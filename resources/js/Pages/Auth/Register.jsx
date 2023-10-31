@@ -8,6 +8,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import LoaderButton from '@/Components/LoaderButton';
 
 export default function Register() {
+
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
@@ -23,18 +24,19 @@ export default function Register() {
 
     const submit = (e) => {
         e.preventDefault();
-
         post(route('register'));
     };
+
+    useEffect(()=>{
+        console.log("errors",errors)
+    }, [errors]);
 
     return (
         <GuestLayout>
             <Head title="Register" />
 
-            <form onSubmit={submit}>
-                <div>
+                {/* <div>
                     <InputLabel htmlFor="name" value="Name" />
-
                     <TextInput
                         id="name"
                         name="name"
@@ -45,13 +47,11 @@ export default function Register() {
                         onChange={(e) => setData('name', e.target.value)}
                         required
                     />
-
                     <InputError message={errors.name} className="mt-2" />
-                </div>
+                </div> */}
 
-                <div className="mt-4">
+                {/* <div className="mt-4">
                     <InputLabel htmlFor="email" value="Email" />
-
                     <TextInput
                         id="email"
                         type="email"
@@ -62,13 +62,11 @@ export default function Register() {
                         onChange={(e) => setData('email', e.target.value)}
                         required
                     />
-
                     <InputError message={errors.email} className="mt-2" />
-                </div>
+                </div> */}
 
-                <div className="mt-4">
+                {/* <div className="mt-4">
                     <InputLabel htmlFor="password" value="Password" />
-
                     <TextInput
                         id="password"
                         type="password"
@@ -79,11 +77,10 @@ export default function Register() {
                         onChange={(e) => setData('password', e.target.value)}
                         required
                     />
-
                     <InputError message={errors.password} className="mt-2" />
-                </div>
+                </div> */}
 
-                <div className="mt-4">
+                {/* <div className="mt-4">
                     <InputLabel htmlFor="password_confirmation" value="Confirm Password" />
 
                     <TextInput
@@ -98,19 +95,95 @@ export default function Register() {
                     />
 
                     <InputError message={errors.password_confirmation} className="mt-2" />
-                </div>
+                </div> */}
 
-                <div className="flex items-center justify-end mt-4">
-                    <Link
-                        href={route('login')}
-                        className="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
-                        Already registered?
-                    </Link>
+            <div className='loginPage mintbg py-14'>
+                <h2 className='headingLg mb-5 text-center mb-6'>Create your Account</h2>
+                <p className='text-center mb-5 font-CeraGRBold'>Already Have an Account? <Link to="/"  className=' mb-6 text-pink'>Login</Link></p>
+                <div className='loginform mx-auto border-black whbg shadow-black'>
+                    <div className='loginheadbox pinkbg'>
+                        <span className='mintbg'></span>
+                        <span className='bluebg'></span>
+                    </div>
+                    <form onSubmit={submit} >
+                        <div className='login-step1'>
+                            <ul>
+                                <li>
+                                    <label>Name</label>
+                                    <input id="name"
+                                    name="name"
+                                    value={data.name}
+                                    className="mt-1 block w-full"
+                                    autoComplete="name"
+                                    onChange={(e) => setData('name', e.target.value)}
+                                    required
+                                    />
+                                    <InputError>{errors?.name || ''}</InputError>
+                                </li>
+                                <li>
+                                    <label>Email</label>
+                                    <input id="email"
+                                        type="email"
+                                        name="email"
+                                        value={data.email}
+                                        className="mt-1 block w-full"
+                                        autoComplete="username"
+                                        onChange={(e) => setData('email', e.target.value)}
+                                        required
+                                     />
+                                     <InputError>{errors?.email || ''}</InputError>
+                                </li>
+                                <li>
+                                    <label>Password</label>
+                                    <input  id="password"
+                                    type="password"
+                                    name="password"
+                                    value={data.password}
+                                    className="mt-1 block w-full"
+                                    autoComplete="new-password"
+                                    onChange={(e) => setData('password', e.target.value)}
+                                    required
+                                    />
+                                    <InputError>{errors?.password || ''}</InputError>
+                                </li>
+                                <li>
+                                    <label>Confirm Password</label>
+                                    <input
+                                        id="password_confirmation"
+                                        type="password"
+                                        name="password_confirmation"
+                                        value={data.password_confirmation}
+                                        className="mt-1 block w-full"
+                                        autoComplete="new-password"
+                                        onChange={(e) => setData('password_confirmation', e.target.value)}
+                                        required
+                                    />
+                                    <InputError>{errors?.password_confirmation || ''}</InputError>
+                                </li>
+                            </ul>
+                            <div className='wishlistbtn rotate-btn text-center flex justify-center mt-16'>
+                                {/* <button type='submit' className='btn-pink-lg'>
+                                    {processing ? "Proccessing" : " Create your Account"}
+                                </button> */}
+                                <LoaderButton disabled={processing} className='btn-pink-lg' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : " Create your Account"}</LoaderButton>
+                            </div>
 
-                    <LoaderButton disabled={processing} className='ml-4' spinnerClassName='fill-red-600'>{processing ? "Wait.." : "Register"}</LoaderButton>
+
+                            <div className="flex items-center justify-center mt-4">
+                                <Link href={route('login')} className="" >
+                                    Already registered?
+                                </Link>
+
+                                {/* <PrimaryButton className="ml-4" disabled={processing}>
+                                    Register
+                                </PrimaryButton> */}
+                            </div>
+                        </div>
+                    </form>
                 </div>
-            </form>
+            </div>
+
+
         </GuestLayout>
     );
 }
