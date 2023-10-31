@@ -13,27 +13,22 @@ export default function Register() {
         password: '',
         password_confirmation: '',
     });
-
     useEffect(() => {
         return () => {
             reset('password', 'password_confirmation');
         };
     }, []);
-
     const submit = (e) => {
         e.preventDefault();
-
         post(route('register'));
     };
 
     return (
         <GuestLayout>
             <Head title="Register" />
-
             <form onSubmit={submit}>
                 <div>
                     <InputLabel htmlFor="name" value="Name" />
-
                     <TextInput
                         id="name"
                         name="name"
@@ -44,13 +39,11 @@ export default function Register() {
                         onChange={(e) => setData('name', e.target.value)}
                         required
                     />
-
                     <InputError message={errors.name} className="mt-2" />
                 </div>
 
                 <div className="mt-4">
                     <InputLabel htmlFor="email" value="Email" />
-
                     <TextInput
                         id="email"
                         type="email"
@@ -61,13 +54,11 @@ export default function Register() {
                         onChange={(e) => setData('email', e.target.value)}
                         required
                     />
-
                     <InputError message={errors.email} className="mt-2" />
                 </div>
 
                 <div className="mt-4">
                     <InputLabel htmlFor="password" value="Password" />
-
                     <TextInput
                         id="password"
                         type="password"
@@ -78,7 +69,6 @@ export default function Register() {
                         onChange={(e) => setData('password', e.target.value)}
                         required
                     />
-
                     <InputError message={errors.password} className="mt-2" />
                 </div>
 
