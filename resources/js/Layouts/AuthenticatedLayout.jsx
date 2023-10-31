@@ -1,13 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
+import { Toaster } from 'react-hot-toast';
+import { useAlerts } from '@/Components/Alerts';
 
 export default function Authenticated({ user, header, children }) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
-
+    const {successAlert, errorAlert} = useAlerts();
+    const {flash} = usePage().props;
+    useEffect(() => {
+        // console.log("flash", flash);
+        if(flash?.error){
+            errorAlert(flash.error);
+        }
+        if(flash?.success){
+            successAlert(flash.success);
+        }
+        if(flash?.warning){
+            warningAlert(flash.warning);
+        }
+        if(flash?.info){
+            successAlert(flash.info);
+        }
+    },[]);
     return (
         <div className="min-h-screen bg-gray-100">
             <nav className="bg-white border-b border-gray-100">
@@ -119,7 +137,10 @@ export default function Authenticated({ user, header, children }) {
                 </header>
             )}
 
-            <main>{children}</main>
+            <main>
+                {children}
+                <Toaster />
+            </main>
         </div>
     );
 }
