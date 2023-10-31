@@ -8,6 +8,8 @@
   src:url('../assets/fonts/newfont.woff') format('woff2'), url('../assets/fonts/newfont.woff2') format('woff');
 }
 
+
+
 @font-face{
     font-family:'CeraGRMedium';
     src:url('../assets/fonts/CeraGRMedium.woff') format('woff2'), url('../assets/fonts/CeraGRMedium.woff2') format('woff');

@@ -1,3 +1,4 @@
+import React from 'react'
 import { useEffect } from 'react';
 import Checkbox from '@/Components/Checkbox';
 import GuestLayout from '@/Layouts/GuestLayout';
@@ -29,7 +30,36 @@ export default function Login({ status, canResetPassword }) {
         <GuestLayout>
             <Head title="Log in" />
             {status && <div className="mb-4 font-medium text-sm text-green-600">{status}</div>}
-            <form onSubmit={submit}>
+
+            <div>
+        <div className='loginPage mintbg py-14'>
+            <h2 className='headingLg mb-5 text-center mb-6'>Create your Account</h2>
+            <p className='text-center mb-5'>Already Have an Account? <Link to="/"  className=' mb-6 text-pink'>Login</Link></p>
+            <div className='loginform mx-auto border-black whbg shadow-black'>
+                <div className='loginheadbox pinkbg'>
+                    <span className='mintbg'></span>
+                    <span className='bluebg'></span>
+                </div>
+                <form>
+                    <ul>
+                        <li>
+                            <label>Enter Email</label>
+                            <input type='text' name='Email' placeholder='Your email...' />
+                        </li>
+                        <li>
+                            <label>Password</label>
+                            <input type='text' name='Email' placeholder='Password..' />
+                        </li>
+                    </ul>
+
+                    <div className='mt-6 wishlistbtn rotate-btn shadow-black'>
+                        <a href='#' className='btn-pink-lg'>Create your Account</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+            {/* <form onSubmit={submit}>
                 <div>
                     <InputLabel htmlFor="email" value="Email" />
 
@@ -88,7 +118,7 @@ export default function Login({ status, canResetPassword }) {
                         Log in
                     </PrimaryButton>
                 </div>
-            </form>
+            </form> */}
         </GuestLayout>
     );
 }
