@@ -31,34 +31,62 @@ export default function Login({ status, canResetPassword }) {
             <Head title="Log in" />
             {status && <div className="mb-4 font-medium text-sm text-green-600">{status}</div>}
 
-            <div>
-        <div className='loginPage mintbg py-14'>
-            <h2 className='headingLg mb-5 text-center mb-6'>Create your Account</h2>
-            <p className='text-center mb-5'>Already Have an Account? <Link to="/"  className=' mb-6 text-pink'>Login</Link></p>
-            <div className='loginform mx-auto border-black whbg shadow-black'>
-                <div className='loginheadbox pinkbg'>
-                    <span className='mintbg'></span>
-                    <span className='bluebg'></span>
-                </div>
-                <form>
-                    <ul>
-                        <li>
-                            <label>Enter Email</label>
-                            <input type='text' name='Email' placeholder='Your email...' />
-                        </li>
-                        <li>
-                            <label>Password</label>
-                            <input type='text' name='Email' placeholder='Password..' />
-                        </li>
-                    </ul>
-
-                    <div className='mt-6 wishlistbtn rotate-btn shadow-black'>
-                        <a href='#' className='btn-pink-lg'>Create your Account</a>
+            <div className='loginPage mintbg py-14'>
+                <h2 className='headingLg mb-5 text-center mb-6'>Login</h2>
+                <div className='loginform mx-auto border-black whbg shadow-black'>
+                    <div className='loginheadbox pinkbg'>
+                        <span className='mintbg'></span>
+                        <span className='bluebg'></span>
                     </div>
-                </form>
+                    <form onSubmit={submit} >
+                        <div className='login-step1'>
+                            <ul>
+                                <li>
+                                    <label>Enter Email</label>
+                                    <input id="email"
+                                    type="email"
+                                    name="email"
+                                    value={data.email}
+                                    className="mt-1 block w-full"
+                                    autoComplete="username"
+                                    isFocused={true}
+                                    onChange={(e) => setData('email', e.target.value)} />
+                                </li>
+                                <li>
+                                    <label>Password</label>
+                                    <input id="password"
+                                        type="password"
+                                        name="password"
+                                        value={data.password}
+                                        className="mt-1 block w-full"
+                                        autoComplete="current-password"
+                                        onChange={(e) => setData('password', e.target.value)}
+                                    />
+                                </li>
+                            </ul>
+                            <InputError message={errors.email} className="mt-2" />
+                            <InputError message={errors.password} className="mt-2" />
+
+                            <div className='wishlistbtn rotate-btn text-center flex justify-center mt-16'>
+                                <button type='submit' className='btn-pink-lg'>Login</button>
+                            </div>
+
+                             <p className='text-center mt-4 font-CeraGRBold'>Don't have an account? <Link to={route('register')} className=' mb-6 text-pink'>signup</Link></p>
+
+
+                            {/* {canResetPassword && (
+                                <Link
+                                    href={route('password.request')}
+                                    className="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" >
+                                    Forgot your password?
+                                </Link>
+                            )} */}
+
+                        </div>
+                    </form>
+                </div>
             </div>
-        </div>
-    </div>
+         
             {/* <form onSubmit={submit}>
                 <div>
                     <InputLabel htmlFor="email" value="Email" />

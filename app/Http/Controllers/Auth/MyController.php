@@ -1,14 +1,19 @@
 <?php 
 namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Inertia\Inertia;
-use Illuminate\Http\Request;
 
 class MyController extends Controller {
 
-  public function getName(){ 
-    return Inertia::render('Auth/ResetPassword');
+  public function getUsers(){
+    // $users = User::where('name','naveen')->orderBy('created_at','DESC')->get(); 
+    $users = User::get(); 
+    return Inertia::render('Lists', [
+      'users' => $users
+    ]);
   } 
+
 }
 
 

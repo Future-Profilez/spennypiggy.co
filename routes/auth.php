@@ -61,4 +61,4 @@ Route::middleware('auth')->group(function () {
                 ->name('logout');
 });
 
-Route::get('reset-password', [MyController::class,'getName'])->name('reset-password');
+Route::get('users', [MyController::class,'getUsers'])->name('users');
