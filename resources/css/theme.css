@@ -1,0 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+body {
+  --white:#ffffff;
+  --black:#000000;
+  --mint:#3CFCCF;
+  /* --mint:  linear-gradient(90deg, var 0%, rgba(9,9,121,1) 35%, rgba(0,212,255,1) 100%); */
+  --pink:#FE3394;
+  --lightpink:#FFC4E2;
+  --voilet: #5D25FD;
+  --body-font:'GillSans';;
+  --heading-font: 'GillSans', sans-serif;
+  --para-font: 'CeraGRMedium';
+  --parabold-font: 'CeraGRMedium';
+  --text-wh: #ffffff;
+}
+
+
+
+
+
+
