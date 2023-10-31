@@ -20,6 +20,7 @@
         "vite": "^4.0.0"
     },
     "dependencies": {
-        "react-hot-toast": "^2.4.1"
+        "react-hot-toast": "^2.4.1",
+        "swiper": "^11.0.3"
     }
 }
