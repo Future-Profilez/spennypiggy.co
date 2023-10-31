@@ -1,5 +1,4 @@
 import { Link, Head } from '@inertiajs/react';
-
 export default function Welcome({ auth, laravelVersion, phpVersion }) {
     return (
         <>
@@ -132,10 +131,8 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     strokeWidth="1.5"
-                                    className="self-center shrink-0 stroke-red-500 w-6 h-6 mx-6"
-                                >
-                                    <path
-                                        strokeLinecap="round"
+                                    className="self-center shrink-0 stroke-red-500 w-6 h-6 mx-6" >
+                                    <path strokeLinecap="round"
                                         strokeLinejoin="round"
                                         d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75"
                                     />
