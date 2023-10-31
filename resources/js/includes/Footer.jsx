@@ -1,6 +1,6 @@
 import React from 'react'
-import footlogo from '../assets/img/footlogo.png'; 
-import { Outlet, Link } from "react-router-dom";
+import footlogo from '../../assets/img/footlogo.png'; 
+import { Link, Head } from '@inertiajs/react';
 
 export default function Footer() {
   return (

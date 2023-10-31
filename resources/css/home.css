@@ -282,7 +282,7 @@
     text-decoration: underline;
 }
 
-.copyright { padding: 10px 0; border-top: 1px solid #ccc; color: var(--white); font-family: var(--font-CeraGR); font-size: 16px; font-style: normal; font-weight: 400; line-height: 250%; text-align: center; margin: 40px 0 0; }
+.copyright { padding: 10px 0; border-top: 1px solid var(--white); color: var(--white); font-family: var(--font-CeraGR); font-size: 16px; font-style: normal; font-weight: 400; line-height: 250%; text-align: center; margin: 40px 0 0; }
 
 
 /* login */
@@ -292,3 +292,84 @@
 }
 
 
+.loginheadbox {
+    padding: 30px 40px;
+    border-radius: 25px 25px 0 0;
+}
+
+.loginform {
+    border-radius: 30px 30px;
+}
+
+.loginheadbox .mintbg {
+    width: 30px;
+    height: 30px;
+    display: inline-block;
+    border-radius: 60px;
+    border: 1px solid var(--black);
+    vertical-align: middle;
+    margin: 0 10px 0 0;
+}
+
+
+.loginheadbox .bluebg {
+    width: 30px;
+    height: 30px;
+    border-radius: 60px;
+    border: 1px solid var(--black);
+    display: inline-block;
+    vertical-align: middle;
+}
+
+
+.loginform form {
+    padding: 50px 35px 60px;
+}
+
+.loginform form ul li {
+    margin: 0 0 40px;
+}
+
+.loginform form ul li label {
+    display: block;
+    width: 100%;
+    color: #333;
+    leading-trim: both;
+    text-edge: cap;
+    font-family:var(--font-CeraGRBold);
+    font-size: 18px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 120%; /* 21.6px */
+    letter-spacing: -1.26px;
+    text-transform: uppercase;
+    margin: 0 0 10px;
+}
+
+.loginform form ul li input {
+    border-radius: 12px;
+    border: 1px solid var(--black);
+    background: var(--white);
+    box-shadow: 4px 4px 0px 0px var(--black);
+    display: block;
+    width: 100%;
+    padding: 20px 20px;
+    transition: all ease .3s
+}
+
+.loginPage p { font-size: 22px; }
+.loginform form ul li input:hover, .loginform form ul li input:focus { outline: none;}
+
+.loginform form ul li input:focus, .loginform form ul li input:focus-within { outline: none;box-shadow: 8px 8px 0px 0px var(--black); transition: all ease .3s;}
+
+.wishManage {
+    display: flex;
+    align-items: flex-start;
+    align-content: flex-start;
+    width: 100%;
+}
+
+.userProfile {
+    width: 30%;
+}
+.userManageRt { width: 40%;}

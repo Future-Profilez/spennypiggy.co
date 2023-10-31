@@ -1,6 +1,7 @@
 import React from 'react';
-import { Outlet, Link } from "react-router-dom";
-import spennypiggy from '../assets/img/spenny-piggy.png'; 
+import { Link, Head } from '@inertiajs/react';
+import spennypiggy from '../../assets/img/spenny-piggy.png'; 
+
 export default function Header() {
   return (
     <div className='mintbg py-14'>
