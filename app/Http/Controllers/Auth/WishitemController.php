@@ -18,16 +18,6 @@ class WishitemController extends Controller
     public function saveWishItem(Request $request): RedirectResponse
     {
 
-        // $regex = '/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/';
-        // $request->validate([
-        //     'wishname' => ['required', 'string', 'max:255'],
-        //     'price' => ['required'],
-        //     'item_url' => ['sometimes', 'regex:' . $regex],
-        //     'subcription' => ['required', 'in:0,1,2'],
-        //     'subcription_period' => ['sometimes', 'string'],
-        //     'repeat_purchase' => ['sometimes', 'in:0,1'],
-        // ]);
-
         $item = Wishitem::create([
             'uuid' => Uuid::uuid4(),
             'wishname' => $request->wishname,
