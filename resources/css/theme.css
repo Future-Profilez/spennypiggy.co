@@ -1,4 +1,24 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+@font-face {
+  font-family: 'CeraGRBold';
+  src: 
+       url('../assets/fonts/CeraGRBold.woff') format('woff'),
+       url('../assets/fonts/CeraGRBold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'CeraGRMedium';
+  src:
+       url('../assets/fonts/CeraGRMedium.woff2') format('woff2'),
+       url('../assets/fonts/CeraGRMedium.woff') format('woff');
+}
+@font-face {
+  font-family: 'gulfs';
+  src:
+       url('../assets/fonts/newfont.woff2') format('woff2'),
+       url('../assets/fonts/newfont.woff') format('woff');
+}
+
 
 body {
   --white:#ffffff;
@@ -8,10 +28,10 @@ body {
   --pink:#FE3394;
   --lightpink:#FFC4E2;
   --voilet: #5D25FD;
-  --body-font:'GillSans';;
-  --heading-font: 'GillSans', sans-serif;
+  --body-font:'newfont';
+  --heading-font: 'gulfs';
   --para-font: 'CeraGRMedium';
-  --parabold-font: 'CeraGRMedium';
+  --parabold-font: 'CeraGRBold';
   --text-wh: #ffffff;
 }
 

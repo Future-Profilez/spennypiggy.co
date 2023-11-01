@@ -1,4 +1,5 @@
 import './bootstrap';
+import '../css/index.css';
 import '../css/app.css';
 import '../css/theme.css';
 import '../css/home.css';
@@ -13,11 +14,11 @@ createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) => resolvePageComponent(`./Pages/${name}.jsx`, import.meta.glob('./Pages/**/*.jsx')),
     setup({ el, App, props }) {
-    const root = createRoot(el);
-    root.render(<>
-        <App {...props} />
-    </>
-    );
+        const root = createRoot(el);
+        root.render(<>
+            <App {...props} />
+        </>
+        );
     },
     progress: {
         color: '#4B5563',
