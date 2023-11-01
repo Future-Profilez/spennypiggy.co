@@ -8,9 +8,11 @@ import { Toaster } from 'react-hot-toast';
 import { useAlerts } from '@/Components/Alerts';
 
 export default function Authenticated({ user, header, children }) {
+
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const {successAlert, errorAlert} = useAlerts();
     const {flash} = usePage().props;
+
     useEffect(() => {
         // console.log("flash", flash);
         if(flash?.error){
@@ -26,6 +28,7 @@ export default function Authenticated({ user, header, children }) {
             successAlert(flash.info);
         }
     },[]);
+    
     return (
         <div className="min-h-screen bg-gray-100">
             <nav className="bg-white border-b border-gray-100">

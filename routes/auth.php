@@ -10,7 +10,11 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\Auth\WishitemController;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
@@ -34,11 +38,15 @@ Route::middleware('guest')->group(function () {
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
                 ->name('password.store');
+                    
     Route::post('reset-password', [NewPasswordController::class, 'store'])
     ->name('password.store');
 });
 
 Route::middleware('auth')->group(function () {
+
+    
+    
     Route::get('verify-email', EmailVerificationPromptController::class)
                 ->name('verification.notice');
 
@@ -57,8 +65,20 @@ Route::middleware('auth')->group(function () {
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
 
-    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
-                ->name('logout');
+    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+
+    Route::get('dashboard', [AuthenticatedSessionController::class, 'getUserProfile'])->name('dashboard');
+
+    Route::get('/{username}', function ($username) {
+        $user = User::where('username',$username)->first();
+        $owner = Auth::user();
+        return Inertia::render('Dashboard',[
+            'owner' => $user->id == $owner->id ? true : false
+        ]);
+    })->middleware(['auth', 'verified'])->name('user.show'); 
+    
+    Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item');
+
 });
 
 Route::get('users', [MyController::class,'getUsers'])->name('users');

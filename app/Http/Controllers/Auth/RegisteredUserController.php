@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
+use Ramsey\Uuid\Uuid;
 
 class RegisteredUserController extends Controller
 {
@@ -45,6 +46,7 @@ class RegisteredUserController extends Controller
             'name' => $request->name,
             'email' => strtolower($request->email),
             'username' => $request->username,
+            'uuid' => Uuid::uuid4(),
             'password' => Hash::make($request->password),
         ]);
 

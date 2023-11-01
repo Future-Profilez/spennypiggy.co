@@ -34,7 +34,9 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(RouteServiceProvider::HOME)->with("success", "Login Success.");
+        $user = Auth::user();
+        
+        return redirect(route("user.show",[$user->username]))->with("success", "Logged out successfully.");
     }
 
     /**
@@ -49,5 +51,17 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect(route("login"))->with("success", "Logged out successfully.");
+    }
+
+
+     /**
+     * Private user profile info 
+     */
+    public function getUserProfile(){
+
+        $user = Auth::user();
+        return Inertia::render('Dashboard',[
+            'user' => $user
+        ]);
     }
 }
