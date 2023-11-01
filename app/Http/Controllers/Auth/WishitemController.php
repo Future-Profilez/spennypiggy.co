@@ -10,12 +10,14 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
 
 class WishitemController extends Controller
 {
     public function saveWishItem(Request $request): RedirectResponse
     {
+
         // $regex = '/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/';
         // $request->validate([
         //     'wishname' => ['required', 'string', 'max:255'],
@@ -39,4 +41,5 @@ class WishitemController extends Controller
         ]);
         return back()->with('item', $item);
     }
+     
 }

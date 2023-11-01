@@ -1,12 +1,13 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import Wishlist from './Auth/Wishlist';
+import { useEffect } from 'react';
 
 export default function Dashboard(props) {
 
     const {auth } = props;
     // console.log("auth", auth)
-    console.log("props", props)
+    console.log("props", props);
 
     return (
         <AuthenticatedLayout

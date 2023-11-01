@@ -12,6 +12,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Models\User;
+use App\Models\Wishitem;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -71,13 +72,17 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/{username}', function ($username) {
         $user = User::where('username', $username)->first();
-        $owner = Auth::user();
-        return Inertia::render('Dashboard');
+        $items = Wishitem::where('id', $user->id)->orderBy('created_at','DESC')->get(); 
+        return Inertia::render('Dashboard', [
+            "items"=>$items
+        ]);
     })->middleware(['auth', 'verified'])->name('user.show');
-    // [
-    //     'owner' => $user->id == $owner->id ? true : false
-    // ]
+    
+    // $owner = Auth::user();
+    // ['owner' => $user->id == $owner->id ? true : false// ]
+
     Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item');
+
 });
 
 Route::get('users', [MyController::class, 'getUsers'])->name('users');
