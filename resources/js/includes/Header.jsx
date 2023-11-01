@@ -3,12 +3,12 @@ import { Link, Head } from '@inertiajs/react';
 import spennypiggy from '../../assets/img/spenny-piggy.png';
 
 export default function Header({ user }) {
-  console.log('auth-header', user);
+//   console.log('auth-header', user);
   return (
     <div className='mintbg py-14'>
       <div className='header flex w-full items-center content-center justify-between pinkbg'>
         <div className='headtitle text-wh font-GillSans'>Create Wishlist</div>
-        <div className='spennylogo'><Link to="/"><img src={spennypiggy} /></Link></div>
+        <div className='spennylogo'><Link to={route('home')}><img src={spennypiggy} /></Link></div>
         <div className='cartLogin'>
           <a href='#' className='cartLink'>
             <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36" fill="none">
@@ -16,7 +16,7 @@ export default function Header({ user }) {
             </svg>
           </a>
           {user && user.name ? <><Link method="post" href={route('logout')} as="button" className='btn-mint'>Logout</Link></> :
-            <><Link to="/login" className='btn-mint'>Login</Link></>}
+            <><Link to={route("login")} className='btn-mint'>Login</Link></>}
 
 
 

@@ -72,12 +72,14 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/{username}', function ($username) {
         $user = User::where('username', $username)->first();
-        $items = Wishitem::where('id', $user->id)->orderBy('created_at','DESC')->get(); 
+        $items = Wishitem::whereUserId($user->id)->latest()->get();
         return Inertia::render('Dashboard', [
             "items"=>$items
         ]);
     })->middleware(['auth', 'verified'])->name('user.show');
-    
+
+    // Route::prefix("/")
+
     // $owner = Auth::user();
     // ['owner' => $user->id == $owner->id ? true : false// ]
 

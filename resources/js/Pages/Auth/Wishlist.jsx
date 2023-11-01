@@ -2,41 +2,35 @@
 import InputError from '@/Components/InputError';
 import LoaderButton from '@/Components/LoaderButton';
 import { Link, useForm } from '@inertiajs/react';
-import { useEffect } from 'react';
-import toast from 'react-hot-toast';
+import { useAlerts } from '@/Components/Alerts';
 
 export default function Wishlist() {
-
+    const {successAlert, errorAlert} = useAlerts();
     const { data, setData, post, processing, errors, reset } = useForm({
         wishname: '',
-        price: null,
+        price: 0.00,
         item_url: '',
         thumbnail: '',
-        subscription: null,
-        subscription_period: '',
-        repeat_purchase: '',
-        category: '',
+        subscription: 0,
+        subscription_period: 'daily',
+        repeat_purchase: 1,
+        category: 'one',
     });
 
-    useEffect(() => {
-        return () => {
-            reset();
-        };
-    }, []);
-
-    const submit = (e) => {
+    const createWishList = (e) => {
         e.preventDefault();
-        post(route('save_wish_item'));
+        post(route('save_wish_item'),{
+            preserveScroll:true,
+            onSuccess: (resp) => {
+                reset();
+                successAlert(resp.props.flash?.success || "Added")
+            },
+            onError: (_err) => {
+                console.log(`errors:`);
+                console.table(errors);
+            }
+        });
     };
-
-    useEffect(() => {
-        // if(errors){
-        //     Object.keys(err).map(key => {
-        //         return toast.error(err[key])
-        //     });
-        // }
-        // toast.error("Error Occured");
-    }, [errors]);
 
     return <>
 
@@ -47,7 +41,7 @@ export default function Wishlist() {
                     <span className='mintbg'></span>
                     <span className='bluebg'></span>
                 </div>
-                <form onSubmit={submit} >
+                <form onSubmit={createWishList} >
                     <div className='login-step1'>
                         <ul>
                             <li>
@@ -61,7 +55,7 @@ export default function Wishlist() {
                                     onChange={(e) => setData('wishname', e.target.value)}
                                     required
                                 />
-                                <InputError>{errors?.wishname || ''}</InputError>
+                                <InputError message={errors.wishname} className='text-xs mt-2'/>
                             </li>
                             <li>
                                 <label>Price</label>
@@ -69,12 +63,13 @@ export default function Wishlist() {
                                     type="number"
                                     name="price"
                                     value={data.price}
+                                    step={`0.01`}
                                     className="mt-1 block w-full"
                                     autoComplete="price"
                                     onChange={(e) => setData('price', e.target.value)}
                                     required
                                 />
-                                <InputError>{errors?.price || ''}</InputError>
+                                <InputError message={errors.price} className='text-xs mt-2'/>
                             </li>
                             <li>
                                 <label>Item Url</label>
@@ -87,7 +82,7 @@ export default function Wishlist() {
                                     onChange={(e) => setData('item_url', e.target.value)}
                                     required
                                 />
-                                <InputError>{errors?.item_url || ''}</InputError>
+                                <InputError message={errors.item_url} className='text-xs mt-2'/>
                             </li>
                             <li>
                                 <label>Image</label>
@@ -100,7 +95,7 @@ export default function Wishlist() {
                                     autoComplete="thumbnail"
                                     onChange={(e) => setData('thumbnail', e.target.value)}
                                 />
-                                <InputError>{errors?.thumbnail || ''}</InputError>
+                                <InputError message={errors.thumbnail} className='text-xs mt-2'/>
                             </li>
                             <li>
                                 <label>Subscription</label>
@@ -109,12 +104,13 @@ export default function Wishlist() {
                                     name="subscription"
                                     className="mt-1 block w-full"
                                     onChange={(e) => setData('subscription', e.target.value)}
+                                    defaultValue={data.subscription}
                                 >
                                     <option value={0}>Single Item</option>
                                     <option value={1}>Subscription</option>
                                     <option value={2}>Crowd Fund</option>
                                 </select>
-                                <InputError>{errors?.subscription || ''}</InputError>
+                                <InputError message={errors.subscription} className='text-xs mt-2'/>
                             </li>
                             <li>
                                 <label>Subscription Period</label>
@@ -122,13 +118,14 @@ export default function Wishlist() {
                                     id="subscription_period"
                                     name="subscription_period"
                                     className="mt-1 block w-full"
+                                    defaultValue={data.subscription_period}
                                     onChange={(e) => setData('subscription_period', e.target.value)}
                                 >
                                     <option value="weekly">Weekly</option>
                                     <option value="monthly">Monthly</option>
                                     <option value="daily">Daily</option>
                                 </select>
-                                <InputError>{errors?.subscription_period || ''}</InputError>
+                                <InputError message={errors.subscription_period} className='text-xs mt-2'/>
                             </li>
                             <li>
                                 <label>Repeat Purchase</label>
@@ -137,11 +134,12 @@ export default function Wishlist() {
                                     name="repeat_purchase"
                                     className="mt-1 block w-full"
                                     onChange={(e) => setData('repeat_purchase', e.target.value)}
+                                    defaultValue={data.repeat_purchase}
                                 >
                                     <option value={1}>Yes</option>
                                     <option value={0}>No</option>
                                 </select>
-                                <InputError>{errors?.repeat_purchase || ''}</InputError>
+                                <InputError message={errors.repeat_purchase} className='text-xs mt-2'/>
                             </li>
                             <li>
                                 <label>Category</label>
@@ -150,29 +148,19 @@ export default function Wishlist() {
                                     name="category"
                                     className="mt-1 block w-full"
                                     onChange={(e) => setData('category', e.target.value)}
+                                    defaultValue={data.category}
                                 >
                                     <option value="one">One</option>
                                     <option value="two">Two</option>
                                 </select>
-                                <InputError>{errors?.category || ''}</InputError>
+                                <InputError message={errors.category} className='text-xs mt-2'/>
                             </li>
                         </ul>
                         <div className='wishlistbtn rotate-btn text-center flex justify-center mt-16'>
                             {/* <button type='submit' className='btn-pink-lg'>
                                     {processing ? "Proccessing" : " Create your Account"}
                                 </button> */}
-                            <LoaderButton disabled={processing} className='btn-pink-lg' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : " Create your Account"}</LoaderButton>
-                        </div>
-
-
-                        <div className="flex items-center justify-center mt-4">
-                            <Link href={route('login')} className="" >
-                                Already registered?
-                            </Link>
-
-                            {/* <PrimaryButton className="ml-4" disabled={processing}>
-                                    Register
-                                </PrimaryButton> */}
+                            <LoaderButton disabled={processing} className='btn-pink-lg' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : "Create Wishlist"}</LoaderButton>
                         </div>
                     </div>
                 </form>

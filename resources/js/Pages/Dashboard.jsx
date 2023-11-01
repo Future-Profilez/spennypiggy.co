@@ -8,14 +8,15 @@ import EditProfile from '@/wishlist/EditProfile';
 
 export default function Dashboard(props) {
 
-    const { auth } = props;
+    const { auth, items } = props;
+
     // console.log("auth", auth)
-    console.log("props", props);
+    console.log("props", items);
 
     return (
         <AuthenticatedLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Dashboard</h2>} >
+            header={``} >
             <Head title="Dashboard" />
 
             <div>
@@ -49,7 +50,7 @@ export default function Dashboard(props) {
                             </div>
                             <div className='userManageRt mt-14'>
                                 <div className='userManageHead flex items-center justify-between mb-8'>
-                                    <select id="country" name="country" autocomplete="country-name" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6">
+                                    <select id="country" name="country" autocomplete="country-name" className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6">
                                         <option>Category</option>
                                         <option>Category 2</option>
                                         <option>Category 3</option>
