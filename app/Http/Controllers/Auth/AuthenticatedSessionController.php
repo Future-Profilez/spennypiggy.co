@@ -35,8 +35,8 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         $user = Auth::user();
-        
-        return redirect(route("user.show",[$user->username]))->with("success", "Logged out successfully.");
+
+        return redirect(route("user.show", [$user->username]))->with("success", "Logged in successfully.");
     }
 
     /**
@@ -54,13 +54,14 @@ class AuthenticatedSessionController extends Controller
     }
 
 
-     /**
+    /**
      * Private user profile info 
      */
-    public function getUserProfile(){
+    public function getUserProfile()
+    {
 
         $user = Auth::user();
-        return Inertia::render('Dashboard',[
+        return Inertia::render('Dashboard', [
             'user' => $user
         ]);
     }

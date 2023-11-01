@@ -29,17 +29,18 @@ class RegisteredUserController extends Controller
      * Handle an incoming registration request.
      *
      * @throws \Illuminate\Validation\ValidationException
-    */
-    public function store(Request $request): RedirectResponse {
+     */
+    public function store(Request $request): RedirectResponse
+    {
         $request->validate([
             'name' => [
                 'required',
                 'string',
                 'max:255'
             ],
-            'email' => ['required','string', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'username' => ['required','string','lowercase', 'max:20', 'unique:users,username'],
+            'username' => ['required', 'string', 'lowercase', 'max:20', 'unique:users,username'],
         ]);
 
         $user = User::create([
@@ -54,6 +55,6 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(RouteServiceProvider::HOME)->with("success", "Registration successfull.");
+        return redirect(route("user.show", [$user->username]))->with("success", "Registration successfull.");
     }
 }
