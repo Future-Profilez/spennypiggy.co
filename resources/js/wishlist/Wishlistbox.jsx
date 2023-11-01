@@ -8,7 +8,6 @@ export default function Wishlistbox() {
     <div className='wishlistcntbox whbg relative	 rounded-3xl shadow-voilet '>
       <div className='wishlistimg'>
         <img src={miniplantimg} alt='img' className='rounded-t-3xl' />
-
       </div>
 
       <div className='wishlistdetial  relative'>
@@ -24,8 +23,6 @@ export default function Wishlistbox() {
       <div className='sharelinks'>
         <Link to="/" className='font-GillSans'>Share Link</Link>
       </div>
-
-
     </div>
   )
 }
