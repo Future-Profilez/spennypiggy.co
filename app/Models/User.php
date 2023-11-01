@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Ramsey\Uuid\Uuid;
 
 class User extends Authenticatable
 {
@@ -18,12 +19,18 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+        'uuid',
         'name',
         'email',
         'username',
         'password',
         'uuid'
     ];
+
+    public static function boot(){
+        parent::boot();
+        static::creating(fn($u) => $u->uuid = Uuid::uuid4());
+    }
 
     /**
      * The attributes that should be hidden for serialization.

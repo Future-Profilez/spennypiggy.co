@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\CreateStripeCustomer;
 use App\Models\User;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Auth\Events\Registered;
@@ -47,10 +48,10 @@ class RegisteredUserController extends Controller
             'name' => $request->name,
             'email' => strtolower($request->email),
             'username' => $request->username,
-            'uuid' => Uuid::uuid4(),
             'password' => Hash::make($request->password),
         ]);
 
+        CreateStripeCustomer::dispatch($user);
         event(new Registered($user));
 
         Auth::login($user);
