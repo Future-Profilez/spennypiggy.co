@@ -1,14 +1,19 @@
 import 'swiper/css';
 import { Link, Head } from '@inertiajs/react';
 import React from 'react';
-import addwishlistimg from '../../assets/img/addwishlistimg.png'; 
-import sharewishimg01 from '../../assets/img/sharewishimg01.png'; 
-import receivegiftimg from '../../assets/img/receivegiftimg.png'; 
-import thankfansimg from '../../assets/img/thankfansimg.png'; 
-import payoutimg from '../../assets/img/payoutimg.png'; 
-import fraudprotecicon from '../../assets/img/fraudprotecicon.png'; 
-import twowayicon from '../../assets/img/twowayicon.png'; 
-import userimg from '../../assets/img/userimg.png'; 
+
+import addwishlistimg from '../../assets/img/addwishlistimg.png';
+import sharewishimg01 from '../../assets/img/sharewishimg01.png';
+import receivegiftimg from '../../assets/img/receivegiftimg.png';
+import thankfansimg from '../../assets/img/thankfansimg.png';
+import payoutimg from '../../assets/img/payoutimg.png';
+import fraudprotecicon from '../../assets/img/fraudprotecicon.png';
+import twowayicon from '../../assets/img/twowayicon.png';
+import userimg from '../../assets/img/userimg.png';
+// import Footer from '../../includes/Footer.js';
+// import { Outlet, Link } from "react-router-dom";
+
+// Import Swiper React components
 import { Swiper, SwiperSlide } from 'swiper/react';
 import Guest from '@/Layouts/GuestLayout';
 
@@ -66,13 +71,13 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                 <div className='funboximg'>
                     <img src={sharewishimg01} alt='img' />
                     </div>
-                    
+
                     <div className='funcnt'>
                     <h3 className='headingSm mb-3'>Create & share <br/>your Wishlist</h3>
                     <p className='text-CeraGR'>Join Whoyouinto, add items to your Wishlist and <br/> start sharing your page just in minutes!</p>
                     </div>
                 </div>
-                
+
 
                 <div className='funboxs pinkbg shadow-black border-black mb-10'>
                     <div className='funcnt'>
@@ -83,13 +88,13 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                     <img src={receivegiftimg} alt='img' />
                     </div>
                 </div>
-            
+
 
                 <div className='funboxs bluebg shadow-black border-black mb-10'>
                 <div className='funboximg'>
                     <img src={thankfansimg} alt='img' />
                     </div>
-                    
+
                     <div className='funcnt'>
                     <h3 className='headingSm mb-3 text-mint'>Thank your <br/>fans!</h3>
                     <p className='text-CeraGR text-wh'>Showcase your gift with a shout-out on your socials or thank your fans directly on Whoyouinto via a personal text or video message.</p>
@@ -144,7 +149,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                             </div>
                             <p>“I've been a loyal fan for years, but this platform takes it to a whole new level. Two-way anonymity lets us interact intimately, while the fraud protection eases our minds. It's a win-win for everyone, making the fan-creator relationship more exciting and secure”</p>
                             <div className='postdate'>Oct 23, 2023,  04:00 pm</div>
-                        
+
                     </div>
                     </SwiperSlide>
 
@@ -159,7 +164,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                             </div>
                             <p>“I've been a loyal fan for years, but this platform takes it to a whole new level. Two-way anonymity lets us interact intimately, while the fraud protection eases our minds. It's a win-win for everyone, making the fan-creator relationship more exciting and secure”</p>
                             <div className='postdate'>Oct 23, 2023,  04:00 pm</div>
-                        
+
                     </div>
                     </SwiperSlide>
                     <SwiperSlide>
@@ -173,7 +178,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                             </div>
                             <p>“I've been a loyal fan for years, but this platform takes it to a whole new level. Two-way anonymity lets us interact intimately, while the fraud protection eases our minds. It's a win-win for everyone, making the fan-creator relationship more exciting and secure”</p>
                             <div className='postdate'>Oct 23, 2023,  04:00 pm</div>
-                        
+
                     </div>
                     </SwiperSlide>
                     <SwiperSlide>

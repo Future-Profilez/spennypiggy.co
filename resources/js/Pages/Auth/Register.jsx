@@ -5,6 +5,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import LoaderButton from '@/Components/LoaderButton';
 
 export default function Register() {
 
@@ -27,14 +28,14 @@ export default function Register() {
         post(route('register'));
     };
 
-    useEffect(()=>{ 
+    useEffect(()=>{
         console.log("errors",errors)
     }, [errors]);
 
     return (
         <GuestLayout>
             <Head title="Register" />
-            
+
                 {/* <div>
                     <InputLabel htmlFor="name" value="Name" />
                     <TextInput
@@ -114,10 +115,10 @@ export default function Register() {
                                     value={data.name}
                                     className="mt-1 block w-full"
                                     autoComplete="name"
-                                    isFocused={true}
                                     onChange={(e) => setData('name', e.target.value)}
-                                    required 
+                                    required
                                     />
+                                    <InputError>{errors?.name || ''}</InputError>
                                 </li>
                                 <li>
                                     <label>Username</label>
@@ -142,6 +143,7 @@ export default function Register() {
                                         onChange={(e) => setData('email', e.target.value)}
                                         required
                                      />
+                                     <InputError>{errors?.email || ''}</InputError>
                                 </li>
                                 <li>
                                     <label>Password</label>
@@ -154,10 +156,11 @@ export default function Register() {
                                     onChange={(e) => setData('password', e.target.value)}
                                     required
                                     />
+                                    <InputError>{errors?.password || ''}</InputError>
                                 </li>
                                 <li>
                                     <label>Confirm Password</label>
-                                    <input  
+                                    <input
                                         id="password_confirmation"
                                         type="password"
                                         name="password_confirmation"
@@ -167,25 +170,31 @@ export default function Register() {
                                         onChange={(e) => setData('password_confirmation', e.target.value)}
                                         required
                                     />
+                                    <InputError>{errors?.password_confirmation || ''}</InputError>
                                 </li>
                             </ul>
                             <div className='wishlistbtn rotate-btn text-center flex justify-center mt-16'>
-                                <button type='submit' className='btn-pink-lg'>
+                                {/* <button type='submit' className='btn-pink-lg'>
                                     {processing ? "Proccessing" : " Create your Account"}
-                                </button>
+                                </button> */}
+                                <LoaderButton disabled={processing} className='btn-pink-lg' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : " Create your Account"}</LoaderButton>
                             </div>
 
                             <div className="flex items-center justify-center mt-4">
-                                <p className='text-center mt-4 font-CeraGRBold'>
-                                    <Link href={route('login')} className=' mb-6 text-dark'>Already registered ? Sign In. </Link>
-                                </p>
+                                <Link href={route('login')} className="" >
+                                    Already registered?
+                                </Link>
+
+                                {/* <PrimaryButton className="ml-4" disabled={processing}>
+                                    Register
+                                </PrimaryButton> */}
                             </div>
                         </div>
                     </form>
                 </div>
             </div>
 
-            
+
         </GuestLayout>
     );
 }
