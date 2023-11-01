@@ -15,8 +15,8 @@ class Wishitem extends Model
         'price',
         'item_url',
         'thumbnail',
-        'subcription',
-        'subcription_period',
+        'subscription',
+        'subscription_period',
         'repeat_purchase',
         'category'
     ];
@@ -26,5 +26,4 @@ class Wishitem extends Model
         1 => 'subscription',
         2 => 'crowdfund',
     ];
-
 }

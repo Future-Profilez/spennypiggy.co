@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
+import Wishlist from './Auth/Wishlist';
 
 export default function Dashboard(props) {
 
@@ -19,6 +20,7 @@ export default function Dashboard(props) {
                         <div className="p-6 text-gray-900">You're logged in!</div>
                     </div>
                 </div>
+                <Wishlist />
             </div>
             
         </AuthenticatedLayout>

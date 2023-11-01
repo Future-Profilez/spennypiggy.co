@@ -1,7 +1,7 @@
 
 import InputError from '@/Components/InputError';
-import GuestLayout from '@/Layouts/GuestLayout';
-import { useForm } from '@inertiajs/react';
+import LoaderButton from '@/Components/LoaderButton';
+import { Link, useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 
@@ -9,10 +9,10 @@ export default function Wishlist(){
     
 const { data, setData, post, processing, errors, reset } = useForm({
         wishname: '',
-        price: '',
+        price: null,
         item_url: '',
         thumbnail: '',
-        subscription: '',
+        subscription: null ,
         subscription_period: '',
         repeat_purchase: '',
         category: '',
@@ -26,7 +26,7 @@ const { data, setData, post, processing, errors, reset } = useForm({
 
     const submit = (e) => {
         e.preventDefault();
-        post(route('register'));
+        post(route('save_wish_item'));
     };
 
     useEffect(()=>{
@@ -39,11 +39,9 @@ const { data, setData, post, processing, errors, reset } = useForm({
     }, [errors]);
 
     return <>  
-        <GuestLayout>
 
             <div className='loginPage mintbg py-14'>
-                <h2 className='headingLg mb-5 text-center mb-6'>Create your Account</h2>
-                <p className='text-center mb-5 font-CeraGRBold'>Already Have an Account? <Link to="/"  className=' mb-6 text-pink'>Login</Link></p>
+                <h2 className='headingLg mb-5 text-center mb-6'>Add Item</h2>
                 <div className='loginform mx-auto border-black whbg shadow-black'>
                     <div className='loginheadbox pinkbg'>
                         <span className='mintbg'></span>
@@ -86,7 +84,7 @@ const { data, setData, post, processing, errors, reset } = useForm({
                                     value={data.item_url}
                                     className="mt-1 block w-full"
                                     autoComplete="item_url"
-                                    onChange={(e) => setData('password', e.target.value)}
+                                    onChange={(e) => setData('item_url', e.target.value)}
                                     required
                                     />
                                     <InputError>{errors?.item_url || ''}</InputError>
@@ -112,9 +110,9 @@ const { data, setData, post, processing, errors, reset } = useForm({
                                         className="mt-1 block w-full"
                                         onChange={(e) => setData('subscription', e.target.value)}
                                     >
-                                        <option value="0">Single Item</option>
-                                        <option value="1">Subscription</option>
-                                        <option value="2">Crowd Fund</option>
+                                        <option value={0}>Single Item</option>
+                                        <option value={1}>Subscription</option>
+                                        <option value={2}>Crowd Fund</option>
                                     </select>
                                     <InputError>{errors?.subscription || ''}</InputError>
                                 </li>
@@ -140,8 +138,8 @@ const { data, setData, post, processing, errors, reset } = useForm({
                                         className="mt-1 block w-full"
                                         onChange={(e) => setData('repeat_purchase', e.target.value)}
                                     >
-                                        <option value="1">Yes</option>
-                                        <option value="0">No</option>
+                                        <option value={1}>Yes</option>
+                                        <option value={0}>No</option>
                                     </select>
                                     <InputError>{errors?.repeat_purchase || ''}</InputError>
                                 </li>
@@ -180,7 +178,5 @@ const { data, setData, post, processing, errors, reset } = useForm({
                     </form>
                 </div>
             </div>
-        </GuestLayout>
-    
     </>
 }
