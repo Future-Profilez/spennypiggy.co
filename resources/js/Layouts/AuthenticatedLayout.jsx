@@ -32,7 +32,7 @@ export default function Authenticated({ user, header, children }) {
     }, []);
 
     return <>
-        <Header />
+        <Header user={user} />
 
         <div className="hidden sm:flex sm:items-center sm:ml-6">
             <div className="ml-3 relative">
