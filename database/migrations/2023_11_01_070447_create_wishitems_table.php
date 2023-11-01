@@ -18,8 +18,8 @@ return new class extends Migration
             $table->double('price', 10, 2)->default(0.00);
             $table->string('item_url')->nullable();
             $table->string('thumbnail')->nullable();
-            $table->tinyInteger('subcription')->comment("0-single, 1-subs, 2-crowdfund"); // single, subcription, crowdfund
-            $table->string('subcription_period')->nullable(); 
+            $table->tinyInteger('subscription')->comment("0-single, 1-subs, 2-crowdfund"); // single, subcription, crowdfund
+            $table->string('subscription_period')->nullable(); 
             $table->tinyInteger('repeat_purchase')->default(0); 
             $table->longText('category')->nullable(); 
             $table->timestamps();
