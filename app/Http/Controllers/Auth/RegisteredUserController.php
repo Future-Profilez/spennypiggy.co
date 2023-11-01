@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
+use Ramsey\Uuid\Uuid;
 
 class RegisteredUserController extends Controller
 {
@@ -28,20 +29,24 @@ class RegisteredUserController extends Controller
      * Handle an incoming registration request.
      *
      * @throws \Illuminate\Validation\ValidationException
-     */
-    public function store(Request $request): RedirectResponse
-    {
+    */
+    public function store(Request $request): RedirectResponse {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+            'name' => [
+                'required',
+                'string',
+                'max:255'
+            ],
+            'email' => ['required','string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'username' => 'require|string|lowercase|max:20|unique:'.User::class,
+            'username' => ['required','string','lowercase', 'max:20', 'unique:users,username'],
         ]);
 
         $user = User::create([
             'name' => $request->name,
-            'email' => $request->email,
+            'email' => strtolower($request->email),
             'username' => $request->username,
+            'uuid' => Uuid::uuid4(),
             'password' => Hash::make($request->password),
         ]);
 

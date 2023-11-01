@@ -73,9 +73,7 @@ export default function Login({ status, canResetPassword }) {
                                 <LoaderButton disabled={processing} className='btn-pink-lg' spinnerClassName='fill-red-600'>{processing ? "Wait" : "Log in"}</LoaderButton>
                             </div>
 
-                             <p className='text-center mt-4 font-CeraGRBold'>Don't have an account? <Link to={route('register')} className=' mb-6 text-pink'>signup</Link></p>
-
-
+                            <p className='text-center mt-4 font-CeraGRBold'>Don't have an account? <Link href={route('register')} className=' mb-6 text-pink'>Signup</Link></p>
                             {/* {canResetPassword && (
                                 <Link
                                     href={route('password.request')}

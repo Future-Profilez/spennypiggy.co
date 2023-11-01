@@ -1,3 +1,4 @@
+import 'swiper/css';
 import { Link, Head } from '@inertiajs/react';
 import React from 'react';
 
@@ -14,9 +15,6 @@ import userimg from '../../assets/img/userimg.png';
 
 // Import Swiper React components
 import { Swiper, SwiperSlide } from 'swiper/react';
-
-// Import Swiper styles
-import 'swiper/css';
 import Guest from '@/Layouts/GuestLayout';
 
 export default function Home({ auth, laravelVersion, phpVersion }) {
