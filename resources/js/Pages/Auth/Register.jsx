@@ -10,6 +10,7 @@ export default function Register() {
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
+        username: '',
         email: '',
         password: '',
         password_confirmation: '',
@@ -97,9 +98,8 @@ export default function Register() {
                 </div> */}
 
             <div className='loginPage mintbg py-14'>
-                <h2 className='headingLg mb-5 text-center mb-6'>Create your Account</h2>
-                <p className='text-center mb-5 font-CeraGRBold'>Already Have an Account? <Link to="/"  className=' mb-6 text-pink'>Login</Link></p>
-                <div className='loginform mx-auto border-black whbg shadow-black'>
+                <h2 className='headingLg pb-5 text-center mb-6'>Create your Account</h2>
+                <div className='loginform mt-5 mx-auto border-black whbg shadow-black'>
                     <div className='loginheadbox pinkbg'>
                         <span className='mintbg'></span>
                         <span className='bluebg'></span>
@@ -108,7 +108,7 @@ export default function Register() {
                         <div className='login-step1'>
                             <ul>
                                 <li>
-                                    <label>Name</label>
+                                    <label>Display Name</label>
                                     <input id="name"
                                     name="name"
                                     value={data.name}
@@ -116,6 +116,18 @@ export default function Register() {
                                     autoComplete="name"
                                     isFocused={true}
                                     onChange={(e) => setData('name', e.target.value)}
+                                    required 
+                                    />
+                                </li>
+                                <li>
+                                    <label>Username</label>
+                                    <input id="username"
+                                    name="username"
+                                    value={data.username}
+                                    className="mt-1 block w-full"
+                                    autoComplete="username"
+                                    isFocused={true}
+                                    onChange={(e) => setData('username', e.target.value)}
                                     required 
                                     />
                                 </li>
@@ -163,15 +175,10 @@ export default function Register() {
                                 </button>
                             </div>
 
-
                             <div className="flex items-center justify-center mt-4">
-                                <Link href={route('login')} className="" >
-                                    Already registered? 
-                                </Link>
-
-                                {/* <PrimaryButton className="ml-4" disabled={processing}>
-                                    Register
-                                </PrimaryButton> */}
+                                <p className='text-center mt-4 font-CeraGRBold'>
+                                    <Link href={route('login')} className=' mb-6 text-dark'>Already registered ? Sign In. </Link>
+                                </p>
                             </div>
                         </div>
                     </form>

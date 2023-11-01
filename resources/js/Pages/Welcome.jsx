@@ -1,6 +1,6 @@
+import 'swiper/css';
 import { Link, Head } from '@inertiajs/react';
 import React from 'react';
-
 import addwishlistimg from '../../assets/img/addwishlistimg.png'; 
 import sharewishimg01 from '../../assets/img/sharewishimg01.png'; 
 import receivegiftimg from '../../assets/img/receivegiftimg.png'; 
@@ -9,14 +9,7 @@ import payoutimg from '../../assets/img/payoutimg.png';
 import fraudprotecicon from '../../assets/img/fraudprotecicon.png'; 
 import twowayicon from '../../assets/img/twowayicon.png'; 
 import userimg from '../../assets/img/userimg.png'; 
-// import Footer from '../../includes/Footer.js'; 
-// import { Outlet, Link } from "react-router-dom";
-
-// Import Swiper React components
 import { Swiper, SwiperSlide } from 'swiper/react';
-
-// Import Swiper styles
-import 'swiper/css';
 import Guest from '@/Layouts/GuestLayout';
 
 export default function Home({ auth, laravelVersion, phpVersion }) {
