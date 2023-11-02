@@ -1,7 +1,7 @@
 import React from 'react'
-import Popup from '../../includes/Popup'
 import profileimg from '../../assets/img/profileimg.png'
 import editicon from '../../assets/img/editicon.png'
+import Popup from '@/Components/Popup'
 
 export default function EditProfile() {
   return (
