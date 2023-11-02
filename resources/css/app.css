@@ -23,6 +23,7 @@ body {position: relative; font-family: var(--para-font);}
 .lightpink { background:var(--lightpink); }
 .shadow-black { box-shadow:13px 15px 0 0 rgba(0,0,0,0.8);}
 .shadow-voilet { box-shadow:13px 15px 0 0 var(--voilet);}
+.shadow-pink { box-shadow:13px 15px 0 0 var(--pink);}
 .text-pink { color: var(--pink); }
 .text-mint { color: var(--mint); }
 .text-wh {color: var(--white);}

@@ -7,12 +7,19 @@ import GlobalUploader from '@/uploadcare/Uploader';
 import st from '../../../css/uploader.module.css'
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import Tab from 'react-bootstrap/Tab';
+import Tabs from 'react-bootstrap/Tabs';
+import Accordion from 'react-bootstrap/Accordion';
+import defaultuserimg from '../../../assets/img/defaultuserimg.jpg';
+import Popup from '@/Components/Popup';
+
+
 export default function Wishlist() {
     const { successAlert, errorAlert } = useAlerts();
 
     const [th, setTh] = useState(null);
 
-    
+
     const getFileUID = (data) => {
         setTh(data?.uuid || '');
     }
@@ -50,6 +57,88 @@ export default function Wishlist() {
 
     return <>
 
+        <Popup
+            classes='btn-pink-lg' text="add wishlist" >
+            <div className="wishlistModal">
+                <div className="widhlistModalInner shadow-pink">
+                    <h2 className="font-GillSans">Add A Wish</h2>
+
+                    <Tabs defaultActiveKey="1" id="uncontrolled-tab-example" className="mb-3">
+                        <Tab eventKey="1" title="Custom">
+                            <div className="wishinfo">
+                                <h3>Wish Information </h3>
+                                <form>
+                                    <ul>
+                                        <li className="mb-3">
+                                            <label className="mb-1">Wish Name</label>
+                                            <input type="text" name="WishName" class="form-input px-2 py-2 border w-full rounded-md" />
+                                        </li>
+                                        <li className="mb-3">
+                                            <label className="mb-1">Price </label>
+                                            <input type="text" name="WishName" class="form-input px-2 py-2 border w-full rounded-md" name="Price " />
+                                            <span className="donot">Don't forget to add to the total to cover shipping and tax.</span>
+                                        </li>
+                                        <li className="mb-3">
+                                            <label className="mb-1">URL (Optional)</label>
+                                            <input type="text" name="WishName" class="form-input px-2 py-2 border w-full rounded-md" name="URL" />
+                                        </li>
+                                        <li className="mb-3">
+                                            <label className="mb-1">Choose Image or Upload</label>
+                                            <div className="chooseImg">
+                                                <img className="rounded-2xl w-full" src={defaultuserimg} alt="img" />
+                                            </div>
+                                        </li>
+                                    </ul>
+                                    <div className=" text-center mb-7">
+                                        <button className="editProfile flex w-12 max-w-xs mx-auto">Upload Custom Photo</button>
+                                    </div>
+
+                                    <div className="wishlistAccordian">
+                                        <Accordion defaultActiveKey="0">
+                                            <Accordion.Item eventKey="0">
+                                                <Accordion.Header><span className="activedote"></span> Single Wish</Accordion.Header>
+                                                <Accordion.Body>
+                                                    <div className="singlewishbox">
+                                                        <div className="repeatpurchase">
+                                                            <label for="allow"><input type="checkbox" id="allow" /> Allow Repeat Purchases</label></div>
+                                                        <p>Check if you want repeat purchases of this gift. If unchecked, the item will automatically delete from your wishlist after the first purchase.</p>
+                                                    </div>
+                                                </Accordion.Body>
+                                            </Accordion.Item>
+                                            <Accordion.Item eventKey="1">
+                                                <Accordion.Header><span className="activedote"></span> Subscription</Accordion.Header>
+                                                <Accordion.Body>
+                                                    fsdfdsfsdf
+                                                </Accordion.Body>
+                                            </Accordion.Item>
+
+                                            <Accordion.Item eventKey="2">
+                                                <Accordion.Header><span className="activedote"></span> Crowdfund</Accordion.Header>
+                                                <Accordion.Body>
+                                                    fsdfdsfsdf
+                                                </Accordion.Body>
+                                            </Accordion.Item>
+                                        </Accordion>
+                                    </div>
+
+                                    <div className="publish">
+                                        <h3>Publish</h3>
+                                        <h4>Categorize this wish (Optional)</h4>
+                                        <p>Organize your wishes to help gifters find what they're looking for while on your wishlist.</p>
+                                        <button className="editProfile flex w-12 max-w-xs mx-auto">Add Wish </button>
+                                    </div>
+
+                                </form>
+                            </div>
+                        </Tab>
+
+                        <Tab eventKey="2" title="Prefill with URL">
+                            Tab content for Profile
+                        </Tab>
+                    </Tabs>
+                </div>
+            </div>
+        </Popup>
 
 
         <div className='loginPage mintbg py-14'>
