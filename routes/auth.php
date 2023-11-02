@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
+use App\Http\Controllers\ProfileController;
 use App\Models\User;
 use App\Models\Wishitem;
 use Illuminate\Support\Facades\Auth;
@@ -79,7 +80,12 @@ Route::middleware('auth')->group(function () {
     // Route::prefix("/")
     // $owner = Auth::user();
     // ['owner' => $user->id == $owner->id ? true : false// ]
+
+
     Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item');
+
+    Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
+
 });
 
 Route::get('users', [MyController::class, 'getUsers'])->name('users');

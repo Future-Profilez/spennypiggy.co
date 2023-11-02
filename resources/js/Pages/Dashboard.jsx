@@ -29,7 +29,7 @@ export default function Dashboard(props) {
                             <div className='userProfile whbg rounded-3xl shadow-voilet border-2'>
                                 <Userprofile user={auth && auth.user} />
                                 <div className='userProfileDate'>
-                                    <EditProfile />
+                                    <EditProfile user={auth.user} />
                                     <div className='finish'>
                                         <p className='mb-4'>Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
                                         <button className='btn-pink-lg'>Finish Setup</button>
