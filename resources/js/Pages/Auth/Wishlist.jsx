@@ -8,11 +8,9 @@ import st from '../../../css/uploader.module.css'
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 export default function Wishlist() {
+
     const { successAlert, errorAlert } = useAlerts();
-
     const [th, setTh] = useState(null);
-
-    
     const getFileUID = (data) => {
         setTh(data?.uuid || '');
     }
@@ -33,7 +31,6 @@ export default function Wishlist() {
             toast.error("Please select a thumbnail for wish list item");
             return false
         }
-
         e.preventDefault();
         post(route('save_wish_item'), {
             preserveScroll: true,
