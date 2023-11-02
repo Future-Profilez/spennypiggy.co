@@ -35,7 +35,6 @@ export default function Wishlist() {
         setData('subscription', e);
         setRepeat(false);
     }
-    const { successAlert, errorAlert } = useAlerts();
 
 
 
@@ -101,9 +100,6 @@ export default function Wishlist() {
                                         </li>
                                         <li className="mb-3">
                                             <label className="mb-1">Price </label>
-<<<<<<< HEAD
-                                            <input type="text" class="form-input px-2 py-2 border w-full rounded-md" name="Price " />
-=======
                                             <input id="price"
                                                 type="number"
                                                 name="price"
@@ -114,14 +110,10 @@ export default function Wishlist() {
                                                 onChange={(e) => setData('price', e.target.value)}
                                                 required
                                             />
->>>>>>> 6e7a81d9d86dfa81e0fc2c2cc60add73ae733bde
                                             <span className="donot">Don't forget to add to the total to cover shipping and tax.</span>
                                         </li>
                                         <li className="mb-3">
                                             <label className="mb-1">URL (Optional)</label>
-<<<<<<< HEAD
-                                            <input type="text"   class="form-input px-2 py-2 border w-full rounded-md" name="URL" />
-=======
                                             <input id="item_url"
                                                 type="text"
                                                 name="item_url"
@@ -131,7 +123,6 @@ export default function Wishlist() {
                                                 onChange={(e) => setData('item_url', e.target.value)}
                                                 required
                                             />
->>>>>>> 6e7a81d9d86dfa81e0fc2c2cc60add73ae733bde
                                         </li>
                                         <li className="mb-3">
                                             <label className="mb-1">Choose Image or Upload</label>
