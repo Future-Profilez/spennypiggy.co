@@ -5,7 +5,7 @@ import { Link, useForm } from '@inertiajs/react';
 import { useAlerts } from '@/Components/Alerts';
 import GlobalUploader from '@/uploadcare/Uploader';
 import st from '../../../css/uploader.module.css'
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import Tab from 'react-bootstrap/Tab';
 import Tabs from 'react-bootstrap/Tabs';
@@ -18,11 +18,7 @@ export default function Wishlist() {
 
     const { successAlert, errorAlert } = useAlerts();
     const [th, setTh] = useState(null);
-
-
-    const getFileUID = (data) => {
-        setTh(data?.uuid || '');
-    }
+    const [repeat, setRepeat] = useState(0);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         wishname: '',
@@ -31,9 +27,32 @@ export default function Wishlist() {
         thumbnail: th,
         subscription: 0,
         subscription_period: 'daily',
-        repeat_purchase: 1,
+        repeat_purchase: repeat ? 1 : 0,
         category: 'one',
     });
+
+    const setSubs = (e) => {
+        setData('subscription', e);
+        setRepeat(false);
+    }
+    const { successAlert, errorAlert } = useAlerts();
+
+
+
+    const getFileUID = (data) => {
+        setTh(data?.uuid || '');
+    }
+
+    const rpValue = (e) => {
+        console.log('checkbox', e.target.checked);
+        setRepeat(e.target.checked)
+    }
+
+
+
+    useEffect(() => {
+        console.log("data", data)
+    }, [data])
 
     const createWishList = (e) => {
         if (!th) {
@@ -70,49 +89,82 @@ export default function Wishlist() {
                                     <ul>
                                         <li className="mb-3">
                                             <label className="mb-1">Wish Name</label>
-                                            <input type="text" name="WishName" class="form-input px-2 py-2 border w-full rounded-md" />
+                                            <input id="wishname"
+                                                name="wishname"
+                                                type="text"
+                                                value={data.wishname}
+                                                className="form-input px-2 py-2 border w-full rounded-md"
+                                                autoComplete="name"
+                                                onChange={(e) => setData('wishname', e.target.value)}
+                                                required
+                                            />
                                         </li>
                                         <li className="mb-3">
                                             <label className="mb-1">Price </label>
+<<<<<<< HEAD
                                             <input type="text" class="form-input px-2 py-2 border w-full rounded-md" name="Price " />
+=======
+                                            <input id="price"
+                                                type="number"
+                                                name="price"
+                                                value={data.price}
+                                                step={`0.01`}
+                                                className="form-input px-2 py-2 border w-full rounded-md"
+                                                autoComplete="price"
+                                                onChange={(e) => setData('price', e.target.value)}
+                                                required
+                                            />
+>>>>>>> 6e7a81d9d86dfa81e0fc2c2cc60add73ae733bde
                                             <span className="donot">Don't forget to add to the total to cover shipping and tax.</span>
                                         </li>
                                         <li className="mb-3">
                                             <label className="mb-1">URL (Optional)</label>
+<<<<<<< HEAD
                                             <input type="text"   class="form-input px-2 py-2 border w-full rounded-md" name="URL" />
+=======
+                                            <input id="item_url"
+                                                type="text"
+                                                name="item_url"
+                                                value={data.item_url}
+                                                className="form-input px-2 py-2 border w-full rounded-md"
+                                                autoComplete="item_url"
+                                                onChange={(e) => setData('item_url', e.target.value)}
+                                                required
+                                            />
+>>>>>>> 6e7a81d9d86dfa81e0fc2c2cc60add73ae733bde
                                         </li>
                                         <li className="mb-3">
                                             <label className="mb-1">Choose Image or Upload</label>
-                                            <div className="chooseImg">
-                                                <img className="rounded-2xl w-full" src={defaultuserimg} alt="img" />
-                                            </div>
+                                            <GlobalUploader sendFile={getFileUID} options={st.wishitemUploader} />
                                         </li>
                                     </ul>
-                                    <div className=" text-center mb-7">
-                                        <button className="editProfile flex w-12 max-w-xs mx-auto">Upload Custom Photo</button>
-                                    </div>
+
 
                                     <div className="wishlistAccordian">
                                         <Accordion defaultActiveKey="0">
                                             <Accordion.Item eventKey="0">
-                                                <Accordion.Header><span className="activedote"></span> Single Wish</Accordion.Header>
+                                                <Accordion.Header onClick={(e) => setSubs(0)} ><span className="activedote"></span> Single Wish</Accordion.Header>
                                                 <Accordion.Body>
                                                     <div className="singlewishbox">
                                                         <div className="repeatpurchase">
-                                                            <label for="allow"><input type="checkbox" id="allow" /> Allow Repeat Purchases</label></div>
+                                                            <label for="allow"><input checked={repeat} type="checkbox" id="allow" name='allow' onChange={rpValue} /> Allow Repeat Purchases</label></div>
                                                         <p>Check if you want repeat purchases of this gift. If unchecked, the item will automatically delete from your wishlist after the first purchase.</p>
                                                     </div>
                                                 </Accordion.Body>
                                             </Accordion.Item>
                                             <Accordion.Item eventKey="1">
-                                                <Accordion.Header><span className="activedote"></span> Subscription</Accordion.Header>
+                                                <Accordion.Header onClick={(e) => setSubs(1)} ><span className="activedote"></span> Subscription</Accordion.Header>
                                                 <Accordion.Body>
-                                                    fsdfdsfsdf
+                                                    <div className="singlewishbox">
+                                                        <div className="repeatpurchase">
+                                                            <label for="allow1"><input checked={repeat} type="checkbox" id="allow1" name='allow' onChange={rpValue} /> Allow Repeat Purchases</label></div>
+                                                        <p>Check if you want repeat purchases of this gift. If unchecked, the item will automatically delete from your wishlist after the first purchase.</p>
+                                                    </div>
                                                 </Accordion.Body>
                                             </Accordion.Item>
 
                                             <Accordion.Item eventKey="2">
-                                                <Accordion.Header><span className="activedote"></span> Crowdfund</Accordion.Header>
+                                                <Accordion.Header onClick={(e) => setSubs(2)}><span className="activedote"></span> Crowdfund</Accordion.Header>
                                                 <Accordion.Body>
                                                     fsdfdsfsdf
                                                 </Accordion.Body>
