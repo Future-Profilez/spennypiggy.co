@@ -3,14 +3,25 @@ import InputError from '@/Components/InputError';
 import LoaderButton from '@/Components/LoaderButton';
 import { Link, useForm } from '@inertiajs/react';
 import { useAlerts } from '@/Components/Alerts';
-
+import GlobalUploader from '@/uploadcare/Uploader';
+import st from '../../../css/uploader.module.css'
+import { useState } from 'react';
+import toast from 'react-hot-toast';
 export default function Wishlist() {
-    const {successAlert, errorAlert} = useAlerts();
+    const { successAlert, errorAlert } = useAlerts();
+
+    const [th, setTh] = useState(null);
+
+    
+    const getFileUID = (data) => {
+        setTh(data?.uuid || '');
+    }
+
     const { data, setData, post, processing, errors, reset } = useForm({
         wishname: '',
         price: 0.00,
         item_url: '',
-        thumbnail: '',
+        thumbnail: th,
         subscription: 0,
         subscription_period: 'daily',
         repeat_purchase: 1,
@@ -18,9 +29,14 @@ export default function Wishlist() {
     });
 
     const createWishList = (e) => {
+        if (!th) {
+            toast.error("Please select a thumbnail for wish list item");
+            return false
+        }
+
         e.preventDefault();
-        post(route('save_wish_item'),{
-            preserveScroll:true,
+        post(route('save_wish_item'), {
+            preserveScroll: true,
             onSuccess: (resp) => {
                 reset();
                 successAlert(resp.props.flash?.success || "Added")
@@ -33,6 +49,8 @@ export default function Wishlist() {
     };
 
     return <>
+
+
 
         <div className='loginPage mintbg py-14'>
             <h2 className='headingLg mb-5 text-center mb-6'>Add Item</h2>
@@ -55,7 +73,7 @@ export default function Wishlist() {
                                     onChange={(e) => setData('wishname', e.target.value)}
                                     required
                                 />
-                                <InputError message={errors.wishname} className='text-xs mt-2'/>
+                                <InputError message={errors.wishname} className='text-xs mt-2' />
                             </li>
                             <li>
                                 <label>Price</label>
@@ -69,7 +87,7 @@ export default function Wishlist() {
                                     onChange={(e) => setData('price', e.target.value)}
                                     required
                                 />
-                                <InputError message={errors.price} className='text-xs mt-2'/>
+                                <InputError message={errors.price} className='text-xs mt-2' />
                             </li>
                             <li>
                                 <label>Item Url</label>
@@ -82,20 +100,12 @@ export default function Wishlist() {
                                     onChange={(e) => setData('item_url', e.target.value)}
                                     required
                                 />
-                                <InputError message={errors.item_url} className='text-xs mt-2'/>
+                                <InputError message={errors.item_url} className='text-xs mt-2' />
                             </li>
                             <li>
-                                <label>Image</label>
-                                <input
-                                    id="thumbnail"
-                                    type="file"
-                                    name="thumbnail"
-                                    value={data.thumbnail}
-                                    className="mt-1 block w-full"
-                                    autoComplete="thumbnail"
-                                    onChange={(e) => setData('thumbnail', e.target.value)}
-                                />
-                                <InputError message={errors.thumbnail} className='text-xs mt-2'/>
+                                <label>Wish Item Thumbnail</label>
+                                <InputError message={errors.thumbnail} className='text-xs mt-2' />
+                                <GlobalUploader sendFile={getFileUID} options={st.wishitemUploader} />
                             </li>
                             <li>
                                 <label>Subscription</label>
@@ -110,7 +120,7 @@ export default function Wishlist() {
                                     <option value={1}>Subscription</option>
                                     <option value={2}>Crowd Fund</option>
                                 </select>
-                                <InputError message={errors.subscription} className='text-xs mt-2'/>
+                                <InputError message={errors.subscription} className='text-xs mt-2' />
                             </li>
                             <li>
                                 <label>Subscription Period</label>
@@ -125,7 +135,7 @@ export default function Wishlist() {
                                     <option value="monthly">Monthly</option>
                                     <option value="daily">Daily</option>
                                 </select>
-                                <InputError message={errors.subscription_period} className='text-xs mt-2'/>
+                                <InputError message={errors.subscription_period} className='text-xs mt-2' />
                             </li>
                             <li>
                                 <label>Repeat Purchase</label>
@@ -139,7 +149,7 @@ export default function Wishlist() {
                                     <option value={1}>Yes</option>
                                     <option value={0}>No</option>
                                 </select>
-                                <InputError message={errors.repeat_purchase} className='text-xs mt-2'/>
+                                <InputError message={errors.repeat_purchase} className='text-xs mt-2' />
                             </li>
                             <li>
                                 <label>Category</label>
@@ -153,7 +163,7 @@ export default function Wishlist() {
                                     <option value="one">One</option>
                                     <option value="two">Two</option>
                                 </select>
-                                <InputError message={errors.category} className='text-xs mt-2'/>
+                                <InputError message={errors.category} className='text-xs mt-2' />
                             </li>
                         </ul>
                         <div className='wishlistbtn rotate-btn text-center flex justify-center mt-16'>
