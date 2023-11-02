@@ -183,7 +183,7 @@ export default function Wishlist() {
         </Popup>
 
 
-        <div className='loginPage mintbg py-14'>
+        {/* <div className='loginPage mintbg py-14'>
             <h2 className='headingLg mb-5 text-center mb-6'>Add Item</h2>
             <div className='loginform mx-auto border-black whbg shadow-black'>
                 <div className='loginheadbox pinkbg'>
@@ -299,11 +299,11 @@ export default function Wishlist() {
                             {/* <button type='submit' className='btn-pink-lg'>
                                     {processing ? "Proccessing" : " Create your Account"}
                                 </button> */}
-                            <LoaderButton disabled={processing} className='btn-pink-lg' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : "Create Wishlist"}</LoaderButton>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
+        <LoaderButton disabled={processing} className='btn-pink-lg' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : "Create Wishlist"}</LoaderButton>
+    </div >
+                    </div >
+                </form >
+            </div >
+        </div > * /}
     </>
 }
