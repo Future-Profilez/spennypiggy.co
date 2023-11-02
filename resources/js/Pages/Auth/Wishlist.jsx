@@ -134,8 +134,7 @@ export default function Wishlist() {
                                     name="repeat_purchase"
                                     className="mt-1 block w-full"
                                     onChange={(e) => setData('repeat_purchase', e.target.value)}
-                                    defaultValue={data.repeat_purchase}
-                                >
+                                    defaultValue={data.repeat_purchase}>
                                     <option value={1}>Yes</option>
                                     <option value={0}>No</option>
                                 </select>
@@ -148,8 +147,7 @@ export default function Wishlist() {
                                     name="category"
                                     className="mt-1 block w-full"
                                     onChange={(e) => setData('category', e.target.value)}
-                                    defaultValue={data.category}
-                                >
+                                    defaultValue={data.category} >
                                     <option value="one">One</option>
                                     <option value="two">Two</option>
                                 </select>

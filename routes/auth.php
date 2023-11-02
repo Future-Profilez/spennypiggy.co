@@ -69,7 +69,6 @@ Route::middleware('auth')->group(function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     Route::get('dashboard', [AuthenticatedSessionController::class, 'getUserProfile'])->name('dashboard');
-
     Route::get('/{username}', function ($username) {
         $user = User::where('username', $username)->first();
         $items = Wishitem::whereUserId($user->id)->latest()->get();
@@ -77,14 +76,10 @@ Route::middleware('auth')->group(function () {
             "items"=>$items
         ]);
     })->middleware(['auth', 'verified'])->name('user.show');
-
     // Route::prefix("/")
-
     // $owner = Auth::user();
     // ['owner' => $user->id == $owner->id ? true : false// ]
-
     Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item');
-
 });
 
 Route::get('users', [MyController::class, 'getUsers'])->name('users');
