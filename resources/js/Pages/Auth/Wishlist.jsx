@@ -37,7 +37,6 @@ export default function Wishlist() {
     }
 
 
-
     const getFileUID = (data) => {
         setTh(data?.uuid || '');
     }
@@ -300,10 +299,6 @@ export default function Wishlist() {
                                     {processing ? "Proccessing" : " Create your Account"}
                                 </button> */}
         <LoaderButton disabled={processing} className='btn-pink-lg' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : "Create Wishlist"}</LoaderButton>
-    </div >
-                    </div >
-                </form >
-            </div >
-        </div > * /}
+   
     </>
 }
