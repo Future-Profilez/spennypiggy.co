@@ -83,9 +83,9 @@ class WishitemController extends Controller
 
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
         $stripe_client = $stripe->products->create([
-            'name' => $request->name ?? null,
+            'name' => $request->wishname ?? null,
             'images' => [$wish->perma_link],
-            "default_price" => $request->price,
+            "default_price_data" => $request->price,
             "url" => $request->item_url ?? null
         ]);
 
