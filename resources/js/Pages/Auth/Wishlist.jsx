@@ -16,15 +16,13 @@ import Popup from '@/Components/Popup';
 
 export default function Wishlist() {
 
-    const { successAlert, errorAlert } = useAlerts();
-    const [th, setTh] = useState(null);
-    const [repeat, setRepeat] = useState(0);
-
+    const [repeat, setRepeat] = useState(false);
+    const [thumbnail, setThumbnail] = useState('');
     const { data, setData, post, processing, errors, reset } = useForm({
         wishname: '',
         price: 0.00,
         item_url: '',
-        thumbnail: th,
+        thumbnail: '',
         subscription: 0,
         subscription_period: 'daily',
         repeat_purchase: repeat ? 1 : 0,
@@ -35,11 +33,12 @@ export default function Wishlist() {
         setData('subscription', e);
         setRepeat(false);
     }
+    const { successAlert, errorAlert } = useAlerts();
 
-
-
-    const getFileUID = (data) => {
-        setTh(data?.uuid || '');
+    const getFileUID = async (data) => {
+        let ss = data?.uuid;
+        console.log("ss", ss);
+        setThumbnail(ss);
     }
 
     const rpValue = (e) => {
@@ -47,17 +46,16 @@ export default function Wishlist() {
         setRepeat(e.target.checked)
     }
 
-
-
     useEffect(() => {
-        console.log("data", data)
-    }, [data])
+        setData('thumbnail', thumbnail); ''
+    }, [thumbnail]);
 
     const createWishList = (e) => {
-        if (!th) {
+        if (!thumbnail) {
             toast.error("Please select a thumbnail for wish list item");
             return false
         }
+
         e.preventDefault();
         post(route('save_wish_item'), {
             preserveScroll: true,
@@ -84,10 +82,10 @@ export default function Wishlist() {
                         <Tab eventKey="1" title="Custom">
                             <div className="wishinfo">
                                 <h3>Wish Information </h3>
-                                <form>
+                                <form onSubmit={createWishList}>
                                     <ul>
-                                        <li className="mb-3">
-                                            <label className="mb-1">Wish Name</label>
+                                        <li className="mb-4">
+                                            <label className="mb-2 text-start d-block">Wish Name</label>
                                             <input id="wishname"
                                                 name="wishname"
                                                 type="text"
@@ -98,8 +96,8 @@ export default function Wishlist() {
                                                 required
                                             />
                                         </li>
-                                        <li className="mb-3">
-                                            <label className="mb-1">Price </label>
+                                        <li className="mb-4">
+                                            <label className="mb-2 text-start d-block">Price </label>
                                             <input id="price"
                                                 type="number"
                                                 name="price"
@@ -112,8 +110,8 @@ export default function Wishlist() {
                                             />
                                             <span className="donot">Don't forget to add to the total to cover shipping and tax.</span>
                                         </li>
-                                        <li className="mb-3">
-                                            <label className="mb-1">URL (Optional)</label>
+                                        <li className="mb-4">
+                                            <label className="mb-2 text-start d-block">URL (Optional)</label>
                                             <input id="item_url"
                                                 type="text"
                                                 name="item_url"
@@ -124,8 +122,8 @@ export default function Wishlist() {
                                                 required
                                             />
                                         </li>
-                                        <li className="mb-3">
-                                            <label className="mb-1">Choose Image or Upload</label>
+                                        <li className="mb-4">
+                                            <label className="mb-2 text-start d-block">Choose Image or Upload</label>
                                             <GlobalUploader sendFile={getFileUID} options={st.wishitemUploader} />
                                         </li>
                                     </ul>
@@ -137,9 +135,9 @@ export default function Wishlist() {
                                                 <Accordion.Header onClick={(e) => setSubs(0)} ><span className="activedote"></span> Single Wish</Accordion.Header>
                                                 <Accordion.Body>
                                                     <div className="singlewishbox">
-                                                        <div className="repeatpurchase">
-                                                            <label for="allow"><input checked={repeat} type="checkbox" id="allow" name='allow' onChange={rpValue} /> Allow Repeat Purchases</label></div>
-                                                        <p>Check if you want repeat purchases of this gift. If unchecked, the item will automatically delete from your wishlist after the first purchase.</p>
+                                                        <div className="repeatpurchase text-start">
+                                                            <label for="allow"><input checked={repeat} type="checkbox" id="allow" name='repeat_purchase' onChange={rpValue} /> Allow Repeat Purchases</label></div>
+                                                        <p className='text-start' >Check if you want repeat purchases of this gift. If unchecked, the item will automatically delete from your wishlist after the first purchase.</p>
                                                     </div>
                                                 </Accordion.Body>
                                             </Accordion.Item>
@@ -147,9 +145,16 @@ export default function Wishlist() {
                                                 <Accordion.Header onClick={(e) => setSubs(1)} ><span className="activedote"></span> Subscription</Accordion.Header>
                                                 <Accordion.Body>
                                                     <div className="singlewishbox">
-                                                        <div className="repeatpurchase">
-                                                            <label for="allow1"><input checked={repeat} type="checkbox" id="allow1" name='allow' onChange={rpValue} /> Allow Repeat Purchases</label></div>
-                                                        <p>Check if you want repeat purchases of this gift. If unchecked, the item will automatically delete from your wishlist after the first purchase.</p>
+                                                        <div className="repeatpurchase text-start">
+                                                            <label for="allow"><input checked={repeat} type="checkbox" id="allow" name='repeat_purchase' onChange={rpValue} /> Allow Repeat Purchases</label></div>
+                                                        <p className='text-start' >Check if you want repeat purchases of this gift. If unchecked, the item will automatically delete from your wishlist after the first purchase.</p>
+                                                    </div>
+
+
+                                                    <strong className='mb-2 text-start mt-4 d-block '>Allows gifter to purchase this item on a recurring basis.</strong>
+                                                    <div className="singlewishbox border p-3 rounded ">
+                                                        <div className="repeatpurchase text-start">
+                                                            <label for="allow"><input checked={repeat} type="checkbox" id="allow" name='repeat_purchase' onChange={rpValue} /> Daily</label></div>
                                                     </div>
                                                 </Accordion.Body>
                                             </Accordion.Item>
@@ -163,20 +168,19 @@ export default function Wishlist() {
                                         </Accordion>
                                     </div>
 
-                                    <div className="publish">
+                                    <div className="publish text-start">
                                         <h3>Publish</h3>
                                         <h4>Categorize this wish (Optional)</h4>
                                         <p>Organize your wishes to help gifters find what they're looking for while on your wishlist.</p>
-                                        <button className="editProfile flex w-12 max-w-xs mx-auto">Add Wish </button>
+                                        <button type='submit' className="editProfile flex w-12 max-w-xs mx-auto">Add Wish </button>
                                     </div>
 
                                 </form>
                             </div>
                         </Tab>
-
-                        <Tab eventKey="2" title="Prefill with URL">
+                        {/* <Tab eventKey="2" title="Prefill with URL">
                             Tab content for Profile
-                        </Tab>
+                        </Tab> */}
                     </Tabs>
                 </div>
             </div>
@@ -295,15 +299,15 @@ export default function Wishlist() {
                                 <InputError message={errors.category} className='text-xs mt-2' />
                             </li>
                         </ul>
-                        <div className='wishlistbtn rotate-btn text-center flex justify-center mt-16'>
-                            {/* <button type='submit' className='btn-pink-lg'>
+                        <div className='wishlistbtn rotate-btn text-center flex justify-center mt-16'> */}
+        {/* <button type='submit' className='btn-pink-lg'>
                                     {processing ? "Proccessing" : " Create your Account"}
                                 </button> */}
-        <LoaderButton disabled={processing} className='btn-pink-lg' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : "Create Wishlist"}</LoaderButton>
-    </div >
-                    </div >
-                </form >
-            </div >
-        </div > * /}
+        {/* <LoaderButton disabled={processing} className='btn-pink-lg' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : "Create Wishlist"}</LoaderButton>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div> */}
     </>
 }
