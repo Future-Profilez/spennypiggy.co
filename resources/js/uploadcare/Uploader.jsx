@@ -9,8 +9,7 @@ export default function GlobalUploader({ options, sendFile }) {
 
     const handleUploaderEvent = useCallback((e) => {
         const { data } = e.detail;
-        console.log("data", data);
-        sendFile(data);
+        sendFile(data[0]);
     }, []);
 
     useEffect(() => {
