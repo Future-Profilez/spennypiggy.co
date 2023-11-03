@@ -16,7 +16,10 @@ import Popup from '@/Components/Popup';
 
 export default function Wishlist() {
 
+    const [clear, setClear] = useState();
+    const [close, setClose] = useState();
     const [repeat, setRepeat] = useState(false);
+    const [subsperiod, setSubsperiod] = useState('');
     const [thumbnail, setThumbnail] = useState('');
     const { data, setData, post, processing, errors, reset } = useForm({
         wishname: '',
@@ -24,7 +27,7 @@ export default function Wishlist() {
         item_url: '',
         thumbnail: '',
         subscription: 0,
-        subscription_period: 'daily',
+        subscription_period: '',
         repeat_purchase: repeat ? 1 : 0,
         category: 'one',
     });
@@ -46,9 +49,17 @@ export default function Wishlist() {
         setRepeat(e.target.checked)
     }
 
+    const spValue = (e) => {
+        console.log('sp', e.target.value);
+        setSubsperiod(e.target.value)
+    }
+
     useEffect(() => {
+        setData('subscription_period', subsperiod); ''
         setData('thumbnail', thumbnail); ''
-    }, [thumbnail]);
+    }, [subsperiod, thumbnail]);
+
+
 
     const createWishList = (e) => {
         if (!thumbnail) {
@@ -61,7 +72,12 @@ export default function Wishlist() {
             preserveScroll: true,
             onSuccess: (resp) => {
                 reset();
-                successAlert(resp.props.flash?.success || "Added")
+                successAlert(resp.props.flash?.success || "Added");
+                setClose(false);
+                setClear(new Date);
+                setTimeout(() => {
+                    setClose();
+                }, 100)
             },
             onError: (_err) => {
                 console.log(`errors:`);
@@ -72,7 +88,7 @@ export default function Wishlist() {
 
     return <>
 
-        <Popup
+        <Popup action={close}
             classes='btn-pink-lg' text="add wishlist" >
             <div className="wishlistModal">
                 <div className="widhlistModalInner shadow-pink">
@@ -119,12 +135,11 @@ export default function Wishlist() {
                                                 className="form-input px-2 py-2 border w-full rounded-md"
                                                 autoComplete="item_url"
                                                 onChange={(e) => setData('item_url', e.target.value)}
-                                                required
                                             />
                                         </li>
                                         <li className="mb-4">
                                             <label className="mb-2 text-start d-block">Choose Image or Upload</label>
-                                            <GlobalUploader sendFile={getFileUID} options={st.wishitemUploader} />
+                                            <GlobalUploader clear={clear} sendFile={getFileUID} options={st.wishitemUploader} />
                                         </li>
                                     </ul>
 
@@ -151,10 +166,17 @@ export default function Wishlist() {
                                                     </div>
 
 
-                                                    <strong className='mb-2 text-start mt-4 d-block '>Allows gifter to purchase this item on a recurring basis.</strong>
-                                                    <div className="singlewishbox border p-3 rounded ">
+                                                    <div className="singlewishbox  mt-4  rounded ">
+                                                        <strong className='mb-2 text-start d-block '>Allows gifter to purchase this item on a recurring basis.</strong>
                                                         <div className="repeatpurchase text-start">
-                                                            <label for="allow"><input checked={repeat} type="checkbox" id="allow" name='repeat_purchase' onChange={rpValue} /> Daily</label></div>
+                                                            <label for="daily"><input type="radio" id="daily" value={'daily'} name='subscription_period' onChange={spValue} /> Daily</label>
+                                                        </div>
+                                                        <div className="repeatpurchase mt-2 text-start">
+                                                            <label for="weekly"><input type="radio" id="weekly" value={'weekly'} name='subscription_period' onChange={spValue} /> Weekly</label>
+                                                        </div>
+                                                        <div className="repeatpurchase mt-2 text-start">
+                                                            <label for="monthly"><input type="radio" id="monthly" value={'monthly'} name='subscription_period' onChange={spValue} /> Monthly</label>
+                                                        </div>
                                                     </div>
                                                 </Accordion.Body>
                                             </Accordion.Item>
@@ -172,7 +194,15 @@ export default function Wishlist() {
                                         <h3>Publish</h3>
                                         <h4>Categorize this wish (Optional)</h4>
                                         <p>Organize your wishes to help gifters find what they're looking for while on your wishlist.</p>
-                                        <button type='submit' className="editProfile flex w-12 max-w-xs mx-auto">Add Wish </button>
+
+                                        {/* <button type='submit' className="editProfile flex w-12 max-w-xs mx-auto">{processing ? "Proccessing" : " Add Wish"}</button> */}
+
+                                        <LoaderButton disabled={processing} type='submit'
+                                            className=' flex w-12 btn-pink-lg  max-w-xs mx-auto'
+                                            spinnerClassName='fill-red-600'>
+                                            {processing ? "Proccessing" : "Add Wish"}
+                                        </LoaderButton>
+
                                     </div>
 
                                 </form>
