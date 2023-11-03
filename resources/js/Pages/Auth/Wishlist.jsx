@@ -21,14 +21,15 @@ export default function Wishlist() {
     const [repeat, setRepeat] = useState(false);
     const [subsperiod, setSubsperiod] = useState('');
     const [thumbnail, setThumbnail] = useState('');
+
     const { data, setData, post, processing, errors, reset } = useForm({
         wishname: '',
         price: 0.00,
         item_url: '',
         thumbnail: '',
         subscription: 0,
-        subscription_period: '',
-        repeat_purchase: repeat ? 1 : 0,
+        subscription_period: 'daily',
+        repeat_purchase: 0,
         category: 'one',
     });
 
@@ -45,28 +46,23 @@ export default function Wishlist() {
     }
 
     const rpValue = (e) => {
-        console.log('checkbox', e.target.checked);
         setRepeat(e.target.checked)
+        setData('repeat_purchase', e.target.checked ? 1 : 0);
     }
 
     const spValue = (e) => {
-        console.log('sp', e.target.value);
-        setSubsperiod(e.target.value)
+        setData('subscription_period', e.target.value);
     }
 
     useEffect(() => {
-        setData('subscription_period', subsperiod); ''
         setData('thumbnail', thumbnail); ''
-    }, [subsperiod, thumbnail]);
-
-
+    }, [thumbnail]);
 
     const createWishList = (e) => {
         if (!thumbnail) {
             toast.error("Please select a thumbnail for wish list item");
             return false
         }
-
         e.preventDefault();
         post(route('save_wish_item'), {
             preserveScroll: true,
@@ -159,32 +155,33 @@ export default function Wishlist() {
                                             <Accordion.Item eventKey="1">
                                                 <Accordion.Header onClick={(e) => setSubs(1)} ><span className="activedote"></span> Subscription</Accordion.Header>
                                                 <Accordion.Body>
+                                                    
                                                     <div className="singlewishbox">
                                                         <div className="repeatpurchase text-start">
                                                             <label for="allow"><input checked={repeat} type="checkbox" id="allow" name='repeat_purchase' onChange={rpValue} /> Allow Repeat Purchases</label></div>
-                                                        <p className='text-start' >Check if you want repeat purchases of this gift. If unchecked, the item will automatically delete from your wishlist after the first purchase.</p>
+                                                            <p className='text-start' >Check if you want repeat purchases of this gift. If unchecked, the item will automatically delete from your wishlist after the first purchase.</p>
                                                     </div>
-
 
                                                     <div className="singlewishbox  mt-4  rounded ">
                                                         <strong className='mb-2 text-start d-block '>Allows gifter to purchase this item on a recurring basis.</strong>
                                                         <div className="repeatpurchase text-start">
-                                                            <label for="daily"><input type="radio" id="daily" value={'daily'} name='subscription_period' onChange={spValue} /> Daily</label>
+                                                            <label for="daily"><input checked={data.subscription_period == 'daily'} type="radio" id="daily" value={'daily'} name='subscription_period' onChange={spValue} /> Daily</label>
                                                         </div>
                                                         <div className="repeatpurchase mt-2 text-start">
-                                                            <label for="weekly"><input type="radio" id="weekly" value={'weekly'} name='subscription_period' onChange={spValue} /> Weekly</label>
+                                                            <label for="weekly"><input checked={data.subscription_period == 'weekly'} type="radio" id="weekly" value={'weekly'} name='subscription_period' onChange={spValue} /> Weekly</label>
                                                         </div>
                                                         <div className="repeatpurchase mt-2 text-start">
-                                                            <label for="monthly"><input type="radio" id="monthly" value={'monthly'} name='subscription_period' onChange={spValue} /> Monthly</label>
+                                                            <label for="monthly"><input checked={data.subscription_period == 'monthly'}  type="radio" id="monthly" value={'monthly'} name='subscription_period' onChange={spValue} /> Monthly</label>
                                                         </div>
                                                     </div>
+
                                                 </Accordion.Body>
                                             </Accordion.Item>
 
                                             <Accordion.Item eventKey="2">
                                                 <Accordion.Header onClick={(e) => setSubs(2)}><span className="activedote"></span> Crowdfund</Accordion.Header>
                                                 <Accordion.Body>
-                                                    fsdfdsfsdf
+                                                    <p className='text-start d-block' >Allows multiple gifters to contribute to your wish item.</p>
                                                 </Accordion.Body>
                                             </Accordion.Item>
                                         </Accordion>
