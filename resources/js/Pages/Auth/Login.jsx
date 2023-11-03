@@ -24,7 +24,12 @@ export default function Login({ status, canResetPassword }) {
 
     const submit = (e) => {
         e.preventDefault();
-        post(route('login-user'));
+        post(route('login-user'),{
+            preserveScroll:true,
+            onError: () => {
+                reset("password");
+            }
+        });
     };
 
     return (
