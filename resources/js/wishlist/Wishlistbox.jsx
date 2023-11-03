@@ -3,11 +3,13 @@ import miniplantimg from '../../assets/img/miniplantimg.jpg';
 import { Link } from '@inertiajs/react';
 
 
-export default function Wishlistbox() {
+export default function Wishlistbox({ itm }) {
+
+  console.log('item', itm);
   return (
     <div className='wishlistcntbox whbg relative	 rounded-3xl shadow-voilet '>
       <div className='wishlistimg'>
-        <img src={miniplantimg} alt='img' className='rounded-t-3xl' />
+        <img src={itm.perma_link} alt='img' className='rounded-t-3xl' />
       </div>
 
       <div className='wishlistdetial  relative'>
@@ -16,8 +18,8 @@ export default function Wishlistbox() {
         </svg> Share</button>
 
         <div>
-          <h3>Mini Plant</h3>
-          <h4 className='font-CeraGRBold'>£ 456</h4>
+          <h3>{itm.wishname}</h3>
+          <h4 className='font-CeraGRBold'>£{itm.price}</h4>
         </div>
       </div>
       <div className='sharelinks'>

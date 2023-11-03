@@ -85,7 +85,7 @@ class WishitemController extends Controller
         $stripe_client = $stripe->products->create([
             'name' => $request->wishname ?? null,
             'images' => [$wish->perma_link],
-            "default_price_data" => $request->price,
+            "default_price_data" => ["currency" => "usd", "unit_amount_decimal" => $request->price],
             "url" => $request->item_url ?? null
         ]);
 

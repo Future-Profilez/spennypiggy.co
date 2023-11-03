@@ -64,9 +64,11 @@ export default function Dashboard(props) {
                                     <Wishlist categories={categories} />
                                 </div>
                                 <div className='wishlistbox flex justify-between items-start'>
-                                    <Wishlistbox />
-                                    <Wishlistbox />
-                                    <Wishlistbox />
+                                    {items && items.map((c, i) => {
+                                        return <>
+                                            <Wishlistbox itm={c} />
+                                        </>
+                                    })}
                                 </div>
                             </div>
 

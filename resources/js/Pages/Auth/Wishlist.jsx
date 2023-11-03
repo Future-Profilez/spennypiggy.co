@@ -241,7 +241,6 @@ export default function Wishlist(props) {
                                     </div>
 
                                     <div className="publish text-start">
-                                        <h3>Publish</h3>
                                         <h4>Categorize this wish (Optional)</h4>
                                         <p>Organize your wishes to help gifters find what they're looking for while on your wishlist.</p>
 
@@ -257,7 +256,7 @@ export default function Wishlist(props) {
                                         </div>
 
 
-                                        <div className='cate-items d-flex '>
+                                        <div className='cate-items mb-3 mt-4 d-flex '>
                                             <input id="cats"
                                                 type="text"
                                                 ref={inputRef}
