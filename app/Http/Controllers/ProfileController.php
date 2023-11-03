@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -43,21 +44,23 @@ class ProfileController extends Controller
 
 
 
+
+
+
+
+
     /**
      * Update the user's profile information.
     */
     public function updateProfile(Request $request) {
+        $user = User::where('id', Auth::id())->first();
 
         $request->validate([
-            'name' => [
-                'string',
-                'max:255'
-            ],
-            'username' => [ 'string', 'lowercase', 'max:20', 'unique:users,username'],
+            'name' => ['string','max:255'],
+            'username' => [ 'string', 'lowercase', 'max:20', Rule::unique('users')->ignore($user->id)],
             'bio' => [ 'string', 'max:255'],
+            'tags' => [ 'string', 'max:255'],
         ]);
-
-        $user = User::where('id', Auth::id())->first();
         $user->name = $request->name ;
         $user->username = $request->username;
         $user->bio = $request->bio;
@@ -66,7 +69,6 @@ class ProfileController extends Controller
         $user->refresh();
         return redirect(route("user.show",["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
     }
-
 
 
     /**

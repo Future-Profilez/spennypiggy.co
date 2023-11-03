@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import profileimg from '../../assets/img/profileimg.png'
 import editicon from '../../assets/img/editicon.png'
 import Popup from '@/Components/Popup'
@@ -10,7 +10,7 @@ export default function EditProfile({user}) {
 
   const [close, setClose] = useState()
   const { successAlert, errorAlert } = useAlerts();
-  
+ 
   const { data, setData, post, processing, errors, reset } = useForm({
       name: user?.name || '',
       username: user?.username || '',
@@ -86,35 +86,21 @@ export default function EditProfile({user}) {
                   class="form-input px-2 py-2 border w-full rounded-md" />
                 </li>
 
-                <li className="mb-3">
+                <li className="mb-2">
                   <label className="mb-1">Username</label>
                   <input defaultValue={user?.username || ''}  onChange={(e) => setData("username", e.target.value)} 
                   type="text" name="username" class="form-input px-2 py-2 border w-full rounded-md" placeholder='Spennypiggy.com/warner99' />
                 </li>
+                <li><strong className='d-block text-start mb-4' >Profile URL : https://www.spennypiggy.co/{user?.username}</strong></li>
 
                 <li className="mb-3">
                   <label className="mb-1">Bio</label>
-                  <input defaultValue={user?.bio || ''}  
+                  <textarea defaultValue={user?.bio || ''}  
                   onChange={(e) => setData("bio", e.target.value)} 
-                  type="text" name="bio" class="form-input px-2 py-2 border w-full rounded-md" 
+                 name="bio" class="form-input px-2 py-2 border w-full rounded-md" 
                   placeholder='Bio' />
                 </li>
-
-                {/* <li className="mb-3">
-                  <label className="mb-1">Wishlist Name </label>
-                  <input type="text"  class="form-input px-2 py-2 border w-full rounded-md" name="Price " />
-                </li>
-                <li className="mb-3">
-                  <label className="mb-1">Bio</label>
-                  <textarea name='Bio' className='form-input px-2 py-2 border w-full rounded-md'></textarea>
-                  <span className='counter'>0/260</span>
-                </li>
                 
-                <li className="mb-3">
-                  <label className="mb-1">Profile Tags</label>
-                  <input type="text" name="WishName" class="form-input px-2 py-2 border w-full rounded-md" placeholder='Add Upto 8 Keywords' />
-                </li>
-              */}
               </ul> 
               <div className=" text-center mb-7">
                 <button type='submit' className="editProfile flex w-12 mx-auto">Update Profile</button>

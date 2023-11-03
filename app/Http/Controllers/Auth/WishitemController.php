@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Stripe\StripeClient;
 
 class WishitemController extends Controller
 {
@@ -50,7 +51,7 @@ class WishitemController extends Controller
                 "nullable"
             ]
         ]);
-
+        
         WishItem::create([
             "user_id" => Auth::id(),
             'wishname' => $request->wishname,
@@ -61,6 +62,11 @@ class WishitemController extends Controller
             'subscription_period' => $request->subscription_period ?? null,
             'repeat_purchase' => $request->repeat_purchase ?? 0,
             'category' => $request->category ?? null,
+        ]);
+
+        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+        $stripe->products->create([
+            'name' => 'Gold Special',
         ]);
 
         return redirect(route("user.show",["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");

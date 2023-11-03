@@ -5,8 +5,8 @@ import spennypiggy from '../../assets/img/spenny-piggy.png';
 export default function Header({ user }) {
 //   console.log('auth-header', user);
   return (
-    <div className='mintbg py-14'>
-      <div className='header flex w-full items-center content-center justify-between pinkbg'>
+    <div className='mintbg py-14 '>
+      <div className='header flex container w-full items-center content-center justify-between pinkbg'>
         <div className='headtitle text-wh font-GillSans'>Create Wishlist</div>
         <div className='spennylogo'><Link to={route('home')}><img src={spennypiggy} /></Link></div>
         <div className='cartLogin'>
