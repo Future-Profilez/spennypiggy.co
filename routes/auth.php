@@ -12,6 +12,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
+use App\Http\Controllers\ProfileController;
 use App\Models\User;
 use App\Models\Wishitem;
 use Illuminate\Support\Facades\Auth;
@@ -70,7 +71,6 @@ Route::middleware('auth')->group(function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     Route::get('dashboard', [AuthenticatedSessionController::class, 'getUserProfile'])->name('dashboard');
-
     Route::get('/{username}', function ($username) {
         $user = User::where('username', $username)->first();
         $items = Wishitem::whereUserId($user->id)->latest()->get();
@@ -78,11 +78,10 @@ Route::middleware('auth')->group(function () {
             "items"=>$items
         ]);
     })->middleware(['auth', 'verified'])->name('user.show');
-
     // Route::prefix("/")
-
     // $owner = Auth::user();
     // ['owner' => $user->id == $owner->id ? true : false// ]
+
 
     Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item');
 
@@ -91,6 +90,7 @@ Route::middleware('auth')->group(function () {
         Route::match(["get", "post"], "/connect-{step}", [StripeController::class, "initConnect"])->name("connect");
         Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
     });
+    Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
 
 });
 

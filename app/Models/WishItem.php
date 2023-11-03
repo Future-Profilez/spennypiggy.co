@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Uploadcare;
+use App\WatermarkHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -34,4 +36,32 @@ class WishItem extends Model
         "created_at",
         "deleted_at"
     ];
+
+
+    public function user(){
+        return $this->belongsTo(User::class,'user_id');
+    }
+
+
+    public function getPermaLinkAttribute()
+    {
+        $url = false;
+        if (!empty($this->thumbnail)) {
+                    $api = Uploadcare::getApiObj()->file();
+                    $info = $api->fileInfo($this->thumbnail)->getContentInfo();
+                    $width = $info->getImage()->getWidth();
+                    $height = $info->getImage()->getHeight();
+
+                $watermark = WatermarkHelper::getWatermarkImage($width, $height);
+                $check = "";
+                    $wm = "spennypiggy.co~s" . $this->user->username;
+                    $textWm = WatermarkHelper::addUcTextWatermark($width, $height);
+                    $wm = urlencode($wm);
+                    $fontsize = $textWm['fontsize'];
+                    $check = "-/preview/-/text_align/left/center/-/font/$fontsize/fff/-/text/80px8p/8p,100p/$wm/";
+                $url = Uploadcare::getUrl($this->thumbnail, $this->type, $watermark, $check);
+            
+        }
+        return $url;
+    }
 }

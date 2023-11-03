@@ -1,24 +1,17 @@
 <?php
 
 namespace App\Http\Controllers\Auth;
-
 use App\Http\Controllers\Controller;
 use App\Models\WishItem;
-use App\Providers\RouteServiceProvider;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
-use Inertia\Inertia;
-use Ramsey\Uuid\Uuid;
 
 class WishitemController extends Controller
 {
     public function saveWishItem(Request $request): RedirectResponse
     {
-
         $request->validate([
             "wishname" => [
                 "required",
