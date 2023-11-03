@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\UserCategory;
+use App\Models\WishCategory;
 use App\Models\WishItem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,6 +56,9 @@ class WishitemController extends Controller
             ]
         ]);
 
+
+
+
         $wish = WishItem::create([
             "user_id" => Auth::id(),
             'wishname' => $request->wishname,
@@ -64,11 +68,17 @@ class WishitemController extends Controller
             'subscription' => $request->subscription,
             'subscription_period' => $request->subscription_period ?? null,
             'repeat_purchase' => $request->repeat_purchase ?? 0,
-            'category' => $request->category ?? null,
+            // 'category' => $request->category ?? null,
         ]);
 
-
         $wish->refresh();
+        foreach ($request->category as $key => $value) {
+            $wish_cat = new WishCategory();
+            $wish_cat->wish_id = $wish->id;
+            $wish_cat->category_id = $value;
+            $wish_cat->save();
+        }
+
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
         $stripe_client = $stripe->products->create([
             'name' => $request->name ?? null,

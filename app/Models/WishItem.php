@@ -65,8 +65,11 @@ class WishItem extends Model
                     $fontsize = $textWm['fontsize'];
                     $check = "-/preview/-/text_align/left/center/-/font/$fontsize/fff/-/text/80px8p/8p,100p/$wm/";
                 $url = Uploadcare::getUrl($this->thumbnail, $this->type, $watermark, $check);
-            
         }
         return $url;
+    }
+
+    public function categories () {
+        return $this->hasMany(WishCategory::class, 'wish_id');
     }
 }
