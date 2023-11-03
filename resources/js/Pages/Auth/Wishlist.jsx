@@ -59,15 +59,11 @@ export default function Wishlist() {
     }, [thumbnail]);
 
     const createWishList = (e) => {
-        // if (!thumbnail) {
-        //     toast.error("Please select a thumbnail for wish list item");
-        //     return false
-        // }
-
-        console.log("data sss", data);
+        if (!thumbnail) {
+            toast.error("Please select a thumbnail for wish list item");
+            return false
+        }
         e.preventDefault();
-        return false;
-
         post(route('save_wish_item'), {
             preserveScroll: true,
             onSuccess: (resp) => {
