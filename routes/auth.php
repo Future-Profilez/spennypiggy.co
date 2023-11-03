@@ -72,13 +72,14 @@ Route::middleware('auth')->group(function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     Route::get('dashboard', [AuthenticatedSessionController::class, 'getUserProfile'])->name('dashboard');
+
     Route::get('/{username}', function ($username) {
         $user = User::where('username', $username)->first();
         $items = Wishitem::whereUserId($user->id)->latest()->get();
         $categories = UserCategory::whereUserId($user->id)->latest()->get();
         return Inertia::render('Dashboard', [
-            "items"=>$items,
-            "categories"=>$categories,
+            "items" => $items,
+            "categories" => $categories,
         ]);
     })->middleware(['auth', 'verified'])->name('user.show');
 
@@ -90,7 +91,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item');
 
-    Route::prefix("stripe")->name("stripe.")->group(function(){
+    Route::prefix("stripe")->name("stripe.")->group(function () {
         Route::get("authorize", [StripeController::class, "index"])->name("index");
         Route::match(["get", "post"], "/connect-{step}", [StripeController::class, "initConnect"])->name("connect");
         Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
@@ -99,8 +100,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
 
-    Route::post('save-category', [ProfileController::class, 'saveUserCategory'])->name('save-category');
-
+    Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
 });
 
 Route::get('users', [MyController::class, 'getUsers'])->name('users');

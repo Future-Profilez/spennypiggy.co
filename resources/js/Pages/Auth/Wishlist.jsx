@@ -5,21 +5,58 @@ import { Link, useForm } from '@inertiajs/react';
 import { useAlerts } from '@/Components/Alerts';
 import GlobalUploader from '@/uploadcare/Uploader';
 import st from '../../../css/uploader.module.css'
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import Tab from 'react-bootstrap/Tab';
 import Tabs from 'react-bootstrap/Tabs';
 import Accordion from 'react-bootstrap/Accordion';
 import defaultuserimg from '../../../assets/img/defaultuserimg.jpg';
 import Popup from '@/Components/Popup';
+import { router } from '@inertiajs/react'
 
 
-export default function Wishlist() {
+export default function Wishlist(props) {
+
+    const { categories } = props;
+    const { successAlert, errorAlert } = useAlerts();
+
+    const inputRef = useRef(null);
+    const [cats, setCats] = useState([]);
+
+    const AddCategory = async () => {
+
+        const value = inputRef.current.value;
+
+        router.post('save-category', { "category": value }, {
+            preserveScroll: true,
+            onSuccess: (resp) => {
+                console.table("resp", resp);
+                inputRef.current.value = '';
+                if (resp.props.flash?.success) {
+                    successAlert(resp.props.flash?.success || "Added");
+                }
+
+                if (resp.props.flash?.error) {
+                    errorAlert(resp.props.flash?.error);
+                }
+                // let arr = [];
+                // if (value) {
+                //     arr.push({ id: 1, category: value });
+                // }
+                // setCats(arr);
+                // arr = [];
+
+            },
+            onError: (_err) => {
+                console.table("error", _err);
+
+            }
+        });
+    }
 
     const [clear, setClear] = useState();
     const [close, setClose] = useState();
     const [repeat, setRepeat] = useState(false);
-    const [subsperiod, setSubsperiod] = useState('');
     const [thumbnail, setThumbnail] = useState('');
 
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -30,14 +67,25 @@ export default function Wishlist() {
         subscription: 0,
         subscription_period: 'daily',
         repeat_purchase: 0,
-        category: 'one',
+        category: [],
     });
 
     const setSubs = (e) => {
         setData('subscription', e);
         setRepeat(false);
     }
-    const { successAlert, errorAlert } = useAlerts();
+
+
+    const [checkboxes, setCheckboxes] = useState([]);
+    const catValue = (event) => {
+        const { value, checked } = event.target;
+        if (checked) {
+            setCheckboxes([...checkboxes, value]);
+        } else {
+            setCheckboxes(checkboxes.filter(item => item !== value));
+        }
+
+    }
 
     const getFileUID = async (data) => {
         let ss = data?.uuid;
@@ -53,6 +101,10 @@ export default function Wishlist() {
     const spValue = (e) => {
         setData('subscription_period', e.target.value);
     }
+
+    useEffect(() => {
+        setData('category', checkboxes);
+    }, [checkboxes]);
 
     useEffect(() => {
         setData('thumbnail', thumbnail); ''
@@ -77,6 +129,7 @@ export default function Wishlist() {
             },
             onError: (_err) => {
                 console.log(`errors:`);
+                // errorAlert(resp.props.flash?.success || "Added");
                 console.table(errors);
             }
         });
@@ -155,11 +208,11 @@ export default function Wishlist() {
                                             <Accordion.Item eventKey="1">
                                                 <Accordion.Header onClick={(e) => setSubs(1)} ><span className="activedote"></span> Subscription</Accordion.Header>
                                                 <Accordion.Body>
-                                                    
+
                                                     <div className="singlewishbox">
                                                         <div className="repeatpurchase text-start">
                                                             <label for="allow"><input checked={repeat} type="checkbox" id="allow" name='repeat_purchase' onChange={rpValue} /> Allow Repeat Purchases</label></div>
-                                                            <p className='text-start' >Check if you want repeat purchases of this gift. If unchecked, the item will automatically delete from your wishlist after the first purchase.</p>
+                                                        <p className='text-start' >Check if you want repeat purchases of this gift. If unchecked, the item will automatically delete from your wishlist after the first purchase.</p>
                                                     </div>
 
                                                     <div className="singlewishbox  mt-4  rounded ">
@@ -171,7 +224,7 @@ export default function Wishlist() {
                                                             <label for="weekly"><input checked={data.subscription_period == 'weekly'} type="radio" id="weekly" value={'weekly'} name='subscription_period' onChange={spValue} /> Weekly</label>
                                                         </div>
                                                         <div className="repeatpurchase mt-2 text-start">
-                                                            <label for="monthly"><input checked={data.subscription_period == 'monthly'}  type="radio" id="monthly" value={'monthly'} name='subscription_period' onChange={spValue} /> Monthly</label>
+                                                            <label for="monthly"><input checked={data.subscription_period == 'monthly'} type="radio" id="monthly" value={'monthly'} name='subscription_period' onChange={spValue} /> Monthly</label>
                                                         </div>
                                                     </div>
 
@@ -191,7 +244,28 @@ export default function Wishlist() {
                                         <h3>Publish</h3>
                                         <h4>Categorize this wish (Optional)</h4>
                                         <p>Organize your wishes to help gifters find what they're looking for while on your wishlist.</p>
-                                        
+
+
+                                        <div className='catslists' >
+                                            {categories && categories.map((c, i) => {
+                                                return <>
+                                                    <div className="repeatpurchase mb-2 text-start">
+                                                        <label for={'categories' + i}><input type="checkbox" id={'categories' + i}
+                                                            value={c.id} name='category' onChange={catValue} /> {c.category}</label></div>
+                                                </>
+                                            })}
+                                        </div>
+
+
+                                        <div className='cate-items d-flex '>
+                                            <input id="cats"
+                                                type="text"
+                                                ref={inputRef}
+                                                className="form-input px-2 py-2 border w-full rounded-md"
+                                            />
+                                            <div className='p-2 border cursor-pointer' onClick={AddCategory} >Add</div>
+                                        </div>
+
                                         {/* <button type='submit' className="editProfile flex w-12 max-w-xs mx-auto">{processing ? "Proccessing" : " Add Wish"}</button> */}
 
                                         <LoaderButton disabled={processing} type='submit'

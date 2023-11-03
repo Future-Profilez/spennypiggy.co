@@ -11,7 +11,7 @@ import { useState } from 'react';
 export default function Dashboard(props) {
 
     console.log("props", props);
-    const { auth, items } = props;
+    const { auth, items, categories } = props;
 
     return (
         <AuthenticatedLayout
@@ -61,7 +61,7 @@ export default function Dashboard(props) {
                                         <option>Category 2</option>
                                         <option>Category 3</option>
                                     </select>
-                                    <Wishlist />
+                                    <Wishlist categories={categories} />
                                 </div>
                                 <div className='wishlistbox flex justify-between items-start'>
                                     <Wishlistbox />

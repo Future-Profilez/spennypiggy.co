@@ -1,7 +1,9 @@
 <?php
 
 namespace App\Http\Controllers\Auth;
+
 use App\Http\Controllers\Controller;
+use App\Models\UserCategory;
 use App\Models\WishItem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,8 +13,9 @@ use Stripe\StripeClient;
 
 class WishitemController extends Controller
 {
-    public function saveWishItem(Request $request): RedirectResponse {
-        
+    public function saveWishItem(Request $request): RedirectResponse
+    {
+
         $request->validate([
             "wishname" => [
                 "required",
@@ -40,7 +43,7 @@ class WishitemController extends Controller
             "subscription" => [
                 "required",
                 "integer",
-                Rule::in([0,1,2])
+                Rule::in([0, 1, 2])
             ],
             "repeat_purchase" => [
                 "sometimes",
@@ -76,7 +79,7 @@ class WishitemController extends Controller
 
         $wish->stripe_product_id = $stripe_client->id;
         $wish->save();
-        return redirect(route("user.show",["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
+        return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
     }
 
 
@@ -91,13 +94,19 @@ class WishitemController extends Controller
                 "alpha_dash"
             ],
         ]);
-        
-        WishItem::create([
+
+        $categories = UserCategory::where('user_id', Auth::id())->get();
+        foreach ($categories as $key => $value) {
+            if ($request->category == $value->category) {
+                return back()->with('error', 'Category is already exists.');
+            }
+        }
+
+        UserCategory::create([
             "user_id" => Auth::id(),
             'category' => $request->category ?? null,
         ]);
 
-        return redirect(route("user.show",["username" => Auth::user()->username]))->with('success', "Category has been saved.");
+        return back()->with('success', 'Category Saved.');
     }
-
 }
