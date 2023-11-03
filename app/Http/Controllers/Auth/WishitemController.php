@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Ramsey\Uuid\Uuid;
 use Stripe\StripeClient;
 
 class WishitemController extends Controller
@@ -74,6 +75,7 @@ class WishitemController extends Controller
         $wish->refresh();
         foreach ($request->category as $key => $value) {
             $wish_cat = new WishCategory();
+            $wish_cat->uuid = Uuid::uuid4();
             $wish_cat->wish_id = $wish->id;
             $wish_cat->category_id = $value;
             $wish_cat->save();
