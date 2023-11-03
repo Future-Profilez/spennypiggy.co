@@ -303,16 +303,11 @@ export default function Wishlist() {
         {/* <button type='submit' className='btn-pink-lg'>
                                     {processing ? "Proccessing" : " Create your Account"}
                                 </button> */}
-<<<<<<< HEAD
-        <LoaderButton disabled={processing} className='btn-pink-lg' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : "Create Wishlist"}</LoaderButton>
-   
-=======
         {/* <LoaderButton disabled={processing} className='btn-pink-lg' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : "Create Wishlist"}</LoaderButton>
                         </div>
                     </div>
                 </form>
             </div>
         </div> */}
->>>>>>> 46a4de1b5dbbe28c11f034cbce4fdb4e6246edc8
     </>
 }

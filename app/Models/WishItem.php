@@ -15,6 +15,7 @@ class WishItem extends Model
 
     protected $fillable = [
         "user_id",
+        "stripe_product_id",
         "wishname",
         "price",
         "item_url",
@@ -23,6 +24,10 @@ class WishItem extends Model
         "subscription_period",
         "repeat_purchase",
         "category",
+    ];
+
+    protected $appends = [ 
+        "perma_link"
     ];
 
     public static function boot(){

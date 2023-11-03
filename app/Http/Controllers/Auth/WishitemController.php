@@ -11,8 +11,8 @@ use Stripe\StripeClient;
 
 class WishitemController extends Controller
 {
-    public function saveWishItem(Request $request): RedirectResponse
-    {
+    public function saveWishItem(Request $request): RedirectResponse {
+        
         $request->validate([
             "wishname" => [
                 "required",
@@ -51,8 +51,8 @@ class WishitemController extends Controller
                 "nullable"
             ]
         ]);
-        
-        WishItem::create([
+
+        $wish = WishItem::create([
             "user_id" => Auth::id(),
             'wishname' => $request->wishname,
             'price' => $request->price,
@@ -64,12 +64,40 @@ class WishitemController extends Controller
             'category' => $request->category ?? null,
         ]);
 
+
+        $wish->refresh();
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-        $stripe->products->create([
-            'name' => 'Gold Special',
+        $stripe_client = $stripe->products->create([
+            'name' => $request->name ?? null,
+            'images' => [$wish->perma_link],
+            "default_price" => $request->price,
+            "url" => $request->item_url ?? null
         ]);
 
+        $wish->stripe_product_id = $stripe_client->id;
+        $wish->save();
         return redirect(route("user.show",["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
+    }
+
+
+    public function saveUserCategory(Request $request): RedirectResponse
+    {
+        $request->validate([
+            "category" => [
+                "required",
+                "string",
+                "min:3",
+                "max:255",
+                "alpha_dash"
+            ],
+        ]);
+        
+        WishItem::create([
+            "user_id" => Auth::id(),
+            'category' => $request->category ?? null,
+        ]);
+
+        return redirect(route("user.show",["username" => Auth::user()->username]))->with('success', "Category has been saved.");
     }
 
 }

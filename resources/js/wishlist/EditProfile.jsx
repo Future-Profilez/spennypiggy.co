@@ -1,10 +1,9 @@
 import React, { useRef, useState } from 'react'
-import profileimg from '../../assets/img/profileimg.png'
-import editicon from '../../assets/img/editicon.png'
-import Popup from '@/Components/Popup'
-import UpdatePasswordForm from '@/Pages/Profile/Partials/UpdatePasswordForm'
-import { useForm } from '@inertiajs/react'
-import { useAlerts } from '@/Components/Alerts'
+import profileimg from '../../assets/img/profileimg.png';
+import editicon from '../../assets/img/editicon.png';
+import Popup from '@/Components/Popup';
+import { useForm } from '@inertiajs/react';
+import { useAlerts } from '@/Components/Alerts';
 
 export default function EditProfile({user}) {
 
@@ -33,9 +32,7 @@ export default function EditProfile({user}) {
             console.table(errors);
         }
     });
-};
-
-
+  };
 
   return (
     <Popup action={close} text={<><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">

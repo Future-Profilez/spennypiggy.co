@@ -18,6 +18,7 @@ use App\Models\Wishitem;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Models\UserCategory;
 
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
@@ -74,10 +75,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/{username}', function ($username) {
         $user = User::where('username', $username)->first();
         $items = Wishitem::whereUserId($user->id)->latest()->get();
+        $categories = UserCategory::whereUserId($user->id)->latest()->get();
         return Inertia::render('Dashboard', [
-            "items"=>$items
+            "items"=>$items,
+            "categories"=>$categories,
         ]);
     })->middleware(['auth', 'verified'])->name('user.show');
+
+
     // Route::prefix("/")
     // $owner = Auth::user();
     // ['owner' => $user->id == $owner->id ? true : false// ]
@@ -90,7 +95,11 @@ Route::middleware('auth')->group(function () {
         Route::match(["get", "post"], "/connect-{step}", [StripeController::class, "initConnect"])->name("connect");
         Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
     });
+
+
     Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
+
+    Route::post('save-category', [ProfileController::class, 'saveUserCategory'])->name('save-category');
 
 });
 

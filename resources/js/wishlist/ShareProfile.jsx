@@ -3,12 +3,14 @@ export default function ShareProfile({children,username,classes}){
 
   function shareTo() {
     const width = window && window.innerWidth;
+    const currentURL = window.location.href;
+
     if(width > 991){ 
-        navigator.clipboard.writeText("dfsdf")
+        navigator.clipboard.writeText(currentURL)
         toast.success("Copied to Clipboard.");
     } else { 
       navigator.share({
-        url:  "APP_URL" + username, title: "/",
+        url:  currentURL, title: "/",
       }); 
     }
   }
