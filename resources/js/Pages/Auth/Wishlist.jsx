@@ -194,7 +194,7 @@ export default function Wishlist() {
                                         <h3>Publish</h3>
                                         <h4>Categorize this wish (Optional)</h4>
                                         <p>Organize your wishes to help gifters find what they're looking for while on your wishlist.</p>
-
+                                        
                                         {/* <button type='submit' className="editProfile flex w-12 max-w-xs mx-auto">{processing ? "Proccessing" : " Add Wish"}</button> */}
 
                                         <LoaderButton disabled={processing} type='submit'
