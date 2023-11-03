@@ -51,11 +51,35 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        CreateStripeCustomer::dispatch($user);
+        // CreateStripeCustomer::dispatch($user);
         event(new Registered($user));
 
         Auth::login($user);
 
         return redirect(route("user.show", [$user->username]))->with("success", "Registration successfull.");
+    }
+
+    /**
+     * Check if username available
+     *
+     * @param Request $request
+     * @return Response
+     */
+    public function checkUsername(Request $request) {
+
+        $request->validate([
+            "username" => [
+                "required",
+                "string",
+                "min:5",
+                "max:20"
+            ]
+        ]);
+
+        $exist = User::whereUsername($request->username)->first();
+        return response()->json([
+            "available" => empty($exist)
+        ]);
+
     }
 }

@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Models\User;
@@ -84,6 +85,12 @@ Route::middleware('auth')->group(function () {
     // ['owner' => $user->id == $owner->id ? true : false// ]
 
     Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item');
+
+    Route::prefix("stripe")->name("stripe.")->group(function(){
+        Route::get("authorize", [StripeController::class, "index"])->name("index");
+        Route::match(["get", "post"], "/connect-{step}", [StripeController::class, "initConnect"])->name("connect");
+        Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
+    });
 
 });
 

@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TestController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -23,6 +25,8 @@ Route::get('/', function () {
     ]);
 })->name("home");
 
+Route::post("/username-availablity", [RegisteredUserController::class, "checkUsername"])->name("check.username");
+
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
@@ -32,6 +36,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+Route::prefix("test")->name("test.")->group(function(){
+    Route::prefix("stripe")->name("stripe.")->group(function(){
+        Route::get("search", [TestController::class, "stripeSearch"])->name("search");
+    });
 });
 
 require __DIR__.'/auth.php';
