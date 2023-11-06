@@ -54,7 +54,8 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                     <div className='welcomeLeft'>
                     <h2 className='headingLg mb-12'>Delight in Intimate Surprises</h2>
                     <div className='mt-6 wishlistbtn rotate-btn'>
-                        <a href='#' className='btn-pink-lg'>Create Wishlist</a>
+                        {/* <a href='#' className='btn-pink-lg'>Create Wishlist</a> */}
+                        <Link href={route("login")} className='btn-pink-lg'>Create Wishlist</Link>
                     </div>
                     </div>
                     <div className='welcomeRt'>
@@ -141,7 +142,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                     <SwiperSlide>
                     <div className='happyclientSec'>
                         <div className='clientdetail'>
-                            <img src={userimg} alt />
+                            <img src={userimg} alt="user-image" />
                             <div className='clientname'>
                             <strong className='font-CeraGRBold'>Dave Turner</strong>
                             @DaveTheRave
@@ -156,7 +157,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                     <SwiperSlide>
                     <div className='happyclientSec'>
                         <div className='clientdetail'>
-                            <img src={userimg} alt />
+                            <img src={userimg} alt="user-image" />
                             <div className='clientname'>
                             <strong>Dave Turner</strong>
                             @DaveTheRave
@@ -170,7 +171,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                     <SwiperSlide>
                     <div className='happyclientSec'>
                         <div className='clientdetail'>
-                            <img src={userimg} alt />
+                            <img src={userimg} alt="user-image" />
                             <div className='clientname'>
                             <strong>Dave Turner</strong>
                             @DaveTheRave
@@ -184,7 +185,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                     <SwiperSlide>
                     <div className='happyclientSec'>
                         <div className='clientdetail'>
-                            <img src={userimg} alt />
+                            <img src={userimg} alt="user-image" />
                             <div className='clientname'>
                             <strong>Dave Turner</strong>
                             @DaveTheRave
@@ -199,11 +200,11 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                 </div>
             </div>
 
-            <div class="joinus lightpink">
-                <h2 class="headingMd mb-3 text-center mb-6">Join thousands creators</h2>
-                <p class="text-CeraGR mb-6 text-center mb-12 font-CeraGRBold">Create your Wishlist and start receiving gifts from your fans right away!</p>
-                <div class="1text-center rotate-btn text-center flex items-center  justify-center content-center w-full">
-                <a href="#" class="btn-pink-lg">Join Whoyouinto</a>
+            <div className="joinus lightpink">
+                <h2 className="headingMd mb-3 text-center mb-6">Join thousands creators</h2>
+                <p className="text-CeraGR mb-6 text-center mb-12 font-CeraGRBold">Create your Wishlist and start receiving gifts from your fans right away!</p>
+                <div className="1text-center rotate-btn text-center flex items-center  justify-center content-center w-full">
+                <a href="#" className="btn-pink-lg">Join Whoyouinto</a>
                 </div>
             </div>
         </Guest>
