@@ -9,7 +9,7 @@ export const useAlerts = () => {
      * @param {Number} duration MiliSeconds
      * @returns {void}
      */
-    const successAlert = (message, position = "top-right" ,duration = 10000) => {
+    const successAlert = (message, position = "top-right", duration = 10000) => {
         toast.success(message, {
             duration: duration,
             position: position,
@@ -26,7 +26,7 @@ export const useAlerts = () => {
      * @param {Number} duration MiliSeconds
      * @returns {void}
      */
-    const errorAlert = (message, position = "top-right" ,duration = 10000) => {
+    const errorAlert = (message, position = "top-right", duration = 10000) => {
         toast.error(message, {
             duration: duration,
             position: position,
@@ -41,7 +41,7 @@ export const useAlerts = () => {
      * @param {Number} duration MiliSeconds
      * @returns {void}
      */
-    const warningAlert = (message, position = "top-right" ,duration = 10000) => {
+    const warningAlert = (message, position = "top-right", duration = 10000) => {
         toast(message, {
             duration: duration,
             position: position,
@@ -57,7 +57,7 @@ export const useAlerts = () => {
      * @param {Number} duration MiliSeconds
      * @returns {void}
      */
-    const infoAlert = (message, position = "top-right" ,duration = 10000) => {
+    const infoAlert = (message, position = "top-right", duration = 10000) => {
         toast(message, {
             duration: duration,
             position: position,
@@ -65,6 +65,22 @@ export const useAlerts = () => {
         return;
     }
 
-    return {successAlert, errorAlert, warningAlert, infoAlert};
+
+    const errorsHandling = (error, position = "top-right", duration = 10000) => {
+        {
+            Object.keys(error).map((key) => {
+                let e = error[key];
+                return toast.error(e, {
+                    duration: duration,
+                    position: position
+                });
+            })
+        }
+        return;
+    }
+
+
+
+    return { successAlert, errorAlert, warningAlert, infoAlert, errorsHandling };
 
 }
