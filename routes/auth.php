@@ -14,7 +14,7 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
 use App\Models\User;
-use App\Models\WishItem;
+use App\Models\Wishitem;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -45,42 +45,45 @@ Route::middleware('guest')->group(function () {
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
-});
 
-Route::middleware('auth')->group(function () {
 
-    Route::get('verify-email', EmailVerificationPromptController::class)
+        
+    });
+    
+    Route::middleware('auth')->group(function () {
+        
+        Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
-
-    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
+        
+        Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
         ->middleware(['signed', 'throttle:6,1'])
         ->name('verification.verify');
-
-    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+        
+        Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
         ->middleware('throttle:6,1')
         ->name('verification.send');
-
-    Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
+        
+        Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
         ->name('password.confirm');
-
+        
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
-
+    
     Route::get('dashboard', [AuthenticatedSessionController::class, 'getUserProfile'])->name('dashboard');
-
-
-
-
+    
+    
+    
+    
     // Route::prefix("/")
     // $owner = Auth::user();
     // ['owner' => $user->id == $owner->id ? true : false// ]
-
-
+    
+    
     Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item');
-
+    
     Route::prefix("stripe")->name("stripe.")->group(function () {
         Route::get("authorize", [StripeController::class, "index"])->name("index");
         Route::match(["get", "post"], "/connect-{step}", [StripeController::class, "initConnect"])->name("connect");
@@ -89,6 +92,7 @@ Route::middleware('auth')->group(function () {
     Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
     Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
 });
+
 
 Route::get('/{username}', function ($username) {
     $user = User::where('username', $username)->first();
@@ -101,6 +105,8 @@ Route::get('/{username}', function ($username) {
     ]);
 })->name('user.show');
 
-Route::get('get_category_data', [WishitemController::class, 'categoryItems'])->name('get_category_data');
+
+Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class, 'categoryItems'])->name('get_category_data');
 
 Route::get('users', [MyController::class, 'getUsers'])->name('users');
+
