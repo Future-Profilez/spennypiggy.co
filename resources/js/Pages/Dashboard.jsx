@@ -20,7 +20,7 @@ export default function Dashboard(props) {
     const showCategory = (e) => {
         setLoading(true);
         console.log(e.target.value);
-        router.post(route(`get_category_data', {"category":e.target.value, "user_id":user.id}`), {
+        router.get(`get_category_data', {"category":e.target.value, "user_id":user.id}`), {
             preserveScroll: true,
             onSuccess: (resp) => {
                 setIts(resp.items)
@@ -31,7 +31,7 @@ export default function Dashboard(props) {
                 console.log(_err);
                 setLoading(false);
             }
-        });
+        };
     }
 
     const [loggedIn, setLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username))
