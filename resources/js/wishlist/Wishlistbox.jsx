@@ -1,10 +1,9 @@
 import React from 'react';
 import miniplantimg from '../../assets/img/miniplantimg.jpg';
 import { Link } from '@inertiajs/react';
-
+import ToCart from './ToCart';
 
 export default function Wishlistbox({ itm }) {
-
   console.log('item', itm);
   return (
     <div className='wishlistcntbox whbg relative	 rounded-3xl shadow-voilet '>
@@ -25,6 +24,8 @@ export default function Wishlistbox({ itm }) {
       <div className='sharelinks'>
         <Link to="/" className='font-GillSans'>Share Link</Link>
       </div>
+
+      <ToCart uuid={itm.uuid} />
     </div>
   )
 }

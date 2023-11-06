@@ -89,10 +89,14 @@ Route::middleware('guest')->group(function () {
         Route::match(["get", "post"], "/connect-{step}", [StripeController::class, "initConnect"])->name("connect");
         Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
     });
-    Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
-    Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
-});
 
+    Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
+
+    Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
+
+    Route::post('add-to-cart', [WishitemController::class, 'addToCart'])->name('add-to-cart');
+
+});
 
 Route::get('/{username}', function ($username) {
     $user = User::where('username', $username)->first();

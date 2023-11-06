@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\UserCart;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
 use App\Models\WishItem;
@@ -14,11 +15,10 @@ use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
 use Stripe\StripeClient;
 
-class WishitemController extends Controller
-{
+class WishitemController extends Controller {
+
     public function saveWishItem(Request $request): RedirectResponse
     {
-
         $request->validate([
             "wishname" => [
                 "required",
@@ -120,6 +120,9 @@ class WishitemController extends Controller
         return back()->with('success', 'Category Saved.');
     }
 
+
+
+
     public function wishItems(Request $request): RedirectResponse {
         $categories = UserCategory::where('user_id', Auth::id())->get();
         UserCategory::create([
@@ -128,6 +131,9 @@ class WishitemController extends Controller
         ]);
         return back()->with('success', 'Category Saved.');
     }
+
+
+
 
 
     
@@ -150,5 +156,34 @@ class WishitemController extends Controller
             'items' => $items
         ]);
     }
+
+
+    public function addToCart (Request $request) {
+        $wishitem = WishItem::where('uuid', $request->uuid)->first();
+        $cart = UserCart::where('wish_id', $wishitem->id)->where("user_id", Auth::user())->first();
+
+        if($cart){
+            $cart->status = 1;
+            $cart->save();
+        } else { 
+            UserCart::create([
+                "user_id" => Auth::id(),
+                "owner_id" => $wishitem->user_id,
+                'wish_id' => $wishitem->id, 
+                'status' => 1,
+            ]);
+        }
+        return back()->with('success', 'Item added to cart.');
+    }
+
+
+    public function cartItems() {
+        $user = Auth::user();
+        $carts = UserCart::where('user_id', $user->id)->get();
+        return response()->json([
+            "carts"=>$carts
+        ]);
+    }
+
 
 }
