@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Models\UserCategory;
+use App\Models\WishCategory;
 
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
@@ -90,10 +91,26 @@ Route::middleware('auth')->group(function () {
     Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
 });
 
-Route::get('/{username}', function ($username) {
+
+Route::get('/{username}/{category?}', function ($username, $category = false) {
     $user = User::where('username', $username)->first();
-    $items = Wishitem::whereUserId($user->id)->latest()->get();
     $categories = UserCategory::whereUserId($user->id)->latest()->get();
+    if ($category) {
+        $query = WishCategory::orderBy('created_at', 'DESC');
+
+        if ($category != 'all') {
+            $query->where('category_id', $category);
+        }
+
+        $itemId = $query->whereHas('wish', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->pluck('wish_id');
+
+        $items = Wishitem::whereIn('id', $itemId)->latest()->get();
+    } else {
+        $items = WishItem::whereUserId($user->id)->latest()->get();
+    }
+
     return Inertia::render('Dashboard', [
         "user" => $user,
         "items" => $items,
@@ -101,6 +118,7 @@ Route::get('/{username}', function ($username) {
     ]);
 })->name('user.show');
 
-Route::get('get_category_data/', [WishitemController::class, 'categoryItems'])->name('get_category_data');
+
+Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class, 'categoryItems'])->name('get_category_data');
 
 Route::get('users', [MyController::class, 'getUsers'])->name('users');

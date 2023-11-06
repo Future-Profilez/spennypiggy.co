@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
 use App\Models\WishItem;
@@ -120,7 +121,8 @@ class WishitemController extends Controller
         return back()->with('success', 'Category Saved.');
     }
 
-    public function wishItems(Request $request): RedirectResponse {
+    public function wishItems(Request $request): RedirectResponse
+    {
         $categories = UserCategory::where('user_id', Auth::id())->get();
         UserCategory::create([
             "user_id" => Auth::id(),
@@ -130,26 +132,31 @@ class WishitemController extends Controller
     }
 
 
-    public function categoryItems (Request $request) {
-        // $category,$user_id
-        $query = WishCategory::orderBy('created_at','DESC');
 
-        if($request->category != 'all'){
-            $query->where('category_id',$request->category);
+    public function categoryItems($category, $user_id)
+    {
+
+        $query = WishCategory::orderBy('created_at', 'DESC');
+
+        if ($category != 'all') {
+            $query->where('category_id', $category);
         }
 
-
-        $itemId = $query->whereHas('wish',function($q) use ( $request){
-            $q->where('user_id',$request->user_id);
+        $itemId = $query->whereHas('wish', function ($q) use ($user_id) {
+            $q->where('user_id', $user_id);
         })->pluck('wish_id');
-        
-        $items = Wishitem::whereIn('id',$itemId)->latest()->get();
-        
-        print_r($items);
-        return response()->json([
-            'status' => true,
-            'items' => $items
-        ]);
-    }
 
+
+        $user = User::where('id', $user_id)->first();
+        $items = Wishitem::whereIn('id', $itemId)->latest()->get();
+        $items = WishItem::whereUserId($user->id)->latest()->get();
+        $categories = UserCategory::whereUserId($user->id)->latest()->get();
+        return Inertia::render('Dashboard', [
+            "user" => $user,
+            "items" => $items,
+            "categories" => $categories,
+        ]);
+
+        // return response()->json(["items" => $items])->header('Content-Type', 'application/json');
+    }
 }

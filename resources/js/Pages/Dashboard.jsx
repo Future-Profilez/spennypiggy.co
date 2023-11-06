@@ -14,25 +14,44 @@ export default function Dashboard(props) {
 
     console.log("props", props);
     const { auth, items, categories, user } = props;
+
     const [its, setIts] = useState(items);
     const [loading, setLoading] = useState(false);
 
+
+
     const showCategory = (e) => {
         setLoading(true);
-        console.log(e.target.value);
-        router.get(`get_category_data', {"category":e.target.value, "user_id":user.id}`), {
+        router.get(`/get_category_data/${e.target.value}/${user.id}`), {
             preserveScroll: true,
             onSuccess: (resp) => {
+                console.log('respitems', resp.props.items)
                 setIts(resp.items)
                 setLoading(false);
             },
             onError: (_err) => {
-                console.log(`errors: `);
+                console.log(`errors:`);
                 console.log(_err);
                 setLoading(false);
             }
         };
     }
+    // const showCategory = (e) => {
+    //     setLoading(true);
+    //     router.get(`/get_category_data/${e.target.value}/${user.id}`), {
+    //         // preserveScroll: true,
+    //         onSuccess: (resp) => {
+    //             console.log('respitems', resp.props.items)
+    //             setIts(resp.items)
+    //             setLoading(false);
+    //         },
+    //         onError: (_err) => {
+    //             console.log(`errors:`);
+    //             console.log(_err);
+    //             setLoading(false);
+    //         }
+    //     };
+    // }
 
     const [loggedIn, setLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username))
     return (
@@ -104,7 +123,7 @@ export default function Dashboard(props) {
                                     {loggedIn ? <Wishlist categories={categories} /> : ""}
                                 </div>
                                 <div className='wishlistbox flex justify-between items-start'>
-                                    {items && items.map((c, i) => {
+                                    {its && its.map((c, i) => {
                                         return <>
                                             <Wishlistbox itm={c} />
                                         </>
