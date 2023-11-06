@@ -14,7 +14,7 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
 use App\Models\User;
-use App\Models\Wishitem;
+use App\Models\WishItem;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -75,7 +75,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/{username}', function ($username) {
         $user = User::where('username', $username)->first();
-        $items = Wishitem::whereUserId($user->id)->latest()->get();
+        $items = WishItem::whereUserId($user->id)->latest()->get();
         $categories = UserCategory::whereUserId($user->id)->latest()->get();
         return Inertia::render('Dashboard', [
             "items" => $items,

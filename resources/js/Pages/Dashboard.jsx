@@ -7,12 +7,31 @@ import Userprofile from '@/wishlist/Userprofile';
 import EditProfile from '@/wishlist/EditProfile';
 import ShareProfile from '@/wishlist/ShareProfile';
 import { useState } from 'react';
+import Social from './Auth/Social';
 
 export default function Dashboard(props) {
 
     console.log("props", props);
     const { auth, items, categories } = props;
-    console.log('categories', categories);
+    const [its, setIts] = useState(items);
+    const [loading, setLoading] = useState(false);
+
+    const showCategory = (e) => {
+        setLoading(true);
+        console.log(e.target.value);
+        get(route(`get_category_data/${e.target.value}`), {
+            preserveScroll: true,
+            onSuccess: (resp) => {
+                setIts(resp.items)
+                setLoading(false);
+            },
+            onError: (_err) => {
+                console.log(`errors:`);
+                console.log(_err);
+                setLoading(false);
+            }
+        });
+    }
 
     return (
         <AuthenticatedLayout
@@ -38,9 +57,16 @@ export default function Dashboard(props) {
 
                                     <div className='addsocial flex'>
                                         <ul>
-                                            <li><Link to="/" ><svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M10.7143 13.7857H3V11.2143H10.7143V3.5H13.2857V11.2143H21V13.7857H13.2857V21.5H10.7143V13.7857Z" fill="#5D25FD" />
-                                            </svg> Add Socials</Link></li>
+                                            <li>
+                                                {/* <Link to="/" ><svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M10.7143 13.7857H3V11.2143H10.7143V3.5H13.2857V11.2143H21V13.7857H13.2857V21.5H10.7143V13.7857Z" fill="#5D25FD" />
+                                                </svg> Add Socials</Link> */}
+
+                                                {/* <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M10.7143 13.7857H3V11.2143H10.7143V3.5H13.2857V11.2143H21V13.7857H13.2857V21.5H10.7143V13.7857Z" fill="#5D25FD" />
+                                                </svg> */}
+                                                <Social />
+                                            </li>
                                             <li>
 
                                                 <ShareProfile classes={"d-flex"} >
@@ -59,10 +85,11 @@ export default function Dashboard(props) {
                                 <div className='userManageHead flex items-center justify-between mb-8'>
                                     <div>
                                         <label for="country" className='mb-2 ms-2 text-white font-semibold'>Categories</label>
-                                        <select id="country" name="country" autocomplete="country-name" className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6">
+                                        <select id="country" onChange={showCategory} name="country" autocomplete="country-name" className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6">
+                                            <option value={'all'}>{'All'}</option>
                                             {categories && categories.map((c, i) => {
                                                 return <>
-                                                    <option value={c.category}>{c.category}</option>
+                                                    <option value={c.id} >{c.category}</option>
                                                 </>
                                             })}
 

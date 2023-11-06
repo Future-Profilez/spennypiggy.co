@@ -18,7 +18,7 @@ import { router } from '@inertiajs/react'
 export default function Wishlist(props) {
 
     const { categories } = props;
-    const { successAlert, errorAlert } = useAlerts();
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
     const inputRef = useRef(null);
     const [cats, setCats] = useState([]);
@@ -129,8 +129,9 @@ export default function Wishlist(props) {
             },
             onError: (_err) => {
                 console.log(`errors:`);
-                // errorAlert(resp.props.flash?.success || "Added");
-                console.table(errors);
+                console.log(_err);
+                errorsHandling(_err);
+                errorAlert(resp.props.flash?.success || "Added");
             }
         });
     };
@@ -171,7 +172,7 @@ export default function Wishlist(props) {
                                                 className="form-input px-2 py-2 border w-full rounded-md"
                                                 autoComplete="price"
                                                 onChange={(e) => setData('price', e.target.value)}
-                                                required
+                                            // required
                                             />
                                             <span className="donot">Don't forget to add to the total to cover shipping and tax.</span>
                                         </li>
