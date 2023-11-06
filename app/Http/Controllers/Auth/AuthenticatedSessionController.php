@@ -55,8 +55,7 @@ class AuthenticatedSessionController extends Controller
     /**
      * Private user profile info
      */
-    public function getUserProfile()
-    {
+    public function getUserProfile(){
         $user = Auth::user();
         return Inertia::render('Dashboard', [
             'user' => $user

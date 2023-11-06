@@ -45,25 +45,22 @@ Route::middleware('guest')->group(function () {
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
+});
 
+Route::middleware('auth')->group(function () {
 
-
-    });
-
-    Route::middleware('auth')->group(function () {
-
-        Route::get('verify-email', EmailVerificationPromptController::class)
+    Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
 
-        Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
+    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
         ->middleware(['signed', 'throttle:6,1'])
         ->name('verification.verify');
 
-        Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
         ->middleware('throttle:6,1')
         ->name('verification.send');
 
-        Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
+    Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
         ->name('password.confirm');
 
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
@@ -93,7 +90,6 @@ Route::middleware('guest')->group(function () {
     Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
 });
 
-
 Route::get('/{username}', function ($username) {
     $user = User::where('username', $username)->first();
     $items = Wishitem::whereUserId($user->id)->latest()->get();
@@ -105,5 +101,6 @@ Route::get('/{username}', function ($username) {
     ]);
 })->name('user.show');
 
+Route::get('get_category_data', [WishitemController::class, 'categoryItems'])->name('get_category_data');
 
 Route::get('users', [MyController::class, 'getUsers'])->name('users');
