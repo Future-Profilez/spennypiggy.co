@@ -45,24 +45,25 @@ Route::middleware('guest')->group(function () {
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
-});
-
-Route::middleware('auth')->group(function () {
 
 
 
-    Route::get('verify-email', EmailVerificationPromptController::class)
+    });
+
+    Route::middleware('auth')->group(function () {
+
+        Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
 
-    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
+        Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
         ->middleware(['signed', 'throttle:6,1'])
         ->name('verification.verify');
 
-    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+        Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
         ->middleware('throttle:6,1')
         ->name('verification.send');
 
-    Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
+        Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
         ->name('password.confirm');
 
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
@@ -73,15 +74,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('dashboard', [AuthenticatedSessionController::class, 'getUserProfile'])->name('dashboard');
 
-    Route::get('/{username}', function ($username) {
-        $user = User::where('username', $username)->first();
-        $items = WishItem::whereUserId($user->id)->latest()->get();
-        $categories = UserCategory::whereUserId($user->id)->latest()->get();
-        return Inertia::render('Dashboard', [
-            "items" => $items,
-            "categories" => $categories,
-        ]);
-    })->middleware(['auth', 'verified'])->name('user.show');
+
 
 
     // Route::prefix("/")
@@ -96,11 +89,21 @@ Route::middleware('auth')->group(function () {
         Route::match(["get", "post"], "/connect-{step}", [StripeController::class, "initConnect"])->name("connect");
         Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
     });
-
-
     Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
-
     Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
 });
+
+
+Route::get('/{username}', function ($username) {
+    $user = User::where('username', $username)->first();
+    $items = Wishitem::whereUserId($user->id)->latest()->get();
+    $categories = UserCategory::whereUserId($user->id)->latest()->get();
+    return Inertia::render('Dashboard', [
+        "user" => $user,
+        "items" => $items,
+        "categories" => $categories,
+    ]);
+})->name('user.show');
+
 
 Route::get('users', [MyController::class, 'getUsers'])->name('users');

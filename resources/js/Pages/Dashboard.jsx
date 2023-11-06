@@ -8,18 +8,19 @@ import EditProfile from '@/wishlist/EditProfile';
 import ShareProfile from '@/wishlist/ShareProfile';
 import { useState } from 'react';
 import Social from './Auth/Social';
+import { router } from '@inertiajs/react'
 
 export default function Dashboard(props) {
 
     console.log("props", props);
-    const { auth, items, categories } = props;
+    const { auth, items, categories, user } = props;
     const [its, setIts] = useState(items);
     const [loading, setLoading] = useState(false);
 
     const showCategory = (e) => {
         setLoading(true);
         console.log(e.target.value);
-        get(route(`get_category_data/${e.target.value}`), {
+        router.get(route(`get_category_data/${e.target.value}/${user.id}`), {
             preserveScroll: true,
             onSuccess: (resp) => {
                 setIts(resp.items)
@@ -35,7 +36,8 @@ export default function Dashboard(props) {
 
     return (
         <AuthenticatedLayout
-            user={auth.user}
+            auth={auth.user}
+            user={auth.user || user}
             header={``} >
             <Head title="Dashboard" />
             <div>
@@ -43,7 +45,7 @@ export default function Dashboard(props) {
                     <div className='containerbox'>
                         <div className='wishbanner '>
                             <img className='w-full  border-black border-2 shadow-black rounded-2xl'
-                                src={auth && auth?.user?.cover || wishlistbannerimg} alt='img' />
+                                src={user?.cover || wishlistbannerimg} alt='img' />
                         </div>
                         <div className='wishManage'>
                             <div className='userProfile whbg rounded-3xl shadow-voilet border-2'>
@@ -62,9 +64,9 @@ export default function Dashboard(props) {
                                                     <path d="M10.7143 13.7857H3V11.2143H10.7143V3.5H13.2857V11.2143H21V13.7857H13.2857V21.5H10.7143V13.7857Z" fill="#5D25FD" />
                                                 </svg> Add Socials</Link> */}
 
-                                                {/* <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                     <path d="M10.7143 13.7857H3V11.2143H10.7143V3.5H13.2857V11.2143H21V13.7857H13.2857V21.5H10.7143V13.7857Z" fill="#5D25FD" />
-                                                </svg> */}
+                                                </svg>
                                                 <Social />
                                             </li>
                                             <li>
@@ -92,11 +94,9 @@ export default function Dashboard(props) {
                                                     <option value={c.id} >{c.category}</option>
                                                 </>
                                             })}
-
                                         </select>
                                     </div>
-
-                                    <Wishlist categories={categories} />
+                                    {auth && auth.user ? <Wishlist categories={categories} /> : ""}
                                 </div>
                                 <div className='wishlistbox flex justify-between items-start'>
                                     {items && items.map((c, i) => {

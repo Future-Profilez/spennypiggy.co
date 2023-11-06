@@ -242,7 +242,7 @@ export default function Wishlist(props) {
                                     </div>
 
                                     <div className="publish text-start">
-                                        <h4>Categorize this wish (Optional)</h4>
+                                        <strong>Categorize this wish ( Optional )</strong>
                                         <p>Organize your wishes to help gifters find what they're looking for while on your wishlist.</p>
 
 
@@ -250,8 +250,8 @@ export default function Wishlist(props) {
                                             {categories && categories.map((c, i) => {
                                                 return <>
                                                     <div className="repeatpurchase mb-2 text-start">
-                                                        <label for={'categories' + i}><input type="checkbox" id={'categories' + i}
-                                                            value={c.id} name='category' onChange={catValue} /> {c.category}</label></div>
+                                                        <label className='text-capitalize' for={'categories' + i}><input type="checkbox" id={'categories' + i}
+                                                        value={c.id} name='category' onChange={catValue} /> {c.category}</label></div>
                                                 </>
                                             })}
                                         </div>
