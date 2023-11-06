@@ -129,20 +129,23 @@ class WishitemController extends Controller
         return back()->with('success', 'Category Saved.');
     }
 
-    public function categoryItems ($category,$user_id) {
 
+    public function categoryItems (Request $request) {
+        // $category,$user_id
         $query = WishCategory::orderBy('created_at','DESC');
 
-        if($category != 'all'){
-            $query->where('category_id',$category);
+        if($request->category != 'all'){
+            $query->where('category_id',$request->category);
         }
 
-        $itemId = $query->whereHas('wish',function($q) use ($user_id){
-            $q->where('user_id',$user_id);
+
+        $itemId = $query->whereHas('wish',function($q) use ( $request){
+            $q->where('user_id',$request->user_id);
         })->pluck('wish_id');
         
         $items = Wishitem::whereIn('id',$itemId)->latest()->get();
         
+        print_r($items);
         return response()->json([
             'status' => true,
             'items' => $items
