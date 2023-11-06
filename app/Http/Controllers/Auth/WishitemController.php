@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
 use Stripe\StripeClient;
 
@@ -118,4 +119,34 @@ class WishitemController extends Controller
 
         return back()->with('success', 'Category Saved.');
     }
+
+    public function wishItems(Request $request): RedirectResponse {
+        $categories = UserCategory::where('user_id', Auth::id())->get();
+        UserCategory::create([
+            "user_id" => Auth::id(),
+            'category' => $request->category ?? null,
+        ]);
+        return back()->with('success', 'Category Saved.');
+    }
+
+    public function categoryItems ($category,$user_id) {
+
+        $query = WishCategory::orderBy('created_at','DESC');
+
+        if($category != 'all'){
+            $query->where('category_id',$category);
+        }
+
+        $itemId = $query->whereHas('wish',function($q) use ($user_id){
+            $q->where('user_id',$user_id);
+        })->pluck('wish_id');
+        
+        $items = Wishitem::whereIn('id',$itemId)->latest()->get();
+        
+        return response()->json([
+            'status' => true,
+            'items' => $items
+        ]);
+    }
+
 }

@@ -10,8 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
-class StripeController extends Controller
-{
+class StripeController extends Controller {
 
     /**
      * Landing Page for Stripe Connect
@@ -34,6 +33,8 @@ class StripeController extends Controller
 
         return Inertia::render("Stripe/Index");
     }
+
+
 
     /**
      * Init Connect Account Start
@@ -91,6 +92,9 @@ class StripeController extends Controller
         }
 
     }
+
+
+
 
     /**
      * Return URL After Success

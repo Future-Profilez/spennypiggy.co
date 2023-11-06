@@ -106,4 +106,7 @@ Route::get('/{username}', function ($username) {
 })->name('user.show');
 
 
+Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class, 'categoryItems'])->name('get_category_data');
+
 Route::get('users', [MyController::class, 'getUsers'])->name('users');
+

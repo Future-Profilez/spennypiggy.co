@@ -14,6 +14,7 @@ export default function Dashboard(props) {
 
     const { auth, items, categories, user } = props;
 
+    const [loggedIn, setLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username))
     return (
         <AuthenticatedLayout
             auth={auth.user}
@@ -31,8 +32,7 @@ export default function Dashboard(props) {
                             <div className='userProfile whbg rounded-3xl shadow-voilet border-2'>
                                 <Userprofile user={user} />
                                 <div className='userProfileDate'>
-
-                                    {auth && auth.user ? <>
+                                    {loggedIn ? <>
                                         <EditProfile user={auth.user} /> 
                                         <div className='finish'>
                                             <p className='mb-4'>Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
@@ -55,7 +55,6 @@ export default function Dashboard(props) {
                                         </div>
                                     </> 
                                     : ''}
-
                                 </div>
                             </div>
                             <div className='userManageRt mt-14'>
@@ -69,7 +68,7 @@ export default function Dashboard(props) {
                                             })}
                                         </select>
                                     </div>
-                                    {auth && auth.user ? <Wishlist categories={categories} /> : "" }
+                                    {loggedIn ? <Wishlist categories={categories} /> : "" }
                                 </div>
                                 <div className='wishlistbox flex justify-between items-start'>
                                     {items && items.map((c, i) => {
@@ -79,7 +78,6 @@ export default function Dashboard(props) {
                                     })}
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </div>
