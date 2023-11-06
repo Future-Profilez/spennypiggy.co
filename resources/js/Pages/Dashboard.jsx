@@ -12,6 +12,7 @@ export default function Dashboard(props) {
 
     console.log("props", props);
     const { auth, items, categories } = props;
+    console.log('categories', categories);
 
     return (
         <AuthenticatedLayout
@@ -56,11 +57,18 @@ export default function Dashboard(props) {
                             </div>
                             <div className='userManageRt mt-14'>
                                 <div className='userManageHead flex items-center justify-between mb-8'>
-                                    <select id="country" name="country" autocomplete="country-name" className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6">
-                                        <option>Category</option>
-                                        <option>Category 2</option>
-                                        <option>Category 3</option>
-                                    </select>
+                                    <div>
+                                        <label for="country" className='mb-2 ms-1 text-white font-semibold'>Categories</label>
+                                        <select id="country" name="country" autocomplete="country-name" className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6">
+                                            {categories && categories.map((c, i) => {
+                                                return <>
+                                                    <option value={c.category}>{c.category}</option>
+                                                </>
+                                            })}
+
+                                        </select>
+                                    </div>
+
                                     <Wishlist categories={categories} />
                                 </div>
                                 <div className='wishlistbox flex justify-between items-start'>
