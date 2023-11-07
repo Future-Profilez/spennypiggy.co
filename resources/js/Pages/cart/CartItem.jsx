@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import cartproductimg from '../../../assets/img/cartproductimg.png';
-export default function CartItem() {
+export default function CartItem({data}) {
     let [count, setCount] = useState(0);
     function incrementCount() {
         count = count + 1;
@@ -11,22 +11,23 @@ export default function CartItem() {
         setCount(count);
       }
   return (
-        <div className='cartlist flex flex-wrap justify-between items-center content-between items-center border-purple shadow-purple rounded-xl mb-5 p-4'>
+        <div className='border cartlist flex flex-wrap justify-between items-center content-between items-center border-purple shadow-purple rounded-xl mb-5 p-4'>
             <div className='prodcartbox items-center'>
                 <div className='productimg'>
-                    <img src={cartproductimg} alt='img' />
+                    <img src={data.url || cartproductimg} alt='img' />
                 </div>
-                <div className='cartProdTitle ps-3'>@worshipmommy </div>
+                <div className='cartProdTitle ps-3'>{data.wishname}</div>
             </div>
 
             <div className="quty flex items-center">
-                <button onClick={decrementCount}>
+                <button onClick={decrementCount} disabled>
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
                     <path d="M19 12.998H5V10.998H19V12.998Z" fill="black"/>
                 </svg>
                 </button>
-                <div className="qutynum">{count}</div>
-                <button onClick={incrementCount}>
+                {/* <div className="qutynum">{count}</div> */}
+                <div className="qutynum">1</div>
+                <button onClick={incrementCount}  disabled>
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
                     <path d="M11 13H5V11H11V5H13V11H19V13H13V19H11V13Z" fill="black"/>
                     </svg>
@@ -35,7 +36,7 @@ export default function CartItem() {
 
             <div className='cartProRtbox  items-center'>
                 <div className='cartPric pe-5'>
-                    £ 4500.00
+                    £ {data.price}
                 </div>
                 <button className='del'>
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">

@@ -47,7 +47,12 @@ Route::middleware('guest')->group(function () {
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
+
+ 
 });
+
+
+
 
 Route::middleware('auth')->group(function () {
 
@@ -71,10 +76,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
-    Route::get('dashboard', [AuthenticatedSessionController::class, 'getUserProfile'])->name('dashboard');
-
-
-
+    // Route::get('dashboard', [AuthenticatedSessionController::class, 'getUserProfile'])->name('dashboard');
 
     // Route::prefix("/")
     // $owner = Auth::user();
@@ -98,6 +100,14 @@ Route::middleware('auth')->group(function () {
 
     Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 });
+
+Route::get('/stripe', function () {
+    return Inertia::render('stripe/Stripe');
+})->middleware(['auth', 'verified'])->name('stripe');
+
+Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class, 'categoryItems'])->name('get_category_data');
+
+Route::get('users', [MyController::class, 'getUsers'])->name('users');
 
 Route::get('/{username}/{category?}', function ($username, $category = false) {
     $user = User::where('username', $username)->first();
@@ -128,8 +138,3 @@ Route::get('/{username}/{category?}', function ($username, $category = false) {
         "categories" => $categories,
     ]);
 })->name('user.show');
-
-
-Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class, 'categoryItems'])->name('get_category_data');
-
-Route::get('users', [MyController::class, 'getUsers'])->name('users');
