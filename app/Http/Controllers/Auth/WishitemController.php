@@ -152,16 +152,14 @@ class WishitemController extends Controller
 
         $user = User::where('id', $user_id)->first();
         $items = Wishitem::whereIn('id', $itemId)->latest()->get();
-        $items = WishItem::whereUserId($user->id)->latest()->get();
+        // $items = WishItem::whereUserId($user->id)->latest()->get();
         $categories = UserCategory::whereUserId($user->id)->latest()->get();
-        return Inertia::render('Dashboard', [
-            "user" => $user,
-            "items" => $items,
-            "categories" => $categories,
-        ]);
 
+        return redirect(route('user.show', ['username', $user->username, 'filter' => true]));
         // return response()->json(["items" => $items])->header('Content-Type', 'application/json');
     }
+
+
     public function addToCart(Request $request)
     {
         $wishitem = WishItem::where('uuid', $request->uuid)->first();

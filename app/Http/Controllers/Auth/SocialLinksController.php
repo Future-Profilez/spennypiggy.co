@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\SocialLinks;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,7 @@ class SocialLinksController extends Controller
 {
     public function saveSocialLinks(Request $request)
     {
+        $user = User::where('id', Auth::id())->first();
         try {
             $sociallinks = SocialLinks::where('user_id', Auth::id())->first();
             if (!empty($sociallinks)) {
@@ -29,28 +31,28 @@ class SocialLinksController extends Controller
                     'other' => $request->other ?? $sociallinks->other,
                     'updated_at' => Carbon::now(),
                 ]);
-                return redirect(route("dashboard", ["sociallinks" => $links]))->with('success', "social links updated successfully.");
+                return redirect(route("user.show", ["username" => $user->username]))->with('success', "social links updated successfully.");
             } else {
                 $links =  SocialLinks::create([
                     'uuid' => Uuid::uuid4(),
                     'user_id' => Auth::id(),
-                    'whoyouinto' => $request->whoyouinto ?? '',
-                    'twitter' => $request->twitter ?? '',
-                    'instagram' => $request->instagram ?? '',
-                    'reddit' => $request->reddit ?? '',
-                    'discord' => $request->discord ?? '',
-                    'onlyfans' => $request->onlyfans ?? '',
-                    'loyalfans' => $request->loyalfans ?? '',
-                    'fansly' => $request->fansly ?? '',
-                    'manyvids' => $request->manyvids ?? '',
-                    'other' => $request->other ?? '',
+                    'whoyouinto' => $request->whoyouinto ?? null,
+                    'twitter' => $request->twitter ?? null,
+                    'instagram' => $request->instagram ?? null,
+                    'reddit' => $request->reddit ?? null,
+                    'discord' => $request->discord ?? null,
+                    'onlyfans' => $request->onlyfans ?? null,
+                    'loyalfans' => $request->loyalfans ?? null,
+                    'fansly' => $request->fansly ?? null,
+                    'manyvids' => $request->manyvids ?? null,
+                    'other' => $request->other ?? null,
                     'created_at' => Carbon::now(),
                     'updated_at' => Carbon::now(),
                 ]);
-                return redirect(route("dashboard", ["sociallinks" => $links]))->with('success', "social links added successfully.");
+                return redirect(route("user.show", ["username" => $user->username]))->with('success', "social links added successfully.");
             }
         } catch (\Throwable $th) {
-            //throw $th;
+            throw $th;
         }
     }
 }

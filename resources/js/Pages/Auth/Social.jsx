@@ -1,10 +1,15 @@
+import { useAlerts } from "@/Components/Alerts";
+import LoaderButton from "@/Components/LoaderButton";
 import Popup from "@/Components/Popup";
 import { useForm } from "@inertiajs/react";
+import { useState } from "react";
 
 
 export default function Social() {
 
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
+    const [close, setClose] = useState();
 
     const { data, setData, post, processing, errors, reset } = useForm({
         twitter: '',
@@ -23,13 +28,12 @@ export default function Social() {
     const createSocial = (e) => {
 
         e.preventDefault();
-        post(route('save_wish_item'), {
+        post(route('save_social_links'), {
             preserveScroll: true,
             onSuccess: (resp) => {
                 reset();
                 successAlert(resp.props.flash?.success || "Added");
                 setClose(false);
-                setClear(new Date);
                 setTimeout(() => {
                     setClose();
                 }, 100)
@@ -160,7 +164,11 @@ export default function Social() {
                                 </li>
                             </ul>
 
-
+                            <LoaderButton disabled={processing} type='submit'
+                                className=' flex w-12 btn-pink-lg  max-w-xs mx-auto'
+                                spinnerClassName='fill-red-600'>
+                                {processing ? "Proccessing" : "Add Links"}
+                            </LoaderButton>
                         </form>
                     </div>
                 </div>

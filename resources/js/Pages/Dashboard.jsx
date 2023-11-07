@@ -4,7 +4,7 @@ import Wishlist from './Auth/Wishlist';
 import Wishlistbox from '@/wishlist/Wishlistbox';
 import wishlistbannerimg from '../../assets/img/wishlistbannerimg.jpg';
 import Userprofile from '@/wishlist/Userprofile';
-import EditProfile from '@/wishlist/EditProfile';
+import EditProfile from '@/Pages/account/EditProfile';
 import ShareProfile from '@/wishlist/ShareProfile';
 import { useState } from 'react';
 import Social from './Auth/Social';
@@ -22,7 +22,7 @@ export default function Dashboard(props) {
 
     const showCategory = (e) => {
         setLoading(true);
-        router.get(`/get_category_data/${e.target.value}/${user.id}`), {
+        router.get(`/${user.username}/${e.target.value}/`), {
             preserveScroll: true,
             onSuccess: (resp) => {
                 console.log('respitems', resp.props.items)
