@@ -74,9 +74,6 @@ Route::middleware('guest')->group(function () {
     
     Route::get('dashboard', [AuthenticatedSessionController::class, 'getUserProfile'])->name('dashboard');
     
-    
-    
-    
     // Route::prefix("/")
     // $owner = Auth::user();
     // ['owner' => $user->id == $owner->id ? true : false// ]
@@ -95,6 +92,8 @@ Route::middleware('guest')->group(function () {
     Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
 
     Route::post('add-to-cart', [WishitemController::class, 'addToCart'])->name('add-to-cart');
+
+    Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 
 });
 

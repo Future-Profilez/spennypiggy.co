@@ -139,7 +139,7 @@ export default function Wishlist(props) {
     return <>
 
         <Popup action={close}
-            classes='btn-pink-lg' text="add wishlist" >
+            classes='btn-pink-lg sm' text="add wishlist" >
             <div className="wishlistModal">
                 <div className="widhlistModalInner shadow-pink">
                     <h2 className="font-GillSans">Add A Wish</h2>
