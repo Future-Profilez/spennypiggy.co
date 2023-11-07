@@ -197,7 +197,8 @@ class WishitemController extends Controller
             }
             $groupedWishes[$owner_id][] = [
                 'user' => $wish->user->toArray(),
-                'wish' => $wish->wish->toArray()
+                'wish' => $wish->wish->toArray(),
+                'url' => $wish->wish->perma_link
             ];
         }
 
@@ -229,6 +230,7 @@ class WishitemController extends Controller
                     'subscription_period' => $v['wish']['subscription_period'],
                     'repeat_purchase' => $v['wish']['repeat_purchase'],
                     'category' => $v['wish']['category'],
+                    'url' => $v['url'],
                 ];
                 $total += $v['wish']['price'];
             }
