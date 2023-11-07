@@ -3,15 +3,28 @@ import miniplantimg from '../../assets/img/miniplantimg.jpg';
 import { Link } from '@inertiajs/react';
 import ToCart from './ToCart';
 import ShareProfile from './ShareProfile';
+import AddCart from './AddCart';
+import { useState } from 'react';
 
 export default function Wishlistbox({ itm }) {
+
   console.log('item', itm);
-  return (
+  const [open, setOpen] = useState();
+
+  const openAddtocart = () => { 
+    setOpen(true);
+    setTimeout(()=>{
+      setOpen();
+    },1000)
+  }
+
+  return <>
+    <AddCart item={itm} uuid={itm.uuid} action={open} />
     <div className='wishlistcntbox whbg relative	 rounded-3xl shadow-voilet '>
-      <div className='wishlistimg'>
+      <div onClick={openAddtocart} className='wishlistimg'>
         <img src={itm.perma_link} alt='img' className='rounded-t-3xl' />
       </div>
-      <div className='wishlistdetial  relative'>
+      <div onClick={openAddtocart} className='wishlistdetial  relative'>
         <div>
           <h4 className='fon-bold text-dark' >{itm.wishname}</h4>
           <h5 className='font-CeraGRBold text-dark'>£{itm.price}</h5>
@@ -22,8 +35,6 @@ export default function Wishlistbox({ itm }) {
           <Link to="/" className='font-GillSans'>Share Link</Link>
         </ShareProfile>
       </div>
-
-      <ToCart uuid={itm.uuid} />
     </div>
-  )
+  </>
 }

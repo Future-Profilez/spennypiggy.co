@@ -1,7 +1,7 @@
 import { useAlerts } from '@/Components/Alerts';
 import { router } from '@inertiajs/react'
 
-export default function ToCart({uuid}){
+export default function ToCart({uuid, text, classes}){
 
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
@@ -24,6 +24,6 @@ export default function ToCart({uuid}){
   };
 
   return <>
-    <button className='btn btn-info d-block' onClick={addtocart} >Add To cart</button>
+    <button className={classes} onClick={addtocart} >{text}</button>
   </>
 }

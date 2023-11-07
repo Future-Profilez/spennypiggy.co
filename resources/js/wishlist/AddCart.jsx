@@ -1,42 +1,32 @@
 import React from 'react'
-import Popup from '../../includes/Popup'
 import profileimg from '../../assets/img/profileimg.png'
 import editicon from '../../assets/img/editicon.png'
 import giftimg from '../../assets/img/giftimg.jpg'
 import cartbannerimg from '../../assets/img/cartbannerimg.jpg'
+import Popup from '@/Components/Popup'
+import ToCart from './ToCart'
 
-export default function AddCart() {
+export default function AddCart({action, uuid, item}) {
+
   return (
+    <Popup action={action}  classes="d-none" >
       <div className='addCartModal relative whbg border-pink shadow-pink'>
         <div className='addCartModalHead rounded-3xl relative'>
-                <h2 className='font-GillSans text-bl uppercase pt-8 text-lg relative z-1'>Add to Cart</h2>
-                <button className='absolute right-5 top-5 z-2'>
-                    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <g clip-path="url(#clip0_386_414)">
-                    <path d="M20.5581 23.7753L21 24.2172L21.4419 23.7753L23.7753 21.4419L24.2172 21L23.7753 20.5581L18.2172 15L23.7753 9.44194L24.2172 9L23.7753 8.55806L21.4419 6.22472L21 5.78278L20.5581 6.22472L15 11.7828L9.44194 6.22472L9 5.78278L8.55806 6.22472L6.22472 8.55806L5.78278 9L6.22472 9.44194L11.7828 15L6.22472 20.5581L5.78278 21L6.22472 21.4419L8.55806 23.7753L9 24.2172L9.44194 23.7753L15 18.2172L20.5581 23.7753ZM3.33333 0.625H26.6667C27.385 0.625 28.0738 0.910341 28.5817 1.41825C29.0897 1.92616 29.375 2.61504 29.375 3.33333V26.6667C29.375 27.385 29.0897 28.0738 28.5817 28.5817C28.0738 29.0897 27.385 29.375 26.6667 29.375H3.33333C2.61504 29.375 1.92616 29.0897 1.41825 28.5817C0.910341 28.0738 0.625 27.385 0.625 26.6667V3.33333C0.625 2.61504 0.910341 1.92616 1.41825 1.41825C1.92616 0.910341 2.61504 0.625 3.33333 0.625Z" fill="#8C52FF" stroke="black" stroke-width="1.25"/>
-                    </g>
-                    <defs>
-                    <clipPath id="clip0_386_414">
-                    <rect width="30" height="30" fill="white"/>
-                    </clipPath>
-                    </defs>
-                    </svg>
-                </button>
-
-                
+            <h2 className='font-GillSans text-bl uppercase pt-8 text-lg relative z-1'>Add to Cart</h2>
         </div>
         <div className='cartModimg absolute left-0 top-0'>
-                <img src={giftimg} alt='img' />
-            </div>
-            <div className='cartbanner '>
-                <img src={cartbannerimg} alt='img' />
-            </div>
-            <div className='cartTitle'>Mini Plant</div>
-            <div className='cartPrice font-CeraGRBold text-voilet mt-1 mb-5'>£ 456</div>
-            <div className='px-5 pb-4'>
-                <button className='btn-pink-lg w-100 mb-4 font-CeraGR'>Add to cart and Keep Shopping </button>
-                <button className='bt-wh w-100'>Add to cart and Checkout</button>
-            </div>
+            <img src={giftimg} alt='img' />
+        </div>
+        <div className='cartbanner '>
+            <img src={item.perma_link ? item.perma_link : cartbannerimg} alt='img' />
+        </div>
+        <div className='cartTitle'>{item.wishname}</div>
+        <div className='cartPrice font-CeraGRBold text-voilet mt-1 mb-3'>£ {item.price}</div>
+        <div className='px-5 pb-4'>
+            <ToCart text="Add to cart and Keep Shopping " classes='btn-pink-lg w-100 mb-4 font-CeraGR' uuid={uuid} />
+            {/* <button className='bt-wh w-100'>Add to cart and Checkout</button> */}
+        </div>
       </div>
+    </Popup>
   )
 }
