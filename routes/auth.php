@@ -101,6 +101,10 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/{username}/{category?}', function ($username, $category = false) {
     $user = User::where('username', $username)->first();
+
+    // if(!$user){
+    //     return
+    // }
     $categories = UserCategory::whereUserId($user->id)->latest()->get();
     if ($category) {
         $query = WishCategory::orderBy('created_at', 'DESC');

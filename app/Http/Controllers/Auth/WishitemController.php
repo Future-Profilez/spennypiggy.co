@@ -90,7 +90,10 @@ class WishitemController extends Controller
         ]);
 
         $wish->stripe_product_id = $stripe_client->id;
+        $wish->price_id = $stripe_client->default_price;
         $wish->save();
+
+
         return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
     }
 
@@ -243,5 +246,12 @@ class WishitemController extends Controller
         return Inertia::render('cart/Cart', [
             "carts" => $cart,
         ]);
+    }
+
+
+
+    public function checkoutSession()
+    {
+        
     }
 }
