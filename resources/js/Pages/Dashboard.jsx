@@ -36,12 +36,10 @@ export default function Dashboard(props) {
 
     const [loggedIn, setLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
 
-    
     return (
         <AuthenticatedLayout
             auth={auth.user}
-            user={auth.user || user}
-            header={``} >
+            user={user} >
             <Head title="Dashboard" />
             <div>
                 <div className='wishlistPage mintbg py-14 '>
