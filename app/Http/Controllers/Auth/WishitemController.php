@@ -123,7 +123,6 @@ class WishitemController extends Controller
     }
 
 
-
     public function wishItems(Request $request): RedirectResponse
     {
         $categories = UserCategory::where('user_id', Auth::id())->get();
@@ -133,7 +132,6 @@ class WishitemController extends Controller
         ]);
         return back()->with('success', 'Category Saved.');
     }
-
 
 
     public function categoryItems($category, $user_id)
@@ -183,9 +181,33 @@ class WishitemController extends Controller
     public function cartItems()
     {
         $user = Auth::user();
+        $userModel = User::find($user->id);
         $carts = UserCart::where('user_id', $user->id)->get();
-        return response()->json([
-            "carts" => $carts
+        $group_cart = $carts->groupBy('owner_id')->map(function ($items) use ($userModel) {
+            return [
+                'user' => [
+                    'id' => $userModel->id,
+                    'name' => $userModel->name,
+                    'username' => $userModel->username,
+                    'uuid' => $userModel->uuid,
+                ],
+                'items' => $items->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'uuid' => $item->uuid,
+                        'user_id' => $item->user_id,
+                        'owner_id' => $item->owner_id,
+                        'wish_id' => $item->wish_id,
+                        'status' => $item->status,
+                        'created_at' => $item->created_at,
+                        'updated_at' => $item->updated_at,
+                    ];
+                }),
+            ];
+        });
+
+        return Inertia::render('cart/Cart', [
+            "carts" => $group_cart,
         ]);
     }
 }
