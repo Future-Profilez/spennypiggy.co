@@ -14,7 +14,7 @@ export default function CartItem({data}) {
         <div className='border cartlist flex flex-wrap justify-between items-center content-between items-center border-purple shadow-purple rounded-xl mb-5 p-4'>
             <div className='prodcartbox items-center'>
                 <div className='productimg'>
-                    <img src={cartproductimg} alt='img' />
+                    <img src={data.url || cartproductimg} alt='img' />
                 </div>
                 <div className='cartProdTitle ps-3'>{data.wishname}</div>
             </div>
