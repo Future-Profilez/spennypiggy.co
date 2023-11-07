@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\SocialLinksController;
 use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
@@ -79,6 +80,7 @@ Route::middleware('auth')->group(function () {
     // $owner = Auth::user();
     // ['owner' => $user->id == $owner->id ? true : false// ]
 
+    Route::post('save_social_links', [SocialLinksController::class, 'saveSocialLinks'])->name('save_social_links');
 
     Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item');
 
