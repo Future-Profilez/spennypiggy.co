@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\UserCart;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
 use App\Models\WishItem;
@@ -17,9 +18,9 @@ use Stripe\StripeClient;
 
 class WishitemController extends Controller
 {
+
     public function saveWishItem(Request $request): RedirectResponse
     {
-
         $request->validate([
             "wishname" => [
                 "required",
@@ -158,5 +159,33 @@ class WishitemController extends Controller
         ]);
 
         // return response()->json(["items" => $items])->header('Content-Type', 'application/json');
+    }
+    public function addToCart(Request $request)
+    {
+        $wishitem = WishItem::where('uuid', $request->uuid)->first();
+        $cart = UserCart::where('wish_id', $wishitem->id)->where("user_id", Auth::user())->first();
+
+        if ($cart) {
+            $cart->status = 1;
+            $cart->save();
+        } else {
+            UserCart::create([
+                "user_id" => Auth::id(),
+                "owner_id" => $wishitem->user_id,
+                'wish_id' => $wishitem->id,
+                'status' => 1,
+            ]);
+        }
+        return back()->with('success', 'Item added to cart.');
+    }
+
+
+    public function cartItems()
+    {
+        $user = Auth::user();
+        $carts = UserCart::where('user_id', $user->id)->get();
+        return response()->json([
+            "carts" => $carts
+        ]);
     }
 }
