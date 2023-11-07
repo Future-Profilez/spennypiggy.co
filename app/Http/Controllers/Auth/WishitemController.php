@@ -161,6 +161,10 @@ class WishitemController extends Controller
     public function addToCart(Request $request)
     {
         $wishitem = WishItem::where('uuid', $request->uuid)->first();
+
+        // if (Auth::id() == $wishitem->user_id) {
+        // }
+
         $cart = UserCart::where('wish_id', $wishitem->id)->where("user_id", Auth::user())->first();
 
         if ($cart) {
@@ -180,34 +184,65 @@ class WishitemController extends Controller
 
     public function cartItems()
     {
-        $user = Auth::user();
-        $userModel = User::find($user->id);
-        $carts = UserCart::where('user_id', $user->id)->get();
-        $group_cart = $carts->groupBy('owner_id')->map(function ($items) use ($userModel) {
-            return [
-                'user' => [
-                    'id' => $userModel->id,
-                    'name' => $userModel->name,
-                    'username' => $userModel->username,
-                    'uuid' => $userModel->uuid,
-                ],
-                'items' => $items->map(function ($item) {
-                    return [
-                        'id' => $item->id,
-                        'uuid' => $item->uuid,
-                        'user_id' => $item->user_id,
-                        'owner_id' => $item->owner_id,
-                        'wish_id' => $item->wish_id,
-                        'status' => $item->status,
-                        'created_at' => $item->created_at,
-                        'updated_at' => $item->updated_at,
-                    ];
-                }),
+
+        $user = User::where('id', Auth::id())->first();
+        $carts = UserCart::where('user_id', $user->id)->where('status', 1)->get();
+
+        $groupedWishes = [];
+        foreach ($carts as $wish) {
+            $owner_id = $wish->owner_id;
+            if (!isset($groupedWishes[$owner_id])) {
+                $groupedWishes[$owner_id] = [];
+            }
+            $groupedWishes[$owner_id][] = [
+                'user' => $wish->user->toArray(),
+                'wish' => $wish->wish->toArray()
             ];
-        });
+        }
+
+        $cart = [];
+        $key = 0;
+        foreach ($groupedWishes as $value) {
+
+            $cart[$key] = [
+                'user' => [
+                    'id' => $value[0]['user']['id'],
+                    'name' => $value[0]['user']['name'],
+                    'username' => $value[0]['user']['username'],
+                    'uuid' => $value[0]['user']['uuid'],
+                ],
+            ];
+
+            $total = 0;
+
+            foreach ($value as $k => $v) {
+                $cart[$key]['items'][$k] = [
+                    'id' => $v['wish']['id'],
+                    'uuid' => $v['wish']['uuid'],
+                    'user_id' => $v['wish']['user_id'],
+                    'wishname' => $v['wish']['wishname'],
+                    'stripe_product_id' => $v['wish']['stripe_product_id'],
+                    'price' => $v['wish']['price'],
+                    'item_url' => $v['wish']['item_url'],
+                    'subscription' => $v['wish']['subscription'],
+                    'subscription_period' => $v['wish']['subscription_period'],
+                    'repeat_purchase' => $v['wish']['repeat_purchase'],
+                    'category' => $v['wish']['category'],
+                ];
+                $total += $v['wish']['price'];
+            }
+            $cart[$key]['total'] = $total;
+            $cart[$key]['fee'] = ($total * 20) / 100;
+
+            $key++;
+        }
+
+        echo "<pre>";
+        print_r($cart);
+        die;
 
         return Inertia::render('cart/Cart', [
-            "carts" => $group_cart,
+            "carts" => $cart,
         ]);
     }
 }
