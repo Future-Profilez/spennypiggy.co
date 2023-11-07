@@ -122,6 +122,8 @@ class WishitemController extends Controller
         return back()->with('success', 'Category Saved.');
     }
 
+
+
     public function wishItems(Request $request): RedirectResponse
     {
         $categories = UserCategory::where('user_id', Auth::id())->get();
