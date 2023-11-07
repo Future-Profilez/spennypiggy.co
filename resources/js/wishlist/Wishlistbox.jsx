@@ -8,10 +8,10 @@ import { useState } from 'react';
 
 export default function Wishlistbox({ itm }) {
 
-  console.log('item', itm);
+//   console.log('item', itm);
   const [open, setOpen] = useState();
 
-  const openAddtocart = () => { 
+  const openAddtocart = () => {
     setOpen(true);
     setTimeout(()=>{
       setOpen();
@@ -22,7 +22,7 @@ export default function Wishlistbox({ itm }) {
     <div className='wishlistcntbox whbg relative	 rounded-3xl shadow-voilet '>
     <AddCart item={itm} uuid={itm.uuid} action={open} />
       <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
-        <img src={itm.perma_link} alt='img' className='rounded-t-3xl' />
+        <img src={itm?.perma_link || undefined} alt='img' className='rounded-t-3xl' />
       </div>
       <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
         <div>

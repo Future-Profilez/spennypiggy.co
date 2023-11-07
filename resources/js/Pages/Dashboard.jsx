@@ -8,11 +8,12 @@ import EditProfile from '@/Pages/account/EditProfile';
 import ShareProfile from '@/wishlist/ShareProfile';
 import { useState } from 'react';
 import Social from './Auth/Social';
-import { router } from '@inertiajs/react'
+import axios from 'axios';
+// import { router } from '@inertiajs/react'
 
 export default function Dashboard(props) {
 
-    console.log("props", props);
+    // console.log("props", props);
     const { auth, items, categories, user } = props;
 
     const [its, setIts] = useState(items);
@@ -21,36 +22,13 @@ export default function Dashboard(props) {
 
     const showCategory = (e) => {
         setLoading(true);
-        router.get(`/${user.username}/${e.target.value}/`), {
-            preserveScroll: true,
-            onSuccess: (resp) => {
-                console.log('respitems', resp.props.items)
-                setIts(resp.items)
-                setLoading(false);
-            },
-            onError: (_err) => {
-                console.log(`errors:`);
-                console.log(_err);
-                setLoading(false);
-            }
-        };
+        axios.get(`${user.username}/${e.target.value}/`)
+        .then(resp => {
+            console.log(`resp-data`, resp?.data);
+        }).catch(_err => {
+            console.log("error", _err);
+        })
     }
-    // const showCategory = (e) => {
-    //     setLoading(true);
-    //     router.get(`/get_category_data/${e.target.value}/${user.id}`), {
-    //         // preserveScroll: true,
-    //         onSuccess: (resp) => {
-    //             console.log('respitems', resp.props.items)
-    //             setIts(resp.items)
-    //             setLoading(false);
-    //         },
-    //         onError: (_err) => {
-    //             console.log(`errors:`);
-    //             console.log(_err);
-    //             setLoading(false);
-    //         }
-    //     };
-    // }
 
     const [loggedIn, setLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
 
@@ -79,11 +57,11 @@ export default function Dashboard(props) {
                                             <div className='addsocial flex'>
                                                 <ul>
                                                     <li>
-                                                        {/* 
+                                                        {/*
                                                         <Link to="/" ><svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                             <path d="M10.7143 13.7857H3V11.2143H10.7143V3.5H13.2857V11.2143H21V13.7857H13.2857V21.5H10.7143V13.7857Z" fill="#5D25FD" />
                                                         </svg> Add Socials
-                                                        </Link> 
+                                                        </Link>
                                                         */}
                                                         <Social />
                                                     </li>
@@ -103,12 +81,10 @@ export default function Dashboard(props) {
                             <div className='userManageRt mt-14'>
                                 <div className='userManageHead flex items-center justify-between mb-8'>
                                     <div>
-                                        <select id="country" onChange={showCategory} name="country" autocomplete="country-name" className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6">
+                                        <select id="country" onBlur={showCategory} name="country" autoComplete="country-name" className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6">
                                             <option value={'all'}>{'All'}</option>
                                             {categories && categories.map((c, i) => {
-                                                return <>
-                                                    <option value={c.id} >{c.category}</option>
-                                                </>
+                                                return <option value={c.id} key={`cat-${c.category}`}>{c.category}</option>
                                             })}
                                         </select>
                                     </div>
@@ -116,9 +92,7 @@ export default function Dashboard(props) {
                                 </div>
                                 <div className='wishlistbox flex justify-between items-start'>
                                     {its && its.map((c, i) => {
-                                        return <>
-                                            <Wishlistbox itm={c} />
-                                        </>
+                                        return <Wishlistbox itm={c} key={`wish-${c.uuid}`}/>
                                     })}
                                 </div>
                             </div>

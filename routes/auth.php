@@ -48,7 +48,7 @@ Route::middleware('guest')->group(function () {
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
 
- 
+
 });
 
 
@@ -130,6 +130,14 @@ Route::get('/{username}/{category?}', function ($username, $category = false) {
         $items = Wishitem::whereIn('id', $itemId)->latest()->get();
     } else {
         $items = WishItem::whereUserId($user->id)->latest()->get();
+    }
+
+    if(request()->ajax()){
+        return response()->json([
+            "success" => true,
+            "items" => $items,
+            "categories" => $categories,
+        ]);
     }
 
     return Inertia::render('Dashboard', [
