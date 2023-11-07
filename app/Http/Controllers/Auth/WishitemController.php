@@ -90,7 +90,10 @@ class WishitemController extends Controller
         ]);
 
         $wish->stripe_product_id = $stripe_client->id;
+        $wish->price_id = $stripe_client->default_price;
         $wish->save();
+
+
         return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
     }
 
@@ -197,7 +200,8 @@ class WishitemController extends Controller
             }
             $groupedWishes[$owner_id][] = [
                 'user' => $wish->user->toArray(),
-                'wish' => $wish->wish->toArray()
+                'wish' => $wish->wish->toArray(),
+                'url' => $wish->wish->perma_link
             ];
         }
 
@@ -229,6 +233,7 @@ class WishitemController extends Controller
                     'subscription_period' => $v['wish']['subscription_period'],
                     'repeat_purchase' => $v['wish']['repeat_purchase'],
                     'category' => $v['wish']['category'],
+                    'url' => $v['url'],
                 ];
                 $total += $v['wish']['price'];
             }
@@ -241,5 +246,12 @@ class WishitemController extends Controller
         return Inertia::render('cart/Cart', [
             "carts" => $cart,
         ]);
+    }
+
+
+
+    public function checkoutSession()
+    {
+        
     }
 }
