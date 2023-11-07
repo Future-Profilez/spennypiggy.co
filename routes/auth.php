@@ -68,7 +68,7 @@ Route::middleware('auth')->group(function () {
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
 
-    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+    Route::get('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     Route::get('dashboard', [AuthenticatedSessionController::class, 'getUserProfile'])->name('dashboard');
 
@@ -93,7 +93,6 @@ Route::middleware('auth')->group(function () {
     Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
 
     Route::post('add-to-cart', [WishitemController::class, 'addToCart'])->name('add-to-cart');
-
 });
 
 Route::get('/{username}/{category?}', function ($username, $category = false) {
