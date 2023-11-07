@@ -14,9 +14,14 @@ export default function Cart(props) {
         <Authenticated>
             <div className="container">
                 <h2 className="text-bl font-GillSans pt-5 py-3   text-center text-2xl uppercase">Cart</h2>
-                {cartsItems && cartsItems.map((c, i)=> { 
-                    return <UserCarts key={i} data={c} />
-                })}
+                {cartsItems && !cartsItems.length ?
+                    <>{cartsItems.map((c, i)=> { 
+                            return <UserCarts key={i} data={c} />
+                    })}</>
+                    : <> <div className="p-5 text-center" >
+                        <h2 className="py-5 my-5" >Nothing to show.</h2>
+                        </div> </> 
+                }
             </div>
         </Authenticated>
         </>

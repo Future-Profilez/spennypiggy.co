@@ -15,8 +15,7 @@ export default function UserCarts({data}){
             <h2 className="pb-1">
                 Wish Basket for {data.user?.name || ''} <Link className="text-voilet" href={`/${data.user?.username || ''}`}> @{data.user?.username || ''}</Link>
             </h2>
-            <p className="pb-4"> You are about to send a payout to{data.user?.name || ''}
-            to fund their wishes. </p>
+            <p className="pb-4"> You are about to send a payout to <strong>{data.user?.name || ''}</strong> to fund their wishes. </p>
 
             <div className="CartItemBox">
                 {data.items && data.items.map((c, i)=> { 
