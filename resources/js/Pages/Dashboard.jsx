@@ -34,7 +34,9 @@ export default function Dashboard(props) {
         });
     }
 
-    const [loggedIn, setLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username))
+    const [loggedIn, setLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
+
+    
     return (
         <AuthenticatedLayout
             auth={auth.user}

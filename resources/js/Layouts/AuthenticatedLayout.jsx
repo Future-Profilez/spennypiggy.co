@@ -28,7 +28,7 @@ export default function Authenticated({auth, user, header, children }) {
     },[]);
 
     return <>
-        <Header auth={auth && auth?.user || null} user={user}  />
+        <Header auth={auth} user={user}  />
             <main>
                 {children}
                 <Toaster />
