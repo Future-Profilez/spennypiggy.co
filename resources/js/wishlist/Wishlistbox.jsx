@@ -19,12 +19,12 @@ export default function Wishlistbox({ itm }) {
   }
 
   return <>
-    <AddCart item={itm} uuid={itm.uuid} action={open} />
     <div className='wishlistcntbox whbg relative	 rounded-3xl shadow-voilet '>
-      <div onClick={openAddtocart} className='wishlistimg'>
+    <AddCart item={itm} uuid={itm.uuid} action={open} />
+      <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
         <img src={itm.perma_link} alt='img' className='rounded-t-3xl' />
       </div>
-      <div onClick={openAddtocart} className='wishlistdetial  relative'>
+      <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
         <div>
           <h4 className='fon-bold text-dark' >{itm.wishname}</h4>
           <h5 className='font-CeraGRBold text-dark'>£{itm.price}</h5>

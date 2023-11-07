@@ -17,3 +17,7 @@ input[type=number] {-moz-appearance:textfield;}
 
 .cate-items div{background:#fb2e94 !important;padding:8px 25px !important;border-radius:11px;color:#fff;}
 .cate-items input{margin-right:10px;border-radius:10px;}
+.disabled { 
+  pointer-events: none;
+  opacity: 0.8;
+}

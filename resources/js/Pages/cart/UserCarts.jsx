@@ -1,8 +1,10 @@
 import { useState } from "react";
 import CartItem from "./CartItem";
+import { Link } from "@inertiajs/react";
 
-export default function UserCarts(){
+export default function UserCarts({data}){
 
+  const [isChecked, setIsChecked] = useState(false);
   const [message , setMessage] = useState(null);
   const [name , setName] = useState(null);
   const [email , setemail] = useState(null);
@@ -11,33 +13,35 @@ export default function UserCarts(){
     <div className="cartPage p-4 border-pink shadow-pink border-pink rounded-3xl">
         <div className="cartMain">
             <h2 className="pb-1">
-                Wish Basket for asiansolequeen @asiansolequeen
+                Wish Basket for {data.user?.name || ''} <Link className="text-voilet" href={`/${data.user?.username || ''}`}> @{data.user?.username || ''}</Link>
             </h2>
-            <p className="pb-4">
-                You are about to send a payout to asiansolequeen to fund
-                their wishes.
-            </p>
+            <p className="pb-4"> You are about to send a payout to{data.user?.name || ''}
+            to fund their wishes. </p>
 
             <div className="CartItemBox">
-                <CartItem />
-                <CartItem />
+                {data.items && data.items.map((c, i)=> { 
+                  return <CartItem data={c} key={i}  />
+                })}
             </div>
 
-            <div className="cartTotal px-0 py-6">
+            <div className="cartTotal px-0 py-3">
                 <div className="cartSubTotal text-right mt-1">
-                    <span>Subtotal :</span> <strong>£ 4500.00</strong>
+                    <span>Platform Fee :</span> <strong className="text-end">£ {data.fee || ''}</strong>
                 </div>
                 <div className="cartSubTotal text-right mt-1">
-                    <span>Platform Fee :</span> <strong>£ 700.00</strong>
+                    <span>Subtotal :</span> <strong className="text-end">£ {data.total || ''}</strong>
                 </div>
-                <div className="cartTotalPrice text-right mt-5 px-3 py-6">
+                <div className="cartSubTotal text-right mt-1">
+                    <strong className="text-dark" >Total :</strong> <strong className="text-end">£ {data.total+data.fee || ''}</strong>
+                </div>
+                {/* <div className="cartTotalPrice text-right mt-5 px-3 py-6">
                     <strong className="font-CeraGRBold text-graydark">
                         Total
                     </strong>
                     <span className="font-CeraGRBold text-graydark">
                         £ 7700.00
                     </span>
-                </div>
+                </div> */}
             </div>
             <div className="addMessage">
                 <form>
@@ -57,7 +61,7 @@ export default function UserCarts(){
                             <input onChange={(e)=>setemail(e.target.value)} type="email" placeholder="Enter Your email..." />
                         </li>
 
-                        <li className="cheklistbox">
+                        {/* <li className="cheklistbox">
                             <label for="dndpublish">
                                 <input type="checkbox" id="dndpublish" name="dndpublish" value="dndpublish" /> 
                                 Don't Publish
@@ -71,16 +75,16 @@ export default function UserCarts(){
                                 and personal information will always be
                                 private.
                             </span>
-                        </li>
+                        </li> */}
 
                         <li className="cheklistbox">
                             <label for="agreeterm">
-                                <input
+                                <input onChange={(e)=>setIsChecked(e.target.checked)}
                                     type="checkbox"
                                     id="agreeterm"
                                     name="agreeterm"
                                     value="agreeterm"
-                                ></input>{" "}
+                                ></input> 
                                 I agree to the Terms of Service and Privacy
                                 Policy and the following statements:
                             </label>
@@ -124,12 +128,12 @@ export default function UserCarts(){
                             </div>
                         </li>
                     </ul>
-                    <button className="btn-pink md w-1/2 text-center m-auto">
-                        Checkout
+                    <button  className={`${isChecked ? "" : 'disabled'}  btn-pink md w-1/2 text-center m-auto`}>
+                        Checkout 
                     </button>
                 </form>
             </div>
         </div>
-    </div>;
+    </div>
   </>
 }

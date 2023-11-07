@@ -19,7 +19,6 @@ export default function Dashboard(props) {
     const [loading, setLoading] = useState(false);
 
 
-
     const showCategory = (e) => {
         setLoading(true);
         router.get(`/${user.username}/${e.target.value}/`), {
@@ -75,7 +74,7 @@ export default function Dashboard(props) {
                                             <EditProfile user={auth.user} />
                                             <div className='finish mt-4 d-block'>
                                                 <p className='mb-4'>Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                <button className='btn-pink-lg'>Finish Setup</button>
+                                                <Link href={"/stripe"} className='btn-pink-lg'>Finish Setup</Link>
                                             </div>
                                             <div className='addsocial flex'>
                                                 <ul>
@@ -83,9 +82,9 @@ export default function Dashboard(props) {
                                                         {/* 
                                                         <Link to="/" ><svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                             <path d="M10.7143 13.7857H3V11.2143H10.7143V3.5H13.2857V11.2143H21V13.7857H13.2857V21.5H10.7143V13.7857Z" fill="#5D25FD" />
-                                                        </svg> Add Socials</Link> 
+                                                        </svg> Add Socials
+                                                        </Link> 
                                                         */}
-                                                        
                                                         <Social />
                                                     </li>
                                                     <li>
