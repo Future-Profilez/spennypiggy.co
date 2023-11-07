@@ -1,36 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@font-face{
-  font-family:'GillSans';
-  src:url('./assets/fonts/newfont.woff') format('woff'), url('./assets/fonts/newfont.woff2') format('woff2');
+/* 
+@font-face{ font-family:'GillSans';
+  src:url('../assets/fonts/newfont.woff') format('woff'), url('../assets/fonts/newfont.woff2') format('woff2');
 }
 
 @font-face{
   font-family:'CeraGRMedium';
-  src:url('./assets/fonts/CeraGRMedium.woff') format('woff'), url('./assets/fonts/CeraGRMedium.woff2') format('woff2');
-}
-
+  src:url('../assets/fonts/CeraGRMedium.woff') format('woff'), url('../assets/fonts/CeraGRMedium.woff2') format('woff2');
+} */
 
 input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
--webkit-appearance: none;
-margin: 0; 
-}
-input[type=number] {
--moz-appearance:textfield;
-}
+input::-webkit-inner-spin-button {-webkit-appearance: none;margin: 0; }
+input[type=number] {-moz-appearance:textfield;}
 
-.cate-items div {
-  background: #fb2e94 !important;
-  padding: 8px 25px !important;
-  border-radius: 11px;
-  color: #fff;
-}
-
-.cate-items input {
-  margin-right: 10px;
-  border-radius: 10px;
-}
-
+.cate-items div{background:#fb2e94 !important;padding:8px 25px !important;border-radius:11px;color:#fff;}
+.cate-items input{margin-right:10px;border-radius:10px;}
