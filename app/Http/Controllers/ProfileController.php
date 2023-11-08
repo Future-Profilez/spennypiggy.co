@@ -36,15 +36,9 @@ class ProfileController extends Controller
         if ($request->user()->isDirty('email')) {
             $request->user()->email_verified_at = null;
         }
-
         $request->user()->save();
-
         return Redirect::route('profile.edit');
     }
-
-
-
-
 
 
 
@@ -53,17 +47,23 @@ class ProfileController extends Controller
      * Update the user's profile information.
     */
     public function updateProfile(Request $request) {
+        
         $user = User::where('id', Auth::id())->first();
-
+        
         $request->validate([
             'name' => ['string','max:255'],
             'username' => [ 'string', 'lowercase', 'max:20', Rule::unique('users')->ignore($user->id)],
             'bio' => [ 'string', 'max:255'],
+            'avatar' => [ 'string'],
+            'cover' => [ 'string'],
             'tags' => [ 'string', 'max:255'],
         ]);
+
         $user->name = $request->name ;
         $user->username = $request->username;
         $user->bio = $request->bio;
+        $user->avatar = $request->avatar;
+        $user->cover = $request->cover;
 
         $user->save();
         $user->refresh();

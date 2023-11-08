@@ -3,26 +3,36 @@ import GlobalUploader from "@/uploadcare/Uploader";
 import { useState } from "react";
 import st from '../../../css/uploader.module.css'
 
-export default function UpdateAvatar({ getImageUID, text, close }) {
+export default function UpdateAvatar({getImageUID, text, close, type }) {
 
     const [clear, setClear] = useState();
+    const [ClosePop, setClosePop] = useState(close || null);
 
+    const [file,setFile] = useState();
     const getFileUID = async (data) => {
-        getImageUID(data);
-        setClear(new Date);
+        setFile(data);
+        
     }
-
     const updateImage = () => {
-        getFileUID();
+        getImageUID(file);
         setClear(new Date);
+        setClosePop(false);
+        setTimeout(()=>{ 
+            setClosePop();
+        },1000);
     }
-
 
     return <>
-        <Popup action={close} text={text}  >
-            <h2 className="updateprofile"  >Update Profile Image</h2>
-            <GlobalUploader clear={clear} sendFile={getFileUID} options={st.profileimage} />
-            <button onClick={updateImage} className="btn" >Confirm</button>
+        <Popup action={ClosePop} text={text}  >
+             <div className='editprofileModal innermodal  '>
+                <div className='editprofileModalInner shadow-pink  p-4'>
+                    <h2 className="updateprofile" > Update {type == 'cover' ? "Cover":"Profile"} Image </h2>
+                    <div className="py-4" >
+                        <GlobalUploader clear={clear} sendFile={getFileUID} options={st.profileimage} />
+                    </div>
+                    <button onClick={updateImage} className="btn-pink sm w-100" >Confirm</button>
+                </div>
+            </div>
         </Popup>
     </>
 }

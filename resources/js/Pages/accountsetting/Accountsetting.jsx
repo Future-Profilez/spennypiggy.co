@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import Popup from '../../includes/Popup';
 import closeblacksm from '../../assets/img/closeblacksm.png';
+import { Link } from '@inertiajs/react';
 
 export default function Accountsetting() {
   return (
@@ -12,7 +12,7 @@ export default function Accountsetting() {
         </div>
         <div className='accsettingList p-4'>
             <ul>
-                <li>
+                <li> 
                     <Link>PAYMENT DASHBOARD <span className='text-voilet'>stripe</span></Link>
                     
                 </li>

@@ -23,7 +23,7 @@ export default function AddCart({action, uuid, item}) {
         <div className='cartTitle'>{item.wishname}</div>
         <div className='cartPrice font-CeraGRBold text-voilet mt-1 mb-3'>£ {item.price}</div>
         <div className='px-5 pb-4'>
-            <ToCart text="Add to cart and Keep Shopping " classes='btn-pink-lg w-100 mb-4 font-CeraGR' uuid={uuid} />
+            <ToCart text="Add to cart and Keep Shopping " classes='btn-pink lg w-100 mb-4 font-CeraGR' uuid={uuid} />
             {/* <button className='bt-wh w-100'>Add to cart and Checkout</button> */}
         </div>
       </div>

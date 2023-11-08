@@ -139,7 +139,7 @@ export default function Wishlist(props) {
     return <>
 
         <Popup action={close}
-            classes='btn-pink-lg sm' text="add wishlist" >
+            classes='btn-pink lg px-4' text="add wishlist" >
             <div className="wishlistModal">
                 <div className="widhlistModalInner shadow-pink">
                     <h2 className="font-GillSans">Add A Wish</h2>
@@ -269,7 +269,7 @@ export default function Wishlist(props) {
                                         {/* <button type='submit' className="editProfile flex w-12 max-w-xs mx-auto">{processing ? "Proccessing" : " Add Wish"}</button> */}
 
                                         <LoaderButton disabled={processing} type='submit'
-                                            className=' flex w-12 btn-pink-lg  max-w-xs mx-auto'
+                                            className=' flex w-12 btn-pink lg  max-w-xs mx-auto'
                                             spinnerClassName='fill-red-600'>
                                             {processing ? "Proccessing" : "Add Wish"}
                                         </LoaderButton>
@@ -401,10 +401,10 @@ export default function Wishlist(props) {
                             </li>
                         </ul>
                         <div className='wishlistbtn rotate-btn text-center flex justify-center mt-16'> */}
-        {/* <button type='submit' className='btn-pink-lg'>
+        {/* <button type='submit' className='btn-pink lg'>
                                     {processing ? "Proccessing" : " Create your Account"}
                                 </button> */}
-        {/* <LoaderButton disabled={processing} className='btn-pink-lg' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : "Create Wishlist"}</LoaderButton>
+        {/* <LoaderButton disabled={processing} className='btn-pink lg' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : "Create Wishlist"}</LoaderButton>
                         </div>
                     </div>
                 </form>

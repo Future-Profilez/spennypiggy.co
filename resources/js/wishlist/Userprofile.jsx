@@ -7,7 +7,8 @@ export default function Userprofile({user}) {
       
       <div className='userphotobox pinkbg flex justify-center relative'>
         <div className='userphoto'>
-          <img src={user && user.avatar ? user.avatar : userphoto} alt='img' />
+          {/* <img src={user && user.avatar ? user.avatar : userphoto} alt='img' /> */}
+          <img src={userphoto} alt='img' />
         </div>
       </div>
 

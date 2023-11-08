@@ -13,7 +13,7 @@ export default function Cart(props) {
         <>
         <Authenticated>
             <div className="container">
-                <h2 className="text-bl font-GillSans pt-5 py-3   text-center text-2xl uppercase">Cart</h2>
+                <h2 className="text-bl font-GillSans pt-5 py-3 text-center text-2xl uppercase">Cart</h2>
                 {cartsItems && !cartsItems.length ?
                     <>{cartsItems.map((c, i)=> { 
                             return <UserCarts key={i} data={c} />

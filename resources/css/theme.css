@@ -26,11 +26,12 @@
 body {
   --white:#ffffff;
   --black:#000000;
-  --mint:#3CFCCF;
+  --gray:#cccccc;
+  --mint:#05EFB8;
   /* --mint: linear-gradient(90deg, var 0%, rgba(9,9,121,1) 35%, rgba(0,212,255,1) 100%); */
-  --pink:#FE3394;
+  --pink:#F94F97;
   --lightpink:#FFC4E2;
-  --voilet: #5D25FD;
+  --voilet: #8C52FF;
   --purple: #8C52FF;
   --body-font:'gulfs';
   --heading-font: 'gulfs';
