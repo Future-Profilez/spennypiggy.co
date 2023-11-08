@@ -25,12 +25,8 @@ export default function EditProfile({ user }) {
         setCoverImage(e.cdnUrl);
         setData('cover', e.uuid);
     }
-
-<<<<<<< HEAD
-=======
-    const [profile, setProfile] = useState('');
+ 
     const [username, setUsername] = useState(user?.username);
->>>>>>> 9637d2d511193898ff584774983f2dc1e39e45cc
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: user?.name || '',
