@@ -47,8 +47,6 @@ Route::middleware('guest')->group(function () {
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
-
- 
 });
 
 
@@ -109,32 +107,4 @@ Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class
 
 Route::get('users', [MyController::class, 'getUsers'])->name('users');
 
-Route::get('/{username}/{category?}', function ($username, $category = false) {
-    $user = User::where('username', $username)->first();
-
-    // if(!$user){
-    //     return
-    // }
-    $categories = UserCategory::whereUserId($user->id)->latest()->get();
-    if ($category) {
-        $query = WishCategory::orderBy('created_at', 'DESC');
-
-        if ($category != 'all') {
-            $query->where('category_id', $category);
-        }
-
-        $itemId = $query->whereHas('wish', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->pluck('wish_id');
-
-        $items = Wishitem::whereIn('id', $itemId)->latest()->get();
-    } else {
-        $items = WishItem::whereUserId($user->id)->latest()->get();
-    }
-
-    return Inertia::render('Dashboard', [
-        "user" => $user,
-        "items" => $items,
-        "categories" => $categories,
-    ]);
-})->name('user.show');
+Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');

@@ -251,7 +251,7 @@ export default function Wishlist(props) {
                                                 return <>
                                                     <div className="repeatpurchase mb-2 text-start">
                                                         <label className='text-capitalize' for={'categories' + i}><input type="checkbox" id={'categories' + i}
-                                                        value={c.id} name='category' onChange={catValue} /> {c.category}</label></div>
+                                                            value={c.id} name='category' onChange={catValue} /> {c.category}</label></div>
                                                 </>
                                             })}
                                         </div>

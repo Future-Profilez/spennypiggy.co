@@ -14,7 +14,6 @@ import Guest from '@/Layouts/GuestLayout';
 
 export default function Home({ auth, laravelVersion, phpVersion }) {
     return (
-        <>
         <Guest>
             <Head title="Welcome" />
             <div>
@@ -181,7 +180,6 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
       </div>
         </Guest>
-        </>
     );
 }
  

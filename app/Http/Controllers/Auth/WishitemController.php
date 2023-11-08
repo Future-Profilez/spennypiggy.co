@@ -228,6 +228,7 @@ class WishitemController extends Controller
                     'wishname' => $v['wish']['wishname'],
                     'stripe_product_id' => $v['wish']['stripe_product_id'],
                     'price' => $v['wish']['price'],
+                    'price_id' => $v['wish']['price_id'],
                     'item_url' => $v['wish']['item_url'],
                     'subscription' => $v['wish']['subscription'],
                     'subscription_period' => $v['wish']['subscription_period'],
@@ -246,12 +247,5 @@ class WishitemController extends Controller
         return Inertia::render('cart/Cart', [
             "carts" => $cart,
         ]);
-    }
-
-
-
-    public function checkoutSession()
-    {
-        
     }
 }

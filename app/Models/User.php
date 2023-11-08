@@ -3,6 +3,9 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+use App\Uploadcare;
+use App\WatermarkHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -27,9 +30,10 @@ class User extends Authenticatable
         'uuid'
     ];
 
-    public static function boot(){
+    public static function boot()
+    {
         parent::boot();
-        static::creating(fn($u) => $u->uuid = Uuid::uuid4());
+        static::creating(fn ($u) => $u->uuid = Uuid::uuid4());
     }
 
     /**
@@ -42,6 +46,12 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+
+    protected $appends = [
+        'avatar_url',
+        'cover_url'
+    ];
+
     /**
      * The attributes that should be cast.
      *
@@ -51,4 +61,50 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+
+
+    public function getAvatarUrlAttribute()
+    {
+        $url = false;
+        if (!empty($this->avatar)) {
+            $api = Uploadcare::getApiObj()->file();
+            $info = $api->fileInfo($this->avatar)->getContentInfo();
+            $width = $info->getImage()->getWidth();
+            $height = $info->getImage()->getHeight();
+
+            $watermark = WatermarkHelper::getWatermarkImage($width, $height);
+            $check = "";
+            $wm = "spennypiggy.co~s" . $this->username;
+            $textWm = WatermarkHelper::addUcTextWatermark($width, $height);
+            $wm = urlencode($wm);
+            $fontsize = $textWm['fontsize'];
+            $check = "-/preview/-/text_align/left/center/-/font/$fontsize/fff/-/text/80px8p/8p,100p/$wm/";
+            $url = Uploadcare::getUrl($this->avatar, $this->type, $watermark, $check);
+        }
+        return $url;
+    }
+
+
+    public function getCoverUrlAttribute()
+    {
+        $url = false;
+        if (!empty($this->cover)) {
+            $api = Uploadcare::getApiObj()->file();
+            $info = $api->fileInfo($this->cover)->getContentInfo();
+            $width = $info->getImage()->getWidth();
+            $height = $info->getImage()->getHeight();
+
+            $watermark = WatermarkHelper::getWatermarkImage($width, $height);
+            $check = "";
+            $wm = "spennypiggy.co~s" . $this->username;
+            $textWm = WatermarkHelper::addUcTextWatermark($width, $height);
+            $wm = urlencode($wm);
+            $fontsize = $textWm['fontsize'];
+            $check = "-/preview/-/text_align/left/center/-/font/$fontsize/fff/-/text/80px8p/8p,100p/$wm/";
+            $url = Uploadcare::getUrl($this->cover, $this->type, $watermark, $check);
+        }
+        return $url;
+    }
+    
 }
