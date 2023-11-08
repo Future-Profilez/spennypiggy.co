@@ -8,8 +8,12 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 import LoaderButton from '@/Components/LoaderButton';
+import { useAlerts } from '@/Components/Alerts';
 
 export default function Login({ status, canResetPassword }) {
+
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
+
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
@@ -24,8 +28,17 @@ export default function Login({ status, canResetPassword }) {
 
     const submit = (e) => {
         e.preventDefault();
-        post(route('login-user'),{
-            preserveScroll:true,
+        post(route('login-user'), {
+            preserveScroll: true,
+            onSuccess: (resp) => {
+                reset();
+                successAlert(resp.props.flash?.success || "Logged in successfully.");
+                // setClose(false);
+                // setClear(new Date);
+                // setTimeout(() => {
+                //     setClose();
+                // }, 100)
+            },
             onError: () => {
                 reset("password");
             }
@@ -50,13 +63,13 @@ export default function Login({ status, canResetPassword }) {
                                 <li>
                                     <label>Enter Email</label>
                                     <input id="email"
-                                    type="email"
-                                    name="email"
-                                    value={data.email}
-                                    className="mt-1 block w-full"
-                                    autoComplete="username"
-                                    autoFocus={true}
-                                    onChange={(e) => setData('email', e.target.value)} />
+                                        type="email"
+                                        name="email"
+                                        value={data.email}
+                                        className="mt-1 block w-full"
+                                        autoComplete="username"
+                                        autoFocus={true}
+                                        onChange={(e) => setData('email', e.target.value)} />
                                 </li>
                                 <li>
                                     <label>Password</label>
