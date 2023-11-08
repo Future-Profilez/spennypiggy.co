@@ -1,23 +1,24 @@
 import React from 'react'
 import footlogo from '../../assets/img/footlogo.png';
 import { Link, Head } from '@inertiajs/react';
-
-export default function Footer() {
+ 
+export default function 
+() {
   return (
     <div>
-        <div className='footer bluebg'>
+        <div className='footer'>
           <div className='containerbox'>
             <div className='footlogo'>
-              <Link to={route('home')} >
+              <Link to="/" >
                 <img src={footlogo} alt="img" />
               </Link>
             </div>
             <div className='footlinksbox'>
               <div className='footlinks'>
                 <h2>Help</h2>
-
+                
                 <ul>
-                  <li><Link to={route('login')} >Login</Link></li>
+                  <li><Link to="/login" >Login</Link></li>
                   <li><Link to="/" >Exchange</Link></li>
                   <li><Link to="/" >Storefront</Link></li>
                   <li><Link to="/" >For Brands</Link></li>

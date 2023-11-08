@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import Tab from 'react-bootstrap/Tab';
 import Tabs from 'react-bootstrap/Tabs';
 import Accordion from 'react-bootstrap/Accordion';
-import defaultuserimg from '../../../assets/img/defaultuserimg.jpg';
+import uploadedimg from '../../../assets/img/uploadedimg.png';
 import Popup from '@/Components/Popup';
 import { router } from '@inertiajs/react'
 
@@ -61,7 +61,7 @@ export default function Wishlist(props) {
 
     const { data, setData, post, processing, errors, reset } = useForm({
         wishname: '',
-        price: 0.00,
+        price: '',
         item_url: '',
         thumbnail: '',
         subscription: 0,
@@ -136,25 +136,22 @@ export default function Wishlist(props) {
         });
     };
 
-    return <>
-
+    return <div>
         <Popup action={close}
-            classes='btn-pink-lg sm' text="add wishlist" >
-            <div className="wishlistModal">
-                <div className="widhlistModalInner shadow-pink">
-                    <h2 className="font-GillSans">Add A Wish</h2>
-
+            classes='btn-pink lg px-4' text="add wishlist" >
+            <div className='editprofileModal  wishlistModal '>
+                <div className='editprofileModalInner innermodel shadow-pink'> 
+                    <h2 className="font-GillSans pt-4 px-3">Add A Wish</h2>
                     <Tabs defaultActiveKey="1" id="uncontrolled-tab-example" className="mb-3">
                         <Tab eventKey="1" title="Custom">
                             <div className="wishinfo">
-                                <h3>Wish Information </h3>
                                 <form onSubmit={createWishList}>
                                     <ul>
                                         <li className="mb-4">
                                             <label className="mb-2 text-start d-block">Wish Name</label>
                                             <input id="wishname"
                                                 name="wishname"
-                                                type="text"
+                                                type="text" placeholder='Eg. Buy me a coffee'
                                                 value={data.wishname}
                                                 className="form-input px-2 py-2 border w-full rounded-md"
                                                 autoComplete="name"
@@ -166,20 +163,18 @@ export default function Wishlist(props) {
                                             <label className="mb-2 text-start d-block">Price </label>
                                             <input id="price"
                                                 type="number"
-                                                name="price"
+                                                name="price" placeholder='eg. 50'
                                                 value={data.price}
                                                 step={`0.01`}
                                                 className="form-input px-2 py-2 border w-full rounded-md"
                                                 autoComplete="price"
                                                 onChange={(e) => setData('price', e.target.value)}
-                                            // required
                                             />
-                                            <span className="donot">Don't forget to add to the total to cover shipping and tax.</span>
                                         </li>
                                         <li className="mb-4">
                                             <label className="mb-2 text-start d-block">URL (Optional)</label>
                                             <input id="item_url"
-                                                type="text"
+                                                type="text" placeholder='URL'
                                                 name="item_url"
                                                 value={data.item_url}
                                                 className="form-input px-2 py-2 border w-full rounded-md"
@@ -189,12 +184,17 @@ export default function Wishlist(props) {
                                         </li>
                                         <li className="mb-4">
                                             <label className="mb-2 text-start d-block">Choose Image or Upload</label>
+                                            
+                                            <div className='default-wish-img mb-1' >
+                                                <img src={uploadedimg} className='img-fluid' />
+                                            </div>
+                                            
                                             <GlobalUploader clear={clear} sendFile={getFileUID} options={st.wishitemUploader} />
                                         </li>
                                     </ul>
 
 
-                                    <div className="wishlistAccordian">
+                                    <div className="wishlistAccordian mt-3">
                                         <Accordion defaultActiveKey="0">
                                             <Accordion.Item eventKey="0">
                                                 <Accordion.Header onClick={(e) => setSubs(0)} ><span className="activedote"></span> Single Wish</Accordion.Header>
@@ -269,7 +269,7 @@ export default function Wishlist(props) {
                                         {/* <button type='submit' className="editProfile flex w-12 max-w-xs mx-auto">{processing ? "Proccessing" : " Add Wish"}</button> */}
 
                                         <LoaderButton disabled={processing} type='submit'
-                                            className=' flex w-12 btn-pink-lg  max-w-xs mx-auto'
+                                            className=' flex w-100 btn-pink lg mx-auto'
                                             spinnerClassName='fill-red-600'>
                                             {processing ? "Proccessing" : "Add Wish"}
                                         </LoaderButton>
@@ -286,129 +286,5 @@ export default function Wishlist(props) {
                 </div>
             </div>
         </Popup>
-
-
-        {/* <div className='loginPage mintbg py-14'>
-            <h2 className='headingLg mb-5 text-center mb-6'>Add Item</h2>
-            <div className='loginform mx-auto border-black whbg shadow-black'>
-                <div className='loginheadbox pinkbg'>
-                    <span className='mintbg'></span>
-                    <span className='bluebg'></span>
-                </div>
-                <form onSubmit={createWishList} >
-                    <div className='login-step1'>
-                        <ul>
-                            <li>
-                                <label>Name</label>
-                                <input id="wishname"
-                                    name="wishname"
-                                    type="text"
-                                    value={data.wishname}
-                                    className="mt-1 block w-full"
-                                    autoComplete="name"
-                                    onChange={(e) => setData('wishname', e.target.value)}
-                                    required
-                                />
-                                <InputError message={errors.wishname} className='text-xs mt-2' />
-                            </li>
-                            <li>
-                                <label>Price</label>
-                                <input id="price"
-                                    type="number"
-                                    name="price"
-                                    value={data.price}
-                                    step={`0.01`}
-                                    className="mt-1 block w-full"
-                                    autoComplete="price"
-                                    onChange={(e) => setData('price', e.target.value)}
-                                    required
-                                />
-                                <InputError message={errors.price} className='text-xs mt-2' />
-                            </li>
-                            <li>
-                                <label>Item Url</label>
-                                <input id="item_url"
-                                    type="text"
-                                    name="item_url"
-                                    value={data.item_url}
-                                    className="mt-1 block w-full"
-                                    autoComplete="item_url"
-                                    onChange={(e) => setData('item_url', e.target.value)}
-                                    required
-                                />
-                                <InputError message={errors.item_url} className='text-xs mt-2' />
-                            </li>
-                            <li>
-                                <label>Wish Item Thumbnail</label>
-                                <InputError message={errors.thumbnail} className='text-xs mt-2' />
-                                <GlobalUploader sendFile={getFileUID} options={st.wishitemUploader} />
-                            </li>
-                            <li>
-                                <label>Subscription</label>
-                                <select
-                                    id="subscription"
-                                    name="subscription"
-                                    className="mt-1 block w-full"
-                                    onChange={(e) => setData('subscription', e.target.value)}
-                                    defaultValue={data.subscription}
-                                >
-                                    <option value={0}>Single Item</option>
-                                    <option value={1}>Subscription</option>
-                                    <option value={2}>Crowd Fund</option>
-                                </select>
-                                <InputError message={errors.subscription} className='text-xs mt-2' />
-                            </li>
-                            <li>
-                                <label>Subscription Period</label>
-                                <select
-                                    id="subscription_period"
-                                    name="subscription_period"
-                                    className="mt-1 block w-full"
-                                    defaultValue={data.subscription_period}
-                                    onChange={(e) => setData('subscription_period', e.target.value)}
-                                >
-                                    <option value="weekly">Weekly</option>
-                                    <option value="monthly">Monthly</option>
-                                    <option value="daily">Daily</option>
-                                </select>
-                                <InputError message={errors.subscription_period} className='text-xs mt-2' />
-                            </li>
-                            <li>
-                                <label>Repeat Purchase</label>
-                                <select
-                                    id="repeat_purchase"
-                                    name="repeat_purchase"
-                                    className="mt-1 block w-full"
-                                    onChange={(e) => setData('repeat_purchase', e.target.value)}
-                                    defaultValue={data.repeat_purchase}>
-                                    <option value={1}>Yes</option>
-                                    <option value={0}>No</option>
-                                </select>
-                                <InputError message={errors.repeat_purchase} className='text-xs mt-2' />
-                            </li>
-                            <li>
-                                <label>Category</label>
-                                <select
-                                    id="category"
-                                    name="category"
-                                    className="mt-1 block w-full"
-                                    onChange={(e) => setData('category', e.target.value)}
-                                    defaultValue={data.category} >
-                                    <option value="one">One</option>
-                                    <option value="two">Two</option>
-                                </select>
-                                <InputError message={errors.category} className='text-xs mt-2' />
-                            </li>
-                        </ul>
-                        <div className='wishlistbtn rotate-btn text-center flex justify-center mt-16'> */}
-        {/* <button type='submit' className='btn-pink-lg'>
-                                    {processing ? "Proccessing" : " Create your Account"}
-                                </button> */}
-        {/* <LoaderButton disabled={processing} className='btn-pink-lg' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : "Create Wishlist"}</LoaderButton>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div> */}
-    </>
+    </div>
 }

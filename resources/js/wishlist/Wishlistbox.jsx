@@ -5,6 +5,7 @@ import ToCart from './ToCart';
 import ShareProfile from './ShareProfile';
 import AddCart from './AddCart';
 import { useState } from 'react';
+import uploadedimg from '../../assets/img/uploadedimg.png';
 
 export default function Wishlistbox({ itm }) {
 
@@ -15,14 +16,14 @@ export default function Wishlistbox({ itm }) {
     setOpen(true);
     setTimeout(()=>{
       setOpen();
-    },1000)
+    },1000);
   }
 
   return <>
-    <div className='wishlistcntbox whbg relative	 rounded-3xl shadow-voilet '>
+    <div className='wishlistcntbox whbg relative rounded-3xl shadow-voilet '>
     <AddCart item={itm} uuid={itm.uuid} action={open} />
       <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
-        <img src={itm?.perma_link || undefined} alt='img' className='rounded-t-3xl' />
+        <img src={!itm?.perma_link || uploadedimg} alt='img' className='rounded-t-3xl' />
       </div>
       <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
         <div>

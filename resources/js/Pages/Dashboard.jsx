@@ -13,12 +13,9 @@ import axios from 'axios';
 
 export default function Dashboard(props) {
 
-    // console.log("props", props);
     const { auth, items, categories, user } = props;
-
     const [its, setIts] = useState(items);
     const [loading, setLoading] = useState(false);
-
 
     const showCategory = (e) => {
         setLoading(true);
@@ -39,15 +36,16 @@ export default function Dashboard(props) {
             user={user} >
             <Head title="Dashboard" />
             <div>
-                <div className='wishlistPage mintbg py-14 '>
+                <div className='wishlistPage blackbg py-14 '>
                     <div className='containerbox'>
-                        <div className='wishbanner '>
-                            <img className='w-full  border-black border-2 shadow-black rounded-2xl' src={user?.cover || wishlistbannerimg} alt='img' />
+                        <div className='wishbanner d-md-block d-none'>
+                            <img className='w-full  border-black border-2 shadow-black rounded-2xl'
+                                src={user?.cover_url || wishlistbannerimg} alt='img' />
                         </div>
 
                         <div className='wishManage'>
                             <div className='userProfile whbg rounded-3xl shadow-voilet border-2'>
-                                <Userprofile user={auth && auth.user} />
+                                <Userprofile user={user} />
                                 <div className='userProfileDate mt-3'>
                                     {loggedIn ? <>
                                         <EditProfile user={auth.user} />

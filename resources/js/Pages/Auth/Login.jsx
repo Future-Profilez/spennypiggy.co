@@ -87,8 +87,8 @@ export default function Login({ status, canResetPassword }) {
                             <InputError message={errors.password} className="mt-2" />
 
                             <div className='wishlistbtn rotate-btn text-center flex justify-center mt-16'>
-                                {/* <button type='submit' className='btn-pink-lg'>Login</button> */}
-                                <LoaderButton disabled={processing} className='btn-pink-lg' spinnerClassName='fill-red-600'>{processing ? "Wait" : "Log in"}</LoaderButton>
+                                {/* <button type='submit' className='btn-pink lg'>Login</button> */}
+                                <LoaderButton disabled={processing} className='btn-pink lg' spinnerClassName='fill-red-600'>{processing ? "Wait" : "Log in"}</LoaderButton>
                             </div>
 
                             <p className='text-center mt-4 font-CeraGRBold'>Don't have an account? <Link href={route('register')} className=' mb-6 text-pink'>Signup</Link></p>
