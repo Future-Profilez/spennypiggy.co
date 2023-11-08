@@ -81,7 +81,7 @@ class StripeController extends Controller
         try {
             $account = StripeControl::getAccount($user->account_id);
             if ($account->charges_enabled) {
-                return redirect(route("user.show"))->with("success", "Stripe already connected.");
+                return redirect(route("user.show", ["username" => $user->username]))->with("success", "Stripe already connected.");
             }
 
             $link = StripeControl::createAccountLink([
@@ -91,7 +91,7 @@ class StripeController extends Controller
                 "type"        => "account_onboarding"
             ]);
 
-            return redirect()->away($link->url);
+            return Inertia::location($link->url);
         } catch (Exception $e) {
             return redirect(route("stripe.index"))->with("error", $e->getMessage());
         }
@@ -112,18 +112,18 @@ class StripeController extends Controller
         $data = $request->all();
         $user = User::find(Auth::id());
         if (empty($user->account_id)) {
-            return redirect(route("user.show"))->with("error", "Stripe did not initiated properly.");
+            return redirect(route("user.show", ["username" => $user->username]))->with("error", "Stripe did not initiated properly.");
         }
 
         try {
             $account = StripeControl::getAccount($user->account_id);
-            if (!$user->stripe_details_submitted) {
+            if (empty($user->stripe_details_submitted)) {
                 $user->stripe_details_submitted = $account->details_submitted ?? NULL;
                 $user->save();
             }
-            return redirect(route("user.show"))->with("success", "Stripe connected.");
+            return redirect(route("user.show", ["username" => $user->username]))->with("success", "Stripe connected.");
         } catch (Exception $e) {
-            return redirect(route("user.show"))->with("error", $e->getMessage());
+            return redirect(route("user.show", ["username" => $user->username]))->with("error", $e->getMessage());
         }
     }
 }
