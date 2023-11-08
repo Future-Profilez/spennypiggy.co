@@ -26,7 +26,6 @@ export default function Social() {
 
 
     const createSocial = (e) => {
-
         e.preventDefault();
         post(route('save_social_links'), {
             preserveScroll: true,
@@ -47,21 +46,16 @@ export default function Social() {
         });
     };
 
-
-
     return <>
         <Popup action={close}
             classes='' text="Add Socials" >
-
-            <div className="wishlistModal">
-                <div className="widhlistModalInner shadow-pink">
-                    <h2 className="font-GillSans">Add Social Links</h2>
-
+            <div className='editprofileModal '>
+                <div className='editprofileModalInner shadow-pink'> 
                     <div className="wishinfo">
-                        <h3>Social Links</h3>
+                        <h3 className="py-4" >Social Links</h3>
                         <form onSubmit={createSocial}>
-                            <ul>
-                                <li className="mb-4">
+                            <ul className="row" >
+                                <li className="mb-4 col-md-6">
                                     <label className="mb-2 text-start d-block">Whoyouinto</label>
                                     <input id="whoyouinto"
                                         name="whoyouinto"
@@ -71,7 +65,7 @@ export default function Social() {
                                         onChange={(e) => setData('whoyouinto', e.target.value)}
                                     />
                                 </li>
-                                <li className="mb-4">
+                                <li className="mb-4 col-md-6">
                                     <label className="mb-2 text-start d-block">Twitter</label>
                                     <input id="twitter"
                                         name="twitter"
@@ -81,7 +75,7 @@ export default function Social() {
                                         onChange={(e) => setData('twitter', e.target.value)}
                                     />
                                 </li>
-                                <li className="mb-4">
+                                <li className="mb-4 col-md-6">
                                     <label className="mb-2 text-start d-block">Instagram </label>
                                     <input id="instagram"
                                         type="text"
@@ -91,7 +85,7 @@ export default function Social() {
                                         onChange={(e) => setData('instagram', e.target.value)}
                                     />
                                 </li>
-                                <li className="mb-4">
+                                <li className="mb-4 col-md-6">
                                     <label className="mb-2 text-start d-block">Reddit</label>
                                     <input id="reddit"
                                         name="reddit"
@@ -101,7 +95,7 @@ export default function Social() {
                                         onChange={(e) => setData('reddit', e.target.value)}
                                     />
                                 </li>
-                                <li className="mb-4">
+                                <li className="mb-4 col-md-6">
                                     <label className="mb-2 text-start d-block">Discord</label>
                                     <input id="discord"
                                         name="discord"
@@ -112,7 +106,7 @@ export default function Social() {
                                     />
                                 </li>
 
-                                <li className="mb-4">
+                                <li className="mb-4 col-md-6">
                                     <label className="mb-2 text-start d-block">OnlyFans</label>
                                     <input id="onlyfans"
                                         name="onlyfans"
@@ -122,7 +116,7 @@ export default function Social() {
                                         onChange={(e) => setData('onlyfans', e.target.value)}
                                     />
                                 </li>
-                                <li className="mb-4">
+                                <li className="mb-4 col-md-6">
                                     <label className="mb-2 text-start d-block">LoyalFans</label>
                                     <input id="loyalfans"
                                         name="loyalfans"
@@ -132,7 +126,7 @@ export default function Social() {
                                         onChange={(e) => setData('loyalfans', e.target.value)}
                                     />
                                 </li>
-                                <li className="mb-4">
+                                <li className="mb-4 col-md-6">
                                     <label className="mb-2 text-start d-block">Fansly</label>
                                     <input id="fansly"
                                         name="fansly"
@@ -142,7 +136,7 @@ export default function Social() {
                                         onChange={(e) => setData('fansly', e.target.value)}
                                     />
                                 </li>
-                                <li className="mb-4">
+                                <li className="mb-4 col-md-6">
                                     <label className="mb-2 text-start d-block">ManyVids</label>
                                     <input id="manyvids"
                                         name="manyvids"
@@ -152,7 +146,7 @@ export default function Social() {
                                         onChange={(e) => setData('manyvids', e.target.value)}
                                     />
                                 </li>
-                                <li className="mb-4">
+                                <li className="mb-4 col-md-6">
                                     <label className="mb-2 text-start d-block">Other</label>
                                     <input id="other"
                                         name="other"
@@ -165,7 +159,7 @@ export default function Social() {
                             </ul>
 
                             <LoaderButton disabled={processing} type='submit'
-                                className=' flex w-12 btn-pink lg  max-w-xs mx-auto'
+                                className=' flex btn-pink sm w-100 mx-auto'
                                 spinnerClassName='fill-red-600'>
                                 {processing ? "Proccessing" : "Add Links"}
                             </LoaderButton>
@@ -173,7 +167,6 @@ export default function Social() {
                     </div>
                 </div>
             </div>
-
         </Popup>
     </>
 }

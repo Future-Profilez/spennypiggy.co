@@ -70,3 +70,14 @@ input[type=number] {-moz-appearance:textfield;}
 .userphotobox { 
   margin-bottom: 0 !important;
 }
+body.modal-open {
+  overflow: hidden;
+}
+
+@keyframes load{0%{opacity:0;}
+100%{opacity:1;}
+}
+.modelmenu.Open  {
+  -webkit-animation:load .5s linear; 
+  animation:load linear 0.5s;
+}

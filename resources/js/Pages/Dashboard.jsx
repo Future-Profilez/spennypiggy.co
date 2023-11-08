@@ -22,10 +22,9 @@ export default function Dashboard(props) {
         axios.get(`${user.username}/${e.target.value}/`)
             .then(resp => {
                 setIts(resp.data.items)
-                console.log(`resp-data`, resp?.data);
-            }).catch(_err => {
-                console.log("error", _err);
-            })
+        }).catch(_err => {
+            console.log("error", _err);
+        })
     }
 
     const [loggedIn, setLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
@@ -42,7 +41,6 @@ export default function Dashboard(props) {
                             <img className='w-full  border-black border-2 shadow-black rounded-2xl'
                                 src={user?.cover_url || wishlistbannerimg} alt='img' />
                         </div>
-
                         <div className='wishManage'>
                             <div className='userProfile whbg rounded-3xl shadow-voilet border-2'>
                                 <Userprofile user={user} />
@@ -51,7 +49,7 @@ export default function Dashboard(props) {
                                         <EditProfile user={auth.user} />
                                         <div className='finish mt-4 d-block'>
                                             <p className='mb-4'>Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                            <Link href={"/stripe"} className='btn-pink-lg'>Finish Setup</Link>
+                                            <Link href={"/stripe"} className='btn-pink lg'>Finish Setup</Link>
                                         </div>
                                         <div className='addsocial flex'>
                                             <ul>
@@ -77,7 +75,7 @@ export default function Dashboard(props) {
                                         : ''}
                                 </div>
                             </div>
-                            <div className='userManageRt mt-14'>
+                            <div className='userManageRt mt-8'>
                                 <div className='userManageHead flex items-center justify-between mb-8'>
                                     <div>
                                         <select id="country" onChange={showCategory} name="country" autoComplete="country-name" className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6">
