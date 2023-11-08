@@ -1,16 +1,19 @@
 import React from 'react'
 import userphoto from '../../assets/img/userphoto.png';
 import { Link } from '@inertiajs/react';
+import wishlistbannerimg from '../../assets/img/wishlistbannerimg.jpg';
+
 export default function Userprofile({user}) {
   return (
     <div className='userprofilesec rounded-3xl whbg'>
       
       <div className='userphotobox pinkbg flex justify-center relative'>
-        <div className='userphoto'>
-          {/* <img src={user && user.avatar ? user.avatar : userphoto} alt='img' /> */}
-          <img src={userphoto} alt='img' />
-        </div>
+          <img className='d-md-none' src={user && user?.cover_url || wishlistbannerimg} alt='img' />
       </div>
+
+        <div className='userphoto'>
+          <img src={user && user.avatar_url ? user.avatar_url : userphoto} alt='img' />
+        </div>
 
       <div className='px-3' >
         <h2 className='font-GillSans'>{user && user.name }</h2>
