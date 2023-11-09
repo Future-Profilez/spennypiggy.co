@@ -172,7 +172,7 @@ class WishitemController extends Controller
             ]);
         }
 
-        $cart = UserCart::where('wish_id', $wishitem->id)->where("user_id", Auth::user())->first();
+        $cart = UserCart::where('wish_id', $wishitem->id)->where("user_id", Auth::id())->first();
 
         if ($cart) {
 
