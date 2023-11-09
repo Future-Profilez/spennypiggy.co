@@ -79,13 +79,13 @@ class AuthenticatedSessionController extends Controller
 
             $items = WishItem::whereIn('id', $itemId)->latest()->get();
 
-            if (request()->ajax()) {
-                return response()->json([
-                    "success" => true,
-                    "items" => $items,
-                    "categories" => $categories,
-                ]);
-            }
+
+
+            return response()->json([
+                "success" => true,
+                "items" => $items,
+                "categories" => $categories,
+            ]);
         } else {
             $items = WishItem::whereUserId($user->id)->latest()->get();
         }

@@ -89,8 +89,8 @@ Route::middleware('auth')->group(function () {
     Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item');
 
 
-    Route::get('create-checkout-session', [StripeController::class, 'createCheckout'])->name('create.checkout');
-    Route::get('sucess-checkout', [StripeController::class, 'successCheckout'])->name('checkout.success');
+    Route::get('/create-checkout-session/{owner_id}', [StripeController::class, 'createCheckout'])->name('create.checkout');
+    Route::get('/sucess-checkout/{id}', [StripeController::class, 'successCheckout'])->name('checkout.success');
     Route::get('cancel-checkout', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel');
 
 

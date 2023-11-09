@@ -132,10 +132,10 @@ class StripeController extends Controller
     }
 
     /* create checkout */
-    public function createCheckout()
+    public function createCheckout($owner_id)
     {
         try {
-            $getdata = UserCart::where('user_id', Auth::id())->where('status', 1)->with(['wish'])->get();
+            $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->with(['wish'])->get();
             $lineItems = [];
             foreach ($getdata as $dd) {
                 $lineItems[] = [
@@ -146,7 +146,7 @@ class StripeController extends Controller
 
             $stripe = new \Stripe\StripeClient('sk_test_51O3maCG7xsNScLmXVQNnz6tw1ukAvcKY5WhVEk7e1wRAH9pSC7rmk3gxRFKAUMrVMAxWsndWudNmmvqkmm2p2w1J00sBIpHExQ');
             $sessioncreate = $stripe->checkout->sessions->create([
-                'success_url' => route('checkout.success'),
+                'success_url' => route('checkout.success', [$owner_id]),
                 'cancel_url' => route('checkout.cancel'),
                 'line_items' => $lineItems,
                 'mode' => 'payment',
@@ -156,6 +156,7 @@ class StripeController extends Controller
             \Log::info("ssss");
             \Log::info($sessioncreate);
             return Inertia::location($sessioncreate->url);
+
 
             // $this->retrive($sessioncreate->id);
         } catch (\Throwable $th) {
@@ -175,10 +176,17 @@ class StripeController extends Controller
         \Log::info($data);
     }
 
-    public function successCheckout()
+    public function successCheckout($owner_id)
     {
-        return view('success');
+        $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->with(['wish'])->get();
+        foreach ($getdata as $dd) {
+            $dd->status = 0;
+            $dd->save();
+        }
+
+        return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
     }
+
     public function cancelCheckout()
     {
         return view('cancel');

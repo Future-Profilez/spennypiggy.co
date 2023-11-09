@@ -15,7 +15,7 @@ export default function UserCarts(props) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        window.location.href = "create-checkout-session";
+        window.location.href = `/create-checkout-session/${datas?.user?.id}`;
     };
 
     // const { data, setData, get, post, processing, errors, reset } = useForm({
@@ -30,12 +30,12 @@ export default function UserCarts(props) {
         <div className="cartPage bg-white p-4 border-pink shadow-pink border-pink rounded-3xl">
             <div className="cartMain">
                 <h2 className="pb-1 wishtitle">
-                    Wish Basket for {datas.user?.name || ''} <Link className="text-voilet" href={`/${datas.user?.username || ''}`}> @{datas.user?.username || ''}</Link>
+                    Wish Basket for {datas?.user?.name || ''} <Link className="text-voilet" href={`/${datas?.user?.username || ''}`}> @{datas?.user?.username || ''}</Link>
                 </h2>
-                <p className="pb-4"> You are about to send a payout to <strong>{datas.user?.name || ''}</strong> to fund their wishes. </p>
+                <p className="pb-4"> You are about to send a payout to <strong>{datas?.user?.name || ''}</strong> to fund their wishes. </p>
 
                 <div className="CartItemBox">
-                    {datas.items && datas.items.map((c, i) => {
+                    {datas?.items && datas?.items.map((c, i) => {
                         return <CartItem data={c} key={i} />
                     })}
                 </div>
@@ -44,19 +44,19 @@ export default function UserCarts(props) {
                     <div className="cartSubTotal text-right mt-1">
                         <span>Platform Fee :</span>{" "}
                         <strong className="text-end">
-                            £ {datas.fee || ""}
+                            £ {datas?.fee || ""}
                         </strong>
                     </div>
                     <div className="cartSubTotal text-right mt-1">
                         <span>Subtotal :</span>{" "}
                         <strong className="text-end">
-                            £ {datas.total || ""}
+                            £ {datas?.total || ""}
                         </strong>
                     </div>
                     <div className="cartSubTotal text-right mt-1">
                         <strong className="text-dark">Total :</strong>{" "}
                         <strong className="text-end">
-                            £ {datas.total + datas.fee || ""}
+                            £ {datas?.total + datas?.fee || ""}
                         </strong>
                     </div>
                     {/* <div className="cartTotalPrice text-right mt-5 px-3 py-6">

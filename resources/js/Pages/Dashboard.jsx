@@ -21,12 +21,14 @@ export default function Dashboard(props) {
     const showCategory = (e) => {
         setLoading(true);
         axios.get(`${user.username}/${e.target.value}`).then(resp => {
-                setIts(resp.data.items)
+            console.log('home-items', resp)
+
+            setIts(resp.data.items)
         }).catch(_err => {
             console.log("error", _err);
         })
     }
-    console.log("props",props)
+    // console.log("props", props)
 
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
 
