@@ -161,9 +161,9 @@ class WishitemController extends Controller
     }
 
 
-    public function addToCart(Request $request)
+    public function addToCart($uuid)
     {
-        $wishitem = WishItem::where('uuid', $request->uuid)->first();
+        $wishitem = WishItem::where('uuid', $uuid)->first();
 
         if (Auth::id() == $wishitem->user_id) {
             return back()->with('error', "You are not able to add your item to your cart.");

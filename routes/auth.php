@@ -94,7 +94,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
 
-    Route::post('add-to-cart', [WishitemController::class, 'addToCart'])->name('add-to-cart');
+    Route::get('/add-to-cart/{uuid}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
 
     Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 });
