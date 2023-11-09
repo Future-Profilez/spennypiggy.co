@@ -14,7 +14,7 @@ export default function ToCart({ uuid, text, classes, custom }) {
         setLoading(true);
         axios.get(`/add-to-cart/${uuid}`).then(resp => {
             setLoading(false);
-            if (resp.data.status) {
+            if (resp.data.status && resp.data.added) {
                 successAlert(resp.data.msg);
             }
             else {
