@@ -160,7 +160,7 @@ export default function UserCarts(props) {
                                 </div>
                             </li>
                         </ul>
-                        <button onClick={checkoutCart} className={`${isChecked ? "" : 'disabled'}  btn-pink md w-1/2 text-center m-auto`}>
+                        <button type="submit" className={`${isChecked ? "" : 'disabled'}  btn-pink md w-1/2 text-center m-auto`}>
                             Checkout
                         </button>
                     </form>
