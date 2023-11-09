@@ -233,6 +233,7 @@ class WishitemController extends Controller
             $groupedWishes[$owner_id][] = [
                 'user' => $wish->user->toArray(),
                 'wish' => $wish->wish->toArray(),
+                'owner' => $wish->owner->toArray(),
                 'url' => $wish->wish->perma_link
             ];
         }
