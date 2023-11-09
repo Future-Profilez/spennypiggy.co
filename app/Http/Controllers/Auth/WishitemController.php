@@ -172,13 +172,8 @@ class WishitemController extends Controller
         $cart = UserCart::where('wish_id', $wishitem->id)->where("user_id", Auth::user())->first();
 
         if ($cart) {
-            if ($cart->status == 0) {
-                $cart->status = 1;
-                $cart->save();
-            } else {
-                $cart->status = 0;
-                $cart->save();
-            }
+            $cart->status = 1;
+            $cart->save();
         } else {
             UserCart::create([
                 "user_id" => Auth::id(),
@@ -188,6 +183,11 @@ class WishitemController extends Controller
             ]);
         }
         return back()->with('success', 'Item added to cart.');
+    }
+
+
+    public function removeCart(){
+        
     }
 
 
