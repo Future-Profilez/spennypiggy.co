@@ -210,8 +210,6 @@ class WishitemController extends Controller
                 'status' => 1,
             ]);
 
-
-
             return response()->json([
                 "success" => true,
                 'added' => true,

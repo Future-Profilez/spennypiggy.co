@@ -135,12 +135,12 @@ class StripeController extends Controller
     public function createCheckout()
     {
         try {
-            $getdata = UserCart::where('user_id', Auth::id())->with(['wish'])->get();
+            $getdata = UserCart::where('user_id', Auth::id())->where('status', 1)->with(['wish'])->get();
             $lineItems = [];
             foreach ($getdata as $dd) {
                 $lineItems[] = [
                     'price' => $dd->wish->price_id,
-                    'quantity' => 2,
+                    'quantity' => 1,
                 ];
             }
 
@@ -151,13 +151,15 @@ class StripeController extends Controller
                 'line_items' => $lineItems,
                 'mode' => 'payment',
             ]);
+
+
             \Log::info("ssss");
             \Log::info($sessioncreate);
-            return redirect()->to($sessioncreate->url);
+            return Inertia::location($sessioncreate->url);
 
             // $this->retrive($sessioncreate->id);
         } catch (\Throwable $th) {
-            //throw $th;
+            throw $th;
         }
     }
 

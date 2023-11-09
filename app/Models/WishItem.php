@@ -85,7 +85,7 @@ class WishItem extends Model
             $cart = UserCart::where('user_id', Auth::id())->where('wish_id', $this->id)->where('status', 1)->first();
 
             if ($cart) {
-                $is_cart = false;
+                $is_cart = true;
             }
         }
 
