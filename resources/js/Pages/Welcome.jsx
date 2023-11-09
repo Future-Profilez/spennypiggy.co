@@ -11,14 +11,15 @@ import twowayicon from '../../assets/img/twowayicon.png';
 import userimg from '../../assets/img/userimg.png';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import Guest from '@/Layouts/GuestLayout';
+import Authenticated from '@/Layouts/AuthenticatedLayout';
 
-export default function Home({ auth, laravelVersion, phpVersion }) {
+export default function Home({ auth, laravelVersion, user }) {
     return (
-        <Guest>
+        <Authenticated auth={auth.user} user={user} >
             <Head title="Welcome" />
             <div>
                 <div className='heroSec'>
-                    <div className='containerbox py-4'>
+                    <div className='containerbox py-5'>
                         <div className='welcome'>
                             <div className='welcomeLeft'>
                                 <h2 className='welcomeHeading shadow-yellow font-GillSans text-uppercase mb-1'>Oink! Oink! <br /> B*tch </h2>
@@ -179,6 +180,6 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                 </div>
 
             </div>
-        </Guest>
+        </Authenticated>
     );
 }

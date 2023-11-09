@@ -81,3 +81,8 @@ body.modal-open {
   -webkit-animation:load .5s linear; 
   animation:load linear 0.5s;
 }
+
+h2.wishtitle {
+  font-size: 21px;
+  font-weight: 900;
+}

@@ -33,6 +33,7 @@ export default function Dashboard(props) {
         <AuthenticatedLayout
             auth={auth.user}
             user={user} >
+                
             <Head title="Dashboard" />
             <div>
                 <div className='wishlistPage blackbg py-14 '>
