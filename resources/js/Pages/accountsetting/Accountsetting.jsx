@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import Popup from '../../includes/Popup';
-import closeblacksm from '../../assets/img/closeblacksm.png';
+import closeblacksm from '../../../assets/img/closeblacksm.png';
 import { Link } from '@inertiajs/react';
 
 export default function Accountsetting() {
@@ -14,17 +13,13 @@ export default function Accountsetting() {
             <ul>
                 <li> 
                     <Link>PAYMENT DASHBOARD <span className='text-voilet'>stripe</span></Link>
-                    
                 </li>
-
                 <li>
                     <button>Email <span className='text-gray'>warner99@gmail.com</span></button>
                 </li>
-
                 <li>
                     <button>PASSWORD </button>
                 </li>
-
                 <li>
                     <button>DISPLAY CURRENCY  <span className='text-gray'>warner99@gmail.com</span></button>
                 </li>
