@@ -192,16 +192,17 @@ class WishitemController extends Controller
                 ]);
             }
         } else {
-            UserCart::create([
+            $cart = UserCart::create([
                 "user_id" => Auth::id(),
                 "owner_id" => $wishitem->user_id,
                 'wish_id' => $wishitem->id,
                 'status' => 1,
             ]);
 
+
+
             return response()->json([
                 "success" => true,
-                "uuid" => $cart->uuid,
                 "msg" => "Item added to cart.",
             ]);
         }
