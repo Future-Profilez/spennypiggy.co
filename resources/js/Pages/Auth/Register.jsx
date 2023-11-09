@@ -28,10 +28,6 @@ export default function Register() {
         post(route('register'));
     };
 
-    useEffect(()=>{
-        console.log("errors",errors)
-    }, [errors]);
-
     return (
         <GuestLayout>
             <Head title="Register" />

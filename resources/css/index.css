@@ -22,6 +22,19 @@ body.modal-open{overflow:hidden;}
 @keyframes load{0%{opacity:0;}
 100%{opacity:1;}
 }
-.modelmenu.Open{-webkit-animation:load .5s linear;animation:load linear 0.5s;}
+.modelmenu.Open{-webkit-animation:load .2s linear;animation:load linear 0.2s;}
 .userphoto img{width:90px;height:90px;object-fit:cover;}
 h2.wishtitle{font-size:24px;font-weight:900;}
+.userManageRt {
+  width: 100% !important;
+  padding: 0 0 0 0px !important;
+}
+.userProfile {
+  width: 100%;
+}
+
+@media(max-width:991px){
+  .userphotobox {
+    height: 280px;
+}
+}

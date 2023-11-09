@@ -9,7 +9,6 @@ import uploadedimg from '../../assets/img/uploadedimg.png';
 
 export default function Wishlistbox({ itm }) {
 
-//   console.log('item', itm);
   const [open, setOpen] = useState();
 
   const openAddtocart = () => {
@@ -20,11 +19,11 @@ export default function Wishlistbox({ itm }) {
   }
 
   return <>
-    <div className=' whbg relative  shadow-voilet '>
+    <div className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
       <AddCart item={itm} uuid={itm.uuid} action={open} />
       
       <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
-        <img src={itm?.perma_link ? itm?.perma_link : uploadedimg} alt='img' className='rounded-t-3xl' />
+        <img src={itm?.perma_link ? itm?.perma_link : uploadedimg} alt='img' className='' />
       </div>
       <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
         <div>

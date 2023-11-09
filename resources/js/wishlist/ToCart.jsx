@@ -25,7 +25,7 @@ export default function ToCart({ uuid, text, classes, custom, removeItem, type }
                window.location = '/cart';
             }
           }).catch(_err => {
-            console.log("error", _err);
+            console.error("error", _err);
             setLoading(false);
           })
     };

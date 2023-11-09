@@ -38,8 +38,7 @@ export default function Social() {
                 }, 100)
             },
             onError: (_err) => {
-                console.log(`errors:`);
-                console.log(_err);
+                console.error(_err);
                 errorsHandling(_err);
                 errorAlert(resp.props.flash?.success || "Added");
             }
