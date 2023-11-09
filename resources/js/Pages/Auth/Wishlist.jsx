@@ -85,7 +85,6 @@ export default function Wishlist(props) {
 
     const getFileUID = async (data) => {
         let ss = data?.uuid;
-        console.log("ss", ss);
         setThumbnail(ss);
     };
 
@@ -125,8 +124,7 @@ export default function Wishlist(props) {
                 }, 100);
             },
             onError: (_err) => {
-                console.log(`errors:`);
-                console.log(_err);
+                console.error(_err);
                 errorsHandling(_err);
                 errorAlert(resp.props.flash?.success || "Added");
             },

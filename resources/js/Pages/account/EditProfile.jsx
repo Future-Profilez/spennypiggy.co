@@ -22,7 +22,6 @@ export default function EditProfile({ user }) {
     }
 
     const getCoverUID = (e) => {
-        console.log("gettted data", e);
         setCoverImage(e.cdnUrl);
         setData('cover', e.uuid);
     }

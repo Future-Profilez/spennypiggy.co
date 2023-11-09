@@ -14,7 +14,6 @@ export const useAlerts = () => {
             duration: duration,
             position: position,
         });
-        // console.log('Success:', message);
         return;
     }
 

@@ -106,9 +106,7 @@ export default function Home({ auth, laravelVersion, user }) {
                         <div className='creatorslider'>
                             <Swiper
                                 spaceBetween={0}
-                                slidesPerView={3}
-                                onSlideChange={() => console.log('slide change')}
-                                onSwiper={(swiper) => console.log(swiper)}>
+                                slidesPerView={3} >
 
                                 <SwiperSlide>
                                     <div className='happyclientSec'>

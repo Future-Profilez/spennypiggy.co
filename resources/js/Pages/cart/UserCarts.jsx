@@ -18,14 +18,6 @@ export default function UserCarts(props) {
         window.location.href = `/create-checkout-session/${datas?.user?.id}`;
     };
 
-    // const { data, setData, get, post, processing, errors, reset } = useForm({
-    //     agreeterm: ''
-    // });
-
-    // const checkoutCart = (e) => {
-    //     get(route("create.checkout"));
-    // }
-
     return <>
         <div className="cartPage bg-white p-4 border-pink shadow-pink border-pink rounded-3xl">
             <div className="cartMain">

@@ -1,7 +1,9 @@
 import React from 'react'
-import footlogo from '../../assets/img/footlogo.png';
-import { Link, Head } from '@inertiajs/react';
- 
+import footlogo from '../../assets/img/footlogo.png'; 
+import { Link } from '@inertiajs/react';
+import Nocontent from './Nocontent';
+
+
 export default function 
 () {
   return (
@@ -14,7 +16,7 @@ export default function
               </Link>
             </div>
             <div className='footlinksbox'>
-              <div className='footlinks'>
+              {/* <div className='footlinks'>
                 <h2>Help</h2>
                 
                 <ul>
@@ -24,10 +26,10 @@ export default function
                   <li><Link to="/" >For Brands</Link></li>
                   <li><Link to="/" >Blog</Link></li>
                 </ul>
-              </div>
+              </div> */}
 
               <div className='footlinks'>
-                <h2>Legal</h2>
+                {/* <h2>Legal</h2> */}
 
                 <ul>
                   <li><Link to="/" >FAQ & Help</Link></li>
@@ -36,7 +38,7 @@ export default function
                 </ul>
               </div>
 
-              <div className='footlinks'>
+              {/* <div className='footlinks'>
                 <h2>General</h2>
                 <ul>
                 <li><Link to="/" >Terms & Service</Link></li>
@@ -45,7 +47,7 @@ export default function
                 <li><Link to="/" >Careers</Link></li>
                 <li><Link to="/" >About</Link></li>
                 </ul>
-              </div>
+              </div> */}
           </div>
         </div>
         <div className='copyright'>Copyright &copy; 2023 Whoyouinto</div>

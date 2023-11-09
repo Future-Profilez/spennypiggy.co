@@ -17,11 +17,9 @@ export default function Header(props) {
           document.body.classList.add('modal-open');
       } else { 
           document.body.classList.remove('modal-open');
-        //   document.body.classList.replace('modal-open','a');
       }
     },[isActive]);
 
-    console.log("header props", props)
 
     const { auth, user } = props;
     const [loggedIn, setLoggedIn] = useState((auth && auth.username))

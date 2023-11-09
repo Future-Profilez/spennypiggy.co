@@ -6,7 +6,6 @@ export default function CartItem({data}) {
 
     const [itemRemoved, setItemRemoved] = useState(null);
     const removeItem = (e) => { 
-        console.log("remove item", e);
         setItemRemoved(e);
     }
 

@@ -8,14 +8,13 @@ export default function Userprofile({user}) {
     <div className='userprofilesec rounded-3xl whbg'>
       
       <div className='userphotobox pinkbg flex justify-center relative'>
-          <img className='d-md-none' src={user && user?.cover_url || wishlistbannerimg} alt='img' />
+          <img className='d-lg-none' src={user && user?.cover_url || wishlistbannerimg} alt='img' />
       </div>
 
+    <div className='userPr' >
         <div className='userphoto'>
           <img src={user && user.avatar_url ? user.avatar_url : userphoto} alt='img' />
         </div>
-
-      <div className='px-3' >
         <h2 className='font-GillSans'>{user && user.name }</h2>
         <div className='userId flex items-center justify-center'>@{user && user.username} 
         <Link to="/" className='ms-4'>
@@ -24,6 +23,9 @@ export default function Userprofile({user}) {
           </svg>
         </Link>
         </div>
+      </div>
+
+      <div className='px-3' >
         <p className={`text-muted text-center ${user && !user.bio ? 'd-none' : ''}`} >{user && user.bio || ""}</p>
       </div>
     </div>

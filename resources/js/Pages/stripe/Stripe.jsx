@@ -51,22 +51,4 @@ export default function Stripe(props) {
     )
 }
 
-
-
-
-// if (props?.auth?.user?.account_id !== null) {
-//     router.post(`/stripe/connect-init`)
-//         .then(resp => {
-//             console.log(`resp-data-post`, resp);
-//         }).catch(_err => {
-//             console.log("error-post", _err);
-//         })
-// }
-// else {
-//     router.get(`/stripe/connect-init`)
-//         .then(resp => {
-//             console.log(`resp-data-get`, resp);
-//         }).catch(_err => {
-//             console.log("error-get", _err);
-//         })
-// }
+ 
