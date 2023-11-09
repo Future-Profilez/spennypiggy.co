@@ -46,8 +46,7 @@ export default function ToCart({uuid, text, classes, custom}){
         //         setLoading(false);
         //     }
         // });
-        axios.post(`/add-to-cart`, 
-        { "uuid": uuid }).then(resp => {
+        axios.get(`/add-to-cart/${uuid}`).then(resp => {
               console.log("resp", resp);
                setLoading(false);
         }).catch(_err => {
