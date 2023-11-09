@@ -243,10 +243,10 @@ class WishitemController extends Controller
 
             $cart[$key] = [
                 'user' => [
-                    'id' => $value[0]['user']['id'],
-                    'name' => $value[0]['user']['name'],
-                    'username' => $value[0]['user']['username'],
-                    'uuid' => $value[0]['user']['uuid'],
+                    'id' => $value[0]['owner']['id'],
+                    'name' => $value[0]['owner']['name'],
+                    'username' => $value[0]['owner']['username'],
+                    'uuid' => $value[0]['owner']['uuid'],
                 ],
             ];
 
