@@ -4,7 +4,7 @@ import { router } from '@inertiajs/react'
 import axios from 'axios';
 import { useState } from 'react';
 
-export default function ToCart({uuid, text, classes, custom}){
+export default function ToCart({ uuid, text, classes, custom }) {
 
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [loading, setLoading] = useState(false);
