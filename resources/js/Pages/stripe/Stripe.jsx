@@ -24,7 +24,7 @@ export default function Stripe(props) {
         <Authenticated>
 
             <div className='blackbg py-2 py-md-5'>
-            <div className='stripbox  mx-auto border-mint whbg shadow-mint rounded-3xl pb-20'>
+            <div className='stripbox  mx-auto border-mint whbg shadow-mint rounded-3xl '>
                 <div className='loginheadbox pinkbg'>
                     <span className='mintbg'></span>
                     <span className='bluebg'></span>
@@ -44,10 +44,8 @@ export default function Stripe(props) {
                             </label>
                         </div>
                     </div>
-                    <div className="wishlistbtn text-center flex justify-center mt-10">
-
-                            {/* <Link className="btn-pink lg w-1/2" href={route("stripe.connect", {step: "init"})} >Go to Stripe Setup</Link> */}
-                            <button type='submit' className='btn-pink lg w-1/2'>Go to Stripe Setup</button>
+                    <div className="text-center flex justify-center mb-4 ">
+                            <button type='submit' className='btn-pink lg w-1/2'>Go to Stripe</button>
                     </div>
                 </form>
             </div>

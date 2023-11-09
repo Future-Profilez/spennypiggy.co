@@ -3,7 +3,7 @@ import CartItem from "./CartItem";
 import { Link } from "@inertiajs/react";
 import { useEffect } from "react";
 
-export default function UserCarts({data}){
+export default function  UserCarts({data}){
 
   const [isChecked, setIsChecked] = useState(false);
   const [message , setMessage] = useState(null);
@@ -19,7 +19,7 @@ export default function UserCarts({data}){
             <p className="pb-4"> You are about to send a payout to <strong>{data.user?.name || ''}</strong> to fund their wishes. </p>
 
             <div className="CartItemBox">
-                {data.items && data.items.map((c, i)=> { 
+                {data.items && data.items.map((c, i)=> {
                   return <CartItem data={c} key={i}  />
                 })}
             </div>
@@ -65,7 +65,7 @@ export default function UserCarts({data}){
 
                         {/* <li className="cheklistbox">
                             <label for="dndpublish">
-                                <input type="checkbox" id="dndpublish" name="dndpublish" value="dndpublish" /> 
+                                <input type="checkbox" id="dndpublish" name="dndpublish" value="dndpublish" />
                                 Don't Publish
                             </label>
 
@@ -86,7 +86,7 @@ export default function UserCarts({data}){
                                     id="agreeterm"
                                     name="agreeterm" className="me-2"
                                     value="agreeterm"
-                                ></input> 
+                                ></input>
                                 I agree to the Terms of Service and Privacy
                                 Policy and the following statements:
                             </label>
@@ -131,7 +131,7 @@ export default function UserCarts({data}){
                         </li>
                     </ul>
                     <button  className={`${isChecked ? "" : 'disabled'}  btn-pink md w-1/2 text-center m-auto`}>
-                        Checkout 
+                        Checkout
                     </button>
                 </form>
             </div>

@@ -181,13 +181,11 @@ class WishitemController extends Controller
                 $cart->status = 0;
                 $cart->save();
 
-
                 return response()->json([
                     "success" => true,
-                    "items" => $items,
+                    "uuid" => $cart->uuid,
                 ]);
             }
-
         } else {
             UserCart::create([
                 "user_id" => Auth::id(),
