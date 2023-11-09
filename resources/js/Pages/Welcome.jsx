@@ -15,7 +15,7 @@ import Authenticated from '@/Layouts/AuthenticatedLayout';
 
 export default function Home({ auth, laravelVersion, user }) {
     return (
-        <Authenticated auth={auth.user} user={user} >
+        <Guest auth={auth.user} user={auth.user} >
             <Head title="Welcome" />
             <div>
                 <div className='heroSec'>
@@ -180,6 +180,6 @@ export default function Home({ auth, laravelVersion, user }) {
                 </div>
 
             </div>
-        </Authenticated>
+        </Guest>
     );
 }

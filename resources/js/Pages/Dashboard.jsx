@@ -9,6 +9,7 @@ import ShareProfile from '@/wishlist/ShareProfile';
 import { useState } from 'react';
 import Social from './Auth/Social';
 import axios from 'axios';
+import Guest from '@/Layouts/GuestLayout';
 // import { router } from '@inertiajs/react'
 
 export default function Dashboard(props) {
@@ -30,10 +31,9 @@ export default function Dashboard(props) {
     const [loggedIn, setLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
 
     return (
-        <AuthenticatedLayout
+        <Guest
             auth={auth.user}
             user={user} >
-                
             <Head title="Dashboard" />
             <div>
                 <div className='wishlistPage blackbg py-14 '>
@@ -99,6 +99,6 @@ export default function Dashboard(props) {
                 </div>
             </div>
 
-        </AuthenticatedLayout>
+        </Guest>
     );
 }

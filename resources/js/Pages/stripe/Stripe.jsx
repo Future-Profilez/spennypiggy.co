@@ -22,7 +22,9 @@ export default function Stripe(props) {
 
     return (
         <Authenticated>
-            <div className='stripbox mx-auto border-mint whbg shadow-mint rounded-3xl pb-20'>
+
+            <div className='blackbg py-2 py-md-5'>
+            <div className='stripbox  mx-auto border-mint whbg shadow-mint rounded-3xl pb-20'>
                 <div className='loginheadbox pinkbg'>
                     <span className='mintbg'></span>
                     <span className='bluebg'></span>
@@ -48,6 +50,7 @@ export default function Stripe(props) {
                             <button type='submit' className='btn-pink lg w-1/2'>Go to Stripe Setup</button>
                     </div>
                 </form>
+            </div>
             </div>
         </Authenticated>
     )
