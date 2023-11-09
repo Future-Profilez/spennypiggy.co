@@ -26,8 +26,6 @@ export default function Dashboard(props) {
             console.log("error", _err);
         })
     }
-    console.log("props",props)
-
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
 
     return (
@@ -38,7 +36,7 @@ export default function Dashboard(props) {
             <div>
                 <div className='wishlistPage blackbg py-14 '>
                     <div className='containerbox'>
-                        <div className='wishbanner d-md-block d-none'>
+                        <div className='wishbanner d-lg-block d-none'>
                             <img className='w-full  border-black border-2 shadow-black rounded-2xl'
                                 src={user?.cover_url || wishlistbannerimg} alt='img' />
                         </div>
@@ -92,7 +90,7 @@ export default function Dashboard(props) {
 
                                 <div className='row'>
                                     {its && its.map((c, i) => {
-                                        return <div className='col-lg-4 col-sm-6' >
+                                        return <div className='col-xl-4 col-lg-6 col-sm-6' >
                                             <Wishlistbox itm={c} key={`wish-${c.uuid}`} />
                                         </div>
                                     })}
