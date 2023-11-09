@@ -29,7 +29,8 @@ class WishItem extends Model
     ];
 
     protected $appends = [
-        "perma_link"
+        "perma_link",
+        'is_cart'
     ];
 
     public static function boot()
@@ -54,7 +55,7 @@ class WishItem extends Model
     {
         $url = false;
         if (!empty($this->thumbnail)) {
-            $api = Uploadcare::getApiObj()->file(); 
+            $api = Uploadcare::getApiObj()->file();
             $info = $api->fileInfo($this->thumbnail)->getContentInfo();
             $width = $info->getImage()->getWidth();
             $height = $info->getImage()->getHeight();
@@ -81,7 +82,13 @@ class WishItem extends Model
     {
         $is_cart = false;
         if (Auth::check()) {
-            $cart = UserCart::where('user_id', Auth::id())->where('wish_id', $this->id)->first();
+            $cart = UserCart::where('user_id', Auth::id())->where('wish_id', $this->id)->where('status', 1)->first();
+
+            if ($cart) {
+                $is_cart = false;
+            }
         }
+
+        return $is_cart;
     }
 }
