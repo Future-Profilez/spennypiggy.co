@@ -12,7 +12,7 @@ export default function Cart(props) {
 
     return (
         <>
-        <Authenticated  auth={auth.user} user={user} >
+        <Authenticated auth={auth.user} user={user} >
             <div className=" blackbg">
                 <div className="container pb-5 ">
                     <h2 className="text-bl font-GillSans pt-5 pt-3 pb-0 text-center text-2xl uppercase text-white">Cart</h2>

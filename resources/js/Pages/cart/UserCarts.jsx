@@ -1,6 +1,7 @@
 import { useState } from "react";
 import CartItem from "./CartItem";
 import { Link } from "@inertiajs/react";
+import { useEffect } from "react";
 
 export default function UserCarts({data}){
 
@@ -83,7 +84,7 @@ export default function UserCarts({data}){
                                 <input onChange={(e)=>setIsChecked(e.target.checked)}
                                     type="checkbox"
                                     id="agreeterm"
-                                    name="agreeterm"
+                                    name="agreeterm" className="me-2"
                                     value="agreeterm"
                                 ></input> 
                                 I agree to the Terms of Service and Privacy

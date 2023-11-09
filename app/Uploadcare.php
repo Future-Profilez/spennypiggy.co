@@ -35,7 +35,7 @@ class Uploadcare
      */
     public static function getApiObj()
     {
-        // static::setAttrs();
+        static::setAttrs();
         $config = Configuration::create(env('UPLOADCARE_PUBLIC_KEY'), env('UPLOADCARE_SECRET_KEY'));
         $api = new Api($config);
         return $api;
