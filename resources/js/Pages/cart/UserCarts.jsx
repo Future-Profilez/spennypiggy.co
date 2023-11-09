@@ -5,7 +5,9 @@ import { useEffect } from "react";
 
 export default function  UserCarts({data}){
 
+  const [lists, setLists] = useState(data|| []);
   const [isChecked, setIsChecked] = useState(false);
+
   const [message , setMessage] = useState(null);
   const [name , setName] = useState(null);
   const [email , setemail] = useState(null);
@@ -19,7 +21,7 @@ export default function  UserCarts({data}){
             <p className="pb-4"> You are about to send a payout to <strong>{data.user?.name || ''}</strong> to fund their wishes. </p>
 
             <div className="CartItemBox">
-                {data.items && data.items.map((c, i)=> {
+                {lists.items && lists.items.map((c, i)=> {
                   return <CartItem data={c} key={i}  />
                 })}
             </div>
@@ -130,7 +132,7 @@ export default function  UserCarts({data}){
                             </div>
                         </li>
                     </ul>
-                    <button  className={`${isChecked ? "" : 'disabled'}  btn-pink md w-1/2 text-center m-auto`}>
+                    <button className={`${isChecked ? "" : 'disabled'}  btn-pink md w-1/2 text-center m-auto`}>
                         Checkout
                     </button>
                 </form>

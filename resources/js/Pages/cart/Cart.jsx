@@ -5,7 +5,7 @@ import UserCarts from "./UserCarts";
 
 export default function Cart(props) {
 
-    console.log("props", props);
+    console.log("cart props", props);
 
     const {auth, user } = props;
     const [cartsItems, setCartItems] = useState(props.carts);
