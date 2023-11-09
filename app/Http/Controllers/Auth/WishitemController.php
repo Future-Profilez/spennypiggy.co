@@ -166,7 +166,10 @@ class WishitemController extends Controller
         $wishitem = WishItem::where('uuid', $uuid)->first();
 
         if (Auth::id() == $wishitem->user_id) {
-            return back()->with('error', "You are not able to add your item to your cart.");
+            return response()->json([
+                "success" => true,
+                "msg" => "You are not able to add your item to your cart.",
+            ]);
         }
 
         $cart = UserCart::where('wish_id', $wishitem->id)->where("user_id", Auth::user())->first();
