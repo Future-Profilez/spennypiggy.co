@@ -203,7 +203,7 @@ class WishitemController extends Controller
                 "success" => true,
                 "uuid" => $cart->uuid,
                 "msg" => "Item added to cart.",
-            ]);;
+            ]);
         }
     }
 
