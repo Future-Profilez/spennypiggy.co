@@ -1,6 +1,7 @@
 import { useState } from "react";
 import CartItem from "./CartItem";
 import { Link } from "@inertiajs/react";
+import { useEffect } from "react";
 
 export default function UserCarts({data}){
 
@@ -10,9 +11,9 @@ export default function UserCarts({data}){
   const [email , setemail] = useState(null);
 
   return <>
-    <div className="cartPage p-4 border-pink shadow-pink border-pink rounded-3xl">
+    <div className="cartPage bg-white p-4 border-pink shadow-pink border-pink rounded-3xl">
         <div className="cartMain">
-            <h2 className="pb-1">
+            <h2 className="pb-1 wishtitle">
                 Wish Basket for {data.user?.name || ''} <Link className="text-voilet" href={`/${data.user?.username || ''}`}> @{data.user?.username || ''}</Link>
             </h2>
             <p className="pb-4"> You are about to send a payout to <strong>{data.user?.name || ''}</strong> to fund their wishes. </p>
@@ -50,14 +51,16 @@ export default function UserCarts({data}){
                             <textarea onChange={(e)=>setMessage(e.target.value)} placeholder="Write message in under 800 Words..."></textarea>
                         </li>
 
-                        <li className="halfbox col-sm-6">
-                            <label className="d-block text-start" >From</label>
-                            <input onChange={(e)=>setName(e.target.value)} type="text" placeholder="Enter Your Name..." />
-                        </li>
+                        <li className="w-100 row">
+                            <div className="col-md-6">
+                                <label className="d-block text-start" >From</label>
+                                <input className="form-input w-100 rounded" onChange={(e)=>setName(e.target.value)} type="text" placeholder="Enter Your Name..." />
+                            </div>
 
-                        <li className="halfbox col-sm-6">
-                            <label className="d-block text-start" >Email(Private)</label>
-                            <input onChange={(e)=>setemail(e.target.value)} type="email" placeholder="Enter Your email..." />
+                            <div className="col-md-6">
+                                <label className="d-block text-start" >Email(Private)</label>
+                                <input className="form-input w-100 rounded" onChange={(e)=>setemail(e.target.value)} type="email" placeholder="Enter Your email..." />
+                            </div>
                         </li>
 
                         {/* <li className="cheklistbox">
@@ -81,7 +84,7 @@ export default function UserCarts({data}){
                                 <input onChange={(e)=>setIsChecked(e.target.checked)}
                                     type="checkbox"
                                     id="agreeterm"
-                                    name="agreeterm"
+                                    name="agreeterm" className="me-2"
                                     value="agreeterm"
                                 ></input> 
                                 I agree to the Terms of Service and Privacy

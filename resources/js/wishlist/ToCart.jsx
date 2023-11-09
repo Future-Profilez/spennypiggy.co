@@ -3,7 +3,7 @@ import LoaderButton from '@/Components/LoaderButton';
 import { router } from '@inertiajs/react'
 import { useState } from 'react';
 
-export default function ToCart({uuid, text, classes}){
+export default function ToCart({uuid, text, classes, custom}){
 
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [loading, setLoading] = useState(false);
@@ -30,12 +30,14 @@ export default function ToCart({uuid, text, classes}){
 
   return <>
 
-    <LoaderButton disabled={loading} onClick={addtocart}
-        className={`flex  ${classes} max-w-xs mx-auto`}
-        spinnerClassName='fill-red-600'>
-        {loading ? "Proccessing" : text}
-    </LoaderButton>
-
-    {/* <button className={classes} onClick={addtocart} >{text}</button> */}
+    {custom ? 
+        <div onClick={addtocart} >{custom}</div> 
+        : 
+        <LoaderButton disabled={loading} onClick={addtocart}
+            className={`flex  ${classes} max-w-xs mx-auto`}
+            spinnerClassName='fill-red-600'>
+            {loading ? "Proccessing" : text}
+        </LoaderButton>
+    }
   </>
 }

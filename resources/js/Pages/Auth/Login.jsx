@@ -50,7 +50,7 @@ export default function Login({ status, canResetPassword }) {
             <Head title="Log in" />
             {status && <div className="mb-4 font-medium text-sm text-green-600">{status}</div>}
 
-            <div className='loginPage mintbg py-14'>
+            <div className='loginPage blackbg px-3 py-5'>
                 <h2 className='headingLg mb-5 text-center mb-6'>Login</h2>
                 <div className='loginform mx-auto border-black whbg shadow-black'>
                     <div className='loginheadbox pinkbg'>
@@ -86,7 +86,7 @@ export default function Login({ status, canResetPassword }) {
                             <InputError message={errors.email} className="mt-2" />
                             <InputError message={errors.password} className="mt-2" />
 
-                            <div className='wishlistbtn rotate-btn text-center flex justify-center mt-16'>
+                            <div className='rotate-btn text-center flex justify-center mt-10'>
                                 {/* <button type='submit' className='btn-pink lg'>Login</button> */}
                                 <LoaderButton disabled={processing} className='btn-pink lg' spinnerClassName='fill-red-600'>{processing ? "Wait" : "Log in"}</LoaderButton>
                             </div>

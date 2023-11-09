@@ -54,7 +54,7 @@ class WishItem extends Model
     {
         $url = false;
         if (!empty($this->thumbnail)) {
-            $api = Uploadcare::getApiObj()->file();
+            $api = Uploadcare::getApiObj()->file(); 
             $info = $api->fileInfo($this->thumbnail)->getContentInfo();
             $width = $info->getImage()->getWidth();
             $height = $info->getImage()->getHeight();

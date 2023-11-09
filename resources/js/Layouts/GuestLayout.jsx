@@ -5,7 +5,7 @@ import { useAlerts } from '@/Components/Alerts';
 import { useEffect } from 'react';
 import Footer from '@/includes/Footer';
 import Header from '@/includes/Header';
-export default function Guest({ children }) {
+export default function Guest(props) {
     const {successAlert, errorAlert} = useAlerts();
     const {flash} = usePage().props;
     useEffect(() => {
@@ -23,8 +23,11 @@ export default function Guest({ children }) {
             successAlert(flash.info);
         }
     },[]);
-    return <>
 
+    const {children} = props;
+
+    console.log("props guest", props)
+    return <>
         <Header />
         {children}
         <Footer />
