@@ -7,6 +7,7 @@ use App\WatermarkHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
 use Ramsey\Uuid\Uuid;
 
 class WishItem extends Model
@@ -73,5 +74,14 @@ class WishItem extends Model
     public function categories()
     {
         return $this->hasMany(WishCategory::class, 'wish_id');
+    }
+
+
+    public function getIsCartAttribute()
+    {
+        $is_cart = false;
+        if (Auth::check()) {
+            $cart = UserCart::where('user_id', Auth::id())->where('wish_id', $this->id)->first();
+        }
     }
 }
