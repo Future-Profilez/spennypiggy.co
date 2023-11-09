@@ -15,6 +15,8 @@ use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
 use Ramsey\Uuid\Uuid;
+use App\Jobs\WelcomeUser;
+use Carbon\Carbon;
 
 class RegisteredUserController extends Controller
 {
@@ -56,6 +58,9 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
+        //send email
+        WelcomeUser::dispatch($user);
+
         return redirect(route("user.show", [$user->username]))->with("success", "Registration successfull.");
     }
 
@@ -65,7 +70,8 @@ class RegisteredUserController extends Controller
      * @param Request $request
      * @return Response
      */
-    public function checkUsername(Request $request) {
+    public function checkUsername(Request $request)
+    {
 
         $request->validate([
             "username" => [
@@ -80,6 +86,36 @@ class RegisteredUserController extends Controller
         return response()->json([
             "available" => empty($exist)
         ]);
+    }
 
+    /* get verify email page */
+    public function getVerifyEmailPage($uuid)
+    {
+        try {
+            $user = User::whereUuid($uuid)->first();
+            $id = $user->id;
+            return view('verify-email', compact('id'));
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+    }
+
+    /* verify email */
+    public function verifyEmail(Request $request)
+    {
+        try {
+            $verify = User::whereId($request->id)->update([
+                'email_verified_at' => Carbon::now(),
+            ]);
+            if (!empty($verify)) {
+                print_r('email verify');
+                die;
+            } else {
+                print_r('unable to verify your email');
+                die;
+            }
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
     }
 }

@@ -22,6 +22,12 @@ use Inertia\Inertia;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
 
+//email verify get
+Route::get('get-verify-email-page/{uuid}', [RegisteredUserController::class, 'getVerifyEmailPage'])
+    ->name('get.verify.email.page');
+Route::post('verify-email', [RegisteredUserController::class, 'verifyEmail'])
+    ->name('verify.email');
+
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');

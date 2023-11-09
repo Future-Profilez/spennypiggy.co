@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SaveWishlist;
+use App\Jobs\WelcomeUser;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserCategory;
@@ -93,6 +95,10 @@ class WishitemController extends Controller
         $wish->price_id = $stripe_client->default_price;
         $wish->save();
 
+        $user = User::whereId(Auth::id())->first();
+
+        //send email
+        SaveWishlist::dispatch($user);
 
         return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
     }
