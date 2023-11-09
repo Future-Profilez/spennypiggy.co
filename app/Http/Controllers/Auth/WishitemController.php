@@ -178,6 +178,7 @@ class WishitemController extends Controller
                 $cart->save();
                 return response()->json([
                     "success" => true,
+                    "uuid" => $cart->uuid,
                     "msg" => "Item added to cart.",
                 ]);
             } else {
@@ -186,6 +187,7 @@ class WishitemController extends Controller
 
                 return response()->json([
                     "success" => true,
+                    'msg' => "Item removed from cart",
                     "uuid" => $cart->uuid,
                 ]);
             }
@@ -196,8 +198,10 @@ class WishitemController extends Controller
                 'wish_id' => $wishitem->id,
                 'status' => 1,
             ]);
+
             return response()->json([
                 "success" => true,
+                "uuid" => $cart->uuid,
                 "msg" => "Item added to cart.",
             ]);;
         }
