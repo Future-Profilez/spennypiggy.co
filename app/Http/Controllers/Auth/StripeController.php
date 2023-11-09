@@ -4,11 +4,15 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\UserCart;
+use App\Models\WishItem;
 use App\StripeControl;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Stripe\Stripe;
+use Stripe\Checkout\Session;
 
 class StripeController extends Controller
 {
@@ -125,5 +129,58 @@ class StripeController extends Controller
         } catch (Exception $e) {
             return redirect(route("user.show", ["username" => $user->username]))->with("error", $e->getMessage());
         }
+    }
+
+    /* create checkout */
+    public function createCheckout()
+    {
+        try {
+            $getdata = UserCart::where('user_id', Auth::id())->where('status', 1)->with(['wish'])->get();
+            $lineItems = [];
+            foreach ($getdata as $dd) {
+                $lineItems[] = [
+                    'price' => $dd->wish->price_id,
+                    'quantity' => 1,
+                ];
+            }
+
+            $stripe = new \Stripe\StripeClient('sk_test_51O3maCG7xsNScLmXVQNnz6tw1ukAvcKY5WhVEk7e1wRAH9pSC7rmk3gxRFKAUMrVMAxWsndWudNmmvqkmm2p2w1J00sBIpHExQ');
+            $sessioncreate = $stripe->checkout->sessions->create([
+                'success_url' => route('checkout.success'),
+                'cancel_url' => route('checkout.cancel'),
+                'line_items' => $lineItems,
+                'mode' => 'payment',
+            ]);
+
+
+            \Log::info("ssss");
+            \Log::info($sessioncreate);
+            return Inertia::location($sessioncreate->url);
+
+            // $this->retrive($sessioncreate->id);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+
+    public function retrive($id)
+    {
+        $stripe = new \Stripe\StripeClient('sk_test_51O3maCG7xsNScLmXVQNnz6tw1ukAvcKY5WhVEk7e1wRAH9pSC7rmk3gxRFKAUMrVMAxWsndWudNmmvqkmm2p2w1J00sBIpHExQ');
+        $data = $stripe->checkout->sessions->retrieve(
+            $id,
+            []
+        );
+
+        \Log::info('2');
+        \Log::info($data);
+    }
+
+    public function successCheckout()
+    {
+        return view('success');
+    }
+    public function cancelCheckout()
+    {
+        return view('cancel');
     }
 }

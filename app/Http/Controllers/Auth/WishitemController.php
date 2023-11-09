@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SaveWishlist;
+use App\Jobs\WelcomeUser;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserCategory;
@@ -93,6 +95,10 @@ class WishitemController extends Controller
         $wish->price_id = $stripe_client->default_price;
         $wish->save();
 
+        $user = User::whereId(Auth::id())->first();
+
+        //send email
+        SaveWishlist::dispatch($user);
 
         return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
     }
@@ -204,8 +210,6 @@ class WishitemController extends Controller
                 'status' => 1,
             ]);
 
-
-
             return response()->json([
                 "success" => true,
                 'added' => true,
@@ -239,10 +243,10 @@ class WishitemController extends Controller
 
             $cart[$key] = [
                 'user' => [
-                    'id' => $value[0]['user']['id'],
-                    'name' => $value[0]['user']['name'],
-                    'username' => $value[0]['user']['username'],
-                    'uuid' => $value[0]['user']['uuid'],
+                    'id' => $value[0]['owner']['id'],
+                    'name' => $value[0]['owner']['name'],
+                    'username' => $value[0]['owner']['username'],
+                    'uuid' => $value[0]['owner']['uuid'],
                 ],
             ];
 

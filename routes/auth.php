@@ -22,6 +22,12 @@ use Inertia\Inertia;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
 
+//email verify get
+Route::get('get-verify-email-page/{uuid}', [RegisteredUserController::class, 'getVerifyEmailPage'])
+    ->name('get.verify.email.page');
+Route::post('verify-email', [RegisteredUserController::class, 'verifyEmail'])
+    ->name('verify.email');
+
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
@@ -48,8 +54,6 @@ Route::middleware('guest')->group(function () {
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
 });
-
-
 
 
 Route::middleware('auth')->group(function () {
@@ -83,6 +87,12 @@ Route::middleware('auth')->group(function () {
     Route::post('save_social_links', [SocialLinksController::class, 'saveSocialLinks'])->name('save_social_links');
 
     Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item');
+
+
+    Route::get('create-checkout-session', [StripeController::class, 'createCheckout'])->name('create.checkout');
+    Route::get('sucess-checkout', [StripeController::class, 'successCheckout'])->name('checkout.success');
+    Route::get('cancel-checkout', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel');
+
 
     Route::prefix("stripe")->name("stripe.")->group(function () {
         Route::get("authorize", [StripeController::class, "index"])->name("index");

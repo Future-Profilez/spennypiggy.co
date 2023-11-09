@@ -1,42 +1,82 @@
 import { useState } from "react";
 import CartItem from "./CartItem";
-import { Link } from "@inertiajs/react";
+import { Link, useForm } from "@inertiajs/react";
 import { useEffect } from "react";
+import axios from "axios";
 
-export default function  UserCarts({data}){
+export default function UserCarts(props) {
 
+<<<<<<< HEAD
   const [lists, setLists] = useState(data|| []);
   const [isChecked, setIsChecked] = useState(false);
 
   const [message , setMessage] = useState(null);
   const [name , setName] = useState(null);
   const [email , setemail] = useState(null);
+=======
+    const datas = props.data;
+    const [isChecked, setIsChecked] = useState(false);
+>>>>>>> 95f162ff485483deceafe704af1b4aea66b9fb2d
 
-  return <>
-    <div className="cartPage bg-white p-4 border-pink shadow-pink border-pink rounded-3xl">
-        <div className="cartMain">
-            <h2 className="pb-1 wishtitle">
-                Wish Basket for {data.user?.name || ''} <Link className="text-voilet" href={`/${data.user?.username || ''}`}> @{data.user?.username || ''}</Link>
-            </h2>
-            <p className="pb-4"> You are about to send a payout to <strong>{data.user?.name || ''}</strong> to fund their wishes. </p>
+    const [message, setMessage] = useState(null);
+    const [name, setName] = useState(null);
+    const [email, setemail] = useState(null);
 
+<<<<<<< HEAD
             <div className="CartItemBox">
                 {lists.items && lists.items.map((c, i)=> {
                   return <CartItem data={c} key={i}  />
                 })}
             </div>
+=======
+    // const handleSubmit = (e) => {
+    //     e.preventDefault();
+    //     window.location.href = "create-checkout-session";
+    // };
+>>>>>>> 95f162ff485483deceafe704af1b4aea66b9fb2d
 
-            <div className="cartTotal px-0 py-3">
-                <div className="cartSubTotal text-right mt-1">
-                    <span>Platform Fee :</span> <strong className="text-end">£ {data.fee || ''}</strong>
+    const { data, setData, get, post, processing, errors, reset } = useForm({
+        agreeterm: ''
+    });
+
+    const checkoutCart = (e) => {
+        get(route("create.checkout"));
+    }
+
+    return <>
+        <div className="cartPage bg-white p-4 border-pink shadow-pink border-pink rounded-3xl">
+            <div className="cartMain">
+                <h2 className="pb-1 wishtitle">
+                    Wish Basket for {datas.user?.name || ''} <Link className="text-voilet" href={`/${datas.user?.username || ''}`}> @{datas.user?.username || ''}</Link>
+                </h2>
+                <p className="pb-4"> You are about to send a payout to <strong>{datas.user?.name || ''}</strong> to fund their wishes. </p>
+
+                <div className="CartItemBox">
+                    {datas.items && datas.items.map((c, i) => {
+                        return <CartItem data={c} key={i} />
+                    })}
                 </div>
-                <div className="cartSubTotal text-right mt-1">
-                    <span>Subtotal :</span> <strong className="text-end">£ {data.total || ''}</strong>
-                </div>
-                <div className="cartSubTotal text-right mt-1">
-                    <strong className="text-dark" >Total :</strong> <strong className="text-end">£ {data.total+data.fee || ''}</strong>
-                </div>
-                {/* <div className="cartTotalPrice text-right mt-5 px-3 py-6">
+
+                <div className="cartTotal px-0 py-3">
+                    <div className="cartSubTotal text-right mt-1">
+                        <span>Platform Fee :</span>{" "}
+                        <strong className="text-end">
+                            £ {datas.fee || ""}
+                        </strong>
+                    </div>
+                    <div className="cartSubTotal text-right mt-1">
+                        <span>Subtotal :</span>{" "}
+                        <strong className="text-end">
+                            £ {datas.total || ""}
+                        </strong>
+                    </div>
+                    <div className="cartSubTotal text-right mt-1">
+                        <strong className="text-dark">Total :</strong>{" "}
+                        <strong className="text-end">
+                            £ {datas.total + datas.fee || ""}
+                        </strong>
+                    </div>
+                    {/* <div className="cartTotalPrice text-right mt-5 px-3 py-6">
                     <strong className="font-CeraGRBold text-graydark">
                         Total
                     </strong>
@@ -44,24 +84,29 @@ export default function  UserCarts({data}){
                         £ 7700.00
                     </span>
                 </div> */}
-            </div>
-            <div className="addMessage">
-                <form>
+                </div>
+                <div className="addMessage">
+                    {/* <form onSubmit={checkoutCart}> */}
                     <ul className="row">
                         <li>
                             <label>Add Message </label>
-                            <textarea onChange={(e)=>setMessage(e.target.value)} placeholder="Write message in under 800 Words..."></textarea>
+                            <textarea
+                                onChange={(e) =>
+                                    setMessage(e.target.value)
+                                }
+                                placeholder="Write message in under 800 Words..."
+                            ></textarea>
                         </li>
 
                         <li className="w-100 row">
                             <div className="col-md-6">
                                 <label className="d-block text-start" >From</label>
-                                <input className="form-input w-100 rounded" onChange={(e)=>setName(e.target.value)} type="text" placeholder="Enter Your Name..." />
+                                <input className="form-input w-100 rounded" onChange={(e) => setName(e.target.value)} type="text" placeholder="Enter Your Name..." />
                             </div>
 
                             <div className="col-md-6">
                                 <label className="d-block text-start" >Email(Private)</label>
-                                <input className="form-input w-100 rounded" onChange={(e)=>setemail(e.target.value)} type="email" placeholder="Enter Your email..." />
+                                <input className="form-input w-100 rounded" onChange={(e) => setemail(e.target.value)} type="email" placeholder="Enter Your email..." />
                             </div>
                         </li>
 
@@ -83,7 +128,7 @@ export default function  UserCarts({data}){
 
                         <li className="cheklistbox">
                             <label for="agreeterm">
-                                <input onChange={(e)=>setIsChecked(e.target.checked)}
+                                <input onChange={(e) => setIsChecked(e.target.checked)}
                                     type="checkbox"
                                     id="agreeterm"
                                     name="agreeterm" className="me-2"
@@ -132,12 +177,16 @@ export default function  UserCarts({data}){
                             </div>
                         </li>
                     </ul>
+<<<<<<< HEAD
                     <button className={`${isChecked ? "" : 'disabled'}  btn-pink md w-1/2 text-center m-auto`}>
+=======
+                    <button onClick={checkoutCart} className={`${isChecked ? "" : 'disabled'}  btn-pink md w-1/2 text-center m-auto`}>
+>>>>>>> 95f162ff485483deceafe704af1b4aea66b9fb2d
                         Checkout
                     </button>
-                </form>
+                    {/* </form> */}
+                </div>
             </div>
         </div>
-    </div>
-  </>
+    </>
 }
