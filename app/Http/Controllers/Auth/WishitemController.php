@@ -168,30 +168,12 @@ class WishitemController extends Controller
         if (Auth::id() == $wishitem->user_id) {
             return back()->with('error', "You are not able to add your item to your cart.");
         }
-<<<<<<< HEAD
-        
-        $cart = UserCart::where('wish_id', $wishitem->id)->where("user_id", Auth::id())->first();
-        
-        if (!empty($cart)) {
-            if ($cart->status == 0) {
-                $cart->status = 1;
-                $cart->save();
-                return back()->with('success', 'Item added to cart.');
-            } else {
-                $cart->status = 0;
-                $cart->save();
-                return redirect(route("cart"))->with([
-                    "carts" => $cart,
-                ]);
-            }
-=======
 
         $cart = UserCart::where('wish_id', $wishitem->id)->where("user_id", Auth::user())->first();
 
         if ($cart) {
             $cart->status = 1;
             $cart->save();
->>>>>>> 710944a2e355a9f83d9c050b1a16e7631465b0e3
         } else {
             UserCart::create([
                 "user_id" => Auth::id(),
