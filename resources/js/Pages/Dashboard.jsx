@@ -26,8 +26,9 @@ export default function Dashboard(props) {
             console.log("error", _err);
         })
     }
+    console.log("props",props)
 
-    const [loggedIn, setLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
+    const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
 
     return (
         <Guest
@@ -45,7 +46,7 @@ export default function Dashboard(props) {
                             <div className='userProfile whbg rounded-3xl shadow-voilet border-2'>
                                 <Userprofile user={user} />
                                 <div className='userProfileDate mt-3'>
-                                    {loggedIn ? <>
+                                    {IsloggedIn ? <>
                                         <EditProfile user={auth.user} />
                                         <div className='finish mt-4 d-block'>
                                             <p className='mb-4'>Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
@@ -85,11 +86,15 @@ export default function Dashboard(props) {
                                             })}
                                         </select>
                                     </div>
-                                    {loggedIn ? <Wishlist categories={categories} /> : ""}
+                                    {IsloggedIn ? <Wishlist categories={categories} /> : ""}
                                 </div>
-                                <div className='wishlistbox flex justify-between items-start'>
+
+
+                                <div className='row'>
                                     {its && its.map((c, i) => {
-                                        return <Wishlistbox itm={c} key={`wish-${c.uuid}`} />
+                                        return <div className='col-lg-4 col-sm-6' >
+                                            <Wishlistbox itm={c} key={`wish-${c.uuid}`} />
+                                        </div>
                                     })}
                                 </div>
                             </div>

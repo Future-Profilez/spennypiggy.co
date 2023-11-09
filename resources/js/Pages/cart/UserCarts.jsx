@@ -6,17 +6,34 @@ import axios from "axios";
 
 export default function UserCarts(props) {
 
+<<<<<<< HEAD
+  const [lists, setLists] = useState(data|| []);
+  const [isChecked, setIsChecked] = useState(false);
+
+  const [message , setMessage] = useState(null);
+  const [name , setName] = useState(null);
+  const [email , setemail] = useState(null);
+=======
     const datas = props.data;
     const [isChecked, setIsChecked] = useState(false);
+>>>>>>> 95f162ff485483deceafe704af1b4aea66b9fb2d
 
     const [message, setMessage] = useState(null);
     const [name, setName] = useState(null);
     const [email, setemail] = useState(null);
 
+<<<<<<< HEAD
+            <div className="CartItemBox">
+                {lists.items && lists.items.map((c, i)=> {
+                  return <CartItem data={c} key={i}  />
+                })}
+            </div>
+=======
     // const handleSubmit = (e) => {
     //     e.preventDefault();
     //     window.location.href = "create-checkout-session";
     // };
+>>>>>>> 95f162ff485483deceafe704af1b4aea66b9fb2d
 
     const { data, setData, get, post, processing, errors, reset } = useForm({
         agreeterm: ''
@@ -160,7 +177,11 @@ export default function UserCarts(props) {
                             </div>
                         </li>
                     </ul>
+<<<<<<< HEAD
+                    <button className={`${isChecked ? "" : 'disabled'}  btn-pink md w-1/2 text-center m-auto`}>
+=======
                     <button onClick={checkoutCart} className={`${isChecked ? "" : 'disabled'}  btn-pink md w-1/2 text-center m-auto`}>
+>>>>>>> 95f162ff485483deceafe704af1b4aea66b9fb2d
                         Checkout
                     </button>
                     {/* </form> */}

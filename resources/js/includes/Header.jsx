@@ -24,7 +24,7 @@ export default function Header(props) {
     console.log("header props", props)
 
     const { auth, user } = props;
-    const [loggedIn, setLoggedIn] = useState((auth && auth.username) == (user && user.username))
+    const [loggedIn, setLoggedIn] = useState((auth && auth.username))
 
     return <>
         <div className='blackbg headermain py-14'>
@@ -92,18 +92,16 @@ export default function Header(props) {
               </svg>
 
           </button>
-          
               <div className="menuImg">
                 <img src={spennypiggy} alt="img" />
               </div>
               <div className="menuList">
               <ul>
-
                 <li><Link to="/">How it works</Link></li> 
                 {loggedIn ? 
                   <>
                     <li><Link href={`/${auth&& auth?.username || ''}`} >Create Wishlist</Link></li> 
-                    <li><Link href={route('cart')} >Cart</Link></li> 
+                    <li><Link href={"/cart"} >Cart</Link></li> 
                     <li><Link  method="get" href={route('logout')}   >Logout</Link></li> 
                   </> 
                   : 

@@ -4,7 +4,12 @@ import { useState } from "react";
 import UserCarts from "../cart/UserCarts";
 
 export default function Cart(props) {
+<<<<<<< HEAD
+
+    console.log("cart props", props);
+=======
     console.log("props", props);
+>>>>>>> 95f162ff485483deceafe704af1b4aea66b9fb2d
 
     const { auth, user } = props;
     const [cartsItems, setCartItems] = useState(props.carts);

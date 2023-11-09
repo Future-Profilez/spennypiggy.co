@@ -133,6 +133,59 @@ export default function Wishlist(props) {
         });
     };
 
+<<<<<<< HEAD
+    return <div>
+        <Popup action={close}
+            classes='btn-pink lg px-4' text="add wishlist" >
+            <div className='editprofileModal wishlistModal '>
+                <div className='editprofileModalInner innermodel shadow-pink'> 
+                    <h2 className="font-GillSans pt-4 px-3">Add A Wish</h2>
+                    <Tabs defaultActiveKey="1" id="uncontrolled-tab-example" className="mb-3">
+                        <Tab eventKey="1" title="Custom">
+                            <div className="wishinfo">
+                                <form onSubmit={createWishList}>
+                                    <ul>
+                                        <li className="mb-4">
+                                            <label className="mb-2 text-start d-block">Wish Name</label>
+                                            <input id="wishname"
+                                                name="wishname"
+                                                type="text" placeholder='Eg. Buy me a coffee'
+                                                value={data.wishname}
+                                                className="form-input px-2 py-2 border w-full rounded-md"
+                                                autoComplete="name"
+                                                onChange={(e) => setData('wishname', e.target.value)}
+                                                required
+                                            />
+                                        </li>
+                                        <li className="mb-4">
+                                            <label className="mb-2 text-start d-block">Price </label>
+                                            <input id="price"
+                                                type="number"
+                                                name="price" placeholder='eg. 50'
+                                                value={data.price}
+                                                step={`0.01`}
+                                                className="form-input px-2 py-2 border w-full rounded-md"
+                                                autoComplete="price"
+                                                onChange={(e) => setData('price', e.target.value)}
+                                            />
+                                        </li>
+                                        <li className="mb-4">
+                                            <label className="mb-2 text-start d-block">URL (Optional)</label>
+                                            <input id="item_url"
+                                                type="text" placeholder='URL'
+                                                name="item_url"
+                                                value={data.item_url}
+                                                className="form-input px-2 py-2 border w-full rounded-md"
+                                                autoComplete="item_url"
+                                                onChange={(e) => setData('item_url', e.target.value)}
+                                            />
+                                        </li>
+                                        <li className="mb-4">
+                                            <label className="mb-2 text-start d-block">Choose Image or Upload</label>
+                                            
+                                            <div className='default-wish-img mb-1' >
+                                                <img src={uploadedimg} className='img-fluid' />
+=======
     return (
         <div>
             <Popup
@@ -464,6 +517,7 @@ export default function Wishlist(props) {
                                                             </>
                                                         );
                                                     })}
+>>>>>>> 95f162ff485483deceafe704af1b4aea66b9fb2d
                                             </div>
 
                                             <div className="cate-items mb-3 mt-4 d-flex ">
