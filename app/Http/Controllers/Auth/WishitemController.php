@@ -176,7 +176,10 @@ class WishitemController extends Controller
             if ($cart->status == 0) {
                 $cart->status = 1;
                 $cart->save();
-                return back()->with('success', 'Item added to cart.');
+                return response()->json([
+                    "success" => true,
+                    "msg" => "Item added to cart.",
+                ]);
             } else {
                 $cart->status = 0;
                 $cart->save();
@@ -193,7 +196,10 @@ class WishitemController extends Controller
                 'wish_id' => $wishitem->id,
                 'status' => 1,
             ]);
-            return back()->with('success', 'Item added to cart.');
+            return response()->json([
+                "success" => true,
+                "msg" => "Item added to cart.",
+            ]);;
         }
     }
 
