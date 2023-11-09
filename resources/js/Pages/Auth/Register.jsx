@@ -174,10 +174,10 @@ export default function Register() {
                                 </li>
                             </ul>
                             <div className='wishlistbtn  rotate-btn text-center flex justify-center mt-16'>
-                                {/* <button type='submit' className='btn-pink-lg'>
+                                {/* <button type='submit' className='btn-pink lg'>
                                     {processing ? "Proccessing" : " Create your Account"}
                                 </button> */}
-                                <LoaderButton disabled={processing} className='btn-pink-lg ' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : " Create your Account"}</LoaderButton>
+                                <LoaderButton disabled={processing} className='btn-pink lg ' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : " Create your Account"}</LoaderButton>
                             </div>
 
                             <div className="flex items-center justify-center mt-4">

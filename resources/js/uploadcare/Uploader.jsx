@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef } from "react";
 
 LR.registerBlocks(LR);
 
-export default function GlobalUploader({ options, sendFile }) {
+export default function GlobalUploader({ options, sendFile, clear }) {
 
     const dataOutputRef = useRef();
 
@@ -11,6 +11,17 @@ export default function GlobalUploader({ options, sendFile }) {
         const { data } = e.detail;
         sendFile(data[0]);
     }, []);
+
+    const handleResetUploader = () => {
+        if (dataOutputRef.current) {
+            dataOutputRef.current.uploadCollection.clearAll();
+            dataOutputRef.current.$['*modalActive'] = false;
+        }
+    };
+
+    useEffect(() => {
+        handleResetUploader();
+    }, [clear]);
 
     useEffect(() => {
         const el = dataOutputRef && dataOutputRef.current;

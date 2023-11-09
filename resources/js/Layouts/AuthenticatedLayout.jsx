@@ -5,7 +5,7 @@ import { useAlerts } from '@/Components/Alerts';
 import Header from '@/includes/Header';
 import Footer from '@/includes/Footer';
 
-export default function Authenticated({ user, header, children }) {
+export default function Authenticated({auth, user, header, children }) {
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const { successAlert, errorAlert } = useAlerts();
@@ -28,11 +28,11 @@ export default function Authenticated({ user, header, children }) {
     },[]);
 
     return <>
-        <Header user={user} />
-        <main>
-            {children}
-            <Toaster />
-        </main>
+        <Header auth={auth} user={user}  />
+            <main>
+                {children}
+                <Toaster />
+            </main>
         <Footer />
     </>
 }

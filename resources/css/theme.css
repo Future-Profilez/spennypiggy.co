@@ -1,3 +1,6 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @font-face {
   font-family: 'CeraGRBold';
@@ -23,20 +26,21 @@
 body {
   --white:#ffffff;
   --black:#000000;
-  --mint:#3CFCCF;
-  /* --mint:  linear-gradient(90deg, var 0%, rgba(9,9,121,1) 35%, rgba(0,212,255,1) 100%); */
-  --pink:#FE3394;
+  --gray:#cccccc;
+  --gray2:#4D4D4D;
+  --mint:#05EFB8;
+  /* --mint: linear-gradient(90deg, var 0%, rgba(9,9,121,1) 35%, rgba(0,212,255,1) 100%); */
+  --pink:#F94F97;
+  --yellow:#E6EA7B;
   --lightpink:#FFC4E2;
-  --voilet: #5D25FD;
-  --body-font:'newfont';
+  --voilet: #8C52FF;
+  --purple: #8C52FF;
+  --body-font:'gulfs';
   --heading-font: 'gulfs';
   --para-font: 'CeraGRMedium';
   --parabold-font: 'CeraGRBold';
   --text-wh: #ffffff;
+  --text-bl: #000000;
+  --text-gray: #616161;
+  --text-graydark: #333333;
 }
-
-
-
-
-
-
