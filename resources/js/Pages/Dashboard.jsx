@@ -20,8 +20,7 @@ export default function Dashboard(props) {
 
     const showCategory = (e) => {
         setLoading(true);
-        axios.get(`${user.username}/${e.target.value}/`)
-            .then(resp => {
+        axios.get(`${user.username}/${e.target.value}`).then(resp => {
                 setIts(resp.data.items)
         }).catch(_err => {
             console.log("error", _err);

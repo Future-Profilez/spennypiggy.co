@@ -46,13 +46,19 @@ export default function ToCart({uuid, text, classes, custom}){
         //         setLoading(false);
         //     }
         // });
-        axios.get(`/add-to-cart/${uuid}`).then(resp => {
-              console.log("resp", resp);
-               setLoading(false);
-        }).catch(_err => {
+        axios.get(`/add-to-cart/${uuid}`, {
+            headers: {
+            //   'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            }
+          }).then(resp => {
+            console.log("resp", resp);
+            setLoading(false);
+          }).catch(_err => {
             console.log("error", _err);
-             setLoading(false);
-        })
+            setLoading(false);
+          })
+          
     };
 
 
