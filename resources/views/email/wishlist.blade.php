@@ -1,6 +1,5 @@
 @extends('email.default-2')
 @section('content')
-<?php \Log::info('4');?>
     <tr>
         <td align="center" style="padding:40px 10px 40px 10px;">
             <table width="100%" cellspacing="0" cellpadding="0" border="0" style="width: 100%; text-align: center;">

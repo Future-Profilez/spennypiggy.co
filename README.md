@@ -37,3 +37,15 @@ php artisan migrate
     ```shell
     npm run dev
     ```
+
+
+* APIS ROUTES
+
+    ```User Cart
+    END POINT - POST - update-cover-or-avatar
+    {
+        'type':'avatar/cover'
+        'file':{
+            uploadcare file
+        }
+    }

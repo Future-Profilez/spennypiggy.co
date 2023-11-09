@@ -60,8 +60,6 @@ class SaveWishlist implements ShouldQueue
             'email' => $this->user->email,
             'uuid' => $this->user->uuid,
         ];
-        \Log::info('1');
-        \Log::info($emailData);
 
         EmailService::saveWishlist($emailData);
     }

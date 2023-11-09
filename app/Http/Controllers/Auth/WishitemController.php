@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\SaveWishlist;
 use App\Jobs\WelcomeUser;
 use App\Models\User;
+use App\Models\UserCart;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
 use App\Models\WishItem;
@@ -19,10 +20,9 @@ use Stripe\StripeClient;
 
 class WishitemController extends Controller
 {
+
     public function saveWishItem(Request $request): RedirectResponse
     {
-        \Log::info("adsfdf");
-        \Log::info($request->all());
         $request->validate([
             "wishname" => [
                 "required",
@@ -92,9 +92,11 @@ class WishitemController extends Controller
         ]);
 
         $wish->stripe_product_id = $stripe_client->id;
+        $wish->price_id = $stripe_client->default_price;
         $wish->save();
 
         $user = User::whereId(Auth::id())->first();
+
         //send email
         SaveWishlist::dispatch($user);
 
@@ -129,6 +131,7 @@ class WishitemController extends Controller
         return back()->with('success', 'Category Saved.');
     }
 
+
     public function wishItems(Request $request): RedirectResponse
     {
         $categories = UserCategory::where('user_id', Auth::id())->get();
@@ -138,7 +141,6 @@ class WishitemController extends Controller
         ]);
         return back()->with('success', 'Category Saved.');
     }
-
 
 
     public function categoryItems($category, $user_id)
@@ -157,14 +159,104 @@ class WishitemController extends Controller
 
         $user = User::where('id', $user_id)->first();
         $items = Wishitem::whereIn('id', $itemId)->latest()->get();
-        $items = WishItem::whereUserId($user->id)->latest()->get();
+        // $items = WishItem::whereUserId($user->id)->latest()->get();
         $categories = UserCategory::whereUserId($user->id)->latest()->get();
-        return Inertia::render('Dashboard', [
-            "user" => $user,
-            "items" => $items,
-            "categories" => $categories,
-        ]);
 
+        return redirect(route('user.show', ['username', $user->username, 'filter' => true]));
         // return response()->json(["items" => $items])->header('Content-Type', 'application/json');
+    }
+
+
+    public function addToCart(Request $request)
+    {
+        $wishitem = WishItem::where('uuid', $request->uuid)->first();
+
+        if (Auth::id() == $wishitem->user_id) {
+            return back()->with('error', "You are not able to add your item to your cart.");
+        }
+
+        $cart = UserCart::where('wish_id', $wishitem->id)->where("user_id", Auth::user())->first();
+
+        if ($cart) {
+            if ($cart->status == 0) {
+                $cart->status = 1;
+                $cart->save();
+            } else {
+                $cart->status = 0;
+                $cart->save();
+            }
+        } else {
+            UserCart::create([
+                "user_id" => Auth::id(),
+                "owner_id" => $wishitem->user_id,
+                'wish_id' => $wishitem->id,
+                'status' => 1,
+            ]);
+        }
+        return back()->with('success', 'Item added to cart.');
+    }
+
+
+    public function cartItems()
+    {
+
+        $user = User::where('id', Auth::id())->first();
+        $carts = UserCart::where('user_id', $user->id)->where('status', 1)->get();
+
+        $groupedWishes = [];
+        foreach ($carts as $wish) {
+            $owner_id = $wish->owner_id;
+            if (!isset($groupedWishes[$owner_id])) {
+                $groupedWishes[$owner_id] = [];
+            }
+            $groupedWishes[$owner_id][] = [
+                'user' => $wish->user->toArray(),
+                'wish' => $wish->wish->toArray(),
+                'url' => $wish->wish->perma_link
+            ];
+        }
+
+        $cart = [];
+        $key = 0;
+        foreach ($groupedWishes as $value) {
+
+            $cart[$key] = [
+                'user' => [
+                    'id' => $value[0]['user']['id'],
+                    'name' => $value[0]['user']['name'],
+                    'username' => $value[0]['user']['username'],
+                    'uuid' => $value[0]['user']['uuid'],
+                ],
+            ];
+
+            $total = 0;
+
+            foreach ($value as $k => $v) {
+                $cart[$key]['items'][$k] = [
+                    'id' => $v['wish']['id'],
+                    'uuid' => $v['wish']['uuid'],
+                    'user_id' => $v['wish']['user_id'],
+                    'wishname' => $v['wish']['wishname'],
+                    'stripe_product_id' => $v['wish']['stripe_product_id'],
+                    'price' => $v['wish']['price'],
+                    'price_id' => $v['wish']['price_id'],
+                    'item_url' => $v['wish']['item_url'],
+                    'subscription' => $v['wish']['subscription'],
+                    'subscription_period' => $v['wish']['subscription_period'],
+                    'repeat_purchase' => $v['wish']['repeat_purchase'],
+                    'category' => $v['wish']['category'],
+                    'url' => $v['url'],
+                ];
+                $total += $v['wish']['price'];
+            }
+            $cart[$key]['total'] = $total;
+            $cart[$key]['fee'] = ($total * 20) / 100;
+
+            $key++;
+        }
+
+        return Inertia::render('cart/Cart', [
+            "carts" => $cart,
+        ]);
     }
 }

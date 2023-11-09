@@ -32,7 +32,6 @@ class EmailService
     public static function saveWishlist($data)
     {
         try {
-            \Log::info('2');
             Mail::to($data['to'])
                 ->send(new Wishlist($data));
         } catch (TransportException $e) {

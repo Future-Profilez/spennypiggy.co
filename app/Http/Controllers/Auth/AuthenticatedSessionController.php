@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\Models\Wishitem;
+use App\Models\User;
+use App\Models\UserCategory;
+use App\Models\WishCategory;
+use App\Models\WishItem;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -40,13 +43,13 @@ class AuthenticatedSessionController extends Controller
     /**
      * Destroy an authenticated session.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(): RedirectResponse
     {
         Auth::guard('web')->logout();
 
-        $request->session()->invalidate();
+        // $request->session()->invalidate();
 
-        $request->session()->regenerateToken();
+        // $request->session()->regenerateToken();
 
         return redirect(route("login"))->with("success", "Logged out successfully.");
     }
@@ -55,10 +58,42 @@ class AuthenticatedSessionController extends Controller
     /**
      * Private user profile info
      */
-    public function getUserProfile(){
-        $user = Auth::user();
+    public function getUserProfile($username, $category = false)
+    {
+        $user = User::where('username', $username)->first();
+
+        // if(!$user){
+        //     return
+        // }
+        $categories = UserCategory::whereUserId($user->id)->latest()->get();
+        if ($category) {
+            $query = WishCategory::orderBy('created_at', 'DESC');
+
+            if ($category != 'all') {
+                $query->where('category_id', $category);
+            }
+
+            $itemId = $query->whereHas('wish', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->pluck('wish_id');
+
+            $items = WishItem::whereIn('id', $itemId)->latest()->get();
+
+            if (request()->ajax()) {
+                return response()->json([
+                    "success" => true,
+                    "items" => $items,
+                    "categories" => $categories,
+                ]);
+            }
+        } else {
+            $items = WishItem::whereUserId($user->id)->latest()->get();
+        }
+
         return Inertia::render('Dashboard', [
-            'user' => $user
+            "user" => $user,
+            "items" => $items,
+            "categories" => $categories,
         ]);
     }
 }

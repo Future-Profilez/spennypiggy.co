@@ -6,7 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
 
-class UserCart extends Model {
+class UserCart extends Model
+{
     use HasFactory;
 
     protected $fillable = [
@@ -17,12 +18,19 @@ class UserCart extends Model {
         "status",
     ];
 
-    public static function boot(){
+    public static function boot()
+    {
         parent::boot();
-        static::creating(fn($w) => $w->uuid = Uuid::uuid4());
+        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 
-    public function user(){
-        return $this->belongsTo(User::class,'user_id');
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function wish()
+    {
+        return $this->belongsTo(WishItem::class, 'wish_id');
     }
 }

@@ -32,8 +32,6 @@ class Wishlist extends Mailable
     {
         try {
             $name = $this->data['name'];
-            \Log::info('3');
-            \Log::info($name);
             $subject = 'Your wishlist added in the spanny piggy platform.';
             return $this->view('email.wishlist')->with(['name' => $name])
                 ->from('Noreply@whoyouinto.com', 'SPANNYPIGGY')
