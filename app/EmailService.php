@@ -3,6 +3,7 @@
 namespace App;
 
 use App\Mail\Welcome;
+use App\Mail\Wishlist;
 use App\Models\AppService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
@@ -23,6 +24,17 @@ class EmailService
         try {
             Mail::to($data['to'])
                 ->send(new Welcome($data));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+    public static function saveWishlist($data)
+    {
+        try {
+            \Log::info('2');
+            Mail::to($data['to'])
+                ->send(new Wishlist($data));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }

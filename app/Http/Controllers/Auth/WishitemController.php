@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SaveWishlist;
+use App\Jobs\WelcomeUser;
 use App\Models\User;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
@@ -19,7 +21,8 @@ class WishitemController extends Controller
 {
     public function saveWishItem(Request $request): RedirectResponse
     {
-
+        \Log::info("adsfdf");
+        \Log::info($request->all());
         $request->validate([
             "wishname" => [
                 "required",
@@ -90,6 +93,11 @@ class WishitemController extends Controller
 
         $wish->stripe_product_id = $stripe_client->id;
         $wish->save();
+
+        $user = User::whereId(Auth::id())->first();
+        //send email
+        SaveWishlist::dispatch($user);
+
         return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
     }
 
