@@ -18,7 +18,6 @@ export default function Stripe(props) {
         }
     }
 
-
     return (
         <Authenticated>
             <div className='blackbg py-2 py-md-5'>
