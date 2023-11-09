@@ -10,7 +10,6 @@ export default function Stripe(props) {
     });
 
     const connectStripe = (e) => {
-
         if (props?.auth?.user?.account_id || false) {
             get(route("stripe.connect", {step:"init"}));
         }
@@ -22,7 +21,6 @@ export default function Stripe(props) {
 
     return (
         <Authenticated>
-
             <div className='blackbg py-2 py-md-5'>
             <div className='stripbox  mx-auto border-mint whbg shadow-mint rounded-3xl '>
                 <div className='loginheadbox pinkbg'>
@@ -45,7 +43,7 @@ export default function Stripe(props) {
                         </div>
                     </div>
                     <div className="text-center flex justify-center mb-4 ">
-                            <button type='submit' className='btn-pink lg w-1/2'>Go to Stripe</button>
+                        <button type='submit' className='btn-pink lg w-1/2'>Go to Stripe</button>
                     </div>
                 </form>
             </div>
