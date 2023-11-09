@@ -18,7 +18,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
             <Head title="Welcome" />
             <div>
                 <div className='heroSec'>
-                    <div className='containerbox'>
+                    <div className='containerbox py-4'>
                         <div className='welcome'>
                             <div className='welcomeLeft'>
                                 <h2 className='welcomeHeading shadow-yellow font-GillSans text-uppercase mb-1'>Oink! Oink! <br /> B*tch </h2>
