@@ -56,9 +56,9 @@ class StripeController extends Controller
 
         $user = User::find(Auth::id());
         if (empty($user->account_id)) {
-            if (!$request->isMethod("POST")) {
-                return redirect()->back()->with("error", "Invalid request!");
-            }
+            // if (!$request->isMethod("POST")) {
+            //     return redirect()->back()->with("error", "Invalid request!");
+            // }
 
             try {
                 $payload = [
@@ -69,7 +69,7 @@ class StripeController extends Controller
                         'card_payments' => ['requested' => true],
                         'transfers' => ['requested' => true],
                     ],
-                    // 'business_type' => 'individual',
+                    'business_type' => 'individual',
                     // 'business_profile' => ['url' => route("user.show", ["username" => $user->username])],
                 ];
 
@@ -95,10 +95,10 @@ class StripeController extends Controller
                 "type"        => "account_onboarding"
             ]);
 
-            // return Inertia::location($link->url);
-            return redirect()->away($link->url);
+            return Inertia::location($link->url);
+            // return redirect()->away($link->url);
         } catch (Exception $e) {
-            return redirect(route("stripe.index"))->with("error", "Invalid error:" . $e->getMessage());
+            return redirect(route("stripe.index"))->with("error", "Internal server error:" . $e->getMessage());
         }
     }
 
@@ -153,9 +153,6 @@ class StripeController extends Controller
                 'mode' => 'payment',
             ]);
 
-
-            \Log::info("ssss");
-            \Log::info($sessioncreate);
             return Inertia::location($sessioncreate->url);
 
 
@@ -172,9 +169,6 @@ class StripeController extends Controller
             $id,
             []
         );
-
-        \Log::info('2');
-        \Log::info($data);
     }
 
     public function successCheckout($owner_id)
