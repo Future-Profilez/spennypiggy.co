@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\StripePaymentDetail;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\WishItem;
 use App\StripeControl;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -165,13 +167,46 @@ class StripeController extends Controller
                 return back()->with('error','Please setup your stripe account first.');
             }
 
+<<<<<<< HEAD
 
             // $this->retrive($sessioncreate->id);
+=======
+            $stripe = new \Stripe\StripeClient('sk_test_51O3maCG7xsNScLmXVQNnz6tw1ukAvcKY5WhVEk7e1wRAH9pSC7rmk3gxRFKAUMrVMAxWsndWudNmmvqkmm2p2w1J00sBIpHExQ');
+
+            $sessionCreate = $stripe->checkout->sessions->create([
+                'success_url' => route('checkout.success', [$owner_id]),
+                'cancel_url' => route('checkout.cancel'),
+                'line_items' => $lineItems,
+                'mode' => 'payment',
+            ]);
+
+            $callbackData = $sessionCreate;
+            session()->forget('session_id');
+            session(['session_id' => $callbackData->id]);
+            StripePaymentDetail::create([
+                'session_id' => $callbackData->id,
+                'amount_subtotal' => $callbackData->amount_subtotal,
+                'amount_total' => $callbackData->amount_total,
+                'currency' => $callbackData->currency,
+                'payment_method_config_detail_id' => optional($callbackData->payment_method_configuration_details)->id,
+                'payment_method_type' => optional($callbackData->payment_method_types)[0],
+                'user_id' => Auth::id(),
+                'owner_id' => $owner_id,
+                'session_created' => $callbackData->created,
+                'session_expires_at' => $callbackData->expires_at,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
+            ]);
+
+            return Inertia::location($sessionCreate->url);
+>>>>>>> 0e8c49515a1ae578c61d4ca346ac6cc752206cf7
         } catch (\Throwable $th) {
+            \Log::error("Error in createCheckout: " . $th->getMessage());
             throw $th;
         }
     }
 
+<<<<<<< HEAD
     public function retrive($id)
     {
         $stripe = new \Stripe\StripeClient('sk_test_51O3maCG7xsNScLmXVQNnz6tw1ukAvcKY5WhVEk7e1wRAH9pSC7rmk3gxRFKAUMrVMAxWsndWudNmmvqkmm2p2w1J00sBIpHExQ');
@@ -180,6 +215,8 @@ class StripeController extends Controller
             []
         );
     }
+=======
+>>>>>>> 0e8c49515a1ae578c61d4ca346ac6cc752206cf7
 
     public function successCheckout($owner_id)
     {
@@ -189,11 +226,21 @@ class StripeController extends Controller
             $dd->save();
         }
 
+        $sessionId = session('session_id');
+        StripePaymentDetail::where('session_id', $sessionId)->update([
+            'payment_status' => 'paid',
+            'updated_at' => Carbon::now(),
+        ]);
         return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
     }
 
     public function cancelCheckout()
     {
+        $sessionId = session('session_id');
+        StripePaymentDetail::where('session_id', $sessionId)->update([
+            'payment_status' => 'unpaid',
+            'updated_at' => Carbon::now(),
+        ]);
         return view('cancel');
     }
 }
