@@ -95,15 +95,16 @@ export default function Header(props) {
               </div>
               <div className="menuList">
               <ul>
-                <li><Link to="/">How it works</Link></li> 
+                <li><Link href={route("how-it-works")} >How it works</Link></li> 
                 {loggedIn ? 
                   <>
                     <li><Link href={`/${auth&& auth?.username || ''}`} >Create Wishlist</Link></li> 
                     <li><Link href={"/cart"} >Cart</Link></li> 
-                    <li><Link  method="get" href={route('logout')}   >Logout</Link></li> 
+                    <li><Link  method="get" href={route('logout')} >Logout</Link></li> 
                   </> 
                   : 
                   <>
+                    <li><Link href={route("register")} >Sign Up</Link></li>  
                     <li><Link href={route("login")} >Login</Link></li>  
                   </> 
                 }
@@ -113,6 +114,6 @@ export default function Header(props) {
         </div>
 
 
-                    </>
+      </>
  
 }

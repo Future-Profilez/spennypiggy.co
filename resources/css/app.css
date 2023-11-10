@@ -25,7 +25,7 @@ body{position:relative;font-family:var(--para-font);}
 .shadow-mint{box-shadow:10px 10px 0 0 var(--mint);}
 .shadow-pink{box-shadow:10px 10px 0 0 var(--pink);}
 .shadow-purple{box-shadow:10px 10px 0 0 var(--purple);}
-.shadow-yellow{text-shadow: 3px 4px 0 #E6EA7B;;}
+.shadow-yellow{text-shadow: 1px 2px 0 #E6EA7B;;}
 .text-pink{color:var(--pink);}
 .text-mint{color:var(--mint);}
 .text-purple{color:var(--purple);}

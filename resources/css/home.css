@@ -262,7 +262,21 @@ letter-spacing:-0.63px;margin:0 0 6px;}
 .noResult{border-radius:30px;background:#171717 !important;}
 .userphotobox > img{object-fit:cover;}
 /* Responsive */
-@media(max-width:1500px){/* .menuList ul li a{font-size:50px;line-height:52px;}
+@media(max-width:1500px){
+  
+  .loveboxes {
+    padding: 0 20px;
+  }
+  .loveboxes img {
+    max-width: 160px;
+}
+
+.loveboxes h3 {
+  font-size: 38px !important;
+  line-height: inherit !important;
+}
+
+/* .menuList ul li a{font-size:50px;line-height:52px;}
 */
 .menuList ul li a{font-size:6vh;}
 }
@@ -295,7 +309,7 @@ letter-spacing:-0.63px;margin:0 0 6px;}
 .userPr *{text-align:start !important;}
 .containerbox{max-width:740px;}
 .MegaMenu{flex-wrap:wrap;align-items:flex-start;align-content:flex-start;}
-.menuImg{width:100%;padding:20px 20px 20px 20px;justify-content:flex-start;}
+.menuImg{width:100%;padding:7px 11px;justify-content:flex-start;}
 .menuList{width:100%;padding:30px 20px;}
 .menuImg img{max-width:200px;}
 .wishbanner img{height:280px;}
@@ -343,7 +357,7 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .headermain{padding-top:15px;padding-bottom:20px;}
 .header{padding:0px 13px;box-shadow:3px 6px 0 0 var(--mint);border-radius:10px;}
 .spennylogo{margin:-10px 0 0 -20px;}
-button.closemega{position:absolute;right:15px;top:15px;}
+button.closemega{position:absolute;right:31px;top:26px;}
 button.closemega svg{width:50px;}
 .headtitle{display:none;}
 .menuList ul li{margin-bottom:10px;}
@@ -368,7 +382,7 @@ button.closemega svg{width:50px;}
 .editprofileHead h2{font-size:18px;text-align:left;}
 .editprofileHead{justify-content:flex-start;}
 .editForm ul li textarea{height:90px;}
-.heroSec{padding:50px 15px;}
+.heroSec{padding:50px 5px;}
 .welcome{flex-wrap:wrap;justify-content:center;flex-direction:column-reverse;margin-top:0;}
 .welcomeRt{width:100%;text-align:center;margin-bottom:40px;}
 .welcomeRt img{margin:auto;}
@@ -442,10 +456,11 @@ button.closemega svg{width:50px;}
 .welcomeTitle{transform:rotate(0deg);}
 .funpart{padding-bottom:0px;}
 }
-@media(max-width:575px){.welcomeTitle{max-width:260px;margin:auto;}
+@media(max-width:575px){.editprofileModalInner,.innermodel{width:100% !important;}
+.welcomeTitle{max-width:260px;margin:auto;}
 button.cartLink svg{width:60px;height:60px;}
 .carticon svg{width:30px;}
-.menuImg img{max-width:140px;}
+.menuImg img{max-width:150px;}
 .wishlistbox{flex-wrap:wrap;justify-content:center!important;}
 .wishlistcntbox{margin-bottom:20px;}
 .userManageHead{flex-wrap:wrap;}

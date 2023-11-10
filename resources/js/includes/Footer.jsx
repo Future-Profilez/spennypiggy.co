@@ -11,21 +11,21 @@ export default function
         <div className='footer'>
           <div className='containerbox'>
             <div className='footlogo'>
-              <Link to="/" >
+              <Link href="/" >
                 <img src={footlogo} alt="img" />
               </Link>
             </div>
             <div className='footlinksbox'>
               <div className='footlinks'>
                 <ul>
-                  <li><Link to="/" >FAQ & Help</Link></li>
-                  <li><Link to="/" >How it works</Link></li>
-                  <li><Link to="/" >Contact</Link></li>
+                  <li><Link href="/" >FAQ & Help</Link></li>
+                  <li><Link href={route("how-it-works")} >How it works</Link></li>
+                  <li><Link href={route("login")} >Login</Link></li>
                 </ul>
               </div>
           </div>
         </div>
-        <div className='copyright'>Copyright &copy; 2023 Speeny Piggy</div>
+        <div className='copyright'>Copyright &copy; 2023 Spenny Piggy</div>
       </div>
     </div>
   )

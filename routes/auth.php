@@ -25,6 +25,7 @@ use App\Models\WishCategory;
 //email verify get
 Route::get('get-verify-email-page/{uuid}', [RegisteredUserController::class, 'getVerifyEmailPage'])
     ->name('get.verify.email.page');
+
 Route::post('verify-email', [RegisteredUserController::class, 'verifyEmail'])
     ->name('verify.email');
 
@@ -117,4 +118,9 @@ Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class
 
 Route::get('users', [MyController::class, 'getUsers'])->name('users');
 
+Route::get('/how-it-works', function () {
+    return Inertia::render('howitworks/Works');
+})->name("how-it-works");
+
 Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
+

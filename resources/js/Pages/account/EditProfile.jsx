@@ -7,6 +7,7 @@ import { useForm } from '@inertiajs/react';
 import { useAlerts } from '@/Components/Alerts';
 import GlobalUploader from '@/uploadcare/Uploader';
 import UpdateAvatar from './UpdateAvatar';
+import LoaderButton from '@/Components/LoaderButton';
 
 export default function EditProfile({ user }) {
 
@@ -95,14 +96,12 @@ export default function EditProfile({ user }) {
                                         onChange={(e) => setData('name', e.target.value)}
                                         class="form-input px-2 py-2 border w-full rounded-md" />
                                 </li>
-
                                 <li className="mb-2">
                                     <label className="mb-1">Username</label>
                                     <input defaultValue={user?.username || ''} onChange={(e) => setData("username", e.target.value)}
                                         type="text" name="username" class="form-input px-2 py-2 border w-full rounded-md" placeholder='Spennypiggy.com/warner99' onKeyUp={(e) => {setUsername(e.target.value)}}/>
                                 </li>
                                 <li><strong className='d-block text-start mb-4' >Profile URL : https://www.spennypiggy.co/{username}</strong></li>
-
                                 <li className="mb-3">
                                     <label className="mb-1">Bio</label>
                                     <textarea defaultValue={user?.bio || ''}
@@ -110,14 +109,14 @@ export default function EditProfile({ user }) {
                                         name="bio" class="form-input px-2 py-2 border w-full rounded-md"
                                         placeholder='Bio' />
                                 </li>
-
                             </ul>
                             <div className=" text-center mb-7">
-                                <button type='submit' className="editProfile flex w-12 mx-auto">Update Profile</button>
+                                <LoaderButton type='submit' disabled={processing} 
+                                className='btn-pink lg' spinnerClassName='fill-red-600'>
+                                    {processing ? "Updating" : "Update Profile"}
+                                </LoaderButton>
                             </div>
-
                             {/* <UpdatePasswordForm className="max-w-xl" /> */}
-
                         </form>
                     </div>
 
