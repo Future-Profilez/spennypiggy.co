@@ -56,9 +56,9 @@ class StripeController extends Controller
 
         $user = User::find(Auth::id());
         if (empty($user->account_id)) {
-            if (!$request->isMethod("POST")) {
-                return redirect()->back()->with("error", "Invalid request!");
-            }
+            // if (!$request->isMethod("POST")) {
+            //     return redirect()->back()->with("error", "Invalid request!");
+            // }
 
             try {
                 $payload = [
@@ -70,7 +70,11 @@ class StripeController extends Controller
                         'transfers' => ['requested' => true],
                     ],
                     'business_type' => 'individual',
+<<<<<<< HEAD
                     'business_profile' => ['url' => route("user.show", ["username" => $user->username])],
+=======
+                    // 'business_profile' => ['url' => route("user.show", ["username" => $user->username])],
+>>>>>>> a8464041f14c4b20706e0aea144a548c758d247e
                 ];
 
 
@@ -95,10 +99,10 @@ class StripeController extends Controller
                 "type"        => "account_onboarding"
             ]);
 
-            // return Inertia::location($link->url);
-            return redirect()->away($link->url);
+            return Inertia::location($link->url);
+            // return redirect()->away($link->url);
         } catch (Exception $e) {
-            return redirect(route("stripe.index"))->with("error", "Invalid error:" . $e->getMessage());
+            return redirect(route("stripe.index"))->with("error", "Internal server error:" . $e->getMessage());
         }
     }
 
@@ -164,6 +168,19 @@ class StripeController extends Controller
             else{
                 return back()->with('error','Please setup your stripe account first.');
             }
+<<<<<<< HEAD
+=======
+
+            $stripe = new \Stripe\StripeClient('sk_test_51O3maCG7xsNScLmXVQNnz6tw1ukAvcKY5WhVEk7e1wRAH9pSC7rmk3gxRFKAUMrVMAxWsndWudNmmvqkmm2p2w1J00sBIpHExQ');
+            $sessioncreate = $stripe->checkout->sessions->create([
+                'success_url' => route('checkout.success', [$owner_id]),
+                'cancel_url' => route('checkout.cancel'),
+                'line_items' => $lineItems,
+                'mode' => 'payment',
+            ]);
+
+            return Inertia::location($sessioncreate->url);
+>>>>>>> a8464041f14c4b20706e0aea144a548c758d247e
 
 
             // $this->retrive($sessioncreate->id);
@@ -179,9 +196,6 @@ class StripeController extends Controller
             $id,
             []
         );
-
-        \Log::info('2');
-        \Log::info($data);
     }
 
     public function successCheckout($owner_id)

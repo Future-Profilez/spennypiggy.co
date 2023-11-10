@@ -1,9 +1,13 @@
+import { useAlerts } from '@/Components/Alerts';
 import Authenticated from '@/Layouts/AuthenticatedLayout'
-import { useForm } from '@inertiajs/react'
+import { useForm, Link } from '@inertiajs/react'
 import React from 'react'
+import { useRef } from 'react';
 
 export default function Stripe(props) {
 
+    const checkRef = useRef();
+    const{errorAlert} = useAlerts();
     // console.log('props', props);
     const {data, setData, get, post, processing, errors, reset} = useForm({
         termaccept: ''
@@ -18,6 +22,17 @@ export default function Stripe(props) {
         }
     }
 
+    const checkTerms = () => {
+        if(checkRef.current.checked){
+            window.location.href = route("stripe.connect", {step:"init"});
+            return true;
+        }
+        errorAlert("Please check accept terms & conditions checkbox");
+        checkRef.current.focus();
+        return false;
+    }
+
+
     return (
         <Authenticated>
             <div className='blackbg py-2 py-md-5'>
@@ -26,7 +41,7 @@ export default function Stripe(props) {
                     <span className='mintbg'></span>
                     <span className='bluebg'></span>
                 </div>
-                <form onSubmit={connectStripe}>
+                {/* <form onSubmit={connectStripe}> */}
                     <div className='stripNote p-8'>
                         <h3 className='font-GillSans mb-2 text-uppercase'>A note to our SW and NSFW content creators</h3>
                         <p className='mb-4'>You are about to go to a 3rd party site, Stripe.com where you will enter your private payment information.
@@ -36,19 +51,18 @@ export default function Stripe(props) {
                             Reach out to us if Stripe attempts to shut your account down at any point. We can help you retain it. Reaching out to us will also help prevent shutdowns for future users and improve Spenny Piggy for everyone.</p>
                         <div className='termselect'>
                             <label htmlFor="termaccept">
-                                <input type="checkbox" id="termaccept" name="termaccept" value="termaccept" required onChange={(e) => setData("termaccept", e.target.value)}></input>
+                                <input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept" required onChange={(e) => setData("termaccept", e.target.value)}></input>
                                 I will only use Spenny Piggy to receive gifts, tips and donations. I will not sell services or goods on my wishlist.
                             </label>
                         </div>
                     </div>
                     <div className="text-center flex justify-center mb-4 ">
-                        <button type='submit' className='btn-pink lg w-1/2'>Go to Stripe</button>
+                        <button className='btn-pink lg w-1/2' onClick={ () => {return checkTerms();}}>Go to Stripe</button>
                     </div>
-                </form>
+                {/* </form> */}
             </div>
             </div>
         </Authenticated>
     )
 }
 
- 

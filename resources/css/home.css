@@ -3,10 +3,7 @@
 .carticon svg path{fill:var(--black);}
 .header{height:127px;margin:0 auto;padding:10px 43px;border-radius:20px;background:var(--pink);}
 .headtitle{width:33.33%;font-size:24px;text-transform:uppercase;}
-.spennylogo {
-  width: auto;
-  max-width: 270px;
-}
+.spennylogo{width:auto;max-width:270px;}
 .cartLogin{width:33.33%;display:flex;align-items:center;align-content:center;justify-content:flex-end;}
 button.closemega{position:absolute;right:30px;top:30px;}
 /* .cartLink{margin-right:20px;}
@@ -72,15 +69,7 @@ margin:30px 0 0 0;}
 .footerbox{max-width:120px;}
 .footer{padding:50px 0 0;}
 .footer .containerbox{display:flex;align-items:flex-start;align-content:flex-start;justify-content:space-between;flex-wrap:wrap;}
-.footlogo {
-  width: 100%;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  align-content: center;
-  max-width: 190px;
-  margin: auto;
-}
+.footlogo{width:100%;text-align:center;display:flex;align-items:center;align-content:center;max-width:190px;margin:auto;}
 .footlinks ul{display:flex;align-items:center;align-content:center;justify-content:center;}
 .footlogo a{margin:auto;}
 .footlinksbox{width:100%;display:flex;align-items:flex-start;align-content:flex-start;justify-content:center;}
@@ -105,20 +94,14 @@ margin:30px 0 0 0;}
 .loginPage p{font-size:22px;}
 .loginform form ul li input:hover,.loginform form ul li input:focus{outline:none;}
 .loginform form ul li input:focus,.loginform form ul li input:focus-within{outline:none;box-shadow:8px 8px 0px 0px var(--black);transition:all ease .3s;}
-.wishManage{ width:100%;padding:0 0 0 25px;}
+.wishManage{width:100%;padding:0 0 0 25px;}
 .wishbanner img{height:398px;object-fit:cover;}
-.userProfile{ margin-top:-200px;}
+.userProfile{margin-top:-200px;}
 .userManageRt{width:773px;padding:0 0 0 35px;}
-select#country{border-radius:10px;border:1px solid var(--mint)!important;background:var(--black);padding:11px 10px 12px;color:var(--mint);font-family:var(--font-CeraGRBold);font-size:20px;font-style:normal;font-weight:400;letter-spacing:-1.8px;width:171px;}
+select#country{border-radius:10px;border:1px solid var(--mint)!important;background:var(--black);padding:11px 10px 12px;color:var(--mint);font-family:var(--font-CeraGRBold);font-size:20px;font-style:normal;font-weight:400;letter-spacing:-1.8px;min-width:121px;}
 select#country:hover,select#country:focus{outline:none;box-shadow:none;}
-.wishlistcntbox {
-  height: 330px;
-  border-radius: 20px;
-}
-.wishlistimg {
-  overflow: hidden;
-  border-radius: 15px;
-}
+.wishlistcntbox{height:330px;border-radius:20px;}
+.wishlistimg{overflow:hidden;border-radius:15px;}
 .wishlistimg img{width:100%;object-fit:cover;height:185px;}
 .wishlistcntbox.shadow-voilet{box-shadow:6px 6px 0 0 var(--voilet);}
 .sharebtn{background:var(--white);width:70px;height:30px;border-radius:5px;position:absolute;right:10px;top:-15px;display:flex;align-items:center;align-content:center;justify-content:center;text-align:center;color:var(--voilet);font-family:var(--font-CeraGRBold);font-size:13.538px;font-style:normal;font-weight:400;line-height:120%;letter-spacing:-1.218px;border:1px solid var(--voilet);}
@@ -275,16 +258,9 @@ letter-spacing:-0.63px;margin:0 0 6px;}
 .socialmedia li{margin-right:10px;}
 .socialmedia li:last-child{margin-right:0;}
 .noresultimg{max-width:110px;margin-bottom:10px !important;}
-.noResult h2.headingLg{font-size:23px !important; margin-bottom: 0 !important; }
-.noResult {
-  border-radius: 30px;
-  background: #171717 !important;
-}
-
-.userphotobox > img {
-  object-fit: cover;
-}
-
+.noResult h2.headingLg{font-size:23px !important;margin-bottom:0 !important;}
+.noResult{border-radius:30px;background:#171717 !important;}
+.userphotobox > img{object-fit:cover;}
 /* Responsive */
 @media(max-width:1500px){/* .menuList ul li a{font-size:50px;line-height:52px;}
 */
@@ -301,7 +277,7 @@ letter-spacing:-0.63px;margin:0 0 6px;}
 */
 .menuList{padding:25px 100px 25px 50px;}
 .userManageHead .btn-pink-md{width:230px;}
-.finish{padding:10px 10px 15px;border-radius:10px;}
+.finish{padding:20px;border-radius:10px;}
 .finish .btn-pink-lg{width:95%;font-size:16px;border-radius:12px;height:50px;}
 .userProfileDate{padding:10px 15px 15px;}
 .addsocial ul li a,.addsocial ul li button{font-size:19px;}
@@ -314,15 +290,17 @@ letter-spacing:-0.63px;margin:0 0 6px;}
 */
 .loginPage h2.headingLg{font-size:50px;line-height:60px;}
 }
-@media(max-width:991px){
-  .containerbox{max-width:740px;}
+@media(max-width:991px){.userPr{width:fit-content !important;padding:0 20px;margin-top:-58px;}
+.userphoto{margin:0 !important;padding-bottom:12px;}
+.userPr *{text-align:start !important;}
+.containerbox{max-width:740px;}
 .MegaMenu{flex-wrap:wrap;align-items:flex-start;align-content:flex-start;}
 .menuImg{width:100%;padding:20px 20px 20px 20px;justify-content:flex-start;}
 .menuList{width:100%;padding:30px 20px;}
 .menuImg img{max-width:200px;}
 .wishbanner img{height:280px;}
 .userphotobox{height:100px;border-radius:20px;margin-bottom:50px;}
-.userphoto img{width:90px;height:90px;}
+.userphoto img{width:100px;height:100px;}
 .userphoto{bottom:-40px;}
 .userprofilesec h2{font-size:19px;}
 .userId{font-size:18px;}
@@ -334,15 +312,15 @@ button.editProfile{padding:10px 10px;font-size:18px;}
 .addsocial ul li a svg{width:14px;height:14px;vertical-align:middle;}
 select#country{width:150px;padding:10px 10px;font-size:18px;}
 .wishlistimg img{height:135px;border-radius:10px;}
-.wishlistcntbox{height:260px; border-radius:10px!important;}
+.wishlistcntbox{height:260px;border-radius:10px!important;}
 .wishlistdetial{padding:16px 10px 10px;}
 .wishlistdetial h3{font-size:15px;}
 .wishlistdetial h4{font-size:16px;}
 .wishlistPage{padding-top:10px;}
 .userManageHead button.btn-pink{padding:10px 10px;width:13rem;}
-.header{height:80px;}
+.header{height:auto;}
 .headtitle{font-size:20px;}
-.spennylogo img{max-width:180px;}
+.spennylogo img{max-width:150px;}
 .welcomeHeading{font-size:50px;line-height:55px;}
 .welcomeTitle{margin-bottom:50px;font-size:22px;line-height:25px;}
 .wishlistbtn .w-2\/5{width:15rem}
@@ -355,21 +333,15 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .happycreator{padding:60px 15px;}
 .footlinks h2{margin:0 0 10px;font-size:20px;}
 .wishlistPage{padding-top:10px;}
-
 .userphotobox{height:300px;}
-
-.userProfile {
-  margin-top: 0px;
+.userProfile{margin-top:0px;}
 }
-
-}
-@media(max-width:767px){
-  .shadow-yellow{text-shadow:1px 3px 0 var(--yellow);}
-  .shadow-voilet {
-    box-shadow: 5px 5px 0 0 var(--voilet);
-}
-.headermain{padding-top:35px;padding-bottom:20px;}
-.header{padding:10px 13px;box-shadow:3px 6px 0 0 var(--mint);border-radius:10px;}
+@media(max-width:767px){.shadow-yellow{text-shadow:1px 3px 0 var(--yellow);}
+.shadow-voilet{box-shadow:5px 5px 0 0 var(--voilet);}
+.rotate-btn a{transform:rotate(0deg);}
+.headingMd{font-size:53px !important;line-height:53px !important;}
+.headermain{padding-top:15px;padding-bottom:20px;}
+.header{padding:0px 13px;box-shadow:3px 6px 0 0 var(--mint);border-radius:10px;}
 .spennylogo{margin:-10px 0 0 -20px;}
 button.closemega{position:absolute;right:15px;top:15px;}
 button.closemega svg{width:50px;}
@@ -383,15 +355,11 @@ button.closemega svg{width:50px;}
 */
 /* .userId{justify-content:flex-start;padding:0 0 0 20px;}
 */
-button.editProfile{position:absolute;right:20px;width:11rem;top:-150px;}
 .userId a{margin-left:2px!important;}
 .userProfileDate{position:relative;}
-.wishManage{ padding:0;}
+.wishManage{padding:0;}
 .userProfile{margin:0 auto;width:100%;}
 .userManageRt{padding:0;width:100%;}
-.userphoto{left:30px;}
-/* .finish{margin-top:0;}
-*/
 .wishlistModal{min-width:300px;}
 .wishinfo{padding:10px 15px 20px;}
 .joinus{padding:30px 15px 60px;}
@@ -400,7 +368,7 @@ button.editProfile{position:absolute;right:20px;width:11rem;top:-150px;}
 .editprofileHead h2{font-size:18px;text-align:left;}
 .editprofileHead{justify-content:flex-start;}
 .editForm ul li textarea{height:90px;}
-.heroSec{padding:10px 15px 30px;}
+.heroSec{padding:50px 15px;}
 .welcome{flex-wrap:wrap;justify-content:center;flex-direction:column-reverse;margin-top:0;}
 .welcomeRt{width:100%;text-align:center;margin-bottom:40px;}
 .welcomeRt img{margin:auto;}
@@ -414,10 +382,10 @@ button.editProfile{position:absolute;right:20px;width:11rem;top:-150px;}
 .wishlistbtnFixed a{background:var(--black);border:none!important;box-shadow:none!important;transform:inherit!important;width:100%!important;margin:auto;padding:27px 20px!important;font-size:22px!important;}
 .creatorslider .swiper-slide.swiper-slide-next .happyclientSec{transform:inherit;}
 .itsfree{padding-inline-start:0;}
-.addsocial ul{justify-content:center;}
 .addsocial ul li{width:auto;padding:0 20px;}
 .addsocial ul li a{font-size:20px;line-height:20px;}
 .addsocial ul li a svg{width:24px;height:24px;}
+.addsocial ul li:last-child{border:0 !important;}
 .finish button{width:96%;margin:auto;}
 .headingMd{font-size:40px;line-height:40px;}
 .text-shadow-black{text-shadow:1px 3px 0px var(--black);}
@@ -436,7 +404,7 @@ button.editProfile{position:absolute;right:20px;width:11rem;top:-150px;}
 .creatorslider .swiper-slide.swiper-slide-active .clientname,.creatorslider .swiper-slide.swiper-slide-active .postdate,.creatorslider .swiper-slide.swiper-slide-active .happyclientSec p{color:var(--white);}
 .funcnt p{font-size:14px;}
 .funboxs.pinkbg{flex-direction:column-reverse;}
-.loveboxes{width:100%;margin:0 0 40px;}
+.loveboxes{width:100%;margin:0 0 40px;max-width:300px;}
 .loveboxes img{margin:0 auto 15px;}
 .footer .containerbox{flex-wrap:wrap;justify-content:center;}
 .footer{padding:20px 0 85px;}
@@ -471,13 +439,15 @@ button.editProfile{position:absolute;right:20px;width:11rem;top:-150px;}
 .howWorkTab{margin-top:25px;padding-bottom:20px;}
 /* No Result */
 .noResult h2.headingLg{font-size:40px;line-height:44px;}
+.welcomeTitle{transform:rotate(0deg);}
+.funpart{padding-bottom:0px;}
 }
-@media(max-width:575px){button.cartLink svg{width:40px;height:40px;}
-.header{height:60px;}
+@media(max-width:575px){.welcomeTitle{max-width:260px;margin:auto;}
+button.cartLink svg{width:60px;height:60px;}
 .carticon svg{width:30px;}
 .menuImg img{max-width:140px;}
 .wishlistbox{flex-wrap:wrap;justify-content:center!important;}
-.wishlistcntbox{margin-bottom:20px; }
+.wishlistcntbox{margin-bottom:20px;}
 .userManageHead{flex-wrap:wrap;}
 /* select#country{width:100%;margin-bottom:10px;}
 */
@@ -492,24 +462,19 @@ button.editProfile{position:absolute;right:20px;width:11rem;top:-150px;}
 .howWorkTab .nav-tabs li{margin:0 6px;}
 .accsettingList ul li a,.accsettingList ul li button,.notification{font-size:13px;}
 .noResult h2.headingLg{font-size:30px;line-height:34px;}
+.wishlistbtnFixed a{box-shadow:3px 3px 16px 3px #fdfdfd33 !important;}
 }
 @media(max-width:449px){.userphoto{left:7px;}
-  .userphoto img{width:70px;height:70px;}
-  button.editProfile{right:10px;width:10rem;top:-143px;font-size:16px;padding:8px 9px;}
-  .socialmedia{margin-top:2px!important;}
-  .userProfileDate{padding-top:0;}
-  .addsocial ul li{padding:0 6px;}
-  .addsocial ul li a{font-size:17px;line-height:20px;}
-  .footlinks ul li a{font-size:15px;}
-  select#country{width:100%;margin-bottom:10px;}
-  .wishlistcntbox{max-width:100%;width:100%;}
+.socialmedia{margin-top:2px!important;}
+.userProfileDate{padding-top:0;}
+.addsocial ul li{padding:0 6px;}
+.addsocial ul li a{font-size:17px;line-height:20px;}
+.footlinks ul li a{font-size:15px;}
+select#country{width:100%;margin-bottom:10px;}
+.wishlistcntbox{max-width:100%;width:100%;}
 }
-@media(max-width:400px){
-  .userManageRt > .row > div {
-    width: 100% !important;
-}
-
-  .spennylogo img{max-width:120px;}
+@media(max-width:400px){.userManageRt > .row > div{width:100% !important;}
+.spennylogo img{max-width:120px;}
 .welcomeHeading{font-size:35px;line-height:40px;}
 /* No Result */
 .noResult h2.headingLg{font-size:25px;line-height:30px;}
