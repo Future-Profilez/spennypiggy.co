@@ -70,11 +70,7 @@ class StripeController extends Controller
                         'transfers' => ['requested' => true],
                     ],
                     'business_type' => 'individual',
-<<<<<<< HEAD
-                    'business_profile' => ['url' => route("user.show", ["username" => $user->username])],
-=======
                     // 'business_profile' => ['url' => route("user.show", ["username" => $user->username])],
->>>>>>> a8464041f14c4b20706e0aea144a548c758d247e
                 ];
 
 
@@ -168,19 +164,6 @@ class StripeController extends Controller
             else{
                 return back()->with('error','Please setup your stripe account first.');
             }
-<<<<<<< HEAD
-=======
-
-            $stripe = new \Stripe\StripeClient('sk_test_51O3maCG7xsNScLmXVQNnz6tw1ukAvcKY5WhVEk7e1wRAH9pSC7rmk3gxRFKAUMrVMAxWsndWudNmmvqkmm2p2w1J00sBIpHExQ');
-            $sessioncreate = $stripe->checkout->sessions->create([
-                'success_url' => route('checkout.success', [$owner_id]),
-                'cancel_url' => route('checkout.cancel'),
-                'line_items' => $lineItems,
-                'mode' => 'payment',
-            ]);
-
-            return Inertia::location($sessioncreate->url);
->>>>>>> a8464041f14c4b20706e0aea144a548c758d247e
 
 
             // $this->retrive($sessioncreate->id);

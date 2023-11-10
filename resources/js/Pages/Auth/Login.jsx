@@ -32,11 +32,7 @@ export default function Login({ status, canResetPassword }) {
             preserveScroll: true,
             onSuccess: (resp) => {
                 reset();
-<<<<<<< HEAD
-                successAlert(resp.props.flash?.success);
-=======
                 // successAlert(resp.props.flash?.success || "Logged in successfully.");
->>>>>>> a8464041f14c4b20706e0aea144a548c758d247e
                 // setClose(false);
                 // setClear(new Date);
                 // setTimeout(() => {
