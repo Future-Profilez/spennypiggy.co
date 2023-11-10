@@ -78,7 +78,7 @@ class StripeController extends Controller
                 $user->account_id = $account->id;
                 $user->save();
             } catch (Exception $e) {
-                return redirect(route("stripe.index"))->with("error", $e->getMessage());
+                return redirect(route("stripe.index"))->with("error", "First invalid error");
             }
         }
 
@@ -95,9 +95,10 @@ class StripeController extends Controller
                 "type"        => "account_onboarding"
             ]);
 
-            return Inertia::location($link->url);
+            // return Inertia::location($link->url);
+            return redirect()->away($link->url);
         } catch (Exception $e) {
-            return redirect(route("stripe.index"))->with("error", $e->getMessage());
+            return redirect(route("stripe.index"))->with("error", "Invalid error:" . $e->getMessage());
         }
     }
 
