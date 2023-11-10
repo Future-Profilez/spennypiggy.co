@@ -94,8 +94,8 @@ export default function Register() {
                     <InputError message={errors.password_confirmation} className="mt-2" />
                 </div> */}
 
-            <div className='loginPage mintbg py-14'>
-                <h2 className='headingLg pb-5 text-center mb-6'>Create your Account</h2>
+            <div className='loginPage blackbg py-14'>
+                <h2 className='headingLg pb-0 pb-md-4 text-center mb-6'>Create your Account</h2>
                 <div className='loginform mt-5 mx-auto border-black whbg shadow-black'>
                     <div className='loginheadbox pinkbg'>
                         <span className='mintbg'></span>

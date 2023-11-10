@@ -106,7 +106,9 @@ export default function Dashboard(props) {
                                                 })}
                                             </>
                                             :
-                                            <Nocontent />
+                                            <div className='col-md-12' >
+                                                <Nocontent text="Currently you don't have any wish item" />
+                                            </div>
                                         }
                                         </div>
                                     </div>
