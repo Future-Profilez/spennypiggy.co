@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\CheckoutUser;
 use App\Models\StripePaymentDetail;
 use App\Models\User;
 use App\Models\UserCart;
@@ -138,9 +139,10 @@ class StripeController extends Controller
     public function createCheckout($owner_id)
     {
         try {
-            $user = User::where('id',Auth::id())->first();
+            \Log::info($owner_id);
+            $user = User::where('id', Auth::id())->first();
 
-            if($user->charges_enabled){
+            if ($user->charges_enabled) {
                 $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->with(['wish'])->get();
                 $lineItems = [];
                 foreach ($getdata as $dd) {
@@ -157,10 +159,16 @@ class StripeController extends Controller
                     'line_items' => $lineItems,
                     'mode' => 'payment',
                 ]);
+
+                $owner = User::where('id', $owner_id)->first();
+
+                //send email
+                CheckoutUser::dispatch($user);
+                CheckoutUser::dispatch($owner);
+
                 return Inertia::location($sessioncreate->url);
-            }
-            else{
-                return back()->with('error','Please setup your stripe account first.');
+            } else {
+                return back()->with('error', 'Please setup your stripe account first.');
             }
 
 
