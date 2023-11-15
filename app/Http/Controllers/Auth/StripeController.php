@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\StripePaymentDetail;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\WishItem;
 use App\StripeControl;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -56,9 +58,9 @@ class StripeController extends Controller
 
         $user = User::find(Auth::id());
         if (empty($user->account_id)) {
-            if (!$request->isMethod("POST")) {
-                return redirect()->back()->with("error", "Invalid request!");
-            }
+            // if (!$request->isMethod("POST")) {
+            //     return redirect()->back()->with("error", "Invalid request!");
+            // }
 
             try {
                 $payload = [
@@ -69,7 +71,7 @@ class StripeController extends Controller
                         'card_payments' => ['requested' => true],
                         'transfers' => ['requested' => true],
                     ],
-                    // 'business_type' => 'individual',
+                    'business_type' => 'individual',
                     // 'business_profile' => ['url' => route("user.show", ["username" => $user->username])],
                 ];
 
@@ -78,7 +80,7 @@ class StripeController extends Controller
                 $user->account_id = $account->id;
                 $user->save();
             } catch (Exception $e) {
-                return redirect(route("stripe.index"))->with("error", $e->getMessage());
+                return redirect(route("stripe.index"))->with("error", "First invalid error");
             }
         }
 
@@ -96,8 +98,9 @@ class StripeController extends Controller
             ]);
 
             return Inertia::location($link->url);
+            // return redirect()->away($link->url);
         } catch (Exception $e) {
-            return redirect(route("stripe.index"))->with("error", $e->getMessage());
+            return redirect(route("stripe.index"))->with("error", "Internal server error:" . $e->getMessage());
         }
     }
 
@@ -135,31 +138,39 @@ class StripeController extends Controller
     public function createCheckout($owner_id)
     {
         try {
-            $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->with(['wish'])->get();
-            $lineItems = [];
-            foreach ($getdata as $dd) {
-                $lineItems[] = [
-                    'price' => $dd->wish->price_id,
-                    'quantity' => 1,
-                ];
+            $user = User::where('id',Auth::id())->first();
+
+            if($user->charges_enabled){
+                $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->with(['wish'])->get();
+                $lineItems = [];
+                foreach ($getdata as $dd) {
+                    $lineItems[] = [
+                        'price' => $dd->wish->price_id,
+                        'quantity' => 1,
+                    ];
+                }
+    
+                $stripe = new \Stripe\StripeClient('sk_test_51O3maCG7xsNScLmXVQNnz6tw1ukAvcKY5WhVEk7e1wRAH9pSC7rmk3gxRFKAUMrVMAxWsndWudNmmvqkmm2p2w1J00sBIpHExQ');
+                $sessioncreate = $stripe->checkout->sessions->create([
+                    'success_url' => route('checkout.success', [$owner_id]),
+                    'cancel_url' => route('checkout.cancel'),
+                    'line_items' => $lineItems,
+                    'mode' => 'payment',
+                ]);
+    
+    
+                \Log::info("ssss");
+                \Log::info($sessioncreate);
+                return Inertia::location($sessioncreate->url);
             }
-
-            $stripe = new \Stripe\StripeClient('sk_test_51O3maCG7xsNScLmXVQNnz6tw1ukAvcKY5WhVEk7e1wRAH9pSC7rmk3gxRFKAUMrVMAxWsndWudNmmvqkmm2p2w1J00sBIpHExQ');
-            $sessioncreate = $stripe->checkout->sessions->create([
-                'success_url' => route('checkout.success', [$owner_id]),
-                'cancel_url' => route('checkout.cancel'),
-                'line_items' => $lineItems,
-                'mode' => 'payment',
-            ]);
-
-
-            \Log::info("ssss");
-            \Log::info($sessioncreate);
-            return Inertia::location($sessioncreate->url);
+            else{
+                return back()->with('error','Please setup your stripe account first.');
+            }
 
 
             // $this->retrive($sessioncreate->id);
         } catch (\Throwable $th) {
+            \Log::error("Error in createCheckout: " . $th->getMessage());
             throw $th;
         }
     }
@@ -171,9 +182,6 @@ class StripeController extends Controller
             $id,
             []
         );
-
-        \Log::info('2');
-        \Log::info($data);
     }
 
     public function successCheckout($owner_id)
@@ -184,11 +192,21 @@ class StripeController extends Controller
             $dd->save();
         }
 
+        $sessionId = session('session_id');
+        StripePaymentDetail::where('session_id', $sessionId)->update([
+            'payment_status' => 'paid',
+            'updated_at' => Carbon::now(),
+        ]);
         return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
     }
 
     public function cancelCheckout()
     {
+        $sessionId = session('session_id');
+        StripePaymentDetail::where('session_id', $sessionId)->update([
+            'payment_status' => 'unpaid',
+            'updated_at' => Carbon::now(),
+        ]);
         return view('cancel');
     }
 }
