@@ -15,6 +15,15 @@ export default function Footer() {
     <Helmet>
         <script type="text/javascript" src="https://app.termly.io/embed.min.js" 
         data-auto-block="on" data-website-uuid="ced8ded9-995d-471a-bf54-880b8c679a81" ></script>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-11395921981"></script>
+        {/* <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){
+            dataLayer && dataLayer.push(arguments)
+          }
+          gtag('js', new Date());
+          gtag('config', 'AW-11395921981');
+        </script> */}
     </Helmet>
     <div>
         <div className='footer'>
