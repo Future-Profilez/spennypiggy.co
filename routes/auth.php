@@ -25,6 +25,7 @@ use App\Models\WishCategory;
 //email verify get
 Route::get('get-verify-email-page/{uuid}', [RegisteredUserController::class, 'getVerifyEmailPage'])
     ->name('get.verify.email.page');
+
 Route::post('verify-email', [RegisteredUserController::class, 'verifyEmail'])
     ->name('verify.email');
 
@@ -107,6 +108,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/add-to-cart/{uuid}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
 
     Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
+
+    Route::get('account', function () {
+        return Inertia::render('accountsetting/Accountsetting');
+    })->name("account");
+
+    
 });
 
 Route::get('/stripe', function () {
@@ -117,4 +124,9 @@ Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class
 
 Route::get('users', [MyController::class, 'getUsers'])->name('users');
 
+Route::get('/how-it-works', function () {
+    return Inertia::render('howitworks/Works');
+})->name("how-it-works");
+
 Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
+

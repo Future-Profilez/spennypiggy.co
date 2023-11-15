@@ -2,6 +2,7 @@ import React from "react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import { useState } from "react";
 import UserCarts from "../cart/UserCarts";
+import Nocontent from "@/includes/Nocontent";
 
 export default function Cart(props) {
 
@@ -19,7 +20,9 @@ export default function Cart(props) {
                                 return <UserCarts key={i} data={c} />
                             })}</>
                             : <> <div className="p-5 text-center" >
-                                <h2 className="py-5 my-5 text-white" >Nothing to show.</h2>
+                                <div className="containerbox" >
+                                <Nocontent text={"Cart is empty."}  />
+                                </div>
                             </div> </>
                         }
                     </div>

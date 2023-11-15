@@ -26,7 +26,33 @@ export default function Home({ auth, laravelVersion, user }) {
         window.addEventListener("resize", windowWidth);
     }, []);
 
-    console.log("auth", auth);
+    const msg = [
+        {
+          "id": 1,
+          "date":'Nov 12, 2023, 04:00 pm',
+          "name": "Titch_dnb",
+          "message": "Honestly, this site has been a game changer for me! I’ve been able to get new decks and keep creating the music I love! All thanks to my fans and anonymous gifts I’ve received!"
+        },
+        {
+          "id": 2,
+          "name": "ysheeblack",
+          "date":'Oct 26, 2023, 05:35 pm',
+          "message": "Girl… I never leave reviews but trust and believe this site is the goat! I’ve been able to upgrade my looks and put on such elevated shows! All thanks to my fans who love me! I didn’t realize how much! And I keep all the cash! Honestly, it’s crazy!"
+        },
+        {
+          "id": 3,
+          "name": "legitjustjack",
+          "date":'Nov 15, 2023, 04:15 am',
+          "message": "I honestly didn’t realize how much I needed spenny piggy in my life! I’ve had loads of gifts funded already and from random strangers! I didn’t realize how easy and simple it could be to get support from my fans!"
+        },
+        {
+          "id": 4,
+          "name": "jademandongwe__",
+          "date":'Nov 08, 2023, 11:45 pm',
+          "message": "Getting to keep everything I earn has been crazy next level! This site has been key in supporting me and my goals!! Genuinely so so impressed! And it’s sexy AF to look at too! x"
+        }
+      ]
+      
 
     return (
         <Guest auth={auth.user} user={auth.user}>
@@ -39,7 +65,7 @@ export default function Home({ auth, laravelVersion, user }) {
                         <div className="welcome">
                             <div className="welcomeLeft">
                                 <h2 className="welcomeHeading shadow-yellow font-GillSans text-uppercase mb-1">
-                                    {width} Oink! Oink! <br /> B*tch{" "}
+                                   Oink! Oink! <br /> B*tch{" "}
                                 </h2>
                                 <h3 className="welcomeTitle shadow-yellow text-uppercase font-GillSans mb-20">
                                     Get Your Lifestyle funded! 🎁
@@ -174,107 +200,37 @@ export default function Home({ auth, laravelVersion, user }) {
                                 onSlideChange={() =>
                                     console.log("slide change")
                                 }
-                                onSwiper={(swiper) => console.log(swiper)}
-                            >
-                                <SwiperSlide>
-                                    <div className="happyclientSec">
-                                        <div className="clientdetail">
-                                            <img src={userimg} alt />
-                                            <div className="clientname">
-                                                <strong className="font-CeraGRBold">
-                                                    Dave Turner
-                                                </strong>
-                                                @DaveTheRave
+                                onSwiper={(swiper) => console.log(swiper)}>
+                                {msg && msg.map((m , i)=>{ 
+                                    return <>
+                                         <SwiperSlide>
+                                            <div className="happyclientSec">
+                                                {/* <div className="clientdetail">
+                                                    <img src={userimg} alt />
+                                                    <div className="clientname">
+                                                        <strong className="font-CeraGRBold">
+                                                            Dave Turner
+                                                        </strong>
+                                                        @DaveTheRave
+                                                    </div>
+                                                </div> */}
+                                                <div className="clientdetail">
+                                                    <div className="clientname ps-0">
+                                                        <strong className="font-CeraGRBold">
+                                                            @{m.name}
+                                                        </strong>
+                                                    </div>
+                                                </div>
+                                                <p>
+                                                {m.message}
+                                                </p>
+                                                <div className="postdate">
+                                                   {m.date}
+                                                </div>
                                             </div>
-                                        </div>
-                                        <p>
-                                            “I've been a loyal fan for years,
-                                            but this platform takes it to a
-                                            whole new level. Two-way anonymity
-                                            lets us interact intimately, while
-                                            the fraud protection eases our
-                                            minds. It's a win-win for everyone,
-                                            making the fan-creator relationship
-                                            more exciting and secure”
-                                        </p>
-                                        <div className="postdate">
-                                            Oct 23, 2023, 04:00 pm
-                                        </div>
-                                    </div>
-                                </SwiperSlide>
-
-                                <SwiperSlide>
-                                    <div className="happyclientSec">
-                                        <div className="clientdetail">
-                                            <img src={userimg} alt />
-                                            <div className="clientname">
-                                                <strong>Dave Turner</strong>
-                                                @DaveTheRave
-                                            </div>
-                                        </div>
-                                        <p>
-                                            “I've been a loyal fan for years,
-                                            but this platform takes it to a
-                                            whole new level. Two-way anonymity
-                                            lets us interact intimately, while
-                                            the fraud protection eases our
-                                            minds. It's a win-win for everyone,
-                                            making the fan-creator relationship
-                                            more exciting and secure”
-                                        </p>
-                                        <div className="postdate">
-                                            Oct 23, 2023, 04:00 pm
-                                        </div>
-                                    </div>
-                                </SwiperSlide>
-                                <SwiperSlide>
-                                    <div className="happyclientSec">
-                                        <div className="clientdetail">
-                                            <img src={userimg} alt />
-                                            <div className="clientname">
-                                                <strong>Dave Turner</strong>
-                                                @DaveTheRave
-                                            </div>
-                                        </div>
-                                        <p>
-                                            “I've been a loyal fan for years,
-                                            but this platform takes it to a
-                                            whole new level. Two-way anonymity
-                                            lets us interact intimately, while
-                                            the fraud protection eases our
-                                            minds. It's a win-win for everyone,
-                                            making the fan-creator relationship
-                                            more exciting and secure”
-                                        </p>
-                                        <div className="postdate">
-                                            Oct 23, 2023, 04:00 pm
-                                        </div>
-                                    </div>
-                                </SwiperSlide>
-                                <SwiperSlide>
-                                    <div className="happyclientSec">
-                                        <div className="clientdetail">
-                                            <img src={userimg} alt />
-                                            <div className="clientname">
-                                                <strong>Dave Turner</strong>
-                                                @DaveTheRave
-                                            </div>
-                                        </div>
-                                        <p>
-                                            “I've been a loyal fan for years,
-                                            but this platform takes it to a
-                                            whole new level. Two-way anonymity
-                                            lets us interact intimately, while
-                                            the fraud protection eases our
-                                            minds. It's a win-win for everyone,
-                                            making the fan-creator relationship
-                                            more exciting and secure”
-                                        </p>
-                                        <div className="postdate">
-                                            Oct 23, 2023, 04:00 pm
-                                        </div>
-                                    </div>
-                                </SwiperSlide>
+                                        </SwiperSlide>
+                                    </>
+                                })}
                             </Swiper>
                         </div>
                     </div>
@@ -289,12 +245,11 @@ export default function Home({ auth, laravelVersion, user }) {
                         fans right away!
                     </p>
                     <div class="1text-center rotate-btn text-center flex items-center  justify-center content-center w-full">
-                        <Link
-                            to="/"
-                            className="btn-pink lg w-80 shadow-mint border-mint"
-                        >
+                        <a target='_blank'
+                            href="https://whoyouinto.com"
+                            className="btn-pink lg w-80 shadow-mint border-mint">
                             Join Whoyouinto
-                        </Link>
+                        </a>
                     </div>
                 </div>
 

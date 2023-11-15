@@ -1,8 +1,10 @@
 body{position:relative;font-family:var(--para-font);}
 /* Comman Css */
-.headingLg{color:var(--pink);text-shadow:1px 7px 0px var(--black);font-family:var(--body-font);font-size:85px;font-style:normal;font-weight:400;line-height:76px;text-transform:uppercase;-webkit-text-stroke:1px var(--black);-moz-text-stroke:1px var(--black);-o-text-stroke:1px var(--black);}
-.headingMd{color:var(--pink);text-shadow:2px 10px 0px var(--black);font-family:var(--body-font);font-size:65px;font-style:normal;font-weight:400;line-height:63px;text-transform:uppercase;-webkit-text-stroke:1px var(--black);-moz-text-stroke:1px var(--black);-o-text-stroke:1px var(--black);}
-.headingSm{color:var(--pink);text-shadow:1px 7px 0px var(--black);font-family:var(--body-font);font-size:50px;font-style:normal;font-weight:400;line-height:50px;text-transform:uppercase;-webkit-text-stroke:1px var(--black);-moz-text-stroke:1px var(--black);-o-text-stroke:1px var(--black);}
+.headingLg{letter-spacing: 1px; color:var(--pink);text-shadow:1px 7px 0px var(--black);font-family:var(--body-font);font-size:85px;font-style:normal;font-weight:400;line-height:76px;text-transform:uppercase;-webkit-text-stroke:1px var(--black);-moz-text-stroke:1px var(--black);-o-text-stroke:1px var(--black);}
+.headingMd{letter-spacing: 1px; color:var(--pink);text-shadow:2px 10px 0px var(--black);font-family:var(--body-font);font-size:65px;font-style:normal;font-weight:400;line-height:63px;text-transform:uppercase;-webkit-text-stroke:1px var(--black);-moz-text-stroke:1px var(--black);-o-text-stroke:1px var(--black);}
+.headingSm{letter-spacing: 1px; color:var(--pink);text-shadow:1px 7px 0px var(--black);font-family:var(--body-font);font-size:50px;font-style:normal;font-weight:400;line-height:50px;text-transform:uppercase;-webkit-text-stroke:1px var(--black);-moz-text-stroke:1px var(--black);-o-text-stroke:1px var(--black);}
+
+
 .text-CeraGR{font-family:var(--para-font);}
 .font-GillSans{font-family:var(--heading-font);}
 .font-CeraGR{font-family:var(--para-font);}
@@ -25,7 +27,7 @@ body{position:relative;font-family:var(--para-font);}
 .shadow-mint{box-shadow:10px 10px 0 0 var(--mint);}
 .shadow-pink{box-shadow:10px 10px 0 0 var(--pink);}
 .shadow-purple{box-shadow:10px 10px 0 0 var(--purple);}
-.shadow-yellow{text-shadow: 3px 4px 0 #E6EA7B;;}
+.shadow-yellow{text-shadow: 1px 2px 0 #E6EA7B;;}
 .text-pink{color:var(--pink);}
 .text-mint{color:var(--mint);}
 .text-purple{color:var(--purple);}
@@ -42,10 +44,11 @@ body{position:relative;font-family:var(--para-font);}
 .btn-pink.sm{border-radius:8px;font-size:14px;padding:12px 10px;}
 
 .btn-pink lg:hover,.btn-pink lg:focus{box-shadow:none;transition:all ease .3s;}
-.rotate-btn a:hover,.rotate-btn a:focus{transform:inherit;box-shadow:8px 8px 0 0 rgba(0,0,0,0.9);}
+.rotate-btn a, .rotate-btn button:hover,.rotate-btn a, .rotate-btn button:focus{transform:rotate(0deg);box-shadow:8px 8px 0 0 rgba(0,0,0,0.9);}
 .btn-pink-md{border-radius:15px;border:1px solid var(--black);background:var(--pink);color:var(--white);font-family:var(--heading-font);font-size:18px;font-style:normal;font-weight:400;line-height:19px;text-transform:uppercase;width:286px;height:60px;display:flex;text-align:center;align-items:center;align-content:center;justify-content:center;box-shadow:6px 6px 0 0 rgba(0,0,0,0.9);transition:all ease .3s;}
 .bt-wh{border-radius:10px;border:1px solid var(--voilet);background:var(--white);box-shadow:5px 5px 0px 0px var(--voilet);display:flex;width:100%;padding:14px 10px;text-align:center;align-items:center;align-content:center;justify-content:center;color:var(--voilet);font-size:22px;font-style:normal;font-weight:400;line-height:120%;letter-spacing:-1.98px;cursor:pointer;}
 .btn-mint{border-radius:9px;background:var(--mint);box-shadow:4px 4px 0px 0px var(--black);color:var(--voilet);text-align:right;font-family:var(--heading-font);font-size:20px;font-style:normal;font-weight:400;line-height:15px;text-transform:uppercase;display:inline-flex;width:130px;height:51px;align-items:center;align-content:center;justify-content:center;transition:all ease .3s;}
 .btn-mint:hover,.btn-mint:focus{box-shadow:8px 8px 0px 0px var(--black);transition:all ease .3s;}
 
 /* end */
+.btn-pink.lg2{padding:20px;letter-spacing:1px;font-size:20px !important;}
