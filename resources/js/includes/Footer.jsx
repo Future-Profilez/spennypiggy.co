@@ -38,9 +38,8 @@ export default function Footer() {
                 <img src={footlogo} alt="img" />
               </Link>
             </div>
-
-            <a  onclick={display}
-            id="termly-consent-preferences">Consent Preferences</a>
+            {/* <a  onclick={display}
+            id="termly-consent-preferences">Consent Preferences</a> */}
             {/* <iframe src="https://app.termly.io/notify/696baafc-17cd-4a28-b758-a8f597cf2ad6" > </iframe> */}
 
             <div className='footlinksbox'>
