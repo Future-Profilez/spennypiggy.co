@@ -149,7 +149,7 @@ class StripeController extends Controller
                         'quantity' => 1,
                     ];
                 }
-    
+
                 $stripe = new \Stripe\StripeClient('sk_test_51O3maCG7xsNScLmXVQNnz6tw1ukAvcKY5WhVEk7e1wRAH9pSC7rmk3gxRFKAUMrVMAxWsndWudNmmvqkmm2p2w1J00sBIpHExQ');
                 $sessioncreate = $stripe->checkout->sessions->create([
                     'success_url' => route('checkout.success', [$owner_id]),
@@ -157,10 +157,6 @@ class StripeController extends Controller
                     'line_items' => $lineItems,
                     'mode' => 'payment',
                 ]);
-    
-    
-                \Log::info("ssss");
-                \Log::info($sessioncreate);
                 return Inertia::location($sessioncreate->url);
             }
             else{
