@@ -30,7 +30,7 @@ export default function Register() {
         <GuestLayout>
             <Head title="Register" />
 
-            <div className='  loginPage blackbg py-14'>
+            <div className='loginPage blackbg py-14'>
             <div className='containerbox '>
 
                 <h2 className='headingLg pb-0 pb-md-4 text-center '>Create Account</h2>
