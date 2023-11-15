@@ -108,6 +108,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/add-to-cart/{uuid}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
 
     Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
+
+    Route::get('account', function () {
+        return Inertia::render('accountsetting/Accountsetting');
+    })->name("account");
+
+    
 });
 
 Route::get('/stripe', function () {

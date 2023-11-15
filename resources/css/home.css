@@ -244,7 +244,7 @@ letter-spacing:-0.63px;margin:0 0 6px;}
   line-height: 24px;
 }
 .termselect label input{display:inline-block;vertical-align:middle;margin:-1px 6px 0 0;}
-.accountsetting{max-width:675px;width:96%;margin-top:60px;margin-bottom:60px;}
+.accountsetting{max-width:675px;width:96%; }
 .accsettingList ul li{margin:0 0 10px;border-radius:10px;border:2px solid var(--black);background:var(--white);box-shadow:3px 3px 0px 0px var(--black);}
 .accsettingList ul li a,.accsettingList ul li button,.notification{position:relative;display:flex;width:100%;padding:15px;padding-right:40px;align-items:center;align-content:center;justify-content:space-between;color:#1E1E1E;font-family:var(--font-CeraGRBold);font-size:18px;font-style:normal;letter-spacing:-0.36px;}
 .accsettingList ul li a:after,.accsettingList ul li button:after,.notification:after{content:'';position:absolute;right:23px;top:21px;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:7px solid var(--black);}

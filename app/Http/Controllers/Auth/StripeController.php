@@ -139,15 +139,13 @@ class StripeController extends Controller
     public function createCheckout($owner_id)
     {
         try {
-            \Log::info($owner_id);
             $user = User::where('id', Auth::id())->first();
-
             if ($user->charges_enabled) {
                 $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->with(['wish'])->get();
                 $lineItems = [];
                 foreach ($getdata as $dd) {
                     $lineItems[] = [
-                        'price' => $dd->wish->price_id,
+                        'price' => $dd->wish->price_id ?? '',
                         'quantity' => 1,
                     ];
                 }
