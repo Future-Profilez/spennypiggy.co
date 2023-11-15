@@ -13,7 +13,6 @@ import { useAlerts } from '@/Components/Alerts';
 export default function Login({ status, canResetPassword }) {
 
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
-
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
@@ -37,7 +36,7 @@ export default function Login({ status, canResetPassword }) {
                 // setClear(new Date);
                 // setTimeout(() => {
                 //     setClose();
-                // }, 100)
+                // }, 100);
             },
             onError: () => {
                 reset("password");
@@ -51,8 +50,9 @@ export default function Login({ status, canResetPassword }) {
             {status && <div className="mb-4 font-medium text-sm text-green-600">{status}</div>}
 
             <div className='loginPage blackbg px-3 py-5'>
-                <h2 className='headingLg mb-5 text-center mb-6'>Login</h2>
-                <div className='loginform mx-auto border-black whbg shadow-black'>
+                <h2 className='headingLg mb-3 text-center '>Welcome Back !</h2>
+                <p className='text-center text-white mb-5 font-CeraGRBold'>Don't have an account? <Link href={route('register')} className=' mb-6 text-pink'>Signup</Link></p>
+                <div className='loginform mx-auto border-black whbg shadow-mint'>
                     <div className='loginheadbox pinkbg'>
                         <span className='mintbg'></span>
                         <span className='bluebg'></span>
@@ -88,10 +88,9 @@ export default function Login({ status, canResetPassword }) {
 
                             <div className='rotate-btn text-center flex justify-center mt-10'>
                                 {/* <button type='submit' className='btn-pink lg'>Login</button> */}
-                                <LoaderButton disabled={processing} className='btn-pink lg' spinnerClassName='fill-red-600'>{processing ? "Wait" : "Log in"}</LoaderButton>
+                                <LoaderButton disabled={processing} className='btn-pink lg2 lg w-80' spinnerClassName='fill-red-600'>{processing ? "Wait" : "Log in"}</LoaderButton>
                             </div>
 
-                            <p className='text-center mt-4 font-CeraGRBold'>Don't have an account? <Link href={route('register')} className=' mb-6 text-pink'>Signup</Link></p>
                             {/* {canResetPassword && (
                                 <Link
                                     href={route('password.request')}

@@ -13,11 +13,11 @@ export default function Header(props) {
     };
 
     useEffect(()=>{
-      if(isActive){
-          document.body.classList.add('modal-open');
-      } else { 
-          document.body.classList.remove('modal-open');
-      }
+      // if(isActive){
+      //     document.body.classList.add('modal-open');
+      // } else { 
+      //     document.body.classList.remove('modal-open');
+      // }
     },[isActive]);
 
 

@@ -6,8 +6,6 @@
 .spennylogo{width:auto;max-width:270px;}
 .cartLogin{width:33.33%;display:flex;align-items:center;align-content:center;justify-content:flex-end;}
 button.closemega{position:absolute;right:30px;top:30px;}
-/* .cartLink{margin-right:20px;}
-*/
 .welcome{margin:20px auto 0;display:flex;align-items:center;align-content:center;justify-content:space-between;}
 .welcomeHeading{color:var(--pink);font-size:65px;line-height:62.5px;}
 .welcomeTitle{color:var(--pink);font-size:35px;line-height:62.5px;}
@@ -19,7 +17,7 @@ button.closemega{position:absolute;right:30px;top:30px;}
 .btn-pink.shadow-mint{box-shadow:6px 6px 0 0 var(--mint);border:2px solid var(--mint);}
 .btn-pink.shadow-mint:hover{box-shadow:10px 10px 0 0 var(--mint);}
 /* mega Menu */
-.MegaMenu{display:none;opacity:0;transition:all ease .3s;position:absolute;top:0;left:0;right:0;width:100%;height:100vh;background:var(--pink);align-items:stretch;align-content:stretch;justify-content:center;z-index:9999;}
+.MegaMenu{display:none;opacity:0;transition:all ease .3s;position:fixed;top:0;left:0;right:0;width:100%;height:100vh;background:var(--pink);align-items:stretch;align-content:stretch;justify-content:center;z-index:9999;}
 .menuImg{width:50%;border-right:1px solid var(--yellow);padding:120px 40px 40px 40px;display:inline-flex;align-items:flex-start;align-content:flex-start;justify-content:center;}
 .menuList{width:50%;display:flex;align-items:center;align-content:center;justify-content:flex-start;padding:25px 100px 25px 70px;}
 .menuList ul li{margin:0 0 20px;}
@@ -29,7 +27,7 @@ button.closemega{position:absolute;right:30px;top:30px;}
 /* end */
 /* .funpart{background:var(--lightpink);}
 */
-.rotate-btn a{transform:rotate(-11deg);}
+.rotate-btn a, .rotate-btn button{transform:rotate(-7deg);}
 .wishlistbtn{margin-top:60px;}
 .btn-pink-lg:hover,.btn-pink-lg:focus{box-shadow:none;transition:all ease .3s;}
 .funpart{padding:70px 15px;}
@@ -40,7 +38,7 @@ button.closemega{position:absolute;right:30px;top:30px;}
 .funcnt p{font-size:18px;font-style:normal;font-weight:400;line-height:120%;}
 .whylove{padding:80px 0;}
 .whylovebox{width:100%;margin:auto;display:flex;align-items:flex-start;align-content:flex-start;flex-wrap:wrap;justify-content:center;}
-.loveboxes{width:33.33%;text-align:center;}
+.loveboxes{ padding: 0 20px; width:33.33%;text-align:center;}
 .loveboxes img{margin:0 auto 35px;}
 .loveboxes h3.headingSm{margin-bottom:15px;}
 .happycreator{padding:100px 15px;}
@@ -70,13 +68,18 @@ margin:30px 0 0 0;}
 .footer{padding:50px 0 0;}
 .footer .containerbox{display:flex;align-items:flex-start;align-content:flex-start;justify-content:space-between;flex-wrap:wrap;}
 .footlogo{width:100%;text-align:center;display:flex;align-items:center;align-content:center;max-width:190px;margin:auto;}
-.footlinks ul{display:flex;align-items:center;align-content:center;justify-content:center;}
+.footlinks ul{display:flex;align-items:center;align-content:center;justify-content:center; flex-wrap: wrap;}
 .footlogo a{margin:auto;}
 .footlinksbox{width:100%;display:flex;align-items:flex-start;align-content:flex-start;justify-content:center;}
 .footlinks{width:100%;margin:30px 0 0;}
 /* .footlinks h2{color:var(--black);font-family:var(--font-GillSans);font-size:20px;font-style:normal;font-weight:400;line-height:120%;margin:0 0 20px;}
 */
-.footlinks ul li{padding:0 20px;border-right:1px solid #2e2e2e;text-align:center;}
+.footlinks ul li {
+  padding: 0px 20px;
+  border-right: 1px solid #2e2e2e;
+  text-align: center;
+  margin: 8px 0;
+}
 .footlinks ul li:last-child{border-right:none;}
 .footlinks ul li a{color:var(--text-black);font-family:var(--font-CeraGR);font-size:16px;font-style:normal;font-weight:400;line-height:20px;}
 .footlinks ul li a:hover,.footlinks ul li a:focus{color:var(--black);text-decoration:underline;}
@@ -230,8 +233,17 @@ letter-spacing:-0.63px;margin:0 0 6px;}
 .stripbox .loginheadbox{border-radius:20px 20px 0 0;}
 .stripNote h3{font-size:24px;}
 .stripNote h3{font-size:24px;}
-.termselect label{color:#676767;font-size:14px;font-style:normal;letter-spacing:-0.28px;display:flex;align-items:flex-start;align-content:flex-start;line-height:17px;}
-.termselect label input{display:inline-block;vertical-align:middle;margin:3px 6px 0 0;}
+.termselect label {
+  color: #676767;
+  font-size: 17px;
+  font-style: normal;
+  letter-spacing: -0.28px;
+  display: flex;
+  align-items: flex-start;
+  align-content: flex-start;
+  line-height: 24px;
+}
+.termselect label input{display:inline-block;vertical-align:middle;margin:-1px 6px 0 0;}
 .accountsetting{max-width:675px;width:96%;margin-top:60px;margin-bottom:60px;}
 .accsettingList ul li{margin:0 0 10px;border-radius:10px;border:2px solid var(--black);background:var(--white);box-shadow:3px 3px 0px 0px var(--black);}
 .accsettingList ul li a,.accsettingList ul li button,.notification{position:relative;display:flex;width:100%;padding:15px;padding-right:40px;align-items:center;align-content:center;justify-content:space-between;color:#1E1E1E;font-family:var(--font-CeraGRBold);font-size:18px;font-style:normal;letter-spacing:-0.36px;}
@@ -349,16 +361,23 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .wishlistPage{padding-top:10px;}
 .userphotobox{height:300px;}
 .userProfile{margin-top:0px;}
+.footlinks ul li {
+  border-right: 0 !important;
 }
-@media(max-width:767px){.shadow-yellow{text-shadow:1px 3px 0 var(--yellow);}
+}
+@media(max-width:767px){
+
+
+.shadow-yellow{text-shadow:1px 3px 0 var(--yellow);}
+
 .shadow-voilet{box-shadow:5px 5px 0 0 var(--voilet);}
-.rotate-btn a{transform:rotate(0deg);}
+.rotate-btn a, .rotate-btn button{transform:rotate(0deg);}
 .headingMd{font-size:53px !important;line-height:53px !important;}
 .headermain{padding-top:15px;padding-bottom:20px;}
 .header{padding:0px 13px;box-shadow:3px 6px 0 0 var(--mint);border-radius:10px;}
 .spennylogo{margin:-10px 0 0 -20px;}
 button.closemega{position:absolute;right:31px;top:26px;}
-button.closemega svg{width:50px;}
+button.closemega svg{width:58px;}
 .headtitle{display:none;}
 .menuList ul li{margin-bottom:10px;}
 .menuList ul li a{font-size:3vh;}
@@ -456,7 +475,8 @@ button.closemega svg{width:50px;}
 .welcomeTitle{transform:rotate(0deg);}
 .funpart{padding-bottom:0px;}
 }
-@media(max-width:575px){.editprofileModalInner,.innermodel{width:100% !important;}
+@media(max-width:575px){
+  .editprofileModalInner,.innermodel{width:100% !important;}
 .welcomeTitle{max-width:260px;margin:auto;}
 button.cartLink svg{width:60px;height:60px;}
 .carticon svg{width:30px;}
@@ -478,6 +498,9 @@ button.cartLink svg{width:60px;height:60px;}
 .accsettingList ul li a,.accsettingList ul li button,.notification{font-size:13px;}
 .noResult h2.headingLg{font-size:30px;line-height:34px;}
 .wishlistbtnFixed a{box-shadow:3px 3px 16px 3px #fdfdfd33 !important;}
+.loginform {
+  width: 96%;
+}
 }
 @media(max-width:449px){.userphoto{left:7px;}
 .socialmedia{margin-top:2px!important;}

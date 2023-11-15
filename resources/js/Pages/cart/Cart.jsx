@@ -20,8 +20,9 @@ export default function Cart(props) {
                                 return <UserCarts key={i} data={c} />
                             })}</>
                             : <> <div className="p-5 text-center" >
-                                
+                                <div className="containerbox" >
                                 <Nocontent text={"Cart is empty."}  />
+                                </div>
                             </div> </>
                         }
                     </div>
