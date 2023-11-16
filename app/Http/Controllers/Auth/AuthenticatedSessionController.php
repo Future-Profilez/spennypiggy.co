@@ -99,8 +99,6 @@ class AuthenticatedSessionController extends Controller
                 'url'    => $slinks->other ?? null,
             )
         );
-        print_r($sociallinks);
-        die;
         // if(!$user){
         //     return
         // }
