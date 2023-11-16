@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\SocialLinks;
 use App\Models\User;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
@@ -61,6 +62,12 @@ class AuthenticatedSessionController extends Controller
     public function getUserProfile($username, $category = false)
     {
         $user = User::where('username', $username)->first();
+        $sociallinks = SocialLinks::where('user_id', Auth::id())->get();
+        if (!empty($sociallinks)) {
+            $sociallinks = $sociallinks;
+        } else {
+            $sociallinks = [];
+        }
 
         // if(!$user){
         //     return
@@ -96,6 +103,7 @@ class AuthenticatedSessionController extends Controller
                 "items" => $items,
                 "categories" => $categories,
                 "itemid" => $itemdid,
+                "sociallinks" => $sociallinks,
             ]);
         } else {
             if ($user) {
@@ -108,6 +116,7 @@ class AuthenticatedSessionController extends Controller
             "items" => $items,
             "categories" => $categories,
             "itemid" => $itemdid,
+            "sociallinks" => $sociallinks,
         ]);
     }
 }
