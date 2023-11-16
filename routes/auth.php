@@ -89,6 +89,8 @@ Route::middleware('auth')->group(function () {
 
     Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item');
 
+    /*update wishitems*/
+    Route::post('update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
 
     Route::get('/create-checkout-session/{owner_id}', [StripeController::class, 'createCheckout'])->name('create.checkout');
     Route::get('/sucess-checkout/{id}', [StripeController::class, 'successCheckout'])->name('checkout.success');
@@ -112,12 +114,10 @@ Route::middleware('auth')->group(function () {
     Route::get('account', function () {
         return Inertia::render('accountsetting/Accountsetting');
     })->name("account");
-    
+
     Route::get('/stripe', function () {
         return Inertia::render('stripe/Stripe');
     })->middleware(['auth', 'verified'])->name('stripe');
-    
-    
 });
 
 Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class, 'categoryItems'])->name('get_category_data');
@@ -129,4 +129,3 @@ Route::get('/how-it-works', function () {
 })->name("how-it-works");
 
 Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
-
