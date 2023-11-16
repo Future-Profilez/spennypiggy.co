@@ -65,9 +65,15 @@ class AuthenticatedSessionController extends Controller
         // if(!$user){
         //     return
         // }
+        if (!empty(request()->query('item'))) {
+            $itemdid = request()->query('item');
+        } else {
+            $itemdid = false;
+        }
+
         $items = [];
         $categories = [];
-        if(!empty($user)){
+        if (!empty($user)) {
             $categories = UserCategory::whereUserId($user->id)->latest()->get();
         }
         if ($category && $user) {
@@ -89,9 +95,10 @@ class AuthenticatedSessionController extends Controller
                 "success" => true,
                 "items" => $items,
                 "categories" => $categories,
+                "itemid" => $itemdid,
             ]);
         } else {
-            if($user){
+            if ($user) {
                 $items = WishItem::whereUserId($user->id)->latest()->get();
             }
         }
@@ -101,6 +108,7 @@ class AuthenticatedSessionController extends Controller
             "user" => $user,
             "items" => $items,
             "categories" => $categories,
+            "itemid" => $itemdid,
         ]);
     }
 }

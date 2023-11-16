@@ -141,7 +141,7 @@ class StripeController extends Controller
         try {
             $user = User::where('id', Auth::id())->first();
             if ($user->charges_enabled) {
-                $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->with(['wish'])->get(); 
+                $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->with(['wish'])->get();
                 $lineItems = [];
                 foreach ($getdata as $dd) {
                     $lineItems[] = [
