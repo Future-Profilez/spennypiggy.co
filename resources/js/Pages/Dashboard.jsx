@@ -97,7 +97,7 @@ export default function Dashboard(props) {
                                             <>
                                                 {!loading && its.map((c, i) => {
                                                     return <div className='col-xl-4 col-lg-6 col-6' >
-                                                        <Wishlistbox itemid={itemid} itm={c} key={`wish-${c.uuid}`} />
+                                                        <Wishlistbox auth={auth.user}  itemid={itemid} itm={c} key={`wish-${c.uuid}`} />
                                                     </div>
                                                 })}
                                             </>

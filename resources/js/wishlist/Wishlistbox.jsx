@@ -8,7 +8,7 @@ import { useState } from 'react';
 import uploadedimg from '../../assets/img/uploadedimg.png';
 import { useEffect } from 'react';
 
-export default function Wishlistbox({ itm, itemid }) {
+export default function Wishlistbox({ itm, itemid, auth }) {
 
   // const [itemUID, setItemUID] = useState('ccbf439a-1872-474b-8a15-47d45943f7ba');
   const [itemUID, setItemUID] = useState(itemid);
@@ -28,7 +28,7 @@ export default function Wishlistbox({ itm, itemid }) {
 
   return <>
     <div className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
-      <AddCart item={itm} uuid={itm.uuid} action={open} />
+      <AddCart auth={auth} item={itm} uuid={itm.uuid} action={open} />
       <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
         <img src={itm?.perma_link ? itm?.perma_link : uploadedimg} alt='img' className='' />
       </div>

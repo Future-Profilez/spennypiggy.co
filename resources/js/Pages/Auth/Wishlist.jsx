@@ -14,7 +14,7 @@ import Popup from "@/Components/Popup";
 import { router } from "@inertiajs/react";
 
 export default function Wishlist(props) {
-    const { categories } = props;
+    const { categories, auth } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
     const inputRef = useRef(null);

@@ -247,6 +247,7 @@ class StripeController extends Controller
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ]);
+
             return Inertia::location($sessioncreate->url);
         } catch (\Throwable $th) {
             \Log::error("Error in createAnonymousCheckout: " . $th->getMessage());
