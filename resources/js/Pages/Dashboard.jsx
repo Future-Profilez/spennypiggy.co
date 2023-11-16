@@ -15,7 +15,7 @@ import Nocontent from '@/includes/Nocontent';
 
 export default function Dashboard(props) {
 
-    const { auth, items, categories, user, itemid } = props;
+    const { auth, items, categories, user, itemid, sociallinks } = props;
     const [its, setIts] = useState(items);
     const [loading, setLoading] = useState(false);
 
@@ -30,7 +30,7 @@ export default function Dashboard(props) {
         })
     }
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
-    console.log("props",props);
+    console.log("props", props);
 
     return (
         <Guest
@@ -42,23 +42,23 @@ export default function Dashboard(props) {
                     <div className='containerbox'>
                         <div className='wishbanner d-lg-block d-none'>
                             <img className='w-full  border-black border-2 shadow-mint rounded-2xl'
-                            src={user?.cover_url || wishlistbannerimg} alt='img' />
+                                src={user?.cover_url || wishlistbannerimg} alt='img' />
                         </div>
 
                         <div className='wishManage'>
                             <div className='row'>
                                 <div className='col-lg-4' >
                                     <div className='userProfile whbg rounded-3xl shadow-voilet border-2'>
-                                        <Userprofile links={"links"} user={user} />
+                                        <Userprofile links={sociallinks} user={user} />
                                         <div className='userProfileDate mt-3'>
                                             {IsloggedIn ? <>
                                                 <EditProfile user={auth.user} />
-                                                {auth.stripe_details_submitted ? 
+                                                {auth.stripe_details_submitted ?
                                                     <div className='finish mt-4 d-block'>
                                                         <p className='mb-4'>Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
                                                         <Link href={"/stripe"} className='btn-pink lg'>Finish Setup</Link>
                                                     </div>
-                                                 : ''}
+                                                    : ''}
 
                                                 <div className='addsocial flex'>
                                                     <ul>
@@ -93,27 +93,27 @@ export default function Dashboard(props) {
                                             {IsloggedIn ? <Wishlist categories={categories} /> : ""}
                                         </div>
                                         <div className='row'>
-                                        {its && its.length ?
-                                            <>
-                                                {!loading && its.map((c, i) => {
-                                                    return <div className='col-xl-4 col-lg-6 col-6' >
-                                                        <Wishlistbox auth={auth.user}  itemid={itemid} itm={c} key={`wish-${c.uuid}`} />
-                                                    </div>
-                                                })}
-                                            </>
-                                            :
-                                            <>
-                                            {!loading ? <div className='col-md-12' >
-                                                <Nocontent text="Currently you don't have any wish item" />
-                                            </div> : ''}
-                                            </>
-                                        } 
+                                            {its && its.length ?
+                                                <>
+                                                    {!loading && its.map((c, i) => {
+                                                        return <div className='col-xl-4 col-lg-6 col-6' >
+                                                            <Wishlistbox auth={auth.user} itemid={itemid} itm={c} key={`wish-${c.uuid}`} />
+                                                        </div>
+                                                    })}
+                                                </>
+                                                :
+                                                <>
+                                                    {!loading ? <div className='col-md-12' >
+                                                        <Nocontent text="Currently you don't have any wish item" />
+                                                    </div> : ''}
+                                                </>
+                                            }
 
-                                        {loading ? 
-                                            <div className='col-md-12' >
-                                                <Nocontent text="Loading...." />
-                                            </div> 
-                                        : '' }
+                                            {loading ?
+                                                <div className='col-md-12' >
+                                                    <Nocontent text="Loading...." />
+                                                </div>
+                                                : ''}
 
                                         </div>
                                     </div>

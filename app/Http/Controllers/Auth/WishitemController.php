@@ -60,6 +60,8 @@ class WishitemController extends Controller
             ]
         ]);
 
+        
+
         $wish = WishItem::create([
             "user_id" => Auth::id(),
             'wishname' => $request->wishname,
@@ -73,6 +75,7 @@ class WishitemController extends Controller
         ]);
 
         $wish->refresh();
+
         foreach ($request->category as $key => $value) {
             $wish_cat = new WishCategory();
             $wish_cat->uuid = Uuid::uuid4();
@@ -86,7 +89,7 @@ class WishitemController extends Controller
             'name' => $request->wishname ?? null,
             'images' => [$wish->perma_link],
             "default_price_data" => ["currency" => "usd", "unit_amount_decimal" => $request->price],
-            // "url" => $request->item_url ?? null
+            "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
         ]);
 
         $wish->stripe_product_id = $stripe_client->id;

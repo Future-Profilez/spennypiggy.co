@@ -1,32 +1,32 @@
 import React from 'react'
-import footlogo from '../../assets/img/footlogo.png'; 
+import footlogo from '../../assets/img/footlogo.png';
 import { Link } from '@inertiajs/react';
 import Nocontent from './Nocontent';
 import {Helmet} from "react-helmet";
 import { useEffect } from 'react';
 
 export default function Footer() {
-  
-  const display = () => { 
+
+  const display = () => {
     window && window.displayPreferenceModal();
     return false;
   }
 
-  // useEffect(()=>{ 
-  //   <script async src="https://www.googletagmanager.com/gtag/js?id=AW-11395921981"></script> 
-  //   <script> 
-  //     window.dataLayer = window.dataLayer || []; 
+  // useEffect(()=>{
+  //   <script async src="https://www.googletagmanager.com/gtag/js?id=AW-11395921981"></script>
+  //   <script>
+  //     window.dataLayer = window.dataLayer || [];
   //     function gtag(){
   //       dataLayer.push(arguments);
-  //     } 
+  //     }
   //     gtag('js', new Date());
-  //     gtag('config', 'AW-11395921981'); 
+  //     gtag('config', 'AW-11395921981');
   //   </script>
   // })
 
   return <>
     <Helmet>
-        <script type="text/javascript" src="https://app.termly.io/embed.min.js" 
+        <script type="text/javascript" src="https://app.termly.io/embed.min.js"
         data-auto-block="on" data-website-uuid="ced8ded9-995d-471a-bf54-880b8c679a81" ></script>
         <script async src="https://www.googletagmanager.com/gtag/js?id=AW-11395921981"></script>
         {/* <script>

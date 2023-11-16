@@ -68,6 +68,8 @@ class WishItem extends Model
             $fontsize = $textWm['fontsize'];
             $check = "-/preview/-/text_align/left/center/-/font/$fontsize/fff/-/text/80px8p/8p,100p/$wm/";
             $url = Uploadcare::getUrl($this->thumbnail, $this->type, $watermark, $check);
+        } else {
+            $url = "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/";
         }
         return $url;
     }
