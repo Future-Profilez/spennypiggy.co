@@ -29,7 +29,7 @@ export default function Guest(props) {
     return <>
         <Header auth={auth ||''} />
         {children}
-        <Footer />
-        <Toaster />
+        <Footer auth={auth ||''} />
+        <Toaster  />
     </>
 }
