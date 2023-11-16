@@ -173,6 +173,7 @@ class StripeController extends Controller
                 'updated_at' => Carbon::now(),
             ]);
 
+            
             return Inertia::location($sessionCreate->url);
         } catch (\Throwable $th) {
             \Log::error("Error in createCheckout: " . $th->getMessage());
