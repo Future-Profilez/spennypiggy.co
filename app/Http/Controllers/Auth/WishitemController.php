@@ -36,7 +36,6 @@ class WishitemController extends Controller
                 "min:0"
             ],
             "item_url" => [
-                "sometimes",
                 "nullable"
             ],
             "thumbnail" => [
@@ -66,7 +65,7 @@ class WishitemController extends Controller
             "user_id" => Auth::id(),
             'wishname' => $request->wishname,
             'price' => $request->price,
-            'item_url' => $request->item_url ?? null,
+            'item_url' => $request->item_url != "" ? $request->item_url : null,
             'thumbnail' => $request->thumbnail ?? null,
             'subscription' => $request->subscription,
             'subscription_period' => $request->subscription_period ?? null,
@@ -88,7 +87,7 @@ class WishitemController extends Controller
             'name' => $request->wishname ?? null,
             'images' => [$wish->perma_link],
             "default_price_data" => ["currency" => "usd", "unit_amount_decimal" => $request->price],
-            "url" => $request->item_url ?? null
+            // "url" => $request->item_url ?? null
         ]);
 
         $wish->stripe_product_id = $stripe_client->id;

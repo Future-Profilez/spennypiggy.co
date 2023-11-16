@@ -36,7 +36,7 @@ export default function Register() {
                 <h2 className='headingLg pb-0 pb-md-4 text-center '>Create Account</h2>
                 <p className='text-center text-white mb-5 font-CeraGRBold'>Already registered? <Link className={'text-pink'} href={route('login')}  > Log In</Link></p>
 
-                <div className='loginform mt-5 mx-auto border-black whbg shadow-mint'>
+                <div className='loginform mt-4 mt-md-5 mx-auto border-black whbg shadow-mint'>
                     <div className='loginheadbox pinkbg'>
                         <span className='mintbg'></span>
                         <span className='bluebg'></span>
@@ -109,7 +109,7 @@ export default function Register() {
                                     <InputError>{errors?.password_confirmation || ''}</InputError>
                                 </li>
                             </ul>
-                            <div className='wishlistbtn  rotate-btn text-center flex justify-center mt-4 mb-4'>
+                            <div className='wishlistbtn  rotate-btn text-center flex justify-center mt-4'>
                                 {/* <button type='submit' className='btn-pink lg'>
                                     {processing ? "Proccessing" : " Create your Account"}
                                 </button> */}

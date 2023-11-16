@@ -21,7 +21,6 @@ export default function Wishlistbox({ itm }) {
   return <>
     <div className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
       <AddCart item={itm} uuid={itm.uuid} action={open} />
-      
       <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
         <img src={itm?.perma_link ? itm?.perma_link : uploadedimg} alt='img' className='' />
       </div>
