@@ -196,7 +196,7 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 .editForm ul li label{text-align:left;width:100%;color:var(--text-gray);font-size:14px;font-style:normal;font-weight:400;line-height:120%;letter-spacing:-0.7px;}
 .editForm ul li textarea{height:150px;}
 .counter{margin:0;text-align:right;width:100%;display:block;color:var(--text-gray);font-size:13px;font-style:normal;font-weight:400;line-height:120%;letter-spacing:-0.65px;}
-.addCartModal{border-radius:30px 30px;max-width:450px;width:100% !important;}
+.addCartModal{border-radius:30px 30px;max-width:450px;min-width:450px;width:100% !important;}
 .addCartModalHead{background:#EFDBE7;border-radius:30px 30px 0 0;}
 .cartModimg img{border-radius:30px 0 0 0;}
 .addCartModalHead{min-height:238px;}
@@ -463,7 +463,7 @@ button.closemega svg{width:56px; top: 10px; }
 .accsettingList{padding:15px 10px!important;}
 .accsettingList ul li a,.accsettingList ul li button,.notification{font-size:15px;}
 .cartbanner{margin-top:-164px;}
-.cartbanner img{max-width:200px;height:130px;}
+/* .cartbanner img{max-width:200px;height:130px;} */
 /* How it Work */
 .howitmain{padding-top:30px;}
 .howitmain p br{display:none;}

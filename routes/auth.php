@@ -123,6 +123,8 @@ Route::middleware('auth')->group(function () {
 /*Anonymous checkout*/
 Route::get('/anonymous-create-checkout-session/{priceid}/{quantity}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
 Route::get('/anonymous-sucess-checkout', [StripeController::class, 'anonymousSuccessCheckout'])->name('checkout.anonymous.success');
+Route::get('/anonymous-cancel-checkout', [StripeController::class, 'anonymousCancelCheckout'])->name('checkout.anonymous.cancel');
+
 Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class, 'categoryItems'])->name('get_category_data');
 
 Route::get('users', [MyController::class, 'getUsers'])->name('users');
