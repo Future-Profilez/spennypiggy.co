@@ -7,7 +7,7 @@ export default function Userprofile({user}) {
   return (
     <div className='userprofilesec rounded-3xl whbg'>
       
-      <div className='userphotobox pinkbg flex justify-center relative'>
+      <div className='userphotobox pinkbg pink-shadow flex justify-center relative'>
           <img className='d-lg-none' src={user && user?.cover_url || wishlistbannerimg} alt='img' />
       </div>
 

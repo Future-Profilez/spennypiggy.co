@@ -1,9 +1,13 @@
+import { useAlerts } from '@/Components/Alerts';
 import Authenticated from '@/Layouts/AuthenticatedLayout'
-import { useForm } from '@inertiajs/react'
+import { useForm, Link } from '@inertiajs/react'
 import React from 'react'
+import { useRef } from 'react';
 
 export default function Stripe(props) {
 
+    const checkRef = useRef();
+    const{errorAlert} = useAlerts();
     // console.log('props', props);
     const {data, setData, get, post, processing, errors, reset} = useForm({
         termaccept: ''
@@ -18,6 +22,17 @@ export default function Stripe(props) {
         }
     }
 
+    const checkTerms = () => {
+        if(checkRef.current.checked){
+            window.location.href = route("stripe.connect", {step:"init"});
+            return true;
+        }
+        errorAlert("Please check accept terms & conditions checkbox");
+        checkRef.current.focus();
+        return false;
+    }
+
+
     return (
         <Authenticated>
             <div className='blackbg py-2 py-md-5'>
@@ -26,29 +41,45 @@ export default function Stripe(props) {
                     <span className='mintbg'></span>
                     <span className='bluebg'></span>
                 </div>
-                <form onSubmit={connectStripe}>
+                {/* <form onSubmit={connectStripe}> */}
                     <div className='stripNote p-8'>
-                        <h3 className='font-GillSans mb-2 text-uppercase'>A note to our SW and NSFW content creators</h3>
-                        <p className='mb-4'>You are about to go to a 3rd party site, Stripe.com where you will enter your private payment information.
-                            Do not put any external business links on your Stripe account.
-                            We've set your business url on Stripe to Spenny Piggy.com. Do not change this link.
-                            Stripe allows adult content creators to use Spenny Piggy to process gifts within our terms of service.
-                            Reach out to us if Stripe attempts to shut your account down at any point. We can help you retain it. Reaching out to us will also help prevent shutdowns for future users and improve Spenny Piggy for everyone.</p>
-                        <div className='termselect'>
+                            <h5 className='font-bold mb-2 text-uppercase'>The following rules are required by our payment processors 
+                            to prevent rejection of your account.</h5>
+
+                            <p className='mb-4' >Stripe allows adult creators to use Spenny Piggy to process gifts within our terms of service. If stripe try to shut down your account for any reason, reach out to support and we can ensure you retain it. Providing none of the Items below are listed:</p>
+                            <ul className='stripeterms' >
+                                <li className='py-1 my-1' >❌ Selling goods or service on your wishlist</li>
+                                <li className='py-1 my-1' >❌ Promising goods or services in exchange for gifts</li>
+                                <li className='py-1 my-1' >❌ Gifts with nudity in the item image</li>
+                                <li className='py-1 my-1' >❌ Alcohol, Tobacco & Items containing THC</li>
+                                <li className='py-1 my-1' >
+                                ❌ Explicit Adult Toys.
+                                    <p className='text-small text-muted mb-0' >Body massaging tools or similar sensual wellness products are.
+                                    acceptable</p>
+                                </li>
+                                <li className='py-1 my-1' >❌ Items including the words: tax, fee, session, deposit or unblock
+                                    <p className='text-small text-muted mb-0' >These words imply a service being exchanged for items.</p>
+                                </li>
+                                <li className='py-1 my-1' >❌ Items with the word Tribute
+                                    <p className='text-small text-muted mb-0' >Appreciation & Tip are acceptable.</p>
+                                </li>
+                            </ul>
+                        
+                        <div className='termselect mt-4'>
                             <label htmlFor="termaccept">
-                                <input type="checkbox" id="termaccept" name="termaccept" value="termaccept" required onChange={(e) => setData("termaccept", e.target.value)}></input>
-                                I will only use Spenny Piggy to receive gifts, tips and donations. I will not sell services or goods on my wishlist.
-                            </label>
+                                <p><input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept"
+                                 required onChange={(e) => setData("termaccept", e.target.value)}></input> 
+                                 Keep that and add after wishlist, And confirm that nothing on the prohibited list above will be listed
+                            </p></label>
                         </div>
                     </div>
                     <div className="text-center flex justify-center mb-4 ">
-                        <button type='submit' className='btn-pink lg w-1/2'>Go to Stripe</button>
+                        <button className='btn-pink lg w-1/2' onClick={ () => {return checkTerms();}}>Go to Stripe</button>
                     </div>
-                </form>
+                {/* </form> */}
             </div>
             </div>
         </Authenticated>
     )
 }
 
- 

@@ -1,6 +1,9 @@
-@tailwind base;@tailwind components;@tailwind utilities;/*@font-face{font-family:'GillSans';src:url('../assets/fonts/newfont.woff') format('woff'),url('../assets/fonts/newfont.woff2') format('woff2');}
+/*@font-face{font-family:'GillSans';src:url('../assets/fonts/newfont.woff') format('woff'),url('../assets/fonts/newfont.woff2') format('woff2');}
 @font-face{font-family:'CeraGRMedium';src:url('../assets/fonts/CeraGRMedium.woff') format('woff'),url('../assets/fonts/CeraGRMedium.woff2') format('woff2');}
 */
+a { 
+  text-decoration: none;
+}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
 input[type=number]{-moz-appearance:textfield;}
 .cate-items div{background:#fb2e94 !important;padding:8px 25px !important;border-radius:11px;color:#fff;}
@@ -25,16 +28,19 @@ body.modal-open{overflow:hidden;}
 .modelmenu.Open{-webkit-animation:load .2s linear;animation:load linear 0.2s;}
 .userphoto img{width:90px;height:90px;object-fit:cover;}
 h2.wishtitle{font-size:24px;font-weight:900;}
-.userManageRt {
-  width: 100% !important;
-  padding: 0 0 0 0px !important;
+.userManageRt{width:100% !important;padding:0 0 0 0px !important;}
+.userProfile{width:100%;}
+
+.stripeterms li { 
+  font-weight: 600;
 }
-.userProfile {
-  width: 100%;
+.stripeterms li p { 
+  font-weight: 400; font-size: 14px;
 }
 
-@media(max-width:991px){
-  .userphotobox {
-    height: 280px;
+.collapse {
+  visibility: visible !important;
 }
+
+@media(max-width:991px){.userphotobox{height:280px;}
 }

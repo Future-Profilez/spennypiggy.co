@@ -65,8 +65,12 @@ class AuthenticatedSessionController extends Controller
         // if(!$user){
         //     return
         // }
-        $categories = UserCategory::whereUserId($user->id)->latest()->get();
-        if ($category) {
+        $items = [];
+        $categories = [];
+        if(!empty($user)){
+            $categories = UserCategory::whereUserId($user->id)->latest()->get();
+        }
+        if ($category && $user) {
             $query = WishCategory::orderBy('created_at', 'DESC');
 
             if ($category != 'all') {
@@ -87,7 +91,9 @@ class AuthenticatedSessionController extends Controller
                 "categories" => $categories,
             ]);
         } else {
-            $items = WishItem::whereUserId($user->id)->latest()->get();
+            if($user){
+                $items = WishItem::whereUserId($user->id)->latest()->get();
+            }
         }
 
         return Inertia::render('Dashboard', [

@@ -51,9 +51,9 @@ export default function Social() {
             <div className='editprofileModal '>
                 <div className='editprofileModalInner shadow-pink'> 
                     <div className="wishinfo">
-                        <h3 className="py-4" >Social Links</h3>
+                        <h3 className="py-4 font-GillSans text-uppercase" >Social Links</h3>
                         <form onSubmit={createSocial}>
-                            <ul className="row" >
+                            <ul className=" ps-0  row" >
                                 <li className="mb-4 col-md-6">
                                     <label className="mb-2 text-start d-block">Whoyouinto</label>
                                     <input id="whoyouinto"

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\CheckoutUser;
 use App\Models\StripePaymentDetail;
 use App\Models\User;
 use App\Models\UserCart;
@@ -58,9 +59,9 @@ class StripeController extends Controller
 
         $user = User::find(Auth::id());
         if (empty($user->account_id)) {
-            if (!$request->isMethod("POST")) {
-                return redirect()->back()->with("error", "Invalid request!");
-            }
+            // if (!$request->isMethod("POST")) {
+            //     return redirect()->back()->with("error", "Invalid request!");
+            // }
 
             try {
                 $payload = [
@@ -71,7 +72,7 @@ class StripeController extends Controller
                         'card_payments' => ['requested' => true],
                         'transfers' => ['requested' => true],
                     ],
-                    // 'business_type' => 'individual',
+                    'business_type' => 'individual',
                     // 'business_profile' => ['url' => route("user.show", ["username" => $user->username])],
                 ];
 
@@ -80,7 +81,7 @@ class StripeController extends Controller
                 $user->account_id = $account->id;
                 $user->save();
             } catch (Exception $e) {
-                return redirect(route("stripe.index"))->with("error", $e->getMessage());
+                return redirect(route("stripe.index"))->with("error", "First invalid error");
             }
         }
 
@@ -98,8 +99,9 @@ class StripeController extends Controller
             ]);
 
             return Inertia::location($link->url);
+            // return redirect()->away($link->url);
         } catch (Exception $e) {
-            return redirect(route("stripe.index"))->with("error", $e->getMessage());
+            return redirect(route("stripe.index"))->with("error", "Internal server error:" . $e->getMessage());
         }
     }
 
@@ -137,25 +139,25 @@ class StripeController extends Controller
     public function createCheckout($owner_id)
     {
         try {
+            $user = User::where('id', Auth::id())->first();
             $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->with(['wish'])->get();
             $lineItems = [];
             foreach ($getdata as $dd) {
                 $lineItems[] = [
-                    'price' => $dd->wish->price_id,
+                    'price' => $dd->wish->price_id ?? '',
                     'quantity' => 1,
                 ];
             }
 
             $stripe = new \Stripe\StripeClient('sk_test_51O3maCG7xsNScLmXVQNnz6tw1ukAvcKY5WhVEk7e1wRAH9pSC7rmk3gxRFKAUMrVMAxWsndWudNmmvqkmm2p2w1J00sBIpHExQ');
-
-            $sessionCreate = $stripe->checkout->sessions->create([
+            $sessioncreate = $stripe->checkout->sessions->create([
                 'success_url' => route('checkout.success', [$owner_id]),
                 'cancel_url' => route('checkout.cancel'),
                 'line_items' => $lineItems,
                 'mode' => 'payment',
             ]);
 
-            $callbackData = $sessionCreate;
+            $callbackData = $sessioncreate;
             session()->forget('session_id');
             session(['session_id' => $callbackData->id]);
             StripePaymentDetail::create([
@@ -173,14 +175,27 @@ class StripeController extends Controller
                 'updated_at' => Carbon::now(),
             ]);
 
-            
-            return Inertia::location($sessionCreate->url);
+            $owner = User::where('id', $owner_id)->first();
+
+            //send email
+            CheckoutUser::dispatch($user);
+            CheckoutUser::dispatch($owner);
+
+            return Inertia::location($sessioncreate->url);
         } catch (\Throwable $th) {
             \Log::error("Error in createCheckout: " . $th->getMessage());
             throw $th;
         }
     }
 
+    public function retrive($id)
+    {
+        $stripe = new \Stripe\StripeClient('sk_test_51O3maCG7xsNScLmXVQNnz6tw1ukAvcKY5WhVEk7e1wRAH9pSC7rmk3gxRFKAUMrVMAxWsndWudNmmvqkmm2p2w1J00sBIpHExQ');
+        $data = $stripe->checkout->sessions->retrieve(
+            $id,
+            []
+        );
+    }
 
     public function successCheckout($owner_id)
     {
