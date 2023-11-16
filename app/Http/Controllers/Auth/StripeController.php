@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\CheckoutUser;
 use App\Models\StripePaymentDetail;
 use App\Models\User;
 use App\Models\UserCart;
@@ -138,18 +139,17 @@ class StripeController extends Controller
     public function createCheckout($owner_id)
     {
         try {
-            $user = User::where('id',Auth::id())->first();
-
-            if($user->charges_enabled){
-                $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->with(['wish'])->get();
+            $user = User::where('id', Auth::id())->first();
+            if ($user->charges_enabled) {
+                $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->with(['wish'])->get(); 
                 $lineItems = [];
                 foreach ($getdata as $dd) {
                     $lineItems[] = [
-                        'price' => $dd->wish->price_id,
+                        'price' => $dd->wish->price_id ?? '',
                         'quantity' => 1,
                     ];
                 }
-    
+
                 $stripe = new \Stripe\StripeClient('sk_test_51O3maCG7xsNScLmXVQNnz6tw1ukAvcKY5WhVEk7e1wRAH9pSC7rmk3gxRFKAUMrVMAxWsndWudNmmvqkmm2p2w1J00sBIpHExQ');
                 $sessioncreate = $stripe->checkout->sessions->create([
                     'success_url' => route('checkout.success', [$owner_id]),
@@ -157,14 +157,16 @@ class StripeController extends Controller
                     'line_items' => $lineItems,
                     'mode' => 'payment',
                 ]);
-    
-    
-                \Log::info("ssss");
-                \Log::info($sessioncreate);
+
+                $owner = User::where('id', $owner_id)->first();
+
+                //send email
+                CheckoutUser::dispatch($user);
+                CheckoutUser::dispatch($owner);
+
                 return Inertia::location($sessioncreate->url);
-            }
-            else{
-                return back()->with('error','Please setup your stripe account first.');
+            } else {
+                return back()->with('error', 'Please setup your stripe account first.');
             }
 
 

@@ -38,12 +38,6 @@ export default function Wishlist(props) {
                     if (resp.props.flash?.error) {
                         errorAlert(resp.props.flash?.error);
                     }
-                    // let arr = [];
-                    // if (value) {
-                    //     arr.push({ id: 1, category: value });
-                    // }
-                    // setCats(arr);
-                    // arr = [];
                 },
                 onError: (_err) => {
                     console.table("error", _err);
@@ -149,7 +143,7 @@ export default function Wishlist(props) {
                             <Tab eventKey="1" title="Custom">
                                 <div className="wishinfo">
                                     <form onSubmit={createWishList}>
-                                        <ul>
+                                        <ul className="ps-0" >
                                             <li className="mb-4">
                                                 <label className="mb-2 text-start d-block">
                                                     Wish Name
@@ -238,10 +232,7 @@ export default function Wishlist(props) {
                                             <Accordion defaultActiveKey="0">
                                                 <Accordion.Item eventKey="0">
                                                     <Accordion.Header
-                                                        onClick={(e) =>
-                                                            setSubs(0)
-                                                        }
-                                                    >
+                                                        onClick={(e) =>setSubs(0)}>
                                                         <span className="activedote"></span>{" "}
                                                         Single Wish
                                                     </Accordion.Header>
@@ -393,7 +384,6 @@ export default function Wishlist(props) {
                                                         </div>
                                                     </Accordion.Body>
                                                 </Accordion.Item>
-
                                                 <Accordion.Item eventKey="2">
                                                     <Accordion.Header
                                                         onClick={(e) =>
@@ -484,7 +474,7 @@ export default function Wishlist(props) {
                                             <LoaderButton
                                                 disabled={processing}
                                                 type="submit"
-                                                className=" flex w-100 btn-pink lg mx-auto"
+                                                className="flex w-100 btn-pink lg mx-auto"
                                                 spinnerClassName="fill-red-600"
                                             >
                                                 {processing

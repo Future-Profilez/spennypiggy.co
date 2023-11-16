@@ -2,6 +2,7 @@
 
 namespace App;
 
+use App\Mail\Checkout;
 use App\Mail\Welcome;
 use App\Mail\Wishlist;
 use App\Models\AppService;
@@ -38,4 +39,15 @@ class EmailService
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }
+
+    public static function checkOutUser($data)
+    {
+        try {
+            Mail::to($data['to'])
+                ->send(new Checkout($data));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
 }

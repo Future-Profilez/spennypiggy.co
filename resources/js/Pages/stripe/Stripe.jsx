@@ -43,8 +43,8 @@ export default function Stripe(props) {
                 </div>
                 {/* <form onSubmit={connectStripe}> */}
                     <div className='stripNote p-8'>
-                            <h2 className='font-bold mb-2 text-uppercase'>The following rules are required by our payment processors 
-                            to prevent rejection of your account.</h2>
+                            <h5 className='font-bold mb-2 text-uppercase'>The following rules are required by our payment processors 
+                            to prevent rejection of your account.</h5>
 
                             <p className='mb-4' >Stripe allows adult creators to use Spenny Piggy to process gifts within our terms of service. If stripe try to shut down your account for any reason, reach out to support and we can ensure you retain it. Providing none of the Items below are listed:</p>
                             <ul className='stripeterms' >
@@ -54,14 +54,14 @@ export default function Stripe(props) {
                                 <li className='py-1 my-1' >❌ Alcohol, Tobacco & Items containing THC</li>
                                 <li className='py-1 my-1' >
                                 ❌ Explicit Adult Toys.
-                                    <p className='text-small text-muted' >Body massaging tools or similar sensual wellness products are.
+                                    <p className='text-small text-muted mb-0' >Body massaging tools or similar sensual wellness products are.
                                     acceptable</p>
                                 </li>
                                 <li className='py-1 my-1' >❌ Items including the words: tax, fee, session, deposit or unblock
-                                    <p className='text-small text-muted' >These words imply a service being exchanged for items.</p>
+                                    <p className='text-small text-muted mb-0' >These words imply a service being exchanged for items.</p>
                                 </li>
                                 <li className='py-1 my-1' >❌ Items with the word Tribute
-                                    <p className='text-small text-muted' >Appreciation & Tip are acceptable.</p>
+                                    <p className='text-small text-muted mb-0' >Appreciation & Tip are acceptable.</p>
                                 </li>
                             </ul>
                         

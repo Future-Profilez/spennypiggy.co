@@ -138,13 +138,18 @@ button.editProfile{border-radius:10px;border:1px solid var(--voilet);background:
 .wishlistModal .nav.nav-tabs .nav-link.active:before{content:'';position:absolute;left:-6px;right:0;bottom:-1px;width:84px;height:6px;background:var(--pink);border-radius:5px 5px 0 0;margin:auto;}
 .wishlistModal .nav.nav-tabs .nav-link{color:#8C8C8C;font-size:20px;font-style:normal;font-weight:400;line-height:120%;letter-spacing:-1.8px;padding:3px 5px 10px;margin:0 20px;text-align:center;border:none;}
 .wishlistModal .nav.nav-tabs .nav-link:hover,.wishlistModal .nav.nav-tabs .nav-link:focus{outline:none;border:none;}
-.wishinfo{padding:20px 30px;}
-.wishinfo{max-height:350px;overflow-x:auto;}
+.wishinfo {
+  padding: 20px 30px;
+  max-height: 83vh;
+  overflow-x: auto;
+  scrollbar-color: #2abb9b #e0e0e0;
+  scrollbar-width: thin;
+}
 .wishinfo{scrollbar-color:#2abb9b #e0e0e0;scrollbar-width:thin;}
 .wishinfo::-webkit-scrollbar{width:6px;}
 .wishinfo::-webkit-scrollbar-track{background:#e0e0e0;border-radius:20px;-webkit-border-radius:20px;}
 .wishinfo::-webkit-scrollbar-thumb{background:#000;border-radius:20px;-webkit-border-radius:20px;}
-.wishinfo h3{color:#141414;font-family:var(--parabold-font);font-size:20px;font-style:normal;line-height:120%;letter-spacing:-1px;margin:0 0 10px;}
+.wishinfo h3{color:#141414; font-size:20px;font-style:normal;line-height:120%;letter-spacing:-1px;margin:0 0 10px;}
 .donot{color:var(--text-gray);font-size:11px;font-style:normal;font-weight:400;line-height:120%;letter-spacing:-0.55px;}
 .wishinfo ul li label{color:var(--text-gray);font-size:14px;font-style:normal;font-weight:400;line-height:120%;letter-spacing:-0.7px;}
 .donot{color:var(--text-gray);font-size:11px;font-style:normal;font-weight:400;line-height:120%;letter-spacing:-0.55px;}
@@ -244,7 +249,7 @@ letter-spacing:-0.63px;margin:0 0 6px;}
   line-height: 24px;
 }
 .termselect label input{display:inline-block;vertical-align:middle;margin:-1px 6px 0 0;}
-.accountsetting{max-width:675px;width:96%;margin-top:60px;margin-bottom:60px;}
+.accountsetting{max-width:675px;width:96%; }
 .accsettingList ul li{margin:0 0 10px;border-radius:10px;border:2px solid var(--black);background:var(--white);box-shadow:3px 3px 0px 0px var(--black);}
 .accsettingList ul li a,.accsettingList ul li button,.notification{position:relative;display:flex;width:100%;padding:15px;padding-right:40px;align-items:center;align-content:center;justify-content:space-between;color:#1E1E1E;font-family:var(--font-CeraGRBold);font-size:18px;font-style:normal;letter-spacing:-0.36px;}
 .accsettingList ul li a:after,.accsettingList ul li button:after,.notification:after{content:'';position:absolute;right:23px;top:21px;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:7px solid var(--black);}
