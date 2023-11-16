@@ -22,11 +22,11 @@ export default function Dashboard(props) {
     const showCategory = (e) => {
         setLoading(true);
         axios.get(`${user.username}/${e.target.value}`).then(resp => {
-            console.log('home-items', resp)
-
             setIts(resp.data.items)
+            setLoading(false);
         }).catch(_err => {
             console.error("error", _err);
+            setLoading(false);
         })
     }
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
@@ -94,7 +94,7 @@ export default function Dashboard(props) {
                                             {IsloggedIn ? <Wishlist categories={categories} /> : ""}
                                         </div>
                                         <div className='row'>
-                                            {its && its.length ?
+                                        {its && its.length ?
                                             <>
                                                 {its.map((c, i) => {
                                                     return <div className='col-xl-4 col-lg-6 col-6' >
@@ -106,7 +106,12 @@ export default function Dashboard(props) {
                                             <div className='col-md-12' >
                                                 <Nocontent text="Currently you don't have any wish item" />
                                             </div>
-                                        }
+                                        } 
+
+                                        {loading ? <div className='col-md-12' >
+                                            <Nocontent text="Loading...." />
+                                        </div> 
+                                        : '' }
                                         </div>
                                     </div>
                                 </div>
@@ -115,7 +120,6 @@ export default function Dashboard(props) {
                     </div>
                 </div>
             </div>
-
         </Guest>
     );
 }

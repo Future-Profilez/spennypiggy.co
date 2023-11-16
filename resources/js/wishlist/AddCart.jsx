@@ -5,6 +5,7 @@ import giftimg from '../../assets/img/giftimg.jpg'
 import cartbannerimg from '../../assets/img/cartbannerimg.jpg'
 import Popup from '@/Components/Popup'
 import ToCart from './ToCart'
+import uploadedimg from '../../assets/img/uploadedimg.png';
 
 export default function AddCart({action, uuid, item}) {
 
@@ -20,7 +21,7 @@ export default function AddCart({action, uuid, item}) {
         </div>
         <div className='bannerrr p-4'>
         <div className='cartbanner'>
-            <img src={item.perma_link ? item.perma_link : cartbannerimg} alt='img' />
+            <img src={item.perma_link ? item.perma_link : uploadedimg} alt='img' />
         </div>
         <div className='cartTitle'>{item.wishname}</div>
         <div className='cartPrice font-CeraGRBold text-voilet mt-1 mb-3'>£ {item.price}</div>

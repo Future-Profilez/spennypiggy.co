@@ -20,9 +20,11 @@ export default function Wishlist(props) {
     const inputRef = useRef(null);
     const [cats, setCats] = useState([]);
 
+
+    const [adding, setAdding] = useState(false);
     const AddCategory = async () => {
         const value = inputRef.current.value;
-
+        setAdding(true);
         router.post(
             "save-category",
             { category: value },
@@ -38,10 +40,12 @@ export default function Wishlist(props) {
                     if (resp.props.flash?.error) {
                         errorAlert(resp.props.flash?.error);
                     }
+                    setAdding(false);
                 },
                 onError: (_err) => {
                     console.table("error", _err);
-                },
+                    setAdding(false);
+                }
             }
         );
     };
@@ -137,8 +141,7 @@ export default function Wishlist(props) {
                         <Tabs
                             defaultActiveKey="1"
                             id="uncontrolled-tab-example"
-                            className="mb-3"
-                        >
+                            className="mb-3" >
                             <Tab eventKey="1" title="Custom">
                                 <div className="wishinfo">
                                     <form onSubmit={createWishList}>
@@ -417,28 +420,15 @@ export default function Wishlist(props) {
                                                                 <div className="repeatpurchase mb-2 text-start">
                                                                     <label
                                                                         className="text-capitalize"
-                                                                        for={
-                                                                            "categories" +
-                                                                            i
-                                                                        }
-                                                                    >
+                                                                        for={"categories" + i}>
                                                                         <input
                                                                             type="checkbox"
-                                                                            id={
-                                                                                "categories" +
-                                                                                i
-                                                                            }
-                                                                            value={
-                                                                                c.id
-                                                                            }
+                                                                            id={"categories" + i}
+                                                                            value={c.id}
                                                                             name="category"
-                                                                            onChange={
-                                                                                catValue
-                                                                            }
-                                                                        />{" "}
-                                                                        {
-                                                                            c.category
-                                                                        }
+                                                                            onChange={catValue}
+                                                                        /> 
+                                                                        {c.category}
                                                                     </label>
                                                                 </div>
                                                             </>
@@ -455,9 +445,8 @@ export default function Wishlist(props) {
                                                 />
                                                 <div
                                                     className="p-2 border cursor-pointer"
-                                                    onClick={AddCategory}
-                                                >
-                                                    Add
+                                                    onClick={AddCategory}>
+                                                    {adding ? "Adding..":"Add"}
                                                 </div>
                                             </div>
 

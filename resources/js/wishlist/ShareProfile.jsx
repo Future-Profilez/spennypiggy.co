@@ -1,10 +1,10 @@
 import toast from 'react-hot-toast';
-export default function ShareProfile({children,username,classes}){
+export default function ShareProfile({children,username,classes, custom}){
 
   function shareTo() {
     
     const width = window && window.innerWidth;
-    const currentURL = window.location.href;
+    const currentURL = custom ? custom : window.location.href;
 
     if(width > 991){ 
         navigator.clipboard.writeText(currentURL)

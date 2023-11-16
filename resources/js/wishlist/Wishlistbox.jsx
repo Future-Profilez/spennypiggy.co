@@ -6,17 +6,25 @@ import ShareProfile from './ShareProfile';
 import AddCart from './AddCart';
 import { useState } from 'react';
 import uploadedimg from '../../assets/img/uploadedimg.png';
+import { useEffect } from 'react';
 
 export default function Wishlistbox({ itm }) {
 
+  // const [itemUID, setItemUID] = useState('ccbf439a-1872-474b-8a15-47d45943f7ba');
+  const [itemUID, setItemUID] = useState(null);
   const [open, setOpen] = useState();
-
   const openAddtocart = () => {
     setOpen(true);
     setTimeout(()=>{
       setOpen();
     },1000);
-  }
+  } 
+
+  useEffect(()=>{
+    if(itemUID == itm.uuid){
+      setOpen(true);
+    }
+  },[itemUID]);
 
   return <>
     <div className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
@@ -31,7 +39,7 @@ export default function Wishlistbox({ itm }) {
         </div>
       </div>
       <div className='sharelinks'>
-        <ShareProfile>
+        <ShareProfile custom={`${window.location.href}?item=${itm.uuid}`} >
           <Link to="/" className='font-GillSans'>Share Link</Link>
         </ShareProfile>
       </div>
