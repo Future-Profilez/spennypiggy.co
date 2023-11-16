@@ -157,6 +157,24 @@ class StripeController extends Controller
                 'mode' => 'payment',
             ]);
 
+            $callbackData = $sessioncreate;
+            session()->forget('session_id');
+            session(['session_id' => $callbackData->id]);
+            StripePaymentDetail::create([
+                'session_id' => $callbackData->id,
+                'amount_subtotal' => $callbackData->amount_subtotal,
+                'amount_total' => $callbackData->amount_total,
+                'currency' => $callbackData->currency,
+                'payment_method_config_detail_id' => optional($callbackData->payment_method_configuration_details)->id,
+                'payment_method_type' => optional($callbackData->payment_method_types)[0],
+                'user_id' => Auth::id(),
+                'owner_id' => $owner_id,
+                'session_created' => $callbackData->created,
+                'session_expires_at' => $callbackData->expires_at,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
+            ]);
+
             $owner = User::where('id', $owner_id)->first();
 
             //send email
@@ -164,10 +182,6 @@ class StripeController extends Controller
             CheckoutUser::dispatch($owner);
 
             return Inertia::location($sessioncreate->url);
-
-
-
-            // $this->retrive($sessioncreate->id);
         } catch (\Throwable $th) {
             \Log::error("Error in createCheckout: " . $th->getMessage());
             throw $th;
