@@ -84,19 +84,13 @@ class AuthenticatedSessionController extends Controller
         }
         if ($category && $user) {
             $query = WishCategory::orderBy('created_at', 'DESC');
-
             if ($category != 'all') {
                 $query->where('category_id', $category);
             }
-
             $itemId = $query->whereHas('wish', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             })->pluck('wish_id');
-
             $items = WishItem::whereIn('id', $itemId)->latest()->get();
-
-
-
             return response()->json([
                 "success" => true,
                 "items" => $items,
