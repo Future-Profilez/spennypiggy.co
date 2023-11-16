@@ -54,7 +54,7 @@ export default function Wishlist(props) {
     const { data, setData, post, processing, errors, reset } = useForm({
         wishname: "",
         price: "",
-        item_url: "",
+        item_url: null,
         thumbnail: "",
         subscription: 0,
         subscription_period: "daily",
@@ -101,10 +101,10 @@ export default function Wishlist(props) {
     }, [thumbnail]);
 
     const createWishList = (e) => {
-        if (!thumbnail) {
-            toast.error("Please select a thumbnail for wish list item");
-            return false;
-        }
+        // if (!thumbnail) {
+        //     toast.error("Please select a thumbnail for wish list item");
+        //     return false;
+        // }
         e.preventDefault();
         post(route("save_wish_item"), {
             preserveScroll: true,
@@ -130,8 +130,7 @@ export default function Wishlist(props) {
             <Popup
                 action={close}
                 classes="btn-pink lg px-4"
-                text="add wishlist"
-            >
+                text="add wishlist" >
                 <div className="editprofileModal  wishlistModal ">
                     <div className="editprofileModalInner innermodel shadow-pink">
                         <h2 className="font-GillSans pt-4 px-3">Add A Wish</h2>
@@ -156,19 +155,12 @@ export default function Wishlist(props) {
                                                     value={data.wishname}
                                                     className="form-input px-2 py-2 border w-full rounded-md"
                                                     autoComplete="name"
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            "wishname",
-                                                            e.target.value
-                                                        )
-                                                    }
+                                                    onChange={(e) => setData( "wishname",e.target.value )}
                                                     required
                                                 />
                                             </li>
                                             <li className="mb-4">
-                                                <label className="mb-2 text-start d-block">
-                                                    Price{" "}
-                                                </label>
+                                                <label className="mb-2 text-start d-block">Price </label>
                                                 <input
                                                     id="price"
                                                     type="number"

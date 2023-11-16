@@ -30,6 +30,7 @@ export default function Dashboard(props) {
         })
     }
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
+    console.log("props",props);
 
     return (
         <Guest
@@ -40,7 +41,7 @@ export default function Dashboard(props) {
                 <div className='wishlistPage blackbg py-14 '>
                     <div className='containerbox'>
                         <div className='wishbanner d-lg-block d-none'>
-                            <img className='w-full  border-black border-2 shadow-black rounded-2xl'
+                            <img className='w-full  border-black border-2 shadow-mint rounded-2xl'
                                 src={user?.cover_url || wishlistbannerimg} alt='img' />
                         </div>
 
@@ -51,20 +52,18 @@ export default function Dashboard(props) {
                                         <Userprofile user={user} />
                                         <div className='userProfileDate mt-3'>
                                             {IsloggedIn ? <>
+
                                                 <EditProfile user={auth.user} />
-                                                <div className='finish mt-4 d-block'>
-                                                    <p className='mb-4'>Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                    <Link href={"/stripe"} className='btn-pink lg'>Finish Setup</Link>
-                                                </div>
+                                                {auth.stripe_details_submitted ? 
+                                                    <div className='finish mt-4 d-block'>
+                                                        <p className='mb-4'>Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                                        <Link href={"/stripe"} className='btn-pink lg'>Finish Setup</Link>
+                                                    </div>
+                                                 : ''}
+
                                                 <div className='addsocial flex'>
                                                     <ul>
                                                         <li>
-                                                            {/*
-                                                                <Link to="/" ><svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                                    <path d="M10.7143 13.7857H3V11.2143H10.7143V3.5H13.2857V11.2143H21V13.7857H13.2857V21.5H10.7143V13.7857Z" fill="#5D25FD" />
-                                                                </svg> Add Socials
-                                                                </Link>
-                                                                */}
                                                             <Social />
                                                         </li>
                                                         <li>
@@ -94,8 +93,6 @@ export default function Dashboard(props) {
                                             </div>
                                             {IsloggedIn ? <Wishlist categories={categories} /> : ""}
                                         </div>
-
-
                                         <div className='row'>
                                             {its && its.length ?
                                             <>
