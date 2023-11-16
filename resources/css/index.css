@@ -1,12 +1,15 @@
-@tailwind base;@tailwind components;@tailwind utilities;/*@font-face{font-family:'GillSans';src:url('../assets/fonts/newfont.woff') format('woff'),url('../assets/fonts/newfont.woff2') format('woff2');}
+/*@font-face{font-family:'GillSans';src:url('../assets/fonts/newfont.woff') format('woff'),url('../assets/fonts/newfont.woff2') format('woff2');}
 @font-face{font-family:'CeraGRMedium';src:url('../assets/fonts/CeraGRMedium.woff') format('woff'),url('../assets/fonts/CeraGRMedium.woff2') format('woff2');}
 */
+a { 
+  text-decoration: none;
+}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
 input[type=number]{-moz-appearance:textfield;}
 .cate-items div{background:#fb2e94 !important;padding:8px 25px !important;border-radius:11px;color:#fff;}
 .cate-items input{margin-right:10px;border-radius:10px;}
 .disabled{pointer-events:none;opacity:0.8;}
-.productimg{width:60px;height:60px;border-radius:10px;overflow:hidden;}
+.productimg{width:60px; min-width: 60px; height:60px;border-radius:10px;overflow:hidden;}
 .productimg img{width:100%;height:100%;object-fit:cover;}
 .editprofileModalInner,.innermodel{max-width:500px;width:500px;}
 .headtitle,.btn-pink lg,.btn-pink{letter-spacing:1px;text-shadow:1px 1px #0006;}
@@ -33,6 +36,10 @@ h2.wishtitle{font-size:24px;font-weight:900;}
 }
 .stripeterms li p { 
   font-weight: 400; font-size: 14px;
+}
+
+.collapse {
+  visibility: visible !important;
 }
 
 @media(max-width:991px){.userphotobox{height:280px;}

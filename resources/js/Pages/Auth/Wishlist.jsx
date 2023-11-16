@@ -38,12 +38,6 @@ export default function Wishlist(props) {
                     if (resp.props.flash?.error) {
                         errorAlert(resp.props.flash?.error);
                     }
-                    // let arr = [];
-                    // if (value) {
-                    //     arr.push({ id: 1, category: value });
-                    // }
-                    // setCats(arr);
-                    // arr = [];
                 },
                 onError: (_err) => {
                     console.table("error", _err);
@@ -60,7 +54,7 @@ export default function Wishlist(props) {
     const { data, setData, post, processing, errors, reset } = useForm({
         wishname: "",
         price: "",
-        item_url: "",
+        item_url: null,
         thumbnail: "",
         subscription: 0,
         subscription_period: "daily",
@@ -107,10 +101,10 @@ export default function Wishlist(props) {
     }, [thumbnail]);
 
     const createWishList = (e) => {
-        if (!thumbnail) {
-            toast.error("Please select a thumbnail for wish list item");
-            return false;
-        }
+        // if (!thumbnail) {
+        //     toast.error("Please select a thumbnail for wish list item");
+        //     return false;
+        // }
         e.preventDefault();
         post(route("save_wish_item"), {
             preserveScroll: true,
@@ -136,8 +130,7 @@ export default function Wishlist(props) {
             <Popup
                 action={close}
                 classes="btn-pink lg px-4"
-                text="add wishlist"
-            >
+                text="add wishlist" >
                 <div className="editprofileModal  wishlistModal ">
                     <div className="editprofileModalInner innermodel shadow-pink">
                         <h2 className="font-GillSans pt-4 px-3">Add A Wish</h2>
@@ -149,7 +142,7 @@ export default function Wishlist(props) {
                             <Tab eventKey="1" title="Custom">
                                 <div className="wishinfo">
                                     <form onSubmit={createWishList}>
-                                        <ul>
+                                        <ul className="ps-0" >
                                             <li className="mb-4">
                                                 <label className="mb-2 text-start d-block">
                                                     Wish Name
@@ -162,19 +155,12 @@ export default function Wishlist(props) {
                                                     value={data.wishname}
                                                     className="form-input px-2 py-2 border w-full rounded-md"
                                                     autoComplete="name"
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            "wishname",
-                                                            e.target.value
-                                                        )
-                                                    }
+                                                    onChange={(e) => setData( "wishname",e.target.value )}
                                                     required
                                                 />
                                             </li>
                                             <li className="mb-4">
-                                                <label className="mb-2 text-start d-block">
-                                                    Price{" "}
-                                                </label>
+                                                <label className="mb-2 text-start d-block">Price </label>
                                                 <input
                                                     id="price"
                                                     type="number"
@@ -238,10 +224,7 @@ export default function Wishlist(props) {
                                             <Accordion defaultActiveKey="0">
                                                 <Accordion.Item eventKey="0">
                                                     <Accordion.Header
-                                                        onClick={(e) =>
-                                                            setSubs(0)
-                                                        }
-                                                    >
+                                                        onClick={(e) =>setSubs(0)}>
                                                         <span className="activedote"></span>{" "}
                                                         Single Wish
                                                     </Accordion.Header>
@@ -393,7 +376,6 @@ export default function Wishlist(props) {
                                                         </div>
                                                     </Accordion.Body>
                                                 </Accordion.Item>
-
                                                 <Accordion.Item eventKey="2">
                                                     <Accordion.Header
                                                         onClick={(e) =>
@@ -484,7 +466,7 @@ export default function Wishlist(props) {
                                             <LoaderButton
                                                 disabled={processing}
                                                 type="submit"
-                                                className=" flex w-100 btn-pink lg mx-auto"
+                                                className="flex w-100 btn-pink lg mx-auto"
                                                 spinnerClassName="fill-red-600"
                                             >
                                                 {processing

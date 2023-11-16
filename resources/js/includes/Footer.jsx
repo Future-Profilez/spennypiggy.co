@@ -3,6 +3,7 @@ import footlogo from '../../assets/img/footlogo.png';
 import { Link } from '@inertiajs/react';
 import Nocontent from './Nocontent';
 import {Helmet} from "react-helmet";
+import { useEffect } from 'react';
 
 export default function Footer() {
   
@@ -10,6 +11,18 @@ export default function Footer() {
     window && window.displayPreferenceModal();
     return false;
   }
+
+  // useEffect(()=>{ 
+  //   <script async src="https://www.googletagmanager.com/gtag/js?id=AW-11395921981"></script> 
+  //   <script> 
+  //     window.dataLayer = window.dataLayer || []; 
+  //     function gtag(){
+  //       dataLayer.push(arguments);
+  //     } 
+  //     gtag('js', new Date());
+  //     gtag('config', 'AW-11395921981'); 
+  //   </script>
+  // })
 
   return <>
     <Helmet>
@@ -33,9 +46,8 @@ export default function Footer() {
                 <img src={footlogo} alt="img" />
               </Link>
             </div>
-
-            <a  onclick={display}
-            id="termly-consent-preferences">Consent Preferences</a>
+            {/* <a  onclick={display}
+            id="termly-consent-preferences">Consent Preferences</a> */}
             {/* <iframe src="https://app.termly.io/notify/696baafc-17cd-4a28-b758-a8f597cf2ad6" > </iframe> */}
 
             <div className='footlinksbox'>

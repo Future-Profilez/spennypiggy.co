@@ -18,8 +18,8 @@ export default function UserCarts(props) {
         window.location.href = `/create-checkout-session/${datas?.user?.id}`;
     };
 
-    return <>
-        <div className="cartPage bg-white p-4 border-pink shadow-pink border-pink rounded-3xl">
+    return <div className="px-2">
+        <div className="my-4 cartPage bg-white p-4 border-pink shadow-pink border-pink rounded-3xl">
             <div className="cartMain">
                 <h2 className="pb-1 wishtitle">
                     Wish Basket for {datas?.user?.name || ''} <Link className="text-voilet" href={`/${datas?.user?.username || ''}`}> @{datas?.user?.username || ''}</Link>
@@ -73,33 +73,19 @@ export default function UserCarts(props) {
                                 ></textarea>
                             </li>
 
-                            <li className="w-100 row">
-                                <div className="col-md-6">
-                                    <label className="d-block text-start" >From</label>
-                                    <input className="form-input w-100 rounded" onChange={(e) => setName(e.target.value)} type="text" placeholder="Enter Your Name..." />
-                                </div>
+                            <li className="w-100 mt-3">
+                                <li className="row">
+                                    <div className="col-md-6 mb-4">
+                                        <label className="d-block text-start" >From</label>
+                                        <input className="form-input w-100 rounded" onChange={(e) => setName(e.target.value)} type="text" placeholder="Enter Your Name..." />
+                                    </div>
 
-                                <div className="col-md-6">
-                                    <label className="d-block text-start" >Email(Private)</label>
-                                    <input className="form-input w-100 rounded" onChange={(e) => setemail(e.target.value)} type="email" placeholder="Enter Your email..." />
-                                </div>
+                                    <div className="col-md-6 mb-4">
+                                        <label className="d-block text-start" >Email(Private)</label>
+                                        <input className="form-input w-100 rounded" onChange={(e) => setemail(e.target.value)} type="email" placeholder="Enter Your email..." />
+                                    </div>
+                                </li>
                             </li>
-
-                            {/* <li className="cheklistbox">
-                            <label for="dndpublish">
-                                <input type="checkbox" id="dndpublish" name="dndpublish" value="dndpublish" />
-                                Don't Publish
-                            </label>
-
-                            <span className="cheklistnot">
-                                If checked, your wisher will not be able to
-                                publish your message and pseudonym you
-                                provided above to their wishlist. Regardless
-                                of whether you check this or not, your email
-                                and personal information will always be
-                                private.
-                            </span>
-                        </li> */}
 
                             <li className="cheklistbox">
                                 <label for="agreeterm">
@@ -159,5 +145,5 @@ export default function UserCarts(props) {
                 </div>
             </div>
         </div>
-    </>
+    </div>
 }

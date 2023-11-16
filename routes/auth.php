@@ -112,13 +112,13 @@ Route::middleware('auth')->group(function () {
     Route::get('account', function () {
         return Inertia::render('accountsetting/Accountsetting');
     })->name("account");
-
+    
+    Route::get('/stripe', function () {
+        return Inertia::render('stripe/Stripe');
+    })->middleware(['auth', 'verified'])->name('stripe');
+    
     
 });
-
-Route::get('/stripe', function () {
-    return Inertia::render('stripe/Stripe');
-})->middleware(['auth', 'verified'])->name('stripe');
 
 Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class, 'categoryItems'])->name('get_category_data');
 

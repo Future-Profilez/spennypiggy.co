@@ -16,17 +16,17 @@ export default function Works(props) {
   return (
     <Authenticated auth={auth?.user || ''} >
     <div className='pt-20 howitmain'>
+    <div className='containerbox'>
         <h2 className='headingMd text-shadow-black text-center mb-4'>How it works</h2>
         <p className='text-center'>Setting up your wishlist on Spenny Piggy only takes a few minutes. Add gifts from our <br/> partner brand catalog or any other retailer in the world.</p>
         <div className='howWorkTab mt-12 pb-12 mx-auto'>
-            <div className='containerbox'>
+           
                 <Tabs defaultActiveKey="1" id="uncontrolled-tab-example" className="mb-3">
                     <Tab eventKey="1" title="for wishers">
                         <div className='funboxs mintbg shadow-black border-black mb-10'>
                             <div className='funboximg'>
                                 <img src={vishitimg01} alt='img' />
                                 </div>
-                                
                                 <div className='funcnt'>
                                 <h5 className='text-voilet mb-2'>STEP 1</h5>
                                 <h3 className='headingSm text-shadow-black mb-3'>Visit A <br/> Wishlist</h3>
@@ -99,8 +99,8 @@ export default function Works(props) {
                         </div>  
                     </Tab>
                 </Tabs>   
-            </div>  
         </div>
+            </div>  
 
 
         <div class="joinus blackbg ">
