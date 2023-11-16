@@ -2,8 +2,9 @@ import React from 'react'
 import userphoto from '../../assets/img/userphoto.png';
 import { Link } from '@inertiajs/react';
 import wishlistbannerimg from '../../assets/img/wishlistbannerimg.jpg';
+import SocialLinks from '@/includes/SocialLinks';
 
-export default function Userprofile({user}) {
+export default function Userprofile({user, links}) {
   return (
     <div className='userprofilesec rounded-3xl whbg'>
       
@@ -23,7 +24,10 @@ export default function Userprofile({user}) {
         </svg>
       </Link>
       </div>
-        <p className={`text-muted text-center ${user && !user.bio ? 'd-none' : ''}`} >{user && user.bio || ""}</p>
+
+      <SocialLinks links={links} />
+
+      <p className={`text-muted text-center ${user && !user.bio ? 'd-none' : ''}`} >{user && user.bio || ""}</p>
     </div>
       
     </div>

@@ -49,7 +49,7 @@ export default function Dashboard(props) {
                             <div className='row'>
                                 <div className='col-lg-4' >
                                     <div className='userProfile whbg rounded-3xl shadow-voilet border-2'>
-                                        <Userprofile user={user} />
+                                        <Userprofile links={"links"} user={user} />
                                         <div className='userProfileDate mt-3'>
                                             {IsloggedIn ? <>
 
@@ -110,12 +110,12 @@ export default function Dashboard(props) {
                                             </>
                                         } 
 
-                                        {loading ? <div className='col-md-12' >
-                                            <Nocontent text="Loading...." />
-                                        </div> 
-
-                                        
+                                        {loading ? 
+                                            <div className='col-md-12' >
+                                                <Nocontent text="Loading...." />
+                                            </div> 
                                         : '' }
+
                                         </div>
                                     </div>
                                 </div>
