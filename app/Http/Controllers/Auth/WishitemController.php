@@ -61,6 +61,8 @@ class WishitemController extends Controller
             ]
         ]);
 
+        
+
         $wish = WishItem::create([
             "user_id" => Auth::id(),
             'wishname' => $request->wishname,
