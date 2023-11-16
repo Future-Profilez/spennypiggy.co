@@ -21,8 +21,7 @@ use Stripe\StripeClient;
 class WishitemController extends Controller
 {
 
-    public function saveWishItem(Request $request): RedirectResponse
-    {
+    public function saveWishItem(Request $request): RedirectResponse {
         $request->validate([
             "wishname" => [
                 "required",
@@ -105,6 +104,59 @@ class WishitemController extends Controller
         return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
     }
 
+
+    public function updateWishItem(Request $request, $uuid = null)
+    {
+        try {
+            $wish = WishItem::where('uuid', $uuid)->first();
+            if (!empty($wish)) {
+                $updatedata = WishItem::where('uuid', $uuid)->update([
+                    "user_id" => Auth::id(),
+                    'wishname' => $request->wishname ?? $wish->wishname,
+                    'price' => $request->price ?? $wish->price,
+                    'item_url' => $request->item_url != "" ? $request->item_url : $wish->item_url,
+                    'thumbnail' => $request->thumbnail ?? $wish->thumbnail,
+                    'subscription' => $request->subscription ?? $wish->subscription,
+                    'subscription_period' => $request->subscription_period ?? $wish->subscription_period,
+                    'repeat_purchase' => $request->repeat_purchase ??
+                        $wish->repeat_purchase,
+                ]);
+
+
+                $updatedata->refresh();
+                if (!empty($request->category)) {
+                    foreach ($request->category as $key => $value) {
+                        $wish_cat = new WishCategory();
+                        $wish_cat->uuid = Uuid::uuid4();
+                        $wish_cat->wish_id = $updatedata->id;
+                        $wish_cat->category_id = $value;
+                        $wish_cat->save();
+                    }
+                }
+
+                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                $stripe_client = $stripe->products->update([
+                    'name' => $request->wishname ?? $wish->wishname,
+                    'images' => [$updatedata->perma_link],
+                    "default_price_data" => ["currency" => "usd", "unit_amount_decimal" => $request->price],
+                    // "url" => $request->item_url ?? null
+                ]);
+
+                $updatedata->stripe_product_id = $stripe_client->id;
+                $updatedata->price_id = $stripe_client->default_price;
+                $updatedata->save();
+
+                $user = User::whereId(Auth::id())->first();
+
+                //send email
+                SaveWishlist::dispatch($user);
+
+                return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been updated.");
+            }
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+    }
 
     public function saveUserCategory(Request $request): RedirectResponse
     {

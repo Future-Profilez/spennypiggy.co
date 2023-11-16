@@ -15,18 +15,18 @@ import Nocontent from '@/includes/Nocontent';
 
 export default function Dashboard(props) {
 
-    const { auth, items, categories, user } = props;
+    const { auth, items, categories, user, itemid } = props;
     const [its, setIts] = useState(items);
     const [loading, setLoading] = useState(false);
 
     const showCategory = (e) => {
         setLoading(true);
         axios.get(`${user.username}/${e.target.value}`).then(resp => {
-            console.log('home-items', resp)
-
             setIts(resp.data.items)
+            setLoading(false);
         }).catch(_err => {
             console.error("error", _err);
+            setLoading(false);
         })
     }
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
@@ -42,17 +42,16 @@ export default function Dashboard(props) {
                     <div className='containerbox'>
                         <div className='wishbanner d-lg-block d-none'>
                             <img className='w-full  border-black border-2 shadow-mint rounded-2xl'
-                                src={user?.cover_url || wishlistbannerimg} alt='img' />
+                            src={user?.cover_url || wishlistbannerimg} alt='img' />
                         </div>
 
                         <div className='wishManage'>
                             <div className='row'>
                                 <div className='col-lg-4' >
                                     <div className='userProfile whbg rounded-3xl shadow-voilet border-2'>
-                                        <Userprofile user={user} />
+                                        <Userprofile links={"links"} user={user} />
                                         <div className='userProfileDate mt-3'>
                                             {IsloggedIn ? <>
-
                                                 <EditProfile user={auth.user} />
                                                 {auth.stripe_details_submitted ? 
                                                     <div className='finish mt-4 d-block'>
@@ -94,19 +93,28 @@ export default function Dashboard(props) {
                                             {IsloggedIn ? <Wishlist categories={categories} /> : ""}
                                         </div>
                                         <div className='row'>
-                                            {its && its.length ?
+                                        {its && its.length ?
                                             <>
-                                                {its.map((c, i) => {
+                                                {!loading && its.map((c, i) => {
                                                     return <div className='col-xl-4 col-lg-6 col-6' >
-                                                        <Wishlistbox itm={c} key={`wish-${c.uuid}`} />
+                                                        <Wishlistbox auth={auth.user}  itemid={itemid} itm={c} key={`wish-${c.uuid}`} />
                                                     </div>
                                                 })}
                                             </>
                                             :
-                                            <div className='col-md-12' >
+                                            <>
+                                            {!loading ? <div className='col-md-12' >
                                                 <Nocontent text="Currently you don't have any wish item" />
-                                            </div>
-                                        }
+                                            </div> : ''}
+                                            </>
+                                        } 
+
+                                        {loading ? 
+                                            <div className='col-md-12' >
+                                                <Nocontent text="Loading...." />
+                                            </div> 
+                                        : '' }
+
                                         </div>
                                     </div>
                                 </div>
@@ -115,7 +123,6 @@ export default function Dashboard(props) {
                     </div>
                 </div>
             </div>
-
         </Guest>
     );
 }

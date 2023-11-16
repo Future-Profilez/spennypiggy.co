@@ -89,38 +89,40 @@ Route::middleware('auth')->group(function () {
 
     Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item');
 
+    /*update wishitems*/
+    Route::post('update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
 
     Route::get('/create-checkout-session/{owner_id}', [StripeController::class, 'createCheckout'])->name('create.checkout');
     Route::get('/sucess-checkout/{id}', [StripeController::class, 'successCheckout'])->name('checkout.success');
     Route::get('cancel-checkout', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel');
 
-    /*Anonymous checkout*/
-    Route::get('/anonymous-create-checkout-session/{priceid}/{quantity}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
-    Route::get('/anonymous-sucess-checkout', [StripeController::class, 'anonymousSuccessCheckout'])->name('checkout.anonymous.success');
-
+    
     Route::prefix("stripe")->name("stripe.")->group(function () {
         Route::get("authorize", [StripeController::class, "index"])->name("index");
         Route::match(["get", "post"], "/connect-{step}", [StripeController::class, "initConnect"])->name("connect");
         Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
     });
-
+    
     Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
-
+    
     Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
-
+    
     Route::get('/add-to-cart/{uuid}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
-
+    
     Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
-
+    
     Route::get('account', function () {
         return Inertia::render('accountsetting/Accountsetting');
     })->name("account");
-
+    
     Route::get('/stripe', function () {
         return Inertia::render('stripe/Stripe');
     })->middleware(['auth', 'verified'])->name('stripe');
 });
 
+/*Anonymous checkout*/
+Route::get('/anonymous-create-checkout-session/{priceid}/{quantity}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
+Route::get('/anonymous-sucess-checkout', [StripeController::class, 'anonymousSuccessCheckout'])->name('checkout.anonymous.success');
 Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class, 'categoryItems'])->name('get_category_data');
 
 Route::get('users', [MyController::class, 'getUsers'])->name('users');
