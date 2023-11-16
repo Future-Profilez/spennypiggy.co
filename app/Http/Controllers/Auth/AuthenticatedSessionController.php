@@ -62,12 +62,45 @@ class AuthenticatedSessionController extends Controller
     public function getUserProfile($username, $category = false)
     {
         $user = User::where('username', $username)->first();
-        $sociallinks = SocialLinks::where('user_id', $user->id)->get();
-        if (!empty($sociallinks)) {
-            $sociallinks = $sociallinks;
-        } else {
-            $sociallinks = [];
-        }
+        $slinks = SocialLinks::where('user_id', $user->id)->first();
+
+        $sociallinks = array(
+            array(
+                'social' => 'whoyouinto',
+                'url'    => $slinks->whoyouinto ?? null,
+            ),
+            array(
+                'social' => 'twitter',
+                'url'    => $slinks->twitter ?? null,
+            ),
+            array(
+                'social' => 'instagram',
+                'url'    => $slinks->instagram ?? null,
+            ), array(
+                'social' => 'reddit',
+                'url'    => $slinks->reddit ?? null,
+            ), array(
+                'social' => 'discord',
+                'url'    => $slinks->discord ?? null,
+            ), array(
+                'social' => 'onlyfans',
+                'url'    => $slinks->onlyfans ?? null,
+            ), array(
+                'social' => 'loyalfans',
+                'url'    => $slinks->loyalfans ?? null,
+            ), array(
+                'social' => 'fansly',
+                'url'    => $slinks->fansly ?? null,
+            ), array(
+                'social' => 'manyvids',
+                'url'    => $slinks->manyvids ?? null,
+            ), array(
+                'social' => 'other',
+                'url'    => $slinks->other ?? null,
+            )
+        );
+        print_r($sociallinks);
+        die;
         // if(!$user){
         //     return
         // }
