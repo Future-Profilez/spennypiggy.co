@@ -15,7 +15,7 @@ import Nocontent from '@/includes/Nocontent';
 
 export default function Dashboard(props) {
 
-    const { auth, items, categories, user } = props;
+    const { auth, items, categories, user, itemid } = props;
     const [its, setIts] = useState(items);
     const [loading, setLoading] = useState(false);
 
@@ -96,21 +96,25 @@ export default function Dashboard(props) {
                                         <div className='row'>
                                         {its && its.length ?
                                             <>
-                                                {its.map((c, i) => {
+                                                {!loading && its.map((c, i) => {
                                                     return <div className='col-xl-4 col-lg-6 col-6' >
-                                                        <Wishlistbox itm={c} key={`wish-${c.uuid}`} />
+                                                        <Wishlistbox itemid={itemid} itm={c} key={`wish-${c.uuid}`} />
                                                     </div>
                                                 })}
                                             </>
                                             :
-                                            <div className='col-md-12' >
+                                            <>
+                                            {!loading ? <div className='col-md-12' >
                                                 <Nocontent text="Currently you don't have any wish item" />
-                                            </div>
+                                            </div> : ''}
+                                            </>
                                         } 
 
                                         {loading ? <div className='col-md-12' >
                                             <Nocontent text="Loading...." />
                                         </div> 
+
+                                        
                                         : '' }
                                         </div>
                                     </div>

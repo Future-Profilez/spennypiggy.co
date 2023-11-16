@@ -8,10 +8,10 @@ import { useState } from 'react';
 import uploadedimg from '../../assets/img/uploadedimg.png';
 import { useEffect } from 'react';
 
-export default function Wishlistbox({ itm }) {
+export default function Wishlistbox({ itm, itemid }) {
 
   // const [itemUID, setItemUID] = useState('ccbf439a-1872-474b-8a15-47d45943f7ba');
-  const [itemUID, setItemUID] = useState(null);
+  const [itemUID, setItemUID] = useState(itemid);
   const [open, setOpen] = useState();
   const openAddtocart = () => {
     setOpen(true);
