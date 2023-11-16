@@ -213,6 +213,62 @@ class StripeController extends Controller
         return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
     }
 
+    /* Anonymous checkout */
+    public function createAnonymousCheckout($priceid = null, $quantity = null)
+    {
+        try {
+            $lineItems = [
+                [
+                    'price' => $priceid ?? '',
+                    'quantity' => $quantity ?? 1,
+                ],
+            ];
+
+            $stripe = new \Stripe\StripeClient('sk_test_51O3maCG7xsNScLmXVQNnz6tw1ukAvcKY5WhVEk7e1wRAH9pSC7rmk3gxRFKAUMrVMAxWsndWudNmmvqkmm2p2w1J00sBIpHExQ');
+            $sessioncreate = $stripe->checkout->sessions->create([
+                'success_url' => route('checkout.anonymous.success'),
+                'cancel_url' => route('checkout.cancel'),
+                'line_items' => $lineItems,
+                'mode' => 'payment',
+            ]);
+
+            $callbackData = $sessioncreate;
+            session()->forget('anonymous_session_id');
+            session(['anonymous_session_id' => $callbackData->id]);
+            StripePaymentDetail::create([
+                'session_id' => $callbackData->id,
+                'amount_subtotal' => $callbackData->amount_subtotal,
+                'amount_total' => $callbackData->amount_total,
+                'currency' => $callbackData->currency,
+                'payment_method_config_detail_id' => optional($callbackData->payment_method_configuration_details)->id,
+                'payment_method_type' => optional($callbackData->payment_method_types)[0],
+                'session_created' => $callbackData->created,
+                'session_expires_at' => $callbackData->expires_at,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
+            ]);
+            return Inertia::location($sessioncreate->url);
+        } catch (\Throwable $th) {
+            \Log::error("Error in createAnonymousCheckout: " . $th->getMessage());
+            throw $th;
+        }
+    }
+
+    public function anonymousSuccessCheckout()
+    {
+        try {
+            $sessionId = session('anonymous_session_id');
+            StripePaymentDetail::where('session_id', $sessionId)->update([
+                'payment_status' => 'paid',
+                'updated_at' => Carbon::now(),
+            ]);
+            print_r("success");
+            die;
+            // return redirect()->back()->with('success', 'Payment Successfull.');
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+    }
     public function cancelCheckout()
     {
         $sessionId = session('session_id');

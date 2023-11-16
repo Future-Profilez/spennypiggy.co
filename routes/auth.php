@@ -94,6 +94,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/sucess-checkout/{id}', [StripeController::class, 'successCheckout'])->name('checkout.success');
     Route::get('cancel-checkout', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel');
 
+    /*Anonymous checkout*/
+    Route::get('/anonymous-create-checkout-session/{priceid}/{quantity}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
+    Route::get('/anonymous-sucess-checkout', [StripeController::class, 'anonymousSuccessCheckout'])->name('checkout.anonymous.success');
 
     Route::prefix("stripe")->name("stripe.")->group(function () {
         Route::get("authorize", [StripeController::class, "index"])->name("index");
@@ -112,12 +115,10 @@ Route::middleware('auth')->group(function () {
     Route::get('account', function () {
         return Inertia::render('accountsetting/Accountsetting');
     })->name("account");
-    
+
     Route::get('/stripe', function () {
         return Inertia::render('stripe/Stripe');
     })->middleware(['auth', 'verified'])->name('stripe');
-    
-    
 });
 
 Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class, 'categoryItems'])->name('get_category_data');
@@ -129,4 +130,3 @@ Route::get('/how-it-works', function () {
 })->name("how-it-works");
 
 Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
-
