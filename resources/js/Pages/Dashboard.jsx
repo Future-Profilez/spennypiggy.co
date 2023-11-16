@@ -42,7 +42,7 @@ export default function Dashboard(props) {
                     <div className='containerbox'>
                         <div className='wishbanner d-lg-block d-none'>
                             <img className='w-full  border-black border-2 shadow-mint rounded-2xl'
-                                src={user?.cover_url || wishlistbannerimg} alt='img' />
+                            src={user?.cover_url || wishlistbannerimg} alt='img' />
                         </div>
 
                         <div className='wishManage'>
@@ -52,7 +52,6 @@ export default function Dashboard(props) {
                                         <Userprofile links={"links"} user={user} />
                                         <div className='userProfileDate mt-3'>
                                             {IsloggedIn ? <>
-
                                                 <EditProfile user={auth.user} />
                                                 {auth.stripe_details_submitted ? 
                                                     <div className='finish mt-4 d-block'>

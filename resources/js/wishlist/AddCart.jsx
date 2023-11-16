@@ -1,11 +1,9 @@
 import React from 'react'
-import profileimg from '../../assets/img/profileimg.png'
-import editicon from '../../assets/img/editicon.png'
 import giftimg from '../../assets/img/giftimg.jpg'
-import cartbannerimg from '../../assets/img/cartbannerimg.jpg'
 import Popup from '@/Components/Popup'
 import ToCart from './ToCart'
 import uploadedimg from '../../assets/img/uploadedimg.png';
+import { Link } from '@inertiajs/react'
 
 export default function AddCart({action, uuid, item}) {
 
@@ -27,7 +25,8 @@ export default function AddCart({action, uuid, item}) {
         <div className='cartPrice font-CeraGRBold text-voilet mt-1 mb-3'>£ {item.price}</div>
           <div className='px-2 pb-2'>
               <ToCart text={item?.is_cart ? "Remove from cart" : `Add to cart`} classes='btn-pink lg w-100 mb-3 font-CeraGR' uuid={uuid} />
-              <ToCart type='checkout' text="Add to cart and Checkout" classes='btn-pink lg w-100 font-CeraGR' uuid={uuid} />
+              <Link href={route("cart")} className='btn-pink lg w-100 font-CeraGR'  > Checkout</Link>
+              {/* <ToCart type='checkout' text="Add to cart and" classes='btn-pink lg w-100 font-CeraGR' uuid={uuid} /> */}
           </div>
         </div>
       </div>

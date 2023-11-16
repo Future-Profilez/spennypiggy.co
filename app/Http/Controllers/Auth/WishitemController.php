@@ -21,8 +21,7 @@ use Stripe\StripeClient;
 class WishitemController extends Controller
 {
 
-    public function saveWishItem(Request $request): RedirectResponse
-    {
+    public function saveWishItem(Request $request): RedirectResponse {
         $request->validate([
             "wishname" => [
                 "required",
