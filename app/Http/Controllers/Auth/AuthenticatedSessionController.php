@@ -65,9 +65,10 @@ class AuthenticatedSessionController extends Controller
         // if(!$user){
         //     return
         // }
+
         $items = [];
         $categories = [];
-        if(!empty($user)){
+        if (!empty($user)) {
             $categories = UserCategory::whereUserId($user->id)->latest()->get();
         }
         if ($category && $user) {
@@ -91,7 +92,7 @@ class AuthenticatedSessionController extends Controller
                 "categories" => $categories,
             ]);
         } else {
-            if($user){
+            if ($user) {
                 $items = WishItem::whereUserId($user->id)->latest()->get();
             }
         }
