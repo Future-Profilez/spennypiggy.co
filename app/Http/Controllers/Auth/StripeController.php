@@ -15,6 +15,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Ramsey\Uuid\Uuid;
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
 
@@ -172,7 +173,7 @@ class StripeController extends Controller
             $callbackData = $sessioncreate;
             session()->forget('session_id');
             session(['session_id' => $callbackData->id]);
-            $stripeid = StripePaymentDetail::insertGetId([
+            $stripeid = StripePaymentDetail::create([
                 'session_id' => $callbackData->id,
                 'amount_subtotal' => $callbackData->amount_subtotal,
                 'amount_total' => $callbackData->amount_total,
@@ -186,10 +187,12 @@ class StripeController extends Controller
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ]);
+            $stripeid->refresh();
 
             foreach ($getdata as $dd) {
                 StripePaymentItems::create([
-                    'stripe_payment_id' => $stripeid,
+                    'uuid' => Uuid::uuid4(),
+                    'stripe_payment_id' => $stripeid->id,
                     'wish_item_id' => $dd->wish_id,
                     'user_cart_id' => $dd->id,
                     'amount' => $dd->amount,

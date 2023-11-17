@@ -257,7 +257,6 @@ class WishitemController extends Controller
         }
 
         $cart = UserCart::where('wish_id', $wishitem->id)->where("user_id", Auth::id())->first();
-        $wishdata = WishItem::where('id', $wishitem->id)->first();
         if ($cart) {
 
             if ($cart->status == 0) {
@@ -281,18 +280,18 @@ class WishitemController extends Controller
                 ]);
             }
         } else {
-            if ($wishdata->subscription == 2) {
+            if ($wishitem->subscription == 2) {
                 $fullfillamount = $amount;
                 $createpriceid = $amount + $amount * env('TAX_PERCENTAGE') / 100;
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripe_client = $stripe->products->create([
                     'name' => 'anonymous',
-                    'images' => [$wishdata->perma_link],
+                    'images' => [$wishitem->perma_link],
                     "default_price_data" => ["currency" => "usd", "unit_amount_decimal" => $createpriceid],
                 ]);
                 $priceid = $stripe_client->default_price;
             } else {
-                $fullfillamount = $wishdata->price;
+                $fullfillamount = $wishitem->price;
                 $priceid = null;
             }
 
@@ -381,7 +380,7 @@ class WishitemController extends Controller
                 }
             }
             $cart[$key]['total'] = $total;
-            $cart[$key]['fee'] = ($total * 15) / 100;
+            $cart[$key]['fee'] = ($total * env('TAX_PERCENTAGE')) / 100;
 
             $key++;
         }

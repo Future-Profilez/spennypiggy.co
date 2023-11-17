@@ -15,6 +15,8 @@ class UserCart extends Model
         "user_id",
         "owner_id",
         "wish_id",
+        'amount',
+        'priceid',
         "status",
     ];
 
