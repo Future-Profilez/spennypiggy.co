@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\CheckoutUser;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
+use App\Models\Subscription;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\WishItem;
@@ -15,6 +16,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Ramsey\Uuid\Uuid;
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
 
@@ -145,15 +147,14 @@ class StripeController extends Controller
 
             $lineItems = [];
             foreach ($getdata as $dd) {
-                if ($dd->wish->subscription = 2) {
+                if ($dd->wish->subscription == 2) {
                     $lineItems[] = [
                         'price' => $dd->priceid ?? '',
                         'quantity' => 1,
                     ];
-                    $check = WishItem::where('id', $dd->wish_id)->first();
-                    $amountadd = $check->fullfill_amount + $dd->amount;
-                    $check->fullfill_amount = $amountadd;
-                    $check->save();
+                    $amountadd = $dd->wish->fullfill_amount + $dd->amount;
+                    $dd->wish->fullfill_amount = $amountadd;
+                    $dd->wish->save();
                 } else {
                     $lineItems[] = [
                         'price' => $dd->wish->price_id ?? '',
@@ -161,7 +162,6 @@ class StripeController extends Controller
                     ];
                 }
             }
-
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
             $sessioncreate = $stripe->checkout->sessions->create([
@@ -174,7 +174,7 @@ class StripeController extends Controller
             $callbackData = $sessioncreate;
             session()->forget('session_id');
             session(['session_id' => $callbackData->id]);
-            $stripeid = StripePaymentDetail::insertGetId([
+            $stripeid = StripePaymentDetail::create([
                 'session_id' => $callbackData->id,
                 'amount_subtotal' => $callbackData->amount_subtotal,
                 'amount_total' => $callbackData->amount_total,
@@ -188,10 +188,12 @@ class StripeController extends Controller
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ]);
+            $stripeid->refresh();
 
             foreach ($getdata as $dd) {
                 StripePaymentItems::create([
-                    'stripe_payment_id' => $stripeid,
+                    'uuid' => Uuid::uuid4(),
+                    'stripe_payment_id' => $stripeid->id,
                     'wish_item_id' => $dd->wish_id,
                     'user_cart_id' => $dd->id,
                     'amount' => $dd->amount,
@@ -226,6 +228,26 @@ class StripeController extends Controller
         foreach ($getdata as $dd) {
             $dd->status = 0;
             $dd->save();
+
+            if ($dd->wish->subscription == 1) {
+
+                if ($dd->wish->subscription_period == 'daily') {
+                    $end = Carbon::now()->addDay(1);
+                } elseif ($dd->wish->subscription_period == 'weekly') {
+                    $end = Carbon::now()->addWeek(1);
+                } elseif ($dd->wish->subscription_period == 'monthly') {
+                    $end = Carbon::now()->addMonth(1);
+                }
+
+                $subscription = new Subscription();
+                $subscription->user_id = $dd->user_id;
+                $subscription->owner_id = $dd->owner_id;
+                $subscription->wish_id = $dd->wish_id;
+                $subscription->start_at = Carbon::now();
+                $subscription->end_at = $end;
+                $subscription->status = 1;
+                $subscription->save();
+            }
         }
 
         $sessionId = session('session_id');

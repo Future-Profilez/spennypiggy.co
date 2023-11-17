@@ -10,6 +10,7 @@ class StripePaymentDetail extends Model
 {
     use HasFactory;
     protected $fillable = [
+        'id',
         'uuid',
         'session_id',
         'amount_subtotal',
