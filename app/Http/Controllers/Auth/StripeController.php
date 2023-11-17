@@ -214,6 +214,16 @@ class StripeController extends Controller
         return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
     }
 
+    public function cancelCheckout()
+    {
+        $sessionId = session('session_id');
+        StripePaymentDetail::where('session_id', $sessionId)->update([
+            'payment_status' => 'unpaid',
+            'updated_at' => Carbon::now(),
+        ]);
+        return view('cancel');
+    }
+
     /* Anonymous checkout */
     public function createAnonymousCheckout($priceid = null, $quantity = null)
     {
@@ -228,7 +238,7 @@ class StripeController extends Controller
             $stripe = new \Stripe\StripeClient('sk_test_51O3maCG7xsNScLmXVQNnz6tw1ukAvcKY5WhVEk7e1wRAH9pSC7rmk3gxRFKAUMrVMAxWsndWudNmmvqkmm2p2w1J00sBIpHExQ');
             $sessioncreate = $stripe->checkout->sessions->create([
                 'success_url' => route('checkout.anonymous.success'),
-                'cancel_url' => route('checkout.cancel'),
+                'cancel_url' => route('checkout.anonymous.cancel'),
                 'line_items' => $lineItems,
                 'mode' => 'payment',
             ]);
@@ -249,7 +259,8 @@ class StripeController extends Controller
                 'updated_at' => Carbon::now(),
             ]);
 
-            return Inertia::location($sessioncreate->url);
+            
+            return Inertia::location("https://checkout.stripe.com/c/pay/cs_test_a1jgKGZXBgUInXbv2q4Ik3o4TjQMBZHMPkQEDWVs1i08XpqTx4Bw8ABEIg#fidkdWxOYHwnPyd1blpxYHZxWjA0SjZoZEZCMn12S1ZmSWhdQmZQb0xrVEZLb1xLXTBqaGhJS2BKcHFUVk8zQVNndWNzSFI3SnB1UEcwZ1FObm5%2FR3xsRk9VdEJ8NkxTPDdvQUZAM1xMbFFTNTVMX3ZvY2IzVicpJ2N3amhWYHdzYHcnP3F3cGApJ2lkfGpwcVF8dWAnPyd2bGtiaWBabHFgaCcpJ2BrZGdpYFVpZGZgbWppYWB3dic%2FcXdwYHgl");
         } catch (\Throwable $th) {
             \Log::error("Error in createAnonymousCheckout: " . $th->getMessage());
             throw $th;
@@ -271,9 +282,10 @@ class StripeController extends Controller
             //throw $th;
         }
     }
-    public function cancelCheckout()
+
+    public function anonymousCancelCheckout()
     {
-        $sessionId = session('session_id');
+        $sessionId = session('anonymous_session_id');
         StripePaymentDetail::where('session_id', $sessionId)->update([
             'payment_status' => 'unpaid',
             'updated_at' => Carbon::now(),
