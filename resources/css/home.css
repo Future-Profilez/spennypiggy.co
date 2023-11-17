@@ -257,7 +257,6 @@ letter-spacing:-0.63px;margin:0 0 6px;}
 .howWorkTab .nav-tabs{border:none;margin-bottom:40px!important;justify-content:center;border:none;}
 .howWorkTab .nav-tabs button{padding:15px 20px;border-radius:12px;border:1px solid var(--black)!important;background:#7C7885;box-shadow:5px 5px 0px 0px var(--black);color:#E6E6E6;font-family:var(--heading-font);font-size:24px;font-style:normal;font-weight:400;line-height:normal;text-transform:uppercase;}
 .howWorkTab .nav-tabs button.active,.howWorkTab .nav-tabs button:hover,.howWorkTab .nav-tabs button:focus{background:#8C52FF;color:var(--white)!important}
-.socialmedia li{margin-right:10px;}
 .socialmedia li:last-child{margin-right:0;}
 .noresultimg{max-width:110px;margin-bottom:10px !important;}
 .noResult h2.headingLg{font-size:23px !important;margin-bottom:0 !important;}
@@ -284,7 +283,10 @@ letter-spacing:-0.63px;margin:0 0 6px;}
   background: transparent; 
   padding: 10px;
 }
-
+ul.socialmedia a svg {
+  width: 30px;
+  height: 30px;
+}
 
 .progress{background:#ECCEDB;height:9px;}
 .progress-bar{background:var(--pink);}

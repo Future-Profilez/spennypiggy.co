@@ -12,7 +12,7 @@ export default function ToCart({ uuid, text, classes, custom, removeItem, type, 
      
     const addtocart = (e) => {
         setLoading(true);
-        axios.get(`/add-to-cart/${uuid}`).then(resp => {
+        axios.get(`/add-to-cart/${uuid}/50`).then(resp => {
             if (resp.data.added == true) {
                 successAlert(resp.data.msg);
                 setis_Cart(true);
