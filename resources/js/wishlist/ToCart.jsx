@@ -4,7 +4,7 @@ import { router } from '@inertiajs/react';
 import axios from 'axios';
 import { useState } from 'react';
 
-export default function ToCart({ uuid, text, classes, custom, removeItem, type, is_cart }) {
+export default function ToCart({ uuid, text, classes, custom, removeItem, type, is_cart, amount }) {
 
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [loading, setLoading] = useState(false);
@@ -12,7 +12,7 @@ export default function ToCart({ uuid, text, classes, custom, removeItem, type, 
      
     const addtocart = (e) => {
         setLoading(true);
-        axios.get(`/add-to-cart/${uuid}/50`).then(resp => {
+        axios.get(`/add-to-cart/${uuid}${amount ? `/${amount}` : ''}`).then(resp => {
             if (resp.data.added == true) {
                 successAlert(resp.data.msg);
                 setis_Cart(true);
@@ -27,10 +27,10 @@ export default function ToCart({ uuid, text, classes, custom, removeItem, type, 
             if(type == 'checkout'){ 
                window.location = '/cart';
             }
-          }).catch(_err => {
-            console.error("error", _err);
-            setLoading(false);
-          })
+        }).catch(_err => {
+          console.error("error", _err);
+          setLoading(false);
+        });
     };
 
   return <>

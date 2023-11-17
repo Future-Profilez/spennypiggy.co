@@ -283,9 +283,13 @@ letter-spacing:-0.63px;margin:0 0 6px;}
   background: transparent; 
   padding: 10px;
 }
-ul.socialmedia a svg {
+ul.socialmedia a svg  {
   width: 30px;
   height: 30px;
+}
+ ul.socialmedia a img {
+  width: 35px;
+  height: 35px;
 }
 
 .progress{background:#ECCEDB;height:9px;}
