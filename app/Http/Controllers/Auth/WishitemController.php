@@ -281,7 +281,7 @@ class WishitemController extends Controller
                 ]);
             }
         } else {
-            if ($wishdata->subscription = 2) {
+            if ($wishdata->subscription == 2) {
                 $fullfillamount = $amount;
                 $createpriceid = $amount + $amount * env('TAX_PERCENTAGE') / 100;
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
