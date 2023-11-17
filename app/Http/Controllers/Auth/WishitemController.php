@@ -262,20 +262,6 @@ class WishitemController extends Controller
 
             if ($cart->status == 0) {
                 $cart->status = 1;
-                if ($wishdata->subscription = 2) {
-                    $cart->amount = $amount;
-                    $createpriceid = $amount + $amount * env('TAX_PERCENTAGE') / 100;
-                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-                    $stripe_client = $stripe->products->create([
-                        'name' => 'anonymous',
-                        'images' => [$wishdata->perma_link],
-                        "default_price_data" => ["currency" => "usd", "unit_amount_decimal" => $createpriceid],
-                    ]);
-                    $cart->priceid = $stripe_client->default_price;
-                } else {
-                    $cart->amount = $wishdata->price;
-                    $cart->priceid = null;
-                }
                 $cart->save();
                 return response()->json([
                     "success" => true,
@@ -285,8 +271,6 @@ class WishitemController extends Controller
                 ]);
             } else {
                 $cart->status = 0;
-                $cart->amount = 0;
-                $cart->priceid = null;
                 $cart->save();
 
                 return response()->json([
@@ -331,7 +315,6 @@ class WishitemController extends Controller
 
     public function cartItems()
     {
-
         $user = User::where('id', Auth::id())->first();
         $carts = UserCart::where('user_id', $user->id)->where('status', 1)->get();
 
@@ -345,7 +328,9 @@ class WishitemController extends Controller
                 'user' => $wish->user->toArray(),
                 'wish' => $wish->wish->toArray(),
                 'owner' => $wish->owner->toArray(),
-                'url' => $wish->wish->perma_link
+                'url' => $wish->wish->perma_link,
+                'amount' => $wish->amount,
+                'priceid' => $wish->priceid,
             ];
         }
 
@@ -365,14 +350,22 @@ class WishitemController extends Controller
             $total = 0;
 
             foreach ($value as $k => $v) {
+                if ($v['wish']['subscription'] == 2) {
+                    $price = $v['amount'];
+                    $priceid = $v['priceid'];
+                } else {
+                    $price = $v['wish']['price'];
+                    $priceid = $v['wish']['price_id'];
+                }
+
                 $cart[$key]['items'][$k] = [
                     'id' => $v['wish']['id'],
                     'uuid' => $v['wish']['uuid'],
                     'user_id' => $v['wish']['user_id'],
                     'wishname' => $v['wish']['wishname'],
                     'stripe_product_id' => $v['wish']['stripe_product_id'],
-                    'price' => $v['wish']['price'],
-                    'price_id' => $v['wish']['price_id'],
+                    'price' => $price,
+                    'price_id' => $priceid,
                     'item_url' => $v['wish']['item_url'],
                     'subscription' => $v['wish']['subscription'],
                     'subscription_period' => $v['wish']['subscription_period'],
@@ -380,7 +373,12 @@ class WishitemController extends Controller
                     'category' => $v['wish']['category'],
                     'url' => $v['url'],
                 ];
-                $total += $v['wish']['price'];
+
+                if ($v['wish']['subscription'] == 2) {
+                    $total += $v['amount'];
+                } else {
+                    $total += $v['wish']['price'];
+                }
             }
             $cart[$key]['total'] = $total;
             $cart[$key]['fee'] = ($total * 15) / 100;

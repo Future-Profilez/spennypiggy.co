@@ -145,15 +145,14 @@ class StripeController extends Controller
 
             $lineItems = [];
             foreach ($getdata as $dd) {
-                if ($dd->wish->subscription = 2) {
+                if ($dd->wish->subscription == 2) {
                     $lineItems[] = [
                         'price' => $dd->priceid ?? '',
                         'quantity' => 1,
                     ];
-                    $check = WishItem::where('id', $dd->wish_id)->first();
-                    $amountadd = $check->fullfill_amount + $dd->amount;
-                    $check->fullfill_amount = $amountadd;
-                    $check->save();
+                    $amountadd = $dd->wish->fullfill_amount + $dd->amount;
+                    $dd->wish->fullfill_amount = $amountadd;
+                    $dd->wish->save();
                 } else {
                     $lineItems[] = [
                         'price' => $dd->wish->price_id ?? '',
@@ -161,7 +160,6 @@ class StripeController extends Controller
                     ];
                 }
             }
-
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
             $sessioncreate = $stripe->checkout->sessions->create([
