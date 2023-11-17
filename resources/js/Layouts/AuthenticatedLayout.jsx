@@ -33,6 +33,6 @@ export default function Authenticated({auth, user, header, children }) {
                 {children}
                 <Toaster />
             </main>
-        <Footer />
+        <Footer auth={auth} />
     </>
 }

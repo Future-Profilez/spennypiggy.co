@@ -53,12 +53,12 @@ export default function Dashboard(props) {
                                         <div className='userProfileDate mt-3'>
                                             {IsloggedIn ? <>
                                                 <EditProfile user={auth.user} />
-                                                {auth.stripe_details_submitted ?
+                                                { !auth.stripe_details_submitted ?
                                                     <div className='finish mt-4 d-block'>
                                                         <p className='mb-4'>Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
                                                         <Link href={"/stripe"} className='btn-pink lg'>Finish Setup</Link>
                                                     </div>
-                                                    : ''}
+                                                : ''}
 
                                                 <div className='addsocial flex'>
                                                     <ul>

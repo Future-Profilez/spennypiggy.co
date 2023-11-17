@@ -4,39 +4,46 @@ import { Link } from '@inertiajs/react';
 import Nocontent from './Nocontent';
 import {Helmet} from "react-helmet";
 import { useEffect } from 'react';
+import ContentPrefrences from './ContentPrefrences';
 
-export default function Footer() {
+export default function Footer(props) {
+
+  const {auth} = props;
 
   const display = () => {
     window && window.displayPreferenceModal();
     return false;
   }
 
-  // useEffect(()=>{
-  //   <script async src="https://www.googletagmanager.com/gtag/js?id=AW-11395921981"></script>
-  //   <script>
-  //     window.dataLayer = window.dataLayer || [];
-  //     function gtag(){
-  //       dataLayer.push(arguments);
-  //     }
-  //     gtag('js', new Date());
-  //     gtag('config', 'AW-11395921981');
-  //   </script>
-  // })
+  useEffect(()=>{
+       if(auth){
+         window.intercomSettings = {
+            "api_base" : "https://api-iam.intercom.io",
+            "app_id": "xomg14o9",
+            "name": auth && auth?.name, // Full name
+            "email": auth && auth?.email, // Email address
+            "created_at": auth && auth?.createdAt // Signup date as a Unix timestamp
+          };
+        (function(){var w=window;var ic=w.Intercom;if(typeof ic==="function"){ic('reattach_activator');ic('update',w.intercomSettings);}else{var d=document;var i=function(){i.c(arguments);};i.q=[];i.c=function(args){i.q.push(args);};w.Intercom=i;var l=function(){var s=d.createElement('script');s.type='text/javascript';s.async=true;s.src='https://widget.intercom.io/widget/xomg14o9';var x=d.getElementsByTagName('script')[0];x.parentNode.insertBefore(s,x);};if(document.readyState==='complete'){l();}else if(w.attachEvent){w.attachEvent('onload',l);}else{w.addEventListener('load',l,false);}}})();
+       } 
+    },[auth && auth?.name]);
+
+    useEffect(()=>{
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){
+          dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+        gtag('config', 'AW-11395921981');
+    },[]);
 
   return <>
     <Helmet>
-        <script type="text/javascript" src="https://app.termly.io/embed.min.js"
+      {/* <head> */}
+        <script async type="text/javascript" src="https://app.termly.io/embed.min.js"
         data-auto-block="on" data-website-uuid="ced8ded9-995d-471a-bf54-880b8c679a81" ></script>
         <script async src="https://www.googletagmanager.com/gtag/js?id=AW-11395921981"></script>
-        {/* <script>
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){
-            dataLayer && dataLayer.push(arguments)
-          }
-          gtag('js', new Date());
-          gtag('config', 'AW-11395921981');
-        </script> */}
+        
     </Helmet>
     <div>
         <div className='footer'>
@@ -46,9 +53,6 @@ export default function Footer() {
                 <img src={footlogo} alt="img" />
               </Link>
             </div>
-            {/* <a  onclick={display}
-            id="termly-consent-preferences">Consent Preferences</a> */}
-            {/* <iframe src="https://app.termly.io/notify/696baafc-17cd-4a28-b758-a8f597cf2ad6" > </iframe> */}
 
             <div className='footlinksbox'>
               <div className='footlinks'>
@@ -58,7 +62,7 @@ export default function Footer() {
                   <li><a target='_blank' href="https://app.termly.io/document/acceptable-use/458f5fac-0c41-406f-a02f-b50adff1ec9c" >Acceptable Use Policy</a></li>
                   <li><a target='_blank' href="https://app.termly.io/notify/696baafc-17cd-4a28-b758-a8f597cf2ad6" >DSAR Form</a></li>
                   <li><Link href={route("how-it-works")} >How it works</Link></li>
-                  <li><Link href={route("login")} >Login</Link></li>
+                  <li> <ContentPrefrences classes='m-auto d-table' /> </li>
                 </ul>
               </div>
           </div>

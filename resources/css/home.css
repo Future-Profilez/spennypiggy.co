@@ -272,6 +272,23 @@ letter-spacing:-0.63px;margin:0 0 6px;}
 .wishlistimg img{border-radius:15px;}
 .wishlistdetial h5{font-family:var(--font-CeraGR) !important;font-weight:bolder !important;}
 
+
+
+.content-pr-modal {
+  min-width: 500px !important;
+  height: 100vh;
+  max-height: 80vh;
+  border-radius: 16px;
+  overflow: auto;
+}
+
+.content-pr-modal iframe {
+  width: 100%;
+  background: #fff;
+  height: 100%;
+}
+
+
 /* Responsive */
 @media(max-width:1500px){.loveboxes{padding:0 20px;}
 .loveboxes img{max-width:160px;}
