@@ -51,7 +51,7 @@ export default function Dashboard(props) {
                                 <div className='col-lg-4' >
                                     <div className='userProfile whbg rounded-3xl shadow-voilet border-2'>
                                         <Userprofile links={sociallinks} user={user} />
-                                        <div className='userProfileDate mt-3'>
+                                        <div className='userProfileDate pt-0'>
                                             {IsloggedIn ? <>
                                                 <EditProfile user={auth.user} />
                                                 { !auth.stripe_details_submitted ?
@@ -106,7 +106,7 @@ export default function Dashboard(props) {
                                                 :
                                                 <>
                                                     {!loading ? <div className='col-md-12' >
-                                                        <Nocontent text="Currently you don't have any wish item" />
+                                                        <Nocontent text="Nothing to see." />
                                                     </div> : ''}
                                                 </>
                                             }

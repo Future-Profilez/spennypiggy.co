@@ -39,10 +39,10 @@ export default function AddCart(props) {
             <input onChange={(e)=>setcartamount(e.target.value)} placeholder='£ eg. 50' type='number' className='form-control mt-1' />
           </div>
           <div className='crowd pt-2 mb-4'>
-            <ProgressBar now={25} max={100} />
+            <ProgressBar now={item.fullfill_amount} max={item.price} />
             <div className='d-flex align-items-center justify-content-between' >
-              <p className='mt-1 mb-0 text-small' >{getPercentage(100, 25)}% granted</p>
-              <p className='mt-1 mb-0 text-small' >Remaining £{item.fullfill_amount}</p>
+              <p className='mt-1 mb-0 text-small' >{getPercentage(item.price, item.fullfill_amount)}% granted</p>
+              <p className='mt-1 mb-0 text-small' >Remaining £{item.price - item.fullfill_amount}</p>
             </div>
           </div>  
 
@@ -50,7 +50,7 @@ export default function AddCart(props) {
           <div className=' pb-2'>
               {auth ?
               <>
-              <ToCart amount={cartamount} is_cart={item?.is_cart} text={`Add to cart`} 
+              <ToCart pending={item.price - item.fullfill_amount} crowd={item.subscription == 2} amount={cartamount} is_cart={item?.is_cart} text={`Add to cart`} 
               classes='btn-pink lg w-100 mb-3 font-CeraGR' uuid={uuid} />
               <Link href={route("cart")} className='text-pink font-CeraGR text-center m-auto d-table'  > View Cart</Link>
               </> 
