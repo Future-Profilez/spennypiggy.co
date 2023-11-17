@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\CheckoutUser;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
+use App\Models\Subscription;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\WishItem;
@@ -227,6 +228,26 @@ class StripeController extends Controller
         foreach ($getdata as $dd) {
             $dd->status = 0;
             $dd->save();
+
+            if ($dd->wish->subscription == 1) {
+
+                if ($dd->wish->subscription_period == 'daily') {
+                    $end = Carbon::now()->addDay(1);
+                } elseif ($dd->wish->subscription_period == 'weekly') {
+                    $end = Carbon::now()->addWeek(1);
+                } elseif ($dd->wish->subscription_period == 'monthly') {
+                    $end = Carbon::now()->addMonth(1);
+                }
+
+                $subscription = new Subscription();
+                $subscription->user_id = $dd->user_id;
+                $subscription->owner_id = $dd->owner_id;
+                $subscription->wish_id = $dd->wish_id;
+                $subscription->start_at = Carbon::now();
+                $subscription->end_at = $end;
+                $subscription->status = 1;
+                $subscription->save();
+            }
         }
 
         $sessionId = session('session_id');
