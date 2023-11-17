@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Jobs\CheckoutUser;
 use App\Models\StripePaymentDetail;
+use App\Models\StripePaymentItems;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\WishItem;
@@ -141,16 +142,28 @@ class StripeController extends Controller
         try {
             $user = User::where('id', Auth::id())->first();
             $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->with(['wish'])->get();
+
             $lineItems = [];
             foreach ($getdata as $dd) {
-                
-                $lineItems[] = [
-                    'price' => $dd->wish->price_id ?? '',
-                    'quantity' => 1,
-                ];
+                if ($dd->wish->subscription = 2) {
+                    $lineItems[] = [
+                        'price' => $dd->priceid ?? '',
+                        'quantity' => 1,
+                    ];
+                    $check = WishItem::where('id', $dd->wish_id)->first();
+                    $amountadd = $check->fullfill_amount + $dd->amount;
+                    $check->fullfill_amount = $amountadd;
+                    $check->save();
+                } else {
+                    $lineItems[] = [
+                        'price' => $dd->wish->price_id ?? '',
+                        'quantity' => 1,
+                    ];
+                }
             }
 
-            $stripe = new \Stripe\StripeClient('sk_test_51O3maCG7xsNScLmXVQNnz6tw1ukAvcKY5WhVEk7e1wRAH9pSC7rmk3gxRFKAUMrVMAxWsndWudNmmvqkmm2p2w1J00sBIpHExQ');
+
+            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
             $sessioncreate = $stripe->checkout->sessions->create([
                 'success_url' => route('checkout.success', [$owner_id]),
                 'cancel_url' => route('checkout.cancel'),
@@ -161,7 +174,7 @@ class StripeController extends Controller
             $callbackData = $sessioncreate;
             session()->forget('session_id');
             session(['session_id' => $callbackData->id]);
-            StripePaymentDetail::create([
+            $stripeid = StripePaymentDetail::insertGetId([
                 'session_id' => $callbackData->id,
                 'amount_subtotal' => $callbackData->amount_subtotal,
                 'amount_total' => $callbackData->amount_total,
@@ -175,6 +188,15 @@ class StripeController extends Controller
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ]);
+
+            foreach ($getdata as $dd) {
+                StripePaymentItems::create([
+                    'stripe_payment_id' => $stripeid,
+                    'wish_item_id' => $dd->wish_id,
+                    'user_cart_id' => $dd->id,
+                    'amount' => $dd->amount,
+                ]);
+            }
 
             $owner = User::where('id', $owner_id)->first();
 
@@ -191,7 +213,7 @@ class StripeController extends Controller
 
     public function retrive($id)
     {
-        $stripe = new \Stripe\StripeClient('sk_test_51O3maCG7xsNScLmXVQNnz6tw1ukAvcKY5WhVEk7e1wRAH9pSC7rmk3gxRFKAUMrVMAxWsndWudNmmvqkmm2p2w1J00sBIpHExQ');
+        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
         $data = $stripe->checkout->sessions->retrieve(
             $id,
             []
@@ -235,7 +257,7 @@ class StripeController extends Controller
                 ],
             ];
 
-            $stripe = new \Stripe\StripeClient('sk_test_51O3maCG7xsNScLmXVQNnz6tw1ukAvcKY5WhVEk7e1wRAH9pSC7rmk3gxRFKAUMrVMAxWsndWudNmmvqkmm2p2w1J00sBIpHExQ');
+            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
             $sessioncreate = $stripe->checkout->sessions->create([
                 'success_url' => route('checkout.anonymous.success'),
                 'cancel_url' => route('checkout.anonymous.cancel'),
@@ -259,7 +281,7 @@ class StripeController extends Controller
                 'updated_at' => Carbon::now(),
             ]);
 
-            
+
             return Inertia::location("https://checkout.stripe.com/c/pay/cs_test_a1jgKGZXBgUInXbv2q4Ik3o4TjQMBZHMPkQEDWVs1i08XpqTx4Bw8ABEIg#fidkdWxOYHwnPyd1blpxYHZxWjA0SjZoZEZCMn12S1ZmSWhdQmZQb0xrVEZLb1xLXTBqaGhJS2BKcHFUVk8zQVNndWNzSFI3SnB1UEcwZ1FObm5%2FR3xsRk9VdEJ8NkxTPDdvQUZAM1xMbFFTNTVMX3ZvY2IzVicpJ2N3amhWYHdzYHcnP3F3cGApJ2lkfGpwcVF8dWAnPyd2bGtiaWBabHFgaCcpJ2BrZGdpYFVpZGZgbWppYWB3dic%2FcXdwYHgl");
         } catch (\Throwable $th) {
             \Log::error("Error in createAnonymousCheckout: " . $th->getMessage());
