@@ -143,6 +143,7 @@ class StripeController extends Controller
             $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->with(['wish'])->get();
             $lineItems = [];
             foreach ($getdata as $dd) {
+                
                 $lineItems[] = [
                     'price' => $dd->wish->price_id ?? '',
                     'quantity' => 1,

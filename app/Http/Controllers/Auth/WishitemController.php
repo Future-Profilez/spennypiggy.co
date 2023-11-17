@@ -60,7 +60,7 @@ class WishitemController extends Controller
             ]
         ]);
 
-        
+
 
         $wish = WishItem::create([
             "user_id" => Auth::id(),
@@ -326,7 +326,7 @@ class WishitemController extends Controller
                 $total += $v['wish']['price'];
             }
             $cart[$key]['total'] = $total;
-            $cart[$key]['fee'] = ($total * 20) / 100;
+            $cart[$key]['fee'] = ($total * 15) / 100;
 
             $key++;
         }
