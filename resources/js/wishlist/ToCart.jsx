@@ -4,18 +4,21 @@ import { router } from '@inertiajs/react';
 import axios from 'axios';
 import { useState } from 'react';
 
-export default function ToCart({ uuid, text, classes, custom, removeItem, type }) {
+export default function ToCart({ uuid, text, classes, custom, removeItem, type, is_cart }) {
 
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [loading, setLoading] = useState(false);
+    const [is_Cart, setis_Cart] = useState(is_cart);
      
     const addtocart = (e) => {
         setLoading(true);
         axios.get(`/add-to-cart/${uuid}`).then(resp => {
             if (resp.data.added == true) {
                 successAlert(resp.data.msg);
+                setis_Cart(true);
             } else {
-                errorAlert(resp.data.msg);
+              successAlert(resp.data.msg);
+              setis_Cart(false);
             }
             if(resp.data.uuid){ 
               removeItem && removeItem(uuid);
@@ -37,7 +40,7 @@ export default function ToCart({ uuid, text, classes, custom, removeItem, type }
         <LoaderButton disabled={loading} onClick={addtocart}
             className={`flex  ${classes} mx-auto`}
             spinnerClassName='fill-red-600'>
-            {loading ? "Proccessing" : text}
+            {loading ? "Proccessing" : is_Cart ? "Remove From Cart" : text}
         </LoaderButton>
     }
   </>

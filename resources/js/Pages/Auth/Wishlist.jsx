@@ -131,12 +131,12 @@ export default function Wishlist(props) {
 
     return (
         <div>
-            <Popup
+            <Popup modalclass='pinkmodal' size='md'
                 action={close}
                 classes="btn-pink lg px-4"
                 text="add wishlist" >
                 <div className="editprofileModal  wishlistModal ">
-                    <div className="editprofileModalInner innermodel shadow-pink">
+                    <div className="editprofileModalInner  ">
                         <h2 className="font-GillSans pt-4 px-3">Add A Wish</h2>
                         <Tabs
                             defaultActiveKey="1"

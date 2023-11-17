@@ -7,6 +7,9 @@ import AddCart from './AddCart';
 import { useState } from 'react';
 import uploadedimg from '../../assets/img/uploadedimg.png';
 import { useEffect } from 'react';
+import ProgressBar from 'react-bootstrap/ProgressBar';
+
+ 
 
 export default function Wishlistbox({ itm, itemid, auth }) {
 
@@ -34,9 +37,14 @@ export default function Wishlistbox({ itm, itemid, auth }) {
       </div>
       <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
         <div>
-          <h4 className='fon-bold text-dark' >{itm.wishname}</h4>
+          <h4 className={`fon-bold text-dark ${itm.subscription == '2' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>
           <h5 className='font-CeraGRBold text-dark'>£{itm.price}</h5>
         </div>
+        {itm.subscription == '2' ? 
+        <div className='crowd pt-2'>
+        <ProgressBar now={60} max={100} />
+        <p className='mt-1 mb-0 text-small' >60% granted</p>
+        </div> : '' }
       </div>
       <div className='sharelinks'>
         <ShareProfile custom={`${window.location.href}?item=${itm.uuid}`} >
