@@ -1,21 +1,13 @@
 /*@font-face{font-family:'GillSans';src:url('../assets/fonts/newfont.woff') format('woff'),url('../assets/fonts/newfont.woff2') format('woff2');}
 @font-face{font-family:'CeraGRMedium';src:url('../assets/fonts/CeraGRMedium.woff') format('woff'),url('../assets/fonts/CeraGRMedium.woff2') format('woff2');}
 */
-a { 
-  text-decoration: none;
-}
+a{text-decoration:none;}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
 input[type=number]{-moz-appearance:textfield;}
-.cate-items div {
-  background: #fb2e94 !important;
-  padding: 8px 25px !important;
-  border-radius: 11px;
-  color: #fff;
-  line-height: 30px;
-}
+.cate-items div{background:#fb2e94 !important;padding:8px 25px !important;border-radius:11px;color:#fff;line-height:30px;}
 .cate-items input{margin-right:10px;border-radius:10px;}
 .disabled{pointer-events:none;opacity:0.8;}
-.productimg{width:60px; min-width: 60px; height:60px;border-radius:10px;overflow:hidden;}
+.productimg{width:60px;min-width:60px;height:60px;border-radius:10px;overflow:hidden;}
 .productimg img{width:100%;height:100%;object-fit:cover;}
 .headtitle,.btn-pink lg,.btn-pink{letter-spacing:1px;text-shadow:1px 1px #0006;}
 .profilePhotoImg.dp{width:110px;height:110px;border:3px solid #8c53fb;border-radius:50%;}
@@ -35,40 +27,13 @@ body.modal-open{overflow:hidden;}
 h2.wishtitle{font-size:24px;font-weight:900;}
 .userManageRt{width:100% !important;padding:0 0 0 0px !important;}
 .userProfile{width:100%;}
-
-.stripeterms li { 
-  font-weight: 600;
-}
-.stripeterms li p { 
-  font-weight: 400; font-size: 14px;
-}
-
-.collapse {
-  visibility: visible !important;
-}
-
+.stripeterms li{font-weight:600;}
+.stripeterms li p{font-weight:400;font-size:14px;}
+.collapse{visibility:visible !important;}
 @media(max-width:991px){.userphotobox{height:280px;}
 }
-
-.loadingtext { 
-  font-size: 20px;
-  line-height: inherit !important;
-}
-.text-large { 
-  font-size: 20px;
-}
-
-
-.croud-add input {
-  border-radius: 10px;
-  background: #f2f2f2;
-  border: 1px solid #ccc;
-  padding: 12px 15px;
-}
-
+.loadingtext{font-size:20px;line-height:inherit !important;}
+.text-large{font-size:20px;}
+.croud-add input{border-radius:10px;background:#f2f2f2;border:1px solid #ccc;padding:12px 15px;}
 /* modal css */
-.pinkmodal.modal .modal-content {
-  border-radius: 25px;
-  border: 2px solid var(--pink);
-  box-shadow: 10px 10px 0 0 var(--pink);
-}
+.pinkmodal.modal .modal-content{border-radius:25px;border:2px solid var(--pink);box-shadow:10px 10px 0 0 var(--pink);}

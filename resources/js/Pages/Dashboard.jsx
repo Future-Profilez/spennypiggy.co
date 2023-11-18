@@ -11,8 +11,7 @@ import Social from './Auth/Social';
 import axios from 'axios';
 import Guest from '@/Layouts/GuestLayout';
 import Nocontent from '@/includes/Nocontent';
-import Loading from '@/includes/Loading';
-// import { router } from '@inertiajs/react'
+import LoadingScreen from '@/includes/LoadingScreen';
 
 export default function Dashboard(props) {
 
@@ -118,7 +117,7 @@ export default function Dashboard(props) {
                                         </div></>
                                         }
 
-                                            {loading ? <Loading />:''}
+                                            {loading ? <LoadingScreen />:''}
 
                                         </div>
                                     </div>
