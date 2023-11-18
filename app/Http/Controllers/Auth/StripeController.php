@@ -200,11 +200,14 @@ class StripeController extends Controller
                 ]);
             }
 
+        
+
             $owner = User::where('id', $owner_id)->first();
 
             //send email
             CheckoutUser::dispatch($user);
             CheckoutUser::dispatch($owner);
+            
 
             return Inertia::location($sessioncreate->url);
         } catch (\Throwable $th) {
