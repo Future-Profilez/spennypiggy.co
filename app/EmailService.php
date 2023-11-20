@@ -3,6 +3,7 @@
 namespace App;
 
 use App\Mail\Checkout;
+use App\Mail\verifyEmail;
 use App\Mail\Welcome;
 use App\Mail\Wishlist;
 use App\Models\AppService;
@@ -50,4 +51,15 @@ class EmailService
         }
     }
 
+    public function verifyUserEmail($data)
+    {
+        try {
+            \Log::info('3');
+
+            Mail::to($data['to'])
+                ->send(new verifyEmail($data));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
 }

@@ -172,7 +172,7 @@ class StripeController extends Controller
             ]);
 
             $callbackData = $sessioncreate;
-            $tax = $callbackData->amount_subtotal / 1+(env('TAX_PERCENTAGE') / 100);
+            $tax = $callbackData->amount_subtotal / 1 + (env('TAX_PERCENTAGE') / 100);
             $subtotal = $callbackData->amount_subtotal - $tax;
 
             session()->forget('session_id');
@@ -199,6 +199,7 @@ class StripeController extends Controller
             //send email
             CheckoutUser::dispatch($user);
             CheckoutUser::dispatch($owner);
+
 
             return Inertia::location($sessioncreate->url);
         } catch (\Throwable $th) {
@@ -247,7 +248,7 @@ class StripeController extends Controller
         }
 
         $sessionId = session('session_id');
-         StripePaymentDetail::where('session_id', $sessionId)->update([
+        StripePaymentDetail::where('session_id', $sessionId)->update([
             'payment_status' => 'paid',
             'updated_at' => Carbon::now(),
         ]);
@@ -262,6 +263,16 @@ class StripeController extends Controller
                 'tax' => $dd->tax,
             ]);
         }
+
+        //send email to buyer
+        // $user = User::whereId(Auth::id())->first();
+        // SaveWishlist::dispatch($user);
+
+
+        //send email to sender
+        // $user = User::whereId($owner_id)->first();
+        // SaveWishlist::dispatch($user);
+
         return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
     }
 
