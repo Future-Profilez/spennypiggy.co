@@ -166,18 +166,22 @@ class StripeController extends Controller
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
             $sessioncreate = $stripe->checkout->sessions->create([
                 'success_url' => route('checkout.success', [$owner_id]),
-                'cancel_url' => route('checkout.cancel'),
+                'cancel_url' => route('checkout.cancel', [$owner_id]),
                 'line_items' => $lineItems,
                 'mode' => 'payment',
             ]);
 
             $callbackData = $sessioncreate;
+            $tax = $callbackData->amount_subtotal / 1 + (env('TAX_PERCENTAGE') / 100);
+            $subtotal = $callbackData->amount_subtotal - $tax;
+
             session()->forget('session_id');
             session(['session_id' => $callbackData->id]);
             $stripeid = StripePaymentDetail::create([
                 'session_id' => $callbackData->id,
-                'amount_subtotal' => $callbackData->amount_subtotal,
+                'amount_subtotal' => $subtotal,
                 'amount_total' => $callbackData->amount_total,
+                'tax' => $tax,
                 'currency' => $callbackData->currency,
                 'payment_method_config_detail_id' => optional($callbackData->payment_method_configuration_details)->id,
                 'payment_method_type' => optional($callbackData->payment_method_types)[0],
@@ -190,24 +194,12 @@ class StripeController extends Controller
             ]);
             $stripeid->refresh();
 
-            foreach ($getdata as $dd) {
-                StripePaymentItems::create([
-                    'uuid' => Uuid::uuid4(),
-                    'stripe_payment_id' => $stripeid->id,
-                    'wish_item_id' => $dd->wish_id,
-                    'user_cart_id' => $dd->id,
-                    'amount' => $dd->amount,
-                ]);
-            }
-
-        
-
             $owner = User::where('id', $owner_id)->first();
 
             //send email
             CheckoutUser::dispatch($user);
             CheckoutUser::dispatch($owner);
-            
+
 
             return Inertia::location($sessioncreate->url);
         } catch (\Throwable $th) {
@@ -227,6 +219,8 @@ class StripeController extends Controller
 
     public function successCheckout($owner_id)
     {
+        $user = User::where('id', Auth::id())->first();
+
         $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->with(['wish'])->get();
         foreach ($getdata as $dd) {
             $dd->status = 0;
@@ -258,17 +252,30 @@ class StripeController extends Controller
             'payment_status' => 'paid',
             'updated_at' => Carbon::now(),
         ]);
+        $stripeid = StripePaymentDetail::where('session_id', $sessionId)->first();
+        foreach ($getdata as $dd) {
+            StripePaymentItems::create([
+                'uuid' => Uuid::uuid4(),
+                'stripe_payment_id' => $stripeid->id,
+                'wish_item_id' => $dd->wish_id,
+                'user_cart_id' => $dd->id,
+                'amount' => $dd->amount,
+                'tax' => $dd->tax,
+            ]);
+        }
         return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
     }
 
-    public function cancelCheckout()
+    public function cancelCheckout($owner_id)
     {
+        $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->with(['wish'])->get();
         $sessionId = session('session_id');
         StripePaymentDetail::where('session_id', $sessionId)->update([
             'payment_status' => 'unpaid',
             'updated_at' => Carbon::now(),
         ]);
-        return view('cancel');
+        return redirect(route('user.show', [$getdata[0]->owner->username]))->with('error', 'Payment Cancel.');
+        // return view('cancel');
     }
 
     /* Anonymous checkout */

@@ -94,7 +94,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/create-checkout-session/{owner_id}', [StripeController::class, 'createCheckout'])->name('create.checkout');
     Route::get('/sucess-checkout/{id}', [StripeController::class, 'successCheckout'])->name('checkout.success');
-    Route::get('cancel-checkout', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel');
+    Route::get('cancel-checkout/{id}', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel');
 
 
     Route::prefix("stripe")->name("stripe.")->group(function () {

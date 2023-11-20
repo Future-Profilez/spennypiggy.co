@@ -261,6 +261,25 @@ class WishitemController extends Controller
 
             if ($cart->status == 0) {
                 $cart->status = 1;
+                if ($wishitem->subscription == 2) {
+                    $fullfillamount = $amount;
+                    $tax =  $amount * env('TAX_PERCENTAGE') / 100;
+                    $createpriceid = $amount + $amount * env('TAX_PERCENTAGE') / 100;
+                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                    $stripe_client = $stripe->products->create([
+                        'name' => 'anonymous',
+                        'images' => [$wishitem->perma_link],
+                        "default_price_data" => ["currency" => "usd", "unit_amount_decimal" => $createpriceid],
+                    ]);
+                    $priceid = $stripe_client->default_price;
+                } else {
+                    $fullfillamount = $wishitem->price;
+                    $tax = $wishitem->tax_amount;
+                    $priceid = null;
+                }
+                $cart->amount = $fullfillamount;
+                $cart->tax = $tax;
+                $cart->priceid = $priceid;
                 $cart->save();
                 return response()->json([
                     "success" => true,
@@ -282,6 +301,7 @@ class WishitemController extends Controller
         } else {
             if ($wishitem->subscription == 2) {
                 $fullfillamount = $amount;
+                $tax =  $amount * env('TAX_PERCENTAGE') / 100;
                 $createpriceid = $amount + $amount * env('TAX_PERCENTAGE') / 100;
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripe_client = $stripe->products->create([
@@ -292,6 +312,7 @@ class WishitemController extends Controller
                 $priceid = $stripe_client->default_price;
             } else {
                 $fullfillamount = $wishitem->price;
+                $tax = $wishitem->tax_amount;
                 $priceid = null;
             }
 
@@ -301,6 +322,7 @@ class WishitemController extends Controller
                 'wish_id' => $wishitem->id,
                 'status' => 1,
                 'amount' => $fullfillamount,
+                'tax' => $tax,
                 'priceid' => $priceid,
             ]);
 
