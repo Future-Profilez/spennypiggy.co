@@ -30,7 +30,7 @@ button.closemega{position:absolute;right:30px;top:30px;}
 .rotate-btn a,.rotate-btn button{transform:rotate(-7deg);}
 .wishlistbtn{margin-top:60px;}
 .btn-pink-lg:hover,.btn-pink-lg:focus{box-shadow:none;transition:all ease .3s;}
-.funpart{padding:70px 15px;}
+.funpart{padding:70px 0px;}
 .funpart h2.headingMd{text-align:center;margin-bottom:30px;}
 .funboxs{height:400px;margin:0 auto 35px;padding:40px 100px;border-radius:30px;display:flex;align-items:center;align-content:flex-start;justify-content:space-between;text-align:left;}
 .funboximg{width:50%;}
@@ -222,7 +222,7 @@ letter-spacing:-0.63px;margin:0 0 6px;}
 .quty button{width:40px;height:43px;font-size:25px;display:flex;align-items:center;align-content:center;justify-content:center;}
 .cartlist.shadow-purple{box-shadow:5px 8px 0 0 var(--purple);}
 /* strip */
-.stripbox{max-width:741px;width:90%;margin-top:60px;margin-bottom:60px;}
+.stripbox{max-width:741px;width:90%;}
 .stripbox .loginheadbox{border-radius:20px 20px 0 0;}
 .stripNote h3{font-size:24px;}
 .stripNote h3{font-size:24px;}
@@ -371,13 +371,13 @@ button.closemega svg{width:56px;top:10px;}
 .userManageRt{padding:0;width:100%;}
 .wishlistModal{min-width:300px;}
 .wishinfo{padding:10px 15px 20px;}
-.joinus{padding:30px 15px 60px;}
-.editProfilePhoto{padding:10px 10px 20px 10px;}
-.editForm{padding:0 10px;}
+.joinus{padding:50px 15px 50px;}
+.editProfilePhoto{padding:0 15px;}
+.editForm{padding:0 15px;}
 .editprofileHead h2{font-size:18px;text-align:left;}
 .editprofileHead{justify-content:flex-start;}
 .editForm ul li textarea{height:90px;}
-.heroSec{padding:50px 5px;}
+.heroSec{padding:20px 5px 50px 5px;}
 .welcome{flex-wrap:wrap;justify-content:center;flex-direction:column-reverse;margin-top:0;}
 .welcomeRt{width:100%;text-align:center;margin-bottom:40px;}
 .welcomeRt img{margin:auto;}
@@ -398,13 +398,13 @@ button.closemega svg{width:56px;top:10px;}
 .finish button{width:96%;margin:auto;}
 .headingMd{font-size:40px;line-height:40px;}
 .text-shadow-black{text-shadow:1px 3px 0px var(--black);}
-.funpart{padding:50px 15px;}
+.funpart{padding:50px 0px;}
 .funboxs{flex-wrap:wrap;justify-content:center;height:auto;}
 .funboximg{width:100%;text-align:center;}
 .funboximg img{margin:auto;}
 .funcnt{width:100%;padding:40px 0 0;text-align:center;}
 .whylove{padding:50px 0 10px;}
-.happycreator{padding:30px 15px;}
+.happycreator{padding:30px 0px;}
 .happycreator .headingMd{margin-bottom:2px;}
 .happyclientSec{border-radius:17px;}
 .headingSm{font-size:30px;line-height:30px;}
@@ -450,7 +450,9 @@ button.closemega svg{width:56px;top:10px;}
 .welcomeTitle{transform:rotate(0deg);}
 .funpart{padding-bottom:0px;}
 }
-@media(max-width:575px){.editprofileModalInner,.innermodel{width:100% !important;}
+@media(max-width:575px){.funboxs{position:sticky;top:0;}
+.loveboxes h3.headingSm{margin-bottom:0;}
+.editprofileModalInner,.innermodel{width:100% !important;}
 .welcomeTitle{max-width:260px;margin:auto;}
 button.cartLink svg{width:50px;height:50px;}
 .carticon svg{width:30px;}
@@ -486,7 +488,13 @@ button.cartLink svg{width:50px;height:50px;}
 select#country{width:100%;margin-bottom:10px;}
 .wishlistcntbox{max-width:100%;width:100%;}
 }
-@media(max-width:400px){.userManageRt > .row > div{width:100% !important;}
+@media(max-width:400px){
+  .headingMd {
+    font-size: 44px !important;
+    line-height: 45px !important;
+}
+.userManageRt > .row > div{width:100% !important;}
+
 .spennylogo img{max-width:120px;}
 .welcomeHeading{font-size:35px;line-height:40px;}
 .noResult h2.headingLg{font-size:25px;line-height:30px;}

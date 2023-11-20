@@ -16,13 +16,12 @@ export default function Works(props) {
   return (
     <Authenticated auth={auth?.user || ''} >
     <div className='pt-20 howitmain'>
-    <div className='containerbox'>
-        <h2 className='headingMd text-shadow-black text-center mb-4'>How it works</h2>
-        <p className='text-center'>Setting up your wishlist on Spenny Piggy only takes a few minutes. Add gifts from our <br/> partner brand catalog or any other retailer in the world.</p>
-        <div className='howWorkTab mt-12 pb-12 mx-auto'>
-           
+        <div className='containerbox'>
+            <h2 className='headingMd text-shadow-black text-center mb-4'>How it works</h2>
+            <p className='text-center'>Setting up your wishlist on Spenny Piggy only takes a few minutes. Add gifts from our <br/> partner brand catalog or any other retailer in the world.</p>
+            <div className='howWorkTab mt-12 pb-12 mx-auto'>
                 <Tabs defaultActiveKey="1" id="uncontrolled-tab-example" className="mb-3">
-                    <Tab eventKey="1" title="for wishers">
+                    <Tab eventKey="1" title="for Gifters">
                         <div className='funboxs mintbg shadow-black border-black mb-10'>
                             <div className='funboximg'>
                                 <img src={vishitimg01} alt='img' />
@@ -57,12 +56,7 @@ export default function Works(props) {
                             </div>
                         </div>
                     </Tab>
-
-
-
-
-
-                    <Tab eventKey="2" title="for Gifters">
+                    <Tab eventKey="2" title="for wishers">
                     <div className='funboxs mintbg shadow-black border-black mb-10'>
                             <div className='funboximg'>
                                 <img src={yourwishlist01} alt='img' />
@@ -99,17 +93,15 @@ export default function Works(props) {
                         </div>  
                     </Tab>
                 </Tabs>   
-        </div>
-            </div>  
-
-
+            </div>
+        </div>  
         <div class="joinus blackbg ">
         <h2 class="headingMd shadow-yellow mb-3 text-center mb-6 ">Join thousands creators</h2>
         <p class="text-CeraGR mb-6 text-center mb-16 font-CeraGRBold text-wh mb-5">Create your Wishlist and start receiving gifts from your fans right away!</p>
         <div class="1text-center rotate-btn text-center flex items-center  justify-center content-center w-full">
         <Link to="/" className='btn-pink lg w-80 shadow-mint border-mint'>Join Whoyouinto</Link>
         </div>
-      </div>
+        </div>
     </div>
     </Authenticated>
   )
