@@ -35,7 +35,7 @@ class Checkout extends Mailable
             $uuid = $this->data['uuid'];
             $subject = 'Checkout from spanny piggy platform.';
             return $this->view('email.checkout')->with(['name' => $name, 'uuid' => $uuid])
-                ->from('Noreply@whoyouinto.com', 'SPANNYPIGGY')
+                ->from('Noreply@whoyouinto.com', 'SPENNYPIGGY')
                 ->subject($subject);
         } catch (\Exception $e) {
         }

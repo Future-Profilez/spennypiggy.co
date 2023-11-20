@@ -22,13 +22,6 @@ use Inertia\Inertia;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
 
-//email verify get
-Route::get('get-verify-email-page/{uuid}', [RegisteredUserController::class, 'getVerifyEmailPage'])
-    ->name('get.verify.email.page');
-
-Route::post('verify-email', [RegisteredUserController::class, 'verifyEmail'])
-    ->name('verify.email');
-
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
@@ -59,16 +52,24 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
 
-    Route::get('verify-email', EmailVerificationPromptController::class)
-        ->name('verification.notice');
+    Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
+    Route::get('verification', [EmailVerificationPromptController::class, '__invoke'])->name('verification.notice');
+    Route::get('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
+        ->name('verification.email');
 
-    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
-        ->middleware(['signed', 'throttle:6,1'])
-        ->name('verification.verify');
+    // Route::post('verification', [RegisteredUserController::class, 'verification'])->name('verification.notice');
 
-    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
-        ->middleware('throttle:6,1')
-        ->name('verification.send');
+    // Route::get('verify-email', [EmailVerificationPromptController::class)])
+    //     ->name('verification.notice');
+
+    // Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
+    //     ->middleware(['signed', 'throttle:6,1'])
+    //     ->name('verification.verify');
+
+    // Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+    //     ->middleware('throttle:6,1')
+    //     ->name('verification.send');
+
 
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
         ->name('password.confirm');
@@ -91,11 +92,9 @@ Route::middleware('auth')->group(function () {
 
     /*update wishitems*/
     Route::post('update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
-
     Route::get('/create-checkout-session/{owner_id}', [StripeController::class, 'createCheckout'])->name('create.checkout');
     Route::get('/sucess-checkout/{id}', [StripeController::class, 'successCheckout'])->name('checkout.success');
-    Route::get('cancel-checkout', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel');
-
+    Route::get('cancel-checkout/{id}', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel');
 
     Route::prefix("stripe")->name("stripe.")->group(function () {
         Route::get("authorize", [StripeController::class, "index"])->name("index");
@@ -107,7 +106,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
 
-    Route::get('/add-to-cart/{uuid}/{amount}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
+    Route::get('/add-to-cart/{uuid}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
 
     Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 

@@ -8,7 +8,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class Wishlist extends Mailable
+class VerifyEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -31,12 +31,15 @@ class Wishlist extends Mailable
     public function build()
     {
         try {
-            $name = $this->data['name'];
-            $subject = 'Your wishlist added in the spanny piggy platform.';
-            return $this->view('email.wishlist')->with(['name' => $name])
-                ->from('Noreply@whoyouinto.com', 'SPENNYPIGGY')
+
+            // print_r($this->data);
+            // die;
+            $subject = 'Verify email from spanny piggy platform.';
+            return $this->view('email.user-verification')
+                ->from('Noreply@spennypiggy.co', 'SPENNYPIGGY')
                 ->subject($subject);
         } catch (\Exception $e) {
+            \Log::info($e);
         }
     }
 }

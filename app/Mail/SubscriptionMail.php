@@ -2,13 +2,14 @@
 
 namespace App\Mail;
 
-use App\Models\EmailTemplate;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class Wishlist extends Mailable
+class SubscriptionMail extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -31,9 +32,8 @@ class Wishlist extends Mailable
     public function build()
     {
         try {
-            $name = $this->data['name'];
-            $subject = 'Your wishlist added in the spanny piggy platform.';
-            return $this->view('email.wishlist')->with(['name' => $name])
+            $subject = 'Subscription payment reminder.';
+            return $this->view('email.subscription')
                 ->from('Noreply@whoyouinto.com', 'SPENNYPIGGY')
                 ->subject($subject);
         } catch (\Exception $e) {
