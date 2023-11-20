@@ -13,6 +13,7 @@
         "laravel/tinker": "^2.8",
         "laravel/vapor-cli": "^1.60",
         "laravel/vapor-core": "^2.33",
+        "spatie/emoji": "^4.0",
         "stripe/stripe-php": "^13.2",
         "tightenco/ziggy": "^1.0",
         "uploadcare/uploadcare-php": "^4.1"

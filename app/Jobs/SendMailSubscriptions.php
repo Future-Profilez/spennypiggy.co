@@ -2,6 +2,9 @@
 
 namespace App\Jobs;
 
+use App\EmailService;
+use App\Models\Subscription;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -26,6 +29,12 @@ class SendMailSubscriptions implements ShouldQueue
      */
     public function handle(): void
     {
-        //
+        $subs = Subscription::where('end_at', '>=', Carbon::now())->where('status', 1)->get();
+
+        foreach ($subs as $key => $value) {
+
+
+            EmailService::sendSubscriptionMail($value);
+        }
     }
 }

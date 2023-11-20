@@ -35,7 +35,7 @@ class Welcome extends Mailable
             $uuid = $this->data['uuid'];
             $subject = 'Welcome to the spanny piggy platform.';
             return $this->view('email.welcome-fans')->with(['name' => $name, 'uuid' => $uuid])
-                ->from('Noreply@whoyouinto.com', 'SPANNYPIGGY')
+                ->from('Noreply@whoyouinto.com', 'SPENNYPIGGY')
                 ->subject($subject);
         } catch (\Exception $e) {
         }
