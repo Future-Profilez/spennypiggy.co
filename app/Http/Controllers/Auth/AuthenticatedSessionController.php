@@ -62,10 +62,12 @@ class AuthenticatedSessionController extends Controller
     public function getUserProfile($username, $category = false)
     {
         $user = User::where('username', $username)->first();
+        $slinks = [];
+        $sociallinks = [];
         if (!empty($user)) {
             $slinks = SocialLinks::where('user_id', $user->id)->first();
 
-            $sociallinks = [];
+
 
             if (!empty($slinks)) {
                 $sociallinks = array(

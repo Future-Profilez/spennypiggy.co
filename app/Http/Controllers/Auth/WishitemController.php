@@ -249,6 +249,7 @@ class WishitemController extends Controller
     {
         $wishitem = WishItem::where('uuid', $uuid)->first();
 
+
         if (Auth::id() == $wishitem->user_id) {
             return response()->json([
                 "success" => true,
