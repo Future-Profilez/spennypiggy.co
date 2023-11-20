@@ -15,5 +15,6 @@ class StripePaymentItems extends Model
         'wish_item_id',
         'user_cart_id',
         'amount',
+        'tax',
     ];
 }

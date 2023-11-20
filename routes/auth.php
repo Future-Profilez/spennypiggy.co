@@ -100,13 +100,13 @@ Route::middleware('auth')->group(function () {
         Route::get("authorize", [StripeController::class, "index"])->name("index");
         Route::match(["get", "post"], "/connect-{step}", [StripeController::class, "initConnect"])->name("connect");
         Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
-    }); 
+    });
 
     Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
 
     Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
 
-    Route::get('/add-to-cart/{uuid}/{amount}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
+    Route::get('/add-to-cart/{uuid}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
 
     Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 
