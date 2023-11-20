@@ -31,7 +31,6 @@ class EmailVerificationNotificationController extends Controller
         try {
             //send verify email to user
             $user = User::whereId(Auth::id())->first();
-            \Log::info('1');
             VerifyEmail::dispatch($user);
         } catch (\Throwable $th) {
             //throw $th;
