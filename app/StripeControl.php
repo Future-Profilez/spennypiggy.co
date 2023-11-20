@@ -151,4 +151,26 @@ class StripeControl
             throw new Exception("Stripe API Error: " . $e->getMessage());
         }
     }
+
+    /**
+     * Create Express Account Link
+     *
+     * @param string $account_id Stripe Express Account Id
+     * @return Throwable|\Stripe\Account\LoginLink
+     */
+    public static function getLoginLink($account_id)
+    {
+        self::setClient();
+        try {
+            return self::$client->accounts->createLoginLink($account_id);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
 }

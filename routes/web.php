@@ -42,6 +42,7 @@ Route::prefix("test")->name("test.")->group(function(){
     Route::prefix("stripe")->name("stripe.")->group(function(){
         Route::get("search", [TestController::class, "stripeSearch"])->name("search");
     });
+    Route::get("email", [TestController::class, "testEmail"]);
 });
 
 require __DIR__.'/auth.php';
