@@ -54,8 +54,8 @@ class ProfileController extends Controller
         $request->validate([
             'name' => ['string', 'max:255'],
             'username' => ['string', 'lowercase', 'max:20', Rule::unique('users')->ignore($user->id)],
-            'bio' => ['string', 'max:255'],
-            'tags' => ['string', 'max:255'],
+            'bio' => ['sometimes', 'max:255'],
+            'tags' => ['sometimes', 'max:255'],
         ]);
 
         $user->name = $request->name;
