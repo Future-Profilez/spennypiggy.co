@@ -3,13 +3,13 @@ import PrimaryButton from "@/Components/PrimaryButton";
 import { Head, Link, useForm } from "@inertiajs/react";
 
 export default function VerifyEmail({ status }) {
-    const { post, processing } = useForm({});
+    const { get, processing } = useForm({});
 
     const submit = (e) => {
         e.preventDefault();
 
         // post(route("verification.send"));
-        post(route("verification.email"));
+        get(route("verification.email"));
     };
 
     return (

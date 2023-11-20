@@ -31,11 +31,12 @@ class VerifyEmail extends Mailable
     public function build()
     {
         try {
-            $name = $this->data['name'];
-            $uuid = $this->data['uuid'];
+
+            // print_r($this->data);
+            // die;
             $subject = 'Verify email from spanny piggy platform.';
-            return $this->view('email.user-verification')->with(['name' => $name, 'uuid' => $uuid])
-                ->from('Noreply@whoyouinto.com', 'SPENNYPIGGY')
+            return $this->view('email.user-verification')
+                ->from('Noreply@spennypiggy.co', 'SPENNYPIGGY')
                 ->subject($subject);
         } catch (\Exception $e) {
             \Log::info($e);

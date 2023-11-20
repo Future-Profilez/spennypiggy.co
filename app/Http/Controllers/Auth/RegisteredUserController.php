@@ -72,13 +72,13 @@ class RegisteredUserController extends Controller
     }
 
 
-    public function verification()
-    {
-        $checkemailverify = User::whereId(Auth::id())->first();
-        return Inertia::render('Auth/VerifyEmail', [
-            "user" => $checkemailverify,
-        ]);
-    }
+    // public function verification()
+    // {
+    //     $checkemailverify = User::whereId(Auth::id())->first();
+    //     return Inertia::render('Auth/VerifyEmail', [
+    //         "user" => $checkemailverify,
+    //     ]);
+    // }
     /**
      * Check if username available
      *

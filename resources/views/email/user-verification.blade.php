@@ -5,7 +5,6 @@
             <img src="https://whoyouinto.com/emails/user/activedots.png" alt="img">
         </td>
     </tr>
-    <?php \Log::info('5'); \Log::info({{ env('APP_URL')}}/user/{{ $uuid }}); ?>
 
     <tr>
         <td align="center" style="padding:10px 10px 20px 10px;"><a href="https://whoyouinto.com"><img alt="image"
@@ -24,14 +23,14 @@
                             src="https://whoyouinto.com/emails/user/giftimg.png" alt="img"></td>
                 </tr>
                 <tr>
-                    <td><b>Hello {{ $name ?? 'user' }}</b></td>
+                    <td><b>Hello {{ $data['name'] ?? 'user' }}</b></td>
                 </tr>
                 <tr>
                     <td><b>Click on the given below button to verify your email</b></td>
                 </tr>
                 <tr>
                     <button style="color:#F94F97;color:white"><a
-                            href="{{ env('APP_URL') }}/user/{{ $uuid }}"></a>Verify Button</button>
+                            href="{{ env('APP_URL') }}/user/{{ $data['uuid'] }}"></a>Verify Button</button>
                 </tr>
 
                 {{-- <tr>

@@ -52,12 +52,12 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
 
-    Route::post('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
+    Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
 
     // Route::post('verification', [RegisteredUserController::class, 'verification'])->name('verification.notice');
 
     Route::get('verification', [EmailVerificationPromptController::class, '__invoke'])->name('verification.notice');
-    Route::post('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
+    Route::get('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
         ->name('verification.email');
 
     // Route::get('verify-email', [EmailVerificationPromptController::class)])
