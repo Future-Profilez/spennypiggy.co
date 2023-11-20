@@ -6,6 +6,7 @@ import Popup from '@/Components/Popup';
 import UpdateProfileInformation from '../Profile/Partials/UpdateProfileInformationForm';
 import UpdatePasswordForm from '../Profile/Partials/UpdatePasswordForm';
 import DeleteUserForm from '../Profile/Partials/DeleteUserForm';
+import PaymentDashboard from '../stripe/PaymentDashboard';
 
 export default function Accountsetting(props) {
     console.log("props aa",props);
@@ -22,7 +23,7 @@ export default function Accountsetting(props) {
                         <ul>
                             <li>  {auth && auth.user && auth.user.stripe_details_submitted == 1 ? 
                             <>
-                                <Link>PAYMENT DASHBOARD <span className='text-mint'>Connected</span></Link>
+                               <PaymentDashboard classes='w-100 text-dark paymentbutton' text={<>PAYMENT DASHBOARD <span className='text-mint'>Connected</span></>} />
                             </> 
                             : 
                             <>

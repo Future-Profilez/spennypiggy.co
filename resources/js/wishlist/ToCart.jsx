@@ -13,6 +13,10 @@ export default function ToCart({ crowd, pending, uuid, text, classes, custom, re
 
     const addtocart = (e) => {
 
+        if(crowd && !amount  ){
+            toast.error(`Please enter a amount to gift this item. `);
+            return false;
+        }
         if (crowd && amount > pending) {
             toast.error(`Amount can not be more than remaining amount £${pending}. `);
             return false;

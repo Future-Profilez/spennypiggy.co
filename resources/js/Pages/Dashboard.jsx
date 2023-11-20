@@ -13,7 +13,7 @@ import Guest from '@/Layouts/GuestLayout';
 import Nocontent from '@/includes/Nocontent';
 import LoadingScreen from '@/includes/LoadingScreen';
 import { useEffect } from 'react';
-import StripeDashboard from './stripe/Dashboard';
+import PaymentDashboard from './stripe/PaymentDashboard';
 
 export default function Dashboard(props) {
 
@@ -59,12 +59,14 @@ export default function Dashboard(props) {
                                     <div className='userProfileDate pt-0'>
                                         {IsloggedIn ? <>
                                             <EditProfile user={auth.user} />
-                                            { auth.user && auth.user.stripe_details_submitted == 1 ? ''
+                                            { auth.user && auth.user.stripe_details_submitted == 1 ? 
+                                            <PaymentDashboard classes='btn-pink lg w-100 mt-4' text='Payment Dashboard' />
                                             : <div className='finish mt-4 d-block'>
                                             <p className='mb-4'>Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
                                             <Link href={"/stripe"} className='btn-pink lg'>Finish Setup</Link>
                                         </div>
                                         }
+
                                             <div className='addsocial flex'>
                                                 <ul>
                                                     <li>
@@ -88,17 +90,18 @@ export default function Dashboard(props) {
                                 <div className='userManageRt mt-8'>
                                     <div className='userManageHead flex items-center justify-between mb-8'>
                                         <div>
-                                        {its && its.length ?
-                                            <select id="country" onChange={showCategory} name="country" autoComplete="country-name" className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6">
-                                                <option value={'all'}>{'All'}</option>
-                                                {categories && categories.map((c, i) => {
-                                                    return <option value={c.id} key={`cat-${c.category}`}>{c.category}</option>
-                                                })}
-                                            </select>
-                                        : ''}
+                                            {its && its.length ?
+                                                <select id="country" onChange={showCategory} name="country" autoComplete="country-name" className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6">
+                                                    <option value={'all'}>{'All'}</option>
+                                                    {categories && categories.map((c, i) => {
+                                                        return <option value={c.id} key={`cat-${c.category}`}>{c.category}</option>
+                                                    })}
+                                                </select>
+                                            : ''}
                                         </div>
-                                        {IsloggedIn ?  <StripeDashboard /> : ''}
+                                         
                                         {IsloggedIn ? <Wishlist fetchingcats={fetchingcats} categories={categories} /> : ""}
+                                    
                                     </div>
                                     <div className='row'>
 
