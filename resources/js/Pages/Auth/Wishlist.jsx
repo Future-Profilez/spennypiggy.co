@@ -12,7 +12,7 @@ import Popup from "@/Components/Popup";
 import { router } from "@inertiajs/react";
 
 export default function Wishlist(props) {
-    const { categories, auth, fetchingcats } = props;
+    const { categories, auth, fetchingcats, action } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
 
@@ -97,7 +97,6 @@ export default function Wishlist(props) {
 
     useEffect(() => {
         setData("thumbnail", thumbnail);
-        ("");
     }, [thumbnail]);
 
     const createWishList = (e) => {
@@ -124,7 +123,7 @@ export default function Wishlist(props) {
 
     return (
         <div>
-            <Popup modalclass='pinkmodal' size='md'
+            <Popup action={action} modalclass='pinkmodal' size='md'
                 action={close}
                 classes="btn-pink lg px-4"
                 text="+ Add wish" >

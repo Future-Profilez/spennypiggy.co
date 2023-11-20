@@ -53,12 +53,11 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
 
     Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
-
-    // Route::post('verification', [RegisteredUserController::class, 'verification'])->name('verification.notice');
-
     Route::get('verification', [EmailVerificationPromptController::class, '__invoke'])->name('verification.notice');
     Route::get('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
         ->name('verification.email');
+
+    // Route::post('verification', [RegisteredUserController::class, 'verification'])->name('verification.notice');
 
     // Route::get('verify-email', [EmailVerificationPromptController::class)])
     //     ->name('verification.notice');
@@ -71,8 +70,6 @@ Route::middleware('auth')->group(function () {
     //     ->middleware('throttle:6,1')
     //     ->name('verification.send');
 
-    Route::post('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
-        ->name('verification.email');
 
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
         ->name('password.confirm');
