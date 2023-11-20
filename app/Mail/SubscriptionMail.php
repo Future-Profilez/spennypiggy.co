@@ -32,11 +32,9 @@ class SubscriptionMail extends Mailable
     public function build()
     {
         try {
-            $name = $this->data['name'];
-            $uuid = $this->data['uuid'];
-            $subject = 'Checkout from spanny piggy platform.';
-            return $this->view('email.checkout')->with(['name' => $name, 'uuid' => $uuid])
-                ->from('Noreply@whoyouinto.com', 'SPANNYPIGGY')
+            $subject = 'Subscription payment reminder.';
+            return $this->view('email.subscription')
+                ->from('Noreply@whoyouinto.com', 'SPENNYPIGGY')
                 ->subject($subject);
         } catch (\Exception $e) {
         }
