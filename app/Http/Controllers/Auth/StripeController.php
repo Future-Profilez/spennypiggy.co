@@ -174,7 +174,7 @@ class StripeController extends Controller
             $callbackData = $sessioncreate;
             $subtotal = $callbackData->amount_total / (1 + (env('TAX_PERCENTAGE') / 100));
             $taxnew = ($callbackData->amount_total) - ($subtotal);
-            \Log::info($taxnew);
+           
             session()->forget('session_id');
             session(['session_id' => $callbackData->id]);
             $stripeid = StripePaymentDetail::create([
