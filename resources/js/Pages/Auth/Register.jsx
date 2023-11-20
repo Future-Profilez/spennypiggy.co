@@ -33,7 +33,7 @@ export default function Register() {
             <div className='loginPage blackbg py-14'>
             <div className='containerbox '>
 
-                <h2 className='headingLg pb-0 pb-md-4 text-center '>Create Account</h2>
+                <h2 className='headingLg pb-0 pb-md-4 text-center  px-2'>Create Account</h2>
                 <p className='text-center text-white mb-5 font-CeraGRBold'>Already registered? <Link className={'text-pink'} href={route('login')}  > Log In</Link></p>
 
                 <div className='loginform mt-4 mt-md-5 mx-auto border-black whbg shadow-mint'>

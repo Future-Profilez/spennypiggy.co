@@ -27,7 +27,7 @@ export default function Userprofile({user, links}) {
 
       <SocialLinks links={links} />
 
-      <p className={`text-muted text-center ${user && !user.bio ? 'd-none' : ''}`} >{user && user.bio || ""}</p>
+      <p className={`text-muted text-center mt-3 ${user && !user.bio ? 'd-none' : ''}`} >{user && user.bio || ""}</p>
     </div>
       
     </div>

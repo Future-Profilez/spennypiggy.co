@@ -71,6 +71,8 @@ Route::middleware('auth')->group(function () {
     //     ->middleware('throttle:6,1')
     //     ->name('verification.send');
 
+    Route::post('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
+        ->name('verification.email');
 
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
         ->name('password.confirm');
@@ -93,11 +95,9 @@ Route::middleware('auth')->group(function () {
 
     /*update wishitems*/
     Route::post('update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
-
     Route::get('/create-checkout-session/{owner_id}', [StripeController::class, 'createCheckout'])->name('create.checkout');
     Route::get('/sucess-checkout/{id}', [StripeController::class, 'successCheckout'])->name('checkout.success');
     Route::get('cancel-checkout/{id}', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel');
-
 
     Route::prefix("stripe")->name("stripe.")->group(function () {
         Route::get("authorize", [StripeController::class, "index"])->name("index");

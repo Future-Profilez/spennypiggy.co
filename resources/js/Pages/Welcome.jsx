@@ -26,6 +26,17 @@ export default function Home({ auth, laravelVersion, user }) {
         window.addEventListener("resize", windowWidth);
     }, []);
 
+
+    // useEffect(() => {
+    //     if ("serviceWorker" in navigator) {
+    //         navigator.serviceWorker.register("/service-worker.js").then((registration) => {
+    //         }).catch((error) => {
+    //             console.log("Service Worker registration failed:", error);
+    //         });
+    //     }
+    //   },[]);
+    
+
     const msg = [
         {
           "id": 1,
@@ -238,18 +249,15 @@ export default function Home({ auth, laravelVersion, user }) {
 
                 <div class="joinus blackbg ">
                     <h2 class="headingMd shadow-yellow mb-3 text-center mb-6 ">
-                        Join thousands creators
+                        Join thousands of creators
                     </h2>
                     <p class="text-CeraGR mb-6 text-center mb-16 font-CeraGRBold text-wh mb-5">
-                        Create your Wishlist and start receiving gifts from your
+                        Create your wishlist and start receiving gift's from your
                         fans right away!
                     </p>
                     <div class="1text-center rotate-btn text-center flex items-center  justify-center content-center w-full">
-                        <a target='_blank'
-                            href="https://whoyouinto.com"
-                            className="btn-pink lg w-80 shadow-mint border-mint">
-                            Join Whoyouinto
-                        </a>
+                        <Link href={route("register")}
+                            className="btn-pink lg w-80 shadow-mint border-mint" >Join SpennyPiggy </Link>
                     </div>
                 </div>
 
