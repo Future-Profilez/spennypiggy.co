@@ -36,6 +36,8 @@ export default function Dashboard(props) {
         fetchingcats(v);
     }
 
+    console.log("props", props)
+
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
 
     return (
@@ -107,7 +109,12 @@ export default function Dashboard(props) {
                                             {its && its.length ?
                                                     !loading && its.map((c, i) => {
                                                         return <div className='col-xl-4 col-lg-6 col-6' >
-                                                            <Wishlistbox IsloggedIn={IsloggedIn} auth={auth.user} itemid={itemid} itm={c} key={`wish-${c.uuid}`} />
+                                                            <Wishlistbox 
+                                                            fetchingcats={fetchingcats} 
+                                                            categories={categories}
+                                                            IsloggedIn={IsloggedIn} 
+                                                            auth={auth.user} 
+                                                            itemid={itemid} itm={c} key={`wish-${c.uuid}`} />
                                                         </div>
                                                     })
                                                 :
