@@ -233,8 +233,7 @@ export default function Wishlist(props) {
                                                 </label>
 
                                                 <div className="default-wish-img mb-1">
-                                                    <img
-                                                        src={uploadedimg || item && item.perma_link}
+                                                    <img src={item && item.perma_link || uploadedimg}
                                                         className="img-fluid"
                                                     />
                                                 </div>

@@ -38,15 +38,13 @@ export default function Wishlistbox({ itm, itemid, auth, IsloggedIn, fetchingcat
 
  
   return <>
-      
       <div className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
-
-      {IsloggedIn ? 
-        <Wishlist item={itm} editpop={true} fetchingcats={fetchingcats} categories={categories} />  
-        : 
+        {/* {IsloggedIn ?  ''
+          // <Wishlist item={itm} editpop={true} fetchingcats={fetchingcats} categories={categories} />  
+          : 
+        } */}
         <AddCart auth={auth} item={itm} uuid={itm.uuid} action={open} /> 
-      }
-      
+
       <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
         <img src={itm?.perma_link ? itm?.perma_link : uploadedimg} alt='img' className='' />
       </div>
