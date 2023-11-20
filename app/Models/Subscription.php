@@ -27,4 +27,20 @@ class Subscription extends Model
         parent::boot();
         static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
+
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function wish()
+    {
+        return $this->belongsTo(WishItem::class, 'wish_id');
+    }
+
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
 }

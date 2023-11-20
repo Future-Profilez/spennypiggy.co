@@ -3,6 +3,7 @@
 namespace App;
 
 use App\Mail\Checkout;
+use App\Mail\SubscriptionMail;
 use App\Mail\Welcome;
 use App\Mail\Wishlist;
 use App\Models\AppService;
@@ -50,4 +51,24 @@ class EmailService
         }
     }
 
+
+    public static function sendSubscriptionMail($value)
+    {
+        try {
+
+            $data = [
+                'to' => $value->user->email,
+                'name' => $value->user->name,
+                'username' => $value->user->username,
+                'phone' => $value->user->phone,
+                'email' => $value->user->email,
+                'uuid' => $value->user->uuid,
+            ];
+
+            Mail::to($data['to'])
+                ->send(new SubscriptionMail($value));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
 }
