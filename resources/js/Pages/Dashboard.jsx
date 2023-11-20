@@ -50,12 +50,12 @@ export default function Dashboard(props) {
                                     <div className='userProfileDate pt-0'>
                                         {IsloggedIn ? <>
                                             <EditProfile user={auth.user} />
-                                            { auth.stripe_details_submitted !== 1 ?
-                                                <div className='finish mt-4 d-block'>
-                                                    <p className='mb-4'>Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                    <Link href={"/stripe"} className='btn-pink lg'>Finish Setup</Link>
-                                                </div>
-                                            : ''}
+                                            { auth.stripe_details_submitted == 1 ? ''
+                                            : <div className='finish mt-4 d-block'>
+                                            <p className='mb-4'>Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                            <Link href={"/stripe"} className='btn-pink lg'>Finish Setup</Link>
+                                        </div>
+                                        }
                                             <div className='addsocial flex'>
                                                 <ul>
                                                     <li>
