@@ -34,17 +34,20 @@ export default function AddCart(props) {
           <div className='cartTitle text-center'>{item.wishname}</div>
           <div className='cartPrice font-CeraGRBold text-voilet mt-1 mb-3 text-center'>£ {item.price}</div>
 
-          <p className='mb-0' >Amount </p>
-          <div className='croud-add' >
-            <input onChange={(e)=>setcartamount(e.target.value)} placeholder='£ eg. 50' type='number' className='form-control mt-1' />
-          </div>
-          <div className='crowd pt-2 mb-4'>
-            <ProgressBar now={item.fullfill_amount} max={item.price} />
-            <div className='d-flex align-items-center justify-content-between' >
-              <p className='mt-1 mb-0 text-small' >{getPercentage(item.price, item.fullfill_amount)}% granted</p>
-              <p className='mt-1 mb-0 text-small' >Remaining £{item.price - item.fullfill_amount}</p>
+          {item.subscription == '2' ? 
+          <>
+            <p className='mb-0' >Amount </p>
+            <div className='croud-add' >
+              <input onChange={(e)=>setcartamount(e.target.value)} placeholder='£ eg. 50' type='number' className='form-control mt-1' />
             </div>
-          </div>  
+            <div className='crowd pt-2 mb-4'>
+              <ProgressBar now={item.fullfill_amount} max={item.price} />
+              <div className='d-flex align-items-center justify-content-between' >
+                <p className='mt-1 mb-0 text-small' >{getPercentage(item.price, item.fullfill_amount)}% granted</p>
+                <p className='mt-1 mb-0 text-small' >Remaining £{item.price - item.fullfill_amount}</p>
+              </div>
+            </div>
+          </> : '' }
 
 
           <div className=' pb-2'>
