@@ -36,9 +36,9 @@ export default function Dashboard(props) {
         fetchingcats(v);
     }
 
-    console.log("props", props)
-
+    
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
+    console.log("IsloggedIn", IsloggedIn)
 
     return (
         <Guest
