@@ -270,6 +270,27 @@ ul.socialmedia a img{width:35px;height:35px;}
 .updateavatar.modal .modal-content{margin:30px;}
 .updateavatar.modal{background:rgb(0 0 0 / 52%);}
 .userProfile{position:sticky;top:20px;}
+
+
+.wishlistcntbox  button.editpop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(100% - 40px);
+  border-radius: 20px;
+  opacity: 0;
+  z-index: 1;
+}
+
+.pageheight { 
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+}
+.headingsm { 
+  font-size:20px;
+  line-height: 29px;
+}
 /* Responsive */
 @media(max-width:1500px){.loveboxes{padding:0 20px;}
 .loveboxes img{max-width:160px;}

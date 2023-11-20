@@ -7,7 +7,7 @@ export default function Popup(props) {
   const [open, setOpen] = useState(false)
   const cancelButtonRef = useRef(null);
   useEffect(()=>{
-    if(action === false){
+    if(action === false || undefined){
       setOpen(false)
     }
     if(action === true){
