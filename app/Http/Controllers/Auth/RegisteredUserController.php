@@ -53,6 +53,7 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
+        // $user->refresh();
         // CreateStripeCustomer::dispatch($user);
         event(new Registered($user));
 
@@ -61,9 +62,23 @@ class RegisteredUserController extends Controller
         //send email
         WelcomeUser::dispatch($user);
 
-        return redirect(route("user.show", [$user->username]))->with("success", "Registration successfull.");
+        $checkemailverify = User::whereId(Auth::id())->first();
+
+        if ($checkemailverify->email_verified_at != NUll) {
+            return redirect(route("user.show", [$user->username]))->with("success", "Registration successful.");
+        } else {
+            return redirect(route('verification.notice'));
+        }
     }
 
+
+    public function verification()
+    {
+        $checkemailverify = User::whereId(Auth::id())->first();
+        return Inertia::render('Auth/VerifyEmail', [
+            "user" => $checkemailverify,
+        ]);
+    }
     /**
      * Check if username available
      *

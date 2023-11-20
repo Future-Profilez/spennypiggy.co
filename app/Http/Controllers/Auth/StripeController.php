@@ -263,6 +263,16 @@ class StripeController extends Controller
                 'tax' => $dd->tax,
             ]);
         }
+
+        //send email to buyer
+        // $user = User::whereId(Auth::id())->first();
+        // SaveWishlist::dispatch($user);
+
+
+        //send email to sender
+        // $user = User::whereId($owner_id)->first();
+        // SaveWishlist::dispatch($user);
+
         return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
     }
 
