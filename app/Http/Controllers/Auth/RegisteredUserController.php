@@ -72,13 +72,13 @@ class RegisteredUserController extends Controller
     }
 
 
-    public function verification()
-    {
-        $checkemailverify = User::whereId(Auth::id())->first();
-        return Inertia::render('Auth/VerifyEmail', [
-            "user" => $checkemailverify,
-        ]);
-    }
+    // public function verification()
+    // {
+    //     $checkemailverify = User::whereId(Auth::id())->first();
+    //     return Inertia::render('Auth/VerifyEmail', [
+    //         "user" => $checkemailverify,
+    //     ]);
+    // }
     /**
      * Check if username available
      *
@@ -103,34 +103,4 @@ class RegisteredUserController extends Controller
         ]);
     }
 
-    /* get verify email page */
-    public function getVerifyEmailPage($uuid)
-    {
-        try {
-            $user = User::whereUuid($uuid)->first();
-            $id = $user->id;
-            return view('verify-email', compact('id'));
-        } catch (\Throwable $th) {
-            //throw $th;
-        }
-    }
-
-    /* verify email */
-    public function verifyEmail(Request $request)
-    {
-        try {
-            $verify = User::whereId($request->id)->update([
-                'email_verified_at' => Carbon::now(),
-            ]);
-            if (!empty($verify)) {
-                print_r('email verify');
-                die;
-            } else {
-                print_r('unable to verify your email');
-                die;
-            }
-        } catch (\Throwable $th) {
-            //throw $th;
-        }
-    }
 }
