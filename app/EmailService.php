@@ -77,7 +77,6 @@ class EmailService
     public static function verifyUserEmail($data)
     {
         try {
-
             Mail::to($data['to'])
                 ->send(new VerifyEmail($data));
         } catch (TransportException $e) {

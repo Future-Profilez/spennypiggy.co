@@ -22,13 +22,6 @@ use Inertia\Inertia;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
 
-//email verify get
-// Route::get('get-verify-email-page/{uuid}', [RegisteredUserController::class, 'getVerifyEmailPage'])
-//     ->name('get.verify.email.page');
-
-// Route::post('verify-email', [RegisteredUserController::class, 'verifyEmail'])
-//     ->name('verify.email');
-
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
@@ -61,9 +54,13 @@ Route::middleware('auth')->group(function () {
 
     Route::post('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
 
-    Route::post('verification', [RegisteredUserController::class, 'verification'])->name('verification.notice');
+    // Route::post('verification', [RegisteredUserController::class, 'verification'])->name('verification.notice');
 
-    // Route::get('verify-email', EmailVerificationPromptController::class)
+    Route::get('verification', [EmailVerificationPromptController::class, '__invoke'])->name('verification.notice');
+    Route::post('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
+        ->name('verification.email');
+
+    // Route::get('verify-email', [EmailVerificationPromptController::class)])
     //     ->name('verification.notice');
 
     // Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
@@ -73,9 +70,6 @@ Route::middleware('auth')->group(function () {
     // Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
     //     ->middleware('throttle:6,1')
     //     ->name('verification.send');
-
-    Route::post('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
-        ->name('verification.email');
 
 
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
