@@ -126,7 +126,7 @@ class AuthenticatedSessionController extends Controller
             $itemId = $query->whereHas('wish', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             })->pluck('wish_id');
-            $items = WishItem::whereIn('id', $itemId)->latest()->get();
+            $items = WishItem::whereIn('id', $itemId)->latest()->get(); 
             return response()->json([
                 "success" => true,
                 "items" => $items,
