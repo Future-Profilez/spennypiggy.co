@@ -53,7 +53,6 @@ class VerifyEmail implements ShouldQueue
             'email' => $this->user->email,
             'uuid' => $this->user->uuid,
         ];
-
         EmailService::verifyUserEmail($emailData);
     }
 }

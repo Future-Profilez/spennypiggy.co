@@ -33,10 +33,8 @@ class VerifyEmail extends Mailable
         try {
             $name = $this->data['name'];
             $uuid = $this->data['uuid'];
-            $username = $this->data['username'];
             $subject = 'Verify email from spanny piggy platform.';
-
-            return $this->view('email.verify-email')->with(['name' => $name, 'uuid' => $uuid])
+            return $this->view('email.user-verification')->with(['name' => $name, 'uuid' => $uuid])
                 ->from('Noreply@whoyouinto.com', 'SPENNYPIGGY')
                 ->subject($subject);
         } catch (\Exception $e) {
