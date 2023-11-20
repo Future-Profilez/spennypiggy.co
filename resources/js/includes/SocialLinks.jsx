@@ -114,7 +114,7 @@ export default function SocialLinks({ links }) {
 
     return (
         <div>
-            <ul className='socialmedia flex-wrap flex justify-center mb-3'>
+            <ul className='socialmedia flex-wrap flex justify-center'>
                 {links.map((l, i) => {
                     return <>
                         {l?.url ?

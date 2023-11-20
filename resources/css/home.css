@@ -267,6 +267,8 @@ ul.socialmedia a img{width:35px;height:35px;}
 .progress{background:#ECCEDB;height:9px;}
 .progress-bar{background:var(--pink);}
 .wishlistimg img{height:190px;border-radius:10px;}
+.updateavatar.modal .modal-content{margin:30px;}
+.updateavatar.modal{background:rgb(0 0 0 / 52%);}
 /* Responsive */
 @media(max-width:1500px){.loveboxes{padding:0 20px;}
 .loveboxes img{max-width:160px;}
@@ -280,6 +282,8 @@ ul.socialmedia a img{width:35px;height:35px;}
 /* .menuList ul li a{font-size:40px;line-height:40px;}
 */
 .menuList ul li a{font-size:4vh;}
+}
+@media(max-width:1199px){.containerbox{max-width:970px;}
 }
 @media(max-width:1139px){.containerbox{max-width:960px;}
 /* .wishlistcntbox{width:30%;}
@@ -347,7 +351,6 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 @media(max-width:767px){.cartProRtbox{display:inline-flex;width:100%;justify-content:space-between;margin-top:10px;}
 .shadow-yellow{text-shadow:1px 3px 0 var(--yellow);}
 .shadow-voilet{box-shadow:5px 5px 0 0 var(--voilet);}
-.rotate-btn a,.rotate-btn button{transform:rotate(0deg);}
 .headingMd{font-size:53px !important;line-height:53px !important;}
 .headermain{padding-top:15px;padding-bottom:20px;}
 .header{padding:0px 13px;box-shadow:3px 6px 0 0 var(--mint);border-radius:10px;}
@@ -368,7 +371,7 @@ button.closemega svg{width:56px;top:10px;}
 .userProfileDate{position:relative;}
 .wishManage{padding:0;}
 .userProfile{margin:0 auto;width:100%;}
-.userManageRt{padding:0;width:100%;}
+.userManageRt{padding:0;width:100%;}  
 .wishlistModal{min-width:300px;}
 .wishinfo{padding:10px 15px 20px;}
 .joinus{padding:50px 15px 50px;}
@@ -388,8 +391,9 @@ button.closemega svg{width:56px;top:10px;}
 .wishlistbtn{text-align:center;display:flex;justify-content:center;}
 .wishlistbtnFixed{position:fixed;bottom:5px;z-index:9;border:none;width:87%;transform:inherit!important;margin:auto;left:0;right:0;}
 .wishlistbutton:before{content:'+';font-size:25px;margin-right:6px;}
-.wishlistbtnFixed a{background:var(--black);border:none!important;box-shadow:none!important;transform:inherit!important;width:100%!important;margin:auto;padding:27px 20px!important;font-size:22px!important;}
+.wishlistbtnFixed a{border:1px solid var(--mint) !important;background:var(--black);box-shadow:none!important;transform:inherit!important;border-radius:19px !important;width:100%!important;margin:auto;padding:27px 20px!important;font-size:22px!important;}
 .creatorslider .swiper-slide.swiper-slide-next .happyclientSec{transform:inherit;}
+.wishlistbtnFixed{margin:0px !important;width:auto;padding:15px !important;bottom:0 !important;}
 .itsfree{padding-inline-start:0;}
 .addsocial ul li{width:auto;padding:0 20px;}
 .addsocial ul li a{font-size:20px;line-height:20px;}
@@ -459,8 +463,7 @@ button.cartLink svg{width:50px;height:50px;}
 .wishlistbox{flex-wrap:wrap;justify-content:center!important;}
 .wishlistcntbox{margin-bottom:20px;}
 .userManageHead{flex-wrap:wrap;}
-/* select#country{width:100%;margin-bottom:10px;}
-*/
+.wishlistbtnFixed a{padding:20px !important;}
 .userManageHead .btn-pink-md{width:100%;}
 .wishbanner .shadow-black{box-shadow:7px 15px 0 0 rgba(0,0,0,0.8);}
 .userProfile .shadow-voilet{box-shadow:7px 15px 0 0 var(--voilet);}
@@ -488,13 +491,8 @@ button.cartLink svg{width:50px;height:50px;}
 select#country{width:100%;margin-bottom:10px;}
 .wishlistcntbox{max-width:100%;width:100%;}
 }
-@media(max-width:400px){
-  .headingMd {
-    font-size: 44px !important;
-    line-height: 45px !important;
-}
+@media(max-width:400px){.headingMd{font-size:44px !important;line-height:45px !important;}
 .userManageRt > .row > div{width:100% !important;}
-
 .spennylogo img{max-width:120px;}
 .welcomeHeading{font-size:35px;line-height:40px;}
 .noResult h2.headingLg{font-size:25px;line-height:30px;}
