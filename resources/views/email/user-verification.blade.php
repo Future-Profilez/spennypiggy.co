@@ -29,25 +29,22 @@
                     <td><b>Click on the given below button to verify your email</b></td>
                 </tr>
                 <tr>
-                    <button style="color:#F94F97;color:white"><a
-                            href="{{ env('APP_URL') }}/user/{{ $data['uuid'] }}"></a>Verify Button</button>
+                    <button style="background-color:#F94F97;color:white;border:none"><a
+                            href="{{ env('APP_URL') }}/user/{{ $data['uuid'] }}" style="text-decoration:none;color:white">Verify Button</a></button>
                 </tr>
 
-                {{-- <tr>
+                <tr>
                <td style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold; font-size: 13px; color: 141414; text-align: left; line-height: 18px; text-align: center;">Someone granted you a <span style="color:#F94F97 ">Wish</span> 🤩</td>
-            </tr> --}}
+               </tr>
 
-                {{-- <tr>
-               <td style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 10px; color: #4D4D4D; text-align: center; line-height: 18px;">Go to <a href="#">Spenny Piggy</a> where you can see your granted wish, send a message to your gifter and share your gift on social media </td>
-            </tr> --}}
-
-
-
-                {{-- <tr> --}}
-                {{-- <td style="padding:0 0 10px 0; text-align: center;">
+                <tr>
+                <td style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 10px; color: #4D4D4D; text-align: center; line-height: 18px;">Go to <a href="#">Spenny Piggy</a> where you can see your granted wish, send a message to your gifter and share your gift on social media </td>
+                </tr>
+                <tr>
+                <td style="padding:0 0 10px 0; text-align: center;">
                   <button style="padding:13px 10px 13px 10px; width: 210px; border:none;background-color: #F94F97; font-family: Arial; font-weight: bold; font-size: 10px; text-align: center; color:#ffffff; cursor: pointer;">See your granted wish</button>
                </td>
-            </tr> --}}
+            </tr>
 
             </table>
         </td>
