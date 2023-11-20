@@ -105,25 +105,25 @@ export default function Dashboard(props) {
                                             <h5 className='loadingtext w-full text-center text-white  mb-1'>{user.name}'s WishList not activated yet.</h5>
                                             <p className='text-center  text-white text-large ' >Until they activate their wishlist, this user won't be able to receive gifts</p>
                                         </div> : 
-                                    <>
-                                            {its && its.length ?
-                                                    !loading && its.map((c, i) => {
-                                                        return <div className='col-xl-4 col-lg-6 col-6' >
-                                                            <Wishlistbox 
-                                                            fetchingcats={fetchingcats} 
-                                                            categories={categories}
-                                                            IsloggedIn={IsloggedIn} 
-                                                            auth={auth.user} 
-                                                            itemid={itemid} itm={c} key={`wish-${c.uuid}`} />
-                                                        </div>
-                                                    })
-                                                :
-                                                <>
-                                                    {!loading ? <div className='col-md-12' >
-                                                        <Nocontent text="Nothing to see." />
-                                                    </div> : ''}
-                                                </>
-                                            }
+                                     ''
+                                    }
+
+                                    {its && its.length ?
+                                            !loading && its.map((c, i) => {
+                                                return <div className='col-xl-4 col-lg-6 col-6' >
+                                                    <Wishlistbox 
+                                                    fetchingcats={fetchingcats} 
+                                                    categories={categories}
+                                                    IsloggedIn={IsloggedIn} 
+                                                    auth={auth.user} 
+                                                    itemid={itemid} itm={c} key={`wish-${c.uuid}`} />
+                                                </div>
+                                            })
+                                        :
+                                        <>
+                                            {!loading ? <div className='col-md-12' >
+                                                <Nocontent text="Nothing to see." />
+                                            </div> : ''}
                                         </>
                                     }
 
