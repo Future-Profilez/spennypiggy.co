@@ -8,10 +8,11 @@ import { useState } from 'react';
 import uploadedimg from '../../assets/img/uploadedimg.png';
 import { useEffect } from 'react';
 import ProgressBar from 'react-bootstrap/ProgressBar';
+import Wishlist from '@/Pages/Auth/Wishlist';
 
  
 
-export default function Wishlistbox({ itm, itemid, auth, IsloggedIn, onclick }) {
+export default function Wishlistbox({ itm, itemid, auth, IsloggedIn, fetchingcats, categories }) {
 
   const [itemUID, setItemUID] = useState(itemid);
   const [open, setOpen] = useState();
@@ -40,6 +41,8 @@ export default function Wishlistbox({ itm, itemid, auth, IsloggedIn, onclick }) 
       <div  className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
 
       {IsloggedIn ? '' : <AddCart auth={auth} item={itm} uuid={itm.uuid} action={open} /> }
+
+      <Wishlist fetchingcats={fetchingcats} categories={categories} />
 
       <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
         <img src={itm?.perma_link ? itm?.perma_link : uploadedimg} alt='img' className='' />
