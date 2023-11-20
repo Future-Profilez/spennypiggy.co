@@ -11,11 +11,11 @@ import Social from './Auth/Social';
 import axios from 'axios';
 import Guest from '@/Layouts/GuestLayout';
 import Nocontent from '@/includes/Nocontent';
-// import { router } from '@inertiajs/react'
+import LoadingScreen from '@/includes/LoadingScreen';
 
 export default function Dashboard(props) {
 
-    const { auth, items, categories, user, itemid, sociallinks } = props;
+    const { auth, items, categories, user, itemid, sociallinks, slinks } = props;
     const [its, setIts] = useState(items);
     const [loading, setLoading] = useState(false);
 
@@ -50,7 +50,7 @@ export default function Dashboard(props) {
                                 <div className='col-lg-4' >
                                     <div className='userProfile whbg rounded-3xl shadow-voilet border-2'>
                                         <Userprofile links={sociallinks} user={user} />
-                                        <div className='userProfileDate mt-3'>
+                                        <div className='userProfileDate pt-0'>
                                             {IsloggedIn ? <>
                                                 <EditProfile user={auth.user} />
                                                 { !auth.stripe_details_submitted ?
@@ -63,7 +63,7 @@ export default function Dashboard(props) {
                                                 <div className='addsocial flex'>
                                                     <ul>
                                                         <li>
-                                                            <Social />
+                                                            <Social links={slinks} />
                                                         </li>
                                                         <li>
                                                             <ShareProfile classes={"d-flex ms-auto"} >
@@ -93,7 +93,8 @@ export default function Dashboard(props) {
                                             {IsloggedIn ? <Wishlist categories={categories} /> : ""}
                                         </div>
                                         <div className='row'>
-                                            {its && its.length ?
+                                        {user?.stripe_details_submitted == 1 ?
+                                            <>{its && its.length ?
                                                 <>
                                                     {!loading && its.map((c, i) => {
                                                         return <div className='col-xl-4 col-lg-6 col-6' >
@@ -104,16 +105,19 @@ export default function Dashboard(props) {
                                                 :
                                                 <>
                                                     {!loading ? <div className='col-md-12' >
-                                                        <Nocontent text="Currently you don't have any wish item" />
+                                                        <Nocontent text="Nothing to see." />
                                                     </div> : ''}
                                                 </>
                                             }
+                                            </>
+                                            
+                                            : <><div className='col-md-12 p-5 notactive' >
+                                            <h5 className='headingLg loadingtext w-full text-center text-white  mb-1'>{user.name}'s WishList not activated yet.</h5>
+                                            <p className='text-center  text-white text-large ' >Until they activate their wishlist, this user won't be able to receive gifts</p>
+                                        </div></>
+                                        }
 
-                                            {loading ?
-                                                <div className='col-md-12' >
-                                                    <Nocontent text="Loading...." />
-                                                </div>
-                                                : ''}
+                                            {loading ? <LoadingScreen />:''}
 
                                         </div>
                                     </div>

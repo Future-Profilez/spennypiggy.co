@@ -16,6 +16,7 @@ export default function Wishlistbox({ itm, itemid, auth }) {
   // const [itemUID, setItemUID] = useState('ccbf439a-1872-474b-8a15-47d45943f7ba');
   const [itemUID, setItemUID] = useState(itemid);
   const [open, setOpen] = useState();
+
   const openAddtocart = () => {
     setOpen(true);
     setTimeout(()=>{
@@ -29,6 +30,12 @@ export default function Wishlistbox({ itm, itemid, auth }) {
     }
   },[itemUID]);
 
+
+  const getPercentage = (actual, paid) => { 
+    return (paid/actual)*100
+  }
+
+
   return <>
     <div className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
       <AddCart auth={auth} item={itm} uuid={itm.uuid} action={open} />
@@ -41,10 +48,11 @@ export default function Wishlistbox({ itm, itemid, auth }) {
           <h5 className='font-CeraGRBold text-dark'>£{itm.price}</h5>
         </div>
         {itm.subscription == '2' ? 
-        <div className='crowd pt-2'>
-        <ProgressBar now={60} max={100} />
-        <p className='mt-1 mb-0 text-small' >60% granted</p>
-        </div> : '' }
+          <div className='crowd pt-2'>
+          <ProgressBar now={itm.fullfill_amount} max={itm.price} />
+          <p className='mt-1 mb-0 text-small' >{getPercentage(itm.price, itm.fullfill_amount)}% granted</p>
+          </div> 
+        : '' }
       </div>
       <div className='sharelinks'>
         <ShareProfile custom={`${window.location.href}?item=${itm.uuid}`} >

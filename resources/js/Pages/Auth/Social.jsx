@@ -5,25 +5,24 @@ import { useForm } from "@inertiajs/react";
 import { useState } from "react";
 
 
-export default function Social() {
+export default function Social({links}) {
 
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
     const [close, setClose] = useState();
 
     const { data, setData, post, processing, errors, reset } = useForm({
-        twitter: '',
-        whoyouinto: '',
-        reddit: '',
-        instagram: '',
-        discord: '',
-        onlyfans: '',
-        loyalfans: '',
-        fansly: '',
-        manyvids: '',
-        other: '',
+        twitter: links?.twitter ? links.twitter : '',
+        whoyouinto: links?.whoyouinto ? links.whoyouinto : '',
+        reddit: links?.reddit ? links.reddit : '',
+        instagram: links?.instagram ? links.instagram : '',
+        discord: links?.discord ? links.discord : '',
+        onlyfans: links?.onlyfans ? links.onlyfans : '',
+        loyalfans: links?.loyalfans ? links.loyalfans : '',
+        fansly: links?.fansly ? links.fansly : '',
+        manyvids: links?.manyvids ? links.manyvids : '',
+        other: links?.other ? links.other : '',
     });
-
 
     const createSocial = (e) => {
         e.preventDefault();
@@ -58,7 +57,7 @@ export default function Social() {
                                 <input id="whoyouinto"
                                     name="whoyouinto"
                                     type="text" placeholder="URL"
-                                    value={data.whoyouinto}
+                                    value={data?.whoyouinto||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('whoyouinto', e.target.value)}
                                 />
@@ -68,7 +67,7 @@ export default function Social() {
                                 <input id="twitter"
                                     name="twitter"
                                     type="text" placeholder="URL"
-                                    value={data.twitter}
+                                    value={data?.twitter||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('twitter', e.target.value)}
                                 />
@@ -78,7 +77,7 @@ export default function Social() {
                                 <input id="instagram"
                                     type="text" placeholder="URL"
                                     name="instagram"
-                                    value={data.instagram}
+                                    value={data?.instagram||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('instagram', e.target.value)}
                                 />
@@ -88,7 +87,7 @@ export default function Social() {
                                 <input id="reddit"
                                     name="reddit"
                                     type="text" placeholder="URL"
-                                    value={data.reddit}
+                                    value={data?.reddit||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('reddit', e.target.value)}
                                 />
@@ -98,7 +97,7 @@ export default function Social() {
                                 <input id="discord"
                                     name="discord"
                                     type="text" placeholder="URL"
-                                    value={data.discord}
+                                    value={data?.discord||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('discord', e.target.value)}
                                 />
@@ -109,7 +108,7 @@ export default function Social() {
                                 <input id="onlyfans"
                                     name="onlyfans"
                                     type="text" placeholder="URL"
-                                    value={data.onlyfans}
+                                    value={data?.onlyfans||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('onlyfans', e.target.value)}
                                 />
@@ -119,7 +118,7 @@ export default function Social() {
                                 <input id="loyalfans"
                                     name="loyalfans"
                                     type="text" placeholder="URL"
-                                    value={data.loyalfans}
+                                    value={data?.loyalfans||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('loyalfans', e.target.value)}
                                 />
@@ -129,7 +128,7 @@ export default function Social() {
                                 <input id="fansly"
                                     name="fansly"
                                     type="text" placeholder="URL"
-                                    value={data.fansly}
+                                    value={data?.fansly||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('fansly', e.target.value)}
                                 />
@@ -139,7 +138,7 @@ export default function Social() {
                                 <input id="manyvids"
                                     name="manyvids"
                                     type="text" placeholder="URL"
-                                    value={data.manyvids}
+                                    value={data?.manyvids||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('manyvids', e.target.value)}
                                 />
@@ -149,7 +148,7 @@ export default function Social() {
                                 <input id="other"
                                     name="other"
                                     type="text" placeholder="URL"
-                                    value={data.other}
+                                    value={data?.other||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('other', e.target.value)}
                                 />

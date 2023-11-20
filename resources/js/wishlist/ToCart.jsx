@@ -3,16 +3,27 @@ import LoaderButton from '@/Components/LoaderButton';
 import { router } from '@inertiajs/react';
 import axios from 'axios';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 
-export default function ToCart({ uuid, text, classes, custom, removeItem, type, is_cart }) {
+export default function ToCart({ crowd,  pending, uuid, text, classes, custom, removeItem, type, is_cart, amount }) {
 
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [loading, setLoading] = useState(false);
     const [is_Cart, setis_Cart] = useState(is_cart);
      
     const addtocart = (e) => {
+      
+      if(crowd && amount > pending){
+        toast.error(`Amount can not be more than remaining amount £${pending}. `);
+        return false;
+      }
+
+      if(amount && amount < 50){
+        toast.error("Amount must be greater than 50.");
+        return false;
+      }
         setLoading(true);
-        axios.get(`/add-to-cart/${uuid}/50`).then(resp => {
+        axios.get(`/add-to-cart/${uuid}${amount ? `/${amount}` : ''}`).then(resp => {
             if (resp.data.added == true) {
                 successAlert(resp.data.msg);
                 setis_Cart(true);
@@ -27,10 +38,10 @@ export default function ToCart({ uuid, text, classes, custom, removeItem, type, 
             if(type == 'checkout'){ 
                window.location = '/cart';
             }
-          }).catch(_err => {
-            console.error("error", _err);
-            setLoading(false);
-          })
+        }).catch(_err => {
+          console.error("error", _err);
+          setLoading(false);
+        });
     };
 
   return <>
@@ -45,3 +56,4 @@ export default function ToCart({ uuid, text, classes, custom, removeItem, type, 
     }
   </>
 }
+

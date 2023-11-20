@@ -99,6 +99,9 @@ class AuthenticatedSessionController extends Controller
                 'url'    => $slinks->other ?? null,
             )
         );
+
+       
+
         // if(!$user){
         //     return
         // }
@@ -142,6 +145,7 @@ class AuthenticatedSessionController extends Controller
             "categories" => $categories,
             "itemid" => $itemdid,
             "sociallinks" => $sociallinks,
+            "slinks" => $slinks
         ]);
     }
 }

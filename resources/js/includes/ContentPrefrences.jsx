@@ -1,13 +1,18 @@
 import Popup from "@/Components/Popup";
+import { useState } from "react";
+import LoadingScreen from "./LoadingScreen";
 
 export default function ContentPrefrences(props){
+  const [loader, UpdateLoader] = useState(true);
   return <>
-  <Popup
-   space='0' modalclass="pinkmodal" size="md"
+  <Popup space='0' modalclass="pinkmodal" size="md"
    text={'Consent Preferences'} classes={`${props.classes} content-pre `}  >
-    <div className="content-pr-modal" >
-      <iframe src="https://app.termly.io/notify/696baafc-17cd-4a28-b758-a8f597cf2ad6" > </iframe>  
-    </div>
+      {loader ? 
+        <LoadingScreen />  : 
+        <div className="content-pr-modal" > 
+          <iframe onLoad={()=>{UpdateLoader(false)}} src="https://app.termly.io/notify/696baafc-17cd-4a28-b758-a8f597cf2ad6" /> 
+        </div> 
+      }
   </Popup>
   </>
 }
