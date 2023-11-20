@@ -1,11 +1,9 @@
-import InputError from "@/Components/InputError";
 import LoaderButton from "@/Components/LoaderButton";
-import { Link, useForm } from "@inertiajs/react";
+import {  useForm } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
 import GlobalUploader from "@/uploadcare/Uploader";
 import st from "../../../css/uploader.module.css";
 import { useEffect, useRef, useState } from "react";
-import toast from "react-hot-toast";
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
 import Accordion from "react-bootstrap/Accordion";
@@ -14,11 +12,9 @@ import Popup from "@/Components/Popup";
 import { router } from "@inertiajs/react";
 
 export default function Wishlist(props) {
-    const { categories, auth } = props;
+    const { categories, auth, fetchingcats } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
-
     const inputRef = useRef(null);
-    const [cats, setCats] = useState([]);
 
 
     const [adding, setAdding] = useState(false);
@@ -105,10 +101,6 @@ export default function Wishlist(props) {
     }, [thumbnail]);
 
     const createWishList = (e) => {
-        // if (!thumbnail) {
-        //     toast.error("Please select a thumbnail for wish list item");
-        //     return false;
-        // }
         e.preventDefault();
         post(route("save_wish_item"), {
             preserveScroll: true,
@@ -120,6 +112,7 @@ export default function Wishlist(props) {
                 setTimeout(() => {
                     setClose();
                 }, 100);
+                fetchingcats('all');
             },
             onError: (_err) => {
                 console.error(_err);
@@ -476,3 +469,4 @@ export default function Wishlist(props) {
         </div>
     );
 }
+ 

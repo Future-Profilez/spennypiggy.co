@@ -269,6 +269,7 @@ ul.socialmedia a img{width:35px;height:35px;}
 .wishlistimg img{height:190px;border-radius:10px;}
 .updateavatar.modal .modal-content{margin:30px;}
 .updateavatar.modal{background:rgb(0 0 0 / 52%);}
+.userProfile{position:sticky;top:20px;}
 /* Responsive */
 @media(max-width:1500px){.loveboxes{padding:0 20px;}
 .loveboxes img{max-width:160px;}
@@ -279,15 +280,13 @@ ul.socialmedia a img{width:35px;height:35px;}
 }
 @media(max-width:1240px){.containerbox{max-width:1140px;}
 .finish .btn-pink-lg{width:100%;}
-/* .menuList ul li a{font-size:40px;line-height:40px;}
-*/
+ 
 .menuList ul li a{font-size:4vh;}
 }
 @media(max-width:1199px){.containerbox{max-width:970px;}
 }
 @media(max-width:1139px){.containerbox{max-width:960px;}
-/* .wishlistcntbox{width:30%;}
-*/
+
 .menuList{padding:25px 100px 25px 50px;}
 .userManageHead .btn-pink-md{width:230px;}
 .finish{padding:20px;border-radius:10px;}
@@ -303,7 +302,8 @@ ul.socialmedia a img{width:35px;height:35px;}
 */
 .loginPage h2.headingLg{font-size:50px;line-height:60px;}
 }
-@media(max-width:991px){.userPr{width:-moz-fit-content !important;width:fit-content !important;margin:auto;margin-top:-78px;}
+@media(max-width:991px){
+.userPr{width:-moz-fit-content !important;width:fit-content !important;margin:auto;margin-top:-78px;}
 .userphoto{margin:auto !important;padding-bottom:12px;margin-top:-30px;}
 .containerbox{max-width:740px;}
 .MegaMenu{flex-wrap:wrap;align-items:flex-start;align-content:flex-start;}
@@ -326,9 +326,8 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .wishlistcntbox{border-radius:10px!important;}
 .wishlistdetial{padding:16px 10px 10px;}
 .wishlistdetial h3{font-size:15px;}
-.wishlistdetial h4{font-size:16px;}
 .wishlistPage{padding-top:10px;}
-.userManageHead button.btn-pink{padding:13px 10px;width:13rem;}
+.userManageHead button.btn-pink{padding:13px 10px;}
 .header{height:auto;}
 .headtitle{font-size:20px;}
 .spennylogo img{max-width:150px;}
@@ -348,7 +347,8 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .userProfile{margin-top:0px;}
 .footlinks ul li{border-right:0 !important;}
 }
-@media(max-width:767px){.cartProRtbox{display:inline-flex;width:100%;justify-content:space-between;margin-top:10px;}
+@media(max-width:767px){.wishlistdetial h4{font-size:16px;}
+.cartProRtbox{display:inline-flex;width:100%;justify-content:space-between;margin-top:10px;}
 .shadow-yellow{text-shadow:1px 3px 0 var(--yellow);}
 .shadow-voilet{box-shadow:5px 5px 0 0 var(--voilet);}
 .headingMd{font-size:53px !important;line-height:53px !important;}
@@ -371,7 +371,7 @@ button.closemega svg{width:56px;top:10px;}
 .userProfileDate{position:relative;}
 .wishManage{padding:0;}
 .userProfile{margin:0 auto;width:100%;}
-.userManageRt{padding:0;width:100%;}  
+.userManageRt{padding:0;width:100%;}
 .wishlistModal{min-width:300px;}
 .wishinfo{padding:10px 15px 20px;}
 .joinus{padding:50px 15px 50px;}

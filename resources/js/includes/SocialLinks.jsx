@@ -118,7 +118,7 @@ export default function SocialLinks({ links }) {
                 {links.map((l, i) => {
                     return <>
                         {l?.url ?
-                            <li className='px-2 mt-3 mb-2' >
+                            <li className='px-2 mt-2 mb-2' >
                                  { l.social == "fansly" ? 
                                         <a title={l.social} href={l.url} > <img src={fansly} className='img-fluid' /> </a>
                                  : l.social == "manyvids" 

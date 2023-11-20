@@ -8,6 +8,8 @@ import { useRef } from 'react';
 
 export default function Stripe(props) {
 
+    const { auth, user } = props;
+    
     const checkRef = useRef();
     const{errorAlert} = useAlerts();
     const {data, setData, get, post, processing, errors, reset} = useForm({
@@ -36,10 +38,10 @@ export default function Stripe(props) {
         checkRef.current.focus();
         return false;
     }
-  
+    console.log("props stripe", props)
 
     return (
-        <Authenticated>
+        <Authenticated auth={auth.user} user={user} >
             <div className='blackbg py-4 py-md-5  '>
                 <div className='stripbox mb-2  mb-md-4 mx-auto border-mint whbg shadow-mint rounded-3xl '>
                     

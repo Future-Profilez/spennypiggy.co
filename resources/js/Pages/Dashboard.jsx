@@ -12,6 +12,7 @@ import axios from 'axios';
 import Guest from '@/Layouts/GuestLayout';
 import Nocontent from '@/includes/Nocontent';
 import LoadingScreen from '@/includes/LoadingScreen';
+import { useEffect } from 'react';
 
 export default function Dashboard(props) {
 
@@ -19,18 +20,23 @@ export default function Dashboard(props) {
     const [its, setIts] = useState(items);
     const [loading, setLoading] = useState(false);
 
-    const showCategory = (e) => {
+    const fetchingcats = (e) => { 
         setLoading(true);
-        axios.get(`${user.username}/${e.target.value}`).then(resp => {
+        axios.get(`${user.username}/${e}`).then(resp => {
             setIts(resp.data.items)
             setLoading(false);
         }).catch(_err => {
             console.error("error", _err);
             setLoading(false);
-        })
+        });
     }
+
+    const showCategory = (e) => {
+        const v = e.target.value;
+        fetchingcats(v);
+    }
+
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
-    console.log("props", props);
 
     return (
         <Guest
@@ -88,22 +94,20 @@ export default function Dashboard(props) {
                                             </select>
                                         : ''}
                                         </div> 
-                                        {IsloggedIn ? <Wishlist categories={categories} /> : ""}
+                                        {IsloggedIn ? <Wishlist fetchingcats={fetchingcats} categories={categories} /> : ""}
                                     </div>
                                     <div className='row'>
-
-                                    
 
                                     {!IsloggedIn && user?.stripe_details_submitted !== 1 ? 
                                         <div className='col-md-12 p-5 notactive' >
                                             <h5 className='loadingtext w-full text-center text-white  mb-1'>{user.name}'s WishList not activated yet.</h5>
                                             <p className='text-center  text-white text-large ' >Until they activate their wishlist, this user won't be able to receive gifts</p>
                                         </div> : 
-                                        <>
+                                    <>
                                             {its && its.length ?
                                                     !loading && its.map((c, i) => {
                                                         return <div className='col-xl-4 col-lg-6 col-6' >
-                                                            <Wishlistbox auth={auth.user} itemid={itemid} itm={c} key={`wish-${c.uuid}`} />
+                                                            <Wishlistbox IsloggedIn={IsloggedIn} auth={auth.user} itemid={itemid} itm={c} key={`wish-${c.uuid}`} />
                                                         </div>
                                                     })
                                                 :
@@ -115,6 +119,7 @@ export default function Dashboard(props) {
                                             }
                                         </>
                                     }
+
 
                                     {loading ? <LoadingScreen />:''}
 

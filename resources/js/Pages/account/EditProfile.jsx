@@ -66,7 +66,6 @@ export default function EditProfile({ user }) {
                 <h2>Edit your Profile</h2>
             </div>
             <div className='editProfilePhoto'>
-                
                 <div className='profilePhoto'>
                     <h3>Profile</h3>
                     <div className='profilePhotoImg dp'>
@@ -110,7 +109,7 @@ export default function EditProfile({ user }) {
                     </ul>
                     <div className=" text-center mb-7">
                         <LoaderButton type='submit' disabled={processing} 
-                        className='btn-pink lg' spinnerClassName='fill-red-600'>
+                        className='btn-pink lg m-auto' spinnerClassName='fill-red-600'>
                             {processing ? "Updating" : "Update Profile"}
                         </LoaderButton>
                     </div>

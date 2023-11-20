@@ -11,9 +11,8 @@ import ProgressBar from 'react-bootstrap/ProgressBar';
 
  
 
-export default function Wishlistbox({ itm, itemid, auth }) {
+export default function Wishlistbox({ itm, itemid, auth, IsloggedIn, onclick }) {
 
-  // const [itemUID, setItemUID] = useState('ccbf439a-1872-474b-8a15-47d45943f7ba');
   const [itemUID, setItemUID] = useState(itemid);
   const [open, setOpen] = useState();
 
@@ -32,13 +31,16 @@ export default function Wishlistbox({ itm, itemid, auth }) {
 
 
   const getPercentage = (actual, paid) => { 
-    return (paid/actual)*100
+    const r = (paid/actual)*100
+    return r.toFixed(0);
   }
 
-
   return <>
-    <div className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
-      <AddCart auth={auth} item={itm} uuid={itm.uuid} action={open} />
+      
+      <div  className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
+
+      {IsloggedIn ? '' : <AddCart auth={auth} item={itm} uuid={itm.uuid} action={open} /> }
+
       <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
         <img src={itm?.perma_link ? itm?.perma_link : uploadedimg} alt='img' className='' />
       </div>
