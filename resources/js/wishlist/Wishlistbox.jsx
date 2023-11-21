@@ -16,7 +16,6 @@ export default function Wishlistbox({ itm, itemid, auth, IsloggedIn, fetchingcat
 
   const [itemUID, setItemUID] = useState(itemid);
   const [open, setOpen] = useState();
-
   const openAddtocart = () => {
     setOpen(true);
     setTimeout(()=>{
