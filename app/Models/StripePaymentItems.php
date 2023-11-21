@@ -28,11 +28,8 @@ class StripePaymentItems extends Model
         return $this->belongsTo(WishItem::class, 'wish_item_id');
     }
 
-    public function payment()
+    public function cart()
     {
-        return $this->belongsTo(StripePaymentDetail::class, 'stripe_payment_id');
+        return $this->belongsTo(UserCart::class, 'user_cart_id');
     }
-
-
-
 }

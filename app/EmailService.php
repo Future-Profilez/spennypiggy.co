@@ -3,6 +3,7 @@
 namespace App;
 
 use App\Mail\Checkout;
+use App\Mail\CheckoutToUser;
 use App\Mail\SubscriptionMail;
 use App\Mail\VerifyEmail;
 use App\Mail\Welcome;
@@ -47,16 +48,36 @@ class EmailService
         try {
 
             $emailData = [
-                'to' => $data->owner->email,
-                'name' => $data->owner->name,
-                'username' => $data->owner->username,
-                'phone' => $data->owner->phone,
-                'email' => $data->owner->email,
-                'uuid' => $data->owner->uuid,
+                'to' => $data->payment->owner->email,
+                'name' => $data->payment->owner->name,
+                'username' => $data->payment->owner->username,
+                'phone' => $data->payment->owner->phone,
+                'email' => $data->payment->owner->email,
+                'uuid' => $data->payment->owner->uuid,
             ];
 
             Mail::to($emailData['to'])
-                ->send(new Checkout($data));
+                ->send(new Checkout($data, $anon));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+    public static function checkOutToUser($data)
+    {
+        try {
+
+            $emailData = [
+                'to' => $data->user->email,
+                'name' => $data->user->name,
+                'username' => $data->user->username,
+                'phone' => $data->user->phone,
+                'email' => $data->user->email,
+                'uuid' => $data->user->uuid,
+            ];
+
+            Mail::to($emailData['to'])
+                ->send(new CheckoutToUser($data));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }

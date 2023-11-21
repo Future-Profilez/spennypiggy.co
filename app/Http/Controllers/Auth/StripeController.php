@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\CheckoutMailToUser;
 use App\Jobs\CheckoutUser;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
@@ -275,13 +276,12 @@ class StripeController extends Controller
             ]);
             $payment_data->refresh();
 
-            CheckoutUser::dispatch($stripeid, false);
+            CheckoutUser::dispatch($payment_data, false);
         }
 
-        $owner = User::where('id', $owner_id)->first();
         //send email
-        CheckoutUser::dispatch($user, false);
-        
+        CheckoutMailToUser::dispatch($stripeid);
+
 
         return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
     }
@@ -393,15 +393,16 @@ class StripeController extends Controller
                 $amount = $getdata->price;
                 $tax = $getdata->tax_amount;
             }
-            StripePaymentItems::create([
+            $data = StripePaymentItems::create([
                 'uuid' => Uuid::uuid4(),
                 'stripe_payment_id' => $stripeid->id,
                 'wish_item_id' => $getdata->id,
                 'amount' => $amount,
                 'tax' => $tax,
             ]);
+            $data->refresh();
 
-            CheckoutUser::dispatch($getdata->user, true);
+            CheckoutUser::dispatch($data, true);
 
             return redirect(route('user.show', [$getdata->user->username]))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
