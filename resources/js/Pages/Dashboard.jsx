@@ -39,7 +39,19 @@ export default function Dashboard(props) {
 
     
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
-    console.log("IsloggedIn", IsloggedIn)
+    console.log("IsloggedIn", IsloggedIn);
+
+    const isvalid = () => { 
+        if(IsloggedIn){
+            return true
+        }  
+        if(user?.stripe_details_submitted == 1){
+            return true
+        }
+        else {
+          return  false
+        }
+    }
 
     return (
         <Guest
@@ -99,40 +111,50 @@ export default function Dashboard(props) {
                                             : ''}
                                         </div>
                                         {IsloggedIn ? <Wishlist fetchingcats={fetchingcats} categories={categories} /> : ""}
-                                    
                                     </div>
+
+
+                                    {loading ? <LoadingScreen />:''}
                                     <div className='row'>
 
-                                    {!IsloggedIn && user?.stripe_details_submitted !== 1 ?
+                                    {/* {!IsloggedIn && user?.stripe_details_submitted !== 1 ?
                                         <div className='col-md-12 p-5 notactive' >
                                             <h5 className='loadingtext w-full text-center text-white  mb-1'>{user.name}'s WishList not activated yet.</h5>
                                             <p className='text-center  text-white text-large ' >Until they activate their wishlist, this user won't be able to receive gifts</p>
                                         </div> :
                                      ''
-                                    }
+                                    } */}
 
-                                    {its && its.length ?
-                                            !loading && its.map((c, i) => {
-                                                return <div className='col-xl-4 col-lg-6 col-6' >
-                                                    <Wishlistbox
-                                                    fetchingcats={fetchingcats}
-                                                    categories={categories}
-                                                    IsloggedIn={IsloggedIn}
-                                                    auth={auth.user}
-                                                    itemid={itemid} itm={c} key={`wish-${c.uuid}`} />
-                                                </div>
-                                            })
-                                        :
+
+
+                                    { IsloggedIn || user?.stripe_details_submitted == 1 ? <>
+                                        { its && its.length ?
+                                                !loading && its.map((c, i) => {
+                                                    return <div className='col-xl-4 col-lg-6 col-6' >
+                                                        <Wishlistbox
+                                                        fetchingcats={fetchingcats}
+                                                        categories={categories}
+                                                        IsloggedIn={IsloggedIn}
+                                                        auth={auth.user}
+                                                        itemid={itemid} itm={c} key={`wish-${c.uuid}`} />
+                                                    </div>
+                                                })
+                                            :
+                                            <>
+                                                {!loading ? <div className='col-md-12' >
+                                                    <Nocontent text="Nothing to see." />
+                                                </div> : ''}
+                                            </>
+                                        }
+                                        </> :
                                         <>
-                                            {!loading ? <div className='col-md-12' >
-                                                <Nocontent text="Nothing to see." />
-                                            </div> : ''}
+                                            <div className='col-md-12 p-5 my-5 notactive' >
+                                                <h5 className='loadingtext w-full text-center text-white  mb-1'>{user.name}'s WishList not activated yet.</h5>
+                                                <p className='text-center  text-white text-large ' >Until they activate their wishlist, this user won't be able to receive gifts</p>
+                                            </div> 
                                         </>
-                                    }
 
-
-                                    {loading ? <LoadingScreen />:''}
-
+                                    } 
                                     </div>
                                 </div>
                             </div>
