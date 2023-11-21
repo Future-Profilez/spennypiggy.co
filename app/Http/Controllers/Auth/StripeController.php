@@ -97,7 +97,7 @@ class StripeController extends Controller
 
             $link = StripeControl::createAccountLink([
                 "account" => $account->id,
-                "refresh_url" => route("stripe.connect", ["step" => "refresh"]),
+                "refresh_url" => route("stripe.connect", ["step" => "refresh", "country" => $user->country]),
                 "return_url"  => route("stripe.return"),
                 "type"        => "account_onboarding"
             ]);

@@ -17,4 +17,9 @@ class StripePaymentItems extends Model
         'amount',
         'tax',
     ];
+
+    public function payment()
+    {
+        return $this->belongsTo(StripePaymentDetail::class, 'stripe_payment_id');
+    }
 }

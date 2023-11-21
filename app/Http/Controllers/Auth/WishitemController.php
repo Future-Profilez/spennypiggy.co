@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Jobs\SaveWishlist;
 use App\Jobs\WelcomeUser;
+use App\Models\StripePaymentItems;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserCategory;
@@ -96,7 +97,7 @@ class WishitemController extends Controller
             $stripe_client = $stripe->products->create([
                 'name' => $request->wishname ?? null,
                 'images' => [$wish->perma_link],
-                "default_price_data" => ["currency" => "usd", "unit_amount_decimal" => $createpriceid],
+                "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => ceil($createpriceid)],
                 "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
             ]);
             $wish->stripe_product_id = $stripe_client->id;
@@ -252,6 +253,17 @@ class WishitemController extends Controller
             return response()->json([
                 "success" => true,
                 "msg" => "You are not able to add your item to your cart.",
+            ]);
+        }
+
+        $payment = StripePaymentItems::where('wish_item_id', $wishitem->id)->whereHas('payment', function ($q) {
+            $q->where('user_id', Auth::id());
+        })->first();
+
+        if ($wishitem->subscription == 0 && $wishitem->repeat_purchase == 0 && !empty($payment)) {
+            return response()->json([
+                "success" => true,
+                "msg" => "You can pay only once for this wish.",
             ]);
         }
 
