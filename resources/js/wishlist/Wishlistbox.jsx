@@ -31,7 +31,7 @@ export default function Wishlistbox(props) {
   const getPercentage = (actual, paid) => { 
     const r = (paid/actual)*100;
     console.log("get percentage", r);
-    return r.toFixed(0);
+    return r.toFixed(1);
   }
  
   console.log("props wishbox", props);
