@@ -67,11 +67,11 @@ class WishitemController extends Controller
 
 
         $taxamount = $request->price * env('TAX_PERCENTAGE') / 100;
-        $createpriceid = $request->price + $taxamount;
+        $createpriceid = ceil($request->price) + $taxamount;
         $wish = WishItem::create([
             "user_id" => Auth::id(),
             'wishname' => $request->wishname,
-            'price' => $request->price,
+            'price' => ceil($request->price),
             'item_url' => $request->item_url != "" ? $request->item_url : null,
             'thumbnail' => $request->thumbnail ?? null,
             'subscription' => $request->subscription,
@@ -97,7 +97,7 @@ class WishitemController extends Controller
             $stripe_client = $stripe->products->create([
                 'name' => $request->wishname ?? null,
                 'images' => [$wish->perma_link],
-                "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => ceil($createpriceid)],
+                "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid],
                 "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
             ]);
             $wish->stripe_product_id = $stripe_client->id;

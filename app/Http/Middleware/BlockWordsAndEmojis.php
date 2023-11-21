@@ -18,21 +18,18 @@ class BlockWordsAndEmojis
     {
         $blockedWords = ['Paypig', 'Findom', 'Worship', 'Unlock', 'Unblock', 'Receive'];
         $blockedEmojis = ['😈', '💩', '💬', '👅', '🍆', '🍌', '🌽', '🌶️', '🍑', '💎', '💦'];
-
         foreach ($blockedWords as $word) {
             if (stripos($request->getContent(), $word) !== false) {
-                return redirect()->back()->with('error', "These words are blocked.");
-                // return response()->json(['error' => 'Blocked word found.'], 403);
+                return redirect()->route('home')->with('error', "These words are not allowed.");
             }
         }
 
         foreach ($blockedEmojis as $emoji) {
             $emojiPattern = preg_quote($emoji);
             if (preg_match("/$emojiPattern/u", $request->getContent())) {
-                return back()->with('error', "These emojis are blocked.");
+                return redirect()->route('home')->with('error', "These emojis are not allowed.");
             }
         }
-
 
         return $next($request);
     }
