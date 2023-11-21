@@ -33,13 +33,8 @@ export default function Stripe(props) {
             errorAlert("Please choose your country.");
             return false;
         }
-
-        console.log('route', route("stripe.connect", { step: "init", country: country }))
-        console.log('country', country)
-        if (checkRef.current.checked) {
-            window.location.href = route("stripe.connect", { step: "init", country: country });
-            // window.location.href = `/stripe/connect-${"init"}/${country}/`;
-
+        if(checkRef.current.checked){
+            window.location.href = route("stripe.connect", {step:"init", country:country});
             return true;
         }
         errorAlert("Please check accept terms & conditions checkbox");

@@ -31,7 +31,25 @@ export default function Authenticated({auth, user, header, children }) {
         <Header auth={auth} user={user}  />
             <main>
                 {children}
-                <Toaster />
+                <Toaster 
+                reverseOrder={false}
+                gutter={8}
+                toastOptions={{
+                    className: '',
+                    duration: 3000,
+                    style: {
+                    background: '#363636',
+                    color: '#fff',
+                    },
+                    success: {
+                    duration: 3000,
+                    theme: {
+                        primary: 'green',
+                        secondary: 'black',
+                    },
+                    },
+                }}
+                />
             </main>
         <Footer auth={auth} />
     </>

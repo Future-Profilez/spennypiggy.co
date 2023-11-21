@@ -55,8 +55,7 @@
 
                         <td valign="middle" style="padding-right: 10px"><a href="https://twitter.com/whoyouinto" target="_blank"><img src="https://whoyouinto.com/emails/user/twittericon.png"></a></td>
 
-                        <td valign="middle" style="padding-right: 10px"><a href="https://instagram.com/whoyouinto?igshid=OGQ5ZDc2ODk2ZA==
-                        " target="_blank"><img src="https://whoyouinto.com/emails/user/instagramicon.png"></a></td>
+                        <td valign="middle" style="padding-right: 10px"><a href="https://instagram.com/whoyouinto?igshid=OGQ5ZDc2ODk2ZA==" target="_blank"><img src="https://whoyouinto.com/emails/user/instagramicon.png"></a></td>
 
                         <td valign="middle" style="padding-right: 10px"><a href="https://www.youtube.com/channel/UC5IHsRra_Pe9mc1DSzkNxMQ?app=desktop" target="_blank"><img src="https://whoyouinto.com/emails/user/youtubeicon.png"></a></td>
 
@@ -92,7 +91,7 @@
             <tr>
                <td style="padding:15px 0 5px 0; font-family: Arial; font-weight: normal; font-size: 8px; line-height: 15px; color: #666666; text-align: center;">
                   You’re receiving this email because you’re a valued member of the Spenny Piggy community.
-To stop receiving notification emails, Please click here</td>
+                  To stop receiving notification emails, Please click here</td>
             </tr>
             <tr>
                <td style="padding:0 0 10px 0; font-family: Arial; font-weight: normal; font-size: 8px; line-height: 15px; color: #666666; text-align: center;">To stop receiving notification emails, For Unsubscribe <br> Please <a href="#" style="color:#5D25FD">click here</a>

@@ -28,7 +28,7 @@ class WishitemController extends Controller
             "wishname" => [
                 "required",
                 "string",
-                "min:10",
+                "min:4",
                 "max:255"
             ],
             "price" => [
