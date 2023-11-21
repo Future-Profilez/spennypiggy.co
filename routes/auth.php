@@ -22,16 +22,21 @@ use Inertia\Inertia;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
 
+Route::get('/frd', function () {
+    print_r('ffff');
+    die;
+});
+
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
 
-    Route::post('register', [RegisteredUserController::class, 'store']);
+    Route::post('register', [RegisteredUserController::class, 'store'])->middleware('blockWordsAndEmojis');
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
-    Route::post('login-user', [AuthenticatedSessionController::class, 'store'])->name('login-user');
+    Route::post('login-user', [AuthenticatedSessionController::class, 'store'])->name('login-user')->middleware('mustHaveToVerify');
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
@@ -50,7 +55,7 @@ Route::middleware('guest')->group(function () {
 });
 
 
-Route::middleware('auth')->group(function () {
+Route::middleware('auth', 'mustHaveToVerify')->group(function () {
 
     Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
     Route::get('verification', [EmailVerificationPromptController::class, '__invoke'])->name('verification.notice');
@@ -121,9 +126,11 @@ Route::middleware('auth')->group(function () {
 });
 
 /*Anonymous checkout*/
-Route::get('/anonymous-create-checkout-session/{priceid}/{quantity}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
-Route::get('/anonymous-sucess-checkout', [StripeController::class, 'anonymousSuccessCheckout'])->name('checkout.anonymous.success');
-Route::get('/anonymous-cancel-checkout', [StripeController::class, 'anonymousCancelCheckout'])->name('checkout.anonymous.cancel');
+// Route::get('/anonymous-create-checkout-session/{priceid}/{quantity}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
+Route::get('/anonymous-create-checkout-session/{wishid}/{amount}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
+
+Route::get('/anonymous-sucess-checkout/{id}', [StripeController::class, 'anonymousSuccessCheckout'])->name('checkout.anonymous.success');
+Route::get('/anonymous-cancel-checkout/{id}', [StripeController::class, 'anonymousCancelCheckout'])->name('checkout.anonymous.cancel');
 
 Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class, 'categoryItems'])->name('get_category_data');
 

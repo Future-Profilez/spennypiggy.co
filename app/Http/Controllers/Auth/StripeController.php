@@ -19,6 +19,7 @@ use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
+use Stripe\StripeClient;
 
 class StripeController extends Controller
 {
@@ -295,32 +296,68 @@ class StripeController extends Controller
     }
 
     /* Anonymous checkout */
-    public function createAnonymousCheckout($priceid = null, $quantity = null)
+    public function createAnonymousCheckout($wishid = null, $amount = null)
     {
         try {
-            $lineItems = [
-                [
-                    'price' => $priceid ?? '',
-                    'quantity' => $quantity ?? 1,
-                ],
-            ];
+            $wishdata = WishItem::whereId($wishid)->first();
+            if (!empty($amount)) {
+                session()->forget('user_fullfill_amount');
+                session(['user_fullfill_amount' => $amount]);
+                // $totalamount = $amount + ($amount * env('TAX_PERCENTAGE') / 100);
+                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                $stripe_client = $stripe->products->update([
+                    'name' => 'anonymous product',
+                    'images' => '',
+                    "default_price_data" => ["currency" => "usd", "unit_amount_decimal" => $amount],
+                ]);
+
+                $wishdata->stripe_product_id = $stripe_client->id;
+                $wishdata->price_id = $stripe_client->default_price;
+                $wishdata->save();
+            }
+
+            $lineItems = [];
+            if ($wishdata->subscription == 2) {
+                $lineItems[] = [
+                    'price' => $wishdata->priceid ?? '',
+                    'quantity' => 1,
+                ];
+                $amountadd = $wishdata->fullfill_amount + $wishdata->amount;
+                $wishdata->fullfill_amount = $amountadd;
+                $wishdata->save();
+            } else {
+                $lineItems[] = [
+                    'price' => $wishdata->price_id ?? '',
+                    'quantity' => 1,
+                ];
+            }
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
             $sessioncreate = $stripe->checkout->sessions->create([
-                'success_url' => route('checkout.anonymous.success'),
-                'cancel_url' => route('checkout.anonymous.cancel'),
+                'success_url' => route('checkout.anonymous.success', [$wishdata->id]),
+                'cancel_url' => route('checkout.anonymous.cancel', [$wishdata->id]),
                 'line_items' => $lineItems,
                 'mode' => 'payment',
             ]);
 
             $callbackData = $sessioncreate;
+            if ($wishdata->subscription == 2) {
+                $subtotal = $callbackData->amount_total;
+                $taxnew = 0;
+            } else {
+                $subtotal = $callbackData->amount_total / (1 + (env('TAX_PERCENTAGE') / 100));
+                $taxnew = ($callbackData->amount_total) - ($subtotal);
+            }
+
             session()->forget('anonymous_session_id');
             session(['anonymous_session_id' => $callbackData->id]);
-            StripePaymentDetail::create([
+            $stripeid = StripePaymentDetail::create([
                 'session_id' => $callbackData->id,
-                'amount_subtotal' => $callbackData->amount_subtotal,
+                'amount_subtotal' => $subtotal,
                 'amount_total' => $callbackData->amount_total,
+                'tax' => $taxnew,
                 'currency' => $callbackData->currency,
+                'owner_id' => $wishdata->user_id,
                 'payment_method_config_detail_id' => optional($callbackData->payment_method_configuration_details)->id,
                 'payment_method_type' => optional($callbackData->payment_method_types)[0],
                 'session_created' => $callbackData->created,
@@ -328,16 +365,15 @@ class StripeController extends Controller
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ]);
-
+            $stripeid->refresh();
 
             return Inertia::location("https://checkout.stripe.com/c/pay/cs_test_a1jgKGZXBgUInXbv2q4Ik3o4TjQMBZHMPkQEDWVs1i08XpqTx4Bw8ABEIg#fidkdWxOYHwnPyd1blpxYHZxWjA0SjZoZEZCMn12S1ZmSWhdQmZQb0xrVEZLb1xLXTBqaGhJS2BKcHFUVk8zQVNndWNzSFI3SnB1UEcwZ1FObm5%2FR3xsRk9VdEJ8NkxTPDdvQUZAM1xMbFFTNTVMX3ZvY2IzVicpJ2N3amhWYHdzYHcnP3F3cGApJ2lkfGpwcVF8dWAnPyd2bGtiaWBabHFgaCcpJ2BrZGdpYFVpZGZgbWppYWB3dic%2FcXdwYHgl");
         } catch (\Throwable $th) {
-            \Log::error("Error in createAnonymousCheckout: " . $th->getMessage());
             throw $th;
         }
     }
 
-    public function anonymousSuccessCheckout()
+    public function anonymousSuccessCheckout($id)
     {
         try {
             $sessionId = session('anonymous_session_id');
@@ -345,6 +381,26 @@ class StripeController extends Controller
                 'payment_status' => 'paid',
                 'updated_at' => Carbon::now(),
             ]);
+            $stripeid = StripePaymentDetail::where('session_id', $sessionId)->first();
+            $getdata = WishItem::whereId($id)->first();
+            if ($getdata->subscription == 2) {
+                $amount = session('user_fullfill_amount');
+                $tax = 0;
+                $usercartid = '';
+            } else {
+                $amount = $getdata->price;
+                $tax = $getdata->tax_amount;
+                $usercartid = '';
+            }
+            StripePaymentItems::create([
+                'uuid' => Uuid::uuid4(),
+                'stripe_payment_id' => $stripeid->id,
+                'wish_item_id' => $getdata->id,
+                'user_cart_id' => $usercartid,
+                'amount' => $amount,
+                'tax' => $tax,
+            ]);
+
             print_r("success");
             die;
             // return redirect()->back()->with('success', 'Payment Successfull.');
@@ -353,13 +409,15 @@ class StripeController extends Controller
         }
     }
 
-    public function anonymousCancelCheckout()
+    public function anonymousCancelCheckout($id)
     {
         $sessionId = session('anonymous_session_id');
         StripePaymentDetail::where('session_id', $sessionId)->update([
             'payment_status' => 'unpaid',
             'updated_at' => Carbon::now(),
         ]);
+        print_r("cancel");
+        die;
         return view('cancel');
     }
 }

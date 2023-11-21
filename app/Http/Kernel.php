@@ -39,6 +39,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
             \App\Http\Middleware\BlockWordsAndEmojis::class,
+            \App\Http\Middleware\UserEmailVerify::class,
         ],
 
         'api' => [
@@ -68,5 +69,6 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'blockWordsAndEmojis' => \App\Http\Middleware\BlockWordsAndEmojis::class,
+        'mustHaveToVerify' => \App\Http\Middleware\UserEmailVerify::class,
     ];
 }
