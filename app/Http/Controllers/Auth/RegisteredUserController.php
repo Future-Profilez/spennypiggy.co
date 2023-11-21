@@ -102,5 +102,4 @@ class RegisteredUserController extends Controller
             "available" => empty($exist)
         ]);
     }
-
 }

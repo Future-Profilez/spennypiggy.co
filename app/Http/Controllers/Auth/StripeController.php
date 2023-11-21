@@ -174,7 +174,7 @@ class StripeController extends Controller
             $callbackData = $sessioncreate;
             $subtotal = $callbackData->amount_total / (1 + (env('TAX_PERCENTAGE') / 100));
             $taxnew = ($callbackData->amount_total) - ($subtotal);
-           
+
             session()->forget('session_id');
             session(['session_id' => $callbackData->id]);
             $stripeid = StripePaymentDetail::create([
@@ -281,7 +281,7 @@ class StripeController extends Controller
     public function createAnonymousCheckout($priceid = null, $quantity = null)
     {
         try {
-            $lineItems = [
+            $lineItems = [  
                 [
                     'price' => $priceid ?? '',
                     'quantity' => $quantity ?? 1,
@@ -315,7 +315,6 @@ class StripeController extends Controller
 
             return Inertia::location("https://checkout.stripe.com/c/pay/cs_test_a1jgKGZXBgUInXbv2q4Ik3o4TjQMBZHMPkQEDWVs1i08XpqTx4Bw8ABEIg#fidkdWxOYHwnPyd1blpxYHZxWjA0SjZoZEZCMn12S1ZmSWhdQmZQb0xrVEZLb1xLXTBqaGhJS2BKcHFUVk8zQVNndWNzSFI3SnB1UEcwZ1FObm5%2FR3xsRk9VdEJ8NkxTPDdvQUZAM1xMbFFTNTVMX3ZvY2IzVicpJ2N3amhWYHdzYHcnP3F3cGApJ2lkfGpwcVF8dWAnPyd2bGtiaWBabHFgaCcpJ2BrZGdpYFVpZGZgbWppYWB3dic%2FcXdwYHgl");
         } catch (\Throwable $th) {
-            \Log::error("Error in createAnonymousCheckout: " . $th->getMessage());
             throw $th;
         }
     }
