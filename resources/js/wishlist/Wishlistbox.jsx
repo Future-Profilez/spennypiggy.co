@@ -10,8 +10,6 @@ import { useEffect } from 'react';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import Wishlist from '@/Pages/Auth/Wishlist';
 
- 
-
 export default function Wishlistbox({ itm, itemid, auth, IsloggedIn, fetchingcats, categories }) {
 
   const [itemUID, setItemUID] = useState(itemid);
