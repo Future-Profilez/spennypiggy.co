@@ -57,7 +57,7 @@ class StripeController extends Controller
      * @param string $step Connection Current Step
      * @return mixed
      */
-    public function initConnect(Request $request, $step = "init")
+    public function initConnect(Request $request, $step = "init", $country)
     {
 
         $user = User::find(Auth::id());
@@ -68,7 +68,7 @@ class StripeController extends Controller
 
             try {
                 $payload = [
-                    "country" => "US",
+                    "country" => $country,
                     "type" => "express",
                     'email' => $user->email,
                     'capabilities' => [
@@ -82,6 +82,7 @@ class StripeController extends Controller
 
                 $account = StripeControl::createAccount($payload);
                 $user->account_id = $account->id;
+                $user->country = $country;
                 $user->save();
             } catch (Exception $e) {
                 return redirect(route("stripe.index"))->with("error", "First invalid error");
@@ -174,7 +175,7 @@ class StripeController extends Controller
             $callbackData = $sessioncreate;
             $subtotal = $callbackData->amount_total / (1 + (env('TAX_PERCENTAGE') / 100));
             $taxnew = ($callbackData->amount_total) - ($subtotal);
-           
+
             session()->forget('session_id');
             session(['session_id' => $callbackData->id]);
             $stripeid = StripePaymentDetail::create([
