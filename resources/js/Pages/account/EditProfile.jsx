@@ -5,7 +5,6 @@ import editicon from '../../../assets/img/editicon.png';
 import Popup from '@/Components/Popup';
 import { useForm } from '@inertiajs/react';
 import { useAlerts } from '@/Components/Alerts';
-import GlobalUploader from '@/uploadcare/Uploader';
 import UpdateAvatar from './UpdateAvatar';
 import LoaderButton from '@/Components/LoaderButton';
 
@@ -65,26 +64,18 @@ export default function EditProfile({ user }) {
             <div className='editprofileHead'>
                 <h2>Edit your Profile</h2>
             </div>
-            <div className='editProfilePhoto'>
-                <div className='profilePhoto'>
-                    <h3>Profile</h3>
+            <div className='editForm'>
+                <div className='mainprofile mb-5 position-relative w-100 '>
+                    <div className='profilePhotoImg cover'>
+                        <img src={coverImage ? coverImage : (user?.cover_url || coverimage)} alt='img' />
+                        <UpdateAvatar type="cover" getImageUID={getCoverUID} 
+                        text={<> <button className='editbtn'> <img src={editicon} alt="img" /> </button> </>} />
+                    </div>
                     <div className='profilePhotoImg dp'>
                         <img src={ profileDP ? profileDP : (user?.avatar_url || userdefaultphoto)} alt='img' />
                         <UpdateAvatar type="avatar" getImageUID={getImageUID} text={<> <button className='editbtn'><img src={editicon} alt="img" /></button></>} />
                     </div>
                 </div>
-
-                <div className='profilePhoto coverPhoto'>
-                    <h3>Cover Image </h3>
-                    <div className='profilePhotoImg'>
-                        <img src={coverImage ? coverImage : (user?.cover_url || coverimage)} alt='img' />
-                        <UpdateAvatar type="cover" getImageUID={getCoverUID} 
-                        text={<> <button className='editbtn'> <img src={editicon} alt="img" /> </button> </>} />
-                    </div>
-                </div>
-
-            </div>
-            <div className='editForm'>
                 <form onSubmit={updateProfile} >
                     <ul>
                         <li className="mb-3">

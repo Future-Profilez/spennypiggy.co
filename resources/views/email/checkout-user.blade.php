@@ -2,12 +2,12 @@
     style="width: 100%; max-width: 450px; border-collapse: collapse; border-radius: 10px;">
     <tr>
         <td style="background-color: #F94F97; padding: 10px 15px 10px 15px">
-            <img src="https://whoyouinto.com/emails/user/activedots.png" alt="img">
+            <img src="activedots.png" alt="img">
         </td>
     </tr>
     <tr>
-        <td align="center" style="padding:10px 10px 20px 10px;"><a href="https://spennypiggy.co"><img alt="image"
-                    width="119" src="https://whoyouinto.com/emails/user/logo.png" style="border:none"></a></td>
+        <td align="center" style="padding:10px 10px 20px 10px;"><a href="https://whoyouinto.com"><img alt="image"
+                    width="119" src="logo.png" style="border:none"></a></td>
     </tr>
     <tr>
         <td align="center" style="padding:10px 10px 20px 10px;">
@@ -16,17 +16,16 @@
                 <tr>
                     <td
                         style="font-family: Arial; font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
-                        New <span style="color: #8C52FF">Granted Wish</span> on <br> Spenny Piggy 🎁 </td>
+                        You have granted a wish on <br> Spenny Piggy 🎁 </td>
                 </tr>
                 <tr>
-                    <td style=" padding: 0 0 25px 0; text-align: center;"><img
-                            src="https://whoyouinto.com/emails/user/giftimg.png" alt="img"></td>
+                    <td style=" padding: 0 0 25px 0; text-align: center;"><img src="giftimg.png" alt="img"></td>
                 </tr>
                 <tr>
                     <td
                         style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                        {{ $anon == false ? $data->cart->user->name : 'Anonymous user' }} granted you a <span
-                            style="color:#F94F97 ">Wish on {{ $data->wish->wishname }} of £{{ $data->amount }}</span> 🤩
+                        You granted <span style="color:#F94F97 ">{{ $data->owner->name }}'s Wish of
+                            £{{ $data->amount_subtotal }}</span> 🤩
                     </td>
                 </tr>
                 <tr>
@@ -37,7 +36,7 @@
                 </tr>
                 <tr>
                     <td style="padding:0 0 10px 0; text-align: center;">
-                        <a href={{ env('APP_URL') . '/' . $data->payment->owner->username }}
+                        <a href={{ env('APP_URL') . '/' . $data->user->username }}
                             style="padding:13px 10px 13px 10px; width: 210px; border:none;background-color: #F94F97; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">See
                             your granted wish</a>
                     </td>
@@ -60,21 +59,18 @@
                             <tr>
                                 <td valign="middle" style="padding-right: 10px"><a
                                         href="https://m.facebook.com/whoyouinto" target="_blank"><img
-                                            src="https://whoyouinto.com/emails/user/facebookicon.png"></a></td>
+                                            src="facebookicon.png"></a></td>
                                 <td valign="middle" style="padding-right: 10px"><a href="https://twitter.com/whoyouinto"
-                                        target="_blank"><img
-                                            src="https://whoyouinto.com/emails/user/twittericon.png"></a></td>
+                                        target="_blank"><img src="twittericon.png"></a></td>
                                 <td valign="middle" style="padding-right: 10px"><a
                                         href="https://instagram.com/whoyouinto?igshid=OGQ5ZDc2ODk2ZA==
                         "
-                                        target="_blank"><img
-                                            src="https://whoyouinto.com/emails/user/instagramicon.png"></a></td>
+                                        target="_blank"><img src="instagramicon.png"></a></td>
                                 <td valign="middle" style="padding-right: 10px"><a
                                         href="https://www.youtube.com/channel/UC5IHsRra_Pe9mc1DSzkNxMQ?app=desktop"
-                                        target="_blank"><img
-                                            src="https://whoyouinto.com/emails/user/youtubeicon.png"></a></td>
+                                        target="_blank"><img src="youtubeicon.png"></a></td>
                                 <td valign="middle"><a href="https://www.tiktok.com/@whoyouinto" target="_blank"><img
-                                            src="https://whoyouinto.com/emails/user/tiktokicon.png"></a></td>
+                                            src="tiktokicon.png"></a></td>
                             </tr>
                         </table>
                     </td>
@@ -86,8 +82,7 @@
                                 <td width="50%" style="padding: 0 5px 0 0">
                                     <table align="left" cellspacing="0" cellpadding="0" border="0">
                                         <tr>
-                                            <td><img src="https://whoyouinto.com/emails/user/lockicon.png"
-                                                    alt="img"></td>
+                                            <td><img src="lockicon.png" alt="img"></td>
                                             <td
                                                 style="color:#8C52FF; font-family: Arial; font-size:12px; font-style: normal; font-weight: 400; line-height: normal;">
                                                 SSl Encryption</td>
@@ -97,8 +92,7 @@
                                 <td width="50%" style="padding: 0 0 0 5px">
                                     <table align="left" cellspacing="0" cellpadding="0" border="0">
                                         <tr>
-                                            <td><img src="https://whoyouinto.com/emails/user/pciimg.png" alt="img">
-                                            </td>
+                                            <td><img src="pciimg.png" alt="img"></td>
                                             <td
                                                 style="color:#8C52FF; font-family: Arial; font-size:12px; font-style: normal; font-weight: 400; line-height: normal;">
                                                 SSl Encryption</td>

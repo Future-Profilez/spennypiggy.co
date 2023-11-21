@@ -10,8 +10,6 @@ import { useEffect } from 'react';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import Wishlist from '@/Pages/Auth/Wishlist';
 
- 
-
 export default function Wishlistbox({ itm, itemid, auth, IsloggedIn, fetchingcats, categories }) {
 
   const [itemUID, setItemUID] = useState(itemid);
@@ -29,14 +27,10 @@ export default function Wishlistbox({ itm, itemid, auth, IsloggedIn, fetchingcat
     }
   },[itemUID]);
 
-
   const getPercentage = (actual, paid) => { 
     const r = (paid/actual)*100
     return r.toFixed(0);
   }
-
-  console.log("itm", itm)
-
  
   return <>
       <div className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>

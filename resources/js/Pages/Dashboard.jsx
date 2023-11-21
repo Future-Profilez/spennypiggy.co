@@ -39,7 +39,6 @@ export default function Dashboard(props) {
 
     
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
-    console.log("IsloggedIn", IsloggedIn);
 
     const isvalid = () => { 
         if(IsloggedIn){

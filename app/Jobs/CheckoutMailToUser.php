@@ -3,11 +3,6 @@
 namespace App\Jobs;
 
 use App\EmailService;
-use App\Models\AppService;
-use App\Models\AutoMessage;
-use App\Models\Follower;
-use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -15,21 +10,12 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-class CheckoutUser implements ShouldQueue
+class CheckoutMailToUser implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /**
-     * New Registered User
-     * @var \App\Models\User
-     */
     public $payment;
 
-    /**
-     * Is via Social
-     * @var bool
-     */
-    public $anon;
 
     /**
      * Create a new job instance.
@@ -38,10 +24,9 @@ class CheckoutUser implements ShouldQueue
      * @param bool $social = false
      * @return void
      */
-    public function __construct($payment, $anon)
+    public function __construct($payment)
     {
         $this->payment = $payment;
-        $this->anon = $anon;
     }
 
     /**
@@ -52,6 +37,6 @@ class CheckoutUser implements ShouldQueue
     public function handle()
     {
 
-        EmailService::checkOutUser($this->payment, $this->anon);
+        EmailService::checkOutToUser($this->payment);
     }
 }

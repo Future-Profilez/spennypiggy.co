@@ -280,7 +280,7 @@ class WishitemController extends Controller
                     $stripe_client = $stripe->products->create([
                         'name' => 'anonymous',
                         'images' => [$wishitem->perma_link],
-                        "default_price_data" => ["currency" => "usd", "unit_amount_decimal" => $createpriceid],
+                        "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid],
                     ]);
                     $priceid = $stripe_client->default_price;
                 } else {
