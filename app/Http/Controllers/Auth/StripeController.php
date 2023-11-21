@@ -68,7 +68,7 @@ class StripeController extends Controller
 
             try {
                 $payload = [
-                    "country" => $country,
+                    "country" => strtoupper($country),
                     "type" => "express",
                     'email' => $user->email,
                     'capabilities' => [
@@ -150,7 +150,7 @@ class StripeController extends Controller
         try {
             $stripe = StripeControl::getLoginLink(Auth::user()->account_id);
             return Inertia::location($stripe->url);
-        } catch (Exception $e){
+        } catch (Exception $e) {
             return back()->with("error", $e->getMessage());
         }
     }
