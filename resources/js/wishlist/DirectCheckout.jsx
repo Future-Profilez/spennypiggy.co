@@ -1,15 +1,15 @@
-import { useAlerts } from '@/Components/Alerts';
-import LoaderButton from '@/Components/LoaderButton';
-import axios from 'axios';
-import { useState } from 'react';
+import { useAlerts } from "@/Components/Alerts";
+import LoaderButton from "@/Components/LoaderButton";
+import axios from "axios";
+import { useState } from "react";
 
-export default function DirectCheckout({ item }) {
-
+export default function DirectCheckout({ item, amount }) {
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [loading, setLoading] = useState(false);
-    const [quantity, setquantity]  = useState(1);
+    const [quantity, setquantity] = useState(1);
 
-    console.log("itemsss", item)
+    console.log("itemsss", item);
+    console.log("amount", amount);
     const checkout = (e) => {
         setLoading(true);
         // axios.get(`/anonymous-create-checkout-session/${item.price_id || ''}/${quantity}`).then(resp => {
@@ -20,10 +20,19 @@ export default function DirectCheckout({ item }) {
         //     console.error("error", _err);
         //     setLoading(false);
         //   })
-        window.location.href = `/anonymous-create-checkout-session/${item.price_id || ''}/${quantity}`;
+        // window.location.href = `/anonymous-create-checkout-session/${
+        //     item.price_id || ""
+        // }/${quantity}`;
+        window.location.href = `/anonymous-create-checkout-session/${
+            item.id || ""
+        }/${amount || ""}`;
     };
 
-  return <>
-      <button className='btn-pink lg w-100' onClick={checkout} >Pay</button> 
-  </>
+    return (
+        <>
+            <button className="btn-pink lg w-100" onClick={checkout}>
+                Pay
+            </button>
+        </>
+    );
 }
