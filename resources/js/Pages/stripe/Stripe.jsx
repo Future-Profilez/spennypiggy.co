@@ -1,15 +1,14 @@
 import { useAlerts } from '@/Components/Alerts';
-import Authenticated from '@/Layouts/AuthenticatedLayout'
+import Authenticated from '@/Layouts/AuthenticatedLayout';
 import Countries from '@/includes/Countries';
-import { useForm, Link } from '@inertiajs/react'
-import React from 'react'
+import { useForm, Link } from '@inertiajs/react';
+import React from 'react';
 import { useState } from 'react';
 import { useRef } from 'react';
 
 export default function Stripe(props) {
-
-    const { auth, user } = props;
     
+    const { auth, user } = props;
     const checkRef = useRef();
     const{errorAlert} = useAlerts();
     const {data, setData, get, post, processing, errors, reset} = useForm({
@@ -30,15 +29,18 @@ export default function Stripe(props) {
     }
 
     const checkTerms = () => {
+        if(!country){
+            errorAlert("Please choose your country.");
+            return false;
+        }
         if(checkRef.current.checked){
-            window.location.href = route("stripe.connect", {step:"init"});
+            window.location.href = route("stripe.connect", {step:"init", country:country});
             return true;
         }
         errorAlert("Please check accept terms & conditions checkbox");
         checkRef.current.focus();
         return false;
     }
-    console.log("props stripe", props)
 
     return (
         <Authenticated auth={auth.user} user={user} >

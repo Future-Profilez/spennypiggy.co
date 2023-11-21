@@ -45,7 +45,7 @@ export default function Dashboard(props) {
         <Guest
             auth={auth.user}
             user={user} >
-            <Head title="Dashboard" />
+            <Head title={user && user.name} />
             <div className='wishlistPage blackbg pt-8 pb-14 '>
                 <div className='containerbox'>
                     <div className='wishbanner d-lg-block d-none'>
