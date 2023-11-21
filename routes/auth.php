@@ -91,7 +91,7 @@ Route::middleware('auth')->group(function () {
     Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item');
 
     /*update wishitems*/
-    Route::post('update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
+    Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
     Route::get('/create-checkout-session/{owner_id}', [StripeController::class, 'createCheckout'])->name('create.checkout');
     Route::get('/sucess-checkout/{id}', [StripeController::class, 'successCheckout'])->name('checkout.success');
     Route::get('cancel-checkout/{id}', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel');
@@ -100,6 +100,7 @@ Route::middleware('auth')->group(function () {
         Route::get("authorize", [StripeController::class, "index"])->name("index");
         Route::match(["get", "post"], "/connect-{step}/{country}", [StripeController::class, "initConnect"])->name("connect");
         Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
+        Route::post("/login", [StripeController::class, "loginToStripe"])->name("login");
     });
 
     Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');

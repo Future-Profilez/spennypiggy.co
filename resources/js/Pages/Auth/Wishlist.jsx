@@ -12,9 +12,15 @@ import Popup from "@/Components/Popup";
 import { router } from "@inertiajs/react";
 
 export default function Wishlist(props) {
-    const { categories, auth, fetchingcats, action } = props;
+
+    const { categories, auth, fetchingcats, item, editpop } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
+
+    const [clear, setClear] = useState();
+    const [close, setClose] = useState();
+    const [repeat, setRepeat] = useState(false);
+    const [thumbnail, setThumbnail] = useState("");
 
 
     const [adding, setAdding] = useState(false);
@@ -46,11 +52,6 @@ export default function Wishlist(props) {
         );
     };
 
-    const [clear, setClear] = useState();
-    const [close, setClose] = useState();
-    const [repeat, setRepeat] = useState(false);
-    const [thumbnail, setThumbnail] = useState("");
-
     const { data, setData, post, processing, errors, reset } = useForm({
         wishname: "",
         price: "",
@@ -61,6 +62,19 @@ export default function Wishlist(props) {
         repeat_purchase: 0,
         category: [],
     });
+
+    useEffect(()=>{ 
+        
+    // if(item){ 
+    //     setData("wishname", item.wishname);
+    //     setData("price", item && item.price);
+    //     setData("item_url",item && item.item_url);
+    //     setData("subscription",item && item.subscription);
+    //     setData("subscription_period",item && item.subscription_period);
+    //     setData("category",item && item.category);
+    // }
+    console.log("item",item);
+    }, [item && item.uuid]);
 
     const setSubs = (e) => {
         setData("subscription", e);
@@ -101,35 +115,55 @@ export default function Wishlist(props) {
 
     const createWishList = (e) => {
         e.preventDefault();
-        post(route("save_wish_item"), {
-            preserveScroll: true,
-            onSuccess: (resp) => {
-                reset();
-                successAlert(resp.props.flash?.success || "Added");
-                setClose(false);
-                setClear(new Date());
-                setTimeout(() => {
-                    setClose();
-                }, 100);
-                fetchingcats('all');
-            },
-            onError: (_err) => {
-                console.error(_err);
-                errorsHandling(_err);
-                errorAlert(resp.props.flash?.success || "Added");
-            },
-        });
+        if(editpop ){
+            post(route(`update_wish_item`, [item && item.uuid]), {
+                preserveScroll: true,
+                onSuccess: (resp) => {
+                    reset();
+                    successAlert(resp.props.flash?.success || "Added");
+                    setClose(false);
+                    setClear(new Date());
+                    setTimeout(() => {
+                        setClose();
+                    }, 100);
+                    fetchingcats('all');
+                },
+                onError: (_err) => {
+                    console.error(_err);
+                    errorsHandling(_err);
+                    errorAlert(resp.props.flash?.success || "Added");
+                },
+            });
+            
+        } else { 
+            post(route("save_wish_item"), {
+                preserveScroll: true,
+                onSuccess: (resp) => {
+                    reset();
+                    successAlert(resp.props.flash?.success || "Added");
+                    setClose(false);
+                    setClear(new Date());
+                    setTimeout(() => {
+                        setClose();
+                    }, 100);
+                    fetchingcats('all');
+                },
+                onError: (_err) => {
+                    console.error(_err);
+                    errorsHandling(_err);
+                    errorAlert(resp.props.flash?.success || "Added");
+                },
+            });
+        }
     };
 
     return (
-        <div>
-            <Popup action={action} modalclass='pinkmodal' size='md'
-                action={close}
-                classes="btn-pink lg px-4"
-                text="+ Add wish" >
+            <Popup modalclass='pinkmodal' size='md' action={close}
+                classes={`${editpop ? "editpop"  : 'btn-pink lg px-4'}`}
+                text={`${editpop ? ""  : '+ Add wish'}`} >
                 <div className="editprofileModal  wishlistModal ">
                     <div className="editprofileModalInner  ">
-                        <h2 className="font-GillSans pt-4 px-3">Add A Wish</h2>
+                        <h2 className="font-GillSans pt-4 px-3">Add A Wish </h2>
                         <Tabs
                             defaultActiveKey="1"
                             id="uncontrolled-tab-example"
@@ -145,9 +179,9 @@ export default function Wishlist(props) {
                                                 <input
                                                     id="wishname"
                                                     name="wishname"
-                                                    type="text"
+                                                    type="text"  
                                                     placeholder="Eg. Buy me a coffee"
-                                                    value={data.wishname}
+                                                    value={data.wishname || item && item.wishname}
                                                     className="form-input px-2 py-2 border w-full rounded-md"
                                                     autoComplete="name"
                                                     onChange={(e) => setData( "wishname",e.target.value )}
@@ -161,7 +195,7 @@ export default function Wishlist(props) {
                                                     type="number"
                                                     name="price"
                                                     placeholder="eg. 50"
-                                                    value={data.price}
+                                                    value={data.price || item && item.price }
                                                     step={`0.01`}
                                                     className="form-input px-2 py-2 border w-full rounded-md"
                                                     autoComplete="price"
@@ -182,7 +216,7 @@ export default function Wishlist(props) {
                                                     type="text"
                                                     placeholder="URL"
                                                     name="item_url"
-                                                    value={data.item_url}
+                                                    value={data.item_url || item && item.item_url}
                                                     className="form-input px-2 py-2 border w-full rounded-md"
                                                     autoComplete="item_url"
                                                     onChange={(e) =>
@@ -199,18 +233,14 @@ export default function Wishlist(props) {
                                                 </label>
 
                                                 <div className="default-wish-img mb-1">
-                                                    <img
-                                                        src={uploadedimg}
+                                                    <img src={item && item.perma_link || uploadedimg}
                                                         className="img-fluid"
                                                     />
                                                 </div>
-
                                                 <GlobalUploader
                                                     clear={clear}
                                                     sendFile={getFileUID}
-                                                    options={
-                                                        st.wishitemUploader
-                                                    }
+                                                    options={st.wishitemUploader}
                                                 />
                                             </li>
                                         </ul>
@@ -228,16 +258,12 @@ export default function Wishlist(props) {
                                                             <div className="repeatpurchase text-start">
                                                                 <label for="allow">
                                                                     <input
-                                                                        checked={
-                                                                            repeat
-                                                                        }
+                                                                        checked={repeat}
                                                                         type="checkbox"
                                                                         id="allow"
                                                                         name="repeat_purchase"
-                                                                        onChange={
-                                                                            rpValue
-                                                                        }
-                                                                    />{" "}
+                                                                        onChange={rpValue}
+                                                                    /> 
                                                                     Allow Repeat
                                                                     Purchases
                                                                 </label>
@@ -465,7 +491,6 @@ export default function Wishlist(props) {
                     </div>
                 </div>
             </Popup>
-        </div>
     );
 }
  

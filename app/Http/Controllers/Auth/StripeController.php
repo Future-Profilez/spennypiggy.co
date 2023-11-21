@@ -139,6 +139,22 @@ class StripeController extends Controller
         }
     }
 
+    /**
+     * Login To Stripe Express Account Dashboard
+     *
+     * @param Request $request
+     * @return Response
+     */
+    public function loginToStripe(Request $request)
+    {
+        try {
+            $stripe = StripeControl::getLoginLink(Auth::user()->account_id);
+            return Inertia::location($stripe->url);
+        } catch (Exception $e){
+            return back()->with("error", $e->getMessage());
+        }
+    }
+
     /* create checkout */
     public function createCheckout($owner_id)
     {
