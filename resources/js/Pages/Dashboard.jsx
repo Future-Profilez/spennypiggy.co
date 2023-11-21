@@ -98,7 +98,6 @@ export default function Dashboard(props) {
                                                 </select>
                                             : ''}
                                         </div>
-                                         
                                         {IsloggedIn ? <Wishlist fetchingcats={fetchingcats} categories={categories} /> : ""}
                                     
                                     </div>
