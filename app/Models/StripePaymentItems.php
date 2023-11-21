@@ -25,7 +25,7 @@ class StripePaymentItems extends Model
 
     public function wish()
     {
-        return $this->belongsTo(WishIte::class, 'wish_item_id');
+        return $this->belongsTo(WishItem::class, 'wish_item_id');
     }
 
     public function payment()
