@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import closeblacksm from '../../../assets/img/closeblacksm.png';
-import { Link } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
 import Popup from '@/Components/Popup';
 import UpdateProfileInformation from '../Profile/Partials/UpdateProfileInformationForm';
@@ -13,6 +13,7 @@ export default function Accountsetting(props) {
     const {auth, user} = props;
     return (
         <Authenticated user={user}  auth={auth.user} >
+            <Head title={"My Account"} />
             <div className='blackbg py-2 pb-md-5'>
                 <div className='accountsetting mx-auto border-mint whbg shadow-mint rounded-3xl mb-4 mb-md-5'>
                     <div className='loginheadbox pinkbg'>

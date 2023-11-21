@@ -133,4 +133,9 @@ Route::get('/how-it-works', function () {
     return Inertia::render('howitworks/Works');
 })->name("how-it-works");
 
+
+Route::get('/terms-and-conditions', function () {
+    return Inertia::render('Terms');
+})->name("terms-and-conditions");
+
 Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
