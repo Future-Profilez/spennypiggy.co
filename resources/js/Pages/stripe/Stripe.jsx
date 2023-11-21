@@ -33,7 +33,7 @@ export default function Stripe(props) {
             errorAlert("Please choose your country.");
             return false;
         }
-        if(checkRef.current.checked){
+        if(checkRef.current.checked){ 
             window.location.href = route("stripe.connect", {step:"init", country:country});
             return true;
         }

@@ -230,29 +230,8 @@ letter-spacing:-0.63px;margin:0 0 6px;}
 .termselect label input{display:inline-block;vertical-align:middle;margin:-1px 6px 0 0;}
 .accountsetting{max-width:675px;width:96%;}
 .accsettingList ul li{margin:0 0 10px;border-radius:10px;border:2px solid var(--black);background:var(--white);box-shadow:3px 3px 0px 0px var(--black);}
-.accsettingList ul li a, .accsettingList ul li button, .notification {
-  position: relative;
-  display: flex;
-  width: 100% !important;
-  padding: 15px !important;
-  padding-right: 40px !important;
-  align-items: center;
-  align-content: center;
-  justify-content: space-between;
-  color: #1E1E1E !important;
-  font-family: var(--font-CeraGRBold);
-  font-size: 18px;
-  font-style: normal;
-  letter-spacing: -0.36px;
-  line-height: 27px;
-
-}
-
-.accsettingList ul li button:hover , .accsettingList ul li button:focus {
-  background: transparent !important;
-}
-
-
+.accsettingList ul li a,.accsettingList ul li button,.notification{position:relative;display:flex;width:100% !important;padding:15px !important;padding-right:40px !important;align-items:center;align-content:center;justify-content:space-between;color:#1E1E1E !important;font-family:var(--font-CeraGRBold);font-size:18px;font-style:normal;letter-spacing:-0.36px;line-height:27px;}
+.accsettingList ul li button:hover,.accsettingList ul li button:focus{background:transparent !important;}
 .accsettingList ul li a:after,.accsettingList ul li button:after,.notification:after{content:'';position:absolute;right:23px;top:37%;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:7px solid var(--black);}
 .switch{position:relative;display:inline-block;width:60px;height:16px;}
 .switch input{opacity:0;width:0;height:0;}
@@ -292,27 +271,18 @@ ul.socialmedia a img{width:35px;height:35px;}
 .updateavatar.modal .modal-content{margin:30px;}
 .updateavatar.modal{background:rgb(0 0 0 / 52%);}
 .userProfile{position:sticky;top:20px;}
-
-
-.wishlistcntbox  button.editpop {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: calc(100% - 40px);
-  border-radius: 20px;
-  opacity: 0;
-  z-index: 1;
-}
-
-.pageheight { 
-  min-height: 100vh;
-  display: flex; align-items: center; justify-content: center;
-}
-.headingsm { 
-  font-size:20px;
-  line-height: 29px;
-}
+.wishlistcntbox button.editpop{position:absolute;top:0;left:0;width:100%;height:calc(100% - 40px);border-radius:20px;opacity:0;z-index:1;}
+.pageheight{min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.headingsm{font-size:20px;line-height:29px;}
+.static-page{color:#fff;}
+.static-page p,.static-page li{margin-bottom:10px;color:#acacac;}
+.static-page h2{font-size:18px !important;margin-top:30px;margin-bottom:10px;}
+.static-page h1{font-size:26px;margin-bottom:12px;}
+/* static page */
+.static-page{color:#fff;}
+.static-page p,.static-page li, .static-page h3 { font-size: 17px; margin-bottom:13px;color:#acacac;}
+.static-page h2{ font-size:22px !important;margin-top:30px;margin-bottom:13px;}
+.static-page h1{font-size:27px;margin-bottom:13px;}
 /* Responsive */
 @media(max-width:1500px){.loveboxes{padding:0 20px;}
 .loveboxes img{max-width:160px;}
@@ -323,13 +293,11 @@ ul.socialmedia a img{width:35px;height:35px;}
 }
 @media(max-width:1240px){.containerbox{max-width:1140px;}
 .finish .btn-pink-lg{width:100%;}
- 
 .menuList ul li a{font-size:4vh;}
 }
 @media(max-width:1199px){.containerbox{max-width:970px;}
 }
 @media(max-width:1139px){.containerbox{max-width:960px;}
-
 .menuList{padding:25px 100px 25px 50px;}
 .userManageHead .btn-pink-md{width:230px;}
 .finish{padding:20px;border-radius:10px;}
@@ -345,8 +313,7 @@ ul.socialmedia a img{width:35px;height:35px;}
 */
 .loginPage h2.headingLg{font-size:50px;line-height:60px;}
 }
-@media(max-width:991px){
-.userPr{width:-moz-fit-content !important;width:fit-content !important;margin:auto;margin-top:-78px;}
+@media(max-width:991px){.userPr{width:-moz-fit-content !important;width:fit-content !important;margin:auto;margin-top:-78px;}
 .userphoto{margin:auto !important;padding-bottom:12px;margin-top:-30px;}
 .containerbox{max-width:740px;}
 .MegaMenu{flex-wrap:wrap;align-items:flex-start;align-content:flex-start;}
@@ -367,7 +334,7 @@ button.editProfile{padding:10px 10px;font-size:18px;}
 .addsocial ul li a svg{width:14px;height:14px;vertical-align:middle;}
 select#country{width:150px;padding:10px 10px;font-size:18px;}
 .wishlistcntbox{border-radius:10px!important;}
-.wishlistdetial{padding:16px 10px 10px;}
+.wishlistdetial{padding:15px;}
 .wishlistdetial h3{font-size:15px;}
 .wishlistPage{padding-top:10px;}
 .userManageHead button.btn-pink{padding:13px 10px;}

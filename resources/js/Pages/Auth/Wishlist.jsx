@@ -16,13 +16,11 @@ export default function Wishlist(props) {
     const { categories, auth, fetchingcats, item, editpop } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
-
+    const [defaultKey, setDefaultKey] = useState("2");
     const [clear, setClear] = useState();
     const [close, setClose] = useState();
     const [repeat, setRepeat] = useState(false);
     const [thumbnail, setThumbnail] = useState("");
-
-
     const [adding, setAdding] = useState(false);
     const AddCategory = async () => {
         const value = inputRef.current.value;
@@ -64,15 +62,9 @@ export default function Wishlist(props) {
     });
 
     useEffect(()=>{ 
-        
-    // if(item){ 
-    //     setData("wishname", item.wishname);
-    //     setData("price", item && item.price);
-    //     setData("item_url",item && item.item_url);
-    //     setData("subscription",item && item.subscription);
-    //     setData("subscription_period",item && item.subscription_period);
-    //     setData("category",item && item.category);
-    // }
+        if(item){ 
+            setData("subscription",item && item.subscription);
+        }
     console.log("item",item);
     }, [item && item.uuid]);
 
@@ -134,7 +126,6 @@ export default function Wishlist(props) {
                     errorAlert(resp.props.flash?.success || "Added");
                 },
             });
-            
         } else { 
             post(route("save_wish_item"), {
                 preserveScroll: true,
@@ -246,7 +237,7 @@ export default function Wishlist(props) {
                                         </ul>
 
                                         <div className="wishlistAccordian mt-3">
-                                            <Accordion defaultActiveKey="0">
+                                            <Accordion defaultActiveKey={defaultKey}>
                                                 <Accordion.Item eventKey="0">
                                                     <Accordion.Header
                                                         onClick={(e) =>setSubs(0)}>
@@ -288,8 +279,7 @@ export default function Wishlist(props) {
                                                     <Accordion.Header
                                                         onClick={(e) =>
                                                             setSubs(1)
-                                                        }
-                                                    >
+                                                        }>
                                                         <span className="activedote"></span>{" "}
                                                         Subscription
                                                     </Accordion.Header>
