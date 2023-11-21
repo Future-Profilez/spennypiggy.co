@@ -11,10 +11,16 @@ import { useState } from "react";
 export default function AddCart(props) {
     const { auth, action, uuid, item } = props;
     const [cartamount, setcartamount] = useState(null);
+
+    console.log("props addCard", props);
+
     const getPercentage = (actual, paid) => { 
-        const r = (paid/actual)*100
+        const r = (paid/actual)*100;
+        console.log("add percentage", r);
         return r.toFixed(0);
     }
+
+
 
     return (
         <Popup
