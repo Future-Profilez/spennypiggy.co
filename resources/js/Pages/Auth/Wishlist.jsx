@@ -19,7 +19,7 @@ export default function Wishlist(props) {
     const [defaultKey, setDefaultKey] = useState("2");
     const [clear, setClear] = useState();
     const [close, setClose] = useState();
-    const [repeat, setRepeat] = useState(false);
+    const [repeat, setRepeat] = useState(true);
     const [thumbnail, setThumbnail] = useState("");
     const [adding, setAdding] = useState(false);
     const AddCategory = async () => {
@@ -70,7 +70,7 @@ export default function Wishlist(props) {
 
     const setSubs = (e) => {
         setData("subscription", e);
-        setRepeat(false);
+        setRepeat(true);
     };
 
     const [checkboxes, setCheckboxes] = useState([]);
@@ -82,17 +82,14 @@ export default function Wishlist(props) {
             setCheckboxes(checkboxes.filter((item) => item !== value));
         }
     };
-
     const getFileUID = async (data) => {
         let ss = data?.uuid;
         setThumbnail(ss);
     };
-
     const rpValue = (e) => {
         setRepeat(e.target.checked);
         setData("repeat_purchase", e.target.checked ? 1 : 0);
     };
-
     const spValue = (e) => {
         setData("subscription_period", e.target.value);
     };
@@ -284,40 +281,7 @@ export default function Wishlist(props) {
                                                         Subscription
                                                     </Accordion.Header>
                                                     <Accordion.Body>
-                                                        <div className="singlewishbox">
-                                                            <div className="repeatpurchase text-start">
-                                                                <label for="allow">
-                                                                    <input
-                                                                        checked={
-                                                                            repeat
-                                                                        }
-                                                                        type="checkbox"
-                                                                        id="allow"
-                                                                        name="repeat_purchase"
-                                                                        onChange={
-                                                                            rpValue
-                                                                        }
-                                                                    />{" "}
-                                                                    Allow Repeat
-                                                                    Purchases
-                                                                </label>
-                                                            </div>
-                                                            <p className="text-start">
-                                                                Check if you
-                                                                want repeat
-                                                                purchases of
-                                                                this gift. If
-                                                                unchecked, the
-                                                                item will
-                                                                automatically
-                                                                delete from your
-                                                                wishlist after
-                                                                the first
-                                                                purchase.
-                                                            </p>
-                                                        </div>
-
-                                                        <div className="singlewishbox  mt-4  rounded ">
+                                                        <div className="singlewishbox rounded ">
                                                             <strong className="mb-2 text-start d-block ">
                                                                 Allows gifter to
                                                                 purchase this
