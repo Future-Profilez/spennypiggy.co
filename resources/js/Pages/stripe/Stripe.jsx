@@ -1,7 +1,7 @@
 import { useAlerts } from '@/Components/Alerts';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
 import Countries from '@/includes/Countries';
-import { useForm, Link } from '@inertiajs/react';
+import { useForm, Head } from '@inertiajs/react';
 import React from 'react';
 import { useState } from 'react';
 import { useRef } from 'react';
@@ -43,6 +43,7 @@ export default function Stripe(props) {
 
     return (
         <Authenticated auth={auth.user} user={user} >
+            <Head title={"Stripe"} />
             <div className='blackbg py-4 py-md-5  '>
                 <div className='stripbox mb-2  mb-md-4 mx-auto border-mint whbg shadow-mint rounded-3xl '>
 
