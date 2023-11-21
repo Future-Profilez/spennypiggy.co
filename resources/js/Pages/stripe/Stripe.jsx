@@ -17,7 +17,6 @@ export default function Stripe(props) {
 
     const [country, setCountry] = useState(null);
     const getCountry = (e) => {
-        console.log("e", e);
         setCountry(e);
     }
 

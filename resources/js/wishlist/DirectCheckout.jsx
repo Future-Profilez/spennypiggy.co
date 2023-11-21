@@ -7,9 +7,6 @@ export default function DirectCheckout({ item, amount }) {
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [loading, setLoading] = useState(false);
     const [quantity, setquantity] = useState(1);
-
-    console.log("itemsss", item);
-    console.log("amount", amount);
     const checkout = (e) => {
         setLoading(true);
         // axios.get(`/anonymous-create-checkout-session/${item.price_id || ''}/${quantity}`).then(resp => {
