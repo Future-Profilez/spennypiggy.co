@@ -43,7 +43,7 @@ export default function Stripe(props) {
 
     return (
         <Authenticated auth={auth.user} user={user} >
-            <Head title={"Stripe"} />
+            <Head title={""} />
             <div className='blackbg py-4 py-md-5  '>
                 <div className='stripbox mb-2  mb-md-4 mx-auto border-mint whbg shadow-mint rounded-3xl '>
 
@@ -51,7 +51,6 @@ export default function Stripe(props) {
                         <span className='mintbg'></span>
                         <span className='bluebg'></span>
                     </div>
-
                     {/* <form onSubmit={connectStripe}> */}
                     <div className='stripNote p-3 p-md-4'>
                         <h4 className='font-bold mb-2 text-uppercase'>The following rules are required by our payment processors
