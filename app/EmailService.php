@@ -42,10 +42,20 @@ class EmailService
         }
     }
 
-    public static function checkOutUser($data)
+    public static function checkOutUser($data, $anon)
     {
         try {
-            Mail::to($data['to'])
+
+            $emailData = [
+                'to' => $data->owner->email,
+                'name' => $data->owner->name,
+                'username' => $data->owner->username,
+                'phone' => $data->owner->phone,
+                'email' => $data->owner->email,
+                'uuid' => $data->owner->uuid,
+            ];
+
+            Mail::to($emailData['to'])
                 ->send(new Checkout($data));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());

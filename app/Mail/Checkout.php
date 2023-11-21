@@ -31,10 +31,8 @@ class Checkout extends Mailable
     public function build()
     {
         try {
-            $name = $this->data['name'];
-            $uuid = $this->data['uuid'];
             $subject = 'Checkout from spanny piggy platform.';
-            return $this->view('email.checkout')->with(['name' => $name, 'uuid' => $uuid])
+            return $this->view('email.checkout')
                 ->from('Noreply@whoyouinto.com', 'SPENNYPIGGY')
                 ->subject($subject);
         } catch (\Exception $e) {

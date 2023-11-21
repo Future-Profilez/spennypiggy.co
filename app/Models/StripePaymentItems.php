@@ -22,4 +22,17 @@ class StripePaymentItems extends Model
     {
         return $this->belongsTo(StripePaymentDetail::class, 'stripe_payment_id');
     }
+
+    public function wish()
+    {
+        return $this->belongsTo(WishIte::class, 'wish_item_id');
+    }
+
+    public function payment()
+    {
+        return $this->belongsTo(StripePaymentDetail::class, 'stripe_payment_id');
+    }
+
+
+
 }
