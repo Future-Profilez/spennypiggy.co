@@ -16,12 +16,13 @@ export default function Wishlist(props) {
     const { categories, auth, fetchingcats, item, editpop } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
-    const [defaultKey, setDefaultKey] = useState("2");
+    const [defaultKey, setDefaultKey] = useState(item && item.subscription ? item.subscription : 0);
     const [clear, setClear] = useState();
     const [close, setClose] = useState();
     const [repeat, setRepeat] = useState(true);
     const [thumbnail, setThumbnail] = useState("");
     const [adding, setAdding] = useState(false);
+
     const AddCategory = async () => {
         const value = inputRef.current.value;
         setAdding(true);
@@ -51,21 +52,18 @@ export default function Wishlist(props) {
     };
 
     const { data, setData, post, processing, errors, reset } = useForm({
-        wishname: "",
-        price: "",
-        item_url: null,
-        thumbnail: "",
-        subscription: 0,
-        subscription_period: "daily",
-        repeat_purchase: 0,
-        category: [],
+        wishname: item && item.wishname ? item.wishname : "",
+        price: item && item.price ? item.price : "",
+        item_url: item && item.item_url ? item.item_url : "",
+        thumbnail: item && item.thumbnail ? item.thumbnail : "" ,
+        subscription: item && item.subscription ? item.subscription : "",
+        subscription_period: item && item.subscription_period ? item.subscription_period : "" ,
+        repeat_purchase: item && item.repeat_purchase ? item.repeat_purchase : 0,
+        category: item && item.category ? item.category : 0,
     });
+    const [period, setPeriod] = useState(data.subscription_period || item && item.subscription_period );
 
     useEffect(()=>{ 
-        if(item){ 
-            setData("subscription",item && item.subscription);
-        }
-    console.log("item",item);
     }, [item && item.uuid]);
 
     const setSubs = (e) => {
@@ -92,6 +90,7 @@ export default function Wishlist(props) {
     };
     const spValue = (e) => {
         setData("subscription_period", e.target.value);
+        setPeriod( e.target.value);
     };
 
     useEffect(() => {
@@ -169,7 +168,7 @@ export default function Wishlist(props) {
                                                     name="wishname"
                                                     type="text"  
                                                     placeholder="Eg. Buy me a coffee"
-                                                    value={data.wishname || item && item.wishname}
+                                                    value={data.wishname}
                                                     className="form-input px-2 py-2 border w-full rounded-md"
                                                     autoComplete="name"
                                                     onChange={(e) => setData( "wishname",e.target.value )}
@@ -235,7 +234,7 @@ export default function Wishlist(props) {
 
                                         <div className="wishlistAccordian mt-3">
                                             <Accordion defaultActiveKey={defaultKey}>
-                                                <Accordion.Item eventKey="0">
+                                                <Accordion.Item eventKey={0}>
                                                     <Accordion.Header
                                                         onClick={(e) =>setSubs(0)}>
                                                         <span className="activedote"></span>{" "}
@@ -272,7 +271,7 @@ export default function Wishlist(props) {
                                                         </div>
                                                     </Accordion.Body>
                                                 </Accordion.Item>
-                                                <Accordion.Item eventKey="1">
+                                                <Accordion.Item eventKey={1}>
                                                     <Accordion.Header
                                                         onClick={(e) =>
                                                             setSubs(1)
@@ -292,7 +291,7 @@ export default function Wishlist(props) {
                                                                 <label for="daily">
                                                                     <input
                                                                         checked={
-                                                                            data.subscription_period ==
+                                                                            period ==
                                                                             "daily"
                                                                         }
                                                                         type="radio"
@@ -312,7 +311,7 @@ export default function Wishlist(props) {
                                                                 <label for="weekly">
                                                                     <input
                                                                         checked={
-                                                                            data.subscription_period ==
+                                                                            period ==
                                                                             "weekly"
                                                                         }
                                                                         type="radio"
@@ -331,27 +330,20 @@ export default function Wishlist(props) {
                                                             <div className="repeatpurchase mt-2 text-start">
                                                                 <label for="monthly">
                                                                     <input
-                                                                        checked={
-                                                                            data.subscription_period ==
-                                                                            "monthly"
-                                                                        }
+                                                                        checked={period == "monthly"}
                                                                         type="radio"
                                                                         id="monthly"
-                                                                        value={
-                                                                            "monthly"
-                                                                        }
+                                                                        value={"monthly"}
                                                                         name="subscription_period"
-                                                                        onChange={
-                                                                            spValue
-                                                                        }
-                                                                    />{" "}
+                                                                        onChange={spValue}
+                                                                    />
                                                                     Monthly
                                                                 </label>
                                                             </div>
                                                         </div>
                                                     </Accordion.Body>
                                                 </Accordion.Item>
-                                                <Accordion.Item eventKey="2">
+                                                <Accordion.Item eventKey={2}>
                                                     <Accordion.Header
                                                         onClick={(e) =>
                                                             setSubs(2)
@@ -373,6 +365,16 @@ export default function Wishlist(props) {
                                         </div>
 
                                         <div className="publish text-start">
+                                        {editpop ? 
+                                        <LoaderButton
+                                            disabled={processing}
+                                            type="submit"
+                                            className="flex w-100 btn-pink lg mx-auto"
+                                            spinnerClassName="fill-red-600" >
+                                            {processing ? "Updating.." : "Update Wish"}
+                                        </LoaderButton>
+                                     : 
+                                        <>
                                             <strong>
                                                 Categorize this wish ( Optional
                                                 )
@@ -421,26 +423,23 @@ export default function Wishlist(props) {
                                                     {adding ? "Adding..":"Add"}
                                                 </div>
                                             </div>
-
-                                            {/* <button type='submit' className="editProfile flex w-12 max-w-xs mx-auto">{processing ? "Proccessing" : " Add Wish"}</button> */}
-
                                             <LoaderButton
                                                 disabled={processing}
                                                 type="submit"
                                                 className="flex w-100 btn-pink lg mx-auto"
-                                                spinnerClassName="fill-red-600"
-                                            >
-                                                {processing
-                                                    ? "Proccessing"
-                                                    : "Add Wish"}
+                                                spinnerClassName="fill-red-600" >
+                                                {processing ? "Proccessing" : "Add Wish"}
                                             </LoaderButton>
+                                            </> }
                                         </div>
+                                        
                                     </form>
                                 </div>
                             </Tab>
                             {/* <Tab eventKey="2" title="Prefill with URL">
-                            Tab content for Profile
-                        </Tab> */}
+                                    Tab content for Profile
+                                </Tab> 
+                            */}
                         </Tabs>
                     </div>
                 </div>

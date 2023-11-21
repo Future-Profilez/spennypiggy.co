@@ -66,7 +66,6 @@ export default function Dashboard(props) {
                                             <Link href={"/stripe"} className='btn-pink lg'>Finish Setup</Link>
                                         </div>
                                         }
-
                                             <div className='addsocial flex'>
                                                 <ul>
                                                     <li>
@@ -91,7 +90,7 @@ export default function Dashboard(props) {
                                     <div className='userManageHead flex items-center justify-between mb-8'>
                                         <div>
                                             {its && its.length ?
-                                                <select id="country" onChange={showCategory} name="country" autoComplete="country-name" className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6">
+                                                <select className='text-capitalize' id="country" onChange={showCategory} name="country" autoComplete="country-name" className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6">
                                                     <option value={'all'}>{'All'}</option>
                                                     {categories && categories.map((c, i) => {
                                                         return <option value={c.id} key={`cat-${c.category}`}>{c.category}</option>
