@@ -138,6 +138,22 @@ class StripeController extends Controller
         }
     }
 
+    /**
+     * Login To Stripe Express Account Dashboard
+     *
+     * @param Request $request
+     * @return Response
+     */
+    public function loginToStripe(Request $request)
+    {
+        try {
+            $stripe = StripeControl::getLoginLink(Auth::user()->account_id);
+            return Inertia::location($stripe->url);
+        } catch (Exception $e){
+            return back()->with("error", $e->getMessage());
+        }
+    }
+
     /* create checkout */
     public function createCheckout($owner_id)
     {
@@ -172,8 +188,8 @@ class StripeController extends Controller
             ]);
 
             $callbackData = $sessioncreate;
-            $tax = $callbackData->amount_subtotal / 1 + (env('TAX_PERCENTAGE') / 100);
-            $subtotal = $callbackData->amount_subtotal - $tax;
+            $subtotal = $callbackData->amount_total / (1 + (env('TAX_PERCENTAGE') / 100));
+            $taxnew = ($callbackData->amount_total) - ($subtotal);
 
             session()->forget('session_id');
             session(['session_id' => $callbackData->id]);
@@ -181,7 +197,7 @@ class StripeController extends Controller
                 'session_id' => $callbackData->id,
                 'amount_subtotal' => $subtotal,
                 'amount_total' => $callbackData->amount_total,
-                'tax' => $tax,
+                'tax' => $taxnew,
                 'currency' => $callbackData->currency,
                 'payment_method_config_detail_id' => optional($callbackData->payment_method_configuration_details)->id,
                 'payment_method_type' => optional($callbackData->payment_method_types)[0],
@@ -193,13 +209,6 @@ class StripeController extends Controller
                 'updated_at' => Carbon::now(),
             ]);
             $stripeid->refresh();
-
-            $owner = User::where('id', $owner_id)->first();
-
-            //send email
-            CheckoutUser::dispatch($user);
-            CheckoutUser::dispatch($owner);
-
 
             return Inertia::location($sessioncreate->url);
         } catch (\Throwable $th) {
@@ -264,14 +273,10 @@ class StripeController extends Controller
             ]);
         }
 
-        //send email to buyer
-        // $user = User::whereId(Auth::id())->first();
-        // SaveWishlist::dispatch($user);
-
-
-        //send email to sender
-        // $user = User::whereId($owner_id)->first();
-        // SaveWishlist::dispatch($user);
+        $owner = User::where('id', $owner_id)->first();
+        //send email
+        CheckoutUser::dispatch($user);
+        CheckoutUser::dispatch($owner);
 
         return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
     }
