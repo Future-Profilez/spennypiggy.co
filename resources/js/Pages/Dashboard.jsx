@@ -21,6 +21,8 @@ export default function Dashboard(props) {
     const [its, setIts] = useState(items);
     const [loading, setLoading] = useState(false);
 
+    console.log("props dashboard", props);
+
     const fetchingcats = (e) => {
         setLoading(true);
         axios.get(`${user.username}/${e}`).then(resp => {
