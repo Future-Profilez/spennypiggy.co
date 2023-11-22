@@ -13,10 +13,11 @@ class Helpers
         $blockedEmojis = ['😈', '💩', '💬', '👅', '🍆', '🍌', '🌽', '🌶️', '🍑', '💎', '💦'];
         foreach ($blockedWords as $word) {
             if (stripos($request->getContent(), $word) !== false) {
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Some restricted words are not allowed.',
-                ]);
+                // return response()->json([
+                //     'status' => true,
+                //     'message' => 'Some restricted words are not allowed.',
+                // ]);
+                return true;
                 // return redirect()->route('home')->with('error', "These words are not allowed.");
             }
         }
@@ -24,10 +25,12 @@ class Helpers
         foreach ($blockedEmojis as $emoji) {
             $emojiPattern = preg_quote($emoji);
             if (preg_match("/$emojiPattern/u", $request->getContent())) {
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Some restricted emojis are not allowed.',
-                ]);
+                // return response()->json([
+                //     'status' => true,
+                //     'message' => 'Some restricted emojis are not allowed.',
+                // ]);
+                return true;
+
                 // return redirect()->route('home')->with('error', "These emojis are not allowed.");
             }
         }

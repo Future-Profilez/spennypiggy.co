@@ -48,31 +48,28 @@ class RegisteredUserController extends Controller
         ]);
 
         $checkdata = Helpers::checkBlockData($request);
-        \Log::info($checkdata);
-        die;
-        // print_r()die;
-        $user = User::create([
-            'name' => $request->name,
-            'email' => strtolower($request->email),
-            'username' => $request->username,
-            'password' => Hash::make($request->password),
-        ]);
-
-        // $user->refresh();
-        // CreateStripeCustomer::dispatch($user);
-        event(new Registered($user));
-
-        Auth::login($user);
-
-        //send email
-        WelcomeUser::dispatch($user);
-
-        $checkemailverify = User::whereId(Auth::id())->first();
-
-        if ($checkemailverify->email_verified_at != NUll) {
-            return redirect(route("user.show", [$user->username]))->with("success", "Registration successful.");
+        if ($checkdata ==  1) {
+            return redirect()->back()->with("error", "Some word and emojis are not allowed.");
         } else {
-            return redirect(route('verification.notice'));
+            $user = User::create([
+                'name' => $request->name,
+                'email' => strtolower($request->email),
+                'username' => $request->username,
+                'password' => Hash::make($request->password),
+            ]);
+            event(new Registered($user));
+            Auth::login($user);
+
+            //send email
+            WelcomeUser::dispatch($user);
+
+            $checkemailverify = User::whereId(Auth::id())->first();
+
+            if ($checkemailverify->email_verified_at != NUll) {
+                return redirect(route("user.show", [$user->username]))->with("success", "Registration successful.");
+            } else {
+                return redirect(route('verification.notice'));
+            }
         }
     }
 
