@@ -171,7 +171,7 @@ class AuthenticatedSessionController extends Controller
                 }
             } else {
                 // Username contains spaces, special characters, or capital letters
-                return response()->json(['status' => false, 'msg' => 'Username contains only lowercase letters, numbers, and underscores']);
+                return response()->json(['status' => false, 'msg' => 'Username should contains only lowercase letters, numbers, and underscores']);
             }
         } catch (\Throwable $th) {
             //throw $th;
