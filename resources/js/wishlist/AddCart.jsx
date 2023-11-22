@@ -99,7 +99,7 @@ export default function AddCart(props) {
                                 pending={item.price - item.fullfill_amount}
                                 crowd={item.subscription == 2}
                                 amount={cartamount} 
-                                isEqual={item.price =< item.fullfill_amount}
+                                isEqual={item.price <= item.fullfill_amount}
                                 is_cart={item?.is_cart}
                                 text={`Add to cart`}
                                 classes="btn-pink lg w-100 mb-3 font-CeraGR"
