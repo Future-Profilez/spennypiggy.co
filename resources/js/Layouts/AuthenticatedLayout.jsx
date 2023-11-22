@@ -13,6 +13,7 @@ export default function Authenticated({auth, user, header, children }) {
     const { flash } = usePage().props;
 
     useEffect(() => {
+        console.log("flash", flash);
         if (flash?.error) {
             errorAlert(flash.error);
         }
@@ -32,7 +33,7 @@ export default function Authenticated({auth, user, header, children }) {
         <Header auth={auth} user={user}  />
             <main>
                 {children}
-                <Toaster 
+                <Toaster
                 reverseOrder={false}
                 gutter={8}
                 toastOptions={{

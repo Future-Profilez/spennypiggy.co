@@ -77,7 +77,7 @@ class StripeController extends Controller
                         'card_payments' => ['requested' => true],
                         'transfers' => ['requested' => true],
                     ],
-                    'business_type' => 'individual',
+                    // 'business_type' => 'individual',
                     // 'business_profile' => ['url' => route("user.show", ["username" => $user->username])],
                 ];
 
@@ -87,7 +87,7 @@ class StripeController extends Controller
                 $user->country = $country;
                 $user->save();
             } catch (Exception $e) {
-                return redirect(route("stripe.index"))->with("error", "First invalid error");
+                return redirect(route("stripe.index"))->with("error", "Account creation error:" . $e->getMessage());
             }
         }
 
@@ -101,7 +101,8 @@ class StripeController extends Controller
                 "account" => $account->id,
                 "refresh_url" => route("stripe.connect", ["step" => "refresh", "country" => $user->country]),
                 "return_url"  => route("stripe.return"),
-                "type"        => "account_onboarding"
+                "type"        => "account_onboarding",
+                // "collect"   => 'currently_due'
             ]);
 
             return Inertia::location($link->url);
@@ -409,7 +410,7 @@ class StripeController extends Controller
             return redirect(route('user.show', [$getdata->user->username]))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
             //throw $th;
-        }   
+        }
     }
 
     public function anonymousCancelCheckout($id)

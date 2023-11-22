@@ -10,7 +10,7 @@ export default function Guest(props) {
     const {successAlert, errorAlert} = useAlerts();
     const {flash} = usePage().props;
     useEffect(() => {
-        // console.log("flash", flash);
+        console.log("flash", flash);
         if(flash?.error){
             errorAlert(flash.error);
         }
