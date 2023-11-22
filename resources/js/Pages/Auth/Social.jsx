@@ -31,10 +31,11 @@ export default function Social({links}) {
             onSuccess: (resp) => {
                 reset();
                 if(resp.props.flash?.success){
-                    successAlert(resp.props.flash?.success || "Added successfully.");
-                } else { 
+                    successAlert(resp.props.flash?.success || "Updated successfully.");
+                }
+                if(resp.props.flash?.error){
                     errorAlert(resp.props.flash?.error || "Something went wrong.")
-                }   
+                } 
                 setClose(false);
                 setTimeout(() => {
                     setClose();

@@ -7,12 +7,18 @@ import { Link } from "@inertiajs/react";
 import DirectCheckout from "./DirectCheckout";
 import ProgressBar from "react-bootstrap/ProgressBar";
 import { useState } from "react";
+import { useEffect } from "react";
 
 export default function AddCart(props) {
     const { auth, action, uuid, item, IsloggedIn } = props;
     const [cartamount, setcartamount] = useState(null);
-
-    console.log("props addCard", props);
+    const [close, setClose] = useState(action);
+    const ItemAdded = (e) => { 
+        setClose(false);
+    }
+    useEffect(()=>{
+        setClose(action);
+    },[action])
 
     const getPercentage = (actual, paid) => { 
         const r = (paid/actual)*100;
@@ -29,11 +35,13 @@ export default function AddCart(props) {
         }
     };
 
+    
+
 
     return (
         <Popup
             size="md"
-            action={action}
+            action={close}
             modalclass="pinkmodal"
             classes="d-none"
         >
@@ -95,7 +103,7 @@ export default function AddCart(props) {
                 <div className=" pb-2">
                     {auth ? (
                         <>
-                            <ToCart
+                            <ToCart ItemAdded={ItemAdded}
                                 pending={item.price - item.fullfill_amount}
                                 crowd={item.subscription == 2}
                                 amount={cartamount} 

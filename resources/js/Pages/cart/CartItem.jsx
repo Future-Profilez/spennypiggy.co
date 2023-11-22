@@ -22,7 +22,7 @@ export default function CartItem({data}) {
     }
 
   return (
-        <div className={`${itemRemoved === data.uuid ? 'd-none' : ''} border cartlist flex flex-wrap justify-between items-center content-between items-center border-purple shadow-purple rounded-xl mb-5 p-3 p-md-4`}>
+        <div className={`${itemRemoved === data.uuid ? 'd-nones' : ''} border cartlist flex flex-wrap justify-between items-center content-between items-center border-purple shadow-purple rounded-xl mb-5 p-3 p-md-4`}>
             <div className='prodcartbox items-center'>
                 <div className='productimg'>
                     <img src={data.url || cartproductimg} alt='img' />

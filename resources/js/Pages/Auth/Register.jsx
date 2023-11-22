@@ -55,12 +55,12 @@ export default function Register() {
     const [usernameValid, setUsernameValid] = useState(null);
     const checkUsername = (e) => { 
         axios.get(`/check-username/${e.target.value}`).then(resp => {
-            if(resp.data.status == true){
+            if(resp.data.status == false){
                 setUsernameValid(0);
-                setValidMsg(resp.data.msg)
-            }else { 
+                setValidMsg(resp.data.msg);
+            } else { 
                 setUsernameValid(1);
-                setValidMsg(resp.data.msg)
+                setValidMsg(resp.data.msg);
             }
         }).catch(_err => {
             console.error("error", _err);
@@ -77,10 +77,11 @@ export default function Register() {
             preserveScroll: true,
             onSuccess: (resp) => {
                 if(resp.props.flash?.success){
-                    successAlert(resp.props.flash?.success || "You have been registered successfully.");
-                } else { 
+                    successAlert(resp.props.flash?.success || "Signup successfully.");
+                }
+                if(resp.props.flash?.error){
                     errorAlert(resp.props.flash?.error || "Something went wrong.")
-                }   
+                }  
             },
             onError: (err) => {
                 reset("password");
@@ -176,8 +177,8 @@ export default function Register() {
                                     onChange={(e) => setData('username', e.target.value)}
                                     required 
                                     />
-                                    {data.username && usernameValid == 1 ? <p className='text-success'>Is valid</p> : ''}
-                                    {data.username && usernameValid == 0 ? <p className='text-danger' >{validMsg}</p> : ''}
+                                    {data.username && usernameValid == 1 ? <p className='text-success text-small username-text'>Username is available.</p> : ''}
+                                    {data.username && usernameValid == 0 ? <p className='text-danger text-small username-text' >{validMsg}</p> : ''}
                                 </li>
                                 <li>
                                     <label>Email</label>

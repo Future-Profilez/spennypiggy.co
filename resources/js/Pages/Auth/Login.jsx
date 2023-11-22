@@ -81,7 +81,7 @@ export default function Login({ status, canResetPassword }) {
 
                             <div className='rotate-btn text-center flex justify-center mt-10'>
                                 {/* <button type='submit' className='btn-pink lg'>Login</button> */}
-                                <LoaderButton disabled={processing} className='btn-pink lg2 lg w-80' spinnerClassName='fill-red-600'>{processing ? "Wait" : "Log in"}</LoaderButton>
+                                <LoaderButton disabled={processing} className='btn-pink lg2 lg w-80 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Wait" : "Log in"}</LoaderButton>
                             </div>
 
                             {/* {canResetPassword && (
