@@ -389,7 +389,7 @@ class StripeController extends Controller
             // return redirect()->back()->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
             //throw $th;
-        }
+        }   
     }
 
     public function anonymousCancelCheckout($id)
