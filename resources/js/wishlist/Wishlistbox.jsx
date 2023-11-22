@@ -42,7 +42,6 @@ export default function Wishlistbox(props) {
     }
   };
   
-
   return <>
       <div className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
         {IsloggedIn ?   
