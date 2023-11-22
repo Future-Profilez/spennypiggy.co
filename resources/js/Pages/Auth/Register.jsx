@@ -36,6 +36,10 @@ export default function Register() {
         password_confirmation: '',
     });
 
+    useEffect(()=>{ 
+        console.log("data",data)
+    },[data])
+
 
     useEffect(() => {
         return () => {
@@ -53,14 +57,18 @@ export default function Register() {
 
     const submit = (e) => {
         e.preventDefault();
-        if(checkRef.current.checked){
+        if(!checkRef.current.checked){
             termsaccept();
             return false;
         }
         post(route('register'), {
             preserveScroll: true,
             onSuccess: (resp) => {
-                successAlert("You have been registered successfully.");
+                if(resp.props.flash?.success){
+                    successAlert(resp.props.flash?.success || "You have been registered successfully.");
+                } else { 
+                    errorAlert(resp.props.flash?.error || "Something went wrong.")
+                }   
             },
             onError: (err) => {
                 reset("password");

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\CreateStripeCustomer;
 use App\Models\User;
@@ -46,28 +47,36 @@ class RegisteredUserController extends Controller
             'username' => ['required', 'string', 'lowercase', 'max:20', 'unique:users,username'],
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => strtolower($request->email),
-            'username' => $request->username,
-            'password' => Hash::make($request->password),
-        ]);
+        $checkdata = Helpers::checkBlockData($request);
+        if ($checkdata == 1) {
 
-        // $user->refresh();
-        // CreateStripeCustomer::dispatch($user);
-        event(new Registered($user));
+            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive, 
+             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
 
-        Auth::login($user);
+            //  return redirect(route('register'))->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive, 
+            //  😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
+            //  die;
 
-        //send email
-        WelcomeUser::dispatch($user);
-
-        $checkemailverify = User::whereId(Auth::id())->first();
-
-        if ($checkemailverify->email_verified_at != NUll) {
-            return redirect(route("user.show", [$user->username]))->with("success", "Registration successful.");
         } else {
-            return redirect(route('verification.notice'));
+            $user = User::create([
+                'name' => $request->name,
+                'email' => strtolower($request->email),
+                'username' => $request->username,
+                'password' => Hash::make($request->password),
+            ]);
+            event(new Registered($user));
+            Auth::login($user);
+
+            //send email
+            WelcomeUser::dispatch($user);
+
+            $checkemailverify = User::whereId(Auth::id())->first();
+
+            if ($checkemailverify->email_verified_at != NUll) {
+                return redirect(route("user.show", [$user->username]))->with("success", "Registration successful.");
+            } else {
+                return redirect(route('verification.notice'));
+            }
         }
     }
 

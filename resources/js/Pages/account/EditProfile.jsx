@@ -46,7 +46,11 @@ export default function EditProfile({ user }) {
                 setTimeout(() => {
                     setClose();
                 }, 1000);
-                successAlert(resp.props.flash?.success || "Profile Updated.")
+                if(resp.props.flash?.success){
+                    successAlert(resp.props.flash?.success || "Updated successfully.");
+                } else { 
+                    errorAlert(resp.props.flash?.error || "Something went wrong.")
+                }  
             },
             onError: (_err) => {
                 console.error(`errors:`);

@@ -31,7 +31,7 @@ Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
 
-    Route::post('register', [RegisteredUserController::class, 'store'])->middleware('blockWordsAndEmojis');
+    Route::post('register', [RegisteredUserController::class, 'store']);
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
@@ -91,12 +91,12 @@ Route::middleware('auth', 'mustHaveToVerify')->group(function () {
     // $owner = Auth::user();
     // ['owner' => $user->id == $owner->id ? true : false// ]
 
-    Route::post('save_social_links', [SocialLinksController::class, 'saveSocialLinks'])->name('save_social_links')->middleware('blockWordsAndEmojis');
+    Route::post('save_social_links', [SocialLinksController::class, 'saveSocialLinks'])->name('save_social_links');
 
-    Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item')->middleware('blockWordsAndEmojis');
+    Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item');
 
     /*update wishitems */
-    Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item')->middleware('blockWordsAndEmojis');
+    Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
     Route::get('/create-checkout-session/{owner_id}', [StripeController::class, 'createCheckout'])->name('create.checkout');
     Route::get('/sucess-checkout/{id}', [StripeController::class, 'successCheckout'])->name('checkout.success');
     Route::get('cancel-checkout/{id}', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel');
@@ -108,9 +108,9 @@ Route::middleware('auth', 'mustHaveToVerify')->group(function () {
         Route::post("/login", [StripeController::class, "loginToStripe"])->name("login");
     });
 
-    Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile')->middleware('blockWordsAndEmojis');
+    Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
 
-    Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category')->middleware('blockWordsAndEmojis');
+    Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
 
     Route::get('/add-to-cart/{uuid}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
 

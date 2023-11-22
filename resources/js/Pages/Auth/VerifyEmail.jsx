@@ -3,21 +3,21 @@ import PrimaryButton from "@/Components/PrimaryButton";
 import { Head, Link, useForm } from "@inertiajs/react";
 import { useEffect } from "react";
 import { useState } from "react";
+import axios from "axios";
 
 export default function VerifyEmail({ status }) {
 
     const { get, processing } = useForm({});
     const submit = (e) => {
         e.preventDefault();
-        get(route("verification.email")), {
-            preserveScroll: true,
-            onSuccess: (resp) => {
-                console.log("resp",resp)
-            },
-            onError: (err) => {
-                console.log("err",err)
-            }
-        };
+        // setLoading(true);
+        axios.get(`verification.email`).then(resp => {
+            console.log("resp",resp)
+            // setLoading(false);
+        }).catch(_err => {
+            console.error("error", _err);
+            // setLoading(false);
+        });
     };
 
     // const [sent,setSent] = useState(0);

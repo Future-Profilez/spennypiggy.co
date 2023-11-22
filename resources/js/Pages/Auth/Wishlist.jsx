@@ -108,7 +108,11 @@ export default function Wishlist(props) {
                 preserveScroll: true,
                 onSuccess: (resp) => {
                     reset();
-                    successAlert(resp.props.flash?.success || "Added");
+                    if(resp.props.flash?.success){
+                        successAlert(resp.props.flash?.success || "Added successfully.");
+                    } else { 
+                        errorAlert(resp.props.flash?.error || "Something went wrong.")
+                    }   
                     setClose(false);
                     setClear(new Date());
                     setTimeout(() => {
@@ -127,7 +131,11 @@ export default function Wishlist(props) {
                 preserveScroll: true,
                 onSuccess: (resp) => {
                     reset();
-                    successAlert(resp.props.flash?.success || "Added");
+                    if(resp.props.flash?.success){
+                        successAlert(resp.props.flash?.success || "Added successfully.");
+                    } else { 
+                        errorAlert(resp.props.flash?.error || "Something went wrong.")
+                    }   
                     setClose(false);
                     setClear(new Date());
                     setTimeout(() => {
