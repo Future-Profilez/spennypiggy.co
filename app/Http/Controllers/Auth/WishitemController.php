@@ -67,7 +67,7 @@ class WishitemController extends Controller
 
 
         $taxamount = $request->price * env('TAX_PERCENTAGE') / 100;
-        $createpriceid = ceil($request->price) + $taxamount;
+        $createpriceid = ceil($request->price) + ceil($taxamount);
         $wish = WishItem::create([
             "user_id" => Auth::id(),
             'wishname' => $request->wishname,
