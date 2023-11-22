@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\User;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -51,22 +52,27 @@ class ProfileController extends Controller
 
         $user = User::where('id', Auth::id())->first();
 
-        $request->validate([
-            'name' => ['string', 'max:255'],
-            'username' => ['string', 'lowercase', 'max:20', Rule::unique('users')->ignore($user->id)],
-            'bio' => ['sometimes', 'max:255'],
-            'tags' => ['sometimes', 'max:255'],
-        ]);
+        $checkdata = Helpers::checkBlockData($request);
+        if ($checkdata == 1) {
+            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive,
+             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
+        } else {
+            $request->validate([
+                'name' => ['string', 'max:255'],
+                'username' => ['string', 'lowercase', 'max:20', Rule::unique('users')->ignore($user->id)],
+                'bio' => ['sometimes', 'max:255'],
+                'tags' => ['sometimes', 'max:255'],
+            ]);
+            $user->name = $request->name;
+            $user->username = $request->username;
+            $user->bio = $request->bio;
+            $user->avatar = $request->avatar;
+            $user->cover = $request->cover;
 
-        $user->name = $request->name;
-        $user->username = $request->username;
-        $user->bio = $request->bio;
-        $user->avatar = $request->avatar;
-        $user->cover = $request->cover;
-
-        $user->save();
-        $user->refresh();
-        return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
+            $user->save();
+            $user->refresh();
+            return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
+        }
     }
 
 

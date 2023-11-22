@@ -49,14 +49,8 @@ class RegisteredUserController extends Controller
 
         $checkdata = Helpers::checkBlockData($request);
         if ($checkdata == 1) {
-
-            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive, 
+            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive,
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
-
-            //  return redirect(route('register'))->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive, 
-            //  😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
-            //  die;
-
         } else {
             $user = User::create([
                 'name' => $request->name,
