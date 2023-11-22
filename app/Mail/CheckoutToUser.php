@@ -36,7 +36,7 @@ class CheckoutToUser extends Mailable
         try {
             $subject = 'You done a checkout from spanny piggy platform.';
             return $this->view('email.checkout-user')
-                ->from('Noreply@whoyouinto.com', 'SPENNYPIGGY')
+                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
                 ->subject($subject);
         } catch (\Exception $e) {
         }
