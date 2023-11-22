@@ -144,7 +144,8 @@ Route::get('/terms-and-conditions', function () {
     return Inertia::render('Terms');
 })->name("terms-and-conditions");
 
-Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
-
 /*check username exist*/
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
+
+Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
+

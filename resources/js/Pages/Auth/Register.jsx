@@ -6,6 +6,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import LoaderButton from '@/Components/LoaderButton';
 import toast from 'react-hot-toast';
 import { useRef } from 'react';
+import axios from 'axios';
 export default function Register() {
     const CheckCircleIcon = () => {
         return <><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path opacity="0.1" d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" fill="#000000"></path> <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#000000" stroke-width="2"></path> <path d="M9 12L10.6828 13.6828V13.6828C10.858 13.858 11.142 13.858 11.3172 13.6828V13.6828L15 10" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg></>
@@ -36,14 +37,10 @@ export default function Register() {
         password_confirmation: '',
     });
 
-    useEffect(()=>{ 
-        console.log("data",data)
-    },[data])
-
-
     useEffect(() => {
         return () => {
             reset('password', 'password_confirmation');
+            setmypass('');
         };
     }, []);
 
@@ -54,6 +51,21 @@ export default function Register() {
         return false;
     }
 
+    const [validMsg, setValidMsg] = useState('');
+    const [usernameValid, setUsernameValid] = useState(null);
+    const checkUsername = (e) => { 
+        axios.get(`/check-username/${e.target.value}`).then(resp => {
+            if(resp.data.status == true){
+                setUsernameValid(0);
+                setValidMsg(resp.data.msg)
+            }else { 
+                setUsernameValid(1);
+                setValidMsg(resp.data.msg)
+            }
+        }).catch(_err => {
+            console.error("error", _err);
+        });
+    }
 
     const submit = (e) => {
         e.preventDefault();
@@ -123,8 +135,6 @@ export default function Register() {
         }  
     } 
 
-
-
     return (
         <GuestLayout>
             <Head title="Register" />
@@ -158,7 +168,7 @@ export default function Register() {
                                 <li>
                                     <label>Username</label>
                                     <input id="username"
-                                    name="username"
+                                    name="username" onBlur={checkUsername}
                                     value={data.username}
                                     className="mt-1 block w-full"
                                     autoComplete="username"
@@ -166,6 +176,8 @@ export default function Register() {
                                     onChange={(e) => setData('username', e.target.value)}
                                     required 
                                     />
+                                    {data.username && usernameValid == 1 ? <p className='text-success'>Is valid</p> : ''}
+                                    {data.username && usernameValid == 0 ? <p className='text-danger' >{validMsg}</p> : ''}
                                 </li>
                                 <li>
                                     <label>Email</label>
@@ -183,11 +195,11 @@ export default function Register() {
                                 <li>
                                     <label>Password</label>
                                     <input  id="password"
-                                    type="password"
+                                    type="password"  
                                     name="password" 
                                     value={mypass}
                                     className="mt-1 block w-full"
-                                    autoComplete="new-password"
+                                    autoComplete="off"
                                     onChange={handlePassHints} required 
                                     />
                                     <InputError>{errors?.password || ''}</InputError>
@@ -200,7 +212,7 @@ export default function Register() {
                                         name="password_confirmation"
                                         value={data.password_confirmation}
                                         className="mt-1 block w-full"
-                                        autoComplete="new-password"
+                                        autoComplete="off"
                                         onChange={(e) => setData('password_confirmation', e.target.value)}
                                         required
                                     />

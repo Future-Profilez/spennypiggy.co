@@ -94,9 +94,9 @@ class RegisteredUserController extends Controller
      * @param Request $request
      * @return Response
      */
+
     public function checkUsername(Request $request)
     {
-
         $request->validate([
             "username" => [
                 "required",
