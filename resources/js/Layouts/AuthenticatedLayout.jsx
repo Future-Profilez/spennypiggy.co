@@ -6,7 +6,6 @@ import Header from '@/includes/Header';
 import Footer from '@/includes/Footer';
 
 export default function Authenticated({auth, user, header, children }) {
-
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const { successAlert, errorAlert } = useAlerts();
     const { flash } = usePage().props;
