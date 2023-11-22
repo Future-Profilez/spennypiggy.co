@@ -26,17 +26,6 @@ export default function Home({ auth, laravelVersion, user }) {
         window.addEventListener("resize", windowWidth);
     }, []);
 
-
-    // useEffect(() => {
-    //     if ("serviceWorker" in navigator) {
-    //         navigator.serviceWorker.register("/service-worker.js").then((registration) => {
-    //         }).catch((error) => {
-    //             console.log("Service Worker registration failed:", error);
-    //         });
-    //     }
-    //   },[]);
-    
-
     const msg = [
         {
           "id": 1,
@@ -208,10 +197,7 @@ export default function Home({ auth, laravelVersion, user }) {
                                 pagination={{ clickable: true }}
                                 modules={[Pagination]}
                                 slidesPerView={width < "1199" ? 1 : 3}
-                                onSlideChange={() =>
-                                    console.log("slide change")
-                                }
-                                onSwiper={(swiper) => console.log(swiper)}>
+                                >
                                 {msg && msg.map((m , i)=>{ 
                                     return <>
                                          <SwiperSlide>

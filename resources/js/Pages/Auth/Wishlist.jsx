@@ -12,12 +12,17 @@ import Popup from "@/Components/Popup";
 import { router } from "@inertiajs/react";
 
 export default function Wishlist(props) {
-    const { categories, auth, fetchingcats, action } = props;
+
+    const { categories, auth, fetchingcats, item, editpop } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
-
-
+    const [defaultKey, setDefaultKey] = useState(item && item.subscription ? item.subscription : 0);
+    const [clear, setClear] = useState();
+    const [close, setClose] = useState();
+    const [repeat, setRepeat] = useState(true);
+    const [thumbnail, setThumbnail] = useState("");
     const [adding, setAdding] = useState(false);
+
     const AddCategory = async () => {
         const value = inputRef.current.value;
         setAdding(true);
@@ -46,25 +51,24 @@ export default function Wishlist(props) {
         );
     };
 
-    const [clear, setClear] = useState();
-    const [close, setClose] = useState();
-    const [repeat, setRepeat] = useState(false);
-    const [thumbnail, setThumbnail] = useState("");
-
     const { data, setData, post, processing, errors, reset } = useForm({
-        wishname: "",
-        price: "",
-        item_url: null,
-        thumbnail: "",
-        subscription: 0,
-        subscription_period: "daily",
-        repeat_purchase: 0,
-        category: [],
+        wishname: item && item.wishname ? item.wishname : "",
+        price: item && item.price ? item.price : "",
+        item_url: item && item.item_url ? item.item_url : "",
+        thumbnail: item && item.thumbnail ? item.thumbnail : "" ,
+        subscription: item && item.subscription ? item.subscription : "",
+        subscription_period: item && item.subscription_period ? item.subscription_period : "" ,
+        repeat_purchase: item && item.repeat_purchase ? item.repeat_purchase : 0,
+        category: item && item.category ? item.category : 0,
     });
+    const [period, setPeriod] = useState(data.subscription_period || item && item.subscription_period );
+
+    useEffect(()=>{ 
+    }, [item && item.uuid]);
 
     const setSubs = (e) => {
         setData("subscription", e);
-        setRepeat(false);
+        setRepeat(true);
     };
 
     const [checkboxes, setCheckboxes] = useState([]);
@@ -76,19 +80,17 @@ export default function Wishlist(props) {
             setCheckboxes(checkboxes.filter((item) => item !== value));
         }
     };
-
     const getFileUID = async (data) => {
         let ss = data?.uuid;
         setThumbnail(ss);
     };
-
     const rpValue = (e) => {
         setRepeat(e.target.checked);
         setData("repeat_purchase", e.target.checked ? 1 : 0);
     };
-
     const spValue = (e) => {
         setData("subscription_period", e.target.value);
+        setPeriod( e.target.value);
     };
 
     useEffect(() => {
@@ -101,35 +103,54 @@ export default function Wishlist(props) {
 
     const createWishList = (e) => {
         e.preventDefault();
-        post(route("save_wish_item"), {
-            preserveScroll: true,
-            onSuccess: (resp) => {
-                reset();
-                successAlert(resp.props.flash?.success || "Added");
-                setClose(false);
-                setClear(new Date());
-                setTimeout(() => {
-                    setClose();
-                }, 100);
-                fetchingcats('all');
-            },
-            onError: (_err) => {
-                console.error(_err);
-                errorsHandling(_err);
-                errorAlert(resp.props.flash?.success || "Added");
-            },
-        });
+        if(editpop ){
+            post(route(`update_wish_item`, [item && item.uuid]), {
+                preserveScroll: true,
+                onSuccess: (resp) => {
+                    reset();
+                    successAlert(resp.props.flash?.success || "Added");
+                    setClose(false);
+                    setClear(new Date());
+                    setTimeout(() => {
+                        setClose();
+                    }, 100);
+                    fetchingcats('all');
+                },
+                onError: (_err) => {
+                    console.error(_err);
+                    errorsHandling(_err);
+                    errorAlert(resp.props.flash?.success || "Added");
+                },
+            });
+        } else { 
+            post(route("save_wish_item"), {
+                preserveScroll: true,
+                onSuccess: (resp) => {
+                    reset();
+                    successAlert(resp.props.flash?.success || "Added");
+                    setClose(false);
+                    setClear(new Date());
+                    setTimeout(() => {
+                        setClose();
+                    }, 100);
+                    fetchingcats('all');
+                },
+                onError: (_err) => {
+                    console.error(_err);
+                    errorsHandling(_err);
+                    errorAlert(resp.props.flash?.success || "Added");
+                },
+            });
+        }
     };
 
     return (
-        <div>
-            <Popup action={action} modalclass='pinkmodal' size='md'
-                action={close}
-                classes="btn-pink lg px-4"
-                text="+ Add wish" >
+            <Popup modalclass='pinkmodal' size='md' action={close}
+                classes={`${editpop ? "editpop"  : 'btn-pink lg px-4'}`}
+                text={`${editpop ? ""  : '+ Add wish'}`} >
                 <div className="editprofileModal  wishlistModal ">
                     <div className="editprofileModalInner  ">
-                        <h2 className="font-GillSans pt-4 px-3">Add A Wish</h2>
+                        <h2 className="font-GillSans pt-4 px-3">Add A Wish </h2>
                         <Tabs
                             defaultActiveKey="1"
                             id="uncontrolled-tab-example"
@@ -145,7 +166,7 @@ export default function Wishlist(props) {
                                                 <input
                                                     id="wishname"
                                                     name="wishname"
-                                                    type="text"
+                                                    type="text"  
                                                     placeholder="Eg. Buy me a coffee"
                                                     value={data.wishname}
                                                     className="form-input px-2 py-2 border w-full rounded-md"
@@ -161,7 +182,7 @@ export default function Wishlist(props) {
                                                     type="number"
                                                     name="price"
                                                     placeholder="eg. 50"
-                                                    value={data.price}
+                                                    value={data.price || item && item.price }
                                                     step={`0.01`}
                                                     className="form-input px-2 py-2 border w-full rounded-md"
                                                     autoComplete="price"
@@ -182,7 +203,7 @@ export default function Wishlist(props) {
                                                     type="text"
                                                     placeholder="URL"
                                                     name="item_url"
-                                                    value={data.item_url}
+                                                    value={data.item_url || item && item.item_url}
                                                     className="form-input px-2 py-2 border w-full rounded-md"
                                                     autoComplete="item_url"
                                                     onChange={(e) =>
@@ -199,25 +220,21 @@ export default function Wishlist(props) {
                                                 </label>
 
                                                 <div className="default-wish-img mb-1">
-                                                    <img
-                                                        src={uploadedimg}
+                                                    <img src={item && item.perma_link || uploadedimg}
                                                         className="img-fluid"
                                                     />
                                                 </div>
-
                                                 <GlobalUploader
                                                     clear={clear}
                                                     sendFile={getFileUID}
-                                                    options={
-                                                        st.wishitemUploader
-                                                    }
+                                                    options={st.wishitemUploader}
                                                 />
                                             </li>
                                         </ul>
 
                                         <div className="wishlistAccordian mt-3">
-                                            <Accordion defaultActiveKey="0">
-                                                <Accordion.Item eventKey="0">
+                                            <Accordion defaultActiveKey={defaultKey}>
+                                                <Accordion.Item eventKey={0}>
                                                     <Accordion.Header
                                                         onClick={(e) =>setSubs(0)}>
                                                         <span className="activedote"></span>{" "}
@@ -228,16 +245,12 @@ export default function Wishlist(props) {
                                                             <div className="repeatpurchase text-start">
                                                                 <label for="allow">
                                                                     <input
-                                                                        checked={
-                                                                            repeat
-                                                                        }
+                                                                        checked={repeat}
                                                                         type="checkbox"
                                                                         id="allow"
                                                                         name="repeat_purchase"
-                                                                        onChange={
-                                                                            rpValue
-                                                                        }
-                                                                    />{" "}
+                                                                        onChange={rpValue}
+                                                                    /> 
                                                                     Allow Repeat
                                                                     Purchases
                                                                 </label>
@@ -258,50 +271,16 @@ export default function Wishlist(props) {
                                                         </div>
                                                     </Accordion.Body>
                                                 </Accordion.Item>
-                                                <Accordion.Item eventKey="1">
+                                                <Accordion.Item eventKey={1}>
                                                     <Accordion.Header
                                                         onClick={(e) =>
                                                             setSubs(1)
-                                                        }
-                                                    >
+                                                        }>
                                                         <span className="activedote"></span>{" "}
                                                         Subscription
                                                     </Accordion.Header>
                                                     <Accordion.Body>
-                                                        <div className="singlewishbox">
-                                                            <div className="repeatpurchase text-start">
-                                                                <label for="allow">
-                                                                    <input
-                                                                        checked={
-                                                                            repeat
-                                                                        }
-                                                                        type="checkbox"
-                                                                        id="allow"
-                                                                        name="repeat_purchase"
-                                                                        onChange={
-                                                                            rpValue
-                                                                        }
-                                                                    />{" "}
-                                                                    Allow Repeat
-                                                                    Purchases
-                                                                </label>
-                                                            </div>
-                                                            <p className="text-start">
-                                                                Check if you
-                                                                want repeat
-                                                                purchases of
-                                                                this gift. If
-                                                                unchecked, the
-                                                                item will
-                                                                automatically
-                                                                delete from your
-                                                                wishlist after
-                                                                the first
-                                                                purchase.
-                                                            </p>
-                                                        </div>
-
-                                                        <div className="singlewishbox  mt-4  rounded ">
+                                                        <div className="singlewishbox rounded ">
                                                             <strong className="mb-2 text-start d-block ">
                                                                 Allows gifter to
                                                                 purchase this
@@ -312,7 +291,7 @@ export default function Wishlist(props) {
                                                                 <label for="daily">
                                                                     <input
                                                                         checked={
-                                                                            data.subscription_period ==
+                                                                            period ==
                                                                             "daily"
                                                                         }
                                                                         type="radio"
@@ -332,7 +311,7 @@ export default function Wishlist(props) {
                                                                 <label for="weekly">
                                                                     <input
                                                                         checked={
-                                                                            data.subscription_period ==
+                                                                            period ==
                                                                             "weekly"
                                                                         }
                                                                         type="radio"
@@ -351,27 +330,20 @@ export default function Wishlist(props) {
                                                             <div className="repeatpurchase mt-2 text-start">
                                                                 <label for="monthly">
                                                                     <input
-                                                                        checked={
-                                                                            data.subscription_period ==
-                                                                            "monthly"
-                                                                        }
+                                                                        checked={period == "monthly"}
                                                                         type="radio"
                                                                         id="monthly"
-                                                                        value={
-                                                                            "monthly"
-                                                                        }
+                                                                        value={"monthly"}
                                                                         name="subscription_period"
-                                                                        onChange={
-                                                                            spValue
-                                                                        }
-                                                                    />{" "}
+                                                                        onChange={spValue}
+                                                                    />
                                                                     Monthly
                                                                 </label>
                                                             </div>
                                                         </div>
                                                     </Accordion.Body>
                                                 </Accordion.Item>
-                                                <Accordion.Item eventKey="2">
+                                                <Accordion.Item eventKey={2}>
                                                     <Accordion.Header
                                                         onClick={(e) =>
                                                             setSubs(2)
@@ -393,6 +365,16 @@ export default function Wishlist(props) {
                                         </div>
 
                                         <div className="publish text-start">
+                                        {editpop ? 
+                                        <LoaderButton
+                                            disabled={processing}
+                                            type="submit"
+                                            className="flex w-100 btn-pink lg mx-auto"
+                                            spinnerClassName="fill-red-600" >
+                                            {processing ? "Updating.." : "Update Wish"}
+                                        </LoaderButton>
+                                     : 
+                                        <>
                                             <strong>
                                                 Categorize this wish ( Optional
                                                 )
@@ -441,31 +423,27 @@ export default function Wishlist(props) {
                                                     {adding ? "Adding..":"Add"}
                                                 </div>
                                             </div>
-
-                                            {/* <button type='submit' className="editProfile flex w-12 max-w-xs mx-auto">{processing ? "Proccessing" : " Add Wish"}</button> */}
-
                                             <LoaderButton
                                                 disabled={processing}
                                                 type="submit"
                                                 className="flex w-100 btn-pink lg mx-auto"
-                                                spinnerClassName="fill-red-600"
-                                            >
-                                                {processing
-                                                    ? "Proccessing"
-                                                    : "Add Wish"}
+                                                spinnerClassName="fill-red-600" >
+                                                {processing ? "Proccessing" : "Add Wish"}
                                             </LoaderButton>
+                                            </> }
                                         </div>
+                                        
                                     </form>
                                 </div>
                             </Tab>
                             {/* <Tab eventKey="2" title="Prefill with URL">
-                            Tab content for Profile
-                        </Tab> */}
+                                    Tab content for Profile
+                                </Tab> 
+                            */}
                         </Tabs>
                     </div>
                 </div>
             </Popup>
-        </div>
     );
 }
  

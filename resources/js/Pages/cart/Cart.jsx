@@ -3,15 +3,17 @@ import Authenticated from "@/Layouts/AuthenticatedLayout";
 import { useState } from "react";
 import UserCarts from "../cart/UserCarts";
 import Nocontent from "@/includes/Nocontent";
+import { Head } from "@inertiajs/react";
 
 export default function Cart(props) {
 
     const { auth, user } = props;
     const [cartsItems, setCartItems] = useState(props.carts);
-
+    console.log("props", props);
     return (
         <>
             <Authenticated auth={auth.user} user={user} >
+                <Head title={"My Cart"} />
                 <div className=" blackbg">
                     <div className="container pb-5 ">
                         <h2 className="text-bl font-GillSans pt-5 pt-3 pb-0 text-center text-2xl uppercase text-white">Cart</h2>

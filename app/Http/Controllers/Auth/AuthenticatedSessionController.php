@@ -62,6 +62,11 @@ class AuthenticatedSessionController extends Controller
     public function getUserProfile($username, $category = false)
     {
         $user = User::where('username', $username)->first();
+
+        if (!$user) {
+            return Inertia::render('NotFound');
+        }
+
         $slinks = [];
         $sociallinks = [];
         if (!empty($user)) {

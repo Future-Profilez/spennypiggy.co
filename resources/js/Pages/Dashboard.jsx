@@ -13,6 +13,7 @@ import Guest from '@/Layouts/GuestLayout';
 import Nocontent from '@/includes/Nocontent';
 import LoadingScreen from '@/includes/LoadingScreen';
 import { useEffect } from 'react';
+import PaymentDashboard from './stripe/PaymentDashboard';
 
 export default function Dashboard(props) {
 
@@ -20,7 +21,9 @@ export default function Dashboard(props) {
     const [its, setIts] = useState(items);
     const [loading, setLoading] = useState(false);
 
-    const fetchingcats = (e) => { 
+    console.log("props dashboard", props);
+
+    const fetchingcats = (e) => {
         setLoading(true);
         axios.get(`${user.username}/${e}`).then(resp => {
             setIts(resp.data.items)
@@ -36,15 +39,26 @@ export default function Dashboard(props) {
         fetchingcats(v);
     }
 
-    console.log("props", props)
-
+    
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
+
+    const isvalid = () => { 
+        if(IsloggedIn){
+            return true
+        }  
+        if(user?.stripe_details_submitted == 1){
+            return true
+        }
+        else {
+          return  false
+        }
+    }
 
     return (
         <Guest
             auth={auth.user}
             user={user} >
-            <Head title="Dashboard" />
+            <Head title={user && user.name} />
             <div className='wishlistPage blackbg pt-8 pb-14 '>
                 <div className='containerbox'>
                     <div className='wishbanner d-lg-block d-none'>
@@ -58,7 +72,8 @@ export default function Dashboard(props) {
                                     <div className='userProfileDate pt-0'>
                                         {IsloggedIn ? <>
                                             <EditProfile user={auth.user} />
-                                            { auth.user && auth.user.stripe_details_submitted == 1 ? ''
+                                            { auth.user && auth.user.stripe_details_submitted == 1 ? 
+                                            <PaymentDashboard classes='btn-pink lg w-100 mt-4' text='Payment Dashboard' />
                                             : <div className='finish mt-4 d-block'>
                                             <p className='mb-4'>Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
                                             <Link href={"/stripe"} className='btn-pink lg'>Finish Setup</Link>
@@ -87,49 +102,60 @@ export default function Dashboard(props) {
                                 <div className='userManageRt mt-8'>
                                     <div className='userManageHead flex items-center justify-between mb-8'>
                                         <div>
-                                        {its && its.length ?  
-                                            <select id="country" onChange={showCategory} name="country" autoComplete="country-name" className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6">
-                                                <option value={'all'}>{'All'}</option>
-                                                {categories && categories.map((c, i) => {
-                                                    return <option value={c.id} key={`cat-${c.category}`}>{c.category}</option>
-                                                })}
-                                            </select>
-                                        : ''}
-                                        </div> 
+                                            {its && its.length ?
+                                                <select id="country" onChange={showCategory} name="country" autoComplete="country-name" className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6">
+                                                    <option value={'all'}>{'All'}</option>
+                                                    {categories && categories.map((c, i) => {
+                                                        return <option value={c.id} key={`cat-${c.category}`}>{c.category}</option>
+                                                    })}
+                                                </select>
+                                            : ''}
+                                        </div>
                                         {IsloggedIn ? <Wishlist fetchingcats={fetchingcats} categories={categories} /> : ""}
                                     </div>
-                                    <div className='row'>
-
-                                    {!IsloggedIn && user?.stripe_details_submitted !== 1 ? 
-                                        <div className='col-md-12 p-5 notactive' >
-                                            <h5 className='loadingtext w-full text-center text-white  mb-1'>{user.name}'s WishList not activated yet.</h5>
-                                            <p className='text-center  text-white text-large ' >Until they activate their wishlist, this user won't be able to receive gifts</p>
-                                        </div> : 
-                                     ''
-                                    }
-
-                                    {its && its.length ?
-                                            !loading && its.map((c, i) => {
-                                                return <div className='col-xl-4 col-lg-6 col-6' >
-                                                    <Wishlistbox 
-                                                    fetchingcats={fetchingcats} 
-                                                    categories={categories}
-                                                    IsloggedIn={IsloggedIn} 
-                                                    auth={auth.user} 
-                                                    itemid={itemid} itm={c} key={`wish-${c.uuid}`} />
-                                                </div>
-                                            })
-                                        :
-                                        <>
-                                            {!loading ? <div className='col-md-12' >
-                                                <Nocontent text="Nothing to see." />
-                                            </div> : ''}
-                                        </>
-                                    }
 
 
                                     {loading ? <LoadingScreen />:''}
+                                    <div className='row'>
 
+                                    {/* {!IsloggedIn && user?.stripe_details_submitted !== 1 ?
+                                        <div className='col-md-12 p-5 notactive' >
+                                            <h5 className='loadingtext w-full text-center text-white  mb-1'>{user.name}'s WishList not activated yet.</h5>
+                                            <p className='text-center  text-white text-large ' >Until they activate their wishlist, this user won't be able to receive gifts</p>
+                                        </div> :
+                                     ''
+                                    } */}
+
+
+
+                                    { IsloggedIn || user?.stripe_details_submitted == 1 ? <>
+                                        { its && its.length ?
+                                                !loading && its.map((c, i) => {
+                                                    return <div className='col-xl-4 col-lg-6 col-6' >
+                                                        <Wishlistbox
+                                                        fetchingcats={fetchingcats}
+                                                        categories={categories}
+                                                        IsloggedIn={IsloggedIn}
+                                                        auth={auth.user}
+                                                        itemid={itemid} itm={c} key={`wish-${c.uuid}`} />
+                                                    </div>
+                                                })
+                                            :
+                                            <>
+                                                {!loading ? <div className='col-md-12' >
+                                                    <Nocontent text="Nothing to see." />
+                                                </div> : ''}
+                                            </>
+                                        }
+                                        </> :
+                                        <>
+                                            <div className='col-md-12 p-5 my-5 notactive' >
+                                                <h5 className='loadingtext w-full text-center text-white  mb-1'>{user.name}'s WishList not activated yet.</h5>
+                                                <p className='text-center  text-white text-large ' >Until they activate their wishlist, this user won't be able to receive gifts</p>
+                                            </div> 
+                                        </>
+
+                                    } 
                                     </div>
                                 </div>
                             </div>

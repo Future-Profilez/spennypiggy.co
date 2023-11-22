@@ -1,11 +1,14 @@
 import { useEffect } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import InputError from '@/Components/InputError';
-
+import { useAlerts } from "@/Components/Alerts";
 import { Head, Link, useForm } from '@inertiajs/react';
 import LoaderButton from '@/Components/LoaderButton';
+import toast from 'react-hot-toast';
 
 export default function Register() {
+
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
@@ -23,7 +26,18 @@ export default function Register() {
 
     const submit = (e) => {
         e.preventDefault();
-        post(route('register'));
+        post(route('register'), {
+            preserveScroll: true,
+            onSuccess: (resp) => {
+                successAlert("You have been registered successfully.");
+            },
+            onError: (err) => {
+                reset("password");
+                Object.keys(err).map((key) => {
+                    errorAlert(err[key]);
+                });
+            }
+        });
     };
 
     return (

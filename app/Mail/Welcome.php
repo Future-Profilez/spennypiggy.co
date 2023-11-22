@@ -38,6 +38,7 @@ class Welcome extends Mailable
                 ->from('Noreply@whoyouinto.com', 'SPENNYPIGGY')
                 ->subject($subject);
         } catch (\Exception $e) {
+            throw $e;
         }
     }
 }

@@ -95,16 +95,17 @@ Route::middleware('auth', 'mustHaveToVerify')->group(function () {
 
     Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item');
 
-    /*update wishitems*/
-    Route::post('update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
+    /*update wishitems */
+    Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
     Route::get('/create-checkout-session/{owner_id}', [StripeController::class, 'createCheckout'])->name('create.checkout');
     Route::get('/sucess-checkout/{id}', [StripeController::class, 'successCheckout'])->name('checkout.success');
     Route::get('cancel-checkout/{id}', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel');
 
     Route::prefix("stripe")->name("stripe.")->group(function () {
         Route::get("authorize", [StripeController::class, "index"])->name("index");
-        Route::match(["get", "post"], "/connect-{step}", [StripeController::class, "initConnect"])->name("connect");
+        Route::match(["get", "post"], "/connect-{step}/{country}", [StripeController::class, "initConnect"])->name("connect");
         Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
+        Route::post("/login", [StripeController::class, "loginToStripe"])->name("login");
     });
 
     Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
@@ -126,7 +127,7 @@ Route::middleware('auth', 'mustHaveToVerify')->group(function () {
 
 /*Anonymous checkout*/
 // Route::get('/anonymous-create-checkout-session/{priceid}/{quantity}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
-Route::get('/anonymous-create-checkout-session/{wishid}/{amount}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
+Route::get('/anonymous-create-checkout-session/{wishid}/{amount?}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
 
 Route::get('/anonymous-sucess-checkout/{id}', [StripeController::class, 'anonymousSuccessCheckout'])->name('checkout.anonymous.success');
 Route::get('/anonymous-cancel-checkout/{id}', [StripeController::class, 'anonymousCancelCheckout'])->name('checkout.anonymous.cancel');
@@ -138,5 +139,9 @@ Route::get('users', [MyController::class, 'getUsers'])->name('users');
 Route::get('/how-it-works', function () {
     return Inertia::render('howitworks/Works');
 })->name("how-it-works");
+
+Route::get('/terms-and-conditions', function () {
+    return Inertia::render('Terms');
+})->name("terms-and-conditions");
 
 Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');

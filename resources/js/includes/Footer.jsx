@@ -43,7 +43,6 @@ export default function Footer(props) {
         <script async type="text/javascript" src="https://app.termly.io/embed.min.js"
         data-auto-block="on" data-website-uuid="ced8ded9-995d-471a-bf54-880b8c679a81" ></script>
         <script async src="https://www.googletagmanager.com/gtag/js?id=AW-11395921981"></script>
-        
     </Helmet>
     <div>
         <div className='footer'>
@@ -62,6 +61,7 @@ export default function Footer(props) {
                   <li><a target='_blank' href="https://app.termly.io/document/acceptable-use/458f5fac-0c41-406f-a02f-b50adff1ec9c" >Acceptable Use Policy</a></li>
                   <li><a target='_blank' href="https://app.termly.io/notify/696baafc-17cd-4a28-b758-a8f597cf2ad6" >DSAR Form</a></li>
                   <li><Link href={route("how-it-works")} >How it works</Link></li>
+                  <li><Link href={route("terms-and-conditions")} >Terms</Link></li>
                   <li> <ContentPrefrences classes='m-auto d-table' /> </li>
                 </ul>
               </div>

@@ -31,4 +31,15 @@ class StripePaymentDetail extends Model
         parent::boot();
         static::creating(fn ($u) => $u->uuid = Uuid::uuid4());
     }
+
+
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }

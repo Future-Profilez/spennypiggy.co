@@ -10,13 +10,11 @@ import { useEffect } from 'react';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import Wishlist from '@/Pages/Auth/Wishlist';
 
- 
+export default function Wishlistbox(props) {
 
-export default function Wishlistbox({ itm, itemid, auth, IsloggedIn, fetchingcats, categories }) {
-
+  const { itm, itemid, auth, IsloggedIn, fetchingcats, categories } = props;
   const [itemUID, setItemUID] = useState(itemid);
   const [open, setOpen] = useState();
-
   const openAddtocart = () => {
     setOpen(true);
     setTimeout(()=>{
@@ -30,18 +28,21 @@ export default function Wishlistbox({ itm, itemid, auth, IsloggedIn, fetchingcat
     }
   },[itemUID]);
 
-
   const getPercentage = (actual, paid) => { 
-    const r = (paid/actual)*100
-    return r.toFixed(0);
+    const r = (paid/actual)*100;
+    console.log("get percentage", r);
+    return r.toFixed(1);
   }
+ 
+  console.log("props wishbox", props);
 
   return <>
-      
-      <div  className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
-
-      {IsloggedIn ? <Wishlist action={open} fetchingcats={fetchingcats} categories={categories} /> : <AddCart auth={auth} item={itm} uuid={itm.uuid} action={open} /> }
-
+      <div className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
+        {IsloggedIn ?   
+          <Wishlist item={itm} editpop={true} fetchingcats={fetchingcats} categories={categories} />  
+          : 
+        <AddCart auth={auth} item={itm} uuid={itm.uuid} action={open} /> 
+        }
 
       <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
         <img src={itm?.perma_link ? itm?.perma_link : uploadedimg} alt='img' className='' />
