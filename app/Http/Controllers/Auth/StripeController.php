@@ -247,6 +247,7 @@ class StripeController extends Controller
                 } elseif ($dd->wish->subscription_period == 'monthly') {
                     $end = Carbon::now()->addMonth(1);
                 }
+                
 
                 $subscription = new Subscription();
                 $subscription->user_id = $dd->user_id;

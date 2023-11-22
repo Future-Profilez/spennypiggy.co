@@ -28,10 +28,13 @@ export default function Wishlistbox({ itm, itemid, auth, IsloggedIn, fetchingcat
   },[itemUID]);
 
   const getPercentage = (actual, paid) => { 
-    const r = (paid/actual)*100
+    const r = (paid/actual)*100;
+    console.log("get percentage", r);
     return r.toFixed(0);
   }
  
+  console.log("props wishbox", props);
+
   return <>
       <div className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
         {IsloggedIn ?   

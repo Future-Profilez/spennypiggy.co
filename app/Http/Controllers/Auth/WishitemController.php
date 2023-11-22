@@ -106,10 +106,10 @@ class WishitemController extends Controller
 
         $wish->save();
 
-        $user = User::whereId(Auth::id())->first();
+        // $user = User::whereId(Auth::id())->first();
 
         //send email
-        SaveWishlist::dispatch($user);
+        // SaveWishlist::dispatch($user);
 
         return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
     }
@@ -318,7 +318,7 @@ class WishitemController extends Controller
                 $stripe_client = $stripe->products->create([
                     'name' => 'anonymous',
                     'images' => [$wishitem->perma_link],
-                    "default_price_data" => ["currency" => "usd", "unit_amount_decimal" => $createpriceid],
+                    "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid],
                 ]);
                 $priceid = $stripe_client->default_price;
             } else {
