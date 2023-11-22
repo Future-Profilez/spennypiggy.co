@@ -25,10 +25,6 @@
                 </tr>
 
                 <tr>
-               <td style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold; font-size: 13px; color: 141414; text-align: left; line-height: 18px; text-align: center;">Someone granted you a <span style="color:#F94F97 ">Wish</span> 🤩</td>
-               </tr>
-
-                <tr>
                 <td style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 10px; color: #4D4D4D; text-align: center; line-height: 18px;">Go to <a href="#">Spenny Piggy</a> where you can see your granted wish, send a message to your gifter and share your gift on social media </td>
                 </tr>
                 <tr>

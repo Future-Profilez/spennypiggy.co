@@ -22,16 +22,16 @@ use Inertia\Inertia;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
 
-Route::get('/frd', function () {
-    print_r('ffff');
-    die;
-});
+// Route::get('/frd', function () {
+//     print_r('ffff');
+//     die;
+// });
 
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
 
-    Route::post('register', [RegisteredUserController::class, 'store'])->middleware('blockWordsAndEmojis');
+    Route::post('register', [RegisteredUserController::class, 'store']);
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
@@ -145,3 +145,6 @@ Route::get('/terms-and-conditions', function () {
 })->name("terms-and-conditions");
 
 Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
+
+/*check username exist*/
+Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');

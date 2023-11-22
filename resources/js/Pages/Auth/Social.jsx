@@ -30,7 +30,11 @@ export default function Social({links}) {
             preserveScroll: true,
             onSuccess: (resp) => {
                 reset();
-                successAlert(resp.props.flash?.success || "Added");
+                if(resp.props.flash?.success){
+                    successAlert(resp.props.flash?.success || "Added successfully.");
+                } else { 
+                    errorAlert(resp.props.flash?.error || "Something went wrong.")
+                }   
                 setClose(false);
                 setTimeout(() => {
                     setClose();

@@ -247,7 +247,7 @@ class StripeController extends Controller
                 } elseif ($dd->wish->subscription_period == 'monthly') {
                     $end = Carbon::now()->addMonth(1);
                 }
-                
+
 
                 $subscription = new Subscription();
                 $subscription->user_id = $dd->user_id;
@@ -304,7 +304,6 @@ class StripeController extends Controller
     {
         try {
             $wishdata = WishItem::whereId($wishid)->first();
-
             $lineItems = [];
             if ($wishdata->subscription == 2) {
                 if (!empty($amount)) {
@@ -312,15 +311,17 @@ class StripeController extends Controller
                     session(['user_fullfill_amount' => $amount]);
 
                     $totalamount = $amount + ($amount * env('TAX_PERCENTAGE') / 100);
-                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
                     try {
+                        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                         $stripe_client = $stripe->products->create([
                             'name' => 'anonymous product',
-                            'images' => '',
-                            "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $totalamount],
+                            'images' => [$wishdata->perma_link],
+                            "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $totalamount * 100],
                         ]);
                     } catch (\Throwable $th) {
+                        echo $th;
+                        die;
                         return back()->with('error', $th);
                     }
 
@@ -408,7 +409,7 @@ class StripeController extends Controller
             return redirect(route('user.show', [$getdata->user->username]))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
             //throw $th;
-        }
+        }   
     }
 
     public function anonymousCancelCheckout($id)
