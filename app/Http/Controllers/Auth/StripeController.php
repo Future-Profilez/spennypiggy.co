@@ -247,7 +247,7 @@ class StripeController extends Controller
                 } elseif ($dd->wish->subscription_period == 'monthly') {
                     $end = Carbon::now()->addMonth(1);
                 }
-                
+
 
                 $subscription = new Subscription();
                 $subscription->user_id = $dd->user_id;
@@ -312,9 +312,9 @@ class StripeController extends Controller
                     session(['user_fullfill_amount' => $amount]);
 
                     $totalamount = $amount + ($amount * env('TAX_PERCENTAGE') / 100);
-                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
                     try {
+                        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                         $stripe_client = $stripe->products->create([
                             'name' => 'anonymous product',
                             'images' => '',
