@@ -192,15 +192,17 @@ class StripeController extends Controller
             ]);
 
             $callbackData = $sessioncreate;
-            $subtotal = $callbackData->amount_total / (1 + (env('TAX_PERCENTAGE') / 100));
-            $taxnew = ($callbackData->amount_total) - ($subtotal);
+            \Log::info("callback data amount: " . $callbackData->amount_total);
+            $subtotal = ($callbackData->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
+            \Log::info("subtotal: " . $subtotal);
+            $taxnew = ($callbackData->amount_total / 100) - ($subtotal);
 
             session()->forget('session_id');
             session(['session_id' => $callbackData->id]);
             $stripeid = StripePaymentDetail::create([
                 'session_id' => $callbackData->id,
                 'amount_subtotal' => $subtotal,
-                'amount_total' => $callbackData->amount_total,
+                'amount_total' => $callbackData->amount_total / 100,
                 'tax' => $taxnew,
                 'currency' => $callbackData->currency,
                 'payment_method_config_detail_id' => optional($callbackData->payment_method_configuration_details)->id,
@@ -349,15 +351,15 @@ class StripeController extends Controller
             ]);
 
             $callbackData = $sessioncreate;
-            $subtotal = $callbackData->amount_total / (1 + (env('TAX_PERCENTAGE') / 100));
-            $taxnew = ($callbackData->amount_total) - ($subtotal);
+            $subtotal = ($callbackData->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
+            $taxnew = ($callbackData->amount_total / 100) - ($subtotal);
 
             session()->forget('anonymous_session_id');
             session(['anonymous_session_id' => $callbackData->id]);
             $stripeid = StripePaymentDetail::create([
                 'session_id' => $callbackData->id,
                 'amount_subtotal' => $subtotal,
-                'amount_total' => $callbackData->amount_total,
+                'amount_total' => $callbackData->amount_total / 100,
                 'tax' => $taxnew,
                 'currency' => $callbackData->currency,
                 'owner_id' => $wishdata->user_id,

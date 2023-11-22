@@ -22,7 +22,6 @@ export default function AddCart(props) {
 
     const getPercentage = (actual, paid) => { 
         const r = (paid/actual)*100;
-        console.log("add percentage", r);
         return r.toFixed(1);
     }
 
@@ -34,9 +33,6 @@ export default function AddCart(props) {
           return item.price
         }
     };
-
-    
-
 
     return (
         <Popup
@@ -110,7 +106,7 @@ export default function AddCart(props) {
                                 isEqual={item.price <= item.fullfill_amount}
                                 is_cart={item?.is_cart}
                                 text={`Add to cart`}
-                                classes="btn-pink lg w-100 mb-3 font-CeraGR"
+                                classes={`btn-pink lg w-100 mb-3 font-CeraGR ${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
                                 uuid={uuid}
                             />
                             <Link
@@ -122,7 +118,9 @@ export default function AddCart(props) {
                             </Link>
                         </>
                     ) : (
-                        <DirectCheckout item={item} amount={cartamount} />
+                        <DirectCheckout
+                        classes={`${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
+                        item={item} amount={cartamount} />
                     )}
                 </div>
             </div>
