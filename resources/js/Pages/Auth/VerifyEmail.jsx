@@ -9,7 +9,15 @@ export default function VerifyEmail({ status }) {
     const { get, processing } = useForm({});
     const submit = (e) => {
         e.preventDefault();
-        get(route("verification.email"));
+        get(route("verification.email")), {
+            preserveScroll: true,
+            onSuccess: (resp) => {
+                console.log("resp",resp)
+            },
+            onError: (err) => {
+                console.log("err",err)
+            }
+        };
     };
 
     // const [sent,setSent] = useState(0);
@@ -26,7 +34,6 @@ export default function VerifyEmail({ status }) {
         `}</style>
         <div>
             <Head title="Email Verification" />
-
             <div  >
                 <div className="mailicon m-auto d-table" >
                     <svg width="341" height="287" viewBox="0 0 341 287" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -88,7 +95,7 @@ export default function VerifyEmail({ status }) {
                 <form onSubmit={submit}>
                     <div className="mt-4 flex items-center justify-content-center">
                         <PrimaryButton className="btn-pink md   py-3 px-2" disabled={processing}>
-                             Resend
+                             {processing ? "processing" : "Resend"}
                         </PrimaryButton>
                     </div>
                 </form>
