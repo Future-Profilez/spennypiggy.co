@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\CreateStripeCustomer;
 use App\Models\User;
@@ -46,6 +47,10 @@ class RegisteredUserController extends Controller
             'username' => ['required', 'string', 'lowercase', 'max:20', 'unique:users,username'],
         ]);
 
+        $checkdata = Helpers::checkBlockData($request);
+        \Log::info($checkdata);
+        die;
+        // print_r()die;
         $user = User::create([
             'name' => $request->name,
             'email' => strtolower($request->email),
