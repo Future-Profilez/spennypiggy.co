@@ -11,7 +11,8 @@ export default function ToCart({ ItemAdded, item, crowd, pending, uuid, text, cl
     const [loading, setLoading] = useState(false);
     const [is_Cart, setis_Cart] = useState(is_cart);
 
-    const addtocart = (e) => {
+    const addtocart = async (e) => {
+
         if(item && item.subscription == "2" && isEqual){
             toast.error(`Wish item funding is completed.`);
             return false;

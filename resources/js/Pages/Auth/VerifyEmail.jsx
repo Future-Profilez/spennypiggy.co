@@ -13,7 +13,6 @@ export default function VerifyEmail({ status }) {
         // setLoading(true);
         axios.get(`verification.email`).then(resp => {
             console.log("resp",resp)
-            // setLoading(false);
         }).catch(_err => {
             console.error("error", _err);
             // setLoading(false);
@@ -95,7 +94,7 @@ export default function VerifyEmail({ status }) {
                 <form onSubmit={submit}>
                     <div className="mt-4 flex items-center justify-content-center">
                         <PrimaryButton className="btn-pink md   py-3 px-2" disabled={processing}>
-                             {processing ? "processing" : "Resend"}
+                             {processing ? "processing" : "Send Verification Link"}
                         </PrimaryButton>
                     </div>
                 </form>

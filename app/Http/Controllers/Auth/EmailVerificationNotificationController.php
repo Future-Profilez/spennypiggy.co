@@ -19,20 +19,19 @@ class EmailVerificationNotificationController extends Controller
     {
         if ($request->user()->hasVerifiedEmail()) {
             return redirect()->intended(RouteServiceProvider::HOME);
-        }
-
+        } 
         $request->user()->sendEmailVerificationNotification();
-
         return back()->with('status', 'verification-link-sent');
     }
 
-    public function sendVerificationEmail()
-    {
+    public function sendVerificationEmail() {
         try {
             $user = User::whereId(Auth::id())->first();
             VerifyEmail::dispatch($user);
+            return back()->with("success", "Verification link sent on your registred email address.");
         } catch (\Throwable $th) {
             //throw $th;
+            return back()->with("error", "Verification failed.");
         }
     }
 }

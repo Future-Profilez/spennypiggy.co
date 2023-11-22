@@ -95,8 +95,7 @@ class RegisteredUserController extends Controller
      * @return Response
      */
 
-    public function checkUsername(Request $request)
-    {
+    public function checkUsername(Request $request){
         $request->validate([
             "username" => [
                 "required",
@@ -105,7 +104,6 @@ class RegisteredUserController extends Controller
                 "max:20"
             ]
         ]);
-
         $exist = User::whereUsername($request->username)->first();
         return response()->json([
             "available" => empty($exist)
