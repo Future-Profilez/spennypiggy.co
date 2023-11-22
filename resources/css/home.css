@@ -511,6 +511,13 @@ button.cartLink svg{width:50px;height:50px;}
 .loginform form{padding:20px;}
 .pass.greybox{padding:0 !important;background:transparent;}
 .wishlistimg img{height:140px !important;}
+
+.btn-pink.lg,.btn-pink.lg2{
+  padding: 15px;
+  letter-spacing: 1px;
+  font-size: 16px !important;
+}
+
 }
 @media(max-width:449px){.userphoto{left:7px;}
 .socialmedia{margin-top:2px!important;}

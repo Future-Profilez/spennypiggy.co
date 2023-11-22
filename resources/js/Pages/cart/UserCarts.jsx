@@ -3,8 +3,11 @@ import CartItem from "./CartItem";
 import { Link, useForm } from "@inertiajs/react";
 import { useEffect } from "react";
 import axios from "axios";
+import PriceFormat from "@/includes/PriceFormat";
 
 export default function UserCarts(props) {
+
+    const { format } = PriceFormat();
 
     const datas = props.data;
     const [isChecked, setIsChecked] = useState(false);
@@ -36,19 +39,19 @@ export default function UserCarts(props) {
                     <div className="cartSubTotal text-right mt-1">
                         <span>Platform Fee :</span>{" "}
                         <strong className="text-end">
-                            £ {datas?.fee || ""}
+                            {format(datas?.fee || "")}
                         </strong>
                     </div>
                     <div className="cartSubTotal text-right mt-1">
                         <span>Subtotal :</span>{" "}
                         <strong className="text-end">
-                            £ {datas?.total || ""}
+                             {format(datas?.total || "")}
                         </strong>
                     </div>
                     <div className="cartSubTotal text-right mt-1">
                         <strong className="text-dark">Total :</strong>{" "}
                         <strong className="text-end">
-                            £ {datas?.total + datas?.fee || ""}
+                             {format(datas?.total + datas?.fee || "")}
                         </strong>
                     </div>
                     {/* <div className="cartTotalPrice text-right mt-5 px-3 py-6">
