@@ -16,7 +16,7 @@ export default function Userprofile({user, links}) {
       </div>
       <h2 className='font-GillSans'>{user && user.name }</h2>
       <div className='userId flex items-center justify-center'>
-      <ShareProfile classes={"d-flex"} >
+      <ShareProfile username={user && user.name} classes={"d-flex"} >
         @{user && user.username} 
         <div className='mt-1 ms-2' >
           <svg xmlns="http://www.w3.org/2000/svg" width="19" height="18" viewBox="0 0 19 18" fill="none">

@@ -188,7 +188,7 @@ class WishitemController extends Controller
                 "required",
                 "string",
                 "min:3",
-                "max:255",
+                "max:30",
                 "alpha_dash"
             ],
         ]);

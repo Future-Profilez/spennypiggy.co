@@ -9,7 +9,7 @@ import ProgressBar from "react-bootstrap/ProgressBar";
 import { useState } from "react";
 
 export default function AddCart(props) {
-    const { auth, action, uuid, item } = props;
+    const { auth, action, uuid, item, IsloggedIn } = props;
     const [cartamount, setcartamount] = useState(null);
 
     console.log("props addCard", props);
@@ -19,6 +19,16 @@ export default function AddCart(props) {
         console.log("add percentage", r);
         return r.toFixed(1);
     }
+
+    const price = () => { 
+        if(!IsloggedIn && item.subscription !== 2){
+            const p = (+item.price) + (+item.tax_amount)
+            return p
+        } else { 
+          return item.price
+        }
+    };
+
 
     return (
         <Popup
@@ -44,7 +54,7 @@ export default function AddCart(props) {
                 </div>
                 <div className="cartTitle text-center">{item.wishname}</div>
                 <div className="cartPrice font-CeraGRBold text-voilet mt-1 mb-3 text-center">
-                    £ {item.price}
+                    £ {price()}
                 </div>
 
                 {item.subscription == "2" ? (

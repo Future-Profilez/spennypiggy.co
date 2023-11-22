@@ -16,6 +16,12 @@ body{position:relative;font-family:var(--para-font);}
   text-transform:uppercase;-webkit-text-stroke:1px var(--black);-moz-text-stroke:1px var(--black);
   -o-text-stroke:1px var(--black);}
 
+  .font-large  { 
+    font-size: 19px; line-height: 28px;
+  }
+  .font--xl-large  { 
+    font-size: 22px;line-height: 32px;
+  }
 
 .text-body{font-family:var(--para-body);}
 .text-CeraGR{font-family:var(--para-font);}

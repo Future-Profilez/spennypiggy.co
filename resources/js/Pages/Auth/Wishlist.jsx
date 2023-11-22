@@ -16,7 +16,7 @@ export default function Wishlist(props) {
     const { categories, auth, fetchingcats, item, editpop } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
-    const [defaultKey, setDefaultKey] = useState(item && item.subscription ? item.subscription : 0);
+    const [defaultKey, setDefaultKey] = useState(item && item.subscription ? item.subscription : null);
     const [clear, setClear] = useState();
     const [close, setClose] = useState();
     const [repeat, setRepeat] = useState(true);
@@ -181,7 +181,7 @@ export default function Wishlist(props) {
                                                     id="price"
                                                     type="number"
                                                     name="price"
-                                                    placeholder="eg. 50"
+                                                    placeholder="Eg. 50"
                                                     value={data.price || item && item.price }
                                                     step={`0.01`}
                                                     className="form-input px-2 py-2 border w-full rounded-md"
@@ -206,12 +206,7 @@ export default function Wishlist(props) {
                                                     value={data.item_url || item && item.item_url}
                                                     className="form-input px-2 py-2 border w-full rounded-md"
                                                     autoComplete="item_url"
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            "item_url",
-                                                            e.target.value
-                                                        )
-                                                    }
+                                                    onChange={(e) =>setData( "item_url",e.target.value )}
                                                 />
                                             </li>
                                             <li className="mb-4">
