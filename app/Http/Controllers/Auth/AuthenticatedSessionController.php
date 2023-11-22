@@ -161,7 +161,7 @@ class AuthenticatedSessionController extends Controller
     public function checkUserName($username)
     {
         try {
-            $user = User::where('username', 'LIKE', '%' . $username . '%')->first();
+            $user = User::where('username', $username)->first();
             if (!empty($user)) {
                 return response()->json(['status' => true]);
             } else {
