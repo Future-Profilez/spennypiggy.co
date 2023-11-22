@@ -16,7 +16,6 @@ export default function VerifyEmail({ status }) {
             console.error("error", _err);
         });
     };
-
     // const [sent,setSent] = useState(0);
     // useEffect(()=>{
     //     setSent(sent+1);
