@@ -18,7 +18,7 @@ export default function ToCart({ ItemAdded, item, crowd, pending, uuid, text, cl
             return false;
         }
 
-        if(crowd && !amount  ){
+        if (crowd && !amount) {
             toast.error(`Please enter a amount to gift this item. `);
             return false;
         }
@@ -33,21 +33,26 @@ export default function ToCart({ ItemAdded, item, crowd, pending, uuid, text, cl
         }
         setLoading(true);
         axios.get(`/add-to-cart/${uuid}${amount ? `/${amount}` : ''}`).then(resp => {
-            if (resp.data.added == true) {
-                successAlert(resp.data.msg);
-                setis_Cart(true);
-                ItemAdded();
+            if (resp.data.success) {
+                if (resp.data.added == true) {
+                    successAlert(resp.data.msg);
+                    setis_Cart(true);
+                    ItemAdded();
+                } else {
+                    successAlert(resp.data.msg);
+                    setis_Cart(false);
+                }
+
+                if (resp.data.uuid) {
+                    removeItem && removeItem(uuid);
+                }
+                if (type == 'checkout') {
+                    window.location = '/cart';
+                }
             } else {
-                successAlert(resp.data.msg);
-                setis_Cart(false);
-            }
-            if (resp.data.uuid) {
-                removeItem && removeItem(uuid);
+                errorAlert(resp.data.msg);
             }
             setLoading(false);
-            if (type == 'checkout') {
-                window.location = '/cart';
-            }
         }).catch(_err => {
             console.error("error", _err);
             setLoading(false);

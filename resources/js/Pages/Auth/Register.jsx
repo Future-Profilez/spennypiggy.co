@@ -1,4 +1,4 @@
-import { useEffect,useState } from 'react';
+import { useEffect, useState } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import InputError from '@/Components/InputError';
 import { useAlerts } from "@/Components/Alerts";
@@ -20,13 +20,13 @@ export default function Register() {
     const capitalLetter = /[A-Z]/g;
     const numberLetter = /[0-9]/g;
     const specialLetter = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/]/g;
-  
+
     const inputField = (typeof window !== 'undefined') && document.getElementById('password');
-    const letter =  (typeof window !== 'undefined') && document.getElementById('letter');
-    const capital =  (typeof window !== 'undefined') && document.getElementById('capital');
-    const number =  (typeof window !== 'undefined') && document.getElementById('number');
-    const special =  (typeof window !== 'undefined') && document.getElementById('special');
-    const length =  (typeof window !== 'undefined') && document.getElementById('length');
+    const letter = (typeof window !== 'undefined') && document.getElementById('letter');
+    const capital = (typeof window !== 'undefined') && document.getElementById('capital');
+    const number = (typeof window !== 'undefined') && document.getElementById('number');
+    const special = (typeof window !== 'undefined') && document.getElementById('special');
+    const length = (typeof window !== 'undefined') && document.getElementById('length');
     const [mypass, setmypass] = useState();
 
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -45,7 +45,7 @@ export default function Register() {
     }, []);
 
 
-    const termsaccept = () => { 
+    const termsaccept = () => {
         errorAlert("Please check accept terms & conditions checkbox");
         checkRef.current.focus();
         return false;
@@ -53,12 +53,12 @@ export default function Register() {
 
     const [validMsg, setValidMsg] = useState('');
     const [usernameValid, setUsernameValid] = useState(null);
-    const checkUsername = (e) => { 
+    const checkUsername = (e) => {
         axios.get(`/check-username/${e.target.value}`).then(resp => {
-            if(resp.data.status == false){
+            if (resp.data.status == false) {
                 setUsernameValid(0);
                 setValidMsg(resp.data.msg);
-            } else { 
+            } else {
                 setUsernameValid(1);
                 setValidMsg(resp.data.msg);
             }
@@ -69,19 +69,20 @@ export default function Register() {
 
     const submit = (e) => {
         e.preventDefault();
-        if(!checkRef.current.checked){
+        if (!checkRef.current.checked) {
             termsaccept();
             return false;
         }
+
         post(route('register'), {
             preserveScroll: true,
             onSuccess: (resp) => {
-                if(resp.props.flash?.success){
+                if (resp.props.flash?.success) {
                     successAlert(resp.props.flash?.success || "Signup successfully.");
                 }
-                if(resp.props.flash?.error){
+                if (resp.props.flash?.error) {
                     errorAlert(resp.props.flash?.error || "Something went wrong.")
-                }  
+                }
             },
             onError: (err) => {
                 reset("password");
@@ -92,167 +93,167 @@ export default function Register() {
         });
     };
 
-    const handlePassHints = (e) => { 
+    const handlePassHints = (e) => {
         setData('password', mypass);
         setmypass(e.target.value);
-        if(inputField.value.match(lowerLetter)){ 
-          letter.classList.remove('text-grey');
-          letter.classList.add('valid'); 
-        } else { 
-          letter.classList.remove('valid');
-          letter.classList.add('text-grey');
+        if (inputField.value.match(lowerLetter)) {
+            letter.classList.remove('text-grey');
+            letter.classList.add('valid');
+        } else {
+            letter.classList.remove('valid');
+            letter.classList.add('text-grey');
         }
-    
-        if(inputField.value.match(capitalLetter)){ 
-          capital.classList.remove('text-grey');
-          capital.classList.add('valid');
-        } else { 
-          capital.classList.remove('valid');
-          capital.classList.add('text-grey');
+
+        if (inputField.value.match(capitalLetter)) {
+            capital.classList.remove('text-grey');
+            capital.classList.add('valid');
+        } else {
+            capital.classList.remove('valid');
+            capital.classList.add('text-grey');
         }
-    
-        if(inputField.value.match(numberLetter)){ 
-          number.classList.remove('text-grey');
-          number.classList.add('valid');
-        } else { 
-          number.classList.remove('valid');
-          number.classList.add('text-grey');
+
+        if (inputField.value.match(numberLetter)) {
+            number.classList.remove('text-grey');
+            number.classList.add('valid');
+        } else {
+            number.classList.remove('valid');
+            number.classList.add('text-grey');
         }
-    
-        if(inputField.value.match(specialLetter)){ 
-          special.classList.remove('text-grey');
-          special.classList.add('valid');
-        } else { 
-          special.classList.remove('valid');
-          special.classList.add('text-grey');
+
+        if (inputField.value.match(specialLetter)) {
+            special.classList.remove('text-grey');
+            special.classList.add('valid');
+        } else {
+            special.classList.remove('valid');
+            special.classList.add('text-grey');
         }
-    
-        if(inputField.value.length > 7){ 
-          length.classList.remove('text-grey');
-          length.classList.add('valid');
-        } else { 
-          length.classList.add('text-grey');
-          length.classList.remove('valid');
-        }  
-    } 
+
+        if (inputField.value.length > 7) {
+            length.classList.remove('text-grey');
+            length.classList.add('valid');
+        } else {
+            length.classList.add('text-grey');
+            length.classList.remove('valid');
+        }
+    }
 
     return (
         <GuestLayout>
             <Head title="Register" />
 
             <div className='loginPage blackbg py-14'>
-            <div className='containerbox '>
+                <div className='containerbox '>
 
-                <h2 className='headingLg pb-0 pb-md-4 text-center  px-2'>Create Account</h2>
-                <p className='text-center text-white mb-5 font-CeraGRBold'>Already registered? <Link className={'text-pink'} href={route('login')}  > Log In</Link></p>
+                    <h2 className='headingLg pb-0 pb-md-4 text-center  px-2'>Create Account</h2>
+                    <p className='text-center text-white mb-5 font-CeraGRBold'>Already registered? <Link className={'text-pink'} href={route('login')}  > Log In</Link></p>
 
-                <div className='loginform mt-4 mt-md-5 mx-auto border-black whbg shadow-mint'>
-                    <div className='loginheadbox pinkbg'>
-                        <span className='mintbg'></span>
-                        <span className='bluebg'></span>
-                    </div>
-                    <form onSubmit={submit} >
-                        <div className='login-step1'>
-                            <ul>
-                                <li>
-                                    <label>Display Name</label>
-                                    <input id="name"
-                                    name="name"
-                                    value={data.name}
-                                    className="mt-1 block w-full"
-                                    autoComplete="name"
-                                    onChange={(e) => setData('name', e.target.value)}
-                                    required
-                                    />
-                                    <InputError>{errors?.name || ''}</InputError>
-                                </li>
-                                <li>
-                                    <label>Username</label>
-                                    <input id="username"
-                                    name="username" onBlur={checkUsername}
-                                    value={data.username}
-                                    className="mt-1 block w-full"
-                                    autoComplete="username"
-                                    isFocused={true}
-                                    onChange={(e) => setData('username', e.target.value)}
-                                    required 
-                                    />
-                                    {data.username && usernameValid == 1 ? <p className='text-success text-small username-text'>Username is available.</p> : ''}
-                                    {data.username && usernameValid == 0 ? <p className='text-danger text-small username-text' >{validMsg}</p> : ''}
-                                </li>
-                                <li>
-                                    <label>Email</label>
-                                    <input id="email"
-                                        type="email"
-                                        name="email"
-                                        value={data.email}
-                                        className="mt-1 block w-full"
-                                        autoComplete="username"
-                                        onChange={(e) => setData('email', e.target.value)}
-                                        required
-                                     />
-                                     <InputError>{errors?.email || ''}</InputError>
-                                </li>
-                                <li>
-                                    <label>Password</label>
-                                    <input  id="password"
-                                    type="password"  
-                                    name="password" 
-                                    value={mypass}
-                                    className="mt-1 block w-full"
-                                    autoComplete="off"
-                                    onChange={handlePassHints} required 
-                                    />
-                                    <InputError>{errors?.password || ''}</InputError>
-                                </li>
-                                <li>
-                                    <label>Confirm Password</label>
-                                    <input
-                                        id="password_confirmation"
-                                        type="password"
-                                        name="password_confirmation"
-                                        value={data.password_confirmation}
-                                        className="mt-1 block w-full"
-                                        autoComplete="off"
-                                        onChange={(e) => setData('password_confirmation', e.target.value)}
-                                        required
-                                    />
-                                    <InputError>{errors?.password_confirmation || ''}</InputError>
-                                    <div className={`mt-3 ${mypass?'d-block':'d-none'}`} >
-                                        
-                                        <div  className="pass greybox border-0 p-3" >
-                                            <div  id="msgText">
-                                                <h3>Password must contain the following:</h3>
-                                                <p id="letter" class="text-grey"><CheckCircleIcon /> &nbsp;A <b> lowercase</b> letter</p>
-                                                <p id="capital" class="text-grey"><CheckCircleIcon /> &nbsp;A <b> capital (uppercase)</b> letter</p>
-                                                <p id="number" class="text-grey"><CheckCircleIcon /> &nbsp;A <b> number</b></p>
-                                                <p id="special" class="text-grey"><CheckCircleIcon /> &nbsp;Special characters</p>
-                                                <p id="length" class="text-grey mb-0"><CheckCircleIcon /> &nbsp;Password should minimum 8 characters.</p>
+                    <div className='loginform mt-4 mt-md-5 mx-auto border-black whbg shadow-mint'>
+                        <div className='loginheadbox pinkbg'>
+                            <span className='mintbg'></span>
+                            <span className='bluebg'></span>
+                        </div>
+                        <form onSubmit={submit} >
+                            <div className='login-step1'>
+                                <ul>
+                                    <li>
+                                        <label>Display Name</label>
+                                        <input id="name"
+                                            name="name"
+                                            value={data.name}
+                                            className="mt-1 block w-full"
+                                            autoComplete="name"
+                                            onChange={(e) => setData('name', e.target.value)}
+                                            required
+                                        />
+                                        <InputError>{errors?.name || ''}</InputError>
+                                    </li>
+                                    <li>
+                                        <label>Username</label>
+                                        <input id="username"
+                                            name="username" onBlur={checkUsername}
+                                            value={data.username}
+                                            className="mt-1 block w-full"
+                                            autoComplete="username"
+                                            isFocused={true}
+                                            onChange={(e) => setData('username', e.target.value)}
+                                            required
+                                        />
+                                        {data.username && usernameValid == 1 ? <p className='text-success text-small username-text'>Username is available.</p> : ''}
+                                        {data.username && usernameValid == 0 ? <p className='text-danger text-small username-text' >{validMsg}</p> : ''}
+                                    </li>
+                                    <li>
+                                        <label>Email</label>
+                                        <input id="email"
+                                            type="email"
+                                            name="email"
+                                            value={data.email}
+                                            className="mt-1 block w-full"
+                                            autoComplete="username"
+                                            onChange={(e) => setData('email', e.target.value)}
+                                            required
+                                        />
+                                        <InputError>{errors?.email || ''}</InputError>
+                                    </li>
+                                    <li>
+                                        <label>Password</label>
+                                        <input id="password"
+                                            type="password"
+                                            name="password"
+                                            value={mypass}
+                                            className="mt-1 block w-full"
+                                            autoComplete="off"
+                                            onChange={handlePassHints} required
+                                        />
+                                        <InputError>{errors?.password || ''}</InputError>
+                                    </li>
+                                    <li>
+                                        <label>Confirm Password</label>
+                                        <input
+                                            id="password_confirmation"
+                                            type="password"
+                                            name="password_confirmation"
+                                            value={data.password_confirmation}
+                                            className="mt-1 block w-full"
+                                            autoComplete="off"
+                                            onChange={(e) => setData('password_confirmation', e.target.value)}
+                                            required
+                                        />
+                                        <InputError>{errors?.password_confirmation || ''}</InputError>
+                                        <div className={`mt-3 ${mypass ? 'd-block' : 'd-none'}`} >
+
+                                            <div className="pass greybox border-0 p-3" >
+                                                <div id="msgText">
+                                                    <h3>Password must contain the following:</h3>
+                                                    <p id="letter" class="text-grey"><CheckCircleIcon /> &nbsp;A <b> lowercase</b> letter</p>
+                                                    <p id="capital" class="text-grey"><CheckCircleIcon /> &nbsp;A <b> capital (uppercase)</b> letter</p>
+                                                    <p id="number" class="text-grey"><CheckCircleIcon /> &nbsp;A <b> number</b></p>
+                                                    <p id="special" class="text-grey"><CheckCircleIcon /> &nbsp;Special characters</p>
+                                                    <p id="length" class="text-grey mb-0"><CheckCircleIcon /> &nbsp;Password should minimum 8 characters.</p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div> 
-                                </li>
-                            </ul>
-                                 
-                            <div className='termselect'>
-                                <label htmlFor="termaccept">
-                                    <p className='tersms-accept' ><input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept"
-                                        required onChange={(e) => setData("termaccept", e.target.value)}></input>
-                                        By signing up you agree to our <Link className='text-voilet font-bold' target='_blank' href={route('terms-and-conditions')} >Terms & Conditions</Link>  and <a className='text-voilet font-bold' target='_blank' href={'https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6'} >Privacy Policy,</a>  and confirm that you are at least 18. years old.
-                                    </p>
-                                </label>
-                            </div>
-                         
-                            <div className='wishlistbtn  rotate-btn text-center flex justify-center mt-4'>
-                                 
-                                <LoaderButton disabled={processing} className='btn-pink lg lg2 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : " Create Account"}</LoaderButton>
-                            </div>
+                                    </li>
+                                </ul>
 
-                            
-                        </div>
-                    </form>
+                                <div className='termselect'>
+                                    <label htmlFor="termaccept">
+                                        <p className='tersms-accept' ><input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept"
+                                            required onChange={(e) => setData("termaccept", e.target.value)}></input>
+                                            By signing up you agree to our <Link className='text-voilet font-bold' target='_blank' href={route('terms-and-conditions')} >Terms & Conditions</Link>  and <a className='text-voilet font-bold' target='_blank' href={'https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6'} >Privacy Policy,</a>  and confirm that you are at least 18. years old.
+                                        </p>
+                                    </label>
+                                </div>
+
+                                <div className='wishlistbtn  rotate-btn text-center flex justify-center mt-4'>
+
+                                    <LoaderButton disabled={processing} className='btn-pink lg lg2 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : " Create Account"}</LoaderButton>
+                                </div>
+
+
+                            </div>
+                        </form>
+                    </div>
                 </div>
-            </div>
             </div>
         </GuestLayout>
     );

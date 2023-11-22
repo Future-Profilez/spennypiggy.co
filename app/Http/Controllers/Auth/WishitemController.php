@@ -67,7 +67,7 @@ class WishitemController extends Controller
 
 
         $taxamount = $request->price * env('TAX_PERCENTAGE') / 100;
-        $createpriceid = ceil($request->price) + $taxamount;
+        $createpriceid = ceil($request->price) + ceil($taxamount);
         $wish = WishItem::create([
             "user_id" => Auth::id(),
             'wishname' => $request->wishname,
@@ -77,7 +77,7 @@ class WishitemController extends Controller
             'subscription' => $request->subscription,
             'subscription_period' => $request->subscription_period ?? null,
             'repeat_purchase' => $request->repeat_purchase ?? 0,
-            'tax_amount' => $taxamount,
+            'tax_amount' => ceil($taxamount),
             // 'category' => $request->category ?? null,
         ]);
 
@@ -262,7 +262,7 @@ class WishitemController extends Controller
 
         if ($wishitem->subscription == 0 && $wishitem->repeat_purchase == 0 && !empty($payment)) {
             return response()->json([
-                "success" => true,
+                "success" => false,
                 "msg" => "You can pay only once for this wish.",
             ]);
         }
@@ -274,8 +274,8 @@ class WishitemController extends Controller
                 $cart->status = 1;
                 if ($wishitem->subscription == 2) {
                     $fullfillamount = $amount;
-                    $tax =  $amount * env('TAX_PERCENTAGE') / 100;
-                    $createpriceid = $amount + $amount * env('TAX_PERCENTAGE') / 100;
+                    $tax =  ceil($amount * env('TAX_PERCENTAGE') / 100);
+                    $createpriceid = $amount + $tax;
                     $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                     $stripe_client = $stripe->products->create([
                         'name' => 'anonymous',
@@ -413,7 +413,7 @@ class WishitemController extends Controller
                 }
             }
             $cart[$key]['total'] = $total;
-            $cart[$key]['fee'] = ($total * env('TAX_PERCENTAGE')) / 100;
+            $cart[$key]['fee'] = ceil($total * env('TAX_PERCENTAGE') / 100);
 
             $key++;
         }
