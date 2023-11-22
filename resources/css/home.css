@@ -560,3 +560,8 @@ div#msgText p {
   display: flex;
   align-items: flex-start;
 }
+.loginPage .username-text {
+  font-size: 15px !important;
+  padding: 10px 4px 0px 4px;
+  margin-bottom: 0 !important;
+}

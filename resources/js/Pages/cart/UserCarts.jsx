@@ -66,13 +66,10 @@ export default function UserCarts(props) {
                             <li>
                                 <label>Add Message </label>
                                 <textarea
-                                    onChange={(e) =>
-                                        setMessage(e.target.value)
-                                    }
+                                    onChange={(e) =>setMessage(e.target.value)}
                                     placeholder="Write message in under 800 Words..."
                                 ></textarea>
                             </li>
-
                             <li className="w-100 mt-3">
                                 <li className="row">
                                     <div className="col-md-6 mb-4">
@@ -86,21 +83,18 @@ export default function UserCarts(props) {
                                     </div>
                                 </li>
                             </li>
-
                             <li className="cheklistbox">
-                                <label for="agreeterm">
+                                <label for="agreeterm" className="text-start" >
                                     <input onChange={(e) => setIsChecked(e.target.checked)}
                                         type="checkbox"
                                         id="agreeterm"
                                         name="agreeterm" className="me-2"
-                                        value="agreeterm"
-                                    ></input>
+                                        value="agreeterm" ></input>
                                     I agree to the Terms of Service and Privacy
                                     Policy and the following statements:
                                 </label>
-
-                                <div className="tearmlist">
-                                    <ul>
+                                <div className="tearmlist ps-3">
+                                    <ul className="ps-0" >
                                         <li>
                                             I am making a non-refundable cash
                                             gift donation.
@@ -138,7 +132,7 @@ export default function UserCarts(props) {
                                 </div>
                             </li>
                         </ul>
-                        <button type="submit" className={`${isChecked ? "" : 'disabled'}  btn-pink md w-1/2 text-center m-auto`}>
+                        <button type="submit" className={`${isChecked ? "" : 'disabled'}  btn-pink md mt-3 w-1/2 text-center m-auto`}>
                             Checkout
                         </button>
                     </form>
