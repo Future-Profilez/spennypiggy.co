@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
 use Stripe\Stripe;
@@ -59,7 +60,7 @@ class StripeController extends Controller
      * @param string $step Connection Current Step
      * @return mixed
      */
-    public function initConnect(Request $request, $step = "init", $country)
+    public function initConnect(Request $request, $step = "init", $country = null)
     {
 
         $user = User::find(Auth::id());
@@ -67,18 +68,22 @@ class StripeController extends Controller
             // if (!$request->isMethod("POST")) {
             //     return redirect()->back()->with("error", "Invalid request!");
             // }
-
+            $country = strtoupper($country);
             try {
                 $payload = [
-                    "country" => strtoupper($country),
+                    "country" => $country,
                     "type" => "express",
                     'email' => $user->email,
                     'capabilities' => [
                         'card_payments' => ['requested' => true],
                         'transfers' => ['requested' => true],
                     ],
-                    // 'business_type' => 'individual',
-                    // 'business_profile' => ['url' => route("user.show", ["username" => $user->username])],
+                    'business_type' => 'individual',
+                    'business_profile' => [
+                        'url'   =>  "https://spennypiggy.com/{$user->username}",
+                        'mcc'   => '5969'
+                    ],
+                    'default_currency' => 'GBP'
                 ];
 
 
@@ -102,7 +107,7 @@ class StripeController extends Controller
                 "refresh_url" => route("stripe.connect", ["step" => "refresh", "country" => $user->country]),
                 "return_url"  => route("stripe.return"),
                 "type"        => "account_onboarding",
-                // "collect"   => 'currently_due'
+                "collect"   => 'currently_due'
             ]);
 
             return Inertia::location($link->url);
@@ -192,9 +197,9 @@ class StripeController extends Controller
             ]);
 
             $callbackData = $sessioncreate;
-            \Log::info("callback data amount: " . $callbackData->amount_total);
+            Log::info("callback data amount: " . $callbackData->amount_total);
             $subtotal = ($callbackData->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
-            \Log::info("subtotal: " . $subtotal);
+            Log::info("subtotal: " . $subtotal);
             $taxnew = ($callbackData->amount_total / 100) - ($subtotal);
 
             session()->forget('session_id');
@@ -218,7 +223,7 @@ class StripeController extends Controller
 
             return Inertia::location($sessioncreate->url);
         } catch (\Throwable $th) {
-            \Log::error("Error in createCheckout: " . $th->getMessage());
+            Log::error("Error in createCheckout: " . $th->getMessage());
             throw $th;
         }
     }
