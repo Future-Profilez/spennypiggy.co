@@ -114,11 +114,6 @@ class AuthenticatedSessionController extends Controller
         }
 
 
-
-
-        // if(!$user){
-        //     return
-        // }
         if (!empty(request()->query('item'))) {
             $itemdid = request()->query('item');
         } else {
@@ -161,5 +156,19 @@ class AuthenticatedSessionController extends Controller
             "sociallinks" => $sociallinks,
             "slinks" => $slinks
         ]);
+    }
+
+    public function checkUserName($username)
+    {
+        try {
+            $user = User::where('username', 'LIKE', '%' . $username . '%')->first();
+            if (!empty($user)) {
+                return response()->json(['status' => true]);
+            } else {
+                return response()->json(['status' => false]);
+            }
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
     }
 }
