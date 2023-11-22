@@ -26,13 +26,19 @@ class EmailVerificationNotificationController extends Controller
         return back()->with('status', 'verification-link-sent');
     }
 
-    public function sendVerificationEmail()
-    {
+    public function sendVerificationEmail(){
         try {
             $user = User::whereId(Auth::id())->first();
             VerifyEmail::dispatch($user);
+            return response()->json([
+                "success" => true,
+                'msg' => "Verification email has been sent.",
+            ]);
         } catch (\Throwable $th) {
-            //throw $th;
+            return response()->json([
+                "success" => false,
+                'error' => "Verification email failed.",
+            ]);
         }
     }
 }
