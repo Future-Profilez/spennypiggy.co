@@ -10,8 +10,9 @@ import { useEffect } from 'react';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import Wishlist from '@/Pages/Auth/Wishlist';
 
-export default function Wishlistbox({ itm, itemid, auth, IsloggedIn, fetchingcats, categories }) {
+export default function Wishlistbox(props) {
 
+  const { itm, itemid, auth, IsloggedIn, fetchingcats, categories } = props;
   const [itemUID, setItemUID] = useState(itemid);
   const [open, setOpen] = useState();
   const openAddtocart = () => {
@@ -30,7 +31,7 @@ export default function Wishlistbox({ itm, itemid, auth, IsloggedIn, fetchingcat
   const getPercentage = (actual, paid) => { 
     const r = (paid/actual)*100;
     console.log("get percentage", r);
-    return r.toFixed(0);
+    return r.toFixed(1);
   }
  
   console.log("props wishbox", props);

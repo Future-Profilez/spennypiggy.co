@@ -17,10 +17,8 @@ export default function AddCart(props) {
     const getPercentage = (actual, paid) => { 
         const r = (paid/actual)*100;
         console.log("add percentage", r);
-        return r.toFixed(0);
+        return r.toFixed(1);
     }
-
-
 
     return (
         <Popup
