@@ -5,13 +5,18 @@ import axios from 'axios';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 
-export default function ToCart({ crowd, pending, uuid, text, classes, custom, removeItem, type, is_cart, amount }) {
+export default function ToCart({ crowd, pending, uuid, text, classes, custom, removeItem, type, is_cart, amount, isEqual }) {
 
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [loading, setLoading] = useState(false);
     const [is_Cart, setis_Cart] = useState(is_cart);
 
     const addtocart = (e) => {
+        
+        if(item.subscription == "2" && isEqual){
+            toast.error(`Wish item funding is completed.`);
+            return false;
+        }
 
         if(crowd && !amount  ){
             toast.error(`Please enter a amount to gift this item. `);
