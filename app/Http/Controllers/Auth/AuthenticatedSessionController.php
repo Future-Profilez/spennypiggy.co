@@ -161,11 +161,17 @@ class AuthenticatedSessionController extends Controller
     public function checkUserName($username)
     {
         try {
-            $user = User::where('username', 'LIKE', '%' . $username . '%')->first();
-            if (!empty($user)) {
-                return response()->json(['status' => true]);
+            if (preg_match("/^[a-z0-9_]+$/", $username)) {
+                // Username contains only lowercase letters, numbers, and underscores
+                $user = User::where('username', $username)->first();
+                if (!empty($user)) {
+                    return response()->json(['status' => true]);
+                } else {
+                    return response()->json(['status' => false, 'msg' => 'Username is not available']);
+                }
             } else {
-                return response()->json(['status' => false]);
+                // Username contains spaces, special characters, or capital letters
+                return response()->json(['status' => false, 'msg' => 'Username contains only lowercase letters, numbers, and underscores']);
             }
         } catch (\Throwable $th) {
             //throw $th;
