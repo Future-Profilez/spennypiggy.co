@@ -289,8 +289,14 @@ ul.socialmedia a img{width:35px;height:35px;}
 
 .profilePhotoImg.cover button{position:absolute !important;left:10px;top:10px;}
 .profilePhotoImg.dp{position:absolute;bottom:-40px;left:50%;transform:translateX(-50%);border-radius:50% !important;overflow:hidden;}
-
-
+.tersms-accept { 
+  font-size: 16px !important;
+}
+div#msgText p  b {
+  font-weight: 700 !important;
+  padding: 0 4px;
+  color: #000;
+}
 
 /* Responsive */
 @media(max-width:1500px){.loveboxes{padding:0 20px;}
@@ -455,7 +461,7 @@ button.closemega svg{width:56px;top:10px;}
 .loginform{border-radius:15px 15px;}
 .loginform form ul li input{padding:12px 12px;border-radius:5px;}
 .loginform form ul li{margin:0 0 18px;}
-.loginform form ul li label{margin-bottom:5px;font-size:13px;}
+.loginform form ul li label{margin-bottom:10px;font-size:15px;}
 .loginheadbox .bluebg,.loginheadbox .mintbg{width:18px;height:18px;}
 .wishlistbtn .w-3\/5{width:96%;}
 .wishlistbtn .btn-pink.lg{font-size:16px;}
@@ -502,6 +508,9 @@ button.cartLink svg{width:50px;height:50px;}
 .cartTotal .cartSubTotal{display:flex !important;justify-content:space-between;}
 .addCartModal{min-width:auto !important;}
 .userphotobox{height:190px;}
+.loginform form{padding:20px;}
+.pass.greybox{padding:0 !important;background:transparent;}
+.wishlistimg img{height:140px !important;}
 }
 @media(max-width:449px){.userphoto{left:7px;}
 .socialmedia{margin-top:2px!important;}
@@ -512,12 +521,42 @@ button.cartLink svg{width:50px;height:50px;}
 select#country{width:100%;margin-bottom:10px;}
 .wishlistcntbox{max-width:100%;width:100%;}
 }
-@media(max-width:400px){.headingMd{font-size:44px !important;line-height:45px !important;}
-.userManageRt > .row > div{width:100% !important;}
-.spennylogo img{max-width:120px;}
-.welcomeHeading{font-size:35px;line-height:40px;}
-.noResult h2.headingLg{font-size:25px;line-height:30px;}
-.menuImg img{max-width:119px;}
-button.closemega svg{width:48px;}
-button.closemega{top:18px;}
+@media(max-width:400px){
+  .headingMd{font-size:44px !important;line-height:45px !important;}
+  .userManageRt > .row > div{width:100% !important;}
+  .spennylogo img{max-width:120px;}
+  .welcomeHeading{font-size:35px;line-height:40px;}
+  .noResult h2.headingLg{font-size:25px;line-height:30px;}
+  .menuImg img{max-width:119px;}
+  button.closemega svg{width:48px;}
+  button.closemega{top:18px;}
+}
+
+
+
+/* msg text */
+div#msgText h3{font-size:15px;color:#fff;margin-bottom:7px;}
+div#msgText p{margin-bottom:9px;font-weight:300 !important;font-size:14px;}
+
+
+#msgText .valid svg{color:var(--mint);}
+.uMsgW.err svg{fill:red !important;}
+.uMsgW{z-index:999;}
+div#msgText h3{font-size:15px;color:#000 !important;margin-bottom:7px;}
+div#msgText p{margin-bottom:9px;font-weight:300 !important;font-size:14px;}
+
+.greybox{background:#eee;border-radius:12px;}
+div#msgText p svg{min-width:18px; width:18px;display:flex;}
+div#msgText p{ display:flex;color:#646464; margin-bottom: 10px !important; } 
+div#msgText h3{color:#000;}
+div#msgText p svg path{stroke:#646464;fill:#fff;}
+div#msgText p.valid {
+  color: #000;
+}
+div#msgText p.valid svg path {
+  stroke: #27b227;
+}
+div#msgText p {
+  display: flex;
+  align-items: flex-start;
 }

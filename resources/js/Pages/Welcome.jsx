@@ -72,7 +72,7 @@ export default function Home({ auth, laravelVersion, user }) {
                                 </h3>
                                 <div className="mt-6 wishlistbtn wishlistbtnFixed rotate-btn">
                                    {auth?.user?.username ? <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink wishlistbutton lg w-2/5 shadow-mint border-mint" > Create Wishlist </Link>
-                                   :  <Link href="/login" className="btn-pink wishlistbutton lg w-2/5 shadow-mint border-mint" > Create Wishlist </Link>
+                                   :  <Link href="/register" className="btn-pink wishlistbutton lg w-2/5 shadow-mint border-mint" > Create Wishlist </Link>
                                    }
                                 </div>
                                 <div className="itsfree mt-4 ps-24">

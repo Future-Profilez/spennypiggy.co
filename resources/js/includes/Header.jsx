@@ -30,7 +30,7 @@ export default function Header(props) {
           {auth && auth?.username ? 
             <Link href={`/${auth && auth?.username || ''}`} className='headtitle text-wh font-GillSans d-none d-lg-flex' > Create Wishlist </Link>
             :  
-            <Link href="/login" className='headtitle text-wh font-GillSans d-none d-lg-flex' > Create Wishlist </Link>
+            <Link href="/register" className='headtitle text-wh font-GillSans d-none d-lg-flex' > Create Wishlist </Link>
           }
 
             {/* <Link href={`/${ auth && auth?.username || ''}`} className='headtitle text-wh font-GillSans  d-none d-lg-flex'>Create Wishlist</Link> */}

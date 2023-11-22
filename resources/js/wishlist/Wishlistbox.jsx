@@ -34,14 +34,22 @@ export default function Wishlistbox(props) {
     return r.toFixed(1);
   }
  
-  console.log("props wishbox", props);
+  const price = () => { 
+    if(!IsloggedIn && itm.subscription !== 2){
+        const p = (+itm.price) + (+itm.tax_amount)
+        return p
+    } else { 
+      return itm.price
+    }
+  };
+  
 
   return <>
       <div className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
         {IsloggedIn ?   
           <Wishlist item={itm} editpop={true} fetchingcats={fetchingcats} categories={categories} />  
           : 
-        <AddCart auth={auth} item={itm} uuid={itm.uuid} action={open} /> 
+        <AddCart IsloggedIn={IsloggedIn} auth={auth} item={itm} uuid={itm.uuid} action={open} /> 
         }
 
       <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
@@ -50,7 +58,7 @@ export default function Wishlistbox(props) {
       <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
         <div>
           <h4 className={`fon-bold text-dark ${itm.subscription == '2' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>
-          <h5 className='font-CeraGRBold text-dark'>£{itm.price}</h5>
+          <h5 className='font-CeraGRBold text-dark'>£{price()}</h5>
         </div>
         {itm.subscription == '2' ? 
           <div className='crowd pt-2'>

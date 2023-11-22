@@ -82,7 +82,7 @@ export default function Stripe(props) {
                             <label htmlFor="termaccept">
                                 <p><input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept"
                                     required onChange={(e) => setData("termaccept", e.target.value)}></input>
-                                    Keep that and add after wishlist, And confirm that nothing on the prohibited list above will be listed.
+                                    I confirm that I will only use Spenny Piggy to receive gifts, tips, donations. I will not sell servicers or goods on my wishlist and confirm that nothing on the prohibited list above will be listed
                                 </p></label>
                         </div>
 

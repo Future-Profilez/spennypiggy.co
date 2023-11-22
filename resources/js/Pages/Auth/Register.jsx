@@ -1,14 +1,32 @@
-import { useEffect } from 'react';
+import { useEffect,useState } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import InputError from '@/Components/InputError';
 import { useAlerts } from "@/Components/Alerts";
 import { Head, Link, useForm } from '@inertiajs/react';
 import LoaderButton from '@/Components/LoaderButton';
 import toast from 'react-hot-toast';
-
+import { useRef } from 'react';
 export default function Register() {
+    const CheckCircleIcon = () => {
+        return <><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path opacity="0.1" d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" fill="#000000"></path> <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#000000" stroke-width="2"></path> <path d="M9 12L10.6828 13.6828V13.6828C10.858 13.858 11.142 13.858 11.3172 13.6828V13.6828L15 10" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg></>
+    }
+
+    const checkRef = useRef();
 
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
+
+    const lowerLetter = /[a-z]/g;
+    const capitalLetter = /[A-Z]/g;
+    const numberLetter = /[0-9]/g;
+    const specialLetter = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/]/g;
+  
+    const inputField = (typeof window !== 'undefined') && document.getElementById('password');
+    const letter =  (typeof window !== 'undefined') && document.getElementById('letter');
+    const capital =  (typeof window !== 'undefined') && document.getElementById('capital');
+    const number =  (typeof window !== 'undefined') && document.getElementById('number');
+    const special =  (typeof window !== 'undefined') && document.getElementById('special');
+    const length =  (typeof window !== 'undefined') && document.getElementById('length');
+    const [mypass, setmypass] = useState();
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
@@ -18,14 +36,27 @@ export default function Register() {
         password_confirmation: '',
     });
 
+
     useEffect(() => {
         return () => {
             reset('password', 'password_confirmation');
         };
     }, []);
 
+
+    const termsaccept = () => { 
+        errorAlert("Please check accept terms & conditions checkbox");
+        checkRef.current.focus();
+        return false;
+    }
+
+
     const submit = (e) => {
         e.preventDefault();
+        if(checkRef.current.checked){
+            termsaccept();
+            return false;
+        }
         post(route('register'), {
             preserveScroll: true,
             onSuccess: (resp) => {
@@ -39,6 +70,52 @@ export default function Register() {
             }
         });
     };
+
+    const handlePassHints = (e) => { 
+        setData('password', mypass);
+        setmypass(e.target.value);
+        if(inputField.value.match(lowerLetter)){ 
+          letter.classList.remove('text-grey');
+          letter.classList.add('valid'); 
+        } else { 
+          letter.classList.remove('valid');
+          letter.classList.add('text-grey');
+        }
+    
+        if(inputField.value.match(capitalLetter)){ 
+          capital.classList.remove('text-grey');
+          capital.classList.add('valid');
+        } else { 
+          capital.classList.remove('valid');
+          capital.classList.add('text-grey');
+        }
+    
+        if(inputField.value.match(numberLetter)){ 
+          number.classList.remove('text-grey');
+          number.classList.add('valid');
+        } else { 
+          number.classList.remove('valid');
+          number.classList.add('text-grey');
+        }
+    
+        if(inputField.value.match(specialLetter)){ 
+          special.classList.remove('text-grey');
+          special.classList.add('valid');
+        } else { 
+          special.classList.remove('valid');
+          special.classList.add('text-grey');
+        }
+    
+        if(inputField.value.length > 7){ 
+          length.classList.remove('text-grey');
+          length.classList.add('valid');
+        } else { 
+          length.classList.add('text-grey');
+          length.classList.remove('valid');
+        }  
+    } 
+
+
 
     return (
         <GuestLayout>
@@ -99,12 +176,11 @@ export default function Register() {
                                     <label>Password</label>
                                     <input  id="password"
                                     type="password"
-                                    name="password"
-                                    value={data.password}
+                                    name="password" 
+                                    value={mypass}
                                     className="mt-1 block w-full"
                                     autoComplete="new-password"
-                                    onChange={(e) => setData('password', e.target.value)}
-                                    required
+                                    onChange={handlePassHints} required 
                                     />
                                     <InputError>{errors?.password || ''}</InputError>
                                 </li>
@@ -121,13 +197,34 @@ export default function Register() {
                                         required
                                     />
                                     <InputError>{errors?.password_confirmation || ''}</InputError>
+                                    <div className={`mt-3 ${mypass?'d-block':'d-none'}`} >
+                                        
+                                        <div  className="pass greybox border-0 p-3" >
+                                            <div  id="msgText">
+                                                <h3>Password must contain the following:</h3>
+                                                <p id="letter" class="text-grey"><CheckCircleIcon /> &nbsp;A <b> lowercase</b> letter</p>
+                                                <p id="capital" class="text-grey"><CheckCircleIcon /> &nbsp;A <b> capital (uppercase)</b> letter</p>
+                                                <p id="number" class="text-grey"><CheckCircleIcon /> &nbsp;A <b> number</b></p>
+                                                <p id="special" class="text-grey"><CheckCircleIcon /> &nbsp;Special characters</p>
+                                                <p id="length" class="text-grey mb-0"><CheckCircleIcon /> &nbsp;Password should minimum 8 characters.</p>
+                                            </div>
+                                        </div>
+                                    </div> 
                                 </li>
                             </ul>
+                                 
+                            <div className='termselect'>
+                                <label htmlFor="termaccept">
+                                    <p className='tersms-accept' ><input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept"
+                                        required onChange={(e) => setData("termaccept", e.target.value)}></input>
+                                        By signing up you agree to our <Link className='text-voilet font-bold' target='_blank' href={route('terms-and-conditions')} >Terms & Conditions</Link>  and <a className='text-voilet font-bold' target='_blank' href={'https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6'} >Privacy Policy,</a>  and confirm that you are at least 18. years old.
+                                    </p>
+                                </label>
+                            </div>
+                         
                             <div className='wishlistbtn  rotate-btn text-center flex justify-center mt-4'>
-                                {/* <button type='submit' className='btn-pink lg'>
-                                    {processing ? "Proccessing" : " Create your Account"}
-                                </button> */}
-                                <LoaderButton disabled={processing} className='btn-pink lg lg2' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : " Create Account"}</LoaderButton>
+                                 
+                                <LoaderButton disabled={processing} className='btn-pink lg lg2 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : " Create Account"}</LoaderButton>
                             </div>
 
                             
