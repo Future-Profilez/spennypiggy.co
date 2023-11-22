@@ -97,7 +97,7 @@ class WishitemController extends Controller
             $stripe_client = $stripe->products->create([
                 'name' => $request->wishname ?? null,
                 'images' => [$wish->perma_link],
-                "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid],
+                "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
                 "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
             ]);
             $wish->stripe_product_id = $stripe_client->id;
@@ -163,7 +163,7 @@ class WishitemController extends Controller
                 $stripe_client = $stripe->products->update([
                     'name' => $request->wishname ?? $wish->wishname,
                     'images' => [$updatedata->perma_link],
-                    "default_price_data" => ["currency" => "usd", "unit_amount_decimal" => $createpriceid],
+                    "default_price_data" => ["currency" => "usd", "unit_amount_decimal" => $createpriceid * 100],
                     // "url" => $request->item_url ?? null
                 ]);
 
@@ -280,7 +280,7 @@ class WishitemController extends Controller
                     $stripe_client = $stripe->products->create([
                         'name' => 'anonymous',
                         'images' => [$wishitem->perma_link],
-                        "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid],
+                        "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
                     ]);
                     $priceid = $stripe_client->default_price;
                 } else {

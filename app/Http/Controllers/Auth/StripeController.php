@@ -304,7 +304,6 @@ class StripeController extends Controller
     {
         try {
             $wishdata = WishItem::whereId($wishid)->first();
-
             $lineItems = [];
             if ($wishdata->subscription == 2) {
                 if (!empty($amount)) {
@@ -317,10 +316,12 @@ class StripeController extends Controller
                         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                         $stripe_client = $stripe->products->create([
                             'name' => 'anonymous product',
-                            'images' => '',
-                            "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $totalamount],
+                            'images' => [$wishdata->perma_link],
+                            "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $totalamount * 100],
                         ]);
                     } catch (\Throwable $th) {
+                        echo $th;
+                        die;
                         return back()->with('error', $th);
                     }
 
