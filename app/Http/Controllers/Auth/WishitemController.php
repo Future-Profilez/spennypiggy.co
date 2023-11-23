@@ -374,9 +374,10 @@ class WishitemController extends Controller
                 'user' => $wish->user->toArray(),
                 'wish' => $wish->wish ? $wish->wish->toArray() : [],
                 'owner' => $wish->owner->toArray(),
-                'url' => $wish->wish->perma_link,
+                'url' => $wish->wish ? $wish->wish->perma_link : 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/',
                 'amount' => $wish->amount,
                 'priceid' => $wish->priceid,
+                'uuiddata' => $wish->uuid,
             ];
         }
 
@@ -396,35 +397,51 @@ class WishitemController extends Controller
             $total = 0;
 
             foreach ($value as $k => $v) {
-                if ($v['wish']['subscription'] == 2) {
-                    $price = $v['amount'];
-                    $priceid = $v['priceid'];
-                } else {
-                    $price = $v['wish']['price'];
-                    $priceid = $v['wish']['price_id'];
-                }
+                // if ($v['wish']['subscription'] == 2) {
+                //     $price = $v['amount'];
+                //     $priceid = $v['priceid'];
+                // } else {
+                //     $price = $v['wish']['price'] ;
+                //     $priceid = $v['wish']['price_id'];
+                // }
 
-                $cart[$key]['items'][$k] = [
-                    'id' => $v['wish']['id'],
-                    'uuid' => $v['wish']['uuid'],
-                    'user_id' => $v['wish']['user_id'],
-                    'wishname' => $v['wish']['wishname'],
-                    'stripe_product_id' => $v['wish']['stripe_product_id'],
-                    'price' => $price,
-                    'price_id' => $priceid,
-                    'item_url' => $v['wish']['item_url'],
-                    'subscription' => $v['wish']['subscription'],
-                    'subscription_period' => $v['wish']['subscription_period'],
-                    'repeat_purchase' => $v['wish']['repeat_purchase'],
-                    'category' => $v['wish']['category'],
-                    'url' => $v['url'],
-                ];
-
-                if ($v['wish']['subscription'] == 2) {
-                    $total += $v['amount'];
-                } else {
-                    $total += $v['wish']['price'];
+                $price = $v['amount'] ? $v['amount'] : $v['wish']['price'];
+                $priceid = $v['priceid'] ? $v['priceid'] : $v['wish']['price_id'];
+                
+                if(!empty($v['wish'])){
+                    $cart[$key]['items'][$k] = [
+                        'id' => $v['wish']['id'],
+                        'uuid' => $v['wish']['uuid'],
+                        'user_id' => $v['wish']['user_id'],
+                        'wishname' => $v['wish']['wishname'],
+                        'stripe_product_id' => $v['wish']['stripe_product_id'],
+                        'price' => $price,
+                        'price_id' => $priceid,
+                        'item_url' => $v['wish']['item_url'],
+                        'subscription' => $v['wish']['subscription'],
+                        'subscription_period' => $v['wish']['subscription_period'],
+                        'repeat_purchase' => $v['wish']['repeat_purchase'],
+                        'category' => $v['wish']['category'],
+                        'url' => $v['url'],
+                    ];
+                }else{
+                    \Log::info( $v);
+                    $cart[$key]['items'][$k] = [
+                        'price' => $price,
+                        'wishname' => 'Surprise Gift',
+                        'uuid' => $v['uuiddata'],
+                        'price_id' => $priceid,
+                        'url' => $v['url'],
+                    ];
                 }
+               
+
+                // if ($v['wish']['subscription'] == 2) {
+                //     $total += $v['amount'];
+                // } else {
+                //     $total += $v['wish']['price'];
+                // }
+                 $total += $v['amount'] ? $v['amount'] : $v['wish']['price'];
             }
             $cart[$key]['total'] = $total;
             $cart[$key]['fee'] = ceil($total * env('TAX_PERCENTAGE') / 100);
