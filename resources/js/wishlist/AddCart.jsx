@@ -8,8 +8,12 @@ import DirectCheckout from "./DirectCheckout";
 import ProgressBar from "react-bootstrap/ProgressBar";
 import { useState } from "react";
 import { useEffect } from "react";
+import PriceFormat from "@/includes/PriceFormat";
 
 export default function AddCart(props) {
+
+    const { format } = PriceFormat();
+
     const { auth, action, uuid, item, IsloggedIn } = props;
     const [cartamount, setcartamount] = useState(null);
     const [close, setClose] = useState(action);
@@ -58,7 +62,7 @@ export default function AddCart(props) {
                 </div>
                 <div className="cartTitle text-center">{item.wishname}</div>
                 <div className="cartPrice font-CeraGRBold text-voilet mt-1 mb-3 text-center">
-                    £ {price()}
+                    {format(price())}
                 </div>
 
                 {item.subscription == "2" ? (
@@ -67,8 +71,8 @@ export default function AddCart(props) {
                         <div className="croud-add">
                             <input
                                 onChange={(e) => setcartamount(e.target.value)}
-                                placeholder="£ eg. 50"
-                                type="number"
+                                placeholder="Eg. 50"
+                                type="number" 
                                 className="form-control mt-1"
                             />
                         </div>
@@ -82,12 +86,10 @@ export default function AddCart(props) {
                                     {getPercentage(
                                         item.price,
                                         item.fullfill_amount
-                                    )}
-                                    % granted
+                                    )}% granted
                                 </p>
                                 <p className="mt-1 mb-0 text-small">
-                                    Remaining £
-                                    {item.price - item.fullfill_amount}
+                                    Remaining  {format(item.price - item.fullfill_amount)}
                                 </p>
                             </div>
                         </div>
@@ -105,17 +107,11 @@ export default function AddCart(props) {
                                 amount={cartamount} 
                                 isEqual={item.price <= item.fullfill_amount}
                                 is_cart={item?.is_cart}
-                                text={`Add to cart`}
+                                text={`Add To Cart And Keep Shopping`}
+                                text2={`Add To Cart And Checkout`}
                                 classes={`btn-pink lg w-100 mb-3 font-CeraGR ${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
                                 uuid={uuid}
                             />
-                            <Link
-                                href={route("cart")}
-                                className="text-pink font-CeraGR text-center m-auto d-table"
-                            >
-                                {" "}
-                                View Cart
-                            </Link>
                         </>
                     ) : (
                         <DirectCheckout

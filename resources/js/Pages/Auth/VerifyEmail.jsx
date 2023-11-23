@@ -10,20 +10,21 @@ export default function VerifyEmail({ status }) {
     const { get, processing } = useForm({});
     const submit = (e) => {
         e.preventDefault();
-        // setLoading(true);
         axios.get(`/email/send-verification-email`).then(resp => {
             console.log("resp", resp)
         }).catch(_err => {
             console.error("error", _err);
-            // setLoading(false);
         });
     };
-
     // const [sent,setSent] = useState(0);
     // useEffect(()=>{
     //     setSent(sent+1);
     //     if(sent < 1){
-    //         get(route("verification.email"));
+    //         axios.get(`/email/send-verification-email`).then(resp => {
+    //             console.log("resp", resp)
+    //         }).catch(_err => {
+    //             console.error("error", _err);
+    //         });
     //     }
     // },[]);
 

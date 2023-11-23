@@ -5,12 +5,11 @@ import { useAlerts } from '@/Components/Alerts';
 import { useEffect } from 'react';
 import Footer from '@/includes/Footer';
 import Header from '@/includes/Header';
-import SiteMeta from '@/includes/SiteMetas';
 export default function Guest(props) {
     const {successAlert, errorAlert} = useAlerts();
     const {flash} = usePage().props;
     useEffect(() => {
-        // console.log("flash", flash);
+        console.log("flash", flash);
         if(flash?.error){
             errorAlert(flash.error);
         }
@@ -28,7 +27,7 @@ export default function Guest(props) {
     const {children, auth} = props;
 
     return <>
-        <SiteMeta />
+        {/* <SiteMeta /> */}
         <Header auth={auth ||''} />
         {children}
         <Footer auth={auth ||''} />

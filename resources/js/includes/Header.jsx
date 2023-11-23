@@ -14,7 +14,7 @@ export default function Header(props) {
     useEffect(()=>{
       // if(isActive){
       //     document.body.classList.add('modal-open');
-      // } else { 
+      // } else {
       //     document.body.classList.remove('modal-open');
       // }
     },[isActive]);
@@ -26,10 +26,10 @@ export default function Header(props) {
         <div className='blackbg headermain py-14'>
           <div className='containerbox'>
           <div className='header flex w-full items-center content-center justify-between pinkbg border-mint shadow-mint'>
-            
-          {auth && auth?.username ? 
+
+          {auth && auth?.username ?
             <Link href={`/${auth && auth?.username || ''}`} className='headtitle text-wh font-GillSans d-none d-lg-flex' > Create Wishlist </Link>
-            :  
+            :
             <Link href="/register" className='headtitle text-wh font-GillSans d-none d-lg-flex' > Create Wishlist </Link>
           }
 
@@ -50,12 +50,12 @@ export default function Header(props) {
               <svg width="58" height="59" viewBox="0 0 58 59" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <g filter="url(#filter0_d_467_5581)">
                 <rect y="0.5" width="55" height="55" rx="11" fill="#F94F97"/>
-                <rect x="0.55" y="1.05" width="53.9" height="53.9" rx="10.45" stroke="#E6EA7B" stroke-width="1.1"/>
+                <rect x="0.55" y="1.05" width="53.9" height="53.9" rx="10.45" stroke="#E6EA7B" strokeWidth="1.1"/>
                 </g>
-                <path d="M17.8125 35.4375H36.1875M17.8125 28.4375H36.1875M17.8125 21.4375H36.1875" stroke="#E6EA7B" stroke-width="2.625" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M17.8125 35.4375H36.1875M17.8125 28.4375H36.1875M17.8125 21.4375H36.1875" stroke="#E6EA7B" strokeWidth="2.625" strokeLinecap="round" strokeLinejoin="round"/>
                 <defs>
-                <filter id="filter0_d_467_5581" x="0" y="0.5" width="58" height="58" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-                <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+                <filter id="filter0_d_467_5581" x="0" y="0.5" width="58" height="58" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                <feFlood floodOpacity="0" result="BackgroundImageFix"/>
                 <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
                 <feOffset dx="3" dy="3"/>
                 <feComposite in2="hardAlpha" operator="out"/>
@@ -78,12 +78,12 @@ export default function Header(props) {
             <svg width="58" height="58" viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg">
               <g filter="url(#filter0_d_746_858)">
               <rect width="55" height="55" rx="11" fill="#F94F97"/>
-              <rect x="0.55" y="0.55" width="53.9" height="53.9" rx="10.45" stroke="#E6EA7B" stroke-width="1.1"/>
+              <rect x="0.55" y="0.55" width="53.9" height="53.9" rx="10.45" stroke="#E6EA7B" strokeWidth="1.1"/>
               </g>
-              <path d="M17.8125 34.9375L36.5 20.9375M27 27.9375H27.1562M17.8125 20.9375L36 34.9375" stroke="#E6EA7B" stroke-width="2.625" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M17.8125 34.9375L36.5 20.9375M27 27.9375H27.1562M17.8125 20.9375L36 34.9375" stroke="#E6EA7B" strokeWidth="2.625" strokeLinecap="round" strokeLinejoin="round"/>
               <defs>
-              <filter id="filter0_d_746_858" x="0" y="0" width="58" height="58" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-              <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+              <filter id="filter0_d_746_858" x="0" y="0" width="58" height="58" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+              <feFlood floodOpacity="0" result="BackgroundImageFix"/>
               <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
               <feOffset dx="3" dy="3"/>
               <feComposite in2="hardAlpha" operator="out"/>
@@ -100,19 +100,20 @@ export default function Header(props) {
               </div>
               <div className="menuList">
               <ul>
-                <li><Link onClick={toggleClass} href={route("how-it-works")} >How it works</Link></li> 
-                {loggedIn ? 
+                <li><Link onClick={toggleClass} href={route("how-it-works")} >How it works</Link></li>
+                <li><a onClick={toggleClass} target='_blank' href="https://intercom.help/spenny-piggy" >FAQ's</a></li>
+                {loggedIn ?
                   <>
-                    <li><Link onClick={toggleClass} href={"/account"} >My Account</Link></li> 
-                    <li><Link onClick={toggleClass} href={`/${auth&& auth?.username || ''}`} >Create Wishlist</Link></li> 
-                    <li><Link onClick={toggleClass} href={"/cart"} >Cart</Link></li> 
-                    <li><Link onClick={toggleClass}  method="get" href={route('logout')} >Logout</Link></li> 
-                  </> 
-                  : 
+                    <li><Link onClick={toggleClass} href={"/account"} >My Account</Link></li>
+                    <li><Link onClick={toggleClass} href={`/${auth&& auth?.username || ''}`} >Create Wishlist</Link></li>
+                    <li><Link onClick={toggleClass} href={"/cart"} >Cart</Link></li>
+                    <li><Link onClick={toggleClass}  method="get" href={route('logout')} >Logout</Link></li>
+                  </>
+                  :
                   <>
-                    <li><Link onClick={toggleClass} href={route("register")} >Sign Up</Link></li>  
-                    <li><Link onClick={toggleClass} href={route("login")} >Login</Link></li>  
-                  </> 
+                    <li><Link onClick={toggleClass} href={route("register")} >Sign Up</Link></li>
+                    <li><Link onClick={toggleClass} href={route("login")} >Login</Link></li>
+                  </>
                 }
               </ul>
               </div>
@@ -121,5 +122,5 @@ export default function Header(props) {
 
 
     </>
- 
+
 }

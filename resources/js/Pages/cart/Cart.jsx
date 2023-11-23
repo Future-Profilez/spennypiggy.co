@@ -9,7 +9,7 @@ export default function Cart(props) {
 
     const { auth, user } = props;
     const [cartsItems, setCartItems] = useState(props.carts);
-    console.log("props", props);
+ 
     return (
         <>
             <Authenticated auth={auth.user} user={user} >

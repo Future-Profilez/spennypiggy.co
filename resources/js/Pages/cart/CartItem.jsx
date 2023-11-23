@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import cartproductimg from '../../../assets/img/cartproductimg.png';
 import ToCart from "@/wishlist/ToCart";
+import PriceFormat from "@/includes/PriceFormat";
 
 export default function CartItem({data}) {
+    const { format } = PriceFormat();
 
     const [itemRemoved, setItemRemoved] = useState(null);
     const removeItem = (e) => { 
@@ -47,7 +49,7 @@ export default function CartItem({data}) {
 
             <div className='cartProRtbox  items-center'>
                 <div className='cartPric pe-5'>
-                    £ {data.price}
+                     {format(data.price)}
                 </div>
                 <ToCart  removeItem={removeItem} uuid={data.uuid} custom={<><button className='del'>
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">

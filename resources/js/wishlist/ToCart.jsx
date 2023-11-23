@@ -1,18 +1,17 @@
 import { useAlerts } from '@/Components/Alerts';
 import LoaderButton from '@/Components/LoaderButton';
-import { router } from '@inertiajs/react';
 import axios from 'axios';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 
-export default function ToCart({ ItemAdded, item, crowd, pending, uuid, text, classes, custom, removeItem, type, is_cart, amount, isEqual }) {
+export default function ToCart({ text2, ItemAdded, item, crowd, pending, uuid, text, classes, custom, removeItem, type, is_cart, amount, isEqual }) {
+
 
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [loading, setLoading] = useState(false);
     const [is_Cart, setis_Cart] = useState(is_cart);
 
-    const addtocart = async (e) => {
-
+    const addtocart = async (sets) => {
         if(item && item.subscription == "2" && isEqual){
             toast.error(`Wish item funding is completed.`);
             return false;
@@ -37,12 +36,16 @@ export default function ToCart({ ItemAdded, item, crowd, pending, uuid, text, cl
                 if (resp.data.added == true) {
                     successAlert(resp.data.msg);
                     setis_Cart(true);
-                    ItemAdded();
+                    if(sets == 1){
+                        ItemAdded();
+                    }
+                    if(sets == 2){
+                        window.location = '/cart';
+                    }
                 } else {
                     successAlert(resp.data.msg);
                     setis_Cart(false);
                 }
-
                 if (resp.data.uuid) {
                     removeItem && removeItem(uuid);
                 }
@@ -59,15 +62,41 @@ export default function ToCart({ ItemAdded, item, crowd, pending, uuid, text, cl
         });
     };
 
+    const checkout = () => { 
+        window.location = '/cart';
+    }
+
     return <>
         {custom ?
             <div onClick={addtocart} >{custom}</div>
             :
-            <LoaderButton disabled={loading} onClick={addtocart}
-                className={`flex  ${classes} mx-auto`}
-                spinnerClassName='fill-red-600'>
-                {loading ? "Proccessing" : is_Cart ? "Remove From Cart" : text}
-            </LoaderButton>
+            is_Cart ? 
+            <>
+                <LoaderButton disabled={loading} onClick={()=>addtocart(1)}
+                    className={`flex  ${classes} mx-auto`}
+                    spinnerClassName='fill-red-600'>
+                    {loading ? "Proccessing" : is_Cart ? "Remove From Cart" : text ? text : "Add To Cart"}
+                </LoaderButton>
+
+                <LoaderButton disabled={loading} onClick={checkout}
+                    className={`flex  ${classes} mx-auto`}
+                    spinnerClassName='fill-red-600'>
+                    Checkout
+                </LoaderButton>
+            </> :
+            <>
+             <LoaderButton disabled={loading} onClick={()=>addtocart(1)}
+                    className={`flex  ${classes} mx-auto`}
+                    spinnerClassName='fill-red-600'>
+                    {loading ? "Proccessing" : is_Cart ? "Remove From Cart" : text ? text : "Add To Cart"}
+                </LoaderButton>
+                <LoaderButton disabled={loading} onClick={()=>addtocart(2)}
+                    className={`flex  ${classes} mx-auto`}
+                    spinnerClassName='fill-red-600'>
+                    {loading ? "Proccessing" : is_Cart ? "Remove From Cart" : text2}
+                </LoaderButton>
+            </>
+
         }
     </>
 }

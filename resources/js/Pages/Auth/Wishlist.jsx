@@ -27,16 +27,13 @@ export default function Wishlist(props) {
         const value = inputRef.current.value;
         setAdding(true);
         router.post("save-category",
-            { category: value },
-            {
+            { category: value },{
                 preserveScroll: true,
                 onSuccess: (resp) => {
-                    console.table("resp", resp);
                     inputRef.current.value = "";
                     if (resp.props.flash?.success) {
                         successAlert(resp.props.flash?.success || "Added");
                     }
-
                     if (resp.props.flash?.error) {
                         errorAlert(resp.props.flash?.error);
                     }
@@ -45,6 +42,7 @@ export default function Wishlist(props) {
                 onError: (_err) => {
                     console.table("error", _err);
                     setAdding(false);
+                    errorAlert(_err?.category);
                 }
             }
         );
