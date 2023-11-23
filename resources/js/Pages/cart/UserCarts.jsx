@@ -8,13 +8,10 @@ import PriceFormat from "@/includes/PriceFormat";
 export default function UserCarts(props) {
 
     const { format } = PriceFormat();
-
     const datas = props.data;
     const [isChecked, setIsChecked] = useState(false);
-
     const [message, setMessage] = useState(null);
     const [name, setName] = useState(null);
-
     const handleSubmit = (e) => {
         e.preventDefault();
         window.location.href = `/create-checkout-session/${datas?.user?.id}?message=${message}&from=${name}`;
