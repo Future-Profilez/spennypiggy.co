@@ -9,8 +9,11 @@ import uploadedimg from '../../assets/img/uploadedimg.png';
 import { useEffect } from 'react';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import Wishlist from '@/Pages/Auth/Wishlist';
+import PriceFormat from '@/includes/PriceFormat';
 
 export default function Wishlistbox(props) {
+
+  const { format } = PriceFormat();
 
   const { itm, itemid, auth, IsloggedIn, fetchingcats, categories } = props;
   const [itemUID, setItemUID] = useState(itemid);
@@ -38,17 +41,17 @@ export default function Wishlistbox(props) {
       const p = (+itm.price) + (+itm.tax_amount)
       return p
     } else { 
-      return itm.price
+      return itm.price;
     }
   };
   
-
   return <>
       <div className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
         {IsloggedIn ?   
           <Wishlist item={itm} editpop={true} fetchingcats={fetchingcats} categories={categories} />  
           : 
-        <AddCart IsloggedIn={IsloggedIn} auth={auth} item={itm} uuid={itm.uuid} action={open} /> 
+        <AddCart 
+         IsloggedIn={IsloggedIn} auth={auth} item={itm} uuid={itm.uuid} action={open} /> 
         }
 
       <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
@@ -57,7 +60,7 @@ export default function Wishlistbox(props) {
       <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
         <div>
           <h4 className={`fon-bold text-dark ${itm.subscription == '2' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>
-          <h5 className='font-CeraGRBold text-dark'>£{price()}</h5>
+          <h5 className='font-CeraGRBold text-dark'>{format(price())}</h5>
         </div>
         {itm.subscription == '2' ? 
           <div className='crowd pt-2'>

@@ -44,6 +44,9 @@ export default function Register() {
         };
     }, []);
 
+    useEffect(() => {
+        console.log("data",data)
+    }, [data]);
 
     const termsaccept = () => {
         errorAlert("Please check accept terms & conditions checkbox");
@@ -73,7 +76,6 @@ export default function Register() {
             termsaccept();
             return false;
         }
-
         post(route('register'), {
             preserveScroll: true,
             onSuccess: (resp) => {
@@ -94,7 +96,6 @@ export default function Register() {
     };
 
     const handlePassHints = (e) => {
-        setData('password', mypass);
         setmypass(e.target.value);
         if (inputField.value.match(lowerLetter)) {
             letter.classList.remove('text-grey');
@@ -202,6 +203,7 @@ export default function Register() {
                                             value={mypass}
                                             className="mt-1 block w-full"
                                             autoComplete="off"
+                                            onKeyUp={(e)=>setData('password', e.target.value)}
                                             onChange={handlePassHints} required
                                         />
                                         <InputError>{errors?.password || ''}</InputError>
@@ -243,13 +245,9 @@ export default function Register() {
                                         </p>
                                     </label>
                                 </div>
-
                                 <div className='wishlistbtn  rotate-btn text-center flex justify-center mt-4'>
-
                                     <LoaderButton disabled={processing} className='btn-pink lg lg2 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : " Create Account"}</LoaderButton>
                                 </div>
-
-
                             </div>
                         </form>
                     </div>
