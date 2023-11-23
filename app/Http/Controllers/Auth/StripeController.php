@@ -189,7 +189,8 @@ class StripeController extends Controller
             $lineItems = [];
 
             foreach ($getdata as $dd) {
-                $priceId = $dd->wish->subscription == 2 ? $dd->priceid : $dd->wish->price_id;
+                // $priceId = $dd->wish->subscription == 2 ? $dd->priceid : $dd->wish->price_id;
+                $priceId = $dd->priceid != Null ? $dd->priceid : $dd->wish->price_id;
 
                 $lineItems[] = [
                     'price' => $priceId ?? '',

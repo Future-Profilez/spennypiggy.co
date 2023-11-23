@@ -439,6 +439,8 @@ class WishitemController extends Controller
     public function sendSurprise($owner_id, Request $request)
     {
         try {
+            \Log::info("ownerid:" . $owner_id);
+            \Log::info('request:' . $request);
             $request->validate([
                 "message" => [
                     "required",
