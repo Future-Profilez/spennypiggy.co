@@ -14,21 +14,21 @@ export default function UserCarts(props) {
 
     const [message, setMessage] = useState(null);
     const [name, setName] = useState(null);
-    const [email, setemail] = useState(null);
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        window.location.href = `/create-checkout-session/${datas?.user?.id}`;
+        window.location.href = `/create-checkout-session/${datas?.user?.id}?message=${message}&from=${name}`;
     };
 
     return <div className="px-2">
         <div className="my-4 cartPage bg-white p-4 border-pink shadow-pink border-pink rounded-3xl">
             <div className="cartMain">
+                
                 <h2 className="pb-1 wishtitle">
                     Wish Basket for {datas?.user?.name || ''} <Link className="text-voilet" href={`/${datas?.user?.username || ''}`}> @{datas?.user?.username || ''}</Link>
                 </h2>
-                <p className="pb-4"> You are about to send a payout to <strong>{datas?.user?.name || ''}</strong> to fund their wishes. </p>
 
+                <p className="pb-4"> You are about to send a payout to <strong>{datas?.user?.name || ''}</strong> to fund their wishes. </p>
                 <div className="CartItemBox">
                     {datas?.items && datas?.items.map((c, i) => {
                         return <CartItem data={c} key={i} />
@@ -63,6 +63,7 @@ export default function UserCarts(props) {
                     </span>
                 </div> */}
                 </div>
+
                 <div className="addMessage">
                     <form onSubmit={handleSubmit}>
                         <ul className="row">
@@ -75,14 +76,9 @@ export default function UserCarts(props) {
                             </li>
                             <li className="w-100 mt-3">
                                 <li className="row">
-                                    <div className="col-md-6 mb-4">
+                                    <div className="col-md-12 mb-4">
                                         <label className="d-block text-start" >From</label>
                                         <input className="form-input w-100 rounded" onChange={(e) => setName(e.target.value)} type="text" placeholder="Enter Your Name..." />
-                                    </div>
-
-                                    <div className="col-md-6 mb-4">
-                                        <label className="d-block text-start" >Email(Private)</label>
-                                        <input className="form-input w-100 rounded" onChange={(e) => setemail(e.target.value)} type="email" placeholder="Enter Your email..." />
                                     </div>
                                 </li>
                             </li>
