@@ -7,17 +7,15 @@ import { useState } from "react";
 export default function SendSurprise({owner}) {
 
    const { format } = PriceFormat();
+   const { successAlert, errorAlert, errorsHandling } = useAlerts();
+   const [loading, setLoading] = useState(false);
+   const [close, setClose] = useState();
+   const [amount, setAmount] = useState();
+   const [message, setMessage] = useState();
 
-    const { successAlert, errorAlert, errorsHandling } = useAlerts();
-    const [loading, setLoading] = useState(false);
-    const [close, setClose] = useState();
-
-    const [amount, setAmount] = useState();
-    const [message, setMessage] = useState();
-
-    const sendSurprise = (e) => {
-        setLoading(true);
-        window.location.href = `/send-surprize/${owner}?amount=${amount}&message=${message}`;
+   const sendSurprise = (e) => {
+      setLoading(true);
+      window.location.href = `/send-surprize/${owner}?amount=${amount}&message=${message}`;
    };
 
     return (
