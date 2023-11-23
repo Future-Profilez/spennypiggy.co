@@ -58,9 +58,7 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth', 'mustHaveToVerify')->group(function () {
 
     /*send surprise amount*/
-    Route::post('/send-surprize/{owner_id}', [WishitemController::class, 'sendSurprise'])->name('send.surprise');
-
-
+    Route::post('/send-surprize', [WishitemController::class, 'sendSurprise'])->name('send-surprize');
     Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
     Route::get('verification', [EmailVerificationPromptController::class, '__invoke'])->name('verification.notice');
     Route::get('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])

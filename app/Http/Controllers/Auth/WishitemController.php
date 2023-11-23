@@ -436,13 +436,9 @@ class WishitemController extends Controller
         ]);
     }
 
-    public function sendSurprise($owner_id, Request $request)
+    public function sendSurprise(Request $request)
     {
         try {
-            print_r($owner_id);
-            die;
-            \Log::info("ownerid:" . $owner_id);
-            \Log::info('request:' . $request);
             $request->validate([
                 "message" => [
                     "required",
@@ -469,7 +465,7 @@ class WishitemController extends Controller
             ]);
             UserCart::create([
                 'user_id' => Auth::id(),
-                'owner_id' => $owner_id ?? '',
+                'owner_id' => $request->owner_id ?? '',
                 'amount' => $request->amount ?? 0,
                 'tax' => $taxamount ?? 0,
                 'priceid' => $stripe_client->default_price,
@@ -484,6 +480,10 @@ class WishitemController extends Controller
                 'added' => true,
                 "msg" => "Item added to cart.",
             ]);
+
+            // return back()->with('success', 'Gift added in cart.');
+
+
         } catch (\Throwable $th) {
             //throw $th;
         }
