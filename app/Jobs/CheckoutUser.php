@@ -23,13 +23,13 @@ class CheckoutUser implements ShouldQueue
      * New Registered User
      * @var \App\Models\User
      */
-    public $user;
+    public $payment;
 
     /**
      * Is via Social
      * @var bool
      */
-    public $social;
+    public $anon;
 
     /**
      * Create a new job instance.
@@ -38,10 +38,10 @@ class CheckoutUser implements ShouldQueue
      * @param bool $social = false
      * @return void
      */
-    public function __construct($user, $social = false)
+    public function __construct($payment, $anon)
     {
-        $this->user = $user;
-        $this->social = $social;
+        $this->payment = $payment;
+        $this->anon = $anon;
     }
 
     /**
@@ -52,15 +52,6 @@ class CheckoutUser implements ShouldQueue
     public function handle()
     {
 
-        $emailData = [
-            'to' => $this->user->email,
-            'name' => $this->user->name,
-            'username' => $this->user->username,
-            'phone' => $this->user->phone,
-            'email' => $this->user->email,
-            'uuid' => $this->user->uuid,
-        ];
-
-        EmailService::checkOutUser($emailData);
+        EmailService::checkOutUser($this->payment, $this->anon);
     }
 }

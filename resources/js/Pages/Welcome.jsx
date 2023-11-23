@@ -47,7 +47,7 @@ export default function Home({ auth, laravelVersion, user }) {
         },
         {
           "id": 4,
-          "name": "jademandongwe__",
+          "name": "mattangove",
           "date":'Nov 08, 2023, 11:45 pm',
           "message": "Getting to keep everything I earn has been crazy next level! This site has been key in supporting me and my goals!! Genuinely so so impressed! And it’s sexy AF to look at too! x"
         }
@@ -72,7 +72,7 @@ export default function Home({ auth, laravelVersion, user }) {
                                 </h3>
                                 <div className="mt-6 wishlistbtn wishlistbtnFixed rotate-btn">
                                    {auth?.user?.username ? <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink wishlistbutton lg w-2/5 shadow-mint border-mint" > Create Wishlist </Link>
-                                   :  <Link href="/login" className="btn-pink wishlistbutton lg w-2/5 shadow-mint border-mint" > Create Wishlist </Link>
+                                   :  <Link href="/register" className="btn-pink wishlistbutton lg w-2/5 shadow-mint border-mint" > Create Wishlist </Link>
                                    }
                                 </div>
                                 <div className="itsfree mt-4 ps-24">
@@ -197,10 +197,7 @@ export default function Home({ auth, laravelVersion, user }) {
                                 pagination={{ clickable: true }}
                                 modules={[Pagination]}
                                 slidesPerView={width < "1199" ? 1 : 3}
-                                onSlideChange={() =>
-                                    console.log("slide change")
-                                }
-                                onSwiper={(swiper) => console.log(swiper)}>
+                                >
                                 {msg && msg.map((m , i)=>{ 
                                     return <>
                                          <SwiperSlide>
@@ -238,18 +235,15 @@ export default function Home({ auth, laravelVersion, user }) {
 
                 <div class="joinus blackbg ">
                     <h2 class="headingMd shadow-yellow mb-3 text-center mb-6 ">
-                        Join thousands creators
+                        Join thousands of creators
                     </h2>
                     <p class="text-CeraGR mb-6 text-center mb-16 font-CeraGRBold text-wh mb-5">
-                        Create your Wishlist and start receiving gifts from your
+                        Create your wishlist and start receiving gift's from your
                         fans right away!
                     </p>
                     <div class="1text-center rotate-btn text-center flex items-center  justify-center content-center w-full">
-                        <a target='_blank'
-                            href="https://whoyouinto.com"
-                            className="btn-pink lg w-80 shadow-mint border-mint">
-                            Join Whoyouinto
-                        </a>
+                        <Link href={route("register")}
+                            className="btn-pink lg w-80 shadow-mint border-mint" >Join SpennyPiggy </Link>
                     </div>
                 </div>
 

@@ -62,46 +62,58 @@ class AuthenticatedSessionController extends Controller
     public function getUserProfile($username, $category = false)
     {
         $user = User::where('username', $username)->first();
-        $slinks = SocialLinks::where('user_id', $user->id)->first();
 
-        $sociallinks = array(
-            array(
-                'social' => 'whoyouinto',
-                'url'    => $slinks->whoyouinto ?? null,
-            ),
-            array(
-                'social' => 'twitter',
-                'url'    => $slinks->twitter ?? null,
-            ),
-            array(
-                'social' => 'instagram',
-                'url'    => $slinks->instagram ?? null,
-            ), array(
-                'social' => 'reddit',
-                'url'    => $slinks->reddit ?? null,
-            ), array(
-                'social' => 'discord',
-                'url'    => $slinks->discord ?? null,
-            ), array(
-                'social' => 'onlyfans',
-                'url'    => $slinks->onlyfans ?? null,
-            ), array(
-                'social' => 'loyalfans',
-                'url'    => $slinks->loyalfans ?? null,
-            ), array(
-                'social' => 'fansly',
-                'url'    => $slinks->fansly ?? null,
-            ), array(
-                'social' => 'manyvids',
-                'url'    => $slinks->manyvids ?? null,
-            ), array(
-                'social' => 'other',
-                'url'    => $slinks->other ?? null,
-            )
-        );
-        // if(!$user){
-        //     return
-        // }
+        if (!$user) {
+            return Inertia::render('NotFound');
+        }
+
+        $slinks = [];
+        $sociallinks = [];
+        if (!empty($user)) {
+            $slinks = SocialLinks::where('user_id', $user->id)->first();
+
+
+
+            if (!empty($slinks)) {
+                $sociallinks = array(
+                    array(
+                        'social' => 'whoyouinto',
+                        'url'    => $slinks->whoyouinto ?? null,
+                    ),
+                    array(
+                        'social' => 'twitter',
+                        'url'    => $slinks->twitter ?? null,
+                    ),
+                    array(
+                        'social' => 'instagram',
+                        'url'    => $slinks->instagram ?? null,
+                    ), array(
+                        'social' => 'reddit',
+                        'url'    => $slinks->reddit ?? null,
+                    ), array(
+                        'social' => 'discord',
+                        'url'    => $slinks->discord ?? null,
+                    ), array(
+                        'social' => 'onlyfans',
+                        'url'    => $slinks->onlyfans ?? null,
+                    ), array(
+                        'social' => 'loyalfans',
+                        'url'    => $slinks->loyalfans ?? null,
+                    ), array(
+                        'social' => 'fansly',
+                        'url'    => $slinks->fansly ?? null,
+                    ), array(
+                        'social' => 'manyvids',
+                        'url'    => $slinks->manyvids ?? null,
+                    ), array(
+                        'social' => 'other',
+                        'url'    => $slinks->other ?? null,
+                    )
+                );
+            }
+        }
+
+
         if (!empty(request()->query('item'))) {
             $itemdid = request()->query('item');
         } else {
@@ -142,6 +154,27 @@ class AuthenticatedSessionController extends Controller
             "categories" => $categories,
             "itemid" => $itemdid,
             "sociallinks" => $sociallinks,
+            "slinks" => $slinks
         ]);
+    }
+
+    public function checkUserName($username)
+    {
+        try {
+            if (preg_match("/^[a-z0-9_]+$/", $username)) {
+                // Username contains only lowercase letters, numbers, and underscores
+                $user = User::where('username', $username)->first();
+                if (!empty($user)) {
+                    return response()->json(['status' => false, 'msg' => 'Username is not available']);
+                } else {
+                    return response()->json(['status' => true, 'msg' => 'Username is available']);
+                }
+            } else {
+                // Username contains spaces, special characters, or capital letters
+                return response()->json(['status' => false, 'msg' => 'Username should contains only lowercase letters, numbers, and underscores']);
+            }
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
     }
 }

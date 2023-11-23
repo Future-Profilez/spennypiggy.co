@@ -5,25 +5,24 @@ import { useForm } from "@inertiajs/react";
 import { useState } from "react";
 
 
-export default function Social() {
+export default function Social({links}) {
 
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
     const [close, setClose] = useState();
 
     const { data, setData, post, processing, errors, reset } = useForm({
-        twitter: '',
-        whoyouinto: '',
-        reddit: '',
-        instagram: '',
-        discord: '',
-        onlyfans: '',
-        loyalfans: '',
-        fansly: '',
-        manyvids: '',
-        other: '',
+        twitter: links?.twitter ? links.twitter : '',
+        whoyouinto: links?.whoyouinto ? links.whoyouinto : '',
+        reddit: links?.reddit ? links.reddit : '',
+        instagram: links?.instagram ? links.instagram : '',
+        discord: links?.discord ? links.discord : '',
+        onlyfans: links?.onlyfans ? links.onlyfans : '',
+        loyalfans: links?.loyalfans ? links.loyalfans : '',
+        fansly: links?.fansly ? links.fansly : '',
+        manyvids: links?.manyvids ? links.manyvids : '',
+        other: links?.other ? links.other : '',
     });
-
 
     const createSocial = (e) => {
         e.preventDefault();
@@ -31,7 +30,12 @@ export default function Social() {
             preserveScroll: true,
             onSuccess: (resp) => {
                 reset();
-                successAlert(resp.props.flash?.success || "Added");
+                if(resp.props.flash?.success){
+                    successAlert(resp.props.flash?.success || "Updated successfully.");
+                }
+                if(resp.props.flash?.error){
+                    errorAlert(resp.props.flash?.error || "Something went wrong.")
+                } 
                 setClose(false);
                 setTimeout(() => {
                     setClose();
@@ -46,124 +50,122 @@ export default function Social() {
     };
 
     return <>
-        <Popup action={close}
+        <Popup action={close} space='4' modalclass="pinkmodal" size="md"
             classes='' text="Add Socials" >
-            <div className='editprofileModal '>
-                <div className='editprofileModalInner shadow-pink'> 
-                    <div className="wishinfo">
-                        <h3 className="pb-4 pt-2 font-GillSans text-uppercase" >Social Links</h3>
-                        <form onSubmit={createSocial}>
-                            <ul className=" ps-0  row" >
-                                <li className="mb-4 col-md-6">
-                                    <label className="mb-2 text-start d-block">Whoyouinto</label>
-                                    <input id="whoyouinto"
-                                        name="whoyouinto"
-                                        type="text" placeholder="URL"
-                                        value={data.whoyouinto}
-                                        className="form-input px-2 py-2 border w-full rounded-md"
-                                        onChange={(e) => setData('whoyouinto', e.target.value)}
-                                    />
-                                </li>
-                                <li className="mb-4 col-md-6">
-                                    <label className="mb-2 text-start d-block">Twitter</label>
-                                    <input id="twitter"
-                                        name="twitter"
-                                        type="text" placeholder="URL"
-                                        value={data.twitter}
-                                        className="form-input px-2 py-2 border w-full rounded-md"
-                                        onChange={(e) => setData('twitter', e.target.value)}
-                                    />
-                                </li>
-                                <li className="mb-4 col-md-6">
-                                    <label className="mb-2 text-start d-block">Instagram </label>
-                                    <input id="instagram"
-                                        type="text" placeholder="URL"
-                                        name="instagram"
-                                        value={data.instagram}
-                                        className="form-input px-2 py-2 border w-full rounded-md"
-                                        onChange={(e) => setData('instagram', e.target.value)}
-                                    />
-                                </li>
-                                <li className="mb-4 col-md-6">
-                                    <label className="mb-2 text-start d-block">Reddit</label>
-                                    <input id="reddit"
-                                        name="reddit"
-                                        type="text" placeholder="URL"
-                                        value={data.reddit}
-                                        className="form-input px-2 py-2 border w-full rounded-md"
-                                        onChange={(e) => setData('reddit', e.target.value)}
-                                    />
-                                </li>
-                                <li className="mb-4 col-md-6">
-                                    <label className="mb-2 text-start d-block">Discord</label>
-                                    <input id="discord"
-                                        name="discord"
-                                        type="text" placeholder="URL"
-                                        value={data.discord}
-                                        className="form-input px-2 py-2 border w-full rounded-md"
-                                        onChange={(e) => setData('discord', e.target.value)}
-                                    />
-                                </li>
+            <div className='editprofileModalInner  '> 
+                <div className="swishinfo">
+                    <h2 className="pb-4 font-GillSans text-center text-uppercase" >Social Links</h2>
+                    <form onSubmit={createSocial}>
+                        <ul className=" ps-0  row" >
+                            <li className="mb-4 col-md-6">
+                                <label className="mb-2 text-start d-block">Whoyouinto</label>
+                                <input id="whoyouinto"
+                                    name="whoyouinto"
+                                    type="text" placeholder="URL"
+                                    value={data?.whoyouinto||''}
+                                    className="form-input px-2 py-2 border w-full rounded-md"
+                                    onChange={(e) => setData('whoyouinto', e.target.value)}
+                                />
+                            </li>
+                            <li className="mb-4 col-md-6">
+                                <label className="mb-2 text-start d-block">Twitter</label>
+                                <input id="twitter"
+                                    name="twitter"
+                                    type="text" placeholder="URL"
+                                    value={data?.twitter||''}
+                                    className="form-input px-2 py-2 border w-full rounded-md"
+                                    onChange={(e) => setData('twitter', e.target.value)}
+                                />
+                            </li>
+                            <li className="mb-4 col-md-6">
+                                <label className="mb-2 text-start d-block">Instagram </label>
+                                <input id="instagram"
+                                    type="text" placeholder="URL"
+                                    name="instagram"
+                                    value={data?.instagram||''}
+                                    className="form-input px-2 py-2 border w-full rounded-md"
+                                    onChange={(e) => setData('instagram', e.target.value)}
+                                />
+                            </li>
+                            <li className="mb-4 col-md-6">
+                                <label className="mb-2 text-start d-block">Reddit</label>
+                                <input id="reddit"
+                                    name="reddit"
+                                    type="text" placeholder="URL"
+                                    value={data?.reddit||''}
+                                    className="form-input px-2 py-2 border w-full rounded-md"
+                                    onChange={(e) => setData('reddit', e.target.value)}
+                                />
+                            </li>
+                            <li className="mb-4 col-md-6">
+                                <label className="mb-2 text-start d-block">Discord</label>
+                                <input id="discord"
+                                    name="discord"
+                                    type="text" placeholder="URL"
+                                    value={data?.discord||''}
+                                    className="form-input px-2 py-2 border w-full rounded-md"
+                                    onChange={(e) => setData('discord', e.target.value)}
+                                />
+                            </li>
 
-                                <li className="mb-4 col-md-6">
-                                    <label className="mb-2 text-start d-block">OnlyFans</label>
-                                    <input id="onlyfans"
-                                        name="onlyfans"
-                                        type="text" placeholder="URL"
-                                        value={data.onlyfans}
-                                        className="form-input px-2 py-2 border w-full rounded-md"
-                                        onChange={(e) => setData('onlyfans', e.target.value)}
-                                    />
-                                </li>
-                                <li className="mb-4 col-md-6">
-                                    <label className="mb-2 text-start d-block">LoyalFans</label>
-                                    <input id="loyalfans"
-                                        name="loyalfans"
-                                        type="text" placeholder="URL"
-                                        value={data.loyalfans}
-                                        className="form-input px-2 py-2 border w-full rounded-md"
-                                        onChange={(e) => setData('loyalfans', e.target.value)}
-                                    />
-                                </li>
-                                <li className="mb-4 col-md-6">
-                                    <label className="mb-2 text-start d-block">Fansly</label>
-                                    <input id="fansly"
-                                        name="fansly"
-                                        type="text" placeholder="URL"
-                                        value={data.fansly}
-                                        className="form-input px-2 py-2 border w-full rounded-md"
-                                        onChange={(e) => setData('fansly', e.target.value)}
-                                    />
-                                </li>
-                                <li className="mb-4 col-md-6">
-                                    <label className="mb-2 text-start d-block">ManyVids</label>
-                                    <input id="manyvids"
-                                        name="manyvids"
-                                        type="text" placeholder="URL"
-                                        value={data.manyvids}
-                                        className="form-input px-2 py-2 border w-full rounded-md"
-                                        onChange={(e) => setData('manyvids', e.target.value)}
-                                    />
-                                </li>
-                                <li className="mb-4 col-md-6">
-                                    <label className="mb-2 text-start d-block">Other</label>
-                                    <input id="other"
-                                        name="other"
-                                        type="text" placeholder="URL"
-                                        value={data.other}
-                                        className="form-input px-2 py-2 border w-full rounded-md"
-                                        onChange={(e) => setData('other', e.target.value)}
-                                    />
-                                </li>
-                            </ul>
+                            <li className="mb-4 col-md-6">
+                                <label className="mb-2 text-start d-block">OnlyFans</label>
+                                <input id="onlyfans"
+                                    name="onlyfans"
+                                    type="text" placeholder="URL"
+                                    value={data?.onlyfans||''}
+                                    className="form-input px-2 py-2 border w-full rounded-md"
+                                    onChange={(e) => setData('onlyfans', e.target.value)}
+                                />
+                            </li>
+                            <li className="mb-4 col-md-6">
+                                <label className="mb-2 text-start d-block">LoyalFans</label>
+                                <input id="loyalfans"
+                                    name="loyalfans"
+                                    type="text" placeholder="URL"
+                                    value={data?.loyalfans||''}
+                                    className="form-input px-2 py-2 border w-full rounded-md"
+                                    onChange={(e) => setData('loyalfans', e.target.value)}
+                                />
+                            </li>
+                            <li className="mb-4 col-md-6">
+                                <label className="mb-2 text-start d-block">Fansly</label>
+                                <input id="fansly"
+                                    name="fansly"
+                                    type="text" placeholder="URL"
+                                    value={data?.fansly||''}
+                                    className="form-input px-2 py-2 border w-full rounded-md"
+                                    onChange={(e) => setData('fansly', e.target.value)}
+                                />
+                            </li>
+                            <li className="mb-4 col-md-6">
+                                <label className="mb-2 text-start d-block">ManyVids</label>
+                                <input id="manyvids"
+                                    name="manyvids"
+                                    type="text" placeholder="URL"
+                                    value={data?.manyvids||''}
+                                    className="form-input px-2 py-2 border w-full rounded-md"
+                                    onChange={(e) => setData('manyvids', e.target.value)}
+                                />
+                            </li>
+                            <li className="mb-4 col-md-6">
+                                <label className="mb-2 text-start d-block">Other</label>
+                                <input id="other"
+                                    name="other"
+                                    type="text" placeholder="URL"
+                                    value={data?.other||''}
+                                    className="form-input px-2 py-2 border w-full rounded-md"
+                                    onChange={(e) => setData('other', e.target.value)}
+                                />
+                            </li>
+                        </ul>
 
-                            <LoaderButton disabled={processing} type='submit'
-                                className=' flex btn-pink sm w-100 mx-auto'
-                                spinnerClassName='fill-red-600'>
-                                {processing ? "Proccessing" : "Add Links"}
-                            </LoaderButton>
-                        </form>
-                    </div>
+                        <LoaderButton disabled={processing} type='submit'
+                            className=' flex btn-pink sm w-100 mx-auto'
+                            spinnerClassName='fill-red-600'>
+                            {processing ? "Proccessing" : "Add Links"}
+                        </LoaderButton>
+                    </form>
                 </div>
             </div>
         </Popup>

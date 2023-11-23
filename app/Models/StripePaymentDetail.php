@@ -10,6 +10,7 @@ class StripePaymentDetail extends Model
 {
     use HasFactory;
     protected $fillable = [
+        'id',
         'uuid',
         'session_id',
         'amount_subtotal',
@@ -19,6 +20,7 @@ class StripePaymentDetail extends Model
         'payment_method_type',
         'user_id',
         'owner_id',
+        'tax',
         'payment_status',
         'session_created',
         'session_expires_at',
@@ -28,5 +30,16 @@ class StripePaymentDetail extends Model
     {
         parent::boot();
         static::creating(fn ($u) => $u->uuid = Uuid::uuid4());
+    }
+
+
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

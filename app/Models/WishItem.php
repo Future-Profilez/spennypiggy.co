@@ -26,6 +26,8 @@ class WishItem extends Model
         "subscription_period",
         "repeat_purchase",
         "category",
+        "fullfill_amount",
+        'tax_amount'
     ];
 
     protected $appends = [

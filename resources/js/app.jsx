@@ -11,8 +11,10 @@ import '../assets/fonts/newfont.woff';
 import '../assets/fonts/newfont.woff2';
 import '../assets/fonts/CeraGRMedium.woff';
 import '../assets/fonts/CeraGRMedium.woff2';
+import { useEffect } from 'react';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Spenny Piggy';
+
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) => resolvePageComponent(`./Pages/${name}.jsx`, import.meta.glob('./Pages/**/*.jsx')),
@@ -21,6 +23,9 @@ createInertiaApp({
         root.render(<App {...props} />);
     },
     progress: {
-        color: '#4B5563',
+        color: 'var(--mint)',
+        delay: 250,
+        includeCSS: true,
+        showSpinner: false,
     },
 });

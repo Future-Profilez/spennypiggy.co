@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\CreateStripeCustomer;
 use App\Models\User;
@@ -46,33 +47,55 @@ class RegisteredUserController extends Controller
             'username' => ['required', 'string', 'lowercase', 'max:20', 'unique:users,username'],
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => strtolower($request->email),
-            'username' => $request->username,
-            'password' => Hash::make($request->password),
-        ]);
+        $checkdata = Helpers::checkBlockData($request);
+        if ($checkdata == 1) {
 
-        // CreateStripeCustomer::dispatch($user);
-        event(new Registered($user));
+            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive, 
+             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
 
-        Auth::login($user);
+            //  return redirect(route('register'))->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive, 
+            //  😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
+            //  die;
 
-        //send email
-        WelcomeUser::dispatch($user);
+        } else {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => strtolower($request->email),
+                'username' => $request->username,
+                'password' => Hash::make($request->password),
+            ]);
+            event(new Registered($user));
+            Auth::login($user);
 
-        return redirect(route("user.show", [$user->username]))->with("success", "Registration successfull.");
+            //send email
+            WelcomeUser::dispatch($user);
+
+            $checkemailverify = User::whereId(Auth::id())->first();
+
+            if ($checkemailverify->email_verified_at != NUll) {
+                return redirect(route("user.show", [$user->username]))->with("success", "Registration successful.");
+            } else {
+                return redirect(route('verification.notice'));
+            }
+        }
     }
 
+
+    // public function verification()
+    // {
+    //     $checkemailverify = User::whereId(Auth::id())->first();
+    //     return Inertia::render('Auth/VerifyEmail', [
+    //         "user" => $checkemailverify,
+    //     ]);
+    // }
     /**
      * Check if username available
      *
      * @param Request $request
      * @return Response
      */
-    public function checkUsername(Request $request)
-    {
 
+    public function checkUsername(Request $request){
         $request->validate([
             "username" => [
                 "required",
@@ -81,41 +104,9 @@ class RegisteredUserController extends Controller
                 "max:20"
             ]
         ]);
-
         $exist = User::whereUsername($request->username)->first();
         return response()->json([
             "available" => empty($exist)
         ]);
-    }
-
-    /* get verify email page */
-    public function getVerifyEmailPage($uuid)
-    {
-        try {
-            $user = User::whereUuid($uuid)->first();
-            $id = $user->id;
-            return view('verify-email', compact('id'));
-        } catch (\Throwable $th) {
-            //throw $th;
-        }
-    }
-
-    /* verify email */
-    public function verifyEmail(Request $request)
-    {
-        try {
-            $verify = User::whereId($request->id)->update([
-                'email_verified_at' => Carbon::now(),
-            ]);
-            if (!empty($verify)) {
-                print_r('email verify');
-                die;
-            } else {
-                print_r('unable to verify your email');
-                die;
-            }
-        } catch (\Throwable $th) {
-            //throw $th;
-        }
     }
 }

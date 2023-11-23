@@ -7,7 +7,6 @@ import { useEffect } from 'react';
 export default function Header(props) {
 
     const [isActive, setActive] = useState(false);
-  
     const toggleClass = () => {
       setActive(!isActive);
     };
@@ -20,7 +19,6 @@ export default function Header(props) {
       // }
     },[isActive]);
 
-
     const { auth, user } = props;
     const [loggedIn, setLoggedIn] = useState((auth && auth.username))
 
@@ -28,7 +26,14 @@ export default function Header(props) {
         <div className='blackbg headermain py-14'>
           <div className='containerbox'>
           <div className='header flex w-full items-center content-center justify-between pinkbg border-mint shadow-mint'>
-            <Link href={`/${auth&& auth?.username || ''}`} className='headtitle text-wh font-GillSans  d-none d-lg-flex'>Create Wishlist</Link>
+            
+          {auth && auth?.username ? 
+            <Link href={`/${auth && auth?.username || ''}`} className='headtitle text-wh font-GillSans d-none d-lg-flex' > Create Wishlist </Link>
+            :  
+            <Link href="/register" className='headtitle text-wh font-GillSans d-none d-lg-flex' > Create Wishlist </Link>
+          }
+
+            {/* <Link href={`/${ auth && auth?.username || ''}`} className='headtitle text-wh font-GillSans  d-none d-lg-flex'>Create Wishlist</Link> */}
             <div className='spennylogo'><Link href={route('home')} ><img src={spennypiggy} /></Link></div>
             <div className='cartLogin'>
               <Link href={route('cart')} as="button" className='cartLink  d-none d-xl-flex'>
@@ -98,6 +103,7 @@ export default function Header(props) {
                 <li><Link onClick={toggleClass} href={route("how-it-works")} >How it works</Link></li> 
                 {loggedIn ? 
                   <>
+                    <li><Link onClick={toggleClass} href={"/account"} >My Account</Link></li> 
                     <li><Link onClick={toggleClass} href={`/${auth&& auth?.username || ''}`} >Create Wishlist</Link></li> 
                     <li><Link onClick={toggleClass} href={"/cart"} >Cart</Link></li> 
                     <li><Link onClick={toggleClass}  method="get" href={route('logout')} >Logout</Link></li> 
@@ -114,6 +120,6 @@ export default function Header(props) {
         </div>
 
 
-      </>
+    </>
  
 }

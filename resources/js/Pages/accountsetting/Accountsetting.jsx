@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
 import closeblacksm from '../../../assets/img/closeblacksm.png';
-import { Link } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
+import Popup from '@/Components/Popup';
+import UpdateProfileInformation from '../Profile/Partials/UpdateProfileInformationForm';
+import UpdatePasswordForm from '../Profile/Partials/UpdatePasswordForm';
+import DeleteUserForm from '../Profile/Partials/DeleteUserForm';
+import PaymentDashboard from '../stripe/PaymentDashboard';
 
 export default function Accountsetting(props) {
-    console.log("props aa",props)
+    console.log("props aa",props);
+    const {auth, user} = props;
     return (
-        <Authenticated auth={props.auth} >
+        <Authenticated user={user}  auth={auth.user} >
+            <Head title={"My Account"} />
             <div className='blackbg py-2 pb-md-5'>
                 <div className='accountsetting mx-auto border-mint whbg shadow-mint rounded-3xl mb-4 mb-md-5'>
                     <div className='loginheadbox pinkbg'>
@@ -15,32 +22,41 @@ export default function Accountsetting(props) {
                     </div>
                     <div className='accsettingList p-4'>
                         <ul>
-                            <li> 
-                                <Link>PAYMENT DASHBOARD <span className='text-voilet'>stripe</span></Link>
-                            </li>
-                            <li>
-                                <button>Email <span className='text-gray'>warner99@gmail.com</span></button>
-                            </li>
-                            <li>
-                                <button>PASSWORD </button>
-                            </li>
-                            <li>
-                                <button>DISPLAY CURRENCY  <span className='text-gray'>warner99@gmail.com</span></button>
+                            <li>  {auth && auth.user && auth.user.stripe_details_submitted == 1 ? 
+                            <>
+                               <PaymentDashboard classes='w-100 text-dark paymentbutton' text={<>PAYMENT DASHBOARD <span className='text-mint'>Connected</span></>} />
+                            </> 
+                            : 
+                            <>
+                                <Link href={route("stripe")} >PAYMENT DASHBOARD <span className='text-voilet'>Connect Stripe</span></Link>
+                            </>}
                             </li>
 
                             <li>
-                                <button>DISPLAY CURRENCY  <span className='text-gray'>GBP</span></button>
+                                <Popup space='4' modalclass="pinkmodal" 
+                                text={<>Email <span className='text-gray'>{auth && auth.user && auth.user.email}</span></>} >
+                                    <UpdateProfileInformation />
+                                </Popup >
+                            </li>
+                            <li>
+                            <Popup space='4' modalclass="pinkmodal" 
+                                text={<>PASSWORD</>} >
+                                    <UpdatePasswordForm />
+                                </Popup >
                             </li>
 
                             <li>
-                                <button>DELETE ACCOUNT  </button>
+                            <Popup space='4' modalclass="pinkmodal" 
+                                text={<>DELETE ACCOUNT  </>} >
+                                    <DeleteUserForm />
+                                </Popup >
                             </li>
 
-                            <li>
+                            <li className='disabled' >
                                 <Link>SET UP AUTO TWEET <img src={closeblacksm} alt="img" /></Link>
                             </li>
 
-                            <li>
+                            <li className='disabled' >
                                 <div className='notification'>
                                 RECEIVE NOTIFICATION ON EMAIL 
                                     <label class="switch">

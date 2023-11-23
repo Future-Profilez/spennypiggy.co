@@ -27,15 +27,12 @@ export default function Login({ status, canResetPassword }) {
             preserveScroll: true,
             onSuccess: (resp) => {
                 reset();
-                // successAlert(resp.props.flash?.success || "Logged in successfully.");
-                // setClose(false);
-                // setClear(new Date);
-                // setTimeout(() => {
-                //     setClose();
-                // }, 100);
             },
-            onError: () => {
+            onError: (err) => {
                 reset("password");
+                Object.keys(err).map((key) => {
+                    errorAlert(err[key]);
+                });
             }
         });
     };
@@ -79,12 +76,12 @@ export default function Login({ status, canResetPassword }) {
                                     />
                                 </li>
                             </ul>
-                            <InputError message={errors.email} className="mt-2" />
-                            <InputError message={errors.password} className="mt-2" />
+                            {/* <InputError message={errors.email} className="mt-2" />
+                            <InputError message={errors.password} className="mt-2" /> */}
 
                             <div className='rotate-btn text-center flex justify-center mt-10'>
                                 {/* <button type='submit' className='btn-pink lg'>Login</button> */}
-                                <LoaderButton disabled={processing} className='btn-pink lg2 lg w-80' spinnerClassName='fill-red-600'>{processing ? "Wait" : "Log in"}</LoaderButton>
+                                <LoaderButton disabled={processing} className='btn-pink lg2 lg w-80 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Wait" : "Log in"}</LoaderButton>
                             </div>
 
                             {/* {canResetPassword && (
