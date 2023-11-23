@@ -81,7 +81,7 @@ export default function SendSurprise({owner}) {
                type='submit'
                   className="flex w-100 btn-pink lg mx-auto"
                   spinnerClassName="fill-red-600" >
-                  {processing ? "Proccessing" : "Send Surprize Gift"}
+                  {processing ? "Proccessing" : "Add to cart"}
             </LoaderButton>
         </Popup>
     );
