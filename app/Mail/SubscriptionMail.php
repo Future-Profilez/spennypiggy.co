@@ -34,7 +34,7 @@ class SubscriptionMail extends Mailable
         try {
             $subject = 'Subscription payment reminder.';
             return $this->view('email.subscription')
-                ->from('Noreply@whoyouinto.com', 'SPENNYPIGGY')
+                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
                 ->subject($subject);
         } catch (\Exception $e) {
         }

@@ -71,8 +71,9 @@ class WishitemController extends Controller
             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive,
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         } else {
+
             $taxamount = $request->price * env('TAX_PERCENTAGE') / 100;
-            $createpriceid = ceil($request->price) + $taxamount;
+            $createpriceid = ceil($request->price) + ceil($taxamount);
             $wish = WishItem::create([
                 "user_id" => Auth::id(),
                 'wishname' => $request->wishname,
@@ -82,7 +83,7 @@ class WishitemController extends Controller
                 'subscription' => $request->subscription,
                 'subscription_period' => $request->subscription_period ?? null,
                 'repeat_purchase' => $request->repeat_purchase ?? 0,
-                'tax_amount' => $taxamount,
+                'tax_amount' => ceil($taxamount),
                 // 'category' => $request->category ?? null,
             ]);
 
@@ -105,18 +106,39 @@ class WishitemController extends Controller
                     "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
                     "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
                 ]);
-                $wish->stripe_product_id = $stripe_client->id;
-                $wish->price_id = $stripe_client->default_price;
+
+                $wish->refresh();
+
+                foreach ($request->category as $key => $value) {
+                    $wish_cat = new WishCategory();
+                    $wish_cat->uuid = Uuid::uuid4();
+                    $wish_cat->wish_id = $wish->id;
+                    $wish_cat->category_id = $value;
+                    $wish_cat->save();
+                }
+
+
+                if ($request->subscription != 2) {
+                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                    $stripe_client = $stripe->products->create([
+                        'name' => $request->wishname ?? null,
+                        'images' => [$wish->perma_link],
+                        "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
+                        "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
+                    ]);
+                    $wish->stripe_product_id = $stripe_client->id;
+                    $wish->price_id = $stripe_client->default_price;
+                }
+
+                $wish->save();
+
+                // $user = User::whereId(Auth::id())->first();
+
+                //send email
+                // SaveWishlist::dispatch($user);
+
+                return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
             }
-
-            $wish->save();
-
-            // $user = User::whereId(Auth::id())->first();
-
-            //send email
-            // SaveWishlist::dispatch($user);
-
-            return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
         }
     }
 
@@ -274,7 +296,7 @@ class WishitemController extends Controller
 
         if ($wishitem->subscription == 0 && $wishitem->repeat_purchase == 0 && !empty($payment)) {
             return response()->json([
-                "success" => true,
+                "success" => false,
                 "msg" => "You can pay only once for this wish.",
             ]);
         }
@@ -286,11 +308,11 @@ class WishitemController extends Controller
                 $cart->status = 1;
                 if ($wishitem->subscription == 2) {
                     $fullfillamount = $amount;
-                    $tax =  $amount * env('TAX_PERCENTAGE') / 100;
-                    $createpriceid = $amount + $amount * env('TAX_PERCENTAGE') / 100;
+                    $tax =  ceil($amount * env('TAX_PERCENTAGE') / 100);
+                    $createpriceid = $amount + $tax;
                     $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                     $stripe_client = $stripe->products->create([
-                        'name' => 'anonymous',
+                        'name' => $wishitem->wishname,
                         'images' => [$wishitem->perma_link],
                         "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
                     ]);
@@ -328,7 +350,7 @@ class WishitemController extends Controller
                 $createpriceid = $amount + $amount * env('TAX_PERCENTAGE') / 100;
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripe_client = $stripe->products->create([
-                    'name' => 'anonymous',
+                    'name' => $wishitem->wishname,
                     'images' => [$wishitem->perma_link],
                     "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid],
                 ]);
@@ -425,7 +447,7 @@ class WishitemController extends Controller
                 }
             }
             $cart[$key]['total'] = $total;
-            $cart[$key]['fee'] = ($total * env('TAX_PERCENTAGE')) / 100;
+            $cart[$key]['fee'] = ceil($total * env('TAX_PERCENTAGE') / 100);
 
             $key++;
         }

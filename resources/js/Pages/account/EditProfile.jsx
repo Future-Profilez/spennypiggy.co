@@ -48,9 +48,10 @@ export default function EditProfile({ user }) {
                 }, 1000);
                 if(resp.props.flash?.success){
                     successAlert(resp.props.flash?.success || "Updated successfully.");
-                } else { 
+                }
+                if(resp.props.flash?.error){
                     errorAlert(resp.props.flash?.error || "Something went wrong.")
-                }  
+                }
             },
             onError: (_err) => {
                 console.error(`errors:`);

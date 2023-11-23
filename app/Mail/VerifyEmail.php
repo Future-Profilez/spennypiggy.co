@@ -36,7 +36,7 @@ class VerifyEmail extends Mailable
             // die;
             $subject = 'Verify email from spanny piggy platform.';
             return $this->view('email.user-verification')
-                ->from('Noreply@spennypiggy.co', 'SPENNYPIGGY')
+                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
                 ->subject($subject);
         } catch (\Exception $e) {
             \Log::info($e);

@@ -16,7 +16,7 @@ export default function Wishlist(props) {
     const { categories, auth, fetchingcats, item, editpop } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
-    const [defaultKey, setDefaultKey] = useState(item && item.subscription ? item.subscription : null);
+    const [defaultKey, setDefaultKey] = useState(item && item.subscription !== null ? +(item.subscription) : null);
     const [clear, setClear] = useState();
     const [close, setClose] = useState();
     const [repeat, setRepeat] = useState(true);
@@ -26,8 +26,7 @@ export default function Wishlist(props) {
     const AddCategory = async () => {
         const value = inputRef.current.value;
         setAdding(true);
-        router.post(
-            "save-category",
+        router.post("save-category",
             { category: value },
             {
                 preserveScroll: true,
@@ -107,12 +106,13 @@ export default function Wishlist(props) {
             post(route(`update_wish_item`, [item && item.uuid]), {
                 preserveScroll: true,
                 onSuccess: (resp) => {
-                    reset();
                     if(resp.props.flash?.success){
-                        successAlert(resp.props.flash?.success || "Added successfully.");
-                    } else { 
+                        successAlert(resp.props.flash?.success || "Updated successfully.");
+                    }
+                    if(resp.props.flash?.error){
                         errorAlert(resp.props.flash?.error || "Something went wrong.")
-                    }   
+                    }
+                    reset();
                     setClose(false);
                     setClear(new Date());
                     setTimeout(() => {
@@ -132,10 +132,11 @@ export default function Wishlist(props) {
                 onSuccess: (resp) => {
                     reset();
                     if(resp.props.flash?.success){
-                        successAlert(resp.props.flash?.success || "Added successfully.");
-                    } else { 
+                        successAlert(resp.props.flash?.success || "Wish added successfully.");
+                    }
+                    if(resp.props.flash?.error){
                         errorAlert(resp.props.flash?.error || "Something went wrong.")
-                    }   
+                    }  
                     setClose(false);
                     setClear(new Date());
                     setTimeout(() => {

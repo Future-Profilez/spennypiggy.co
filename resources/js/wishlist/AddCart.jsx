@@ -7,16 +7,21 @@ import { Link } from "@inertiajs/react";
 import DirectCheckout from "./DirectCheckout";
 import ProgressBar from "react-bootstrap/ProgressBar";
 import { useState } from "react";
+import { useEffect } from "react";
 
 export default function AddCart(props) {
     const { auth, action, uuid, item, IsloggedIn } = props;
     const [cartamount, setcartamount] = useState(null);
-
-    console.log("props addCard", props);
+    const [close, setClose] = useState(action);
+    const ItemAdded = (e) => { 
+        setClose(false);
+    }
+    useEffect(()=>{
+        setClose(action);
+    },[action])
 
     const getPercentage = (actual, paid) => { 
         const r = (paid/actual)*100;
-        console.log("add percentage", r);
         return r.toFixed(1);
     }
 
@@ -29,11 +34,10 @@ export default function AddCart(props) {
         }
     };
 
-
     return (
         <Popup
             size="md"
-            action={action}
+            action={close}
             modalclass="pinkmodal"
             classes="d-none"
         >
@@ -95,13 +99,14 @@ export default function AddCart(props) {
                 <div className=" pb-2">
                     {auth ? (
                         <>
-                            <ToCart
+                            <ToCart ItemAdded={ItemAdded}
                                 pending={item.price - item.fullfill_amount}
                                 crowd={item.subscription == 2}
-                                amount={cartamount}
+                                amount={cartamount} 
+                                isEqual={item.price <= item.fullfill_amount}
                                 is_cart={item?.is_cart}
                                 text={`Add to cart`}
-                                classes="btn-pink lg w-100 mb-3 font-CeraGR"
+                                classes={`btn-pink lg w-100 mb-3 font-CeraGR ${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
                                 uuid={uuid}
                             />
                             <Link
@@ -113,7 +118,9 @@ export default function AddCart(props) {
                             </Link>
                         </>
                     ) : (
-                        <DirectCheckout item={item} amount={cartamount} />
+                        <DirectCheckout
+                        classes={`${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
+                        item={item} amount={cartamount} />
                     )}
                 </div>
             </div>

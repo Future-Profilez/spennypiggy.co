@@ -5,15 +5,20 @@ import axios from 'axios';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 
-export default function ToCart({ crowd, pending, uuid, text, classes, custom, removeItem, type, is_cart, amount }) {
+export default function ToCart({ ItemAdded, item, crowd, pending, uuid, text, classes, custom, removeItem, type, is_cart, amount, isEqual }) {
 
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [loading, setLoading] = useState(false);
     const [is_Cart, setis_Cart] = useState(is_cart);
 
-    const addtocart = (e) => {
+    const addtocart = async (e) => {
 
-        if(crowd && !amount  ){
+        if(item && item.subscription == "2" && isEqual){
+            toast.error(`Wish item funding is completed.`);
+            return false;
+        }
+
+        if (crowd && !amount) {
             toast.error(`Please enter a amount to gift this item. `);
             return false;
         }
@@ -28,20 +33,26 @@ export default function ToCart({ crowd, pending, uuid, text, classes, custom, re
         }
         setLoading(true);
         axios.get(`/add-to-cart/${uuid}${amount ? `/${amount}` : ''}`).then(resp => {
-            if (resp.data.added == true) {
-                successAlert(resp.data.msg);
-                setis_Cart(true);
+            if (resp.data.success) {
+                if (resp.data.added == true) {
+                    successAlert(resp.data.msg);
+                    setis_Cart(true);
+                    ItemAdded();
+                } else {
+                    successAlert(resp.data.msg);
+                    setis_Cart(false);
+                }
+
+                if (resp.data.uuid) {
+                    removeItem && removeItem(uuid);
+                }
+                if (type == 'checkout') {
+                    window.location = '/cart';
+                }
             } else {
-                successAlert(resp.data.msg);
-                setis_Cart(false);
-            }
-            if (resp.data.uuid) {
-                removeItem && removeItem(uuid);
+                errorAlert(resp.data.msg);
             }
             setLoading(false);
-            if (type == 'checkout') {
-                window.location = '/cart';
-            }
         }).catch(_err => {
             console.error("error", _err);
             setLoading(false);

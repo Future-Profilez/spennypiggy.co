@@ -30,14 +30,13 @@ export default function Wishlistbox(props) {
 
   const getPercentage = (actual, paid) => { 
     const r = (paid/actual)*100;
-    console.log("get percentage", r);
     return r.toFixed(1);
   }
  
   const price = () => { 
     if(!IsloggedIn && itm.subscription !== 2){
-        const p = (+itm.price) + (+itm.tax_amount)
-        return p
+      const p = (+itm.price) + (+itm.tax_amount)
+      return p
     } else { 
       return itm.price
     }
@@ -68,7 +67,7 @@ export default function Wishlistbox(props) {
         : '' }
       </div>
       <div className='sharelinks'>
-        <ShareProfile custom={`${window.location.href}?item=${itm.uuid}`} >
+        <ShareProfile username={itm.wishname} custom={`${window.location.href}?item=${itm.uuid}`} >
           <Link to="/" className='font-GillSans'>Share Link</Link>
         </ShareProfile>
       </div>

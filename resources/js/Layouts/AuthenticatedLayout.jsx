@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { useAlerts } from '@/Components/Alerts';
 import Header from '@/includes/Header';
 import Footer from '@/includes/Footer';
+import SiteMeta from '@/includes/SiteMetas';
 
 export default function Authenticated({auth, user, header, children }) {
 
@@ -27,6 +28,7 @@ export default function Authenticated({auth, user, header, children }) {
     },[]);
 
     return <>
+         <SiteMeta />
         <Header auth={auth} user={user}  />
             <main>
                 {children}
