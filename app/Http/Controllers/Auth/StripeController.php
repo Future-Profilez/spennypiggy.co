@@ -78,11 +78,11 @@ class StripeController extends Controller
                         'card_payments' => ['requested' => true],
                         'transfers' => ['requested' => true],
                     ],
-                    'business_type' => 'individual',
-                    'business_profile' => [
-                        'url'   =>  "https://spennypiggy.com/{$user->username}",
-                        'mcc'   => '5969'
-                    ],
+                    // 'business_type' => 'individual',
+                    // 'business_profile' => [
+                    //     'url'   =>  "https://spennypiggy.com/{$user->username}",
+                    //     'mcc'   => '5969'
+                    // ],
                     'default_currency' => 'GBP'
                 ];
 
