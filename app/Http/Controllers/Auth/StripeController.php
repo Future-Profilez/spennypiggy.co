@@ -244,7 +244,7 @@ class StripeController extends Controller
     public function createCheckout($owner_id, Request $request)
     {
         try {
-            if (!empty($request->message)) {
+            if (!empty($request)) {
                 $wordLimit = 100;
                 $message = $request->message;
 
@@ -254,7 +254,7 @@ class StripeController extends Controller
 
                 $from = $request->from;
             }
-
+            
             $user = User::findOrFail(Auth::id());
             $getdata = UserCart::where('user_id', Auth::id())
                 ->where('owner_id', $owner_id)
@@ -286,16 +286,12 @@ class StripeController extends Controller
                 'mode' => 'payment',
             ]);
 
-            Log::info("callback data amount: " . $sessionCreate->amount_total);
-
             $subtotal = ($sessionCreate->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
-            Log::info("subtotal: " . $subtotal);
 
             $taxNew = ($sessionCreate->amount_total / 100) - $subtotal;
 
             session()->forget('session_id');
             session(['session_id' => $sessionCreate->id]);
-
             $stripePaymentDetail = StripePaymentDetail::create([
                 'session_id' => $sessionCreate->id,
                 'amount_subtotal' => $subtotal,

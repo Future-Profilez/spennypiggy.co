@@ -20,6 +20,8 @@ class StripePaymentDetail extends Model
         'payment_method_type',
         'user_id',
         'owner_id',
+        'name',
+        'message',
         'tax',
         'payment_status',
         'session_created',
