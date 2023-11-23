@@ -18,6 +18,7 @@ class UserCart extends Model
         'amount',
         'tax',
         'priceid',
+        'message',
         "status",
     ];
 

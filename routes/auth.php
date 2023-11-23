@@ -101,6 +101,10 @@ Route::middleware('auth', 'mustHaveToVerify')->group(function () {
     Route::get('/sucess-checkout/{id}', [StripeController::class, 'successCheckout'])->name('checkout.success');
     Route::get('cancel-checkout/{id}', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel');
 
+    /*send surprise amount*/
+    Route::get('/send-surprize/{owner_id}', [WishitemController::class, 'sendSurprise'])->name('send.surprise');
+    // /send-surprize/${owner}?amount=${amount}&message=${message}
+
     Route::prefix("stripe")->name("stripe.")->group(function () {
         Route::get("authorize", [StripeController::class, "index"])->name("index");
         Route::match(["get", "post"], "/connect-{step}/{country?}", [StripeController::class, "initConnect"])->name("connect");
@@ -148,4 +152,3 @@ Route::get('/terms-and-conditions', function () {
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
 
 Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
-

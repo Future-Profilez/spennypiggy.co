@@ -12,6 +12,7 @@ use App\Models\UserCart;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
 use App\Models\WishItem;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -433,5 +434,54 @@ class WishitemController extends Controller
         return Inertia::render('cart/Cart', [
             "carts" => $cart,
         ]);
+    }
+
+    public function sendSurprise($owner_id, Request $request)
+    {
+        try {
+            $request->validate([
+                "message" => [
+                    "required",
+                    "string",
+                ],
+                "amount" => [
+                    "required",
+                ],
+            ]);
+
+            $wordLimit = 100;
+            $message = $request->message;
+            if (str_word_count($message) > $wordLimit) {
+                return redirect()->back()->with("error", "Max limit for message is 100 words");
+            }
+
+            $taxamount = $request->amount * env('TAX_PERCENTAGE') / 100;
+            $priceid = $request->amount + $taxamount;
+            $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+            $stripe_client = $stripe->products->create([
+                'name' => 'surprise',
+                'images' => ['https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/'],
+                "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $priceid * 100],
+            ]);
+            UserCart::create([
+                'user_id' => Auth::id(),
+                'owner_id' => $owner_id ?? '',
+                'amount' => $request->amount ?? 0,
+                'tax' => $taxamount ?? 0,
+                'priceid' => $stripe_client->default_price,
+                'message' => $request->message,
+                'status' => 1,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
+            ]);
+
+            return response()->json([
+                "success" => true,
+                'added' => true,
+                "msg" => "Item added to cart.",
+            ]);
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
     }
 }
