@@ -197,9 +197,11 @@ class StripeController extends Controller
                     'quantity' => 1,
                 ];
 
-                if ($dd->wish->subscription == 2) {
-                    $amountadd = $dd->wish->fullfill_amount + $dd->amount;
-                    $dd->wish->update(['fullfill_amount' => $amountadd]);
+                if (!empty($dd->wish->subscription)) {
+                    if($dd->wish->subscription == 2){
+                        $amountadd = $dd->wish->fullfill_amount + $dd->amount;
+                        $dd->wish->update(['fullfill_amount' => $amountadd]);
+                    }
                 }
             }
 
@@ -263,9 +265,9 @@ class StripeController extends Controller
             $dd->status = 0;
             $dd->save();
 
-            if ($dd->wish->subscription == 1) {
-
-                if ($dd->wish->subscription_period == 'daily') {
+            if (!empty($dd->wish->subscription)) {
+                if($dd->wish->subscription == 1){
+                    if ($dd->wish->subscription_period == 'daily') {
                     $end = Carbon::now()->addDay(1);
                 } elseif ($dd->wish->subscription_period == 'weekly') {
                     $end = Carbon::now()->addWeek(1);
@@ -282,6 +284,7 @@ class StripeController extends Controller
                 $subscription->end_at = $end;
                 $subscription->status = 1;
                 $subscription->save();
+                }
             }
         }
 
@@ -307,9 +310,13 @@ class StripeController extends Controller
 
         //send email
         CheckoutMailToUser::dispatch($stripeid);
-
-
-        return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
+        
+         if(!empty($getdata[0]->owner->username)){
+            return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
+         }else{
+            return redirect(route('user.show', [Auth::user()->username]))->with('success', 'Payment Successfull.');
+         }
+        
     }
 
     public function cancelCheckout($owner_id)
