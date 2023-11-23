@@ -23,124 +23,124 @@ use Stripe\StripeClient;
 class WishitemController extends Controller
 {
 
-    public function saveWishItem(Request $request): RedirectResponse
-    {
-        $request->validate([
-            "wishname" => [
-                "required",
-                "string",
-                "min:4",
-                "max:255"
-            ],
-            "price" => [
-                "required",
-                "numeric",
-                "min:0"
-            ],
-            "item_url" => [
-                "nullable"
-            ],
-            "fullfill_amount" => [
-                "nullable"
-            ],
-            "thumbnail" => [
-                "sometimes",
-                "nullable"
-            ],
-            "subscription_period" => [
-                "sometimes",
-                "nullable",
-            ],
-            "subscription" => [
-                "required",
-                "integer",
-                Rule::in([0, 1, 2])
-            ],
-            "repeat_purchase" => [
-                "sometimes",
-                "nullable"
-            ],
-            "category" => [
-                "sometimes",
-                "nullable"
-            ]
-        ]);
+    // public function saveWishItem(Request $request): RedirectResponse
+    // {
+    //     $request->validate([
+    //         "wishname" => [
+    //             "required",
+    //             "string",
+    //             "min:4",
+    //             "max:255"
+    //         ],
+    //         "price" => [
+    //             "required",
+    //             "numeric",
+    //             "min:0"
+    //         ],
+    //         "item_url" => [
+    //             "nullable"
+    //         ],
+    //         "fullfill_amount" => [
+    //             "nullable"
+    //         ],
+    //         "thumbnail" => [
+    //             "sometimes",
+    //             "nullable"
+    //         ],
+    //         "subscription_period" => [
+    //             "sometimes",
+    //             "nullable",
+    //         ],
+    //         "subscription" => [
+    //             "required",
+    //             "integer",
+    //             Rule::in([0, 1, 2])
+    //         ],
+    //         "repeat_purchase" => [
+    //             "sometimes",
+    //             "nullable"
+    //         ],
+    //         "category" => [
+    //             "sometimes",
+    //             "nullable"
+    //         ]
+    //     ]);
 
-        $checkdata = Helpers::checkBlockData($request);
-        if ($checkdata == 1) {
-            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive,
-             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
-        } else {
+    //     $checkdata = Helpers::checkBlockData($request);
+    //     if ($checkdata == 1) {
+    //         return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive,
+    //          😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
+    //     } else {
 
-            $taxamount = $request->price * env('TAX_PERCENTAGE') / 100;
-            $createpriceid = ceil($request->price) + ceil($taxamount);
-            $wish = WishItem::create([
-                "user_id" => Auth::id(),
-                'wishname' => $request->wishname,
-                'price' => ceil($request->price),
-                'item_url' => $request->item_url != "" ? $request->item_url : null,
-                'thumbnail' => $request->thumbnail ?? null,
-                'subscription' => $request->subscription,
-                'subscription_period' => $request->subscription_period ?? null,
-                'repeat_purchase' => $request->repeat_purchase ?? 0,
-                'tax_amount' => ceil($taxamount),
-                // 'category' => $request->category ?? null,
-            ]);
+    //         $taxamount = $request->price * env('TAX_PERCENTAGE') / 100;
+    //         $createpriceid = ceil($request->price) + ceil($taxamount);
+    //         $wish = WishItem::create([
+    //             "user_id" => Auth::id(),
+    //             'wishname' => $request->wishname,
+    //             'price' => ceil($request->price),
+    //             'item_url' => $request->item_url != "" ? $request->item_url : null,
+    //             'thumbnail' => $request->thumbnail ?? null,
+    //             'subscription' => $request->subscription,
+    //             'subscription_period' => $request->subscription_period ?? null,
+    //             'repeat_purchase' => $request->repeat_purchase ?? 0,
+    //             'tax_amount' => ceil($taxamount),
+    //             // 'category' => $request->category ?? null,
+    //         ]);
 
-            $wish->refresh();
+    //         $wish->refresh();
 
-            foreach ($request->category as $key => $value) {
-                $wish_cat = new WishCategory();
-                $wish_cat->uuid = Uuid::uuid4();
-                $wish_cat->wish_id = $wish->id;
-                $wish_cat->category_id = $value;
-                $wish_cat->save();
-            }
-
-
-            if ($request->subscription != 2) {
-                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-                $stripe_client = $stripe->products->create([
-                    'name' => $request->wishname ?? null,
-                    'images' => [$wish->perma_link],
-                    "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
-                    "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
-                ]);
-
-                $wish->refresh();
-
-                foreach ($request->category as $key => $value) {
-                    $wish_cat = new WishCategory();
-                    $wish_cat->uuid = Uuid::uuid4();
-                    $wish_cat->wish_id = $wish->id;
-                    $wish_cat->category_id = $value;
-                    $wish_cat->save();
-                }
+    //         foreach ($request->category as $key => $value) {
+    //             $wish_cat = new WishCategory();
+    //             $wish_cat->uuid = Uuid::uuid4();
+    //             $wish_cat->wish_id = $wish->id;
+    //             $wish_cat->category_id = $value;
+    //             $wish_cat->save();
+    //         }
 
 
-                if ($request->subscription != 2) {
-                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-                    $stripe_client = $stripe->products->create([
-                        'name' => $request->wishname ?? null,
-                        'images' => [$wish->perma_link],
-                        "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
-                        "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
-                    ]);
-                    $wish->stripe_product_id = $stripe_client->id;
-                    $wish->price_id = $stripe_client->default_price;
-                }
+    //         if ($request->subscription != 2) {
+    //             $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+    //             $stripe_client = $stripe->products->create([
+    //                 'name' => $request->wishname ?? null,
+    //                 'images' => [$wish->perma_link],
+    //                 "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
+    //                 "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
+    //             ]);
 
-                $wish->save();
+    //             $wish->refresh();
 
-                // $user = User::whereId(Auth::id())->first();
+    //             foreach ($request->category as $key => $value) {
+    //                 $wish_cat = new WishCategory();
+    //                 $wish_cat->uuid = Uuid::uuid4();
+    //                 $wish_cat->wish_id = $wish->id;
+    //                 $wish_cat->category_id = $value;
+    //                 $wish_cat->save();
+    //             }
 
-                //send email
-                // SaveWishlist::dispatch($user);
 
-                return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
-            }
-        }
-    }
+    //             if ($request->subscription != 2) {
+    //                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+    //                 $stripe_client = $stripe->products->create([
+    //                     'name' => $request->wishname ?? null,
+    //                     'images' => [$wish->perma_link],
+    //                     "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
+    //                     "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
+    //                 ]);
+    //                 $wish->stripe_product_id = $stripe_client->id;
+    //                 $wish->price_id = $stripe_client->default_price;
+    //             }
+
+    //             $wish->save();
+
+    //             // $user = User::whereId(Auth::id())->first();
+
+    //             //send email
+    //             // SaveWishlist::dispatch($user);
+
+    //             return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
+    //         }
+    //     }
+    // }
 
 
     public function updateWishItem(Request $request, $uuid = null)
