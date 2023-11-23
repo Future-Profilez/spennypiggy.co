@@ -12,8 +12,6 @@ export default function SendSurprise({owner}) {
    const { format } = PriceFormat();
    const { successAlert, errorAlert, errorsHandling } = useAlerts();
    const [close, setClose] = useState();
- 
-
    const { data, setData, post, processing, errors, reset } = useForm({
       amount:  '',
       message: '',
