@@ -474,13 +474,13 @@ class WishitemController extends Controller
                 'status' => 1,
             ]);
 
-            return response()->json([
-                "success" => true,
-                'added' => true,
-                "msg" => "Item added to cart.",
-            ]);
+            // return response()->json([
+            //     "success" => true,
+            //     'added' => true,
+            //     "msg" => "Item added to cart.",
+            // ]);
 
-            // return back()->with('success', 'Gift added in cart.');
+            return back()->with('success', 'Gift added in cart.');
 
 
         } catch (\Throwable $th) {
