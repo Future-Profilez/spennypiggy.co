@@ -2,7 +2,6 @@ import { useAlerts } from "@/Components/Alerts";
 import LoaderButton from "@/Components/LoaderButton";
 import Popup from "@/Components/Popup";
 import PriceFormat from "@/includes/PriceFormat";
-import { Axios } from "axios";
 import { useState } from "react";
 import { useForm } from "@inertiajs/react";
 
@@ -16,17 +15,23 @@ export default function SendSurprise({owner}) {
       amount:  '',
       message: '',
    });
-
-  useForm
-  console.log("data", data)
-
+ 
    const sendSurprize = (e) => {
+      if(!data.amount){
+         errorAlert("Choose a valid amount.");
+         return false;
+      }
       e.preventDefault();
       post(route(`send-surprize`, {"owner_id": owner, "amount":data.amount, "message":data.message}), {
          preserveScroll: true,
          onSuccess: (resp) => {
             if (resp.props.flash?.success) {
                successAlert(resp.props.flash?.success || "Added");
+               setClose(false);
+               setTimeout(()=>{
+                  setClose();
+               });
+               reset();
            }
            if (resp.props.flash?.error) {
                errorAlert(resp.props.flash?.error);
@@ -42,50 +47,42 @@ export default function SendSurprise({owner}) {
         <Popup
             modalclass="pinkmodal sendSurprize-modal"
             space="4" size="md"
-            action={close}
-            classes={`btn-pink lg px-4 w-100`}
+            action={close} classes={`btn-pink lg px-4 my-2 w-100`}
             text={`Send Surprise`} >
             <h2 className="text-uppercase font-GillSans pb-4 font-large">
                 Send a Surprise Gift
             </h2>
-
-            {/* <form onSubmit={sendSurprize} > */}
-
-               <div className="form-field mb-4">
-                     <label className="d-block text-start mb-2">Amount</label>
-                     <input
-                        className="form-input w-100 rounded"
-                        onChange={(e) => setData('amount', e.target.value)}
-                        type="text"
-                        placeholder="Enter"
-                     />
-                     <p className="mt-1">
-                        The amount is set to {format(data.amount)} GBP in the wisher's
-                        currency
-                     </p>
-               </div>
-
-               <div className="form-field mb-4">
-                     <label className="d-block text-start mb-2">
-                        Suggested use (optional)
-                     </label>
-                     <textarea
-                        placeholder="Message..."
-                        className="form-input w-100 rounded"
-                        onChange={(e) => setData('message',e.target.value)}
-                        type="text"
-                     />
-               </div>
-
-               <LoaderButton onClick={sendSurprize}
-                     disabled={processing}
-                  type='submit'
-                     className="flex w-100 btn-pink lg mx-auto"
-                     spinnerClassName="fill-red-600" >
-                     {processing ? "Proccessing" : "Send Surprize Gift"}
-               </LoaderButton>
-            {/* </form> */}
-
+            <div className="form-field mb-4">
+                  <label className="d-block text-start mb-2">Amount</label>
+                  <input
+                     className="form-input w-100 rounded"
+                     onChange={(e) => setData('amount', e.target.value)}
+                     type="text"
+                     placeholder="Enter"
+                  />
+                  <p className="mt-1">
+                     The amount is set to {format(data.amount)} GBP in the wisher's
+                     currency
+                  </p>
+            </div>
+            <div className="form-field mb-4">
+                  <label className="d-block text-start mb-2">
+                     Suggested use (optional)
+                  </label>
+                  <textarea
+                     placeholder="Message..."
+                     className="form-input w-100 rounded"
+                     onChange={(e) => setData('message',e.target.value)}
+                     type="text"
+                  />
+            </div>
+            <LoaderButton onClick={sendSurprize}
+                  disabled={processing}
+               type='submit'
+                  className="flex w-100 btn-pink lg mx-auto"
+                  spinnerClassName="fill-red-600" >
+                  {processing ? "Proccessing" : "Send Surprize Gift"}
+            </LoaderButton>
         </Popup>
     );
 }

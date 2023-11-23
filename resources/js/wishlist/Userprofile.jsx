@@ -5,7 +5,7 @@ import SocialLinks from "@/includes/SocialLinks";
 import ShareProfile from "./ShareProfile";
 import SendSurprise from "./SendSurprise";
 
-export default function Userprofile({ user, links }) {
+export default function Userprofile({ user, links, IsloggedIn }) {
     return (
         <div className="userprofilesec rounded-3xl whbg">
             <div className="userphotobox pinkbg pink-shadow flex justify-center relative">
@@ -18,11 +18,7 @@ export default function Userprofile({ user, links }) {
             <div className="userPr p-4">
                 <div className="userphoto">
                     <img
-                        src={
-                            user && user.avatar_url
-                                ? user.avatar_url
-                                : userphoto
-                        }
+                        src={user && user.avatar_url ? user.avatar_url:userphoto}
                         alt="img"
                     />
                 </div>
@@ -48,18 +44,12 @@ export default function Userprofile({ user, links }) {
                             </svg>
                         </div>
                     </ShareProfile>
-                    {/* <Link to="/" className='ms-2'>
-
-      </Link> */}
                 </div>
 
                 <SocialLinks links={links} />
-                <SendSurprise owner={user && user.id} />
-                <p
-                    className={`text-muted text-center mt-3 ${
-                        user && !user.bio ? "d-none" : ""
-                    }`}
-                >
+                {!IsloggedIn ? <SendSurprise owner={user && user.id} /> : ''}
+
+                <p className={`text-muted text-center mt-3 ${user && !user.bio ? "d-none":""}`}>
                     {(user && user.bio) || ""}
                 </p>
             </div>
