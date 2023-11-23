@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\SaveWishlist;
+use App\Jobs\SendUserGiftMail;
 use App\Jobs\WelcomeUser;
 use App\Models\StripePaymentItems;
 use App\Models\User;
@@ -474,6 +475,20 @@ class WishitemController extends Controller
                 'status' => 1,
             ]);
 
+
+            $user = User::whereId(Auth::id())->first();
+            $owner = User::whereId($request->owner_id)->first();
+            //send email to user
+            SendUserGiftMail::dispatch($user, $owner);
+
+            //send email to owner
+            // SaveWishlist::dispatch($user);
+
+
+
+
+
+
             // return response()->json([
             //     "success" => true,
             //     'added' => true,
@@ -481,8 +496,6 @@ class WishitemController extends Controller
             // ]);
 
             return back()->with('success', 'Gift added in cart.');
-
-
         } catch (\Throwable $th) {
             //throw $th;
         }
