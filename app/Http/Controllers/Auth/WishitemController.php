@@ -369,9 +369,10 @@ class WishitemController extends Controller
             if (!isset($groupedWishes[$owner_id])) {
                 $groupedWishes[$owner_id] = [];
             }
+            
             $groupedWishes[$owner_id][] = [
                 'user' => $wish->user->toArray(),
-                'wish' => $wish->wish->toArray(),
+                'wish' => $wish->wish ? $wish->wish->toArray() : [],
                 'owner' => $wish->owner->toArray(),
                 'url' => $wish->wish->perma_link,
                 'amount' => $wish->amount,
@@ -438,7 +439,7 @@ class WishitemController extends Controller
 
     public function sendSurprise(Request $request)
     {
-        try {
+       
             $request->validate([
                 "message" => [
                     "required",
@@ -479,12 +480,9 @@ class WishitemController extends Controller
             //     'added' => true,
             //     "msg" => "Item added to cart.",
             // ]);
+            
+            return back()->with('success', 'Gift item has been added in cart.');
 
-            return back()->with('success', 'Gift added in cart.');
-
-
-        } catch (\Throwable $th) {
-            //throw $th;
-        }
+            // return back()->with('success', 'Gift added in cart.');
     }
 }
