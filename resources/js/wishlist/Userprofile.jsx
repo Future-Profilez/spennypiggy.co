@@ -3,6 +3,7 @@ import userphoto from '../../assets/img/userphoto.png';
 import wishlistbannerimg from '../../assets/img/wishlistbannerimg.jpg';
 import SocialLinks from '@/includes/SocialLinks';
 import ShareProfile from './ShareProfile';
+import SendSurprise from './SendSurprise';
 
 export default function Userprofile({user, links}) {
   return (
@@ -30,7 +31,7 @@ export default function Userprofile({user, links}) {
       </div>
 
       <SocialLinks links={links} />
-
+      <SendSurprise />
       <p className={`text-muted text-center mt-3 ${user && !user.bio ? 'd-none' : ''}`} >{user && user.bio || ""}</p>
     </div>
       
