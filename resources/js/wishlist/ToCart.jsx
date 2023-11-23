@@ -62,7 +62,7 @@ export default function ToCart({ text2, ItemAdded, item, crowd, pending, uuid, t
         });
     };
 
-    const checkout = () => { 
+    const checkout = () => {
         window.location = '/cart';
     }
 
@@ -70,7 +70,7 @@ export default function ToCart({ text2, ItemAdded, item, crowd, pending, uuid, t
         {custom ?
             <div onClick={addtocart} >{custom}</div>
             :
-            is_Cart ? 
+            is_Cart ?
             <>
                 <LoaderButton disabled={loading} onClick={()=>addtocart(1)}
                     className={`flex  ${classes} mx-auto`}

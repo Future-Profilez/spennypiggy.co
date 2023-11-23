@@ -116,7 +116,8 @@ Route::middleware('auth', 'mustHaveToVerify')->group(function () {
     Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
 
     Route::get('/add-to-cart/{uuid}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
-
+    Route::get('remove-surprise-from-cart/{uuid}', [WishitemController::class, 'removeSurpriseFromCart'])->name('remove-surprise-from-cart');
+    
     Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 
     Route::get('account', function () {

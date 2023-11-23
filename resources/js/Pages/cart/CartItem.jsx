@@ -7,7 +7,7 @@ export default function CartItem({data}) {
     const { format } = PriceFormat();
 
     const [itemRemoved, setItemRemoved] = useState(null);
-    const removeItem = (e) => { 
+    const removeItem = (e) => {
         setItemRemoved(e);
         window && window.location.reload(false);
     }
