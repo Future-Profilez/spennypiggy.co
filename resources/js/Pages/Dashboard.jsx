@@ -71,13 +71,13 @@ export default function Dashboard(props) {
                                         {IsloggedIn ? <>
                                             <EditProfile user={auth.user} />
                                             { auth.user && auth.user.stripe_details_submitted == 1 ? 
-                                            <PaymentDashboard classes='btn-pink lg w-100 mt-4' text='Payment Dashboard' />
-                                            : <div className='finish mt-4 d-block'>
-                                            <p className='mb-4'>Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                            <Link href={"/stripe"} className='btn-pink lg'>Finish Setup</Link>
-                                        </div>
-                                        }
-                                            <div className='addsocial flex'>
+                                                <PaymentDashboard classes='btn-pink lg w-100 mt-4' text='Payment Dashboard' />
+                                                : <div className='finish mt-4 d-block'>
+                                                <p className='mb-4'>Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                                <Link href={"/stripe"} className='btn-pink lg'>Finish Setup</Link>
+                                            </div>
+                                            }
+                                        <div className='addsocial flex'>
                                                 <ul>
                                                     <li>
                                                         <Social links={slinks} />
@@ -90,7 +90,7 @@ export default function Dashboard(props) {
                                                         </ShareProfile>
                                                     </li>
                                                 </ul>
-                                            </div>
+                                        </div>
                                         </>
                                         : ''}
                                     </div>

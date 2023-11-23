@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\SaveWishlist;
 use App\Jobs\WelcomeUser;
@@ -65,53 +66,80 @@ class WishitemController extends Controller
             ]
         ]);
 
+        $checkdata = Helpers::checkBlockData($request);
+        if ($checkdata == 1) {
+            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive,
+             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
+        } else {
 
-        $taxamount = $request->price * env('TAX_PERCENTAGE') / 100;
-        $createpriceid = ceil($request->price) + ceil($taxamount);
-        $wish = WishItem::create([
-            "user_id" => Auth::id(),
-            'wishname' => $request->wishname,
-            'price' => ceil($request->price),
-            'item_url' => $request->item_url != "" ? $request->item_url : null,
-            'thumbnail' => $request->thumbnail ?? null,
-            'subscription' => $request->subscription,
-            'subscription_period' => $request->subscription_period ?? null,
-            'repeat_purchase' => $request->repeat_purchase ?? 0,
-            'tax_amount' => ceil($taxamount),
-            // 'category' => $request->category ?? null,
-        ]);
-
-        $wish->refresh();
-
-        foreach ($request->category as $key => $value) {
-            $wish_cat = new WishCategory();
-            $wish_cat->uuid = Uuid::uuid4();
-            $wish_cat->wish_id = $wish->id;
-            $wish_cat->category_id = $value;
-            $wish_cat->save();
-        }
-
-
-        if ($request->subscription != 2) {
-            $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-            $stripe_client = $stripe->products->create([
-                'name' => $request->wishname ?? null,
-                'images' => [$wish->perma_link],
-                "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
-                "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
+            $taxamount = $request->price * env('TAX_PERCENTAGE') / 100;
+            $createpriceid = ceil($request->price) + ceil($taxamount);
+            $wish = WishItem::create([
+                "user_id" => Auth::id(),
+                'wishname' => $request->wishname,
+                'price' => ceil($request->price),
+                'item_url' => $request->item_url != "" ? $request->item_url : null,
+                'thumbnail' => $request->thumbnail ?? null,
+                'subscription' => $request->subscription,
+                'subscription_period' => $request->subscription_period ?? null,
+                'repeat_purchase' => $request->repeat_purchase ?? 0,
+                'tax_amount' => ceil($taxamount),
+                // 'category' => $request->category ?? null,
             ]);
-            $wish->stripe_product_id = $stripe_client->id;
-            $wish->price_id = $stripe_client->default_price;
+
+            $wish->refresh();
+
+            foreach ($request->category as $key => $value) {
+                $wish_cat = new WishCategory();
+                $wish_cat->uuid = Uuid::uuid4();
+                $wish_cat->wish_id = $wish->id;
+                $wish_cat->category_id = $value;
+                $wish_cat->save();
+            }
+
+
+            if ($request->subscription != 2) {
+                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                $stripe_client = $stripe->products->create([
+                    'name' => $request->wishname ?? null,
+                    'images' => [$wish->perma_link],
+                    "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
+                    "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
+                ]);
+
+                $wish->refresh();
+
+                foreach ($request->category as $key => $value) {
+                    $wish_cat = new WishCategory();
+                    $wish_cat->uuid = Uuid::uuid4();
+                    $wish_cat->wish_id = $wish->id;
+                    $wish_cat->category_id = $value;
+                    $wish_cat->save();
+                }
+
+
+                if ($request->subscription != 2) {
+                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                    $stripe_client = $stripe->products->create([
+                        'name' => $request->wishname ?? null,
+                        'images' => [$wish->perma_link],
+                        "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
+                        "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
+                    ]);
+                    $wish->stripe_product_id = $stripe_client->id;
+                    $wish->price_id = $stripe_client->default_price;
+                }
+
+                $wish->save();
+
+                // $user = User::whereId(Auth::id())->first();
+
+                //send email
+                // SaveWishlist::dispatch($user);
+
+                return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
+            }
         }
-
-        $wish->save();
-
-        // $user = User::whereId(Auth::id())->first();
-
-        //send email
-        // SaveWishlist::dispatch($user);
-
-        return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
     }
 
 
@@ -119,62 +147,68 @@ class WishitemController extends Controller
     {
         try {
             $wish = WishItem::where('uuid', $uuid)->first();
-            if (!empty($request->price)) {
-                $taxamount = $request->price * env('TAX_PERCENTAGE') / 100;
-                $price = $request->price;
-                $createpriceid = $taxamount + $price;
+            $checkdata = Helpers::checkBlockData($request);
+            if ($checkdata == 1) {
+                return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive,
+             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
             } else {
-                $taxamount = $wish->tax_amount;
-                $price = $wish->price;
-                $createpriceid = $taxamount + $price;
-            }
-            if (!empty($wish)) {
-                $updatedata = WishItem::where('uuid', $uuid)->update([
-                    "user_id" => Auth::id(),
-                    'wishname' => $request->wishname ?? $wish->wishname,
-                    'price' => $price,
-                    'item_url' => $request->item_url != "" ? $request->item_url : $wish->item_url,
-                    'thumbnail' => $request->thumbnail ?? $wish->thumbnail,
-                    'subscription' => $request->subscription ?? $wish->subscription,
-                    'subscription_period' => $request->subscription_period ?? $wish->subscription_period,
-                    'repeat_purchase' => $request->repeat_purchase ??
-                        $wish->repeat_purchase,
-                    'fullfill_amount' => $request->fullfill_amount ??
-                        $wish->fullfill_amount,
-                    'tax_amount' => $taxamount,
-                ]);
-
-
-                $updatedata->refresh();
-                if (!empty($request->category)) {
-                    foreach ($request->category as $key => $value) {
-                        WishCategory::where('wish_id', $updatedata->id)->update([
-                            'category_id' => $value
-                        ]);
-                        // $wish_cat = new WishCategory();
-                        // $wish_cat->uuid = Uuid::uuid4();
-                        // $wish_cat->wish_id = $updatedata->id;
-                        // $wish_cat->category_id = $value;
-                        // $wish_cat->save();
-                    }
+                if (!empty($request->price)) {
+                    $taxamount = $request->price * env('TAX_PERCENTAGE') / 100;
+                    $price = $request->price;
+                    $createpriceid = $taxamount + $price;
+                } else {
+                    $taxamount = $wish->tax_amount;
+                    $price = $wish->price;
+                    $createpriceid = $taxamount + $price;
                 }
+                if (!empty($wish)) {
+                    $updatedata = WishItem::where('uuid', $uuid)->update([
+                        "user_id" => Auth::id(),
+                        'wishname' => $request->wishname ?? $wish->wishname,
+                        'price' => $price,
+                        'item_url' => $request->item_url != "" ? $request->item_url : $wish->item_url,
+                        'thumbnail' => $request->thumbnail ?? $wish->thumbnail,
+                        'subscription' => $request->subscription ?? $wish->subscription,
+                        'subscription_period' => $request->subscription_period ?? $wish->subscription_period,
+                        'repeat_purchase' => $request->repeat_purchase ??
+                            $wish->repeat_purchase,
+                        'fullfill_amount' => $request->fullfill_amount ??
+                            $wish->fullfill_amount,
+                        'tax_amount' => $taxamount,
+                    ]);
 
-                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-                $stripe_client = $stripe->products->update([
-                    'name' => $request->wishname ?? $wish->wishname,
-                    'images' => [$updatedata->perma_link],
-                    "default_price_data" => ["currency" => "usd", "unit_amount_decimal" => $createpriceid * 100],
-                    // "url" => $request->item_url ?? null
-                ]);
 
-                $updatedata->stripe_product_id = $stripe_client->id;
-                $updatedata->price_id = $stripe_client->default_price;
-                $updatedata->save();
+                    $updatedata->refresh();
+                    if (!empty($request->category)) {
+                        foreach ($request->category as $key => $value) {
+                            WishCategory::where('wish_id', $updatedata->id)->update([
+                                'category_id' => $value
+                            ]);
+                            // $wish_cat = new WishCategory();
+                            // $wish_cat->uuid = Uuid::uuid4();
+                            // $wish_cat->wish_id = $updatedata->id;
+                            // $wish_cat->category_id = $value;
+                            // $wish_cat->save();
+                        }
+                    }
 
-                $user = User::whereId(Auth::id())->first();
-                //send email
-                SaveWishlist::dispatch($user);
-                return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been updated.");
+                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                    $stripe_client = $stripe->products->update([
+                        'name' => $request->wishname ?? $wish->wishname,
+                        'images' => [$updatedata->perma_link],
+                        "default_price_data" => ["currency" => "usd", "unit_amount_decimal" => $createpriceid * 100],
+                        // "url" => $request->item_url ?? null
+                    ]);
+
+                    $updatedata->stripe_product_id = $stripe_client->id;
+                    $updatedata->price_id = $stripe_client->default_price;
+                    $updatedata->save();
+
+                    $user = User::whereId(Auth::id())->first();
+                    //send email
+                    SaveWishlist::dispatch($user);
+                    return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been updated.");
+                }
             }
         } catch (\Throwable $th) {
             //throw $th;
@@ -278,7 +312,7 @@ class WishitemController extends Controller
                     $createpriceid = $amount + $tax;
                     $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                     $stripe_client = $stripe->products->create([
-                        'name' => 'anonymous',
+                        'name' => $wishitem->wishname,
                         'images' => [$wishitem->perma_link],
                         "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
                     ]);
@@ -316,7 +350,7 @@ class WishitemController extends Controller
                 $createpriceid = $amount + $amount * env('TAX_PERCENTAGE') / 100;
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripe_client = $stripe->products->create([
-                    'name' => 'anonymous',
+                    'name' => $wishitem->wishname,
                     'images' => [$wishitem->perma_link],
                     "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid],
                 ]);
