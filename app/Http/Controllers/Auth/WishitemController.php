@@ -106,39 +106,14 @@ class WishitemController extends Controller
                     "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
                     "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
                 ]);
-
-                $wish->refresh();
-
-                foreach ($request->category as $key => $value) {
-                    $wish_cat = new WishCategory();
-                    $wish_cat->uuid = Uuid::uuid4();
-                    $wish_cat->wish_id = $wish->id;
-                    $wish_cat->category_id = $value;
-                    $wish_cat->save();
-                }
-
-
-                if ($request->subscription != 2) {
-                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-                    $stripe_client = $stripe->products->create([
-                        'name' => $request->wishname ?? null,
-                        'images' => [$wish->perma_link],
-                        "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
-                        "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
-                    ]);
-                    $wish->stripe_product_id = $stripe_client->id;
-                    $wish->price_id = $stripe_client->default_price;
-                }
-
-                $wish->save();
-
-                // $user = User::whereId(Auth::id())->first();
-
-                //send email
-                // SaveWishlist::dispatch($user);
-
-                return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
+                $wish->stripe_product_id = $stripe_client->id;
+                $wish->price_id = $stripe_client->default_price;
             }
+            $wish->save();
+            // $user = User::whereId(Auth::id())->first();
+            //send email
+            // SaveWishlist::dispatch($user);
+            return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
         }
     }
 
