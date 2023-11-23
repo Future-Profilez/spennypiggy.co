@@ -57,6 +57,10 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth', 'mustHaveToVerify')->group(function () {
 
+    /*send surprise amount*/
+    Route::post('/send-surprize/{owner_id}', [WishitemController::class, 'sendSurprise'])->name('send.surprise');
+
+
     Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
     Route::get('verification', [EmailVerificationPromptController::class, '__invoke'])->name('verification.notice');
     Route::get('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
@@ -101,9 +105,6 @@ Route::middleware('auth', 'mustHaveToVerify')->group(function () {
     Route::get('/sucess-checkout/{id}', [StripeController::class, 'successCheckout'])->name('checkout.success');
     Route::get('cancel-checkout/{id}', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel');
 
-    /*send surprise amount*/
-    Route::get('/send-surprize/{owner_id}', [WishitemController::class, 'sendSurprise'])->name('send.surprise');
-    // /send-surprize/${owner}?amount=${amount}&message=${message}
 
     Route::prefix("stripe")->name("stripe.")->group(function () {
         Route::get("authorize", [StripeController::class, "index"])->name("index");
