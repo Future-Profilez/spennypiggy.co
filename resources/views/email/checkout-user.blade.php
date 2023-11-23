@@ -11,7 +11,7 @@
                     <td
                         style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
                             <span style="color:#F94F97 ">
-                            Thankyou for granted a wish of ({{ $data->owner->name }}'s) on  Spenny Piggy of amount £{{ $data->amount_subtotal }} 🎁 
+                            Thankyou for granted a wish of {{ $data->owner->name }} on  Spenny Piggy of amount £{{ $data->amount_subtotal }} 🎁 
                             </span>
                     </td>
                 </tr>
