@@ -186,7 +186,7 @@ class StripeController extends Controller
         } catch (\Throwable $th) {
             \Log::error("Error in createCheckout: " . $th->getMessage());
             throw $th;
-        }
+        } 
     }
 
     public function retrive($id)
