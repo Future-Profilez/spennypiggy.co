@@ -439,8 +439,6 @@ class WishitemController extends Controller
     public function sendSurprise(Request $request)
     {
         try {
-            \Log::info('aaa');
-            \Log::info($request);
             $request->validate([
                 "message" => [
                     "required",
@@ -456,11 +454,8 @@ class WishitemController extends Controller
             if (str_word_count($message) > $wordLimit) {
                 return redirect()->back()->with("error", "Max limit for message is 100 words");
             }
-            \Log::info($message);
 
             $taxamount = $request->amount * env('TAX_PERCENTAGE') / 100;
-            \Log::info($taxamount);
-
             $priceid = $request->amount + $taxamount;
             $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
             $stripe_client = $stripe->products->create([
@@ -468,12 +463,11 @@ class WishitemController extends Controller
                 'images' => ['https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/'],
                 "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $priceid * 100],
             ]);
-            \Log::info($stripe_client);
-
             UserCart::create([
                 'user_id' => Auth::id(),
                 'owner_id' => $request->owner_id ?? '',
                 'amount' => $request->amount ?? 0,
+                'wish_id' => 0,
                 'tax' => $taxamount ?? 0,
                 'priceid' => $stripe_client->default_price,
                 'message' => $request->message,
