@@ -164,87 +164,11 @@ class StripeController extends Controller
     }
 
     /* create checkout */
-    // public function createCheckout($owner_id, Request $request)
-    // {
-    //     try {
-
-    //         if (!empty($request)) {
-    //             $data = $request;
-    //             $message = $data['message'];
-    //             $wordLimit = 100;
-    //             if (str_word_count($message) > $wordLimit) {
-    //                 return redirect()->back()->with("error", "Max limit for message is 100 words");
-    //             }
-    //             $from = $data['from'];
-    //         }
-
-    //         $user = User::where('id', Auth::id())->first();
-    //         $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->with(['wish'])->get();
-
-    //         $lineItems = [];
-    //         foreach ($getdata as $dd) {
-    //             if ($dd->wish->subscription == 2) {
-    //                 $lineItems[] = [
-    //                     'price' => $dd->priceid ?? '',
-    //                     'quantity' => 1,
-    //                 ];
-    //                 $amountadd = $dd->wish->fullfill_amount + $dd->amount;
-    //                 $dd->wish->fullfill_amount = $amountadd;
-    //                 $dd->wish->save();
-    //             } else {
-    //                 $lineItems[] = [
-    //                     'price' => $dd->wish->price_id ?? '',
-    //                     'quantity' => 1,
-    //                 ];
-    //             }
-    //         }
-
-    //         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-    //         $sessioncreate = $stripe->checkout->sessions->create([
-    //             'success_url' => route('checkout.success', [$owner_id]),
-    //             'cancel_url' => route('checkout.cancel', [$owner_id]),
-    //             'line_items' => $lineItems,
-    //             'mode' => 'payment',
-    //         ]);
-
-    //         $callbackData = $sessioncreate;
-    //         Log::info("callback data amount: " . $callbackData->amount_total);
-    //         $subtotal = ($callbackData->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
-    //         Log::info("subtotal: " . $subtotal);
-    //         $taxnew = ($callbackData->amount_total / 100) - ($subtotal);
-
-    //         session()->forget('session_id');
-    //         session(['session_id' => $callbackData->id]);
-    //         $stripeid = StripePaymentDetail::create([
-    //             'session_id' => $callbackData->id,
-    //             'amount_subtotal' => $subtotal,
-    //             'amount_total' => $callbackData->amount_total / 100,
-    //             'tax' => $taxnew,
-    //             'currency' => $callbackData->currency,
-    //             'payment_method_config_detail_id' => optional($callbackData->payment_method_configuration_details)->id,
-    //             'payment_method_type' => optional($callbackData->payment_method_types)[0],
-    //             'user_id' => Auth::id(),
-    //             'owner_id' => $owner_id,
-    //             'name' => $from ?? '',
-    //             'message' => $message ?? '',
-    //             'session_created' => $callbackData->created,
-    //             'session_expires_at' => $callbackData->expires_at,
-    //             'created_at' => Carbon::now(),
-    //             'updated_at' => Carbon::now(),
-    //         ]);
-    //         $stripeid->refresh();
-
-    //         return Inertia::location($sessioncreate->url);
-    //     } catch (\Throwable $th) {
-    //         Log::error("Error in createCheckout: " . $th->getMessage());
-    //         throw $th;
-    //     }
-    // }
 
     public function createCheckout($owner_id, Request $request)
     {
         try {
-            if (!empty($request->message)) {
+            if (!empty($request)) {
                 $wordLimit = 100;
                 $message = $request->message;
 
@@ -265,7 +189,8 @@ class StripeController extends Controller
             $lineItems = [];
 
             foreach ($getdata as $dd) {
-                $priceId = $dd->wish->subscription == 2 ? $dd->priceid : $dd->wish->price_id;
+                // $priceId = $dd->wish->subscription == 2 ? $dd->priceid : $dd->wish->price_id;
+                $priceId = $dd->priceid != Null ? $dd->priceid : $dd->wish->price_id;
 
                 $lineItems[] = [
                     'price' => $priceId ?? '',
@@ -286,16 +211,12 @@ class StripeController extends Controller
                 'mode' => 'payment',
             ]);
 
-            Log::info("callback data amount: " . $sessionCreate->amount_total);
-
             $subtotal = ($sessionCreate->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
-            Log::info("subtotal: " . $subtotal);
 
             $taxNew = ($sessionCreate->amount_total / 100) - $subtotal;
 
             session()->forget('session_id');
             session(['session_id' => $sessionCreate->id]);
-
             $stripePaymentDetail = StripePaymentDetail::create([
                 'session_id' => $sessionCreate->id,
                 'amount_subtotal' => $subtotal,
@@ -320,7 +241,7 @@ class StripeController extends Controller
         } catch (\Throwable $th) {
             Log::error("Error in createCheckout: " . $th->getMessage());
             throw $th;
-        } 
+        }
     }
 
 

@@ -12,6 +12,7 @@ use App\Models\UserCart;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
 use App\Models\WishItem;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -89,16 +90,18 @@ class WishitemController extends Controller
 
             $wish->refresh();
 
-            foreach ($request->category as $key => $value) {
-                $wish_cat = new WishCategory();
-                $wish_cat->uuid = Uuid::uuid4();
-                $wish_cat->wish_id = $wish->id;
-                $wish_cat->category_id = $value;
-                $wish_cat->save();
+            if (!empty($request->category)) {
+                foreach ($request->category as $key => $value) {
+                    $wish_cat = new WishCategory();
+                    $wish_cat->uuid = Uuid::uuid4();
+                    $wish_cat->wish_id = $wish->id;
+                    $wish_cat->category_id = $value;
+                    $wish_cat->save();
+                }
             }
 
 
-            if ($request->subscription != 2) {
+            if (!$request->subscription == 2) {
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripe_client = $stripe->products->create([
                     'name' => $request->wishname ?? null,
@@ -108,8 +111,9 @@ class WishitemController extends Controller
                 ]);
                 $wish->stripe_product_id = $stripe_client->id;
                 $wish->price_id = $stripe_client->default_price;
+                $wish->save();
             }
-            $wish->save();
+
             // $user = User::whereId(Auth::id())->first();
             //send email
             // SaveWishlist::dispatch($user);
@@ -430,5 +434,58 @@ class WishitemController extends Controller
         return Inertia::render('cart/Cart', [
             "carts" => $cart,
         ]);
+    }
+
+    public function sendSurprise(Request $request)
+    {
+        try {
+            $request->validate([
+                "message" => [
+                    "required",
+                    "string",
+                ],
+                "amount" => [
+                    "required",
+                ],
+            ]);
+
+            $wordLimit = 100;
+            $message = $request->message;
+            if (str_word_count($message) > $wordLimit) {
+                return redirect()->back()->with("error", "Max limit for message is 100 words");
+            }
+
+            $taxamount = $request->amount * env('TAX_PERCENTAGE') / 100;
+            $priceid = $request->amount + $taxamount;
+            $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+            $stripe_client = $stripe->products->create([
+                'name' => 'surprise',
+                'images' => ['https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/'],
+                "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $priceid * 100],
+            ]);
+            UserCart::create([
+                'user_id' => Auth::id(),
+                'owner_id' => $request->owner_id ?? '',
+                'amount' => $request->amount ?? 0,
+                'tax' => $taxamount ?? 0,
+                'priceid' => $stripe_client->default_price,
+                'message' => $request->message,
+                'status' => 1,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
+            ]);
+
+            return response()->json([
+                "success" => true,
+                'added' => true,
+                "msg" => "Item added to cart.",
+            ]);
+
+            // return back()->with('success', 'Gift added in cart.');
+
+
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
     }
 }

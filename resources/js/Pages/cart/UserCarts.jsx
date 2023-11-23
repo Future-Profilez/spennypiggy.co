@@ -14,7 +14,6 @@ export default function UserCarts(props) {
     const handleSubmit = (e) => {
         e.preventDefault();
         window.location.href = `/create-checkout-session/${datas?.user?.id}?message=${message}&from=${name}`;
-        // window.location.href = `/create-checkout-session/${datas?.user?.id}`;
     };
 
     return (
