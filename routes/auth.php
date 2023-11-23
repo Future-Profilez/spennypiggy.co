@@ -150,4 +150,4 @@ Route::get('/terms-and-conditions', function () {
 /*check username exist*/
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
 
-Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
+// Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
