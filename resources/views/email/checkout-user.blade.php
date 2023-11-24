@@ -10,7 +10,7 @@
                     <td style=" padding: 0 0 25px 0; text-align: center;"><img src="https://whoyouinto.com/emails/user/giftimg.png" alt="img"></td>
                 </tr>
                 <tr>
-                    @if(!empty($detail==true))
+                    @if(!empty($detail))
                     <td
                         style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
                             <span style="color:#F94F97 ">
