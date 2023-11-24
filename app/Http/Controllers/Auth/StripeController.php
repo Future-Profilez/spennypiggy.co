@@ -320,7 +320,7 @@ class StripeController extends Controller
                 $payment_data = StripePaymentItems::create([
                     'uuid' => Uuid::uuid4(),
                     'stripe_payment_id' => $stripeid->id,
-                    'wish_item_id' => $dd->wish_id ?? '',
+                    'wish_item_id' => $dd->wish_id ?? Null,
                     'user_cart_id' => $dd->id,
                     'amount' => $dd->amount,
                     'tax' => $dd->tax,
@@ -331,16 +331,9 @@ class StripeController extends Controller
                 } else {
                     CheckoutUser::dispatch($payment_data, false, false, $stripeid->message);
                 }
-
-                if ($dd->wish_id == NULL) {
-                    CheckoutMailToUser::dispatch($stripeid, $dd);
-                } else {
-                    //send email
-                    CheckoutMailToUser::dispatch($stripeid, false);
-                }
             }
 
-
+            CheckoutMailToUser::dispatch($stripeid);
 
             if (!empty($getdata[0]->owner->username)) {
                 return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
