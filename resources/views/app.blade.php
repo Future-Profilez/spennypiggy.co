@@ -8,7 +8,7 @@
     <!-- Metas start -->
     <link rel="canonical" href="https://spennypiggy.co" />
     <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,maximum-scale=2" />
-    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="manifest" href="/manifest.json" />
     <link rel="mask-icon" href="/favicon.ico" />
     <link rel="icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/favicon.ico" />
@@ -33,9 +33,23 @@
     <meta name="twitter:image:alt" content="The Best Alternative to Amazon Wishlist" />
     <meta name="twitter:image:src" content="/site.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+
+    <script type="text/javascript">
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js', {
+                scope: '.'
+            }).then(function (registration) {
+                console.log('Laravel PWA: ServiceWorker registration successful with scope: ', registration.scope);
+            }, function (err) {
+                console.log('Laravel PWA: ServiceWorker registration failed: ', err);
+            });
+        }
+    </script>
+
     <!-- Metas END -->
 
     <!-- Scripts -->
+    @laravelPWA
     @routes
     @viteReactRefresh
     @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])
