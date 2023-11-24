@@ -449,27 +449,39 @@ class StripeController extends Controller
                 'updated_at' => Carbon::now(),
             ]);
             $stripeid = StripePaymentDetail::where('session_id', $sessionId)->first();
-            $getdata = WishItem::whereId($id)->first();
 
-            if ($getdata->subscription == 2) {
-                $amount = session('user_fullfill_amount');
-                $tax = $amount * env('TAX_PERCENTAGE') / 100;
-                $getdata->fullfill_amount += $amount;
-                $getdata->save();
-            } else {
-                $amount = $getdata->price;
-                $tax = $getdata->tax_amount;
+            if($id != null){
+                $getdata = WishItem::whereId($id)->first();
+                if ($getdata->subscription == 2) {
+                    $amount = session('user_fullfill_amount');
+                    $tax = $amount * env('TAX_PERCENTAGE') / 100;
+                    $getdata->fullfill_amount += $amount;
+                    $getdata->save();
+                } else {
+                    $amount = $getdata->price;
+                    $tax = $getdata->tax_amount;
+                }
             }
+            else{
+                $amount = $stripeid->amount_total;
+                $tax = $stripeid->tax;
+            }
+
             $data = StripePaymentItems::create([
                 'uuid' => Uuid::uuid4(),
                 'stripe_payment_id' => $stripeid->id,
-                'wish_item_id' => $getdata->id,
+                'wish_item_id' => $getdata->id ?? null,
                 'amount' => $amount,
                 'tax' => $tax,
             ]);
             $data->refresh();
 
-            CheckoutUser::dispatch($data, true, false, $stripeid->message);
+            if($data->wish_item_id != null){
+                CheckoutUser::dispatch($data, true, false, $stripeid->message);
+            }
+            else{
+                CheckoutUser::dispatch($data, true, true, $stripeid->message);
+            }
 
             return redirect(route('user.show', [$getdata->user->username]))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
