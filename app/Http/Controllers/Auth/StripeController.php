@@ -81,9 +81,26 @@ class StripeController extends Controller
                     'business_type' => 'individual',
                     'business_profile' => [
                         'url'   =>  "https://spennypiggy.com/{$user->username}",
-                        'mcc'   => '5969'
+                        'mcc'   => '5947'
                     ],
-                    'default_currency' => 'GBP'
+                    'default_currency' => 'GBP',
+                    // 'individual' => [
+                    //     'address' => [
+                    //         'city' => 'Dormansland',
+                    //         'country' => 'GB',
+                    //         'line1' => '72 North Promenade',
+                    //         'postal_code' => 'RH7 7LA'
+                    //     ],
+                    //     'email' => $user->mail,
+                    //     'first_name' => "John",
+                    //     'last_name' => "Doe",
+                    //     'dob' => [
+                    //         'day' => 29,
+                    //         'month' => 7,
+                    //         'year' => 1999
+                    //     ],
+                    //     'phone' => "7893986800"
+                    // ]
                 ];
 
 
