@@ -434,7 +434,7 @@ class StripeController extends Controller
         }
     }
 
-    public function anonymousSuccessCheckout($id = null)
+    public function anonymousSuccessCheckout($id = null,$cart_id)
     {
         try {
             $sessionId = session('anonymous_session_id');
@@ -444,7 +444,7 @@ class StripeController extends Controller
             ]);
             $stripeid = StripePaymentDetail::where('session_id', $sessionId)->first();
 
-            if ($id != null) {
+            if ($id != 0) {
                 $getdata = WishItem::whereId($id)->first();
                 if ($getdata->subscription == 2) {
                     $amount = session('user_fullfill_amount');
@@ -463,6 +463,7 @@ class StripeController extends Controller
             $data = StripePaymentItems::create([
                 'uuid' => Uuid::uuid4(),
                 'stripe_payment_id' => $stripeid->id,
+                'user_cart_id' => $cart_id ?? null,
                 'wish_item_id' => $getdata->id ?? null,
                 'amount' => $amount,
                 'tax' => $tax,

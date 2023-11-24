@@ -525,8 +525,8 @@ class WishitemController extends Controller
             ];
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
             $sessioncreate = $stripe->checkout->sessions->create([
-                'success_url' => route('checkout.anonymous.success'),
-                'cancel_url' => route('checkout.anonymous.cancel'),
+                'success_url' => route('checkout.anonymous.success', [0,$cart->id]),
+                'cancel_url' => route('checkout.anonymous.cancel',[0]),
                 'line_items' => $lineItems,
                 'mode' => 'payment',
             ]);
@@ -550,13 +550,10 @@ class WishitemController extends Controller
                 'updated_at' => Carbon::now(),
             ]);
 
+
+
             return Inertia::location($sessioncreate->url);
         }
-
-        $user = User::whereId(Auth::id())->first();
-        $owner = User::whereId($request->owner_id)->first();
-        //send email to user
-        SendUserGiftMail::dispatch($user, $owner);
 
         //send email to owner
         // SaveWishlist::dispatch($user);

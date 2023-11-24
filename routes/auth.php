@@ -131,8 +131,8 @@ Route::middleware('auth', 'mustHaveToVerify')->group(function () {
 // Route::get('/anonymous-create-checkout-session/{priceid}/{quantity}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
 Route::get('/anonymous-create-checkout-session/{wishid}/{amount?}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
 
-Route::get('/anonymous-sucess-checkout/{id?}', [StripeController::class, 'anonymousSuccessCheckout'])->name('checkout.anonymous.success');
-Route::get('/anonymous-cancel-checkout/{id?}', [StripeController::class, 'anonymousCancelCheckout'])->name('checkout.anonymous.cancel');
+Route::get('/anonymous-sucess-checkout/{id}/{cart_id?}', [StripeController::class, 'anonymousSuccessCheckout'])->name('checkout.anonymous.success');
+Route::get('/anonymous-cancel-checkout/{id}', [StripeController::class, 'anonymousCancelCheckout'])->name('checkout.anonymous.cancel');
 
 Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class, 'categoryItems'])->name('get_category_data');
 
