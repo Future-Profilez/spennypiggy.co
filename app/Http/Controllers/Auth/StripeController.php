@@ -373,7 +373,7 @@ class StripeController extends Controller
                     try {
                         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                         $stripe_client = $stripe->products->create([
-                            'name' => $wishdata->wishdata,
+                            'name' => $wishdata->wishname,
                             'images' => [$wishdata->perma_link],
                             "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $totalamount * 100],
                         ]);
