@@ -316,7 +316,6 @@ class StripeController extends Controller
                 'updated_at' => Carbon::now(),
             ]);
             $stripeid = StripePaymentDetail::where('session_id', $sessionId)->first();
-            \Log::info($stripeid->message);
             foreach ($getdata as $dd) {
                 $payment_data = StripePaymentItems::create([
                     'uuid' => Uuid::uuid4(),
@@ -434,7 +433,7 @@ class StripeController extends Controller
         }
     }
 
-    public function anonymousSuccessCheckout($id = null,$cart_id)
+    public function anonymousSuccessCheckout($id = null, $cart_id = null)
     {
         try {
             $sessionId = session('anonymous_session_id');
@@ -443,6 +442,7 @@ class StripeController extends Controller
                 'updated_at' => Carbon::now(),
             ]);
             $stripeid = StripePaymentDetail::where('session_id', $sessionId)->first();
+
 
             if ($id != 0) {
                 $getdata = WishItem::whereId($id)->first();
@@ -455,9 +455,12 @@ class StripeController extends Controller
                     $amount = $getdata->price;
                     $tax = $getdata->tax_amount;
                 }
+                $username = $getdata->user->username;
             } else {
+                $cartdata = UserCart::whereId($cart_id)->first();
                 $amount = $stripeid->amount_total;
                 $tax = $stripeid->tax;
+                $username = $cartdata->owner->username;
             }
 
             $data = StripePaymentItems::create([
@@ -469,14 +472,15 @@ class StripeController extends Controller
                 'tax' => $tax,
             ]);
             $data->refresh();
-
-            if ($data->wish_item_id != null) {
-                CheckoutUser::dispatch($data, true, false, $stripeid->message);
+            \Log::info("Cartid" . $cart_id);
+            // $dd->wish_id == NULL
+            if ($data->wish_item_id == NULL) {
+                CheckoutUser::dispatch($data, true, $cartdata, false);
             } else {
-                CheckoutUser::dispatch($data, true, true, $stripeid->message);
+                CheckoutUser::dispatch($data, true, false, false);
             }
 
-            return redirect(route('user.show', [$getdata->user->username]))->with('success', 'Payment Successfull.');
+            return redirect(route('user.show', [$username]))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
             //throw $th;
         }

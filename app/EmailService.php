@@ -55,8 +55,6 @@ class EmailService
                 'uuid' => $data->payment->owner->uuid,
             ];
 
-            \Log::info('messageinfo2' . $message);
-
             Mail::to($emailData['to'])
                 ->send(new Checkout($data, $anon, $surprise, $message));
         } catch (TransportException $e) {
