@@ -1,5 +1,5 @@
 <?php
-
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -147,6 +147,11 @@ Route::get('/how-it-works', function () {
 Route::get('/terms-and-conditions', function () {
     return Inertia::render('Terms');
 })->name("terms-and-conditions");
+
+Route::get('/files/{filename}', function (string $filename) {
+    $fullPath = '/public/' . $filename;
+    return Storage::response($fullPath);
+});
 
 /*check username exist*/
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');

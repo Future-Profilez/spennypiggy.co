@@ -25,7 +25,7 @@
     <meta property="og:image" content="/site.png" />
     <meta property="og:site_name" content="spennypiggy.co" />
     <meta property="og:description" content="For spicy creators to Safely recieve financial gifts" />
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="The Best Alternative to Amazon Wishlist" />
     <meta name="twitter:description" content="For spicy creators to Safely recieve financial gifts" />
     <meta name="twitter:image" content="/site.png" />
@@ -39,14 +39,12 @@
             navigator.serviceWorker.register('/service-worker.js', {
                 scope: '.'
             }).then(function (registration) {
-                console.log('Laravel PWA: ServiceWorker registration successful with scope: ', registration.scope);
+                console.log('Service worker installed: ', registration.scope);
             }, function (err) {
                 console.log('Laravel PWA: ServiceWorker registration failed: ', err);
             });
         }
     </script>
-
-    <!-- Metas END -->
 
     <!-- Scripts -->
     @laravelPWA
