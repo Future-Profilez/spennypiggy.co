@@ -27,9 +27,9 @@ export default function Cart(props) {
                             </>
                         ) : (
                             <>
-                                <div className="p-5 text-center">
+                                <div className="py-5 text-center">
                                     <div className="containerbox">
-                                        <Nocontent text={"Cart is empty."} />
+                                        <Nocontent  classes={`py-5`} text={"Cart is empty."} />
                                     </div>
                                 </div>
                             </>
