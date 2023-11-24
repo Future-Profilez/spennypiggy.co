@@ -35,7 +35,7 @@ class CheckoutToUser extends Mailable
     public function build()
     {
         try {
-            $subject = 'You done a checkout from spanny piggy platform.';
+            $subject = 'You done a checkout from spenny piggy platform.';
             return $this->view('email.checkout-user')
                 ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
                 ->subject($subject);
