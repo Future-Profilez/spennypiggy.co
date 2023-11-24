@@ -5,8 +5,9 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { useForm } from '@inertiajs/react';
 import { Transition } from '@headlessui/react';
+import { useAlerts } from '@/Components/Alerts';
 
-export default function UpdatePasswordForm({ className = '' }) {
+export default function UpdatePasswordForm({passwordUpdate, className = '' }) {
     const passwordInput = useRef();
     const currentPasswordInput = useRef();
 
@@ -16,18 +17,27 @@ export default function UpdatePasswordForm({ className = '' }) {
         password_confirmation: '',
     });
 
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const updatePassword = (e) => {
         e.preventDefault();
-
         put(route('password.update'), {
             preserveScroll: true,
-            onSuccess: () => reset(),
+            onSuccess: (resp) => {
+                reset();
+                if (resp.props.flash?.success) {
+                    successAlert(resp.props.flash?.success || "Updated !!");
+                    passwordUpdate(false);
+                }
+                if (resp.props.flash?.error) {
+                    errorAlert(resp.props.flash?.error);
+                }
+            },
             onError: (errors) => {
+                errorAlert("Failed to reset password.");
                 if (errors.password) {
                     reset('password', 'password_confirmation');
                     passwordInput.current.focus();
                 }
-
                 if (errors.current_password) {
                     reset('current_password');
                     currentPasswordInput.current.focus();
@@ -49,7 +59,6 @@ export default function UpdatePasswordForm({ className = '' }) {
             <form onSubmit={updatePassword} className="mt-6 space-y-6">
                 <div>
                     <InputLabel htmlFor="current_password" value="Current Password" />
-
                     <TextInput
                         id="current_password"
                         ref={currentPasswordInput}
@@ -59,13 +68,10 @@ export default function UpdatePasswordForm({ className = '' }) {
                         className="mt-1 block w-full"
                         autoComplete="current-password"
                     />
-
                     <InputError message={errors.current_password} className="mt-2" />
                 </div>
-
                 <div>
                     <InputLabel htmlFor="password" value="New Password" />
-
                     <TextInput
                         id="password"
                         ref={passwordInput}
@@ -75,13 +81,11 @@ export default function UpdatePasswordForm({ className = '' }) {
                         className="mt-1 block w-full"
                         autoComplete="new-password"
                     />
-
                     <InputError message={errors.password} className="mt-2" />
                 </div>
 
                 <div>
                     <InputLabel htmlFor="password_confirmation" value="Confirm Password" />
-
                     <TextInput
                         id="password_confirmation"
                         value={data.password_confirmation}
@@ -90,13 +94,11 @@ export default function UpdatePasswordForm({ className = '' }) {
                         className="mt-1 block w-full"
                         autoComplete="new-password"
                     />
-
                     <InputError message={errors.password_confirmation} className="mt-2" />
                 </div>
 
                 <div className="flex items-center gap-4">
                     <PrimaryButton disabled={processing}>Save</PrimaryButton>
-
                     <Transition
                         show={recentlySuccessful}
                         enter="transition ease-in-out"

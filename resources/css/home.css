@@ -266,7 +266,7 @@ ul.socialmedia a svg{width:30px;height:30px;}
 ul.socialmedia a img{width:35px;height:35px;}
 .progress{background:#ECCEDB;height:9px;}
 .progress-bar{background:var(--pink);}
-.wishlistimg img{height:190px;border-radius:10px;}
+.wishlistimg img{height:190px;border-radius:20px;}
 .updateavatar.modal .modal-content{margin:30px;}
 .updateavatar.modal{background:rgb(0 0 0 / 52%);}
 .userProfile{position:sticky;top:20px;}

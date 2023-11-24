@@ -11,6 +11,16 @@ import PaymentDashboard from '../stripe/PaymentDashboard';
 export default function Accountsetting(props) {
     console.log("props aa",props);
     const {auth, user} = props;
+    const [passClose, setSassClose] = useState(null);
+
+    const passwordUpdated = () => { 
+        setSassClose(false);
+        setTimeout(() => {
+            setSassClose();
+        }, 100);
+    }
+
+
     return (
         <Authenticated user={user}  auth={auth.user} >
             <Head title={"My Account"} />
@@ -39,10 +49,9 @@ export default function Accountsetting(props) {
                                 </Popup >
                             </li>
                             <li>
-                            <Popup space='4' modalclass="pinkmodal" 
-                                text={<>PASSWORD</>} >
-                                    <UpdatePasswordForm />
-                                </Popup >
+                                <Popup action={passClose} space='4' modalclass="pinkmodal" text={<>PASSWORD</>} >
+                                    <UpdatePasswordForm passwordUpdate={passwordUpdated} />
+                                </Popup>
                             </li>
 
                             <li>

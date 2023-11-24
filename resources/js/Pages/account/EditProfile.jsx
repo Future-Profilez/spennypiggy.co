@@ -55,7 +55,10 @@ export default function EditProfile({ user }) {
             },
             onError: (_err) => {
                 console.error(`errors:`);
-                console.table(errors);
+                console.table(_err);
+                if(_err.username){
+                    errorAlert(_err.username || "Something went wrong.")
+                }
             }
         });
     };
