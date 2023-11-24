@@ -316,6 +316,7 @@ class StripeController extends Controller
                 'updated_at' => Carbon::now(),
             ]);
             $stripeid = StripePaymentDetail::where('session_id', $sessionId)->first();
+            \Log::info($stripeid->message);
             foreach ($getdata as $dd) {
                 $payment_data = StripePaymentItems::create([
                     'uuid' => Uuid::uuid4(),
@@ -443,7 +444,7 @@ class StripeController extends Controller
             ]);
             $stripeid = StripePaymentDetail::where('session_id', $sessionId)->first();
 
-            if($id != null){
+            if ($id != null) {
                 $getdata = WishItem::whereId($id)->first();
                 if ($getdata->subscription == 2) {
                     $amount = session('user_fullfill_amount');
@@ -454,8 +455,7 @@ class StripeController extends Controller
                     $amount = $getdata->price;
                     $tax = $getdata->tax_amount;
                 }
-            }
-            else{
+            } else {
                 $amount = $stripeid->amount_total;
                 $tax = $stripeid->tax;
             }
@@ -469,10 +469,9 @@ class StripeController extends Controller
             ]);
             $data->refresh();
 
-            if($data->wish_item_id != null){
+            if ($data->wish_item_id != null) {
                 CheckoutUser::dispatch($data, true, false, $stripeid->message);
-            }
-            else{
+            } else {
                 CheckoutUser::dispatch($data, true, true, $stripeid->message);
             }
 
