@@ -15,17 +15,19 @@ class Checkout extends Mailable
     public $data;
     public $anon;
     public $surprise;
+    public $message;
 
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($data, $anon, $surprise)
+    public function __construct($data, $anon, $surprise, $message)
     {
         $this->data = $data;
         $this->anon = $anon;
         $this->surprise = $surprise;
+        $this->message = $message;
     }
 
     /**
@@ -36,6 +38,8 @@ class Checkout extends Mailable
     public function build()
     {
         try {
+            \Log::info('user mail 3');
+
             $subject = 'Checkout from spanny piggy platform.';
             return $this->view('email.checkout')
                 ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')

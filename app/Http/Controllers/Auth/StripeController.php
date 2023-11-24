@@ -320,24 +320,27 @@ class StripeController extends Controller
                 $payment_data = StripePaymentItems::create([
                     'uuid' => Uuid::uuid4(),
                     'stripe_payment_id' => $stripeid->id,
-                    'wish_item_id' => $dd->wish_id,
+                    'wish_item_id' => $dd->wish_id ?? '',
                     'user_cart_id' => $dd->id,
                     'amount' => $dd->amount,
                     'tax' => $dd->tax,
                 ]);
                 $payment_data->refresh();
-                if (!$getdata->wish_id == NULL) {
-                    CheckoutUser::dispatch($payment_data, false, $dd);
+                if ($dd->wish_id == NULL) {
+                    CheckoutUser::dispatch($payment_data, false, $dd, $stripeid->message);
                 } else {
-                    CheckoutUser::dispatch($payment_data, false, false);
+                    CheckoutUser::dispatch($payment_data, false, false, $stripeid->message);
+                }
+
+                if ($dd->wish_id == NULL) {
+                    CheckoutMailToUser::dispatch($stripeid, $dd);
+                } else {
+                    //send email
+                    CheckoutMailToUser::dispatch($stripeid, false);
                 }
             }
 
-            if (!$getdata->wish_id == NULL) {
-            } else {
-                //send email
-                CheckoutMailToUser::dispatch($stripeid);
-            }
+
 
             if (!empty($getdata[0]->owner->username)) {
                 return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
@@ -466,7 +469,7 @@ class StripeController extends Controller
             ]);
             $data->refresh();
 
-            CheckoutUser::dispatch($data, true, false);
+            CheckoutUser::dispatch($data, true, false, $stripeid->message);
 
             return redirect(route('user.show', [$getdata->user->username]))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {

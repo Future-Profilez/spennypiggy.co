@@ -43,9 +43,10 @@ class EmailService
         }
     }
 
-    public static function checkOutUser($data, $anon, $surprise)
+    public static function checkOutUser($data, $anon, $surprise, $message)
     {
         try {
+            \Log::info('user mail 2');
 
             $emailData = [
                 'to' => $data->payment->owner->email,
@@ -57,15 +58,16 @@ class EmailService
             ];
 
             Mail::to($emailData['to'])
-                ->send(new Checkout($data, $anon, $surprise));
+                ->send(new Checkout($data, $anon, $surprise, $message));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }
 
-    public static function checkOutToUser($data)
+    public static function checkOutToUser($data, $detail)
     {
         try {
+            \Log::info('owner mail 2');
 
             $emailData = [
                 'to' => $data->user->email,
@@ -77,7 +79,7 @@ class EmailService
             ];
 
             Mail::to($emailData['to'])
-                ->send(new CheckoutToUser($data));
+                ->send(new CheckoutToUser($data, $detail));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }

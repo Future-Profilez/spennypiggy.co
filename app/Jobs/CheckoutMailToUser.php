@@ -15,6 +15,7 @@ class CheckoutMailToUser implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $payment;
+    public $data;
 
 
     /**
@@ -24,9 +25,10 @@ class CheckoutMailToUser implements ShouldQueue
      * @param bool $social = false
      * @return void
      */
-    public function __construct($payment)
+    public function __construct($payment, $data)
     {
         $this->payment = $payment;
+        $this->data = $data;
     }
 
     /**
@@ -36,7 +38,7 @@ class CheckoutMailToUser implements ShouldQueue
      */
     public function handle()
     {
-
-        EmailService::checkOutToUser($this->payment);
+        \Log::info('owner mail 1');
+        EmailService::checkOutToUser($this->payment, $this->data);
     }
 }

@@ -1,6 +1,7 @@
 @extends('email.default-2')
 @section('content')
 
+ <?php  echo \Log::info('user mail 4'); ?>
     <tr>
         <td align="center" style="padding:10px 10px 20px 10px;"><a href="https://spennypiggy.co"><img alt="image"
                     width="119" src="https://whoyouinto.com/emails/user/logo.png" style="border:none"></a></td>
@@ -19,11 +20,18 @@
                             src="https://whoyouinto.com/emails/user/giftimg.png" alt="img"></td>
                 </tr>
                 <tr>
-                    <td
+                     @if($surprise==true)
+                        <td
+                        style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
+                        {{ $surprise == true ? $surprise->user->name : 'Anonymous user' }} granted you a Surprise of £{{ $surprise->amount }}🤩.
+                        </td>
+                     @else
+                        <td
                         style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
                         {{ $anon == false ? $data->cart->user->name : 'Anonymous user' }} granted you a Wish on <span
-                            style="color:#F94F97 ">{{ $data->wish->wishname }}</span> of £{{ $data->amount }}🤩.
-                    </td>
+                            style="color:#F94F97 ">{{ $data->wish->wishname ?? ''}}</span> of £{{ $data->amount }}🤩.
+                        </td>
+                     @endif
                 </tr>
                 <tr>
                     <td
@@ -31,13 +39,22 @@
                         Go to <a href="#">Spenny Piggy</a> where you can see your granted wish, send a message to
                         your gifter and share your gift on social media </td>
                 </tr>
+                @if(!empty($message==true))
+                 <tr>
+                    <td
+                        style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
+                      <b>Message :~</b> {{ $message }} </td>
+                </tr>
+                @else
+                @endif
                 <tr>
                     <td style="padding:0 0 10px 0; text-align: center;">
                         <a href={{ env('APP_URL') . '/' . $data->payment->owner->username }}
                             style="padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">See
-                            your granted wish</a>
+                            your granted wish and surprise</a>
                     </td>
                 </tr>
+
             </table>
         </td>
     </tr>
