@@ -4,8 +4,7 @@ import axios from 'axios';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 
-export default function ToCart({ text2, ItemAdded, item, crowd, pending, uuid, text, classes, custom, removeItem, type, is_cart, amount, isEqual }) {
-
+export default function ToCart({ actionfrom, checkoutbtn, ItemAdded, item, crowd, pending, uuid, text, classes, custom, removeItem, type, is_cart, amount, isEqual }) {
 
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [loading, setLoading] = useState(false);
@@ -26,7 +25,6 @@ export default function ToCart({ text2, ItemAdded, item, crowd, pending, uuid, t
     }
 
     const addtocart = async (sets) => {
-
         if(item && item.product == 'surprise'){
             removeGiftItem();
             return false;
@@ -35,7 +33,7 @@ export default function ToCart({ text2, ItemAdded, item, crowd, pending, uuid, t
                 toast.error(`Wish item funding is completed.`);
                 return false;
             }
-            if (crowd && !amount) {
+            if (!item?.is_cart && crowd && !amount) {
                 toast.error(`Please enter a amount to gift this item. `);
                 return false;
             }
@@ -54,8 +52,8 @@ export default function ToCart({ text2, ItemAdded, item, crowd, pending, uuid, t
                     if (resp.data.added == true) {
                         successAlert(resp.data.msg);
                         setis_Cart(true);
+                        ItemAdded("added");
                         if(sets == 1){
-                            ItemAdded();
                         }
                         if(sets == 2){
                             window.location = '/cart';
@@ -63,15 +61,20 @@ export default function ToCart({ text2, ItemAdded, item, crowd, pending, uuid, t
                     } else {
                         successAlert(resp.data.msg);
                         setis_Cart(false);
+                        ItemAdded("removed");
+                        
                     }
                     if (resp.data.uuid) {
                         removeItem && removeItem(uuid);
                     }
-                    if (type == 'checkout') {
+                    if (checkoutbtn) {
                         window.location = '/cart';
                     }
                 } else {
                     errorAlert(resp.data.msg);
+                }
+                if(actionfrom){
+                    window.location = '/cart';
                 }
                 setLoading(false);
             }).catch(_err => {
@@ -79,44 +82,20 @@ export default function ToCart({ text2, ItemAdded, item, crowd, pending, uuid, t
                 setLoading(false);
             });
         }
-
     };
 
-    const checkout = () => {
-        window.location = '/cart';
-    }
+    
 
     return <>
         {custom ?
             <div onClick={addtocart} >{custom}</div>
             :
-            is_Cart ?
-            <>
                 <LoaderButton disabled={loading} onClick={()=>addtocart(1)}
                     className={`flex  ${classes} mx-auto`}
                     spinnerClassName='fill-red-600'>
-                    {loading ? "Proccessing" : is_Cart ? "Remove From Cart" : text ? text : "Add To Cart"}
+                    {loading ? "Proccessing" : is_Cart ? "Remove From Cart" : text }
                 </LoaderButton>
-
-                <LoaderButton disabled={loading} onClick={checkout}
-                    className={`flex  ${classes} mx-auto`}
-                    spinnerClassName='fill-red-600'>
-                    Checkout
-                </LoaderButton>
-            </> :
-            <>
-             <LoaderButton disabled={loading} onClick={()=>addtocart(1)}
-                    className={`flex  ${classes} mx-auto`}
-                    spinnerClassName='fill-red-600'>
-                    {loading ? "Proccessing" : is_Cart ? "Remove From Cart" : text ? text : "Add To Cart"}
-                </LoaderButton>
-                <LoaderButton disabled={loading} onClick={()=>addtocart(2)}
-                    className={`flex  ${classes} mx-auto`}
-                    spinnerClassName='fill-red-600'>
-                    {loading ? "Proccessing" : is_Cart ? "Remove From Cart" : text2}
-                </LoaderButton>
-            </>
-
+           
         }
     </>
 }

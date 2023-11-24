@@ -18,7 +18,7 @@ export default function UserCarts(props) {
 
     return (
         <div className="px-2">
-            <div className="my-4 cartPage bg-white p-4 border-pink shadow-pink border-pink rounded-3xl">
+            <div className="my-4 cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
                 <div className="cartMain">
                     <h2 className="pb-1 wishtitle">
                         Wish Basket for {datas?.user?.name || ""}{" "}
