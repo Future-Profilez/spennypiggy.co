@@ -327,7 +327,7 @@ class WishitemController extends Controller
         } else {
             if ($wishitem->subscription == 2) {
                 $fullfillamount = $amount;
-                $tax =  $amount * env('TAX_PERCENTAGE') / 100;
+                $tax = ceil($amount * env('TAX_PERCENTAGE') / 100);
                 $createpriceid = $amount + $amount * env('TAX_PERCENTAGE') / 100;
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripe_client = $stripe->products->create([
