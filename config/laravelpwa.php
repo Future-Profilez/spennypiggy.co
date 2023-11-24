@@ -8,7 +8,7 @@ return [
         'theme_color' => '#5D25FD',
         'display' => 'standalone',
         'orientation' => 'any',
-        'status_bar' => '#5D25FD',
+        'status_bar' => '#000000',
         'icons' => [
             '72x72' => [
                 'path' => '/favicon-32x32.png',

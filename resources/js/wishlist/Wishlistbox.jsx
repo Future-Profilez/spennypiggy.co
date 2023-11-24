@@ -71,7 +71,7 @@ export default function Wishlistbox(props) {
       </div>
       <div className='sharelinks'>
         <ShareProfile username={itm.wishname} custom={`${window.location.href}?item=${itm.uuid}`} >
-          <Link to="/" className='font-GillSans'>Share Link</Link>
+          <div className='text-pink font-GillSans'>Share Link</div>
         </ShareProfile>
       </div>
     </div>

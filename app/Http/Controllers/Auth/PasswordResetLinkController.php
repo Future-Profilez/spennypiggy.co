@@ -28,24 +28,40 @@ class PasswordResetLinkController extends Controller
      * @throws \Illuminate\Validation\ValidationException
      */
     public function store(Request $request): RedirectResponse
-    {
-        $request->validate([
-            'email' => 'required|email',
-        ]);
+{
+    $request->validate([
+        'email' => 'required|email',
+    ]);
 
-        // We will send the password reset link to this user. Once we have attempted
-        // to send the link, we will examine the response then see the message we
-        // need to show to the user. Finally, we'll send out a proper response.
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+    // Attempt to send the password reset link
+    $status = Password::sendResetLink(
+        $request->only('email')
+    );
 
-        if ($status == Password::RESET_LINK_SENT) {
+    // Check different cases and handle errors accordingly
+    switch ($status) {
+        case Password::RESET_LINK_SENT:
+            // Password reset link sent successfully
             return back()->with('status', __($status));
-        }
+        
+        case Password::INVALID_USER:
+            // User with the provided email not found
+            return back()->with('error', 'Email address not found.');
 
-        throw ValidationException::withMessages([
-            'email' => [trans($status)],
-        ]);
+        case Password::RESET_THROTTLED:
+            // Too many password reset requests for this email
+            return back()->with('error', 'Too many password reset requests. Please try again later.');
+
+        case Password::INVALID_TOKEN:
+            // Invalid or expired password reset token
+            return back()->with('error', 'Invalid or expired password reset token. Please request a new one.');
+
+        default:
+            // Handle any other cases
+            throw ValidationException::withMessages([
+                'email' => [trans($status)],
+            ]);
     }
+}
+
 }
