@@ -396,6 +396,7 @@ class WishitemController extends Controller
                 'amount' => $wish->amount,
                 'priceid' => $wish->priceid,
                 'uuiddata' => $wish->uuid,
+                'tax' => $wish->tax
             ];
         }
 
@@ -412,7 +413,7 @@ class WishitemController extends Controller
             ];
 
             $total = 0;
-
+            $fee = 0;
             foreach ($value as $k => $v) {
                 // if ($v['wish']['subscription'] == 2) {
                 //     $price = $v['amount'];
@@ -458,10 +459,11 @@ class WishitemController extends Controller
                 // } else {
                 //     $total += $v['wish']['price'];
                 // }
-                $total += $v['amount'] ? $v['amount'] : $v['wish']['price'];
+                $total += !empty($v['priceid']) ? $v['amount'] : $v['wish']['price'];
+                $fee += !empty($v['priceid']) ? $v['tax'] : $v['wish']['tax_amount'];
             }
             $cart[$key]['total'] = $total;
-            $cart[$key]['fee'] = ceil($total * env('TAX_PERCENTAGE') / 100);
+            $cart[$key]['fee'] = $fee;
 
             $key++;
         }
@@ -490,19 +492,17 @@ class WishitemController extends Controller
             return redirect()->back()->with("error", "Max limit for message is 100 words");
         }
 
-        $taxamount = $request->amount * env('TAX_PERCENTAGE') / 100;
-        $priceid = $request->amount + $taxamount;
+        $taxamount = 0;
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
         $stripe_client = $stripe->products->create([
             'name' => 'surprise',
             'images' => ['https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/'],
-            "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $priceid * 100],
+            "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $request->amount * 100],
         ]);
         UserCart::create([
             'user_id' => Auth::id(),
             'owner_id' => $request->owner_id ?? '',
             'amount' => $request->amount ?? 0,
-            'wish_id' => 0,
             'tax' => $taxamount ?? 0,
             'priceid' => $stripe_client->default_price,
             'message' => $request->message,

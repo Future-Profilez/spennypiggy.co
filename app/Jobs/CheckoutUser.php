@@ -31,6 +31,8 @@ class CheckoutUser implements ShouldQueue
      */
     public $anon;
 
+    public $surprise;
+
     /**
      * Create a new job instance.
      *
@@ -38,10 +40,11 @@ class CheckoutUser implements ShouldQueue
      * @param bool $social = false
      * @return void
      */
-    public function __construct($payment, $anon)
+    public function __construct($payment, $anon, $surprise)
     {
         $this->payment = $payment;
         $this->anon = $anon;
+        $this->surprise = $surprise;
     }
 
     /**
@@ -52,6 +55,6 @@ class CheckoutUser implements ShouldQueue
     public function handle()
     {
 
-        EmailService::checkOutUser($this->payment, $this->anon);
+        EmailService::checkOutUser($this->payment, $this->anon, $this->surprise);
     }
 }
