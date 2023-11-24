@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\SaveWishlist;
 use App\Jobs\SendUserGiftMail;
 use App\Jobs\WelcomeUser;
+use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\User;
 use App\Models\UserCart;
@@ -489,27 +490,65 @@ class WishitemController extends Controller
 
         $wordLimit = 100;
         $message = $request->message;
+
         if (str_word_count($message) > $wordLimit) {
             return redirect()->back()->with("error", "Max limit for message is 100 words");
         }
 
-        $taxamount = 0;
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
         $stripe_client = $stripe->products->create([
             'name' => 'surprise',
             'images' => ['https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/'],
             "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $request->amount * 100],
         ]);
-        UserCart::create([
-            'user_id' => Auth::id(),
-            'owner_id' => $request->owner_id ?? '',
+
+
+        $cart = UserCart::create([
+            'user_id' => Auth::id() ?? null,
+            'owner_id' => $request->owner_id ?? null,
             'amount' => $request->amount ?? 0,
-            'tax' => $taxamount ?? 0,
+            'tax' => 0,
             'priceid' => $stripe_client->default_price,
             'message' => $request->message,
             'status' => 1,
         ]);
 
+        $cart->refresh();
+
+        if (!Auth::check()) {
+            $lineItems[] = [
+                'price' => $request->amount ?? '',
+                'quantity' => 1,
+            ];
+            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+            $sessioncreate = $stripe->checkout->sessions->create([
+                'success_url' => route('checkout.anonymous.success'),
+                'cancel_url' => route('checkout.anonymous.cancel'),
+                'line_items' => $lineItems,
+                'mode' => 'payment',
+            ]);
+
+            $callbackData = $sessioncreate;
+
+            session()->forget('anonymous_session_id');
+            session(['anonymous_session_id' => $callbackData->id]);
+            $stripeid = StripePaymentDetail::create([
+                'session_id' => $callbackData->id,
+                'amount_subtotal' => $request->amount,
+                'amount_total' => $request->amount,
+                'tax' => 0,
+                'currency' => $callbackData->currency,
+                'owner_id' => $request->owner_id,
+                'payment_method_config_detail_id' => optional($callbackData->payment_method_configuration_details)->id,
+                'payment_method_type' => optional($callbackData->payment_method_types)[0],
+                'session_created' => $callbackData->created,
+                'session_expires_at' => $callbackData->expires_at,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
+            ]);
+
+            return Inertia::location($sessioncreate->url);
+        }
 
         $user = User::whereId(Auth::id())->first();
         $owner = User::whereId($request->owner_id)->first();

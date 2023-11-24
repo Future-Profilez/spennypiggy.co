@@ -38,8 +38,6 @@ class Checkout extends Mailable
     public function build()
     {
         try {
-            \Log::info('user mail 3');
-
             $subject = 'Checkout from spanny piggy platform.';
             return $this->view('email.checkout')
                 ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')

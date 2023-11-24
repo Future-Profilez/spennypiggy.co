@@ -440,7 +440,7 @@ class StripeController extends Controller
         }
     }
 
-    public function anonymousSuccessCheckout($id)
+    public function anonymousSuccessCheckout($id = null)
     {
         try {
             $sessionId = session('anonymous_session_id');
@@ -477,7 +477,7 @@ class StripeController extends Controller
         }
     }
 
-    public function anonymousCancelCheckout($id)
+    public function anonymousCancelCheckout($id = null)
     {
         $sessionId = session('anonymous_session_id');
         StripePaymentDetail::where('session_id', $sessionId)->update([
