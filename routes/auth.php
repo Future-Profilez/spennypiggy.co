@@ -149,7 +149,7 @@ Route::get('/terms-and-conditions', function () {
 })->name("terms-and-conditions");
 
 Route::get('/files/{filename}', function (string $filename) {
-    $fullPath = '/public/' . $filename;
+    $fullPath = "http://localhost:8000/$filename";
     return Storage::response($fullPath);
 });
 
