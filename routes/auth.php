@@ -58,71 +58,70 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth', 'mustHaveToVerify')->group(function () {
 
     /*send surprise amount*/
-    Route::post('/send-surprize', [WishitemController::class, 'sendSurprise'])->name('send-surprize');
     Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
     Route::get('verification', [EmailVerificationPromptController::class, '__invoke'])->name('verification.notice');
     Route::get('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
-        ->name('verification.email');
-
+    ->name('verification.email');
+    
     // Route::post('verification', [RegisteredUserController::class, 'verification'])->name('verification.notice');
-
+    
     // Route::get('verify-email', [EmailVerificationPromptController::class)])
     //     ->name('verification.notice');
-
+    
     // Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
     //     ->middleware(['signed', 'throttle:6,1'])
     //     ->name('verification.verify');
-
+    
     // Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
     //     ->middleware('throttle:6,1')
     //     ->name('verification.send');
-
-
+    
+    
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
-        ->name('password.confirm');
-
+    ->name('password.confirm');
+    
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
-
+    
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
-
+    
     Route::get('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
-
+    
     // Route::get('dashboard', [AuthenticatedSessionController::class, 'getUserProfile'])->name('dashboard');
-
+    
     // Route::prefix("/")
     // $owner = Auth::user();
     // ['owner' => $user->id == $owner->id ? true : false// ]
-
+    
     Route::post('save_social_links', [SocialLinksController::class, 'saveSocialLinks'])->name('save_social_links');
-
+    
     Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item');
-
+    
     /*update wishitems */
     Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
     Route::get('/create-checkout-session/{owner_id}', [StripeController::class, 'createCheckout'])->name('create.checkout');
     Route::get('/sucess-checkout/{id}', [StripeController::class, 'successCheckout'])->name('checkout.success');
     Route::get('cancel-checkout/{id}', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel');
-
-
+    
+    
     Route::prefix("stripe")->name("stripe.")->group(function () {
         Route::get("authorize", [StripeController::class, "index"])->name("index");
         Route::match(["get", "post"], "/connect-{step}/{country?}", [StripeController::class, "initConnect"])->name("connect");
         Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
         Route::post("/login", [StripeController::class, "loginToStripe"])->name("login");
     });
-
+    
     Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
-
+    
     Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
-
+    
     Route::get('/add-to-cart/{uuid}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
-
+    
     Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 
     Route::get('account', function () {
         return Inertia::render('accountsetting/Accountsetting');
     })->name("account");
-
+    
     Route::get('/stripe', function () {
         return Inertia::render('stripe/Stripe');
     })->middleware(['auth', 'verified'])->name('stripe');
@@ -138,6 +137,7 @@ Route::get('/anonymous-cancel-checkout/{id?}', [StripeController::class, 'anonym
 Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class, 'categoryItems'])->name('get_category_data');
 
 Route::get('users', [MyController::class, 'getUsers'])->name('users');
+Route::post('/send-surprize', [WishitemController::class, 'sendSurprise'])->name('send-surprize');
 
 Route::get('/how-it-works', function () {
     return Inertia::render('howitworks/Works');

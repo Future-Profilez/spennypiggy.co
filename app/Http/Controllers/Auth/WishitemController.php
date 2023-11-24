@@ -516,8 +516,11 @@ class WishitemController extends Controller
         $cart->refresh();
 
         if (!Auth::check()) {
+
+
+
             $lineItems[] = [
-                'price' => $request->amount ?? '',
+                'price' => $cart->priceid ?? '',
                 'quantity' => 1,
             ];
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
