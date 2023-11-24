@@ -198,7 +198,7 @@ class StripeController extends Controller
                 ];
 
                 if (!empty($dd->wish->subscription)) {
-                    if($dd->wish->subscription == 2){
+                    if ($dd->wish->subscription == 2) {
                         $amountadd = $dd->wish->fullfill_amount + $dd->amount;
                         $dd->wish->update(['fullfill_amount' => $amountadd]);
                     }
@@ -266,24 +266,24 @@ class StripeController extends Controller
             $dd->save();
 
             if (!empty($dd->wish->subscription)) {
-                if($dd->wish->subscription == 1){
+                if ($dd->wish->subscription == 1) {
                     if ($dd->wish->subscription_period == 'daily') {
-                    $end = Carbon::now()->addDay(1);
-                } elseif ($dd->wish->subscription_period == 'weekly') {
-                    $end = Carbon::now()->addWeek(1);
-                } elseif ($dd->wish->subscription_period == 'monthly') {
-                    $end = Carbon::now()->addMonth(1);
-                }
+                        $end = Carbon::now()->addDay(1);
+                    } elseif ($dd->wish->subscription_period == 'weekly') {
+                        $end = Carbon::now()->addWeek(1);
+                    } elseif ($dd->wish->subscription_period == 'monthly') {
+                        $end = Carbon::now()->addMonth(1);
+                    }
 
 
-                $subscription = new Subscription();
-                $subscription->user_id = $dd->user_id;
-                $subscription->owner_id = $dd->owner_id;
-                $subscription->wish_id = $dd->wish_id;
-                $subscription->start_at = Carbon::now();
-                $subscription->end_at = $end;
-                $subscription->status = 1;
-                $subscription->save();
+                    $subscription = new Subscription();
+                    $subscription->user_id = $dd->user_id;
+                    $subscription->owner_id = $dd->owner_id;
+                    $subscription->wish_id = $dd->wish_id;
+                    $subscription->start_at = Carbon::now();
+                    $subscription->end_at = $end;
+                    $subscription->status = 1;
+                    $subscription->save();
                 }
             }
         }
@@ -310,13 +310,12 @@ class StripeController extends Controller
 
         //send email
         CheckoutMailToUser::dispatch($stripeid);
-        
-         if(!empty($getdata[0]->owner->username)){
+
+        if (!empty($getdata[0]->owner->username)) {
             return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
-         }else{
+        } else {
             return redirect(route('user.show', [Auth::user()->username]))->with('success', 'Payment Successfull.');
-         }
-        
+        }
     }
 
     public function cancelCheckout($owner_id)
