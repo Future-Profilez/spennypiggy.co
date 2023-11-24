@@ -25,13 +25,13 @@ export default function SendSurprise({owner}) {
       post(route(`send-surprize`, {"owner_id": owner, "amount":data.amount, "message":data.message}), {
          preserveScroll: true,
          onSuccess: (resp) => {
+            setClose(false);
+            setTimeout(()=>{
+               setClose();
+            });
+            reset();
             if (resp.props.flash?.success) {
                successAlert(resp.props.flash?.success || "Added");
-               setClose(false);
-               setTimeout(()=>{
-                  setClose();
-               });
-               reset();
            }
            if (resp.props.flash?.error) {
                errorAlert(resp.props.flash?.error);

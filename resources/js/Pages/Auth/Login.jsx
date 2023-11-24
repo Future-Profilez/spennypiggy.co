@@ -74,8 +74,20 @@ export default function Login({ status, canResetPassword }) {
                                         autoComplete="current-password"
                                         onChange={(e) => setData('password', e.target.value)}
                                     />
+
+                                    {canResetPassword && (
+                                        <div className=' mt-4 m-auto d-table ' >
+                                            <Link
+                                                href={route('password.request')}
+                                                className="text-sm text-sm text-gray-600 hover:text-gray-900" >
+                                                Forgot your password?
+                                            </Link>
+                                        </div>
+                                    )}
                                 </li>
                             </ul>
+                            
+
                             {/* <InputError message={errors.email} className="mt-2" />
                             <InputError message={errors.password} className="mt-2" /> */}
 
@@ -84,13 +96,7 @@ export default function Login({ status, canResetPassword }) {
                                 <LoaderButton disabled={processing} className='btn-pink lg2 lg w-80 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Wait" : "Log in"}</LoaderButton>
                             </div>
 
-                            {/* {canResetPassword && (
-                                <Link
-                                    href={route('password.request')}
-                                    className="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" >
-                                    Forgot your password?
-                                </Link>
-                            )} */}
+                            
 
                         </div>
                     </form>
