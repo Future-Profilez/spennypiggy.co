@@ -204,7 +204,8 @@ class StripeController extends Controller
                 ->get();
 
             $lineItems = [];
-
+            $subtotal = 0;
+            $taxNew = 0;
             foreach ($getdata as $dd) {
                 // $priceId = $dd->wish->subscription == 2 ? $dd->priceid : $dd->wish->price_id;
                 $priceId = $dd->priceid != Null ? $dd->priceid : $dd->wish->price_id;
@@ -220,6 +221,9 @@ class StripeController extends Controller
                         $dd->wish->update(['fullfill_amount' => $amountadd]);
                     }
                 }
+
+                $subtotal += $dd->amount;
+                $taxNew += $dd->tax;
             }
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
@@ -230,9 +234,9 @@ class StripeController extends Controller
                 'mode' => 'payment',
             ]);
 
-            $subtotal = ($sessionCreate->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
+            // $subtotal = ($sessionCreate->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
 
-            $taxNew = ($sessionCreate->amount_total / 100) - $subtotal;
+            // $taxNew = ($sessionCreate->amount_total / 100) - $subtotal;
 
             session()->forget('session_id');
             session(['session_id' => $sessionCreate->id]);
@@ -275,63 +279,73 @@ class StripeController extends Controller
 
     public function successCheckout($owner_id)
     {
-        $user = User::where('id', Auth::id())->first();
+        try {
+            $user = User::where('id', Auth::id())->first();
+            $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->get();
 
-        $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->get();
-        foreach ($getdata as $dd) {
-            $dd->status = 0;
-            $dd->save();
+            foreach ($getdata as $dd) {
+                $dd->status = 0;
+                $dd->save();
 
-            if (!empty($dd->wish->subscription)) {
-                if ($dd->wish->subscription == 1) {
-                    if ($dd->wish->subscription_period == 'daily') {
-                        $end = Carbon::now()->addDay(1);
-                    } elseif ($dd->wish->subscription_period == 'weekly') {
-                        $end = Carbon::now()->addWeek(1);
-                    } elseif ($dd->wish->subscription_period == 'monthly') {
-                        $end = Carbon::now()->addMonth(1);
+                if (!empty($dd->wish->subscription)) {
+                    if ($dd->wish->subscription == 1) {
+                        if ($dd->wish->subscription_period == 'daily') {
+                            $end = Carbon::now()->addDay(1);
+                        } elseif ($dd->wish->subscription_period == 'weekly') {
+                            $end = Carbon::now()->addWeek(1);
+                        } elseif ($dd->wish->subscription_period == 'monthly') {
+                            $end = Carbon::now()->addMonth(1);
+                        }
+
+
+                        $subscription = new Subscription();
+                        $subscription->user_id = $dd->user_id;
+                        $subscription->owner_id = $dd->owner_id;
+                        $subscription->wish_id = $dd->wish_id;
+                        $subscription->start_at = Carbon::now();
+                        $subscription->end_at = $end;
+                        $subscription->status = 1;
+                        $subscription->save();
                     }
-
-
-                    $subscription = new Subscription();
-                    $subscription->user_id = $dd->user_id;
-                    $subscription->owner_id = $dd->owner_id;
-                    $subscription->wish_id = $dd->wish_id;
-                    $subscription->start_at = Carbon::now();
-                    $subscription->end_at = $end;
-                    $subscription->status = 1;
-                    $subscription->save();
                 }
             }
-        }
 
-        $sessionId = session('session_id');
-        StripePaymentDetail::where('session_id', $sessionId)->update([
-            'payment_status' => 'paid',
-            'updated_at' => Carbon::now(),
-        ]);
-        $stripeid = StripePaymentDetail::where('session_id', $sessionId)->first();
-        foreach ($getdata as $dd) {
-            $payment_data = StripePaymentItems::create([
-                'uuid' => Uuid::uuid4(),
-                'stripe_payment_id' => $stripeid->id,
-                'wish_item_id' => $dd->wish_id,
-                'user_cart_id' => $dd->id,
-                'amount' => $dd->amount,
-                'tax' => $dd->tax,
+            $sessionId = session('session_id');
+            StripePaymentDetail::where('session_id', $sessionId)->update([
+                'payment_status' => 'paid',
+                'updated_at' => Carbon::now(),
             ]);
-            $payment_data->refresh();
+            $stripeid = StripePaymentDetail::where('session_id', $sessionId)->first();
+            foreach ($getdata as $dd) {
+                $payment_data = StripePaymentItems::create([
+                    'uuid' => Uuid::uuid4(),
+                    'stripe_payment_id' => $stripeid->id,
+                    'wish_item_id' => $dd->wish_id,
+                    'user_cart_id' => $dd->id,
+                    'amount' => $dd->amount,
+                    'tax' => $dd->tax,
+                ]);
+                $payment_data->refresh();
+                if (!$getdata->wish_id == NULL) {
+                    CheckoutUser::dispatch($payment_data, false, $dd);
+                } else {
+                    CheckoutUser::dispatch($payment_data, false, false);
+                }
+            }
 
-            CheckoutUser::dispatch($payment_data, false);
-        }
+            if (!$getdata->wish_id == NULL) {
+            } else {
+                //send email
+                CheckoutMailToUser::dispatch($stripeid);
+            }
 
-        //send email
-        CheckoutMailToUser::dispatch($stripeid);
-
-        if (!empty($getdata[0]->owner->username)) {
-            return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
-        } else {
-            return redirect(route('user.show', [Auth::user()->username]))->with('success', 'Payment Successfull.');
+            if (!empty($getdata[0]->owner->username)) {
+                return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
+            } else {
+                return redirect(route('user.show', [Auth::user()->username]))->with('success', 'Payment Successfull.');
+            }
+        } catch (\Throwable $th) {
+            \Log::info('error:' . $th);
         }
     }
 
@@ -452,7 +466,7 @@ class StripeController extends Controller
             ]);
             $data->refresh();
 
-            CheckoutUser::dispatch($data, true);
+            CheckoutUser::dispatch($data, true, false);
 
             return redirect(route('user.show', [$getdata->user->username]))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
