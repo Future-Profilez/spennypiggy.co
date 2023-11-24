@@ -1,12 +1,10 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-
 <head>
     <meta charset="utf-8">
-    <title inertia>{{ config('app.name', 'Spenny Piggy') }}</title>
+    <title inertia>{{ config('app.name', 'The Best Alternative to Amazon Wishlist') }}</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
-
     <!-- Metas start -->
     <link rel="canonical" href="https://spennypiggy.co" />
     <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,maximum-scale=2" />
@@ -19,20 +17,20 @@
     <meta name="msapplication-TileColor" content="#05EFB8" />
     <meta name="msapplication-TileImage" content="/site.png" />
     <meta name="theme-color" content="#05EFB8" />
-    <meta name="description" content="Receive or give gifts safely and easily. Create your privacy-first Wishlist and let your fans support you by sending gifts without sharing personal information." />
-    <meta name="keywords" content="Receive or give gifts safely and easily. Create your privacy-first Wishlist and let your fans support you by sending gifts without sharing personal information. gifts, wish" />
-    <meta property="og:title" content="Spenny Piggy" />
+    <meta name="description" content="For spicy creators to Safely recieve financial gifts" />
+    <meta name="keywords" content="The Best Alternative to Amazon Wishlist, For spicy creators to Safely recieve financial gifts, Create Wishlist, Share Wishlist, Add Wishlist, Recieve Gifts, Send Gifts, Fans Funding." />
+    <meta property="og:title" content="The Best Alternative to Amazon Wishlist" />
     <meta property="og:type" content="video.movie" />
     <meta property="og:url" content="spennypiggy.co" />
     <meta property="og:image" content="/site.png" />
     <meta property="og:site_name" content="spennypiggy.co" />
-    <meta property="og:description" content="Receive or give gifts safely and easily. Create your privacy-first Wishlist and let your fans support you by sending gifts without sharing personal information." />
+    <meta property="og:description" content="For spicy creators to Safely recieve financial gifts" />
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Spenny Piggy" />
-    <meta name="twitter:description" content="Receive or give gifts safely and easily. Create your privacy-first Wishlist and let your fans support you by sending gifts without sharing personal information." />
+    <meta name="twitter:title" content="The Best Alternative to Amazon Wishlist" />
+    <meta name="twitter:description" content="For spicy creators to Safely recieve financial gifts" />
     <meta name="twitter:image" content="/site.png" />
     <meta name="twitter:site" content="@spennypiggy" />
-    <meta name="twitter:image:alt" content="Spenny Piggy" />
+    <meta name="twitter:image:alt" content="The Best Alternative to Amazon Wishlist" />
     <meta name="twitter:image:src" content="/site.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <!-- Metas END -->

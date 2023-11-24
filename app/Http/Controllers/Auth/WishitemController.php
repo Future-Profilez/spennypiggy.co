@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\SaveWishlist;
+use App\Jobs\SendUserGiftMail;
 use App\Jobs\WelcomeUser;
 use App\Models\StripePaymentItems;
 use App\Models\User;
@@ -359,6 +360,23 @@ class WishitemController extends Controller
         }
     }
 
+    public function removeSurpriseFromCart($uuid)
+    {
+        try {
+            $cart = UserCart::whereUuid($uuid)->first();
+            $cart->status = 0;
+            $cart->save();
+            return response()->json([
+                "success" => true,
+                'added' => false,
+                'msg' => "Item removed from cart",
+                "uuid" => $cart->uuid,
+            ]);
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+    }
+
     public function cartItems()
     {
         $user = User::where('id', Auth::id())->first();
@@ -370,20 +388,21 @@ class WishitemController extends Controller
             if (!isset($groupedWishes[$owner_id])) {
                 $groupedWishes[$owner_id] = [];
             }
+
             $groupedWishes[$owner_id][] = [
                 'user' => $wish->user->toArray(),
-                'wish' => $wish->wish->toArray(),
+                'wish' => $wish->wish ? $wish->wish->toArray() : [],
                 'owner' => $wish->owner->toArray(),
-                'url' => $wish->wish->perma_link,
+                'url' => $wish->wish ? $wish->wish->perma_link : 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/',
                 'amount' => $wish->amount,
                 'priceid' => $wish->priceid,
+                'uuiddata' => $wish->uuid,
             ];
         }
 
         $cart = [];
         $key = 0;
         foreach ($groupedWishes as $value) {
-
             $cart[$key] = [
                 'user' => [
                     'id' => $value[0]['owner']['id'],
@@ -396,35 +415,51 @@ class WishitemController extends Controller
             $total = 0;
 
             foreach ($value as $k => $v) {
-                if ($v['wish']['subscription'] == 2) {
-                    $price = $v['amount'];
-                    $priceid = $v['priceid'];
+                // if ($v['wish']['subscription'] == 2) {
+                //     $price = $v['amount'];
+                //     $priceid = $v['priceid'];
+                // } else {
+                //     $price = $v['wish']['price'] ;
+                //     $priceid = $v['wish']['price_id'];
+                // }
+
+                $price = $v['amount'] ? $v['amount'] : $v['wish']['price'];
+                $priceid = $v['priceid'] ? $v['priceid'] : $v['wish']['price_id'];
+
+                if (!empty($v['wish'])) {
+                    $cart[$key]['items'][$k] = [
+                        'id' => $v['wish']['id'],
+                        'uuid' => $v['wish']['uuid'],
+                        'user_id' => $v['wish']['user_id'],
+                        'wishname' => $v['wish']['wishname'],
+                        'stripe_product_id' => $v['wish']['stripe_product_id'],
+                        'price' => $price,
+                        'price_id' => $priceid,
+                        'item_url' => $v['wish']['item_url'],
+                        'subscription' => $v['wish']['subscription'],
+                        'subscription_period' => $v['wish']['subscription_period'],
+                        'repeat_purchase' => $v['wish']['repeat_purchase'],
+                        'category' => $v['wish']['category'],
+                        'url' => $v['url'],
+                    ];
                 } else {
-                    $price = $v['wish']['price'];
-                    $priceid = $v['wish']['price_id'];
+                    $cart[$key]['items'][$k] = [
+                        'price' => $price,
+                        'wishname' => 'Surprise Gift',
+                        'uuid' => $v['uuiddata'],
+                        'price_id' => $priceid,
+                        'product' => 'surprise',
+                        'url' => $v['url'],
+                    ];
                 }
 
-                $cart[$key]['items'][$k] = [
-                    'id' => $v['wish']['id'],
-                    'uuid' => $v['wish']['uuid'],
-                    'user_id' => $v['wish']['user_id'],
-                    'wishname' => $v['wish']['wishname'],
-                    'stripe_product_id' => $v['wish']['stripe_product_id'],
-                    'price' => $price,
-                    'price_id' => $priceid,
-                    'item_url' => $v['wish']['item_url'],
-                    'subscription' => $v['wish']['subscription'],
-                    'subscription_period' => $v['wish']['subscription_period'],
-                    'repeat_purchase' => $v['wish']['repeat_purchase'],
-                    'category' => $v['wish']['category'],
-                    'url' => $v['url'],
-                ];
 
-                if ($v['wish']['subscription'] == 2) {
-                    $total += $v['amount'];
-                } else {
-                    $total += $v['wish']['price'];
-                }
+                // if ($v['wish']['subscription'] == 2) {
+                //     $total += $v['amount'];
+                // } else {
+                //     $total += $v['wish']['price'];
+                // }
+                $total += $v['amount'] ? $v['amount'] : $v['wish']['price'];
             }
             $cart[$key]['total'] = $total;
             $cart[$key]['fee'] = ceil($total * env('TAX_PERCENTAGE') / 100);
@@ -439,54 +474,64 @@ class WishitemController extends Controller
 
     public function sendSurprise(Request $request)
     {
-        try {
-            $request->validate([
-                "message" => [
-                    "required",
-                    "string",
-                ],
-                "amount" => [
-                    "required",
-                ],
-            ]);
 
-            $wordLimit = 100;
-            $message = $request->message;
-            if (str_word_count($message) > $wordLimit) {
-                return redirect()->back()->with("error", "Max limit for message is 100 words");
-            }
+        $request->validate([
+            "message" => [
+                "required",
+                "string",
+            ],
+            "amount" => [
+                "required",
+            ],
+        ]);
 
-            $taxamount = $request->amount * env('TAX_PERCENTAGE') / 100;
-            $priceid = $request->amount + $taxamount;
-            $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-            $stripe_client = $stripe->products->create([
-                'name' => 'surprise',
-                'images' => ['https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/'],
-                "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $priceid * 100],
-            ]);
-            UserCart::create([
-                'user_id' => Auth::id(),
-                'owner_id' => $request->owner_id ?? '',
-                'amount' => $request->amount ?? 0,
-                'tax' => $taxamount ?? 0,
-                'priceid' => $stripe_client->default_price,
-                'message' => $request->message,
-                'status' => 1,
-                'created_at' => Carbon::now(),
-                'updated_at' => Carbon::now(),
-            ]);
-
-            return response()->json([
-                "success" => true,
-                'added' => true,
-                "msg" => "Item added to cart.",
-            ]);
-
-            // return back()->with('success', 'Gift added in cart.');
-
-
-        } catch (\Throwable $th) {
-            //throw $th;
+        $wordLimit = 100;
+        $message = $request->message;
+        if (str_word_count($message) > $wordLimit) {
+            return redirect()->back()->with("error", "Max limit for message is 100 words");
         }
+
+        $taxamount = $request->amount * env('TAX_PERCENTAGE') / 100;
+        $priceid = $request->amount + $taxamount;
+        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+        $stripe_client = $stripe->products->create([
+            'name' => 'surprise',
+            'images' => ['https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/'],
+            "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $priceid * 100],
+        ]);
+        UserCart::create([
+            'user_id' => Auth::id(),
+            'owner_id' => $request->owner_id ?? '',
+            'amount' => $request->amount ?? 0,
+            'wish_id' => 0,
+            'tax' => $taxamount ?? 0,
+            'priceid' => $stripe_client->default_price,
+            'message' => $request->message,
+            'status' => 1,
+        ]);
+
+
+        $user = User::whereId(Auth::id())->first();
+        $owner = User::whereId($request->owner_id)->first();
+        //send email to user
+        SendUserGiftMail::dispatch($user, $owner);
+
+        //send email to owner
+        // SaveWishlist::dispatch($user);
+
+
+
+
+
+
+        // return response()->json([
+        //     "success" => true,
+        //     'added' => true,
+        //     "msg" => "Item added to cart.",
+        // ]);
+
+        return back()->with('success', 'Gift item has been added in cart.');
+
+        // return back()->with('success', 'Gift added in cart.');
     }
 }

@@ -9,6 +9,7 @@ import setuppaymentimg01 from '../../../assets/img/setuppaymentimg01.png';
 import sharlinkimg from '../../../assets/img/sharlinkimg.png'; 
 import { Head, Link } from '@inertiajs/react';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
+import JoinUs from '@/Components/JoinUs';
 
 export default function Works(props) {
     const {auth} = props;
@@ -95,13 +96,7 @@ export default function Works(props) {
                     </Tabs>   
                 </div>
             </div>  
-            <div class="joinus blackbg ">
-            <h2 class="headingMd shadow-yellow mb-3 text-center mb-6 ">Join thousands creators</h2>
-            <p class="text-CeraGR mb-6 text-center mb-16 font-CeraGRBold text-wh mb-5">Create your Wishlist and start receiving gifts from your fans right away!</p>
-            <div class="1text-center rotate-btn text-center flex items-center  justify-center content-center w-full">
-            <Link to="/" className='btn-pink lg w-80 shadow-mint border-mint'>Join Whoyouinto</Link>
-            </div>
-            </div>
+            <JoinUs />
         </div>
     </Authenticated>
   )

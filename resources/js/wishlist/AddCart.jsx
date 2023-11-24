@@ -105,6 +105,7 @@ export default function AddCart(props) {
                                 pending={item.price - item.fullfill_amount}
                                 crowd={item.subscription == 2}
                                 amount={cartamount} 
+                                item={item}
                                 isEqual={item.price <= item.fullfill_amount}
                                 is_cart={item?.is_cart}
                                 text={`Add To Cart And Keep Shopping`}

@@ -11,58 +11,78 @@ export default function ToCart({ text2, ItemAdded, item, crowd, pending, uuid, t
     const [loading, setLoading] = useState(false);
     const [is_Cart, setis_Cart] = useState(is_cart);
 
-    const addtocart = async (sets) => {
-        if(item && item.subscription == "2" && isEqual){
-            toast.error(`Wish item funding is completed.`);
-            return false;
-        }
-
-        if (crowd && !amount) {
-            toast.error(`Please enter a amount to gift this item. `);
-            return false;
-        }
-        if (crowd && amount > pending) {
-            toast.error(`Amount can not be more than remaining amount £${pending}. `);
-            return false;
-        }
-
-        if (amount && amount < 50) {
-            toast.error("Amount must be greater than 50.");
-            return false;
-        }
-        setLoading(true);
-        axios.get(`/add-to-cart/${uuid}${amount ? `/${amount}` : ''}`).then(resp => {
+    const removeGiftItem = () => { 
+        axios.get(`remove-surprise-from-cart/${uuid}`).then(resp => {
             if (resp.data.success) {
-                if (resp.data.added == true) {
-                    successAlert(resp.data.msg);
-                    setis_Cart(true);
-                    if(sets == 1){
-                        ItemAdded();
+                successAlert(resp.data.msg);
+                window.location = '/cart';
+            } 
+            if (resp.data.error) {
+                errorAlert(resp.data.msg);
+            } 
+        }).catch(_err => {
+            console.error("error", _err);
+        });
+    }
+
+    const addtocart = async (sets) => {
+
+        if(item && item.product == 'surprise'){
+            removeGiftItem();
+            return false;
+        } else { 
+            if(item && item.subscription == "2" && isEqual){
+                toast.error(`Wish item funding is completed.`);
+                return false;
+            }
+            if (crowd && !amount) {
+                toast.error(`Please enter a amount to gift this item. `);
+                return false;
+            }
+            if (crowd && amount > pending) {
+                toast.error(`Amount can not be more than remaining amount £${pending}. `);
+                return false;
+            }
+    
+            if (amount && amount < 50) {
+                toast.error("Amount must be greater than 50.");
+                return false;
+            }
+            setLoading(true);
+            axios.get(`/add-to-cart/${uuid}${amount ? `/${amount}` : ''}`).then(resp => {
+                if (resp.data.success) {
+                    if (resp.data.added == true) {
+                        successAlert(resp.data.msg);
+                        setis_Cart(true);
+                        if(sets == 1){
+                            ItemAdded();
+                        }
+                        if(sets == 2){
+                            window.location = '/cart';
+                        }
+                    } else {
+                        successAlert(resp.data.msg);
+                        setis_Cart(false);
                     }
-                    if(sets == 2){
+                    if (resp.data.uuid) {
+                        removeItem && removeItem(uuid);
+                    }
+                    if (type == 'checkout') {
                         window.location = '/cart';
                     }
                 } else {
-                    successAlert(resp.data.msg);
-                    setis_Cart(false);
+                    errorAlert(resp.data.msg);
                 }
-                if (resp.data.uuid) {
-                    removeItem && removeItem(uuid);
-                }
-                if (type == 'checkout') {
-                    window.location = '/cart';
-                }
-            } else {
-                errorAlert(resp.data.msg);
-            }
-            setLoading(false);
-        }).catch(_err => {
-            console.error("error", _err);
-            setLoading(false);
-        });
+                setLoading(false);
+            }).catch(_err => {
+                console.error("error", _err);
+                setLoading(false);
+            });
+        }
+
     };
 
-    const checkout = () => { 
+    const checkout = () => {
         window.location = '/cart';
     }
 
@@ -70,7 +90,7 @@ export default function ToCart({ text2, ItemAdded, item, crowd, pending, uuid, t
         {custom ?
             <div onClick={addtocart} >{custom}</div>
             :
-            is_Cart ? 
+            is_Cart ?
             <>
                 <LoaderButton disabled={loading} onClick={()=>addtocart(1)}
                     className={`flex  ${classes} mx-auto`}
