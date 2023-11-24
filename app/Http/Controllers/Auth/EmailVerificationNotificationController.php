@@ -25,13 +25,8 @@ class EmailVerificationNotificationController extends Controller
     }
 
     public function sendVerificationEmail() {
-        try {
-            $user = User::whereId(Auth::id())->first();
-            VerifyEmail::dispatch($user);
-            return back()->with("success", "Verification link sent on your registred email address.");
-        } catch (\Throwable $th) {
-            //throw $th;
-            return back()->with("error", "Verification failed.");
-        }
+        $user = User::whereId(Auth::id())->first();
+        VerifyEmail::dispatch($user);
+        return back()->with("success", "Verification link sent on your registred email address.");
     }
 }
