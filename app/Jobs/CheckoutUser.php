@@ -56,7 +56,6 @@ class CheckoutUser implements ShouldQueue
      */
     public function handle()
     {
-        \Log::info('user mail 1');
         EmailService::checkOutUser($this->payment, $this->anon, $this->surprise, $this->message);
     }
 }

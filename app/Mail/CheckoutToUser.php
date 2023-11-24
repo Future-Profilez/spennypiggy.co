@@ -14,7 +14,6 @@ class CheckoutToUser extends Mailable
     use Queueable, SerializesModels;
 
     public $data;
-    public $detail;
 
 
 
@@ -23,10 +22,9 @@ class CheckoutToUser extends Mailable
      *
      * @return void
      */
-    public function __construct($data, $detail)
+    public function __construct($data)
     {
         $this->data = $data;
-        $this->detail = $detail;
     }
 
     /**
@@ -37,8 +35,6 @@ class CheckoutToUser extends Mailable
     public function build()
     {
         try {
-            \Log::info('owner mail 3');
-
             $subject = 'You done a checkout from spanny piggy platform.';
             return $this->view('email.checkout-user')
                 ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
