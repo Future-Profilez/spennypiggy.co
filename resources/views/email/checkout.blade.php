@@ -37,7 +37,12 @@
                         Go to <a href="#">Spenny Piggy</a> where you can see your granted wish, send a message to
                         your gifter and share your gift on social media </td>
                 </tr>
-
+                @if(!empty($messages))
+                <tr>
+                    <td
+                        style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; "> <b>Message :~ </b>{{ $messages ?? '' }}</td>
+                </tr>
+                @endif
                 <tr>
                     <td style="padding:0 0 10px 0; text-align: center;">
                         <a href={{ env('APP_URL') . '/' . $data->payment->owner->username }}

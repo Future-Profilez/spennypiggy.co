@@ -5,7 +5,7 @@ import SocialLinks from "@/includes/SocialLinks";
 import ShareProfile from "./ShareProfile";
 import SendSurprise from "./SendSurprise";
 
-export default function Userprofile({ user, links, IsloggedIn }) {
+export default function Userprofile({auth, user, links, IsloggedIn }) {
     return (
         <div className="userprofilesec rounded-3xl whbg">
             <div className="userphotobox pinkbg pink-shadow flex justify-center relative">
@@ -47,7 +47,7 @@ export default function Userprofile({ user, links, IsloggedIn }) {
                 </div>
 
                 <SocialLinks links={links} />
-                {!IsloggedIn ? <SendSurprise owner={user && user.id} /> : ''}
+                {!IsloggedIn ? <SendSurprise auth={auth} owner={user && user.id} /> : ''}
 
                 <p className={`text-muted text-center mt-3 ${user && !user.bio ? "d-none":""}`}>
                     {(user && user.bio) || ""}

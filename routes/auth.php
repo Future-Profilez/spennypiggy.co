@@ -56,7 +56,7 @@ Route::middleware('guest')->group(function () {
 });
 
 
-Route::middleware('auth', 'mustHaveToVerify')->group(function () {
+Route::middleware('auth')->group(function () {
 
     /*send surprise amount*/
     Route::get('verification', [EmailVerificationPromptController::class, '__invoke'])->name('verification.notice');
@@ -78,20 +78,30 @@ Route::middleware('auth', 'mustHaveToVerify')->group(function () {
 
 
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
-        ->name('password.confirm');
+        ->name('password.confirm')->middleware('mustHaveToVerify');
 
-    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
+    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store'])->middleware('mustHaveToVerify');
 
-    Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+    Route::put('password', [PasswordController::class, 'update'])->name('password.update')->middleware('mustHaveToVerify');
 
-    Route::get('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
-
+    Route::get('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout')->middleware('mustHaveToVerify');
     // Route::get('dashboard', [AuthenticatedSessionController::class, 'getUserProfile'])->name('dashboard');
 
     // Route::prefix("/")
     // $owner = Auth::user();
     // ['owner' => $user->id == $owner->id ? true : false// ]
 
+<<<<<<< HEAD
+    Route::post('save_social_links', [SocialLinksController::class, 'saveSocialLinks'])->name('save_social_links')->middleware('mustHaveToVerify');
+
+    Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item')->middleware('mustHaveToVerify');
+
+    /*update wishitems */
+    Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item')->middleware('mustHaveToVerify');
+    Route::get('/create-checkout-session/{owner_id}', [StripeController::class, 'createCheckout'])->name('create.checkout')->middleware('mustHaveToVerify');
+    Route::get('/sucess-checkout/{id}', [StripeController::class, 'successCheckout'])->name('checkout.success')->middleware('mustHaveToVerify');
+    Route::get('cancel-checkout/{id}', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel')->middleware('mustHaveToVerify');
+=======
     Route::post('save_social_links', [SocialLinksController::class, 'saveSocialLinks'])->name('save_social_links');
 
     Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item');
@@ -101,15 +111,29 @@ Route::middleware('auth', 'mustHaveToVerify')->group(function () {
     Route::get('/create-checkout-session/{owner_id}', [StripeController::class, 'createCheckout'])->name('create.checkout');
     Route::get('/sucess-checkout/{id}', [StripeController::class, 'successCheckout'])->name('checkout.success');
     Route::get('cancel-checkout/{id}', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel');
+>>>>>>> 622d15854988f8958ae978670e705b71e59a2821
 
 
     Route::prefix("stripe")->name("stripe.")->group(function () {
-        Route::get("authorize", [StripeController::class, "index"])->name("index");
-        Route::match(["get", "post"], "/connect-{step}/{country?}", [StripeController::class, "initConnect"])->name("connect");
-        Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
-        Route::post("/login", [StripeController::class, "loginToStripe"])->name("login");
+        Route::get("authorize", [StripeController::class, "index"])->name("index")->middleware('mustHaveToVerify');
+        Route::match(["get", "post"], "/connect-{step}/{country?}", [StripeController::class, "initConnect"])->name("connect")->middleware('mustHaveToVerify');
+        Route::get("/response", [StripeController::class, "connectReturn"])->name("return")->middleware('mustHaveToVerify');
+        Route::post("/login", [StripeController::class, "loginToStripe"])->name("login")->middleware('mustHaveToVerify');
     });
 
+<<<<<<< HEAD
+    Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile')->middleware('mustHaveToVerify');
+
+    Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category')->middleware('mustHaveToVerify');
+
+    Route::get('/add-to-cart/{uuid}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart')->middleware('mustHaveToVerify');
+
+    Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart')->middleware('mustHaveToVerify')->middleware('mustHaveToVerify');
+
+    Route::get('account', function () {
+        return Inertia::render('accountsetting/Accountsetting');
+    })->name("account")->middleware('mustHaveToVerify');
+=======
     Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
 
     Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
@@ -121,10 +145,11 @@ Route::middleware('auth', 'mustHaveToVerify')->group(function () {
     Route::get('account', function () {
         return Inertia::render('accountsetting/Accountsetting');
     })->name("account");
+>>>>>>> 622d15854988f8958ae978670e705b71e59a2821
 
     Route::get('/stripe', function () {
         return Inertia::render('stripe/Stripe');
-    })->middleware(['auth', 'verified'])->name('stripe');
+    })->middleware(['auth', 'verified'])->name('stripe')->middleware('mustHaveToVerify');
 });
 
 Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);

@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useForm } from "@inertiajs/react";
 
 
-export default function SendSurprise({owner}) {
+export default function SendSurprise({auth, owner}) {
 
    const { format } = PriceFormat();
    const { successAlert, errorAlert, errorsHandling } = useAlerts();
@@ -77,11 +77,11 @@ export default function SendSurprise({owner}) {
                   />
             </div>
             <LoaderButton onClick={sendSurprize}
-                  disabled={processing}
+               disabled={processing}
                type='submit'
                   className="flex w-100 btn-pink lg mx-auto"
                   spinnerClassName="fill-red-600" >
-                  {processing ? "Proccessing" : "Add to cart"}
+                  {processing ? "Proccessing" : auth && auth.name ? "Add to cart" : "Send Gift"}
             </LoaderButton>
         </Popup>
     );

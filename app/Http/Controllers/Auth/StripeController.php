@@ -265,7 +265,7 @@ class StripeController extends Controller
 
             return Inertia::location($sessionCreate->url);
         } catch (\Throwable $th) {
-            Log::error("Error in createCheckout: " . $th->getMessage());
+            // Log::error("Error in createCheckout: " . $th->getMessage());
             throw $th;
         }
     }
@@ -329,10 +329,11 @@ class StripeController extends Controller
                     'tax' => $dd->tax,
                 ]);
                 $payment_data->refresh();
+                $message = $stripeid->message;
                 if ($dd->wish_id == NULL) {
-                    CheckoutUser::dispatch($payment_data, false, $dd, $stripeid->message);
+                    CheckoutUser::dispatch($payment_data, false, $dd, $message);
                 } else {
-                    CheckoutUser::dispatch($payment_data, false, false, $stripeid->message);
+                    CheckoutUser::dispatch($payment_data, false, false, $message);
                 }
             }
 
@@ -344,7 +345,6 @@ class StripeController extends Controller
                 return redirect(route('user.show', [Auth::user()->username]))->with('success', 'Payment Successfull.');
             }
         } catch (\Throwable $th) {
-            \Log::info('error:' . $th);
         }
     }
 
@@ -475,8 +475,6 @@ class StripeController extends Controller
                 'tax' => $tax,
             ]);
             $data->refresh();
-            \Log::info("Cartid" . $cart_id);
-            // $dd->wish_id == NULL
             if ($data->wish_item_id == NULL) {
                 CheckoutUser::dispatch($data, true, $cartdata, false);
             } else {
