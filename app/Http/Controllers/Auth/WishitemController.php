@@ -334,7 +334,7 @@ class WishitemController extends Controller
                 $stripe_client = $stripe->products->create([
                     'name' => $wishitem->wishname,
                     'images' => [$wishitem->perma_link],
-                    "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid],
+                    "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
                 ]);
                 $priceid = $stripe_client->default_price;
             } else {
@@ -525,8 +525,8 @@ class WishitemController extends Controller
             ];
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
             $sessioncreate = $stripe->checkout->sessions->create([
-                'success_url' => route('checkout.anonymous.success', [0,$cart->id]),
-                'cancel_url' => route('checkout.anonymous.cancel',[0]),
+                'success_url' => route('checkout.anonymous.success', [0, $cart->id]),
+                'cancel_url' => route('checkout.anonymous.cancel', [0]),
                 'line_items' => $lineItems,
                 'mode' => 'payment',
             ]);

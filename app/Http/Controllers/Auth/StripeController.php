@@ -94,11 +94,6 @@ class StripeController extends Controller
                         'email' => "jack@spennypiggy.co",
                         'first_name' => "Jack",
                         'last_name' => "Smith",
-                        'dob' => [
-                            'day' => 29,
-                            'month' => 7,
-                            'year' => 1994
-                        ],
                         'phone' => "2045873148"
                     ]
                 ];
@@ -232,6 +227,14 @@ class StripeController extends Controller
                 'cancel_url' => route('checkout.cancel', [$owner_id]),
                 'line_items' => $lineItems,
                 'mode' => 'payment',
+                'payment_intent_data' => [
+                    'transfer_data' => [
+                        'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
+                    ],
+                    'receipt_email' => 'saurav@futureprofilez.com',
+                ],
+                'customer_email' => 'saurav@futureprofilez.com',
+
             ]);
 
             // $subtotal = ($sessionCreate->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
