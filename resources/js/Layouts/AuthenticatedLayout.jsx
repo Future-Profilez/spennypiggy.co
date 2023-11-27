@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { useEffect } from 'react';
+import { usePage } from '@inertiajs/react';
 import { Toaster } from 'react-hot-toast';
 import { useAlerts } from '@/Components/Alerts';
 import Header from '@/includes/Header';
 import Footer from '@/includes/Footer';
 
 export default function Authenticated({auth, user, header, children }) {
-    const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const { successAlert, errorAlert } = useAlerts();
     const { flash } = usePage().props;
 
