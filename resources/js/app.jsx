@@ -11,6 +11,8 @@ import '../assets/fonts/newfont.woff';
 import '../assets/fonts/newfont.woff2';
 import '../assets/fonts/CeraGRMedium.woff';
 import '../assets/fonts/CeraGRMedium.woff2';
+import { Provider } from 'react-redux';
+import store from './Pages/redux/Store';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Spenny Piggy';
 
@@ -19,7 +21,11 @@ createInertiaApp({
     resolve: (name) => resolvePageComponent(`./Pages/${name}.jsx`, import.meta.glob('./Pages/**/*.jsx')),
     setup({ el, App, props }) {
         const root = createRoot(el);
-        root.render(<App {...props} />);
+        root.render(
+            <Provider store={store} >
+                <App {...props} />
+            </Provider>
+        );
     },
     progress: {
         color: 'var(--mint)',

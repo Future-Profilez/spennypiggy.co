@@ -537,3 +537,4 @@ div#msgText p.valid{color:#000;}
 div#msgText p.valid svg path{stroke:#27b227;}
 div#msgText p{display:flex;align-items:flex-start;}
 .loginPage .username-text{font-size:15px !important;padding:10px 4px 0px 4px;margin-bottom:0 !important;}
+.site-counter{position:absolute;background:#8c52ff;color:#fff;width:23px;height:23px !important;line-height:25px !important;border-radius:50%;font-size:11px;font-weight:bold !important;right:-2px;top:-9px;}
