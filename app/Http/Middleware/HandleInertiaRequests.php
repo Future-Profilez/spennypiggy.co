@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\UserCart;
+use App\Models\WishItem;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Tightenco\Ziggy\Ziggy;
@@ -28,12 +30,16 @@ class HandleInertiaRequests extends Middleware
      *
      * @return array<string, mixed>
      */
-    public function share(Request $request): array
-    {
+
+    public function share(Request $request): array {
+
+        $user = $request->user();
+        $items = UserCart::where('user_id', $user->id)->where('status',1)->count();
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
             ],
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
@@ -47,6 +53,7 @@ class HandleInertiaRequests extends Middleware
                     "info" => $request->session()->get("info"),
                 ];
             },
+            'cart_count' => $items
         ];
     }
 }

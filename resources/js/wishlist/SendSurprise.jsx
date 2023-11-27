@@ -5,9 +5,8 @@ import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
 import { useForm } from "@inertiajs/react";
 
-
 export default function SendSurprise({auth, owner}) {
-
+   
    const { format } = PriceFormat();
    const { successAlert, errorAlert, errorsHandling } = useAlerts();
    const [close, setClose] = useState();

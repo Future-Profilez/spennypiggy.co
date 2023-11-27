@@ -32,14 +32,13 @@ export default function CartItem({data}) {
                 <div className='cartProdTitle ps-3'>{data.wishname}</div>
             </div>
 
-            <div className="d-none quty flex items-center">
+            <div className=" quty flex items-center">
                 <button onClick={decrementCount} disabled>
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
                     <path d="M19 12.998H5V10.998H19V12.998Z" fill="black"/>
                 </svg>
                 </button>
-                {/* <div className="qutynum">{count}</div> */}
-                <div className="qutynum">1</div>
+                <div className="qutynum">{count}</div>
                 <button onClick={incrementCount}  disabled>
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
                     <path d="M11 13H5V11H11V5H13V11H19V13H13V19H11V13Z" fill="black"/>
