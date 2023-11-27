@@ -345,6 +345,7 @@ class StripeController extends Controller
                 return redirect(route('user.show', [Auth::user()->username]))->with('success', 'Payment Successfull.');
             }
         } catch (\Throwable $th) {
+            Log::info('error:' . $th);
         }
     }
 
@@ -475,6 +476,8 @@ class StripeController extends Controller
                 'tax' => $tax,
             ]);
             $data->refresh();
+            Log::info("Cartid" . $cart_id);
+            // $dd->wish_id == NULL
             if ($data->wish_item_id == NULL) {
                 CheckoutUser::dispatch($data, true, $cartdata, false);
             } else {
