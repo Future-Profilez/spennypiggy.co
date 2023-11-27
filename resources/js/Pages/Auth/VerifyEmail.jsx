@@ -11,7 +11,8 @@ export default function VerifyEmail({ status }) {
     const submit = (e) => {
         e.preventDefault();
         axios.get(`/email/send-verification-email`).then(resp => {
-            console.log("resp", resp)
+            console.log("resp", resp);
+            
         }).catch(_err => {
             console.error("error", _err);
         });

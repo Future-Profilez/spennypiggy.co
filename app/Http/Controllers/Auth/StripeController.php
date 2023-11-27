@@ -84,23 +84,23 @@ class StripeController extends Controller
                         'mcc'   => '5947'
                     ],
                     'default_currency' => 'GBP',
-                    // 'individual' => [
-                    //     'address' => [
-                    //         'city' => 'Dormansland',
-                    //         'country' => 'GB',
-                    //         'line1' => '72 North Promenade',
-                    //         'postal_code' => 'RH7 7LA'
-                    //     ],
-                    //     'email' => $user->mail,
-                    //     'first_name' => "John",
-                    //     'last_name' => "Doe",
-                    //     'dob' => [
-                    //         'day' => 29,
-                    //         'month' => 7,
-                    //         'year' => 1999
-                    //     ],
-                    //     'phone' => "7893986800"
-                    // ]
+                    'individual' => [
+                        'address' => [
+                            'city' => 'Birmingham',
+                            'country' => 'GB',
+                            'line1' => '55 Colmore Row',
+                            'postal_code' => 'B3 2AA'
+                        ],
+                        'email' => "jack@spennypiggy.co",
+                        'first_name' => "Jack",
+                        'last_name' => "Smith",
+                        'dob' => [
+                            'day' => 29,
+                            'month' => 7,
+                            'year' => 1994
+                        ],
+                        'phone' => "2045873148"
+                    ]
                 ];
 
 

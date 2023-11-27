@@ -34,10 +34,9 @@
     <meta name="twitter:image:src" content={{env("FILE_URL")."/site.png"}} />
     <meta name="apple-mobile-web-app-capable" content="yes" />
 
-    <script type="text/javascript">
+    <script type="text/javascript"> 
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/service-worker.js', {
-                scope: '.'
+            navigator.serviceWorker.register('https://d352qugnflhnxw.cloudfront.net/10954687-295e-4a13-9c92-1688e776c243/service-worker.js', {scope: '.'
             }).then(function (registration) {
                 console.log('Service worker installed: ', registration.scope);
             }, function (err) {

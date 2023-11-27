@@ -66,7 +66,7 @@ export default function Dashboard(props) {
                         <div className='row'>
                             <div className='col-lg-4' >
                                 <div className='userProfile whbg rounded-3xl shadow-voilet border-2'>
-                                    <Userprofile IsloggedIn={IsloggedIn} links={sociallinks} user={user} />
+                                    <Userprofile auth={auth && auth.user} IsloggedIn={IsloggedIn} links={sociallinks} user={user} />
                                     <div className='userProfileDate pt-0'>
                                         {IsloggedIn ? <>
                                             <EditProfile user={auth.user} />

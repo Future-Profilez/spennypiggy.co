@@ -33,7 +33,7 @@ class Welcome extends Mailable
         try {
             $name = $this->data['name'];
             $uuid = $this->data['uuid'];
-            $subject = 'Welcome to the spanny piggy platform.';
+            $subject = 'Welcome to the spenny piggy platform.';
             return $this->view('email.welcome-fans')->with(['name' => $name, 'uuid' => $uuid])
                 ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
                 ->subject($subject);

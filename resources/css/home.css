@@ -207,15 +207,14 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 .cartTotalPrice strong{font-size:22px;color:var(--gray2);display:inline-block;vertical-align:middle;width:160px;text-align:left;}
 .cartTotalPrice span{font-size:22px;display:inline-block;vertical-align:middle;}
 .addMessage ul li.halfbox{width:50%;}
-.addMessage ul li label{color:var(--gray2);text-align:center;font-size:18px;font-style:normal;font-weight:400;line-height:120%;/* 21.6px */
-letter-spacing:-0.63px;margin:0 0 6px;}
+.addMessage ul li label{color:var(--gray2);text-align:center;font-size:18px;font-style:normal;font-weight:400;line-height:150%;letter-spacing:-0.63px;margin:0 0 6px;}
 .addMessage ul li input[type="text"]{border-radius:3px;border:1px solid #E6E6E6;background:var(--white);width:100%;padding:15px;}
 .addMessage ul li textarea{border-radius:10px;background:#F3E4EB;height:183px;width:100%;padding:15px;}
 .addMessage ul li.cheklistbox{position:relative;}
 .addMessage ul li.cheklistbox input[type='checkbox']{border:1px solid var(--gray);}
 .cheklistnot{clear:both;display:block;color:#666;font-size:13px;font-style:normal;font-weight:400;line-height:150%;letter-spacing:-0.65px;padding:0 0 0 20px;}
 .tearmlist{padding:0 0 0 36px;}
-.tearmlist ul li{color:#666;font-size:13px;font-style:normal;font-weight:400;line-height:150%;letter-spacing:-0.65px;margin:0 0 7px;list-style:disc;}
+.tearmlist ul li{color:#666;font-size:15px;font-style:normal;font-weight:400;line-height:150%;letter-spacing:-0.65px;margin:0 0 7px;list-style:disc;}
 .quty{border:1px solid var(--gray);border-radius:5px;}
 .qutynum{font-size:20px;width:40px;height:43px;text-align:center;border-left:1px solid var(--gray);border-right:1px solid var(--gray);display:inline-flex;align-items:center;align-content:center;justify-content:center;line-height:23px;}
 .quty button{width:40px;height:43px;font-size:25px;display:flex;align-items:center;align-content:center;justify-content:center;}
@@ -253,7 +252,7 @@ letter-spacing:-0.63px;margin:0 0 6px;}
 .howWorkTab .nav-tabs button.active,.howWorkTab .nav-tabs button:hover,.howWorkTab .nav-tabs button:focus{background:#8C52FF;color:var(--white)!important}
 .socialmedia li:last-child{margin-right:0;}
 .noresultimg{max-width:110px;margin-bottom:10px !important;}
-.noResult h2.headingLg{font-size:23px !important;margin-bottom:0 !important;line-height:inherit;}
+.noResult h2.headingLg{font-size:26px !important;margin-bottom:0 !important;line-height:inherit;}
 .noResult{border-radius:30px;background:#171717 !important;}
 .userphotobox > img{object-fit:cover;}
 .cartbanner img{width:100%;height:100%;max-height:220px;}
