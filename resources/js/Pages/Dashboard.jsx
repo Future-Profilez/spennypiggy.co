@@ -1,4 +1,3 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 import Wishlist from './Auth/Wishlist';
 import Wishlistbox from '@/wishlist/Wishlistbox';
@@ -12,15 +11,16 @@ import axios from 'axios';
 import Guest from '@/Layouts/GuestLayout';
 import Nocontent from '@/includes/Nocontent';
 import LoadingScreen from '@/includes/LoadingScreen';
-import { useEffect } from 'react';
 import PaymentDashboard from './stripe/PaymentDashboard';
+import { useDispatch } from "react-redux";
+import { useEffect } from 'react';
+import {  app_name, cart_counter } from './redux/UserSlice';
 
 export default function Dashboard(props) {
 
-    const { auth, items, categories, user, itemid, sociallinks, slinks } = props;
+    const { cart_count, auth, items, categories, user, itemid, sociallinks, slinks } = props;
     const [its, setIts] = useState(items);
     const [loading, setLoading] = useState(false);
-
     const fetchingcats = (e) => {
         setLoading(true);
         axios.get(`${user.username}/${e}`).then(resp => {
@@ -37,28 +37,23 @@ export default function Dashboard(props) {
         fetchingcats(v);
     }
 
-    
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
+    const { cartCounter, setCartCounter } = useState();
+    const dispatch = useDispatch();
 
-    const isvalid = () => { 
-        if(IsloggedIn){
-            return true
-        }  
-        if(user?.stripe_details_submitted == 1){
-            return true
-        }
-        else {
-          return  false
-        }
-    }
+    useEffect(()=>{ 
+        dispatch(cart_counter(cart_count));
+    },[cart_count]);
 
     return (
-        <Guest
+        <Guest 
             auth={auth.user}
             user={user} >
             <Head title={user && user.name} />
             <div className='wishlistPage blackbg pt-8 pb-14 '>
                 <div className='containerbox'>
+                    <h3>{cartCounter}</h3>
+                    <button onClick={()=>setCartCounter(33)} >Onchange</button>
                     <div className='wishbanner d-lg-block d-none'>
                         <img className='w-full  border-black border-2 shadow-mint rounded-2xl' src={user?.cover_url || wishlistbannerimg} alt='img' />
                     </div>

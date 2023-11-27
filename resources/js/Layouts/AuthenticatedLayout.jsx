@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { useEffect } from 'react';
+import { usePage } from '@inertiajs/react';
 import { Toaster } from 'react-hot-toast';
 import { useAlerts } from '@/Components/Alerts';
 import Header from '@/includes/Header';
 import Footer from '@/includes/Footer';
 
-export default function Authenticated({auth, user, header, children }) {
-    const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
+export default function Authenticated(props) {
+
+    const { auth, user, children, cart_count } = props;
     const { successAlert, errorAlert } = useAlerts();
     const { flash } = usePage().props;
 
@@ -26,31 +27,31 @@ export default function Authenticated({auth, user, header, children }) {
         }
     },[]);
 
+
     return <>
-         {/* <SiteMeta /> */}
-        <Header auth={auth} user={user}  />
-            <main>
-                {children}
-                <Toaster
-                reverseOrder={false}
-                gutter={8}
-                toastOptions={{
-                    className: '',
-                    duration: 3000,
-                    style: {
-                    background: '#363636',
-                    color: '#fff',
-                    },
-                    success: {
-                    duration: 3000,
-                    theme: {
-                        primary: 'green',
-                        secondary: 'black',
-                    },
-                    },
-                }}
-                />
-            </main>
-        <Footer auth={auth} />
+    <Header auth={auth} user={user}  />
+        <main>
+            {children}
+            <Toaster
+            reverseOrder={false}
+            gutter={8}
+            toastOptions={{
+                className: '',
+                duration: 3000,
+                style: {
+                background: '#363636',
+                color: '#fff',
+                },
+                success: {
+                duration: 3000,
+                theme: {
+                    primary: 'green',
+                    secondary: 'black',
+                },
+                },
+            }}
+            />
+        </main>
+    <Footer auth={auth} />
     </>
 }
