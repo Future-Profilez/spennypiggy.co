@@ -34,7 +34,7 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array {
 
         $user = $request->user();
-        $items = UserCart::where('user_id', $user->id)->where('status',1)->count();
+        $items = UserCart::where('user_id', $user->id ?? null)->where('status',1)->count();
 
         return [
             ...parent::share($request),
@@ -54,6 +54,7 @@ class HandleInertiaRequests extends Middleware
                 ];
             },
             'cart_count' => $items
+        
         ];
     }
 }

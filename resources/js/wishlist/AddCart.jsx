@@ -13,8 +13,52 @@ import LoaderButton from "@/Components/LoaderButton";
 
 export default function AddCart(props) {
 
-    const { format } = PriceFormat();
+    const static_cart = useState([
+        {
+            "user": {
+                "id": 2,
+                "name": "John Deo",
+                "username": "naveen",
+                "uuid": "ae03d616-3007-4d7b-b7f2-96af4d246c2c"
+            },
+            "items": [
+                {
+                    "id": 6,
+                    "uuid": "3991ff24-93e9-401c-94c3-87927a456fb7",
+                    "user_id": 2,
+                    "wishname": "Hello Everyone !!",
+                    "stripe_product_id": null,
+                    "price": 66,
+                    "price_id": "price_1OH8JrG7xsNScLmXcPcrWPSv",
+                    "item_url": null,
+                    "subscription": 2,
+                    "subscription_period": null,
+                    "repeat_purchase": 1,
+                    "category": null,
+                    "url": "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"
+                },
+                {
+                    "id": 5,
+                    "uuid": "4870f1a1-5936-42e7-bbfd-c280fb7dc469",
+                    "user_id": 2,
+                    "wishname": "Naveen Tehrpariya",
+                    "stripe_product_id": "prod_P3k2jBHXMIOKbd",
+                    "price": 555,
+                    "price_id": "price_1OFcYYG7xsNScLmXvVXaTljK",
+                    "item_url": null,
+                    "subscription": 0,
+                    "subscription_period": null,
+                    "repeat_purchase": 1,
+                    "category": null,
+                    "url": "https://ucarecdn.com/29d065e3-5b8a-4ff0-972e-dad84ee164fb/?token=exp=1701105313~acl=/29d065e3-5b8a-4ff0-972e-dad84ee164fb/~hmac=4b74c60e29630a6edbbf13783d18f8b36dfae38ec12379821bc6dad370c817e9"
+                }
+            ],
+            "total": 621,
+            "fee": 125
+        }
+    ]);
 
+    const { format } = PriceFormat();
     const { auth, action, uuid, item, IsloggedIn } = props;
     const [cartamount, setcartamount] = useState(null);
     const [close, setClose] = useState(action);

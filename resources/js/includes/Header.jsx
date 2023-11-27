@@ -14,7 +14,7 @@ export default function Header(props) {
     const { auth, user } = props;
     const [loggedIn, setLoggedIn] = useState((auth && auth.username));
     const { cart_counter } = useSelector(state => state.data.redux);
-
+    
     return <>
         <div className='blackbg headermain py-14'>
           <div className='containerbox'>
@@ -24,9 +24,7 @@ export default function Header(props) {
               :
               <Link href="/register" className='headtitle text-wh font-GillSans d-none d-lg-flex' > Create Wishlist </Link>
             }
-
             {/* <Link href={`/${ auth && auth?.username || ''}`} className='headtitle text-wh font-GillSans  d-none d-lg-flex'>Create Wishlist</Link> */}
-            
             <div className='spennylogo'><Link href={route('home')} ><img src={spennypiggy} /></Link></div>
             <div className='cartLogin'>
               <Link href={route('cart')} as="button" className='cartLink  d-none d-xl-flex position-relative'>
@@ -35,11 +33,13 @@ export default function Header(props) {
                   </svg>
                   <span className='site-counter d-block' >{cart_counter}</span>
               </Link>
+
               {loggedIn ?
                   <Link method="get" href={route('logout')} as="button" className='btn-mint mx-3  d-none d-xl-flex'>Logout</Link>
                   :
                   <Link href={route("login")} className='btn-mint mx-3  d-none d-xl-flex'>Login</Link>
               }
+
               <button className="cartLink position-relative"  onClick={toggleClass}>
               <svg width="58" height="59" viewBox="0 0 58 59" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <g filter="url(#filter0_d_467_5581)">

@@ -5,30 +5,13 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 
 export default function ToCart({ actionfrom, checkoutbtn, ItemAdded, item, crowd, pending, uuid, text, classes, custom, removeItem, type, is_cart, amount, isEqual }) {
-
-export default function ToCart({
-    text2,
-    ItemAdded,
-    item,
-    crowd,
-    pending,
-    uuid,
-    text,
-    classes,
-    custom,
-    removeItem,
-    type,
-    is_cart,
-    amount,
-    isEqual,
-}) {
+    
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [loading, setLoading] = useState(false);
     const [is_Cart, setis_Cart] = useState(is_cart);
 
     const removeGiftItem = () => {
-        axios
-            .get(`remove-surprise-from-cart/${uuid}`)
+        axios.get(`remove-surprise-from-cart/${uuid}`)
             .then((resp) => {
                 if (resp.data.success) {
                     successAlert(resp.data.msg);
