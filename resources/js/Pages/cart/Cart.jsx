@@ -10,9 +10,10 @@ export default function Cart(props) {
 
     const { auth, user } = props;
     const [cartsItems, setCartItems] = useState(props.carts);
-    
-    const { app_name } = useSelector(state => state.data.redux);
-    console.log("cart props", props);
+
+    const cartData = useSelector(state => state.data.cart.cart);
+    console.log("cartData",cartData);
+
 
     return (
         <>

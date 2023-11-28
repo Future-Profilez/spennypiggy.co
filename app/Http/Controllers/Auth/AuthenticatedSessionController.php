@@ -72,8 +72,6 @@ class AuthenticatedSessionController extends Controller
         if (!empty($user)) {
             $slinks = SocialLinks::where('user_id', $user->id)->first();
 
-
-
             if (!empty($slinks)) {
                 $sociallinks = array(
                     array(
@@ -133,7 +131,7 @@ class AuthenticatedSessionController extends Controller
             $itemId = $query->whereHas('wish', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             })->pluck('wish_id');
-            $items = WishItem::whereIn('id', $itemId)->latest()->get();
+            $items = WishItem::whereIn('id', $itemId)->with(['user'])->latest()->get();
             return response()->json([
                 "success" => true,
                 "items" => $items,
@@ -143,7 +141,7 @@ class AuthenticatedSessionController extends Controller
             ]);
         } else {
             if ($user) {
-                $items = WishItem::whereUserId($user->id)->latest()->get();
+                $items = WishItem::whereUserId($user->id)->with(['user'])->latest()->get();
             }
         }
 
