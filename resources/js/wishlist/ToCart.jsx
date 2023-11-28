@@ -8,6 +8,9 @@ import { useDispatch } from "react-redux";
 import { add_to_cart } from "../Pages/redux/UserSlice"; // Update the path accordingly
 
 export default function ToCart({ actionfrom, checkoutbtn, ItemAdded, item, crowd, pending, uuid, text, classes, custom, removeItem, type, is_cart, amount, isEqual }) {
+    
+    const cartData = useSelector(state => state.data.cart.cart);
+   
     // const static_cart = useState([
     //     {
     //         "user": {
@@ -77,81 +80,73 @@ export default function ToCart({ actionfrom, checkoutbtn, ItemAdded, item, crowd
             removeGiftItem();
             return false;
         } else {
-            
-            let cart_item = item;
-            if(item && item.subscription == "2"){
-                cart_item['price'] = amount;
-            }
-            dispatch(add_to_cart(cart_item));
-
-            return false;
             if (item && item.subscription == "2" && isEqual) {
                 toast.error(`Wish item funding is completed.`);
                 return false;
             }
             if (!item?.is_cart && crowd && !amount) {
-                toast.error(`Please enter a amount to gift this item. `);
+                toast.error(`Please enter a amount to gift this item.`);
                 return false;
             }
             if (crowd && amount > pending) {
-                toast.error(
-                    `Amount can not be more than remaining amount £${pending}. `
-                );
+                toast.error(`Amount can not be more than remaining amount £${pending}.`);
                 return false;
             }
-
             if (amount && amount < 50) {
                 toast.error("Amount must be greater than 50.");
                 return false;
             }
             setLoading(true);
-            axios.get(`/add-to-cart/${uuid}${amount ? `/${amount}` : ''}`).then(resp => {
-                if (resp.data.success) {
-                    if (resp.data.added == true) {
-                        successAlert(resp.data.msg);
-                        setis_Cart(true);
-                        ItemAdded("added");
-                        if(sets == 1){
-                        }
-                        if (resp.data.uuid) {
-                            removeItem && removeItem(uuid);
-                        }
-                        if (type == "checkout") {
-                            window.location = "/cart";
-                        }
-                    } else {
-                        successAlert(resp.data.msg);
-                        setis_Cart(false);
-                        ItemAdded("removed");
+            let cart_item = item;
+            if(item && item.subscription == "2"){
+                cart_item['price'] = amount;
+            }
+            dispatch(add_to_cart(cart_item));
+            // axios.get(`/add-to-cart/${uuid}${amount ? `/${amount}` : ''}`).then(resp => {
+            //     if (resp.data.success) {
+            //         if (resp.data.added == true) {
+            //             successAlert(resp.data.msg);
+            //             // setis_Cart(true);
+            //             ItemAdded("added");
+            //             if(sets == 1){
+            //             }
+            //             if (resp.data.uuid) {
+            //                 removeItem && removeItem(uuid);
+            //             }
+            //             if (type == "checkout") {
+            //                 window.location = "/cart";
+            //             }
+            //         } else {
+            //             successAlert(resp.data.msg);
+            //             // setis_Cart(false);
+            //             ItemAdded("removed");
 
-                    }
-                    if (resp.data.uuid) {
-                        removeItem && removeItem(uuid);
-                    }
-                    if (checkoutbtn) {
-                        window.location = '/cart';
-                    }
-                } else {
-                    errorAlert(resp.data.msg);
-                }
-                if(actionfrom){
-                    window.location = '/cart';
-                }
-                setLoading(false);
-            }).catch(_err => {
-                console.error("error", _err);
-                setLoading(false);
-            });
+            //         }
+            //         if (resp.data.uuid) {
+            //             removeItem && removeItem(uuid);
+            //         }
+            //         if (checkoutbtn) {
+            //             window.location = '/cart';
+            //         }
+            //     } else {
+            //         errorAlert(resp.data.msg);
+            //     }
+            //     if(actionfrom){
+            //         window.location = '/cart';
+            //     }
+            //     setLoading(false);
+            // }).catch(_err => {
+            //     console.error("error", _err);
+            //     setLoading(false);
+            // });
         }
     };
 
-
     return <>
         {custom ?
-            <div onClick={addtocart} >{custom}</div>
-            :
+            <div onClick={addtocart} >{custom}</div> :
             <LoaderButton disabled={loading} onClick={()=>addtocart(1)}
-                className={`flex  ${classes} mx-auto`}
+                className={`flex ${classes} mx-auto`}
                 spinnerClassName='fill-red-600'>
                 {loading ? "Proccessing" : is_cart ? "Remove From Cart" : text }
             </LoaderButton>

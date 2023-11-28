@@ -121,7 +121,7 @@ Route::middleware('auth')->group(function () {
     })->middleware(['auth', 'verified'])->name('stripe')->middleware('mustHaveToVerify');
 });
 
-Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart')->middleware('mustHaveToVerify');
+Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 
 Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
 /*Anonymous checkout*/
