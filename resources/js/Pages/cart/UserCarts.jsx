@@ -13,7 +13,7 @@ export default function UserCarts(props) {
     const [name, setName] = useState(null);
     const [email, setEmail] = useState(null);
     const [loading, setLoading] = useState(false);
-
+    
     const handleSubmit = (e) => {
         e.preventDefault();
         if (auth && auth.id) {
@@ -34,23 +34,22 @@ export default function UserCarts(props) {
         }
     };
 
+    const subtotal = datas && datas?.items.reduce((total, item) => +total + +item.price, 0);
+    const fee = 0.2 * subtotal;
+
     return (
         <div className="px-2">
             <div className="my-4 cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
                 <div className="cartMain">
                     <h2 className="pb-1 wishtitle">
                         Wish Basket for {datas?.user?.name || ""}{" "}
-                        <Link
-                            className="text-voilet"
-                            href={`/${datas?.user?.username || ""}`}
-                        >
-                            {" "}
+                        <Link className="text-voilet"
+                        href={`/${datas?.user?.username || ""}`} >
                             @{datas?.user?.username || ""}
                         </Link>
                     </h2>
 
                     <p className="pb-4">
-                        {" "}
                         You are about to send a payout to{" "}
                         <strong>{datas?.user?.name || ""}</strong> to fund their
                         wishes.{" "}
@@ -66,29 +65,21 @@ export default function UserCarts(props) {
                         <div className="cartSubTotal text-right mt-1">
                             <span>Platform Fee :</span>{" "}
                             <strong className="text-end">
-                                {format(datas?.fee || "")}
+                                {format(fee  || "")}
                             </strong>
                         </div>
                         <div className="cartSubTotal text-right mt-1">
                             <span>Subtotal :</span>{" "}
                             <strong className="text-end">
-                                {format(datas?.total || "")}
+                                {format(subtotal || "")}
                             </strong>
                         </div>
                         <div className="cartSubTotal text-right mt-1">
                             <strong className="text-dark">Total :</strong>{" "}
                             <strong className="text-end">
-                                {format(datas?.total + datas?.fee || "")}
+                                {format(fee + subtotal || "")}
                             </strong>
                         </div>
-                        {/* <div className="cartTotalPrice text-right mt-5 px-3 py-6">
-                    <strong className="font-CeraGRBold text-graydark">
-                        Total
-                    </strong>
-                    <span className="font-CeraGRBold text-graydark">
-                        £ 7700.00
-                    </span>
-                </div> */}
                     </div>
 
                     <div className="addMessage">

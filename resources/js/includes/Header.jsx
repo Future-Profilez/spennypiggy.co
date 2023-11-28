@@ -92,12 +92,10 @@ export default function Header(props) {
               </div>
               <div className="menuList">
               <ul>
-
                 {loggedIn ?
                   <>
                     <li><Link onClick={toggleClass} href={"/account"} >My Account</Link></li>
                     <li><Link onClick={toggleClass} href={`/${auth&& auth?.username || ''}`} >Create Wishlist</Link></li>
-                    <li><Link onClick={toggleClass} href={"/cart"} >Cart</Link></li>
                     <li><Link onClick={toggleClass}  method="get" href={route('logout')} >Logout</Link></li>
                   </>
                   :
@@ -106,6 +104,7 @@ export default function Header(props) {
                     <li><Link onClick={toggleClass} href={route("login")} >Login</Link></li>
                   </>
                 }
+                <li><Link onClick={toggleClass} href={"/cart"} >Cart</Link></li>
                 <li><Link onClick={toggleClass} href={route("how-it-works")} >How it works</Link></li>
                 <li><a onClick={toggleClass} target='_blank' href="https://intercom.help/spenny-piggy" >FAQ's</a></li>
               </ul>

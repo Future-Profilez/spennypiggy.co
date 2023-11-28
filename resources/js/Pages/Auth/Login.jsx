@@ -26,6 +26,7 @@ export default function Login({ status, canResetPassword }) {
         post(route('login-user'), {
             preserveScroll: true,
             onSuccess: (resp) => {
+                localStorage.removeItem("cart");
                 reset();
             },
             onError: (err) => {

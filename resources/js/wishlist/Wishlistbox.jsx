@@ -52,31 +52,29 @@ export default function Wishlistbox(props) {
         {IsloggedIn ?   
           <Wishlist item={itm} editpop={true} fetchingcats={fetchingcats} categories={categories} />  
           : 
-        <AddCart 
-         IsloggedIn={IsloggedIn} auth={auth} item={itm} uuid={itm.uuid} action={open} /> 
+          <AddCart  IsloggedIn={IsloggedIn} auth={auth} item={itm} uuid={itm.uuid} action={open} />  
         }
-
-      <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
-        <img src={itm?.perma_link ? itm?.perma_link : uploadedimg} alt='img' className='' />
-      </div>
-      <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
-        <div>
-          <h4 className={`fon-bold text-dark ${itm.subscription == '2' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>
-          <h5 className='font-CeraGRBold text-dark'>{format(price())}</h5>
+        <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
+          <img src={itm?.perma_link ? itm?.perma_link : uploadedimg} alt='img' className='' />
         </div>
-        {itm.subscription == '2' ? 
-          <div className='crowd pt-2'>
-          <ProgressBar now={itm.fullfill_amount} max={itm.price} />
-          <p className='mt-1 mb-0 text-small' >{getPercentage(itm.price, itm.fullfill_amount)}% granted</p>
-          </div> 
-        : '' }
-      </div>
+        <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
+          <div>
+            <h4 className={`fon-bold text-dark ${itm.subscription == '2' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>
+            <h5 className='font-CeraGRBold text-dark'>{format(price())}</h5>
+          </div>
+          {itm.subscription == '2' ? 
+            <div className='crowd pt-2'>
+            <ProgressBar now={itm.fullfill_amount} max={itm.price} />
+            <p className='mt-1 mb-0 text-small' >{getPercentage(itm.price, itm.fullfill_amount)}% granted</p>
+            </div> 
+          : '' }
+        </div>
 
-      <div className='sharelinks'>
-        <ShareProfile username={itm.wishname} custom={`${window.location.href}?item=${itm.uuid}`} >
-          <div className='text-pink font-GillSans'>Share Link</div>
-        </ShareProfile>
-      </div>
+        <div className='sharelinks'>
+          <ShareProfile username={itm.wishname} custom={`${window.location.href}?item=${itm.uuid}`} >
+            <div className='text-pink font-GillSans'>Share Link</div>
+          </ShareProfile>
+        </div>
     </div>
   </>
 }

@@ -10,24 +10,29 @@ import CartTransform from "@/includes/CartTransform";
 
 export default function Cart(props) {
 
-    const {transform} = CartTransform();
-    const { auth, user } = props;
-    const [cartsItems, setCartItems] = useState(props.carts);
+    const { transform } = CartTransform();
+    const { auth, user, carts } = props;
+    const [ cartsItems, setCartItems ] = useState([]);
     const cartData = useSelector(state => state.data.cart.cart);
- 
     const loggedInUserId = 2; 
-
+    
     useEffect(()=>{
-        if(cartData && cartData.length){
-            const data = transform(cartData, loggedInUserId);
-            localStorage.setItem('cart',JSON.stringify(data));
-            setCartItems(data);
+        if(auth && auth.user && auth.user.id){
+            setCartItems(props.carts);
         } else {
-            const local_data = localStorage && localStorage.getItem('cart');
-            console.log("local_data",local_data)
-            setCartItems(JSON.parse(local_data));
+            if(cartData && cartData.length){
+                const data = transform(cartData, loggedInUserId);
+                localStorage.setItem('cart',JSON.stringify(data));
+                setCartItems(data);
+            } else {
+                const local_data = localStorage && localStorage.getItem('cart');
+                console.log("local_data",local_data)
+                setCartItems(JSON.parse(local_data));
+            }
         }
-    },[cartData]);
+    },[cartData, auth.id]);
+
+    console.log("cart props", carts);
 
     return (
             <Authenticated auth={auth.user} user={user}>
