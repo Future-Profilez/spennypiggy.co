@@ -1,10 +1,11 @@
 import { useState } from "react";
 import CartItem from "./CartItem";
-import { Link } from "@inertiajs/react";
+import { Link, router } from "@inertiajs/react";
 import PriceFormat from "@/includes/PriceFormat";
 
 export default function UserCarts(props) {
 
+    const { auth } = props;
     const { format } = PriceFormat();
     const datas = props.data;
     const [isChecked, setIsChecked] = useState(false);
@@ -15,11 +16,11 @@ export default function UserCarts(props) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if(auth && auth.id){
+        if (auth && auth.id) {
             window.location.href = `/create-checkout-session/${datas?.user?.id}?message=${message}&from=${name}&email=${email}`;
         } else {
             setLoading(true);
-            post(route(`/anonymous-create-checkout-session?message=${message}&from=${name}&email=${email}`, {'data':datas}), {
+            router.post(`/anonymous-create-checkout-session?message=${message}&from=${name}&email=${email}`, { 'data': datas }), {
                 preserveScroll: true,
                 onSuccess: (resp) => {
                     setLoading(false);
@@ -29,7 +30,7 @@ export default function UserCarts(props) {
                     console.error(_err);
                     setLoading(false);
                 }
-            });
+            };
         }
     };
 
@@ -120,7 +121,7 @@ export default function UserCarts(props) {
                                         <div className="col-md-6 mb-4">
                                             <label className="d-block text-start">Email </label>
                                             <input className="form-input w-100 rounded"
-                                                onChange={(e) =>setEmail(e.target.value)}
+                                                onChange={(e) => setEmail(e.target.value)}
                                                 type="email" placeholder="Enter Your email..."
                                             />
                                         </div>
@@ -188,9 +189,8 @@ export default function UserCarts(props) {
                             </ul>
                             <button
                                 type="submit"
-                                className={`${
-                                    isChecked ? "" : "disabled"
-                                }  btn-pink md mt-3 w-1/2 text-center m-auto`} >
+                                className={`${isChecked ? "" : "disabled"
+                                    }  btn-pink md mt-3 w-1/2 text-center m-auto`} >
                                 Checkout
                             </button>
                         </form>
