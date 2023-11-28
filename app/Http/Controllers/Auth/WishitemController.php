@@ -498,7 +498,7 @@ class WishitemController extends Controller
         }
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
         $stripe_client = $stripe->products->create([
-            'name' => 'surprise',
+            'name' => 'Surprise Gift',
             'images' => ['https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/'],
             "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $request->amount * 100],
         ]);
@@ -557,13 +557,12 @@ class WishitemController extends Controller
         // return back()->with('success', 'Gift added in cart.');
     }
 
-    public function noOfCartItems(){
-        $items = UserCart::where('user_id', Auth::id())->where('status',1)->count();
+    public function noOfCartItems()
+    {
+        $items = UserCart::where('user_id', Auth::id())->where('status', 1)->count();
         return response()->json([
             "success" => true,
             "counts" => $items,
         ]);
-
     }
-
 }
