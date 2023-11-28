@@ -57,7 +57,6 @@ export default function AddCart(props) {
             "fee": 125
         }
     ]);
-
     const { format } = PriceFormat();
     const { auth, action, uuid, item, IsloggedIn } = props;
     const [cartamount, setcartamount] = useState(null);
