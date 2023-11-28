@@ -76,7 +76,6 @@ Route::middleware('auth')->group(function () {
     //     ->middleware('throttle:6,1')
     //     ->name('verification.send');
 
-
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
         ->name('password.confirm')->middleware('mustHaveToVerify');
 
@@ -101,7 +100,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/sucess-checkout/{id}', [StripeController::class, 'successCheckout'])->name('checkout.success')->middleware('mustHaveToVerify');
     Route::get('cancel-checkout/{id}', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel')->middleware('mustHaveToVerify');
 
-
     Route::prefix("stripe")->name("stripe.")->group(function () {
         Route::get("authorize", [StripeController::class, "index"])->name("index")->middleware('mustHaveToVerify');
         Route::match(["get", "post"], "/connect-{step}/{country?}", [StripeController::class, "initConnect"])->name("connect")->middleware('mustHaveToVerify');
@@ -114,7 +112,6 @@ Route::middleware('auth')->group(function () {
     Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category')->middleware('mustHaveToVerify');
 
     Route::get('/add-to-cart/{uuid}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart')->middleware('mustHaveToVerify');
-
     Route::get('account', function () {
         return Inertia::render('accountsetting/Accountsetting');
     })->name("account")->middleware('mustHaveToVerify');

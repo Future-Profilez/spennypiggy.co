@@ -12,9 +12,6 @@ import Guest from '@/Layouts/GuestLayout';
 import Nocontent from '@/includes/Nocontent';
 import LoadingScreen from '@/includes/LoadingScreen';
 import PaymentDashboard from './stripe/PaymentDashboard';
-import { useDispatch } from "react-redux";
-import { useEffect } from 'react';
-import {  app_name, cart_counter } from './redux/UserSlice';
 
 export default function Dashboard(props) {
 
@@ -39,12 +36,8 @@ export default function Dashboard(props) {
 
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
     const { cartCounter, setCartCounter } = useState();
-    const dispatch = useDispatch();
 
-    useEffect(()=>{ 
-        dispatch(cart_counter(cart_count));
-    },[cart_count]);
-
+    console.log("props",props);
     return (
         <Guest 
             auth={auth.user}
