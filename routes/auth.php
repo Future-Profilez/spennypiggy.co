@@ -116,18 +116,13 @@ Route::middleware('auth')->group(function () {
     Route::get('account', function () {
         return Inertia::render('accountsetting/Accountsetting');
     })->name("account")->middleware('mustHaveToVerify');
-    
+
     Route::get('/stripe', function () {
         return Inertia::render('stripe/Stripe');
     })->middleware(['auth', 'verified'])->name('stripe')->middleware('mustHaveToVerify');
-    
-    Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart')->middleware('mustHaveToVerify')->middleware('mustHaveToVerify');
-    
-    Route::get('cart-counter', [WishitemController::class, 'noOfCartItems'])->name('cart-counter');
-
 });
 
-Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart')->middleware('mustHaveToVerify');
+Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 
 Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
 /*Anonymous checkout*/
