@@ -44,6 +44,8 @@ export default function Wishlistbox(props) {
       return itm.price;
     }
   };
+
+  console.log("itm",itm)
   
   return <>
       <div className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
@@ -69,6 +71,7 @@ export default function Wishlistbox(props) {
           </div> 
         : '' }
       </div>
+
       <div className='sharelinks'>
         <ShareProfile username={itm.wishname} custom={`${window.location.href}?item=${itm.uuid}`} >
           <div className='text-pink font-GillSans'>Share Link</div>

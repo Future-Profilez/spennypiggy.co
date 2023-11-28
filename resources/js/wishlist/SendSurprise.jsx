@@ -65,9 +65,7 @@ export default function SendSurprise({auth, owner}) {
                   </p>
             </div>
             <div className="form-field mb-4">
-                  <label className="d-block text-start mb-2">
-                     Suggested use (optional)
-                  </label>
+                  <label className="d-block text-start mb-2">Suggested use (optional)</label>
                   <textarea
                      placeholder="Message..."
                      className="form-input w-100 rounded"
@@ -82,6 +80,21 @@ export default function SendSurprise({auth, owner}) {
                   spinnerClassName="fill-red-600" >
                   {processing ? "Proccessing" : auth && auth.name ? "Add to cart" : "Send Gift"}
             </LoaderButton>
+
+            {/* <ToCart auth={auth} 
+               ItemAdded={ItemAdded}
+               pending={item.price - item.fullfill_amount}
+               crowd={item.subscription == 2}
+               amount={cartamount} 
+               item={item}
+               isEqual={item.price <= item.fullfill_amount}
+               is_cart={is_cart}
+               text={`Add To Cart And Checkout`}
+               checkoutbtn={true}
+               classes={`btn-pink lg w-100 mb-3 font-CeraGR ${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
+               uuid={uuid}
+            /> */}
+            
         </Popup>
     );
 }

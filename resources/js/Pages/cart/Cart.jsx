@@ -5,18 +5,31 @@ import UserCarts from "../cart/UserCarts";
 import Nocontent from "@/includes/Nocontent";
 import { Head } from "@inertiajs/react";
 import { useSelector } from "react-redux";
+import { useEffect } from "react";
+import CartTransform from "@/includes/CartTransform";
 
 export default function Cart(props) {
 
+    const {transform} = CartTransform();
     const { auth, user } = props;
     const [cartsItems, setCartItems] = useState(props.carts);
-
     const cartData = useSelector(state => state.data.cart.cart);
-    console.log("cartData",cartData);
+ 
+    const loggedInUserId = 2; 
 
+    useEffect(()=>{
+        if(cartData && cartData.length){
+            const data = transform(cartData, loggedInUserId);
+            localStorage.setItem('cart',JSON.stringify(data));
+            setCartItems(data);
+        } else {
+            const local_data = localStorage && localStorage.getItem('cart');
+            console.log("local_data",local_data)
+            setCartItems(JSON.parse(local_data));
+        }
+    },[cartData]);
 
     return (
-        <>
             <Authenticated auth={auth.user} user={user}>
                 <Head title={"My Cart"} />
                 <div className=" blackbg">
@@ -25,7 +38,7 @@ export default function Cart(props) {
                         {cartsItems && cartsItems.length ? (
                             <>
                                 {cartsItems.map((c, i) => {
-                                    return <UserCarts key={i} data={c} />;
+                                    return <UserCarts auth={auth && auth.user} key={i} data={c} />;
                                 })}
                             </>
                         ) : (
@@ -40,6 +53,5 @@ export default function Cart(props) {
                     </div>
                 </div>
             </Authenticated>
-        </>
     );
 }

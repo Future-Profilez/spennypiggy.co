@@ -109,73 +109,30 @@ export default function AddCart(props) {
                 )}
 
                 <div className=" pb-2">
-
-                <ToCart ItemAdded={ItemAdded}
-                    pending={item.price - item.fullfill_amount}
-                    crowd={item.subscription == 2}
-                    amount={cartamount} 
-                    item={item}
-                    isEqual={item.price <= item.fullfill_amount}
-                    is_cart={is_cart}
-                    text={`Add To Cart And Keep Shopping`}
-                    classes={`btn-pink lg w-100 mb-3 font-CeraGR ${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
-                    uuid={uuid}
-                />
-
-
-                    {/* {auth ? (
-                        <>
-                        {is_cart ? 
-                        <>
-                            <ToCart ItemAdded={ItemAdded}
-                                pending={item.price - item.fullfill_amount}
-                                crowd={item.subscription == 2}
-                                amount={cartamount} 
-                                item={item}
-                                isEqual={item.price <= item.fullfill_amount}
-                                is_cart={is_cart}
-                                text={`Add To Cart And Keep Shopping`}
-                                classes={`btn-pink lg w-100 mb-3 font-CeraGR ${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
-                                uuid={uuid} />
-
-                                <LoaderButton onClick={()=>checkoutnow()}
-                                    className={`flex btn-pink w-100 lg mx-auto`}
-                                    spinnerClassName='fill-red-600'>Checkout
-                                </LoaderButton>
-                        </> : 
-                        <>
-                            <ToCart ItemAdded={ItemAdded}
-                                pending={item.price - item.fullfill_amount}
-                                crowd={item.subscription == 2}
-                                amount={cartamount} 
-                                item={item}
-                                isEqual={item.price <= item.fullfill_amount}
-                                is_cart={is_cart}
-                                text={`Add To Cart And Keep Shopping`}
-                                classes={`btn-pink lg w-100 mb-3 font-CeraGR ${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
-                                uuid={uuid}
-                            />
-                            <ToCart 
-                                ItemAdded={ItemAdded}
-                                pending={item.price - item.fullfill_amount}
-                                crowd={item.subscription == 2}
-                                amount={cartamount} 
-                                item={item}
-                                isEqual={item.price <= item.fullfill_amount}
-                                is_cart={is_cart}
-                                text={`Add To Cart And Checkout`}
-                                checkoutbtn={true}
-                                classes={`btn-pink lg w-100 mb-3 font-CeraGR ${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
-                                uuid={uuid}
-                            />
-                        </>
-                        }
-                        </>
-                    ) : (
-                        <DirectCheckout
-                        classes={`${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
-                        item={item} amount={cartamount} />
-                    )} */}
+                    <ToCart ItemAdded={ItemAdded}  auth={auth} 
+                        pending={item.price - item.fullfill_amount}
+                        crowd={item.subscription == 2}
+                        amount={cartamount} 
+                        item={item}
+                        isEqual={item.price <= item.fullfill_amount}
+                        is_cart={is_cart}
+                        text={`Add To Cart And Keep Shopping`}
+                        classes={`btn-pink lg w-100 mb-3 font-CeraGR ${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
+                        uuid={uuid}
+                    />
+                    <ToCart auth={auth} 
+                        ItemAdded={ItemAdded}
+                        pending={item.price - item.fullfill_amount}
+                        crowd={item.subscription == 2}
+                        amount={cartamount} 
+                        item={item}
+                        isEqual={item.price <= item.fullfill_amount}
+                        is_cart={is_cart}
+                        text={`Add To Cart And Checkout`}
+                        checkoutbtn={true}
+                        classes={`btn-pink lg w-100 mb-3 font-CeraGR ${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
+                        uuid={uuid}
+                    />
                 </div>
             </div>
         </Popup>
