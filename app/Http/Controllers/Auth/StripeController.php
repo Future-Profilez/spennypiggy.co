@@ -231,6 +231,7 @@ class StripeController extends Controller
                     'transfer_data' => [
                         'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
                     ],
+                    'application_fee_amount' => $taxNew,
                     'receipt_email' => 'saurav@futureprofilez.com',
                 ],
                 'customer_email' => 'saurav@futureprofilez.com',
