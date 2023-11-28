@@ -72,8 +72,6 @@ class AuthenticatedSessionController extends Controller
         if (!empty($user)) {
             $slinks = SocialLinks::where('user_id', $user->id)->first();
 
-
-
             if (!empty($slinks)) {
                 $sociallinks = array(
                     array(

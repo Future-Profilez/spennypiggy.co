@@ -3,7 +3,6 @@ import giftimg from "../../assets/img/giftimg.jpg";
 import Popup from "@/Components/Popup";
 import ToCart from "./ToCart";
 import uploadedimg from "../../assets/img/uploadedimg.png";
-import { Link } from "@inertiajs/react";
 import DirectCheckout from "./DirectCheckout";
 import ProgressBar from "react-bootstrap/ProgressBar";
 import { useState } from "react";
@@ -53,10 +52,10 @@ export default function AddCart(props) {
                     "url": "https://ucarecdn.com/29d065e3-5b8a-4ff0-972e-dad84ee164fb/?token=exp=1701105313~acl=/29d065e3-5b8a-4ff0-972e-dad84ee164fb/~hmac=4b74c60e29630a6edbbf13783d18f8b36dfae38ec12379821bc6dad370c817e9"
                 }
             ],
-            "total": 621,
-            "fee": 125
+            "loggeInUser":2
         }
     ]);
+    
     const { format } = PriceFormat();
     const { auth, action, uuid, item, IsloggedIn } = props;
     const [cartamount, setcartamount] = useState(null);
@@ -72,7 +71,6 @@ export default function AddCart(props) {
         }
         setClose(false);
     }
-
 
     useEffect(()=>{
         setClose(action);
@@ -101,8 +99,7 @@ export default function AddCart(props) {
             size="md"
             action={close}
             modalclass="pinkmodal"
-            classes="d-none"
-        >
+            classes="d-none" >
             <div className="addCartModalHead rounded-3xl relative shadow-pink">
                 <h2 className="font-GillSans text-bl uppercase pt-8 text-lg relative z-1 px-3 text-center">
                     Add to Cart

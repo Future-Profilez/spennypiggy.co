@@ -490,19 +490,15 @@ class WishitemController extends Controller
 
         $wordLimit = 100;
         $message = $request->message;
-
         if (str_word_count($message) > $wordLimit) {
             return redirect()->back()->with("error", "Max limit for message is 100 words");
         }
-
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
         $stripe_client = $stripe->products->create([
             'name' => 'surprise',
             'images' => ['https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/'],
             "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $request->amount * 100],
         ]);
-
-
         $cart = UserCart::create([
             'user_id' => Auth::id() ?? null,
             'owner_id' => $request->owner_id ?? null,
@@ -512,13 +508,8 @@ class WishitemController extends Controller
             'message' => $request->message,
             'status' => 1,
         ]);
-
         $cart->refresh();
-
         if (!Auth::check()) {
-
-
-
             $lineItems[] = [
                 'price' => $cart->priceid ?? '',
                 'quantity' => 1,
@@ -530,9 +521,7 @@ class WishitemController extends Controller
                 'line_items' => $lineItems,
                 'mode' => 'payment',
             ]);
-
             $callbackData = $sessioncreate;
-
             session()->forget('anonymous_session_id');
             session(['anonymous_session_id' => $callbackData->id]);
             $stripeid = StripePaymentDetail::create([
@@ -549,20 +538,12 @@ class WishitemController extends Controller
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ]);
-
-
-
             return Inertia::location($sessioncreate->url);
         }
 
         //send email to owner
+
         // SaveWishlist::dispatch($user);
-
-
-
-
-
-
         // return response()->json([
         //     "success" => true,
         //     'added' => true,
@@ -570,7 +551,16 @@ class WishitemController extends Controller
         // ]);
 
         return back()->with('success', 'Gift item has been added in cart.');
-
         // return back()->with('success', 'Gift added in cart.');
     }
+
+    public function noOfCartItems(){
+        $items = UserCart::where('user_id', Auth::id())->where('status',1)->count();
+        return response()->json([
+            "success" => true,
+            "counts" => $items,
+        ]);
+
+    }
+
 }
