@@ -1,15 +1,17 @@
-import ApplicationLogo from '@/Components/ApplicationLogo';
 import { Link, usePage } from '@inertiajs/react';
 import { Toaster } from 'react-hot-toast';
 import { useAlerts } from '@/Components/Alerts';
 import { useEffect } from 'react';
 import Footer from '@/includes/Footer';
 import Header from '@/includes/Header';
+
 export default function Guest(props) {
+
+    const {children, auth, cart_count } = props;
     const {successAlert, errorAlert} = useAlerts();
     const {flash} = usePage().props;
+
     useEffect(() => {
-        console.log("flash", flash);
         if(flash?.error){
             errorAlert(flash.error);
         }
@@ -24,10 +26,9 @@ export default function Guest(props) {
         }
     },[]);
 
-    const {children, auth} = props;
+    console.log("props guest", props)
 
     return <>
-        {/* <SiteMeta /> */}
         <Header auth={auth ||''} />
         {children}
         <Footer auth={auth ||''} />

@@ -16,6 +16,7 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
 use App\Models\User;
+use App\Models\UserCart;
 use App\Models\WishItem;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -148,11 +149,6 @@ Route::get('/how-it-works', function () {
 Route::get('/terms-and-conditions', function () {
     return Inertia::render('Terms');
 })->name("terms-and-conditions");
-
-Route::get('/files/{filename}', function (string $filename) {
-    $fullPath = asset($filename);
-    return Storage::response($fullPath);
-});
 
 /*check username exist*/
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
