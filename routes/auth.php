@@ -113,11 +113,6 @@ Route::middleware('auth')->group(function () {
     Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category')->middleware('mustHaveToVerify');
 
     Route::get('/add-to-cart/{uuid}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart')->middleware('mustHaveToVerify');
-<<<<<<< HEAD
-    
-=======
-
->>>>>>> b32461d6ee79cfd42742c87dbbc787986352bb2f
     Route::get('account', function () {
         return Inertia::render('accountsetting/Accountsetting');
     })->name("account")->middleware('mustHaveToVerify');

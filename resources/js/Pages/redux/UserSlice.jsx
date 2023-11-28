@@ -1,19 +1,35 @@
-import { createSlice } from "@reduxjs/toolkit";
-const UserSlice = createSlice({
-    name: "redux",
+import { createSlice, combineReducers } from "@reduxjs/toolkit";
+const cartSlice = createSlice({
+    name: "cart",
     initialState: {
-        redux: {}
+        cart: [],
     },
     reducers: {
-        cart_counter: (state, action) => {
-            state.redux.cart_counter = action.payload;
+        add_to_cart: (state, action) => {
+            state.cart.push(action.payload);
         },
-        
-        app_name: (state, action) => {
-            state.redux.app_name = action.payload;
-        }
-    }
-})
+    },
+});
 
-export const { cart_counter, app_name } = UserSlice.actions;
-export default UserSlice.reducer;
+const userSlice = createSlice({
+    name: "user",
+    initialState: {
+        userInfo: null,
+    },
+    reducers: {
+        set_user_info: (state, action) => {
+            state.userInfo = action.payload;
+        },
+    },
+});
+
+
+// Combine the reducers into a single root reducer
+const rootReducer = combineReducers({
+    cart: cartSlice.reducer,
+    user: userSlice.reducer,
+});
+export const { add_to_cart } = cartSlice.actions;
+export const { set_user_info } = userSlice.actions;
+
+export default rootReducer;
