@@ -115,8 +115,6 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/add-to-cart/{uuid}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart')->middleware('mustHaveToVerify');
 
-    Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart')->middleware('mustHaveToVerify')->middleware('mustHaveToVerify');
-
     Route::get('account', function () {
         return Inertia::render('accountsetting/Accountsetting');
     })->name("account")->middleware('mustHaveToVerify');
@@ -126,10 +124,14 @@ Route::middleware('auth')->group(function () {
     })->middleware(['auth', 'verified'])->name('stripe')->middleware('mustHaveToVerify');
 });
 
+Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart')->middleware('mustHaveToVerify');
+
 Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
 /*Anonymous checkout*/
 // Route::get('/anonymous-create-checkout-session/{priceid}/{quantity}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
-Route::get('/anonymous-create-checkout-session/{wishid}/{amount?}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
+// Route::get('/anonymous-create-checkout-session/{wishid}/{amount?}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
+
+Route::post('/anonymous-create-checkout-session/{amount?}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
 
 Route::get('/anonymous-sucess-checkout/{id}/{cart_id?}', [StripeController::class, 'anonymousSuccessCheckout'])->name('checkout.anonymous.success');
 Route::get('/anonymous-cancel-checkout/{id}', [StripeController::class, 'anonymousCancelCheckout'])->name('checkout.anonymous.cancel');
