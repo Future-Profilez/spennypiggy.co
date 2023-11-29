@@ -77,7 +77,7 @@ export default function SendSurprise({auth, owner}) {
                   />
             </div>
 
-            {auth.id ? 
+            {auth && auth.id ? 
                <LoaderButton onClick={sendSurprize}
                   disabled={processing}
                   type='submit'
@@ -99,7 +99,6 @@ export default function SendSurprise({auth, owner}) {
                surprise_message={data.message}
                />
             }
-            
         </Popup>
     );
 }
