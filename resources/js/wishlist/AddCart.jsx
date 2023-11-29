@@ -8,9 +8,9 @@ import ProgressBar from "react-bootstrap/ProgressBar";
 import { useState } from "react";
 import { useEffect } from "react";
 import PriceFormat from "@/includes/PriceFormat";
-
 export default function AddCart(props) {
     
+
     const { format } = PriceFormat();
     const { auth, action, uuid, item, IsloggedIn } = props;
     const [cartamount, setcartamount] = useState(null);
@@ -50,12 +50,11 @@ export default function AddCart(props) {
     }
    
     return (
-        <Popup
-            size="md"
-            action={close}
-            modalclassName="pinkmodal"
-            classes="d-none" >
-            <div className="addCartModalHead rounded-3xl relative shadow-pink">
+        <Popup size="md" 
+            action={close} 
+            modalclassName="pinkmodal" 
+            classes="d-none" > 
+            <div className="addCartModalHead rounded-3xl relative ">
                 <h2 className="font-GillSans text-bl uppercase pt-8 text-lg relative z-1 px-3 text-center"> Add to Cart </h2>
             </div>
             <div className="cartModimg absolute left-0 top-0">

@@ -8,33 +8,19 @@ import { useDispatch } from "react-redux";
 import { add_to_cart } from "../Pages/redux/UserSlice"; // Update the path accordingly
 import { useEffect } from 'react';
 import CartTransform from '@/includes/CartTransform';
+import DeviceID from "@/includes/DeviceID";
 
 export default function ToCart({ 
     is_surprise, surprise_amount, surprise_message, owner, 
     auth, actionfrom, checkoutbtn, ItemAdded, item, crowd, pending, uuid, text, classes, custom, removeItem, type, is_cart, amount, isEqual }) {
     
+    const deviceID  = DeviceID();
+    console.log("deviceID",deviceID )
     const { transform } = CartTransform();
-   
-
     const [itemMain, setItemMain] = useState(item);
     const dispatch = useDispatch();
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [loading, setLoading] = useState(false);
-
-    const removeGiftItem = () => {
-        axios.get(`remove-surprise-from-cart/${uuid}`)
-        .then((resp) => {
-            if (resp.data.success) {
-                successAlert(resp.data.msg);
-                window.location = "/cart";
-            }
-            if (resp.data.error) {
-                errorAlert(resp.data.msg);
-            }
-        }).catch((_err) => {
-            console.error("error", _err);
-        });
-    };
 
     const addtocart = async (sets) => {
         function check(){
@@ -60,85 +46,86 @@ export default function ToCart({
         }
         setLoading(true);
         console.log("auth",auth)
-        if(auth && auth.id){
-            axios.get(`/add-to-cart/${uuid}${amount ? `/${amount}` : ''}`).then(resp => {
-            if (resp.data.success) {
-                if (resp.data.added == true) {
-                    successAlert(resp.data.msg);
-                    ItemAdded && ItemAdded("added");
-                    check();
-                } else {
-                    successAlert(resp.data.msg);
-                }
-                if (resp.data.uuid) {
-                    removeItem && removeItem(uuid);
-                }
-                } else { errorAlert(resp.data.msg);
-                }
-            }).catch(_err => {
-                console.error("error", _err);
-            });
-        }
-        else {
-            if(is_surprise){
-                const surpriseItem = {
-                    user_id: owner && owner.id,
-                    name: owner && owner.name,
-                    username:owner && owner.username,
-                    user : {
-                        id: owner && owner.id,
-                        uuid: owner && owner.uuid,
-                        user_id: owner && owner.id,
-                        name: owner && owner.name,
-                        username:owner && owner.username, 
-                    },
-                    product: "surprise",
-                    surprise_message: surprise_message,
-                    wishname: "Surprise Gift",
-                    quantity: 1,
-                    stripe_product_id: null,
-                    price: surprise_amount,
-                    price_id: null,
-                    item_url: null,
-                    subscription: null,
-                    subscription_period: null,
-                    repeat_purchase: null,
-                    category: null,
-                    perma_link: "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"
-                }
-                dispatch(add_to_cart(surpriseItem));
-                console.log("cart_item surprise", surpriseItem);
+        axios.get(`/add-to-cart/${uuid}/${deviceID}${amount ? `/${amount}` : ''}`).then(resp => {
+        if (resp.data.success) {
+            if (resp.data.added == true) {
+                successAlert(resp.data.msg);
                 ItemAdded && ItemAdded("added");
+                check();
             } else {
-                let cart_items = {...itemMain};
-                if(item && item.subscription == "2"){
-                    cart_items['price'] = amount;
-                }
-                dispatch(add_to_cart(cart_items));
-                ItemAdded && ItemAdded("added");
+                successAlert(resp.data.msg);
             }
-            check();
-            ItemAdded && ItemAdded("added");
-            successAlert("item added in cart.");
-        }
+            if (resp.data.uuid) {
+                removeItem && removeItem(uuid);
+            }
+            } else { errorAlert(resp.data.msg);
+            }
+        }).catch(_err => {
+            console.error("error", _err);
+        });
+        // if(auth && auth.id){
+        // }
+        // else {
+        //     if(is_surprise){
+        //         const surpriseItem = {
+        //             user_id: owner && owner.id,
+        //             name: owner && owner.name,
+        //             username:owner && owner.username,
+        //             uuid:Math.floor(100000000 + Math.random() * 900000),
+        //             user : {
+        //                 id: owner && owner.id,
+        //                 uuid: owner && owner.uuid,
+        //                 user_id: owner && owner.id,
+        //                 name: owner && owner.name,
+        //                 username:owner && owner.username, 
+        //             },
+        //             product: "surprise",
+        //             surprise_message: surprise_message,
+        //             wishname: "Surprise Gift",
+        //             quantity: 1,
+        //             stripe_product_id: null,
+        //             price: surprise_amount,
+        //             price_id: null,
+        //             item_url: null,
+        //             subscription: null,
+        //             subscription_period: null,
+        //             repeat_purchase: null,
+        //             category: null,
+        //             perma_link: "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"
+        //         }
+        //         dispatch(add_to_cart(surpriseItem));
+        //         console.log("cart_item surprise", surpriseItem);
+        //         ItemAdded && ItemAdded("added");
+        //     } else {
+        //         let cart_items = {...itemMain};
+        //         if(item && item.subscription == "2"){
+        //             cart_items['price'] = amount;
+        //         }
+        //         dispatch(add_to_cart(cart_items));
+        //         ItemAdded && ItemAdded("added");
+        //     }
+        //     check();
+        //     ItemAdded && ItemAdded("added");
+        //     successAlert("item added in cart.");
+        // }
         setLoading(false);
     };
 
-    const cartData = useSelector(state => state.data.cart.cart);
-    const loggedInUserId = null;
+    // const cartData = useSelector(state => state.data.cart.cart);
+    // const loggedInUserId = null;
 
-    async function updateCartData (){
-        setTimeout(()=>{
-            if(cartData && cartData.length){
-                const data = transform(cartData, loggedInUserId);
-                localStorage && localStorage.setItem('cart',JSON.stringify(data));
-            }
-        },1000);
-    }
+    // async function updateCartData (){
+    //     setTimeout(()=>{
+    //         if(cartData && cartData.length){
+    //             const data = transform(cartData, loggedInUserId);
+    //             localStorage && localStorage.setItem('cart',JSON.stringify(data));
+    //         }
+    //     },1000);
+    // }
 
-    useEffect(()=>{
-        updateCartData();
-    },[cartData, loading]);
+    // useEffect(()=>{
+    //     updateCartData();
+    // },[cartData, loading]);
 
     return <>
         {custom ?

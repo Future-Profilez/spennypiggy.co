@@ -40,14 +40,12 @@ export default function CartTransform(){
         return acc;
       }, {});
     
-      // Calculate processing fee (20% of subtotal) for each user
       for (const userId in groupedData) {
         const userCart = groupedData[userId];
-        userCart.processingFee = 0.2 * userCart.subtotal; // 20% processing fee
+        userCart.processingFee = 0.2 * userCart.subtotal; 
         userCart.loggeInUser = loggedInUserId;
         outputData.push(userCart);
       }
-    
       return outputData;
     };
    

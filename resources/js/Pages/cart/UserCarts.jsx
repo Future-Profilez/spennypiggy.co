@@ -5,7 +5,7 @@ import PriceFormat from "@/includes/PriceFormat";
 
 export default function UserCarts(props) {
 
-    const { auth } = props;
+    const { auth, removeFromCart } = props;
     const { format } = PriceFormat();
     const datas = props.data;
     const [isChecked, setIsChecked] = useState(false);
@@ -58,7 +58,7 @@ export default function UserCarts(props) {
                     <div className="CartItemBox">
                         {datas?.items &&
                             datas?.items.map((c, i) => {
-                                return <CartItem data={c} key={i} />;
+                                return <CartItem removeFromCart={removeFromCart} data={c} key={i} />;
                             })}
                     </div>
 
