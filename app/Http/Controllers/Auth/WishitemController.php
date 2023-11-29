@@ -373,8 +373,7 @@ class WishitemController extends Controller
         }
     }
 
-    public function cartItems()
-    {
+    public function cartItems(){
         if (!empty(Auth::id())) {
             $user = User::where('id', Auth::id())->first();
             $carts = UserCart::where('user_id', $user->id)->where('status', 1)->get();
@@ -478,8 +477,90 @@ class WishitemController extends Controller
         ]);
     }
 
-    public function sendSurprise(Request $request)
-    {
+    public function anonymousCartItems($id) {
+        $carts = UserCart::where('device_id', $id)->where('status', 1)->get();
+        $groupedWishes = [];
+        foreach ($carts as $wish) {
+            $owner_id = $wish->owner_id;
+            if (!isset($groupedWishes[$owner_id])) {
+                $groupedWishes[$owner_id] = [];
+            }
+            $groupedWishes[$owner_id][] = [
+                'user' => $wish->user,
+                'wish' => $wish->wish ? $wish->wish->toArray() : [],
+                'owner' => $wish->owner->toArray(),
+                'url' => $wish->wish ? $wish->wish->perma_link : 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/',
+                'amount' => $wish->amount,
+                'priceid' => $wish->priceid,
+                'uuiddata' => $wish->uuid,
+                'tax' => $wish->tax,
+                'surprisemessage' => $wish->message ?? '',
+                'quantity' => $wish->quantity ?? '',
+            ];
+        }
+        $cart = [];
+        $key = 0;
+        foreach ($groupedWishes as $value) {
+            $cart[$key] = [
+                'user' => [
+                    'id' => $value[0]['owner']['id'],
+                    'name' => $value[0]['owner']['name'],
+                    'username' => $value[0]['owner']['username'],
+                    'uuid' => $value[0]['owner']['uuid'],
+                ],
+            ];
+
+            $total = 0;
+            $fee = 0;
+            foreach ($value as $k => $v) {
+
+                $price = $v['amount'] ? $v['amount'] : $v['wish']['price'];
+                $priceid = $v['priceid'] ? $v['priceid'] : $v['wish']['price_id'];
+
+                if (!empty($v['wish'])) {
+                    $cart[$key]['items'][$k] = [
+                        'id' => $v['wish']['id'],
+                        'uuid' => $v['wish']['uuid'],
+                        'user_id' => $v['wish']['user_id'],
+                        'wishname' => $v['wish']['wishname'],
+                        'stripe_product_id' => $v['wish']['stripe_product_id'],
+                        'price' => $price,
+                        'price_id' => $priceid,
+                        'item_url' => $v['wish']['item_url'],
+                        'subscription' => $v['wish']['subscription'],
+                        'subscription_period' => $v['wish']['subscription_period'],
+                        'repeat_purchase' => $v['wish']['repeat_purchase'],
+                        'category' => $v['wish']['category'],
+                        'url' => $v['url'],
+                        'quantity' => $v['quantity'],
+                    ];
+                } else {
+                    $cart[$key]['items'][$k] = [
+                        'price' => $price,
+                        'wishname' => 'Surprise Gift',
+                        'uuid' => $v['uuiddata'],
+                        'price_id' => $priceid,
+                        'product' => 'surprise',
+                        'url' => $v['url'],
+                        'surprise_message' => $v['surprisemessage'],
+                        'quantity' => $v['quantity'],
+                    ];
+                }
+                $total += !empty($v['priceid']) ? $v['amount'] : $v['wish']['price'];
+                $fee += !empty($v['priceid']) ? $v['tax'] : $v['wish']['tax_amount'];
+            }
+            $cart[$key]['total'] = $total;
+            $cart[$key]['fee'] = $fee;
+
+            $key++;
+        }
+        return response()->json([
+            "success" => true,
+            "carts" => $carts,
+        ]);
+    }
+
+    public function sendSurprise(Request $request){
 
         $request->validate([
             "message" => [

@@ -58,7 +58,7 @@ export default function UserCarts(props) {
                     <div className="CartItemBox">
                         {datas?.items &&
                             datas?.items.map((c, i) => {
-                                return <CartItem removeFromCart={removeFromCart} data={c} key={i} />;
+                                return <CartItem data={c} key={i} />;
                             })}
                     </div>
 

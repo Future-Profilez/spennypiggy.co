@@ -119,13 +119,15 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('stripe/Stripe');
     })->middleware(['auth', 'verified'])->name('stripe')->middleware('mustHaveToVerify');
 
-
     //update cart quantity
     Route::post('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity')->middleware('mustHaveToVerify');
 });
 
 Route::get('/add-to-cart/{uuid}/{device_id}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
+
 Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
+
+Route::get('anonymous-cart/{id}', [WishitemController::class, 'anonymousCartItems'])->name('anonymous-cart');
 
 Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
 /*Anonymous checkout*/
