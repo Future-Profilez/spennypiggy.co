@@ -262,8 +262,6 @@ class WishitemController extends Controller
     public function addToCart($uuid, $amount = null)
     {
         $wishitem = WishItem::where('uuid', $uuid)->first();
-
-
         if (Auth::id() == $wishitem->user_id) {
             return response()->json([
                 "success" => true,
@@ -284,10 +282,8 @@ class WishitemController extends Controller
 
         $cart = UserCart::where('wish_id', $wishitem->id)->where("user_id", Auth::id())->first();
         if ($cart) {
-
-
-            if ($cart->status == 0) {
                 $cart->status = 1;
+                $cart->quantity = $cart->quantity+1;
                 if ($wishitem->subscription == 2) {
                     $fullfillamount = $amount;
                     $tax =  ceil($amount * env('TAX_PERCENTAGE') / 100);
@@ -314,17 +310,6 @@ class WishitemController extends Controller
                     "uuid" => $cart->uuid,
                     "msg" => "Item added to cart.",
                 ]);
-            } else {
-                $cart->status = 0;
-                $cart->save();
-
-                return response()->json([
-                    "success" => true,
-                    'added' => false,
-                    'msg' => "Item removed from cart",
-                    "uuid" => $cart->uuid,
-                ]);
-            }
         } else {
             if ($wishitem->subscription == 2) {
                 $fullfillamount = $amount;

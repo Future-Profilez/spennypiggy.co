@@ -14,36 +14,40 @@ export default function Cart(props) {
     const { auth, user, carts } = props;
     const [ cartsItems, setCartItems ] = useState([]);
     const cartData = useSelector(state => state.data.cart.cart);
-
     const loggedInUserId = null; 
+    
+    const updateCartdata = async () => {
+        if(cartData && cartData.length){
+            const data = transform(cartData, loggedInUserId);
+            localStorage.setItem('cart',JSON.stringify(data));
+            setCartItems(data);
+            return true;
+        } else {
+            const local_data = localStorage && localStorage.getItem('cart');
+            console.log("local_data",local_data)
+            if(local_data){
+                setCartItems(JSON.parse(local_data));
+            }
+            return true;
+        }  
+    }
+
     useEffect(()=>{
         if(auth && auth.user && auth.user.id){
             setCartItems(props.carts);
         } else {
-            if(cartData && cartData.length){
-                const data = transform(cartData, loggedInUserId);
-                localStorage.setItem('cart',JSON.stringify(data));
-                setCartItems(data);
-            } else {
-                const local_data = localStorage && localStorage.getItem('cart');
-                console.log("local_data",local_data)
-                if(local_data){
-                    setCartItems(JSON.parse(local_data));
-                }
-            }
+            updateCartdata();
         }
     },[cartData, auth.id]);
 
     console.log("cart props", carts);
-
     console.log("cartsItems", cartsItems);
-
     console.log("cartData", cartData);
 
     return (
             <Authenticated auth={auth.user} user={user}>
-                <Head title={"My Cart"} />
-                <div className=" blackbg">
+                <Head title={"Cart"} />
+                <div className="blackbg">
                     <div className="container pb-5 ">
                         <h2 className="text-bl font-GillSans pt-5 pt-3 pb-0 text-center text-2xl uppercase text-white">Cart</h2>
                         {cartsItems && cartsItems.length ? <>
