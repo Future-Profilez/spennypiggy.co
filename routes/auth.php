@@ -83,7 +83,7 @@ Route::middleware('auth')->group(function () {
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update')->middleware('mustHaveToVerify');
 
-    Route::get('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout')->middleware('mustHaveToVerify');
+    Route::get('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     // Route::get('dashboard', [AuthenticatedSessionController::class, 'getUserProfile'])->name('dashboard');
 
     // Route::prefix("/")

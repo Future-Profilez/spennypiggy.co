@@ -487,7 +487,7 @@ class WishitemController extends Controller
                 "string",
             ],
             "amount" => [
-                "required",
+                "required", 
             ],
         ]);
 
