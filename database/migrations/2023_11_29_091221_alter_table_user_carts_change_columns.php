@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('user_carts', function (Blueprint $table) {
             $table->bigInteger('owner_id')->unsigned()->nullable()->change();
-            $table->bigInteger('quantity')->unsigned()->default(1)->change();
+            $table->bigInteger('quantity')->unsigned()->default(0)->change();
         });
     }
 
