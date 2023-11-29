@@ -4,6 +4,7 @@ import Popup from "@/Components/Popup";
 import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
 import { useForm } from "@inertiajs/react";
+import ToCart from "./ToCart";
 
 export default function SendSurprise({auth, owner}) {
    
@@ -12,34 +13,34 @@ export default function SendSurprise({auth, owner}) {
    const [close, setClose] = useState();
    const { data, setData, post, processing, errors, reset } = useForm({
       amount:  '',
-      message: '',
+      message: ''
    });
  
    const sendSurprize = (e) => {
+      e.preventDefault();
       if(!data.amount){
          errorAlert("Choose a valid amount.");
          return false;
       }
-      e.preventDefault();
       post(route(`send-surprize`, {"owner_id": owner, "amount":data.amount, "message":data.message}), {
-         preserveScroll: true,
-         onSuccess: (resp) => {
-            setClose(false);
-            setTimeout(()=>{
-               setClose();
-            });
-            reset();
-            if (resp.props.flash?.success) {
-               successAlert(resp.props.flash?.success || "Added");
-           }
-           if (resp.props.flash?.error) {
-               errorAlert(resp.props.flash?.error);
-           }
-         },
-         onError: (_err) => {
-            console.error(_err);
-         }
-     });
+            preserveScroll: true,
+            onSuccess: (resp) => {
+               setClose(false);
+               setTimeout(()=>{
+                  setClose();
+               });
+               reset();
+               if (resp.props.flash?.success) {
+                  successAlert(resp.props.flash?.success || "Added");
+            }
+            if (resp.props.flash?.error) {
+                  errorAlert(resp.props.flash?.error);
+            }
+            },
+            onError: (_err) => {
+               console.error(_err);
+            }
+      });
    };
 
     return (
@@ -73,6 +74,7 @@ export default function SendSurprise({auth, owner}) {
                      type="text"
                   />
             </div>
+
             <LoaderButton onClick={sendSurprize}
                disabled={processing}
                type='submit'
@@ -81,19 +83,18 @@ export default function SendSurprise({auth, owner}) {
                   {processing ? "Proccessing" : auth && auth.name ? "Add to cart" : "Send Gift"}
             </LoaderButton>
 
-            {/* <ToCart auth={auth} 
-               ItemAdded={ItemAdded}
-               pending={item.price - item.fullfill_amount}
-               crowd={item.subscription == 2}
-               amount={cartamount} 
-               item={item}
-               isEqual={item.price <= item.fullfill_amount}
-               is_cart={is_cart}
-               text={`Add To Cart And Checkout`}
-               checkoutbtn={true}
-               classes={`btn-pink lg w-100 mb-3 font-CeraGR ${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
-               uuid={uuid}
-            /> */}
+            <ToCart auth={auth} 
+               // ItemAdded={ItemAdded}
+               // pending={item.price - item.fullfill_amount}
+               crowd={false}
+               // amount={data.amount} 
+               item={null}
+               text={`Add To Cart`}
+               classes={`btn-pink lg w-100 mb-3 font-CeraGR`}
+               surprise_amount={data.amount}
+               is_surprise={true} 
+               surprise_message={data.message}
+            />
             
         </Popup>
     );

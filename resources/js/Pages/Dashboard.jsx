@@ -45,8 +45,6 @@ export default function Dashboard(props) {
             <Head title={user && user.name} />
             <div className='wishlistPage blackbg pt-8 pb-14 '>
                 <div className='containerbox'>
-                    <h3>{cartCounter}</h3>
-                    <button onClick={()=>setCartCounter(33)} >Onchange</button>
                     <div className='wishbanner d-lg-block d-none'>
                         <img className='w-full  border-black border-2 shadow-mint rounded-2xl' src={user?.cover_url || wishlistbannerimg} alt='img' />
                     </div>

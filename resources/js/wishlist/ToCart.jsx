@@ -10,7 +10,8 @@ import { useEffect } from 'react';
 import CartTransform from '@/includes/CartTransform';
 
 export default function ToCart({ 
-    is_surprise, surprise_amount, owner, surprise_message, 
+    is_surprise, surprise_amount, surprise_message, 
+    owner, 
     auth, actionfrom, checkoutbtn, ItemAdded, item, crowd, pending, uuid, text, classes, custom, removeItem, type, is_cart, amount, isEqual }) {
     
     const { transform } = CartTransform();
@@ -54,7 +55,7 @@ export default function ToCart({
 
     const addtocart = async (sets) => {
         function check(){
-            if (type == "checkout") {
+            if (checkoutbtn) {
                 window.location = "/cart";
             }
         }
@@ -77,12 +78,13 @@ export default function ToCart({
         
         setLoading(true);
 
-        if(auth){
+        console.log("auth",auth)
+        if(auth && auth.id){
             axios.get(`/add-to-cart/${uuid}${amount ? `/${amount}` : ''}`).then(resp => {
             if (resp.data.success) {
                 if (resp.data.added == true) {
                     successAlert(resp.data.msg);
-                    ItemAdded("added");
+                    ItemAdded && ItemAdded("added");
                     check();
                 } else {
                     successAlert(resp.data.msg);
@@ -98,17 +100,19 @@ export default function ToCart({
         }
         else {
             if(is_surprise){
-                let cart_item = {...surpriseItem};
-                dispatch(add_to_cart(cart_item));
+                let cart_items = {...surpriseItem};
+                dispatch(add_to_cart(cart_items));
+
+                console.log("cart_item surprise", cart_items);
             } else {
-                let cart_item = {...itemMain};
+                let cart_items = {...itemMain};
                 if(item && item.subscription == "2"){
-                    cart_item['price'] = amount;
+                    cart_items['price'] = amount;
                 }
-                dispatch(add_to_cart(cart_item));
+                dispatch(add_to_cart(cart_items));
             }
             check();
-            ItemAdded("added");
+            ItemAdded && ItemAdded("added");
             successAlert("item added in cart.");
         }
         setLoading(false);
