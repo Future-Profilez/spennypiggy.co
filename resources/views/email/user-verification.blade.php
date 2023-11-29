@@ -3,9 +3,11 @@
 @section('content')
 
 <tr>
+     {{-- width="100%"  --}}
+{{-- max-width: 296px;  --}}
     <td align="center" style="padding:10px 10px 20px 10px;">
-        <table width="100%" cellspacing="0" cellpadding="0" border="0"
-            style="max-width: 296px; width: 100%; text-align: center;">
+        <table cellspacing="0" cellpadding="0" border="0"
+            style="width: 100%; text-align: center;">
             {{-- <tr>
             <td style="font-family: Arial; font-weight: bold; font-size: 18px; color:#000; line-height: 26px; padding: 0 0 25px 0; text-align: center;">New <span style="color: #8C52FF">Granted Wish</span>  on <br> Spenny Piggy 🎁 </td>
         </tr> --}}
@@ -30,8 +32,8 @@
 
             <tr>
                 <a style="background-color:#F94F97;color:white;border:none"><a
-                        href="{{ env('APP_URL') }}/user/{{ $data['uuid'] }}" 
-                         style="padding:13px 30px 13px 30px; width: 210px; 
+                        href="{{ env('APP_URL') }}/user/{{ $data['uuid'] }}"
+                         style="padding:13px 30px 13px 30px; width: 210px;
                          text-decoration:none; border:none;background-color: #F94F97;
                           font-family: Arial; font-weight: bold; font-size:
                            15px; text-align: center; color:#ffffff; cursor: pointer;"
