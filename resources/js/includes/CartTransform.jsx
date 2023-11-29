@@ -27,6 +27,7 @@ export default function CartTransform(){
           stripe_product_id: item.stripe_product_id || '',
           price: item.price || '',
           price_id: item.price_id || '',
+          quantity: 1,
           item_url: item.item_url || '',
           subscription: item.subscription || '',
           subscription_period: item.subscription_period || '',
