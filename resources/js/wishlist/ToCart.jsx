@@ -97,6 +97,7 @@ export default function ToCart({
                     product: "surprise",
                     surprise_message: surprise_message,
                     wishname: "Surprise Gift",
+                    quantity: 1,
                     stripe_product_id: null,
                     price: surprise_amount,
                     price_id: null,

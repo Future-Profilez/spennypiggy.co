@@ -43,7 +43,7 @@ export default function SendSurprise({auth, owner}) {
       });
    };
 
-   console.log("surprise owner", owner)
+   console.log("surprise owner", auth)
 
     return (
         <Popup
@@ -77,15 +77,16 @@ export default function SendSurprise({auth, owner}) {
                   />
             </div>
 
-            <LoaderButton onClick={sendSurprize}
-               disabled={processing}
-               type='submit'
-                  className="flex w-100 btn-pink lg mx-auto"
-                  spinnerClassName="fill-red-600" >
-                  {processing ? "Proccessing" : auth && auth.name ? "Add to cart" : "Send Gift"}
-            </LoaderButton>
-
-            <ToCart auth={auth} 
+            {auth.id ? 
+               <LoaderButton onClick={sendSurprize}
+                  disabled={processing}
+                  type='submit'
+                     className="flex w-100 btn-pink lg mx-auto"
+                     spinnerClassName="fill-red-600" >
+                     {processing ? "Proccessing" : auth && auth.name ? "Add to cart" : "Send Gift"}
+               </LoaderButton>
+               :
+               <ToCart auth={auth} 
                // ItemAdded={ItemAdded}
                // pending={item.price - item.fullfill_amount}
                crowd={false}
@@ -96,7 +97,8 @@ export default function SendSurprise({auth, owner}) {
                surprise_amount={data.amount}
                is_surprise={true} 
                surprise_message={data.message}
-            />
+               />
+            }
             
         </Popup>
     );

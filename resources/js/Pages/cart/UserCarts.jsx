@@ -15,11 +15,12 @@ export default function UserCarts(props) {
     const [loading, setLoading] = useState(false);
     
     const handleSubmit = (e) => {
+        console.log(auth && auth.id)
         e.preventDefault();
         if (auth && auth.id) {
             window.location.href = `/create-checkout-session/${datas?.user?.id}?message=${message}&from=${name}&email=${email}`;
         } else {
-            setLoading(true);
+            // setLoading(true);
             router.post(`/anonymous-create-checkout-session?message=${message}&from=${name}&email=${email}`, { 'data': datas }), {
                 preserveScroll: true,
                 onSuccess: (resp) => {
@@ -27,7 +28,7 @@ export default function UserCarts(props) {
                     console.log("resp", resp);
                 },
                 onError: (_err) => {
-                    console.error(_err);
+                    console.error("cart",_err);
                     setLoading(false);
                 }
             };
