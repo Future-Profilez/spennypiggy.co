@@ -50,8 +50,7 @@ export default function Dashboard(props) {
     );
     const { cartCounter, setCartCounter } = useState();
 
-    console.log("props",props);
-    
+    console.log("props", props);
     return (
         <Guest auth={auth.user} user={user}>
             <Head title={user && user.name} />

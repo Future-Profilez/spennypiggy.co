@@ -399,7 +399,9 @@ class WishitemController extends Controller
                     'amount' => $wish->amount,
                     'priceid' => $wish->priceid,
                     'uuiddata' => $wish->uuid,
-                    'tax' => $wish->tax
+                    'tax' => $wish->tax,
+                    'surprisemessage' => $wish->message ?? '',
+                    'quantity' => $wish->quantity ?? '',
                 ];
             }
 
@@ -444,6 +446,7 @@ class WishitemController extends Controller
                             'repeat_purchase' => $v['wish']['repeat_purchase'],
                             'category' => $v['wish']['category'],
                             'url' => $v['url'],
+                            'quantity' => $v['quantity'],
                         ];
                     } else {
                         $cart[$key]['items'][$k] = [
@@ -453,6 +456,8 @@ class WishitemController extends Controller
                             'price_id' => $priceid,
                             'product' => 'surprise',
                             'url' => $v['url'],
+                            'surprise_message' => $v['surprisemessage'],
+                            'quantity' => $v['quantity'],
                         ];
                     }
 
@@ -487,7 +492,7 @@ class WishitemController extends Controller
                 "string",
             ],
             "amount" => [
-                "required", 
+                "required",
             ],
         ]);
 
@@ -563,5 +568,27 @@ class WishitemController extends Controller
             "success" => true,
             "counts" => $items,
         ]);
+    }
+
+    public function updateCartQuantity($uuid, $quantity)
+    {
+        try {
+            $cart = UserCart::whereUuid($uuid)->first();
+            if (!empty($cart)) {
+                $cart->quantity = $quantity ?? 1;
+                $cart->save();
+                return response()->json([
+                    "success" => true,
+                    "message" => 'Quantity updated successfully',
+                ]);
+            } else {
+                return response()->json([
+                    "success" => false,
+                    "message" => 'Unable to update quantity',
+                ]);
+            }
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
     }
 }
