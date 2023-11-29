@@ -83,7 +83,7 @@ Route::middleware('auth')->group(function () {
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update')->middleware('mustHaveToVerify');
 
-    Route::get('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout')->middleware('mustHaveToVerify');
+    Route::get('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     // Route::get('dashboard', [AuthenticatedSessionController::class, 'getUserProfile'])->name('dashboard');
 
     // Route::prefix("/")
@@ -130,7 +130,7 @@ Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
 
 Route::post('/anonymous-create-checkout-session', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
 
-Route::get('/anonymous-sucess-checkout/{id}/{cart_id?}', [StripeController::class, 'anonymousSuccessCheckout'])->name('checkout.anonymous.success');
+Route::get('/anonymous-sucess-checkout/{id}', [StripeController::class, 'anonymousSuccessCheckout'])->name('checkout.anonymous.success');
 
 Route::get('/anonymous-cancel-checkout/{id}', [StripeController::class, 'anonymousCancelCheckout'])->name('checkout.anonymous.cancel');
 
