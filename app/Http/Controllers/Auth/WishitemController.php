@@ -552,7 +552,6 @@ class WishitemController extends Controller
         //     'added' => true,
         //     "msg" => "Item added to cart.",
         // ]);
-
         return back()->with('success', 'Gift item has been added in cart.');
         // return back()->with('success', 'Gift added in cart.');
     }

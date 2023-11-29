@@ -54,23 +54,10 @@ export default function Dashboard(props) {
     return (
         <Guest auth={auth.user} user={user}>
             <Head title={user && user.name} />
-<<<<<<< HEAD
             <div className='wishlistPage blackbg pt-8 pb-14 '>
                 <div className='containerbox'>
                     <div className='wishbanner d-lg-block d-none'>
                         <img className='w-full  border-black border-2 shadow-mint rounded-2xl' src={user?.cover_url || wishlistbannerimg} alt='img' />
-=======
-            <div className="wishlistPage blackbg pt-8 pb-14 ">
-                <div className="containerbox">
-                    <h3>{cartCounter}</h3>
-                    <button onClick={() => setCartCounter(33)}>Onchange</button>
-                    <div className="wishbanner d-lg-block d-none">
-                        <img
-                            className="w-full  border-black border-2 shadow-mint rounded-2xl"
-                            src={user?.cover_url || wishlistbannerimg}
-                            alt="img"
-                        />
->>>>>>> bc366e33e638197f965b79eaf0588a906a86369b
                     </div>
                     <div className="wishManage">
                         <div className="row">

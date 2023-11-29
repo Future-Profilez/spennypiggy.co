@@ -9,6 +9,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
 
 class SocialLinksController extends Controller
@@ -56,6 +57,8 @@ class SocialLinksController extends Controller
                         'updated_at' => Carbon::now(),
                     ]);
                     return redirect(route("user.show", ["username" => $user->username]))->with('success', "social links added successfully.");
+               
+                    // return ->with('success', "social links added successfully.");
                 }
             }
         } catch (\Throwable $th) {
