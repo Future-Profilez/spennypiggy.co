@@ -119,6 +119,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/stripe', function () {
         return Inertia::render('stripe/Stripe');
     })->middleware(['auth', 'verified'])->name('stripe')->middleware('mustHaveToVerify');
+
+
+    //update cart quantity
+    Route::post('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity')->middleware('mustHaveToVerify');
 });
 
 Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');

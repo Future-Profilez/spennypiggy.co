@@ -19,7 +19,6 @@ export default function CartTransform(){
     
         const itemSubtotal = parseFloat(item.price);
         acc[userId].subtotal += itemSubtotal;
-    
         acc[userId].items.push({
           id: item.id || '',
           uuid: item.uuid || '',
@@ -34,6 +33,8 @@ export default function CartTransform(){
           repeat_purchase: item.repeat_purchase || '',
           category: item.category || '',
           url: item.perma_link || '',
+          product:item.product || '',
+          surprise_message: item.surprise_message || '',
         });
         return acc;
       }, {});

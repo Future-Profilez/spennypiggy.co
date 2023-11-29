@@ -192,15 +192,12 @@ export default function Home({ auth, laravelVersion, user }) {
                             Happy Creators
                         </h2>
                         <div className="creatorslider">
-                            <Swiper
-                                spaceBetween={0}
+                            <Swiper spaceBetween={0}
                                 pagination={{ clickable: true }}
                                 modules={[Pagination]}
-                                slidesPerView={width < "1199" ? 1 : 3}
-                                >
+                                slidesPerView={width < "1199" ? 1 : 3} >
                                 {msg && msg.map((m , i)=>{ 
-                                    return <>
-                                         <SwiperSlide>
+                                    return <SwiperSlide key={`swiper-item-${i}`} >
                                             <div className="happyclientSec">
                                                 {/* <div className="clientdetail">
                                                     <img src={userimg} alt />
@@ -225,23 +222,22 @@ export default function Home({ auth, laravelVersion, user }) {
                                                    {m.date}
                                                 </div>
                                             </div>
-                                        </SwiperSlide>
-                                    </>
+                                    </SwiperSlide>
                                 })}
                             </Swiper>
                         </div>
                     </div>
                 </div>
 
-                <div class="joinus blackbg ">
-                    <h2 class="headingMd shadow-yellow mb-3 text-center mb-6 ">
+                <div className="joinus blackbg ">
+                    <h2 className="headingMd shadow-yellow mb-3 text-center mb-6 ">
                         Join thousands of creators
                     </h2>
-                    <p class="text-CeraGR mb-6 text-center mb-16 font-CeraGRBold text-wh mb-5">
+                    <p className="text-CeraGR mb-6 text-center mb-16 font-CeraGRBold text-wh mb-5">
                         Create your wishlist and start receiving gift's from your
                         fans right away!
                     </p>
-                    <div class="1text-center rotate-btn text-center flex items-center  justify-center content-center w-full">
+                    <div className="1text-center rotate-btn text-center flex items-center  justify-center content-center w-full">
                         <Link href={route("register")}
                             className="btn-pink lg w-80 shadow-mint border-mint" >Join SpennyPiggy </Link>
                     </div>

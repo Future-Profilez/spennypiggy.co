@@ -226,11 +226,11 @@ export default function Register() {
                                             <div className="pass greybox border-0 p-3" >
                                                 <div id="msgText">
                                                     <h3>Password must contain the following:</h3>
-                                                    <p id="letter" class="text-grey"><CheckCircleIcon /> &nbsp;A <b> lowercase</b> letter</p>
-                                                    <p id="capital" class="text-grey"><CheckCircleIcon /> &nbsp;A <b> capital (uppercase)</b> letter</p>
-                                                    <p id="number" class="text-grey"><CheckCircleIcon /> &nbsp;A <b> number</b></p>
-                                                    <p id="special" class="text-grey"><CheckCircleIcon /> &nbsp;Special characters</p>
-                                                    <p id="length" class="text-grey mb-0"><CheckCircleIcon /> &nbsp;Password should minimum 8 characters.</p>
+                                                    <p id="letter" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> lowercase</b> letter</p>
+                                                    <p id="capital" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> capital (uppercase)</b> letter</p>
+                                                    <p id="number" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> number</b></p>
+                                                    <p id="special" className="text-grey"><CheckCircleIcon /> &nbsp;Special characters</p>
+                                                    <p id="length" className="text-grey mb-0"><CheckCircleIcon /> &nbsp;Password should minimum 8 characters.</p>
                                                 </div>
                                             </div>
                                         </div>

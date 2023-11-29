@@ -10,7 +10,7 @@
     <form action="{{ route('verify.email') }}" method="post">
         @csrf
         <input type="hidden" name="id" value="{{ $id }}">
-        <input type="submit" value="Verify Email" class="btn btn-primary">
+        <input type="submit" value="Verify Email" className="btn btn-primary">
     </form>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
   </body>

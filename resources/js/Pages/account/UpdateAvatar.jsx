@@ -23,7 +23,7 @@ export default function UpdateAvatar({getImageUID, text, close, type }) {
     }
 
     return <>
-        <Popup modalclass="updateavatar" action={ClosePop} text={text}  >
+        <Popup modalclassName="updateavatar" action={ClosePop} text={text}  >
              <div className='editprofileModal  innermodal  '>
                 <div className='editprofileModalInner shadow-pink  p-4'>
                     <h2 className="updateprofile" > Update {type == 'cover' ? "Cover":"Profile"} Image </h2>

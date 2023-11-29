@@ -158,18 +158,15 @@ export default function Dashboard(props) {
                                                     {categories &&
                                                         categories.map(
                                                             (c, i) => {
-                                                                return (
-                                                                    <option
+                                                                return  <option key={`cats-${i}`}
                                                                         value={
                                                                             c.id
                                                                         }
-                                                                        key={`cat-${c.category}`}
                                                                     >
                                                                         {
                                                                             c.category
                                                                         }
                                                                     </option>
-                                                                );
                                                             }
                                                         )}
                                                 </select>
@@ -203,8 +200,7 @@ export default function Dashboard(props) {
                                                 {its && its.length ? (
                                                     !loading &&
                                                     its.map((c, i) => {
-                                                        return (
-                                                            <div className="col-xl-4 col-lg-6 col-6">
+                                                        return <div key={`wish-item-${i}`} className="col-xl-4 col-lg-6 col-6">
                                                                 <Wishlistbox
                                                                     fetchingcats={
                                                                         fetchingcats
@@ -224,8 +220,7 @@ export default function Dashboard(props) {
                                                                     itm={c}
                                                                     key={`wish-${c.uuid}`}
                                                                 />
-                                                            </div>
-                                                        );
+                                                        </div>
                                                     })
                                                 ) : (
                                                     <>

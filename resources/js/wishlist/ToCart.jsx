@@ -84,24 +84,28 @@ export default function ToCart({
         else {
             if(is_surprise){
                 const surpriseItem = {
-                    id: owner && owner.id,
-                    uuid: owner && owner.uuid,
-                    user_id: owner && owner.user_id,
+                    user_id: owner && owner.id,
                     name: owner && owner.name,
                     username:owner && owner.username,
-                    uuid:null,
+                    user : {
+                        id: owner && owner.id,
+                        uuid: owner && owner.uuid,
+                        user_id: owner && owner.id,
+                        name: owner && owner.name,
+                        username:owner && owner.username, 
+                    },
                     product: "surprise",
                     surprise_message: surprise_message,
                     wishname: "Surprise Gift",
                     stripe_product_id: null,
                     price: surprise_amount,
                     price_id: null,
-                    item_url: "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/",
+                    item_url: null,
                     subscription: null,
                     subscription_period: null,
                     repeat_purchase: null,
                     category: null,
-                    url: "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"
+                    perma_link: "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"
                 }
                 dispatch(add_to_cart(surpriseItem));
                 console.log("cart_item surprise", surpriseItem);

@@ -8,7 +8,7 @@
     <!-- Metas start -->
     <link rel="canonical" href="https://spennypiggy.co" />
     <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,maximum-scale=2" />
-    <link rel="manifest"  href={{env("FILE_URL")."/manifest.json"}} />
+    <link rel="manifest"  href="/manifest.json" />
     <link rel="mask-icon" href={{env("FILE_URL")."/favicon.ico"}} />
     <link rel="icon" href={{env("FILE_URL")."/favicon.ico"}} />
     <link rel="apple-touch-icon" href={{env("FILE_URL")."/favicon.ico"}} />
@@ -36,7 +36,7 @@
 
     <script type="text/javascript"> 
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('https://d352qugnflhnxw.cloudfront.net/10954687-295e-4a13-9c92-1688e776c243/service-worker.js', {scope: '.'
+            navigator.serviceWorker.register('/service-worker.js', {scope: '.'
             }).then(function (registration) {
                 console.log('Service worker installed: ', registration.scope);
             }, function (err) {
@@ -53,7 +53,7 @@
     @inertiaHead
 </head>
 
-<body class="font-sans antialiased">
+<body className="font-sans antialiased">
     @inertia
 </body>
 
