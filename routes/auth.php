@@ -111,7 +111,6 @@ Route::middleware('auth')->group(function () {
 
     Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category')->middleware('mustHaveToVerify');
 
-    Route::get('/add-to-cart/{uuid}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart')->middleware('mustHaveToVerify');
     Route::get('account', function () {
         return Inertia::render('accountsetting/Accountsetting');
     })->name("account")->middleware('mustHaveToVerify');
@@ -125,6 +124,7 @@ Route::middleware('auth')->group(function () {
     Route::post('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity')->middleware('mustHaveToVerify');
 });
 
+Route::get('/add-to-cart/{uuid}/{device_id}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
 Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 
 Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
