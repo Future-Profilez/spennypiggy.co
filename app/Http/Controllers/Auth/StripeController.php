@@ -258,8 +258,8 @@ class StripeController extends Controller
             ]);
             $stripePaymentDetail->refresh();
         }
-
         return Inertia::location($sessionCreate->url);
+        
     } catch (\Throwable $th) {
         // Log::error("Error in createCheckout: " . $th->getMessage());
         throw $th;
