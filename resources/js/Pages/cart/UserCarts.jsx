@@ -156,7 +156,7 @@ export default function UserCarts(props) {
                                                 I have taken the necessary steps
                                                 to confirm the wishlist owner is
                                                 authentic and I understand that
-                                                WishTender will not be held
+                                                Spenny Piggy will not be held
                                                 responsible for any issues
                                                 arising from a catfishing
                                                 situation.

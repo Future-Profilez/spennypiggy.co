@@ -10,28 +10,11 @@ import { useEffect } from 'react';
 import CartTransform from '@/includes/CartTransform';
 
 export default function ToCart({ 
-    is_surprise, surprise_amount, surprise_message, 
-    owner, 
+    is_surprise, surprise_amount, surprise_message, owner, 
     auth, actionfrom, checkoutbtn, ItemAdded, item, crowd, pending, uuid, text, classes, custom, removeItem, type, is_cart, amount, isEqual }) {
     
     const { transform } = CartTransform();
-    const surpriseItem = {
-        product: "surprise",
-        surprise_message: surprise_message,
-        id: null,
-        uuid: null,
-        user_id: owner,
-        wishname: "Surprise Gift",
-        stripe_product_id: null,
-        price: surprise_amount,
-        price_id: null,
-        item_url: "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/",
-        subscription: null,
-        subscription_period: null,
-        repeat_purchase: null,
-        category: null,
-        url: "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"
-    }
+   
 
     const [itemMain, setItemMain] = useState(item);
     const dispatch = useDispatch();
@@ -100,10 +83,28 @@ export default function ToCart({
         }
         else {
             if(is_surprise){
-                let cart_items = {...surpriseItem};
-                dispatch(add_to_cart(cart_items));
-
-                console.log("cart_item surprise", cart_items);
+                const surpriseItem = {
+                    id: owner && owner.id,
+                    uuid: owner && owner.uuid,
+                    user_id: owner && owner.user_id,
+                    name: owner && owner.name,
+                    username:owner && owner.username,
+                    uuid:null,
+                    product: "surprise",
+                    surprise_message: surprise_message,
+                    wishname: "Surprise Gift",
+                    stripe_product_id: null,
+                    price: surprise_amount,
+                    price_id: null,
+                    item_url: "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/",
+                    subscription: null,
+                    subscription_period: null,
+                    repeat_purchase: null,
+                    category: null,
+                    url: "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"
+                }
+                dispatch(add_to_cart(surpriseItem));
+                console.log("cart_item surprise", surpriseItem);
             } else {
                 let cart_items = {...itemMain};
                 if(item && item.subscription == "2"){

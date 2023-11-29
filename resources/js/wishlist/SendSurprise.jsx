@@ -43,6 +43,8 @@ export default function SendSurprise({auth, owner}) {
       });
    };
 
+   console.log("surprise owner", owner)
+
     return (
         <Popup
             modalclass="pinkmodal sendSurprize-modal"
@@ -87,7 +89,7 @@ export default function SendSurprise({auth, owner}) {
                // ItemAdded={ItemAdded}
                // pending={item.price - item.fullfill_amount}
                crowd={false}
-               // amount={data.amount} 
+               owner={owner} 
                item={null}
                text={`Add To Cart`}
                classes={`btn-pink lg w-100 mb-3 font-CeraGR`}
