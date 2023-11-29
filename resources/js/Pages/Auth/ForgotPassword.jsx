@@ -4,9 +4,11 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, useForm,Link } from '@inertiajs/react';
 import LoaderButton from '@/Components/LoaderButton';
+import { useAlerts } from '@/Components/Alerts';
 
 export default function ForgotPassword(props) {
 
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const {status, auth} = props;
     const { data, setData, post, processing, errors } = useForm({
         email: '',
@@ -14,7 +16,22 @@ export default function ForgotPassword(props) {
 
     const submit = (e) => {
         e.preventDefault();
-        post(route('password.email'));
+        post(route(`password.email`), {
+            preserveScroll: true,
+            onSuccess: (resp) => {
+                if(resp.props.flash?.success){
+                    successAlert(resp.props.flash?.success || "Updated successfully.");
+                }
+                if(resp.props.flash?.error){
+                    errorAlert(resp.props.flash?.error || "Something went wrong.")
+                }
+                reset();
+            },
+            onError: (_err) => {
+                console.error(_err);
+                errorAlert(resp.props.flash?.success || "Added");
+            },
+        });
     };
 
     return (
@@ -53,11 +70,9 @@ export default function ForgotPassword(props) {
                                             isFocused={true}
                                             onChange={(e) => setData('email', e.target.value)}
                                         />
-
                                         <InputError message={errors.email} className="mt-2" />
-
-                                        <div className='wishlistbtn  rotate-btn text-center flex justify-center '>
-                                            <LoaderButton disabled={processing} className='btn-pink lg lg2 mb-4 mb-md-0' 
+                                        <div className='wishlistbtn mt-3 text-center flex justify-center '>
+                                            <LoaderButton disabled={processing} className='btn-pink lg lg2  mb-md-0' 
                                             spinnerClassName='fill-red-600'>{processing ? "Sending..." : "Email Password Reset Link"}</LoaderButton>
                                         </div>
 

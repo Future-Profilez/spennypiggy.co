@@ -39,8 +39,7 @@ Route::middleware('guest')->group(function () {
 
     Route::post('login-user', [AuthenticatedSessionController::class, 'store'])->name('login-user')->middleware('mustHaveToVerify');
 
-    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
-        ->name('password.request');
+    
 
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
         ->name('password.email');
@@ -96,7 +95,6 @@ Route::middleware('auth')->group(function () {
 
     /*update wishitems */
     Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item')->middleware('mustHaveToVerify');
-    Route::get('/create-checkout-session/{owner_id}', [StripeController::class, 'createCheckout'])->name('create.checkout')->middleware('mustHaveToVerify');
     Route::get('/sucess-checkout/{id}', [StripeController::class, 'successCheckout'])->name('checkout.success')->middleware('mustHaveToVerify');
     Route::get('cancel-checkout/{id}', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel')->middleware('mustHaveToVerify');
 
@@ -123,11 +121,16 @@ Route::middleware('auth')->group(function () {
     Route::post('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity')->middleware('mustHaveToVerify');
 });
 
+Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
+        ->name('password.request');
+        
+Route::get('/create-checkout-session/{owner_id}/{deviceid}', [StripeController::class, 'createCheckout'])->name('create.checkout');
+
 Route::get('/add-to-cart/{uuid}/{device_id}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
 
 Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 
-Route::get('anonymous-cart/{id}', [WishitemController::class, 'anonymousCartItems'])->name('anonymous-cart');
+Route::get('anonymous-cart/{deviceId}', [WishitemController::class, 'anonymousCartItems'])->name('anonymous-cart');
 
 Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
 /*Anonymous checkout*/

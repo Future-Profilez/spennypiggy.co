@@ -2,9 +2,10 @@ import { useState } from "react";
 import CartItem from "./CartItem";
 import { Link, router } from "@inertiajs/react";
 import PriceFormat from "@/includes/PriceFormat";
+import DeviceID from "@/includes/DeviceID";
 
 export default function UserCarts(props) {
-
+    const deviceid  = DeviceID();
     const { auth, removeFromCart } = props;
     const { format } = PriceFormat();
     const datas = props.data;
@@ -15,24 +16,21 @@ export default function UserCarts(props) {
     const [loading, setLoading] = useState(false);
     
     const handleSubmit = (e) => {
-        console.log(auth && auth.id)
         e.preventDefault();
-        if (auth && auth.id) {
-            window.location.href = `/create-checkout-session/${datas?.user?.id}?message=${message}&from=${name}&email=${email}`;
-        } else {
-            // setLoading(true);
-            router.post(`/anonymous-create-checkout-session?message=${message}&from=${name}&email=${email}`, { 'data': datas }), {
+        // if (auth && auth.id) {
+            // window.location.href = `/create-checkout-session/${datas?.user?.id || 'no'}/${deviceid}?message=${message}&from=${name}&email=${email}`;
+        // } else {
+        //     // setLoading(true);
+            router.get(`/create-checkout-session/${datas?.user?.id || 'no'}/${deviceid}?message=${message}&from=${name}&email=${email}`), {
                 preserveScroll: true,
                 onSuccess: (resp) => {
-                    setLoading(false);
                     console.log("resp", resp);
                 },
                 onError: (_err) => {
                     console.error("cart",_err);
-                    setLoading(false);
                 }
             };
-        }
+        // }
     };
 
     const subtotal = datas && datas?.items.reduce((total, item) => +total + +item.price, 0);

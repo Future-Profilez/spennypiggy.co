@@ -176,74 +176,69 @@ class StripeController extends Controller
     }
 
     /* create checkout */
-
-    public function createCheckout($owner_id, Request $request)
-    {
-        try {
-            if (!empty($request)) {
-                $wordLimit = 100;
-                $message = $request->message;
-
-                if (str_word_count($message) > $wordLimit) {
-                    return redirect()->back()->with("error", "Max limit for message is 100 words");
-                }
-
-                $from = $request->from;
+    public function createCheckout($owner_id, $deviceid, Request $request)
+{
+    try {
+        if (!empty($request)) {
+            $wordLimit = 100;
+            $message = $request->message;
+            if (str_word_count($message) > $wordLimit) {
+                return redirect()->back()->with("error", "Max limit for message is 100 words");
             }
+            $from = $request->from;
+        }
 
-            $user = User::findOrFail(Auth::id());
-            $getdata = UserCart::where('user_id', Auth::id())
-                ->where('owner_id', $owner_id)
-                ->where('status', 1)
-                ->with(['wish'])
-                ->get();
+        $lineItems = [];
+        $subtotal = 0;
+        $taxNew = 0;
+        $transferData = [];
 
-            $lineItems = [];
-            $subtotal = 0;
-            $taxNew = 0;
-            foreach ($getdata as $dd) {
-                // $priceId = $dd->wish->subscription == 2 ? $dd->priceid : $dd->wish->price_id;
-                $priceId = $dd->priceid != Null ? $dd->priceid : $dd->wish->price_id;
+        if (Auth::check()) {
+            $getdata = UserCart::where('owner_id',$owner_id) ->where('status',1) ->with(['wish']) ->get();
+        } else {
+            $getdata = UserCart::where('owner_id',$owner_id) ->where('status',1)->where('device_id',$deviceid)->with(['wish'])->get();
+        }
 
-                $lineItems[] = [
-                    'price' => $priceId ?? '',
-                    'quantity' => 1,
-                ];
-
-                if (!empty($dd->wish->subscription)) {
-                    if ($dd->wish->subscription == 2) {
-                        $amountadd = $dd->wish->fullfill_amount + $dd->amount;
-                        $dd->wish->update(['fullfill_amount' => $amountadd]);
-                    }
-                }
-
-                $subtotal += $dd->amount;
-                $taxNew += $dd->tax;
+        foreach ($getdata as $dd) {
+            $priceId = $dd->priceid != null ? $dd->priceid : $dd->wish->price_id;
+            $lineItems[] = [
+                'price' => $priceId ?? '',
+                'quantity' => 1,
+            ];
+            if (!empty($dd->wish->subscription) && $dd->wish->subscription == 2) {
+                $amountadd = $dd->wish->fullfill_amount + $dd->amount;
+                $dd->wish->update(['fullfill_amount' => $amountadd]);
             }
+            $subtotal += $dd->amount;
+            $taxNew += $dd->tax;
 
-            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-            $sessionCreate = $stripe->checkout->sessions->create([
-                'success_url' => route('checkout.success', [$owner_id]),
-                'cancel_url' => route('checkout.cancel', [$owner_id]),
-                'line_items' => $lineItems,
-                'mode' => 'payment',
-                'payment_intent_data' => [
-                    'transfer_data' => [
-                        'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
-                    ],
-                    'application_fee_amount' => $taxNew,
-                    'receipt_email' => 'saurav@futureprofilez.com',
-                ],
-                'customer_email' => 'saurav@futureprofilez.com',
+            if (!empty($getdata[0]->owner->account_id)) {
+                $transferData['destination'] = $getdata[0]->owner->account_id;
+            }
+        }
 
-            ]);
+        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+        $sessionCreateParams = [
+            'success_url' => route('checkout.success', [$owner_id]),
+            'cancel_url' => route('checkout.cancel', [$owner_id]),
+            'line_items' => $lineItems,
+            'mode' => 'payment',
+            'customer_email' => 'saurav@futureprofilez.com',
+        ];
 
-            // $subtotal = ($sessionCreate->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
+        // If there's a connected account ID, set it for destination payments
+        if (!empty($getdata[0]->owner->account_id)) {
+            $sessionCreateParams['payment_intent_data'] = [
+                'transfer_data' => $transferData,
+                'receipt_email' => 'saurav@futureprofilez.com',
+            ];
+        }
+        $sessionCreate = $stripe->checkout->sessions->create($sessionCreateParams);
+        session()->forget('session_id');
+        session(['session_id' => $sessionCreate->id]);
 
-            // $taxNew = ($sessionCreate->amount_total / 100) - $subtotal;
-
-            session()->forget('session_id');
-            session(['session_id' => $sessionCreate->id]);
+        // Handle user-specific details if logged in
+        if (Auth::check()) {
             $stripePaymentDetail = StripePaymentDetail::create([
                 'session_id' => $sessionCreate->id,
                 'amount_subtotal' => $subtotal,
@@ -261,15 +256,16 @@ class StripeController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-
             $stripePaymentDetail->refresh();
-
-            return Inertia::location($sessionCreate->url);
-        } catch (\Throwable $th) {
-            // Log::error("Error in createCheckout: " . $th->getMessage());
-            throw $th;
         }
+
+        return Inertia::location($sessionCreate->url);
+    } catch (\Throwable $th) {
+        // Log::error("Error in createCheckout: " . $th->getMessage());
+        throw $th;
     }
+
+}
 
 
     public function retrive($id)

@@ -5,9 +5,10 @@ import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
 import { useForm } from "@inertiajs/react";
 import ToCart from "./ToCart";
+import DeviceID from "@/includes/DeviceID";
 
 export default function SendSurprise({auth, owner}) {
-   
+   const deviceID  = DeviceID();
    const { format } = PriceFormat();
    const { successAlert, errorAlert, errorsHandling } = useAlerts();
    const [close, setClose] = useState();
@@ -30,6 +31,7 @@ export default function SendSurprise({auth, owner}) {
       }
       post(route(`send-surprize`, {
          "owner_id": owner && owner.id, 
+         "device_id": deviceID, 
          "amount":data.amount, 
          "message":data.message}), {
             preserveScroll: true,
@@ -92,7 +94,7 @@ export default function SendSurprise({auth, owner}) {
                   spinnerClassName="fill-red-600" >
                   {processing ? "Proccessing" : auth && auth.name ? "Add to cart" : "Send Gift"}
             </LoaderButton>
-            
+
         </Popup>
     );
 }
