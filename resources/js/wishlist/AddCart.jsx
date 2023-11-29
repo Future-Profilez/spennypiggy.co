@@ -53,7 +53,7 @@ export default function AddCart(props) {
         <Popup
             size="md"
             action={close}
-            modalclass="pinkmodal"
+            modalclassName="pinkmodal"
             classes="d-none" >
             <div className="addCartModalHead rounded-3xl relative shadow-pink">
                 <h2 className="font-GillSans text-bl uppercase pt-8 text-lg relative z-1 px-3 text-center"> Add to Cart </h2>

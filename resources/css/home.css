@@ -97,7 +97,7 @@ margin:30px 0 0 0;}
 .userManageRt{width:773px;padding:0 0 0 35px;}
 select#country{text-transform:capitalize;border-radius:10px;border:1px solid var(--mint)!important;background:var(--black);padding:11px 10px 12px;color:var(--mint);font-family:var(--font-CeraGRBold);font-size:20px;font-style:normal;font-weight:400;letter-spacing:-1.8px;min-width:121px;}
 select#country:hover,select#country:focus{outline:none;box-shadow:none;}
-.wishlistcntbox{border-radius:20px;}
+.wishlistcntbox{border-radius:20px; overflow: hidden;}
 .wishlistimg{overflow:hidden;}
 .wishlistimg img{width:100%;object-fit:cover;}
 .wishlistcntbox.shadow-voilet{box-shadow:6px 6px 0 0 var(--voilet);}
@@ -257,7 +257,7 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 .userphotobox > img{object-fit:cover;}
 .cartbanner img{width:100%;height:100%;max-height:220px;}
 .wishlistdetial h5 .font-CeraGRBold{font-family:var(--font-CeraGR) !important;font-weight:800 !important;}
-.wishlistimg img{border-radius:15px;}
+.wishlistimg img{border-radius:0 0 20px 20px;}
 .wishlistdetial h5{font-family:var(--font-CeraGR) !important;font-weight:bolder !important;}
 .content-pr-modal{min-width:500px !important;height:100vh;max-height:80vh;border-radius:16px;overflow:auto;}
 .content-pr-modal iframe{width:100%;height:100%;background:transparent;padding:10px;}
@@ -265,7 +265,7 @@ ul.socialmedia a svg{width:30px;height:30px;}
 ul.socialmedia a img{width:35px;height:35px;}
 .progress{background:#ECCEDB;height:9px;}
 .progress-bar{background:var(--pink);}
-.wishlistimg img{height:190px;border-radius:20px;}
+.wishlistimg img{height:190px;border-radius:0 0 20px 20px;}
 .updateavatar.modal .modal-content{margin:30px;}
 .updateavatar.modal{background:rgb(0 0 0 / 52%);}
 .userProfile{position:sticky;top:20px;}
@@ -335,7 +335,6 @@ button.editProfile{padding:10px 10px;font-size:18px;}
 .userManageHead .btn-pink-md{width:190px;height:46px;border-radius:9px;font-size:16px;}
 .addsocial ul li a svg{width:14px;height:14px;vertical-align:middle;}
 select#country{width:150px;padding:10px 10px;font-size:18px;}
-.wishlistcntbox{border-radius:10px!important;}
 .wishlistdetial{padding:15px;}
 .wishlistdetial h3{font-size:15px;}
 .wishlistPage{padding-top:10px;}
@@ -499,7 +498,7 @@ button.cartLink svg{width:50px;height:50px;}
 .userphotobox{height:190px;}
 .loginform form{padding:20px;}
 .pass.greybox{padding:0 !important;background:transparent;}
-.wishlistimg img{height:140px !important;}
+.wishlistimg img{height:160px !important;}
 .btn-pink.lg,.btn-pink.lg2{padding:15px;letter-spacing:1px;font-size:16px !important;}
 }
 @media(max-width:449px){.userphoto{left:7px;}

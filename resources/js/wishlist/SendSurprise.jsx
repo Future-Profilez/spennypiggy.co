@@ -47,7 +47,7 @@ export default function SendSurprise({auth, owner}) {
 
     return (
         <Popup
-            modalclass="pinkmodal sendSurprize-modal"
+            modalclassName="pinkmodal sendSurprize-modal"
             space="4" size="md"
             action={close} classes={`btn-pink lg px-4 my-2 w-100`}
             text={`Send Surprise`} >
@@ -59,8 +59,8 @@ export default function SendSurprise({auth, owner}) {
                   <input
                      className="form-input w-100 rounded"
                      onChange={(e) => setData('amount', e.target.value)}
-                     type="text"
-                     placeholder="Enter"
+                     type="number"
+                     placeholder="Enter amount.. "
                   />
                   <p className="mt-1">
                      The amount is set to {format(data.amount)} GBP in the wisher's
