@@ -577,11 +577,7 @@ class StripeController extends Controller
                 ]);
                 $data->refresh();
                 // $dd->wish_id == NULL
-                if ($data->wish_item_id == NULL) {
-                    CheckoutUser::dispatch($data, true, false, false);
-                } else {
-                    CheckoutUser::dispatch($data, true, false, false);
-                }
+                CheckoutUser::dispatch($data, true, false, false);
             }
 
 

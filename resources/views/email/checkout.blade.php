@@ -18,10 +18,10 @@
                             src="https://whoyouinto.com/emails/user/giftimg.png" alt="img"></td>
                 </tr>
                 <tr>
-                    @if(!empty($surprise))
+                    @if($data->wish_item_id == null)
                     <td
                         style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                        {{ $anon == false ? $surprise->user->name : 'Anonymous user' }} granted you a surprise gift of £{{ $surprise->amount }}🤩.
+                        {{ $anon == false ? $data->cart->user->name : 'Anonymous user' }} granted you a surprise gift of £{{ $surprise->amount }}🤩.
                     </td>
                     @else
                     <td
