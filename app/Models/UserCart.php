@@ -13,6 +13,7 @@ class UserCart extends Model
     protected $fillable = [
         "uuid",
         "user_id",
+        'device_id',
         "owner_id",
         "wish_id",
         'amount',
