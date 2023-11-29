@@ -16,19 +16,25 @@ export default function SendSurprise({auth, owner}) {
       message: ''
    });
  
+   function ItemAdded () {
+      setClose(false);
+      setTimeout(()=>{
+         setClose();
+      });
+   }
    const sendSurprize = (e) => {
       e.preventDefault();
       if(!data.amount){
          errorAlert("Choose a valid amount.");
          return false;
       }
-      post(route(`send-surprize`, {"owner_id": owner, "amount":data.amount, "message":data.message}), {
+      post(route(`send-surprize`, {
+         "owner_id": owner && owner.id, 
+         "amount":data.amount, 
+         "message":data.message}), {
             preserveScroll: true,
             onSuccess: (resp) => {
-               setClose(false);
-               setTimeout(()=>{
-                  setClose();
-               });
+               ItemAdded();
                reset();
                if (resp.props.flash?.success) {
                   successAlert(resp.props.flash?.success || "Added");
@@ -42,6 +48,8 @@ export default function SendSurprise({auth, owner}) {
             }
       });
    };
+
+   
 
    console.log("surprise owner", auth)
 
@@ -86,7 +94,7 @@ export default function SendSurprise({auth, owner}) {
                      {processing ? "Proccessing" : auth && auth.name ? "Add to cart" : "Send Gift"}
                </LoaderButton>
                :
-               <ToCart auth={auth} 
+               <ToCart ItemAdded={ItemAdded} auth={auth} 
                // ItemAdded={ItemAdded}
                // pending={item.price - item.fullfill_amount}
                crowd={false}

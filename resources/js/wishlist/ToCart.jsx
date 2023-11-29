@@ -58,9 +58,7 @@ export default function ToCart({
             toast.error("Amount must be greater than 50.");
             return false;
         }
-        
         setLoading(true);
-
         console.log("auth",auth)
         if(auth && auth.id){
             axios.get(`/add-to-cart/${uuid}${amount ? `/${amount}` : ''}`).then(resp => {
@@ -110,37 +108,36 @@ export default function ToCart({
                 }
                 dispatch(add_to_cart(surpriseItem));
                 console.log("cart_item surprise", surpriseItem);
+                ItemAdded && ItemAdded("added");
             } else {
                 let cart_items = {...itemMain};
                 if(item && item.subscription == "2"){
                     cart_items['price'] = amount;
                 }
                 dispatch(add_to_cart(cart_items));
+                ItemAdded && ItemAdded("added");
             }
             check();
             ItemAdded && ItemAdded("added");
             successAlert("item added in cart.");
         }
         setLoading(false);
-        
-        // if(actionfrom){
-        //     window.location = '/cart';
-        // }
-        // if (checkoutbtn) {
-        //     window.location = '/cart';
-        // }
     };
 
     const cartData = useSelector(state => state.data.cart.cart);
-    const loggedInUserId = 2;
+    const loggedInUserId = null;
 
-    useEffect(()=>{
+    async function updateCartData (){
         setTimeout(()=>{
             if(cartData && cartData.length){
                 const data = transform(cartData, loggedInUserId);
                 localStorage && localStorage.setItem('cart',JSON.stringify(data));
             }
-        },2000);
+        },1000);
+    }
+
+    useEffect(()=>{
+        updateCartData();
     },[cartData, loading]);
 
     return <>
