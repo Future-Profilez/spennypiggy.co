@@ -259,57 +259,66 @@ class WishitemController extends Controller
     }
 
 
-    public function addToCart($uuid, $amount = null)
+    public function addToCart($uuid, $device_id, $amount = null)
     {
         $wishitem = WishItem::where('uuid', $uuid)->first();
-        if (Auth::id() == $wishitem->user_id) {
-            return response()->json([
-                "success" => true,
-                "msg" => "You are not able to add your item to your cart.",
-            ]);
-        }
-
-        $payment = StripePaymentItems::where('wish_item_id', $wishitem->id)->whereHas('payment', function ($q) {
-            $q->where('user_id', Auth::id());
-        })->first();
-
-        if ($wishitem->subscription == 0 && $wishitem->repeat_purchase == 0 && !empty($payment)) {
-            return response()->json([
-                "success" => false,
-                "msg" => "You can pay only once for this wish.",
-            ]);
-        }
-
-        $cart = UserCart::where('wish_id', $wishitem->id)->where("user_id", Auth::id())->first();
-        if ($cart) {
-                $cart->status = 1;
-                $cart->quantity = $cart->quantity+1;
-                if ($wishitem->subscription == 2) {
-                    $fullfillamount = $amount;
-                    $tax =  ceil($amount * env('TAX_PERCENTAGE') / 100);
-                    $createpriceid = $amount + $tax;
-                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-                    $stripe_client = $stripe->products->create([
-                        'name' => $wishitem->wishname,
-                        'images' => [$wishitem->perma_link],
-                        "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
-                    ]);
-                    $priceid = $stripe_client->default_price;
-                } else {
-                    $fullfillamount = $wishitem->price;
-                    $tax = $wishitem->tax_amount;
-                    $priceid = null;
-                }
-                $cart->amount = $fullfillamount;
-                $cart->tax = $tax;
-                $cart->priceid = $priceid;
-                $cart->save();
+        if (Auth::check()) {
+            if (Auth::id() == $wishitem->user_id) {
                 return response()->json([
                     "success" => true,
-                    'added' => true,
-                    "uuid" => $cart->uuid,
-                    "msg" => "Item added to cart.",
+                    "msg" => "You are not able to add your item to your cart.",
                 ]);
+            }
+
+
+            $payment = StripePaymentItems::where('wish_item_id', $wishitem->id)->whereHas('payment', function ($q) {
+                $q->where('user_id', Auth::id());
+            })->first();
+
+            if ($wishitem->subscription == 0 && $wishitem->repeat_purchase == 0 && !empty($payment)) {
+                return response()->json([
+                    "success" => false,
+                    "msg" => "You can pay only once for this wish.",
+                ]);
+            }
+        }
+
+        $cart = UserCart::where('wish_id', $wishitem->id)->where(function ($q) use ($device_id) {
+            if (Auth::check()) {
+                $q->where("user_id", Auth::id());
+            } else {
+                $q->where("device_id", $device_id);
+            }
+        })->first();
+        if ($cart) {
+            $cart->status = 1;
+            $cart->quantity = $cart->quantity + 1;
+            if ($wishitem->subscription == 2) {
+                $fullfillamount = $amount;
+                $tax =  ceil($amount * env('TAX_PERCENTAGE') / 100);
+                $createpriceid = $amount + $tax;
+                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                $stripe_client = $stripe->products->create([
+                    'name' => $wishitem->wishname,
+                    'images' => [$wishitem->perma_link],
+                    "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
+                ]);
+                $priceid = $stripe_client->default_price;
+            } else {
+                $fullfillamount = $wishitem->price;
+                $tax = $wishitem->tax_amount;
+                $priceid = null;
+            }
+            $cart->amount = $fullfillamount;
+            $cart->tax = $tax;
+            $cart->priceid = $priceid;
+            $cart->save();
+            return response()->json([
+                "success" => true,
+                'added' => true,
+                "uuid" => $cart->uuid,
+                "msg" => "Item added to cart.",
+            ]);
         } else {
             if ($wishitem->subscription == 2) {
                 $fullfillamount = $amount;
@@ -329,7 +338,8 @@ class WishitemController extends Controller
             }
 
             $cart = UserCart::create([
-                "user_id" => Auth::id(),
+                "user_id" => Auth::check() ? Auth::id() : null,
+                "device_id" => !Auth::check() ? $device_id : null,
                 "owner_id" => $wishitem->user_id,
                 'wish_id' => $wishitem->id,
                 'status' => 1,

@@ -441,13 +441,12 @@ class StripeController extends Controller
     public function createAnonymousCheckout(Request $request)
     {
         try {
-            if (!empty($request->items)) {
-
+            if (!empty($request['data']['items'])) {
                 $lineItems = [];
                 $wishIds = [];
-                foreach ($request->items as $key => $value) {
-                    $price = intval($value->price);
-                    if ($value->subscription == 2) {
+                foreach ($request['data']['items'] as $key => $value) {
+                    $price = intval($value['price']);
+                    if ($value['subscription'] == 2) {
 
                         session()->forget('user_fullfill_amount');
                         session(['user_fullfill_amount' => $price]);
@@ -457,8 +456,8 @@ class StripeController extends Controller
                         try {
                             $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                             $stripe_client = $stripe->products->create([
-                                'name' => $value->wishname,
-                                'images' => [$value->url],
+                                'name' => $value['wishname'],
+                                'images' => [$value['url']],
                                 "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $totalamount * 100],
                             ]);
                         } catch (\Throwable $th) {
@@ -469,7 +468,7 @@ class StripeController extends Controller
                             'price' => $stripe_client->default_price ?? '',
                             'quantity' => 1,
                         ];
-                    } elseif ($value->product == 'surprise') {
+                    } elseif ($value['product'] == 'surprise') {
 
                         $totalamount = $price + ($price * env('TAX_PERCENTAGE') / 100);
 
@@ -490,19 +489,18 @@ class StripeController extends Controller
                         ];
                     } else {
                         $lineItems[] = [
-                            'price' => $value->price_id ?? '',
+                            'price' => $value['price_id'] ?? '',
                             'quantity' => 1,
                         ];
                     }
-                    if ($value->id != null) {
-                        array_push($wishIds, $value->id);
+                    if ($value['id'] != null) {
+                        array_push($wishIds, $value['id']);
                     } else {
                         array_push($wishIds, 0);
                     }
                 }
 
                 $wid = implode(',', $wishIds);
-
                 $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
                 $sessioncreate = $stripe->checkout->sessions->create([
                     'success_url' => route('checkout.anonymous.success', [$wid]),
@@ -523,7 +521,7 @@ class StripeController extends Controller
                     'amount_total' => $callbackData->amount_total / 100,
                     'tax' => $taxnew,
                     'currency' => $callbackData->currency,
-                    'owner_id' => $request->user->id,
+                    'owner_id' => $request['data']['user']['id'],
                     'payment_method_config_detail_id' => optional($callbackData->payment_method_configuration_details)->id,
                     'payment_method_type' => optional($callbackData->payment_method_types)[0],
                     'session_created' => $callbackData->created,
