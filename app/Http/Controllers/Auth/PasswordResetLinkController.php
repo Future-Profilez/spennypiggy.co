@@ -102,8 +102,8 @@ class PasswordResetLinkController extends Controller
     public function changePassword(Request $request, $uuid)
     {
         $request->validate([
-            'password' => 'required|confirmed',
-            'confirmpassword' => 'required',
+            'password' => 'required|min:6',
+            'confirmpassword' => 'required|same:password|min:6',
         ]);
         try {
             $user = User::where('uuid', $uuid)->first();

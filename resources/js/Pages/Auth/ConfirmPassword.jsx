@@ -6,7 +6,8 @@ import PrimaryButton from "@/Components/PrimaryButton";
 import TextInput from "@/Components/TextInput";
 import { Head, useForm } from "@inertiajs/react";
 
-export default function ConfirmPassword(data) {
+export default function ConfirmPassword(props) {
+    const { uuid } = props;
     const { data, setData, post, processing, errors, reset } = useForm({
         password: "",
         confirmpassword: "",
@@ -22,8 +23,8 @@ export default function ConfirmPassword(data) {
     const submit = (e) => {
         e.preventDefault();
 
-        // post(route("password.confirm", { uuid: data.uuid }));
-        post(route("password.confirm"));
+        post(route("changePassword", { uuid: uuid }));
+        // post(route("password.confirm"));
     };
 
     return (
@@ -61,7 +62,7 @@ export default function ConfirmPassword(data) {
                         id="confirmpassword"
                         type="password"
                         name="confirmpassword"
-                        value={data.password}
+                        value={data.confirmpassword}
                         className="mt-1 block w-full"
                         isFocused={true}
                         onChange={(e) =>
