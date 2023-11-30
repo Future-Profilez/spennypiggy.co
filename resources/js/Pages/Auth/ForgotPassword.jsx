@@ -2,12 +2,12 @@ import GuestLayout from '@/Layouts/GuestLayout';
 import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
-import { Head, useForm,Link } from '@inertiajs/react';
+import { Head, useForm,Link, router } from '@inertiajs/react';
 import LoaderButton from '@/Components/LoaderButton';
 import { useAlerts } from '@/Components/Alerts';
 
 export default function ForgotPassword(props) {
-
+    
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const {status, auth} = props;
     const { data, setData, post, processing, errors } = useForm({
@@ -16,7 +16,7 @@ export default function ForgotPassword(props) {
 
     const submit = (e) => {
         e.preventDefault();
-        post(route(`password.email`), {
+        router.post('forgot-password', { email:data.email }),{
             preserveScroll: true,
             onSuccess: (resp) => {
                 if(resp.props.flash?.success){
@@ -31,7 +31,7 @@ export default function ForgotPassword(props) {
                 console.error(_err);
                 errorAlert(resp.props.flash?.success || "Added");
             },
-        });
+        }
     };
 
     return (
