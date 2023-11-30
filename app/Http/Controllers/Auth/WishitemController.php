@@ -356,7 +356,6 @@ class WishitemController extends Controller
     }
 
     public function removeSurpriseFromCart($uuid) {
-        try {
             $cart = UserCart::whereUuid($uuid)->first();
             $cart->status = 0;
             $cart->save();
@@ -366,9 +365,7 @@ class WishitemController extends Controller
                 'msg' => "Item removed from cart",
                 "uuid" => $cart->uuid,
             ]);
-        } catch (\Throwable $th) {
-            //throw $th;
-        }
+      
     }
 
     public function cartItems(){
