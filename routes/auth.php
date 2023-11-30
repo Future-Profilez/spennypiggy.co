@@ -123,10 +123,12 @@ Route::middleware('auth')->group(function () {
     //update cart quantity
 });
 
+Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
+
 Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity');
+
 Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
     ->name('password.request');
-
 
 Route::get('/remove-from-cart/{uuid}', [WishitemController::class, 'removeSurpriseFromCart'])->name('remove-from-cart');
 
@@ -137,6 +139,7 @@ Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 Route::get('anonymous-cart/{deviceId}', [WishitemController::class, 'anonymousCartItems'])->name('anonymous-cart');
 
 Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
+
 /*Anonymous checkout*/
 // Route::get('/anonymous-create-checkout-session/{priceid}/{quantity}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
 // Route::get('/anonymous-create-checkout-session/{wishid}/{amount?}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
@@ -150,6 +153,7 @@ Route::get('/anonymous-cancel-checkout/{id}', [StripeController::class, 'anonymo
 Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class, 'categoryItems'])->name('get_category_data');
 
 Route::get('users', [MyController::class, 'getUsers'])->name('users');
+
 Route::post('/send-surprize', [WishitemController::class, 'sendSurprise'])->name('send-surprize');
 
 Route::get('/how-it-works', function () {

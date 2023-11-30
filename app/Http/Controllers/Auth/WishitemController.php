@@ -624,22 +624,40 @@ class WishitemController extends Controller
                 $cart->quantity = $quantity ?? 1;
                 $cart->save();
 
-                return back()->with('success', 'Quantity updated successfully.');
+                // return back()->with('success', 'Quantity updated successfully.');
 
-                // return response()->json([
-                //     "success" => true,
-                //     "message" => 'Quantity updated successfully',
-                // ]);
+                return response()->json([
+                    "success" => true,
+                    "message" => 'Quantity updated successfully',
+                ]);
             } else {
-                return back()->with('error', 'Failed  to update quantity.');
+                // return back()->with('error', 'Failed  to update quantity.');
 
-                // return response()->json([
-                //     "success" => false,
-                //     "message" => 'Unable to update quantity',
-                // ]);
+                return response()->json([
+                    "success" => false,
+                    "message" => 'Unable to update quantity',
+                ]);
             }
         } catch (\Throwable $th) {
             //throw $th;
+        }
+    }
+
+    public function wish_counter($deviceid)
+    {
+        if (!Auth::check()) {
+            $items = UserCart::where('device_id', $deviceid ?? null)->where('status', 1)->count();
+            return response()->json([
+                "success" => true,
+                "counter" => $items,
+            ]);
+        } else {
+            $user = Auth::user();
+            $items = UserCart::where('user_id', $user->id ?? null)->where('status', 1)->count();
+            return response()->json([
+                "success" => true,
+                "counter" => $items,
+            ]);
         }
     }
 }
