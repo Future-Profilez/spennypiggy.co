@@ -13,6 +13,7 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
+
 class PasswordResetLinkController extends Controller
 {
     /**
@@ -69,22 +70,24 @@ class PasswordResetLinkController extends Controller
     // }
 
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request)
     {
         $request->validate([
             'email' => 'required|email',
         ]);
-        try {
-            $email = $request->input('email');
-            $user = User::where('email', $email)->first();
-            if (!empty($user)) {
-                ForgotPassword::dispatch($user);
-                return back()->with('success', 'Please check your email inbox');
-            } else {
-                return back()->with('error', 'Email not match.');
-            }
-        } catch (\Exception $e) {
-            return back()->with('error', 'An error occurred during the password reset process. Please try again later.');
+        $email = $request->input('email');
+        $user = User::where('email', $email)->first();
+        if (!empty($user)) {
+            ForgotPassword::dispatch($user);
+            return response()->json([
+                "status" => true,
+                "message"=> "Password reset link has been sent to your emal address. Please check your email inbox."
+            ]);
+        } else {
+            return response()->json([
+                "status" => false,
+                "message"=> "Email address is invalid or did't match with our records."
+            ]);
         }
     }
 

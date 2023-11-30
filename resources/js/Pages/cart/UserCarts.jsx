@@ -1,11 +1,12 @@
 import { useState } from "react";
 import CartItem from "./CartItem";
-import { Link, router } from "@inertiajs/react";
+import { Link } from "@inertiajs/react";
 import PriceFormat from "@/includes/PriceFormat";
 import DeviceID from "@/includes/DeviceID";
+import axios from "axios";
 
 export default function UserCarts(props) {
-    
+
     const deviceid  = DeviceID();
     const { auth, removeFromCart } = props;
     const { format } = PriceFormat();
@@ -35,6 +36,14 @@ export default function UserCarts(props) {
         }
     };
 
+    const removeCart = (id) => {
+        axios.get(`/remove-from-cart/${id}`).then(resp => {
+            console.log("resp", resp);
+        }).catch(_err => {
+            console.error("error", _err);
+        });
+    };
+
     const subtotal = datas && datas?.items.reduce((total, item) => +total + +item.price, 0);
     const fee = 0.2 * subtotal;
 
@@ -58,7 +67,7 @@ export default function UserCarts(props) {
                     <div className="CartItemBox">
                         {datas?.items &&
                             datas?.items.map((c, i) => {
-                                return <CartItem data={c} key={i} />;
+                                return <CartItem  removeCart={removeCart} data={c} key={i} />;
                             })}
                     </div>
 
@@ -122,18 +131,14 @@ export default function UserCarts(props) {
                                 <li className="cheklistbox">
                                     <label
                                         for="agreeterm"
-                                        className="text-start"
-                                    >
+                                        className="text-start" >
                                         <input
-                                            onChange={(e) =>
-                                                setIsChecked(e.target.checked)
-                                            }
+                                            onChange={(e) => setIsChecked(e.target.checked)}
                                             type="checkbox"
                                             id="agreeterm"
                                             name="agreeterm"
                                             className="me-2"
-                                            value="agreeterm"
-                                        ></input>
+                                            value="agreeterm" ></input>
                                         I agree to the Terms of Service and
                                         Privacy Policy and the following
                                         statements:

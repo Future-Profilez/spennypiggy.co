@@ -4,6 +4,8 @@ import TextInput from '@/Components/TextInput';
 import { Head, useForm,Link, router } from '@inertiajs/react';
 import LoaderButton from '@/Components/LoaderButton';
 import { useAlerts } from '@/Components/Alerts';
+import axios  from 'axios';
+import { useState } from 'react';
 
 export default function ForgotPassword(props) {
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
@@ -11,30 +13,25 @@ export default function ForgotPassword(props) {
     const { data, setData, post, processing, errors } = useForm({
         email: "",
     });
+
+    const [loading, setLoading] = useState(false);
     const submit = (e) => {
         e.preventDefault();
-        console.log(data.email);
-        router.post("forgot-password", { email: data.email }),
-            {
-                preserveScroll: true,
-                onSuccess: (resp) => {
-                    if (resp.props.flash?.success) {
-                        successAlert(
-                            resp.props.flash?.success || "Updated successfully."
-                        );
-                    }
-                    if (resp.props.flash?.error) {
-                        errorAlert(
-                            resp.props.flash?.error || "Something went wrong."
-                        );
-                    }
-                    reset();
-                },
-                onError: (_err) => {
-                    console.error(_err);
-                    errorAlert(resp.props.flash?.success || "Added");
-                },
-            };
+        setLoading(true);
+        axios.post(`forgot-password`, { email: data.email }).then(resp => {
+            console.log("resp", resp);
+            if(resp.data.status){
+                successAlert(resp.data.message);
+            } else {
+                errorAlert(resp.data.message);
+            }
+            setLoading(false);
+        }).catch(_err => {
+            console.error("error", _err);
+            errorAlert("Unable to update quantity.")
+            setQuantity(intialItem);
+            setLoading(false);
+        });
     };
 
     return (
@@ -80,10 +77,10 @@ export default function ForgotPassword(props) {
                                         />
                                         <div className="wishlistbtn mt-3  mb-0 text-center flex justify-center ">
                                             <LoaderButton
-                                                disabled={processing}
+                                                disabled={loading}
                                                 className="btn-pink mb-2 w-100 lg lg2  mb-md-0"
                                                 spinnerClassName="fill-red-600" >
-                                                {processing ? "Sending..." : "Email Password Reset Link"}
+                                                {loading ? "Sending..." : "Email Password Reset Link"}
                                             </LoaderButton>
                                         </div>
                                     </li>
