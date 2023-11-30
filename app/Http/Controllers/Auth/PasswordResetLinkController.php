@@ -99,4 +99,23 @@ class PasswordResetLinkController extends Controller
         }
     }
 
+    public function changePassword(Request $request, $uuid)
+    {
+        $request->validate([
+            'password' => 'required|min:6',
+            'confirmpassword' => 'required|same:password|min:6',
+        ]);
+        try {
+            $user = User::where('uuid', $uuid)->first();
+            if (!empty($user)) {
+                $user->password = Hash::make($request->password);
+                $user->save();
+                return redirect(route('login'))->with('success', 'Password updated successfully');
+            } else {
+                return back()->with('error', 'Unable to update password');
+            }
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+    }
 }
