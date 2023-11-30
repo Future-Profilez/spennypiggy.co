@@ -103,7 +103,7 @@ class PasswordResetLinkController extends Controller
     {
         $request->validate([
             'password' => 'required|confirmed',
-            'confirm_password' => 'required',
+            'confirmpassword' => 'required',
         ]);
         try {
             $user = User::where('uuid', $uuid)->first();
