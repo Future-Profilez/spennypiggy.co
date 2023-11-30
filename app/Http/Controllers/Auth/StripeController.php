@@ -432,23 +432,21 @@ class StripeController extends Controller
     public function createAnonymousCheckout(Request $request, $device_id)
     {
         try {
-            if (!empty($request['data']['items'])) {
+
+            $cart = UserCart::where('device_id', $device_id)->where('status', 1)->get();
+            if (!empty($cart)) {
                 $lineItems = [];
-                $wishIds = [];
-                foreach ($request['data']['items'] as $key => $value) {
-                    $price = intval($value['price']);
-                    if ($value['subscription'] == 2) {
+                foreach ($cart as $key => $value) {
 
-                        session()->forget('user_fullfill_amount');
-                        session(['user_fullfill_amount' => $price]);
+                    if ($value->wish->subscription == 2) {
 
-                        $totalamount = $price + ($price * env('TAX_PERCENTAGE') / 100);
+                        $totalamount = $value->amount + ($value->amount * env('TAX_PERCENTAGE') / 100);
 
                         try {
                             $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                             $stripe_client = $stripe->products->create([
-                                'name' => $value['wishname'],
-                                'images' => [$value['url']],
+                                'name' => $value->wish->wishname,
+                                'images' => [$value->wish->perma_link],
                                 "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $totalamount * 100],
                             ]);
                         } catch (\Throwable $th) {
@@ -459,9 +457,9 @@ class StripeController extends Controller
                             'price' => $stripe_client->default_price ?? '',
                             'quantity' => 1,
                         ];
-                    } elseif ($value['product'] == 'surprise') {
+                    } elseif ($value->wish_id == null) {
 
-                        $totalamount = $price + ($price * env('TAX_PERCENTAGE') / 100);
+                        $totalamount = $value->amount;
 
                         try {
                             $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
@@ -480,22 +478,16 @@ class StripeController extends Controller
                         ];
                     } else {
                         $lineItems[] = [
-                            'price' => $value['price_id'] ?? '',
+                            'price' => $value->wish->price_id ?? '',
                             'quantity' => 1,
                         ];
                     }
-                    if ($value['id'] != null) {
-                        array_push($wishIds, $value['id']);
-                    } else {
-                        array_push($wishIds, 0);
-                    }
                 }
 
-                $wid = implode(',', $wishIds);
                 $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
                 $sessioncreate = $stripe->checkout->sessions->create([
-                    'success_url' => route('checkout.anonymous.success', [$wid]),
-                    'cancel_url' => route('checkout.anonymous.cancel', [$wid]),
+                    'success_url' => route('checkout.anonymous.success', [$device_id]),
+                    'cancel_url' => route('checkout.anonymous.cancel', [$device_id]),
                     'line_items' => $lineItems,
                     'mode' => 'payment',
                 ]);
@@ -512,7 +504,7 @@ class StripeController extends Controller
                     'amount_total' => $callbackData->amount_total / 100,
                     'tax' => $taxnew,
                     'currency' => $callbackData->currency,
-                    'owner_id' => $request['data']['user']['id'],
+                    'owner_id' => $cart[0]->owner_id,
                     'payment_method_config_detail_id' => optional($callbackData->payment_method_configuration_details)->id,
                     'payment_method_type' => optional($callbackData->payment_method_types)[0],
                     'session_created' => $callbackData->created,
@@ -529,7 +521,7 @@ class StripeController extends Controller
         }
     }
 
-    public function anonymousSuccessCheckout($id)
+    public function anonymousSuccessCheckout($device_id)
     {
         try {
             $sessionId = session('anonymous_session_id');
@@ -539,28 +531,22 @@ class StripeController extends Controller
             ]);
             $stripeid = StripePaymentDetail::where('session_id', $sessionId)->first();
 
-            $ids = explode(',', $id);
-            foreach ($ids as $key => $value) {
-                if ($value != 0) {
-                    $getdata = WishItem::whereId($value)->first();
-                    if ($getdata->subscription == 2) {
-                        $amount = session('user_fullfill_amount');
-                        $tax = $amount * env('TAX_PERCENTAGE') / 100;
-                        $getdata->fullfill_amount += $amount;
-                        $getdata->save();
-                    } else {
-                        $amount = $getdata->price;
-                        $tax = $getdata->tax_amount;
+            $cart = UserCart::where('device_id', $device_id)->where('status', 1)->get();
+
+            foreach ($cart as $key => $value) {
+                $amount = $value->amount;
+                $tax = $value->tax;
+                if ($value->wish_id != null) {
+                    if ($value->wish->subscription == 2) {
+                        $value->fullfill_amount += $amount;
+                        $value->save();
                     }
-                } else {
-                    $amount = $stripeid->amount_total;
-                    $tax = $stripeid->tax;
                 }
 
                 $data = StripePaymentItems::create([
                     'uuid' => Uuid::uuid4(),
                     'stripe_payment_id' => $stripeid->id,
-                    'wish_item_id' => $getdata->id ?? null,
+                    'wish_item_id' => $value->wish_id ?? null,
                     'amount' => $amount,
                     'tax' => $tax,
                 ]);
