@@ -11,9 +11,7 @@ export default function Header(props) {
 
     const deviceid = DeviceID();
     const [isActive, setActive] = useState(false);
-    const toggleClass = () => {
-      setActive(!isActive);
-    };
+    const toggleClass = () => setActive(!isActive);
 
     const [count, setCount] = useState(null)
     const { auth, user } = props;

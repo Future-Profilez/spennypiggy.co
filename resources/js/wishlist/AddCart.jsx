@@ -37,12 +37,12 @@ export default function AddCart(props) {
     }
 
     const price = () => { 
-        if(!IsloggedIn && item.subscription !== 2){
-            const p = (+item.price) + (+item.tax_amount)
-            return p
-        } else { 
+        // if(!IsloggedIn && item.subscription !== 2){
+        //     const p = (+item.price) + (+item.tax_amount)
+        //     return p
+        // } else { 
           return item.price
-        }
+        // }
     };
 
     const checkoutnow = () => { 
