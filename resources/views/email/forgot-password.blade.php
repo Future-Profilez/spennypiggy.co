@@ -1,7 +1,7 @@
 @extends('email.default-2')
 @section('content')
 <tr>
-    <?php echo \Log::info('4 data :'.$data->uuid)  ?>
+
      {{--width="100%"--}}
      {{--max-width: 296px;--}}
     <td align="center" style="padding:10px 10px 20px 10px;">

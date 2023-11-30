@@ -7,6 +7,7 @@ use App\Jobs\ForgotPassword;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -74,7 +75,8 @@ class PasswordResetLinkController extends Controller
             'email' => 'required|email',
         ]);
         try {
-            $user = User::where('email', $request->email)->first();
+            $email = $request->input('email');
+            $user = User::where('email', $email)->first();
             if (!empty($user)) {
                 ForgotPassword::dispatch($user);
                 return back()->with('success', 'Please check your email inbox');
@@ -82,8 +84,38 @@ class PasswordResetLinkController extends Controller
                 return back()->with('error', 'Email not match.');
             }
         } catch (\Exception $e) {
-            dd($e);
             return back()->with('error', 'An error occurred during the password reset process. Please try again later.');
+        }
+    }
+
+    public function forgotPasswordPage($uuid)
+    {
+        try {
+            return Inertia::render('Auth/ConfirmPassword', [
+                'uuid' => $uuid,
+            ]);
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+    }
+
+    public function changePassword(Request $request, $uuid)
+    {
+        $request->validate([
+            'password' => 'required|confirmed',
+            'confirm_password' => 'required',
+        ]);
+        try {
+            $user = User::where('uuid', $uuid)->first();
+            if (!empty($user)) {
+                $user->password = Hash::make($request->password);
+                $user->save();
+                return redirect(route('login'))->with('success', 'Password updated successfully');
+            } else {
+                return back()->with('error', 'Unable to update password');
+            }
+        } catch (\Throwable $th) {
+            //throw $th;
         }
     }
 }

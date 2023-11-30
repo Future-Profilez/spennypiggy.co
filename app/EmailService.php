@@ -117,7 +117,6 @@ class EmailService
     public static function ForgotPassword($data)
     {
         try {
-            \Log::info('2 data:' . $data);
             Mail::to($data['to'])
                 ->send(new ForgotPassEmail($data));
         } catch (TransportException $e) {

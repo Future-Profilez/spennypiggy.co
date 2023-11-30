@@ -6,35 +6,40 @@ import LoaderButton from '@/Components/LoaderButton';
 import { useAlerts } from '@/Components/Alerts';
 
 export default function ForgotPassword(props) {
-    
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
-    const {status, auth} = props;
+    const { status, auth } = props;
     const { data, setData, post, processing, errors } = useForm({
-        email: '',
+        email: "",
     });
 
     const submit = (e) => {
         e.preventDefault();
-        router.post('forgot-password', { email:data.email }),{
-            preserveScroll: true,
-            onSuccess: (resp) => {
-                if(resp.props.flash?.success){
-                    successAlert(resp.props.flash?.success || "Updated successfully.");
-                }
-                if(resp.props.flash?.error){
-                    errorAlert(resp.props.flash?.error || "Something went wrong.")
-                }
-                reset();
-            },
-            onError: (_err) => {
-                console.error(_err);
-                errorAlert(resp.props.flash?.success || "Added");
-            },
-        }
+        console.log(data.email);
+        router.post("forgot-password", { email: data.email }),
+            {
+                preserveScroll: true,
+                onSuccess: (resp) => {
+                    if (resp.props.flash?.success) {
+                        successAlert(
+                            resp.props.flash?.success || "Updated successfully."
+                        );
+                    }
+                    if (resp.props.flash?.error) {
+                        errorAlert(
+                            resp.props.flash?.error || "Something went wrong."
+                        );
+                    }
+                    reset();
+                },
+                onError: (_err) => {
+                    console.error(_err);
+                    errorAlert(resp.props.flash?.success || "Added");
+                },
+            };
     };
 
     return (
-        <GuestLayout auth={auth && auth.user} user={auth && auth.user} >
+        <GuestLayout auth={auth && auth.user} user={auth && auth.user}>
             <Head title="Forgot Password" />
             <div className='loginPage blackbg py-14'>
                 <div className='containerbox '>
@@ -55,21 +60,33 @@ export default function ForgotPassword(props) {
                                         <label>Email Address</label>
                                         <TextInput
                                             id="email"
-                                            type="email" placeholder='Enter your email address'
+                                            required="required"
+                                            type="email"
+                                            placeholder="Enter your email address"
                                             name="email"
                                             value={data.email}
                                             className="mt-1 block w-full"
                                             isFocused={true}
-                                            onChange={(e) => setData('email', e.target.value)}
+                                            onChange={(e) =>
+                                                setData("email", e.target.value)
+                                            }
                                         />
-                                        <InputError message={errors.email} className="mt-2" />
-                                        <div className='wishlistbtn mt-3 text-center flex justify-center '>
-                                            <LoaderButton disabled={processing} className='btn-pink lg lg2  mb-md-0' 
-                                            spinnerClassName='fill-red-600'>{processing ? "Sending..." : "Email Password Reset Link"}</LoaderButton>
+                                        <InputError
+                                            message={errors.email}
+                                            className="mt-2"
+                                        />
+                                        <div className="wishlistbtn mt-3 text-center flex justify-center ">
+                                            <LoaderButton
+                                                disabled={processing}
+                                                className="btn-pink lg lg2  mb-md-0"
+                                                spinnerClassName="fill-red-600"
+                                            >
+                                                {processing
+                                                    ? "Sending..."
+                                                    : "Email Password Reset Link"}
+                                            </LoaderButton>
                                         </div>
-
                                     </li>
-                                  
                                 </ul>
                             </div>
                         </form>
