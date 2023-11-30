@@ -336,7 +336,6 @@ class WishitemController extends Controller
                 $tax = $wishitem->tax_amount;
                 $priceid = null;
             }
-
             $cart = UserCart::create([
                 "user_id" => Auth::check() ? Auth::id() : null,
                 "device_id" => !Auth::check() ? $device_id : null,
@@ -348,7 +347,6 @@ class WishitemController extends Controller
                 'tax' => $tax,
                 'priceid' => $priceid,
             ]);
-
             return response()->json([
                 "success" => true,
                 'added' => true,
@@ -577,7 +575,7 @@ class WishitemController extends Controller
         $stripe_client = $stripe->products->create([
             'name' => 'Surprise Gift',
             'images' => ['https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/'],
-            "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $request->amount * 100],
+            "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => ((ceil($request->amount) + ceil($request->amount * env('TAX_PERCENTAGE') / 100)) * 100)],
         ]);
 
         if (!Auth::check()) {
@@ -588,6 +586,7 @@ class WishitemController extends Controller
                 'tax' => ceil($request->amount * env('TAX_PERCENTAGE') / 100),
                 'priceid' => $stripe_client->default_price,
                 'message' => $request->message,
+                'quantity' => 1,
                 'status' => 1,
             ]);
             return back()->with('success', 'Surprise Gift item has been added to the cart.');
@@ -599,6 +598,7 @@ class WishitemController extends Controller
                 'tax' => ceil($request->amount * env('TAX_PERCENTAGE') / 100),
                 'priceid' => $stripe_client->default_price,
                 'message' => $request->message,
+                'quantity' => 1,
                 'status' => 1,
             ]);
             return back()->with('success', 'Surprise Gift item has been added to the cart.');
@@ -623,15 +623,20 @@ class WishitemController extends Controller
             if (!empty($cart)) {
                 $cart->quantity = $quantity ?? 1;
                 $cart->save();
-                return response()->json([
-                    "success" => true,
-                    "message" => 'Quantity updated successfully',
-                ]);
+
+                return back()->with('success', 'Quantity updated successfully.');
+
+                // return response()->json([
+                //     "success" => true,
+                //     "message" => 'Quantity updated successfully',
+                // ]);
             } else {
-                return response()->json([
-                    "success" => false,
-                    "message" => 'Unable to update quantity',
-                ]);
+                return back()->with('error', 'Failed  to update quantity.');
+
+                // return response()->json([
+                //     "success" => false,
+                //     "message" => 'Unable to update quantity',
+                // ]);
             }
         } catch (\Throwable $th) {
             //throw $th;

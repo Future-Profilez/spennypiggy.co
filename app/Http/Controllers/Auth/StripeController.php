@@ -429,17 +429,19 @@ class StripeController extends Controller
     //     }
     // }
 
-    public function createAnonymousCheckout(Request $request, $device_id)
+    public function createAnonymousCheckout($device_id)
     {
         try {
 
             $cart = UserCart::where('device_id', $device_id)->where('status', 1)->get();
+
             if (!empty($cart)) {
+
                 $lineItems = [];
                 foreach ($cart as $key => $value) {
 
                     $lineItems[] = [
-                        'price' => !empty($value->price_id) ? $value->price_id : $value->wish->price_id,
+                        'price' => !empty($value->priceid) ? $value->priceid : $value->wish->price_id,
                         'quantity' => $value->quantity,
                     ];
                 }
@@ -468,8 +470,8 @@ class StripeController extends Controller
                     'payment_method_config_detail_id' => optional($callbackData->payment_method_configuration_details)->id,
                     'payment_method_type' => optional($callbackData->payment_method_types)[0],
                     'session_created' => $callbackData->created,
-                    'name' => $request->query('name') ?? null,
-                    'message' => $request->query('message') ?? null,
+                    'name' => request()->query('name') ?? null,
+                    'message' => request()->query('message') ?? null,
                     'session_expires_at' => $callbackData->expires_at,
                     'created_at' => Carbon::now(),
                     'updated_at' => Carbon::now(),
