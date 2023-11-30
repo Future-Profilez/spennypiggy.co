@@ -291,8 +291,13 @@ class WishitemController extends Controller
             }
         })->first();
         if ($cart) {
+
+            if ($cart->status == 1) {
+                $cart->quantity = $cart->quantity + 1;
+            } else {
+                $cart->quantity = 1;
+            }
             $cart->status = 1;
-            $cart->quantity = $cart->quantity + 1;
             if ($wishitem->subscription == 2) {
                 $fullfillamount = $amount;
                 $tax =  ceil($amount * env('TAX_PERCENTAGE') / 100);
@@ -355,7 +360,8 @@ class WishitemController extends Controller
         }
     }
 
-    public function removeSurpriseFromCart($uuid){
+    public function removeSurpriseFromCart($uuid)
+    {
         $cart = UserCart::whereUuid($uuid)->first();
         $cart->status = 0;
         $cart->save();
@@ -612,7 +618,8 @@ class WishitemController extends Controller
         ]);
     }
 
-    public function updateCartQuantity($uuid, $quantity) {
+    public function updateCartQuantity($uuid, $quantity)
+    {
         try {
             $cart = UserCart::whereUuid($uuid)->first();
             if (!empty($cart)) {
