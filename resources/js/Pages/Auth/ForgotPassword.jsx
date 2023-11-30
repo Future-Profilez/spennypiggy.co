@@ -11,7 +11,6 @@ export default function ForgotPassword(props) {
     const { data, setData, post, processing, errors } = useForm({
         email: "",
     });
-
     const submit = (e) => {
         e.preventDefault();
         console.log(data.email);
