@@ -106,6 +106,7 @@ export default function Header(props) {
                 }
                 <li><Link onClick={toggleClass} href={"/cart"} >Cart</Link></li>
                 <li><Link onClick={toggleClass} href={route("how-it-works")} >How it works</Link></li>
+                <li><Link onClick={toggleClass} href={"https://blog.spennypiggy.co"} >Blog</Link></li>
                 <li><a onClick={toggleClass} target='_blank' href="https://intercom.help/spenny-piggy" >FAQ's</a></li>
               </ul>
               </div>

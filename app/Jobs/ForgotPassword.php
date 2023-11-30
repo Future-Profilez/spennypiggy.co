@@ -57,8 +57,10 @@ class ForgotPassword implements ShouldQueue
             'email' => $this->user->email,
             'uuid' => $this->user->uuid,
         ];
-
-        \Log::info('1 data:' . $emailData);
-        EmailService::ForgotPassword($emailData);
+        try {
+            EmailService::ForgotPassword($emailData);
+        } catch (\Throwable $th) {
+            // dd($th);
+        }
     }
 }

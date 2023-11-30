@@ -39,10 +39,13 @@ Route::middleware('guest')->group(function () {
 
     Route::post('login-user', [AuthenticatedSessionController::class, 'store'])->name('login-user')->middleware('mustHaveToVerify');
 
-    
-
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
         ->name('password.email');
+
+    Route::get('forgot-password-page/{uuid}', [PasswordResetLinkController::class, 'forgotPasswordPage']);
+
+
+    Route::post('change-password/{uuid}', [PasswordResetLinkController::class, 'changePassword'])->name('changePassword');
 
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
         ->name('password.reset');
@@ -122,8 +125,8 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
-        ->name('password.request');
-        
+    ->name('password.request');
+
 Route::get('/create-checkout-session/{owner_id}/{deviceid}', [StripeController::class, 'createCheckout'])->name('create.checkout');
 
 Route::get('/add-to-cart/{uuid}/{device_id}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
