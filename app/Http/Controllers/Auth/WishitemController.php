@@ -103,7 +103,7 @@ class WishitemController extends Controller
             }
 
 
-            if (!$request->subscription == 2) {
+            if ($request->subscription != 2) {
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripe_client = $stripe->products->create([
                     'name' => $request->wishname ?? null,
