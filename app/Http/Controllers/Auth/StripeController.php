@@ -97,8 +97,6 @@ class StripeController extends Controller
                         'phone' => "2045873148"
                     ]
                 ];
-
-
                 $account = StripeControl::createAccount($payload);
                 $user->account_id = $account->id;
                 $user->country = $country;
@@ -128,8 +126,6 @@ class StripeController extends Controller
             return redirect(route("stripe.index"))->with("error", "Internal server error:" . $e->getMessage());
         }
     }
-
-
 
 
     /**
@@ -216,7 +212,6 @@ class StripeController extends Controller
                 $transferData['destination'] = $getdata[0]->owner->account_id;
             }
         }
-
         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
         $sessionCreateParams = [
             'success_url' => route('checkout.success', [$owner_id]),
@@ -259,7 +254,7 @@ class StripeController extends Controller
             $stripePaymentDetail->refresh();
         }
         return Inertia::location($sessionCreate->url);
-        
+
     } catch (\Throwable $th) {
         // Log::error("Error in createCheckout: " . $th->getMessage());
         throw $th;

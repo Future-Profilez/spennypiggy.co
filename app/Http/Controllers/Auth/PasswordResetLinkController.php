@@ -59,7 +59,7 @@ class PasswordResetLinkController extends Controller
                     throw new \Exception("Password reset failed with status: $status");
             }
         } catch (\Exception $e) {
-            dd($e);
+            // dd($e);
             // Handle exceptions, log the error, and provide a generic error message to the user
             return back()->with('error', 'An error occurred during the password reset process. Please try again later.');
         }
