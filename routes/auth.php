@@ -98,6 +98,7 @@ Route::middleware('auth')->group(function () {
 
     /*update wishitems */
     Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item')->middleware('mustHaveToVerify');
+    Route::get('/create-checkout-session/{owner_id}', [StripeController::class, 'createCheckout'])->name('create.checkout');
     Route::get('/sucess-checkout/{id}', [StripeController::class, 'successCheckout'])->name('checkout.success')->middleware('mustHaveToVerify');
     Route::get('cancel-checkout/{id}', [StripeController::class, 'cancelCheckout'])->name('checkout.cancel')->middleware('mustHaveToVerify');
 
@@ -127,7 +128,6 @@ Route::middleware('auth')->group(function () {
 Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
     ->name('password.request');
 
-Route::get('/create-checkout-session/{owner_id}/{deviceid}', [StripeController::class, 'createCheckout'])->name('create.checkout');
 
 Route::get('/add-to-cart/{uuid}/{device_id}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
 
@@ -140,7 +140,7 @@ Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
 // Route::get('/anonymous-create-checkout-session/{priceid}/{quantity}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
 // Route::get('/anonymous-create-checkout-session/{wishid}/{amount?}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
 
-Route::post('/anonymous-create-checkout-session', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
+Route::post('/anonymous-create-checkout-session/{device_id}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
 
 Route::get('/anonymous-sucess-checkout/{id}', [StripeController::class, 'anonymousSuccessCheckout'])->name('checkout.anonymous.success');
 
