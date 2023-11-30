@@ -14,6 +14,7 @@ import twowayicon from "../../assets/img/twowayicon.png";
 import userimg from "../../assets/img/userimg.png";
 import Guest from "@/Layouts/GuestLayout";
 import { useState, useEffect } from "react";
+import LiveBar from '@/includes/LiveBar';
 
 export default function Home({ auth, laravelVersion, user }) {
 
@@ -54,7 +55,8 @@ export default function Home({ auth, laravelVersion, user }) {
       ]
       
 
-    return (
+    return <> 
+        <LiveBar />
         <Guest auth={auth.user} user={auth.user}>
             <Head title="Welcome" />
             <div>
@@ -245,5 +247,5 @@ export default function Home({ auth, laravelVersion, user }) {
 
             </div>
         </Guest>
-    );
+    </>
 }

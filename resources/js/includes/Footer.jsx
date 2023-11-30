@@ -62,6 +62,7 @@ export default function Footer(props) {
                   <li><a target='_blank' href="https://app.termly.io/notify/696baafc-17cd-4a28-b758-a8f597cf2ad6" >DSAR Form</a></li>
                   <li><a target='_blank' href="https://intercom.help/spenny-piggy" >FAQ's</a></li>
                   <li><Link href={route("how-it-works")} >How it works</Link></li>
+                  <li><a target='_blank' href="https://blog.spennypiggy.co" >Blog</a></li>
                   <li><Link href={route("terms-and-conditions")} >Terms</Link></li>
                   <li> <ContentPrefrences classes='m-auto d-table' /> </li>
                 </ul>
