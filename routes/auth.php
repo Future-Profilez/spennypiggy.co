@@ -39,8 +39,6 @@ Route::middleware('guest')->group(function () {
 
     Route::post('login-user', [AuthenticatedSessionController::class, 'store'])->name('login-user')->middleware('mustHaveToVerify');
 
-    
-
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
         ->name('password.email');
 

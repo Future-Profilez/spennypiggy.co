@@ -73,7 +73,6 @@ class PasswordResetLinkController extends Controller
         $request->validate([
             'email' => 'required|email',
         ]);
-
         try {
             $user = User::where('email', $request->email)->first();
             if (!empty($user)) {

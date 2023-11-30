@@ -11,7 +11,6 @@ import thankfansimg from "../../assets/img/thankfansimg.png";
 import payoutimg from "../../assets/img/payoutimg.png";
 import fraudprotecicon from "../../assets/img/fraudprotecicon.png";
 import twowayicon from "../../assets/img/twowayicon.png";
-import userimg from "../../assets/img/userimg.png";
 import Guest from "@/Layouts/GuestLayout";
 import { useState, useEffect } from "react";
 import LiveBar from '@/includes/LiveBar';

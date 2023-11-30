@@ -1,26 +1,38 @@
 import React, { useState } from "react";
 import cartproductimg from '../../../assets/img/cartproductimg.png';
-import ToCart from "@/wishlist/ToCart";
 import PriceFormat from "@/includes/PriceFormat";
+import { router } from "@inertiajs/react";
+import { useAlerts } from "@/Components/Alerts";
 
 export default function CartItem({data, removeFromCart}) {
 
     const { format } = PriceFormat();
-    const [itemRemoved, setItemRemoved] = useState(null);
-    const removeItem = (e) => {
-        setItemRemoved(e);
-        window && window.location.reload(false);
+    const [quantity, setQuantity] = useState(data && data.quantity || 1);
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
+
+    const [intialItem, setInitialItem] = useState();
+    const updatequantity = (quantity) => {
+        axios.get(`cart-update-quantity/${data && data.uuid}/${quantity}`).then(resp => {
+            console.log("resp", resp);
+        }).catch(_err => {
+            console.error("error", _err);
+            errorAlert("Unable to update quantity.")
+            setQuantity(intialItem);
+        });
+    };
+
+    async function incrementCount(){
+        setInitialItem(quantity);
+        let counts = quantity + 1;
+        setQuantity(counts);
+        updatequantity(counts);
     }
 
-
-    let [count, setCount] = useState(data.quantity || 1);
-    function incrementCount(){
-        let counts = count + 1;
-        setCount(counts);
-    }
-    function decrementCount(){
-        let counts = count - 1;
-        setCount(counts);
+    async function decrementCount(){
+        setInitialItem(quantity);
+        let counts = quantity - 1;
+        setQuantity(counts);
+        updatequantity(counts);
     }
 
 
@@ -37,13 +49,13 @@ export default function CartItem({data, removeFromCart}) {
                 </div>
 
                 <div className="quty flex items-center">
-                    <button onClick={decrementCount} disabled>
+                    <button disabled={quantity == 1} onClick={decrementCount}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
                             <path d="M19 12.998H5V10.998H19V12.998Z" fill="black"/>
                         </svg>
                     </button>
-                    <div className="qutynum">{count}</div>
-                    <button onClick={incrementCount}  disabled>
+                    <div className="qutynum">{quantity}</div>
+                    <button onClick={incrementCount}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
                         <path d="M11 13H5V11H11V5H13V11H19V13H13V19H11V13Z" fill="black"/>
                         </svg>
