@@ -355,17 +355,17 @@ class WishitemController extends Controller
         }
     }
 
-    public function removeSurpriseFromCart($uuid)
-    {
+    public function removeSurpriseFromCart($uuid){
         $cart = UserCart::whereUuid($uuid)->first();
         $cart->status = 0;
         $cart->save();
-        return response()->json([
-            "success" => true,
-            'added' => false,
-            'msg' => "Item removed from cart",
-            "uuid" => $cart->uuid,
-        ]);
+        return back()->with('success', 'Item removed from cart');
+        // return response()->json([
+        //     "success" => true,
+        //     'added' => false,
+        //     'msg' => "Item removed from cart",
+        //     "uuid" => $cart->uuid,
+        // ]);
     }
 
     public function cartItems()
@@ -450,8 +450,6 @@ class WishitemController extends Controller
                             'quantity' => $v['quantity'],
                         ];
                     }
-
-
                     // if ($v['wish']['subscription'] == 2) {
                     //     $total += $v['amount'];
                     // } else {
@@ -517,7 +515,7 @@ class WishitemController extends Controller
                 if (!empty($v['wish'])) {
                     $cart[$key]['items'][$k] = [
                         'id' => $v['wish']['id'] ?? null,
-                        'uuid' => $v['wish']['uuid'] ?? null,
+                        'uuid' => $v['uuiddata'] ?? null,
                         'user_id' => $v['wish']['user_id'] ?? null,
                         'wishname' => $v['wish']['wishname'] ?? null,
                         'stripe_product_id' => $v['wish']['stripe_product_id'] ?? null,
@@ -605,8 +603,6 @@ class WishitemController extends Controller
         }
     }
 
-
-
     public function noOfCartItems()
     {
         $items = UserCart::where('user_id', Auth::id())->where('status', 1)->count();
@@ -616,23 +612,19 @@ class WishitemController extends Controller
         ]);
     }
 
-    public function updateCartQuantity($uuid, $quantity)
-    {
+    public function updateCartQuantity($uuid, $quantity) {
         try {
             $cart = UserCart::whereUuid($uuid)->first();
             if (!empty($cart)) {
                 $cart->quantity = $quantity ?? 1;
                 $cart->save();
-
                 // return back()->with('success', 'Quantity updated successfully.');
-
                 return response()->json([
                     "success" => true,
                     "message" => 'Quantity updated successfully',
                 ]);
             } else {
                 // return back()->with('error', 'Failed  to update quantity.');
-
                 return response()->json([
                     "success" => false,
                     "message" => 'Unable to update quantity',
