@@ -342,6 +342,7 @@ class WishitemController extends Controller
                 "device_id" => !Auth::check() ? $device_id : null,
                 "owner_id" => $wishitem->user_id,
                 'wish_id' => $wishitem->id,
+                'quantity' => 1,
                 'status' => 1,
                 'amount' => $fullfillamount,
                 'tax' => $tax,
@@ -356,17 +357,17 @@ class WishitemController extends Controller
         }
     }
 
-    public function removeSurpriseFromCart($uuid) {
-            $cart = UserCart::whereUuid($uuid)->first();
-            $cart->status = 0;
-            $cart->save();
-            return response()->json([
-                "success" => true,
-                'added' => false,
-                'msg' => "Item removed from cart",
-                "uuid" => $cart->uuid,
-            ]);
-
+    public function removeSurpriseFromCart($uuid)
+    {
+        $cart = UserCart::whereUuid($uuid)->first();
+        $cart->status = 0;
+        $cart->save();
+        return response()->json([
+            "success" => true,
+            'added' => false,
+            'msg' => "Item removed from cart",
+            "uuid" => $cart->uuid,
+        ]);
     }
 
     public function cartItems()
@@ -584,7 +585,7 @@ class WishitemController extends Controller
                 'device_id' => $request->device_id,
                 'owner_id' => $request->owner_id ?? null,
                 'amount' => $request->amount ?? 0,
-                'tax' => 0,
+                'tax' => ceil($request->amount * env('TAX_PERCENTAGE') / 100),
                 'priceid' => $stripe_client->default_price,
                 'message' => $request->message,
                 'status' => 1,
@@ -595,7 +596,7 @@ class WishitemController extends Controller
                 'user_id' => Auth::id(),
                 'owner_id' => $request->owner_id ?? null,
                 'amount' => $request->amount ?? 0,
-                'tax' => 0,
+                'tax' => ceil($request->amount * env('TAX_PERCENTAGE') / 100),
                 'priceid' => $stripe_client->default_price,
                 'message' => $request->message,
                 'status' => 1,

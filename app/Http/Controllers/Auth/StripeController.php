@@ -438,50 +438,10 @@ class StripeController extends Controller
                 $lineItems = [];
                 foreach ($cart as $key => $value) {
 
-                    if ($value->wish->subscription == 2) {
-
-                        $totalamount = $value->amount + ($value->amount * env('TAX_PERCENTAGE') / 100);
-
-                        try {
-                            $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-                            $stripe_client = $stripe->products->create([
-                                'name' => $value->wish->wishname,
-                                'images' => [$value->wish->perma_link],
-                                "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $totalamount * 100],
-                            ]);
-                        } catch (\Throwable $th) {
-                            return back()->with('error', $th);
-                        }
-
-                        $lineItems[] = [
-                            'price' => $stripe_client->default_price ?? '',
-                            'quantity' => 1,
-                        ];
-                    } elseif ($value->wish_id == null) {
-
-                        $totalamount = $value->amount;
-
-                        try {
-                            $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-                            $stripe_client = $stripe->products->create([
-                                'name' => "Surprise Gift",
-                                'images' => ['https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/'],
-                                "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $totalamount * 100],
-                            ]);
-                        } catch (\Throwable $th) {
-                            return back()->with('error', $th);
-                        }
-
-                        $lineItems[] = [
-                            'price' => $stripe_client->default_price ?? '',
-                            'quantity' => 1,
-                        ];
-                    } else {
-                        $lineItems[] = [
-                            'price' => $value->wish->price_id ?? '',
-                            'quantity' => 1,
-                        ];
-                    }
+                    $lineItems[] = [
+                        'price' => !empty($value->price_id) ? $value->price_id : $value->wish->price_id,
+                        'quantity' => $value->quantity,
+                    ];
                 }
 
                 $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
@@ -508,6 +468,8 @@ class StripeController extends Controller
                     'payment_method_config_detail_id' => optional($callbackData->payment_method_configuration_details)->id,
                     'payment_method_type' => optional($callbackData->payment_method_types)[0],
                     'session_created' => $callbackData->created,
+                    'name' => $request->query('name') ?? null,
+                    'message' => $request->query('message') ?? null,
                     'session_expires_at' => $callbackData->expires_at,
                     'created_at' => Carbon::now(),
                     'updated_at' => Carbon::now(),
@@ -551,6 +513,9 @@ class StripeController extends Controller
                     'tax' => $tax,
                 ]);
                 $data->refresh();
+
+                $value->status = 0;
+                $value->save();
                 // $dd->wish_id == NULL
                 CheckoutUser::dispatch($data, true, false, false);
             }
