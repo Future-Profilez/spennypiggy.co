@@ -5,6 +5,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import DeviceID from "@/includes/DeviceID";
 
 export default function UserCarts(props) {
+    
     const deviceid  = DeviceID();
     const { auth, removeFromCart } = props;
     const { format } = PriceFormat();
