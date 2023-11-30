@@ -355,8 +355,7 @@ class WishitemController extends Controller
         }
     }
 
-    public function removeSurpriseFromCart($uuid)
-    {
+    public function removeSurpriseFromCart($uuid) {
         try {
             $cart = UserCart::whereUuid($uuid)->first();
             $cart->status = 0;

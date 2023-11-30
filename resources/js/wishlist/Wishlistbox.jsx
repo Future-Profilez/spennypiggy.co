@@ -10,6 +10,8 @@ import { useEffect } from 'react';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import Wishlist from '@/Pages/Auth/Wishlist';
 import PriceFormat from '@/includes/PriceFormat';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 
 export default function Wishlistbox(props) {
 
@@ -37,15 +39,22 @@ export default function Wishlistbox(props) {
   }
  
   const price = () => { 
-    if(!IsloggedIn && itm.subscription !== 2){
-      const p = (+itm.price) + (+itm.tax_amount)
-      return p
-    } else { 
+    // if(!IsloggedIn && itm.subscription !== 2){
+    //   const p = (+itm.price) + (+itm.tax_amount)
+    //   return p
+    // } else { 
       return itm.price;
-    }
+    // }
   };
 
-  console.log("itm",itm)
+  console.log("itm",itm);
+
+  const renderTooltip = (props) => (
+    <Tooltip id="button-tooltip" {...props}>
+      *not including 20% service fee.
+    </Tooltip>
+  );
+  
   
   return <>
       <div className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
@@ -60,7 +69,14 @@ export default function Wishlistbox(props) {
         <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
           <div>
             <h4 className={`fon-bold text-dark ${itm.subscription == '2' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>
-            <h5 className='font-CeraGRBold text-dark'>{format(price())}</h5>
+            <h5 className='font-CeraGRBold text-dark'>{format(price())}
+              <OverlayTrigger
+                placement="right"
+                delay={{ show: 250, hide: 400 }}
+                overlay={renderTooltip} >
+                <button className='tooltipbtn' >?</button>
+              </OverlayTrigger>
+            </h5>
           </div>
           {itm.subscription == '2' ? 
             <div className='crowd pt-2'>

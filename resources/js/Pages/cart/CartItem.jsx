@@ -3,6 +3,7 @@ import cartproductimg from '../../../assets/img/cartproductimg.png';
 import PriceFormat from "@/includes/PriceFormat";
 import { router } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
+import axios from "axios";
 
 export default function CartItem({data, removeFromCart}) {
 
@@ -36,6 +37,14 @@ export default function CartItem({data, removeFromCart}) {
     }
 
 
+    const removeCart = () => {
+        axios.get(`/remove-from-cart/${data && data.uuid}`).then(resp => {
+            console.log("resp", resp);
+        }).catch(_err => {
+            console.error("error", _err);
+        });
+    };
+
     return (
             <div className={`border cartlist flex flex-wrap justify-between items-center content-between items-center border-purple shadow-purple rounded-xl mb-5 p-3 p-md-4`}>
                 <div className='prodcartbox items-center'>
@@ -66,7 +75,7 @@ export default function CartItem({data, removeFromCart}) {
                     <div className='cartPric pe-5'>
                         {format(data.price)}
                     </div>
-                    {/* <button onClick={()=>removeFromCart(data && data.uuid)} >Remove</button> */}
+                    <button onClick={removeCart} >Remove</button>
                     {/* <ToCart actionfrom={true} removeItem={removeItem} item={data}
                     uuid={data.uuid} custom={<><button className='del'>
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
