@@ -1,9 +1,10 @@
 import { useState } from "react";
 import CartItem from "./CartItem";
-import { Link } from "@inertiajs/react";
+import { Link, router } from "@inertiajs/react";
 import PriceFormat from "@/includes/PriceFormat";
 import DeviceID from "@/includes/DeviceID";
 import axios from "axios";
+import { useEffect } from "react";
 
 export default function UserCarts(props) {
 
@@ -23,52 +24,67 @@ export default function UserCarts(props) {
             window.location.href = `/create-checkout-session/${datas?.user?.id || ''}?message=${message}&from=${name}&email=${email}`;
         } else {
             // setLoading(true);
-            window.location.href =`/anonymous-create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`;
-            // router.get(`/anonymous-create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`), {
-            //     preserveScroll: true,
-            //     onSuccess: (resp) => {
-            //         console.log("resp", resp);
-            //     },
-            //     onError: (_err) => {
-            //         console.error("cart",_err);
-            //     }
-            // };
+            // window.location.href =`/anonymous-create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`;
+            router.get(`/anonymous-create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`), {
+                preserveScroll: true,
+                onSuccess: (resp) => {
+                    console.log("resp", resp);
+                },
+                onError: (_err) => {
+                    console.error("cart",_err);
+                }
+            };
         }
     };
 
+    const [items, setItems] = useState(datas?.items);
     const removeCart = (id) => {
         axios.get(`/remove-from-cart/${id}`).then(resp => {
             console.log("resp", resp);
+            const updatedItems = items.filter(item => item.uuid !== id);
+            setItems(updatedItems);
         }).catch(_err => {
             console.error("error", _err);
         });
     };
 
-    const subtotal = datas && datas?.items.reduce((total, item) => +total + +item.price, 0);
-    const fee = 0.2 * subtotal;
+    const [subtotal, setsubtotal] = useState();
+    const [fee, setFee] = useState(0.2 * subtotal);
+
+
+    function updateTotals (){
+        const value = items && items.reduce((total, item) => +total + +item.price * (+item.quantity || 1), 0);
+        setsubtotal(value);
+        setFee(0.2 * value);
+    }
+
+    const quantityUpdate = () =>{ 
+        updateTotals();
+    }
+    useEffect(()=>{
+        updateTotals();
+    },[items]);
 
     return (
         <div className="px-2">
             <div className="my-4 cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
                 <div className="cartMain">
                     <h2 className="pb-1 wishtitle">
-                        Wish Basket for {datas?.user?.name || ""}{" "}
+                        Wish Basket for {datas?.user?.name || ""} 
                         <Link className="text-voilet"
                         href={`/${datas?.user?.username || ""}`} >
                             @{datas?.user?.username || ""}
                         </Link>
                     </h2>
-
                     <p className="pb-4">
-                        You are about to send a payout to{" "}
-                        <strong>{datas?.user?.name || ""}</strong> to fund their
-                        wishes.{" "}
+                        You are about to send a payout to 
+                        <strong> {datas?.user?.name || ""} </strong> to fund their
+                        wishes. 
                     </p>
                     <div className="CartItemBox">
-                        {datas?.items &&
-                            datas?.items.map((c, i) => {
-                                return <CartItem  removeCart={removeCart} data={c} key={i} />;
-                            })}
+                        {items && items.map((c, i) => {
+                            return <CartItem quantityUpdate={quantityUpdate}  removeCart={removeCart} data={c} key={i} />;
+                        })}
                     </div>
 
                     <div className="cartTotal px-0 py-3">

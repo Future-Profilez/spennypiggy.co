@@ -336,7 +336,6 @@ class WishitemController extends Controller
                 $tax = $wishitem->tax_amount;
                 $priceid = null;
             }
-
             $cart = UserCart::create([
                 "user_id" => Auth::check() ? Auth::id() : null,
                 "device_id" => !Auth::check() ? $device_id : null,
@@ -347,7 +346,6 @@ class WishitemController extends Controller
                 'tax' => $tax,
                 'priceid' => $priceid,
             ]);
-
             return response()->json([
                 "success" => true,
                 'added' => true,
@@ -622,15 +620,20 @@ class WishitemController extends Controller
             if (!empty($cart)) {
                 $cart->quantity = $quantity ?? 1;
                 $cart->save();
-                return response()->json([
-                    "success" => true,
-                    "message" => 'Quantity updated successfully',
-                ]);
+
+                return back()->with('success', 'Quantity updated successfully.');
+
+                // return response()->json([
+                //     "success" => true,
+                //     "message" => 'Quantity updated successfully',
+                // ]);
             } else {
-                return response()->json([
-                    "success" => false,
-                    "message" => 'Unable to update quantity',
-                ]);
+                return back()->with('error', 'Failed  to update quantity.');
+
+                // return response()->json([
+                //     "success" => false,
+                //     "message" => 'Unable to update quantity',
+                // ]);
             }
         } catch (\Throwable $th) {
             //throw $th;
