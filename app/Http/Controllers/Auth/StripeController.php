@@ -502,8 +502,8 @@ class StripeController extends Controller
                 $tax = $value->tax;
                 if ($value->wish_id != null) {
                     if ($value->wish->subscription == 2) {
-                        $value->fullfill_amount += $amount;
-                        $value->save();
+                        $value->wish->fullfill_amount += $amount;
+                        $value->wish->save();
                     }
                 }
 
