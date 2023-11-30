@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Auth;
+
 use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\SaveWishlist;
@@ -355,7 +356,8 @@ class WishitemController extends Controller
         }
     }
 
-    public function removeSurpriseFromCart($uuid) {
+    public function removeSurpriseFromCart($uuid)
+    {
         try {
             $cart = UserCart::whereUuid($uuid)->first();
             $cart->status = 0;
@@ -371,7 +373,8 @@ class WishitemController extends Controller
         }
     }
 
-    public function cartItems(){
+    public function cartItems()
+    {
         if (!empty(Auth::id())) {
             $user = User::where('id', Auth::id())->first();
             $carts = UserCart::where('user_id', $user->id)->where('status', 1)->get();
@@ -426,7 +429,7 @@ class WishitemController extends Controller
                     if (!empty($v['wish'])) {
                         $cart[$key]['items'][$k] = [
                             'id' => $v['wish']['id'],
-                            'uuid' => $v['wish']['uuid'],
+                            'uuid' => $v['uuiddata'],
                             'user_id' => $v['wish']['user_id'],
                             'wishname' => $v['wish']['wishname'],
                             'stripe_product_id' => $v['wish']['stripe_product_id'],
@@ -475,7 +478,8 @@ class WishitemController extends Controller
         ]);
     }
 
-    public function anonymousCartItems($deviceId) {
+    public function anonymousCartItems($deviceId)
+    {
         $carts = UserCart::where('device_id', $deviceId)->where('status', 1)->get();
         $groupedWishes = [];
         foreach ($carts as $wish) {
@@ -559,25 +563,26 @@ class WishitemController extends Controller
         ]);
     }
 
-    public function sendSurprise(Request $request){
+    public function sendSurprise(Request $request)
+    {
         $request->validate([
             "message" => ["required", "string"],
             "amount" => ["required"],
         ]);
-    
+
         $wordLimit = 100;
         $message = $request->message;
         if (str_word_count($message) > $wordLimit) {
             return redirect()->back()->with("error", "Max limit for message is 100 words");
         }
-    
+
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
         $stripe_client = $stripe->products->create([
             'name' => 'Surprise Gift',
             'images' => ['https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/'],
             "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $request->amount * 100],
         ]);
-    
+
         if (!Auth::check()) {
             UserCart::create([
                 'device_id' => $request->device_id,
@@ -589,7 +594,6 @@ class WishitemController extends Controller
                 'status' => 1,
             ]);
             return back()->with('success', 'Surprise Gift item has been added to the cart.');
-        
         } else {
             UserCart::create([
                 'user_id' => Auth::id(),
@@ -601,10 +605,9 @@ class WishitemController extends Controller
                 'status' => 1,
             ]);
             return back()->with('success', 'Surprise Gift item has been added to the cart.');
-        
         }
     }
-    
+
 
 
     public function noOfCartItems()
