@@ -39,30 +39,51 @@ export default function UserCarts(props) {
 
     const [items, setItems] = useState(datas?.items);
     const removeCart = (id) => {
-        axios.get(`/remove-from-cart/${id}`).then(resp => {
-            console.log("resp", resp);
-            const updatedItems = items.filter(item => item.uuid !== id);
-            setItems(updatedItems);
-        }).catch(_err => {
-            console.error("error", _err);
-        });
+        // axios.get(`/remove-from-cart/${id}`).then(resp => {
+        //     console.log("resp", resp);
+        //     const updatedItems = items.filter(item => item.uuid !== id);
+        //     setItems(updatedItems);
+        // }).catch(_err => {
+        //     console.error("error", _err);
+        // });
+        router.get(`/remove-from-cart/${id}`,{
+                preserveScroll: true,
+                onSuccess: (resp) => {
+                    console.log("resp", resp);
+                    const updatedItems = items.filter(item => item.uuid !== id);
+                    setItems(updatedItems);
+                },
+                onError: (_err) => {
+                    console.error("error", _err);
+                }
+            }
+        );
+
     };
 
     const [subtotal, setsubtotal] = useState();
     const [fee, setFee] = useState(0.2 * subtotal);
 
-
-    function updateTotals (){
-        const value = items && items.reduce((total, item) => +total + +item.price * (+item.quantity || 1), 0);
+    function updateTotals (p){
+        const value = items && items.reduce((total, item) => +total + +item.price * (+item.quantity || 1), 0) + p;
         setsubtotal(value);
         setFee(0.2 * value);
     }
 
-    const quantityUpdate = () =>{ 
-        updateTotals();
+    const quantityUpdate = (type, amount) =>{ 
+        if(type == 'add'){
+            const updated = subtotal+amount;
+            setsubtotal(updated)
+            setFee(0.2 * updated);
+        }else {
+            const updated = subtotal-amount;
+            setsubtotal(updated)
+            setFee(0.2 * updated);
+        }
     }
+
     useEffect(()=>{
-        updateTotals();
+        updateTotals(0);
     },[items]);
 
     return (
