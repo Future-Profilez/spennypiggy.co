@@ -52,10 +52,14 @@ export default function ForgotPassword(props) {
                         {status && <div className="mb-4 font-medium text-sm text-green-600">{status}</div>}
                         <form onSubmit={submit} >
                             <div className='login-step1'>
-                            <p className='text-start text-dark mb-5 text-md m-auto'>Forgot your password? No problem. Just let us know your email address and we will email you a password
-                            reset link that will allow you to choose a new one.</p>
+                            <p className='text-start text-dark mb-2 text-md m-auto'>Forgot your password? 
+                            </p>
+                            <p className='text-start text-muted mb-5 text-small m-auto'>
+                                No problem. Just let us know your email address and we will email you a password
+                                reset link that will allow you to choose a new one.
+                            </p>
                                 <ul>
-                                    <li>
+                                    <li className='mb-0' >
                                         <label>Email Address</label>
                                         <TextInput
                                             id="email"
@@ -74,15 +78,12 @@ export default function ForgotPassword(props) {
                                             message={errors.email}
                                             className="mt-2"
                                         />
-                                        <div className="wishlistbtn mt-3 text-center flex justify-center ">
+                                        <div className="wishlistbtn mt-3  mb-0 text-center flex justify-center ">
                                             <LoaderButton
                                                 disabled={processing}
-                                                className="btn-pink lg lg2  mb-md-0"
-                                                spinnerClassName="fill-red-600"
-                                            >
-                                                {processing
-                                                    ? "Sending..."
-                                                    : "Email Password Reset Link"}
+                                                className="btn-pink w-100 lg lg2  mb-md-0"
+                                                spinnerClassName="fill-red-600" >
+                                                {processing ? "Sending..." : "Email Password Reset Link"}
                                             </LoaderButton>
                                         </div>
                                     </li>

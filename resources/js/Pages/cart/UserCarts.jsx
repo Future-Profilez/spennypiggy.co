@@ -17,20 +17,21 @@ export default function UserCarts(props) {
     
     const handleSubmit = (e) => {
         e.preventDefault();
-        // if (auth && auth.id) {
-            // window.location.href = `/create-checkout-session/${datas?.user?.id || 'no'}/${deviceid}?message=${message}&from=${name}&email=${email}`;
-        // } else {
-        //     // setLoading(true);
-            router.get(`/create-checkout-session/${datas?.user?.id || 'no'}/${deviceid}?message=${message}&from=${name}&email=${email}`), {
-                preserveScroll: true,
-                onSuccess: (resp) => {
-                    console.log("resp", resp);
-                },
-                onError: (_err) => {
-                    console.error("cart",_err);
-                }
-            };
-        // }
+        if (auth && auth.id) {
+            window.location.href = `/create-checkout-session/${datas?.user?.id || ''}?message=${message}&from=${name}&email=${email}`;
+        } else {
+            // setLoading(true);
+            window.location.href =`/anonymous-create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`;
+            // router.get(`/anonymous-create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`), {
+            //     preserveScroll: true,
+            //     onSuccess: (resp) => {
+            //         console.log("resp", resp);
+            //     },
+            //     onError: (_err) => {
+            //         console.error("cart",_err);
+            //     }
+            // };
+        }
     };
 
     const subtotal = datas && datas?.items.reduce((total, item) => +total + +item.price, 0);
