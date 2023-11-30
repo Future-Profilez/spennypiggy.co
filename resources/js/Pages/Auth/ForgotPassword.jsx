@@ -81,7 +81,7 @@ export default function ForgotPassword(props) {
                                         <div className="wishlistbtn mt-3  mb-0 text-center flex justify-center ">
                                             <LoaderButton
                                                 disabled={processing}
-                                                className="btn-pink w-100 lg lg2  mb-md-0"
+                                                className="btn-pink mb-2 w-100 lg lg2  mb-md-0"
                                                 spinnerClassName="fill-red-600" >
                                                 {processing ? "Sending..." : "Email Password Reset Link"}
                                             </LoaderButton>
