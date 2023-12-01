@@ -120,10 +120,10 @@ export default function SocialLinks({ links }) {
                         {l?.url ?
                             <li className='px-2 mt-2 mb-2' >
                                  { l.social == "fansly" ? 
-                                        <a target="_blank" title={l.social} href={l.url} > <img src={fansly} className='img-fluid' /> </a>
+                                        <a target="_blank" title={l.social} href={l.url} > <img src={fansly}  alt="img" className='img-fluid' /> </a>
                                  : l.social == "manyvids" 
                                     ? 
-                                    <a target="_blank" title={l.social} href={l.url} > <img src={manyvids} className='img-fluid' /> </a> 
+                                    <a target="_blank" title={l.social} href={l.url} > <img src={manyvids}  alt="img" className='img-fluid' /> </a> 
                                   :
                                  <a target="_blank" title={l.social} href={l.url} dangerouslySetInnerHTML={{ __html: icons(l.social) }} ></a>
                                  }

@@ -1,6 +1,6 @@
 import { useAlerts } from "@/Components/Alerts";
 import React from "react";
-const LoaderButton = React.lazy(() => import('@/Components/LoaderButton'));
+import  LoaderButton from "@/Components/LoaderButton";
 const Popup = React.lazy(() => import('@/Components/Popup'));
 import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
@@ -50,9 +50,6 @@ export default function SendSurprise({auth, owner}) {
             }
       });
    };
-
-   
-
    console.log("surprise owner", auth)
 
     return (

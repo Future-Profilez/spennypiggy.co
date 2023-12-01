@@ -1,4 +1,3 @@
-// import './bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../css/theme.css';
 import '../css/app.css';
@@ -29,7 +28,7 @@ createInertiaApp({
     },
     progress: {
         color: 'var(--mint)',
-        delay: 250,
+        delay: 100,
         includeCSS: true,
         showSpinner: false,
     },
