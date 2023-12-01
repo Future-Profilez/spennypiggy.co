@@ -3,9 +3,6 @@
 <head>
     <meta charset="utf-8">
     <title inertia>{{ config('app.name', 'The Best Alternative to Amazon Wishlist') }}</title>
-    <!-- <link rel="preconnect" href="https://fonts.bunny.net"> -->
-    <link rel="preload" as="font" href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
-    <!-- Metas start -->
     <link rel="canonical" href="https://spennypiggy.co" />
     <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,maximum-scale=5" />
     <link rel="manifest"  href="/manifest.json" />

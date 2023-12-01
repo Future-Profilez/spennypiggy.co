@@ -490,7 +490,7 @@ button.cartLink svg{width:50px;height:50px;}
 .userManageHead .btn-pink-md{width:100%;}
 .wishbanner .shadow-black{box-shadow:7px 15px 0 0 rgba(0,0,0,0.8);}
 .userProfile .shadow-voilet{box-shadow:7px 15px 0 0 var(--voilet);}
-.welcomeHeading{font-size:40px;line-height:45px;}
+.welcomeHeading{font-size:48px;line-height:53px;}
 .funpart h2.headingMd br{display:none;}
 .headingMd{font-size:29px;line-height:30px;}
 .funboxs{padding:20px 20px;border-radius:32px;}
@@ -508,6 +508,9 @@ button.cartLink svg{width:50px;height:50px;}
 .pass.greybox{padding:0 !important;background:transparent;}
 .wishlistimg img{height:160px !important;}
 .btn-pink.lg,.btn-pink.lg2{padding:15px;letter-spacing:1px;font-size:16px !important;}
+.welcomeRt {
+   padding: 10px 0px;
+}
 }
 @media(max-width:449px){.userphoto{left:7px;}
 .socialmedia{margin-top:2px!important;}
@@ -517,6 +520,10 @@ button.cartLink svg{width:50px;height:50px;}
 .footlinks ul li a{font-size:15px;}
 select#country{width:100%;margin-bottom:10px;}
 .wishlistcntbox{max-width:100%;width:100%;}
+.welcomeTitle {
+   font-size: 27px;
+   line-height: 34px;
+}
 }
 @media(max-width:400px){.wishlistimg img{height:230px!important;}
 .wishlistdetial h4{font-size:20px !important;}
@@ -524,7 +531,7 @@ select#country{width:100%;margin-bottom:10px;}
 .headingMd{font-size:44px !important;line-height:45px !important;}
 .userManageRt > .row > div{width:100% !important;}
 .spennylogo img{max-width:120px;}
-.welcomeHeading{font-size:35px;line-height:40px;}
+.welcomeHeading{font-size:44px; }
 .noResult h2.headingLg{font-size:25px;line-height:30px;}
 .menuImg img{max-width:119px;}
 .closemega svg{width:48px;}
@@ -554,3 +561,14 @@ div#msgText p{display:flex;align-items:flex-start;}
 .swiper-button-prev:after{margin-left:0 !important;margin-right:3px !important;}
 .tooltipbtn{width:13px;height:14px;background:#000;color:#fff;font-size:11px;border-radius:50%;margin-left:6px;display:inline-block;}
 .text-small{font-size:14px;}
+@keyframes fade {
+   0%{
+      opacity: 0; transition:0.6s;
+   }
+   100%{
+      opacity: 1; transition:0.6s;
+   }
+}
+.welcomeRt {
+   animation: fade 0.5s linear; transition:0.6s;
+}

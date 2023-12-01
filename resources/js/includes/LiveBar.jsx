@@ -28,6 +28,7 @@ const ScrollingContent = styled.div`
 
 const LiveBar = () => {
   return (
+    <div className='pb-2 pb-md-0 blackbg' >
     <LiveBarWrapper className="livebar mintbg py-3 pb-2 px-2">
       <style>{`
          .livebar p{font-size:18px;text-transform:uppercase;}
@@ -38,15 +39,16 @@ const LiveBar = () => {
       <ScrollingContainer>
         <ScrollingContent>
           {/* Repeat your content here */}
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
+          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
+          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
+          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
+          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
+          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
           {/* Repeat as many times as needed */}
         </ScrollingContent>
       </ScrollingContainer>
     </LiveBarWrapper>
+    </div>
   );
 };
 
