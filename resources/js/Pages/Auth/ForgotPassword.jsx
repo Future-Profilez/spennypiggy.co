@@ -22,6 +22,7 @@ export default function ForgotPassword(props) {
             console.log("resp", resp);
             if(resp.data.status){
                 successAlert(resp.data.message);
+                setData("email", '');
             } else {
                 errorAlert(resp.data.message);
             }
