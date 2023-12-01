@@ -60,8 +60,10 @@ export default function ToCart({
             }
             } else { errorAlert(resp.data.msg);
             }
+            setLoading(false);
         }).catch(_err => {
             console.error("error", _err);
+            setLoading(false);
         });
         // if(auth && auth.id){
         // }
@@ -108,7 +110,7 @@ export default function ToCart({
         //     ItemAdded && ItemAdded("added");
         //     successAlert("item added in cart.");
         // }
-        setLoading(false);
+        
     };
 
     // const cartData = useSelector(state => state.data.cart.cart);

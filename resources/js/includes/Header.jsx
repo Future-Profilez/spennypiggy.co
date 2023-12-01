@@ -17,13 +17,17 @@ export default function Header(props) {
     const { auth, user } = props;
     const [loggedIn, setLoggedIn] = useState((auth && auth.username));
 
-    useEffect(()=>{
+    async function fetchCounter () {
       axios.get(`counter/${deviceid}`).then((resp)=>{
           console.log("resp", resp.data.counter);
           setCount(resp.data.counter);
       }).catch((_err)=>{
           console.error("error", _err);
       });
+    }
+    
+    useEffect(()=>{
+      fetchCounter();
     },[]);
 
     return <>
@@ -52,24 +56,24 @@ export default function Header(props) {
               }
 
               <button className="cartLink position-relative"  onClick={toggleClass}>
-              <svg width="58" height="59" viewBox="0 0 58 59" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <g filter="url(#filter0_d_467_5581)">
-                <rect y="0.5" width="55" height="55" rx="11" fill="#F94F97"/>
-                <rect x="0.55" y="1.05" width="53.9" height="53.9" rx="10.45" stroke="#E6EA7B" strokeWidth="1.1"/>
-                </g>
-                <path d="M17.8125 35.4375H36.1875M17.8125 28.4375H36.1875M17.8125 21.4375H36.1875" stroke="#E6EA7B" strokeWidth="2.625" strokeLinecap="round" strokeLinejoin="round"/>
-                <defs>
-                <filter id="filter0_d_467_5581" x="0" y="0.5" width="58" height="58" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-                <feFlood floodOpacity="0" result="BackgroundImageFix"/>
-                <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-                <feOffset dx="3" dy="3"/>
-                <feComposite in2="hardAlpha" operator="out"/>
-                <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0"/>
-                <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_467_5581"/>
-                <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_467_5581" result="shape"/>
-                </filter>
-                </defs>
-              </svg>
+                <svg width="58" height="59" viewBox="0 0 58 59" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <g filter="url(#filter0_d_467_5581)">
+                  <rect y="0.5" width="55" height="55" rx="11" fill="#F94F97"/>
+                  <rect x="0.55" y="1.05" width="53.9" height="53.9" rx="10.45" stroke="#E6EA7B" strokeWidth="1.1"/>
+                  </g>
+                  <path d="M17.8125 35.4375H36.1875M17.8125 28.4375H36.1875M17.8125 21.4375H36.1875" stroke="#E6EA7B" strokeWidth="2.625" strokeLinecap="round" strokeLinejoin="round"/>
+                  <defs>
+                  <filter id="filter0_d_467_5581" x="0" y="0.5" width="58" height="58" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                  <feFlood floodOpacity="0" result="BackgroundImageFix"/>
+                  <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                  <feOffset dx="3" dy="3"/>
+                  <feComposite in2="hardAlpha" operator="out"/>
+                  <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0"/>
+                  <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_467_5581"/>
+                  <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_467_5581" result="shape"/>
+                  </filter>
+                  </defs>
+                </svg>
               </button>
             </div>
             </div>
@@ -78,27 +82,26 @@ export default function Header(props) {
 
         <div className={`modelmenu ${isActive ? 'Open': null}`}>
           <div className="MegaMenu">
-          <button className="closemega" onClick={toggleClass}>
-            <svg width="58" height="58" viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <g filter="url(#filter0_d_746_858)">
-              <rect width="55" height="55" rx="11" fill="#F94F97"/>
-              <rect x="0.55" y="0.55" width="53.9" height="53.9" rx="10.45" stroke="#E6EA7B" strokeWidth="1.1"/>
-              </g>
-              <path d="M17.8125 34.9375L36.5 20.9375M27 27.9375H27.1562M17.8125 20.9375L36 34.9375" stroke="#E6EA7B" strokeWidth="2.625" strokeLinecap="round" strokeLinejoin="round"/>
-              <defs>
-              <filter id="filter0_d_746_858" x="0" y="0" width="58" height="58" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-              <feFlood floodOpacity="0" result="BackgroundImageFix"/>
-              <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-              <feOffset dx="3" dy="3"/>
-              <feComposite in2="hardAlpha" operator="out"/>
-              <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0"/>
-              <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_746_858"/>
-              <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_746_858" result="shape"/>
-              </filter>
-              </defs>
-              </svg>
-
-          </button>
+              <button className="closemega" onClick={toggleClass}>
+                <svg width="58" height="58" viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <g filter="url(#filter0_d_746_858)">
+                  <rect width="55" height="55" rx="11" fill="#F94F97"/>
+                  <rect x="0.55" y="0.55" width="53.9" height="53.9" rx="10.45" stroke="#E6EA7B" strokeWidth="1.1"/>
+                  </g>
+                  <path d="M17.8125 34.9375L36.5 20.9375M27 27.9375H27.1562M17.8125 20.9375L36 34.9375" stroke="#E6EA7B" strokeWidth="2.625" strokeLinecap="round" strokeLinejoin="round"/>
+                  <defs>
+                  <filter id="filter0_d_746_858" x="0" y="0" width="58" height="58" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                  <feFlood floodOpacity="0" result="BackgroundImageFix"/>
+                  <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                  <feOffset dx="3" dy="3"/>
+                  <feComposite in2="hardAlpha" operator="out"/>
+                  <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0"/>
+                  <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_746_858"/>
+                  <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_746_858" result="shape"/>
+                  </filter>
+                  </defs>
+                  </svg>
+              </button>
               <div className="menuImg">
                 <img src={spennypiggy} alt="img" />
               </div>
@@ -119,7 +122,7 @@ export default function Header(props) {
                 <li><Link onClick={toggleClass} href={"/cart"} >Cart</Link></li>
                 <li><Link onClick={toggleClass} href={route("how-it-works")} >How it works</Link></li>
                 <li><a onClick={toggleClass} target='_blank' href="https://intercom.help/spenny-piggy" >FAQ's</a></li>
-                <li><Link onClick={toggleClass} href={"https://blog.spennypiggy.co"} >Blog</Link></li>
+                <li><a onClick={toggleClass} href="https://blog.spennypiggy.co" >Blog</a></li>
                 <li><Link onClick={(toggleClass)} className='livechat' >Need help ?</Link></li>
               </ul>
               </div>
