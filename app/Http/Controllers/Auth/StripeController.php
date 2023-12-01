@@ -312,9 +312,9 @@ class StripeController extends Controller
                 $payment_data->refresh();
                 $message = $stripeid->message;
                 if ($dd->wish_id == NULL) {
-                    CheckoutUser::dispatch($payment_data, false, $dd, $message);
+                    CheckoutUser::dispatch($payment_data, false, $dd, $message, false);
                 } else {
-                    CheckoutUser::dispatch($payment_data, false, false, $message);
+                    CheckoutUser::dispatch($payment_data, false, false, $message, false);
                 }
             }
 
@@ -421,7 +421,7 @@ class StripeController extends Controller
     public function createAnonymousCheckout($device_id)
     {
         try {
-
+            // \Log::info(request()->query('name'));
             $cart = UserCart::where('device_id', $device_id)->where('status', 1)->get();
 
             if (!empty($cart)) {
@@ -459,7 +459,7 @@ class StripeController extends Controller
                     'payment_method_config_detail_id' => optional($callbackData->payment_method_configuration_details)->id,
                     'payment_method_type' => optional($callbackData->payment_method_types)[0],
                     'session_created' => $callbackData->created,
-                    'name' => request()->query('name') ?? null,
+                    'name' => request()->query('from') ?? null,
                     'message' => request()->query('message') ?? null,
                     'session_expires_at' => $callbackData->expires_at,
                     'created_at' => Carbon::now(),
@@ -504,11 +504,10 @@ class StripeController extends Controller
                     'tax' => $tax,
                 ]);
                 $data->refresh();
-
                 $value->status = 0;
                 $value->save();
-                // $dd->wish_id == NULL
-                CheckoutUser::dispatch($data, true, false, false);
+                // $dd->wish_id == NULL 
+                CheckoutUser::dispatch($data, true, false, false, $stripeid->name);
             }
 
 

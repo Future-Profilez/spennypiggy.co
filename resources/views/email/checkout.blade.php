@@ -21,13 +21,13 @@
                     @if ($data->wish_item_id == null)
                         <td
                             style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                            {{ $anon == false ? $data->cart->user->name : 'Anonymous user' }} granted you a surprise gift of
+                            {{ $anon == false ? $data->cart->user->name : $anonname }} granted you a surprise gift of
                             £{{ $data->amount }}🤩.
                         </td>
                     @else
                         <td
                             style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                            {{ $anon == false ? $data->cart->user->name : 'Anonymous user' }} granted you a Wish on <span
+                            {{ $anon == false ? $data->cart->user->name : $anonname }} granted you a Wish on <span
                                 style="color:#F94F97 ">{{ $data->wish->wishname ?? '' }}</span> of £{{ $data->amount }}🤩.
                         </td>
                     @endif
