@@ -506,7 +506,7 @@ class StripeController extends Controller
                 $data->refresh();
                 $value->status = 0;
                 $value->save();
-                // $dd->wish_id == NULL 
+                // $dd->wish_id == NULL
                 CheckoutUser::dispatch($data, true, false, false, $stripeid->name);
             }
 
