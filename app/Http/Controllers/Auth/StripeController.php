@@ -208,30 +208,38 @@ class StripeController extends Controller
             }
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-            $sessionCreate = $stripe->checkout->sessions->create([
-                'success_url' => route('checkout.success', [$owner_id]),
-                'cancel_url' => route('checkout.cancel', [$owner_id]),
-                'line_items' => $lineItems,
-                'mode' => 'payment',
-                // 'payment_intent_data' => [
-                //     'transfer_data' => [
-                //         'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
-                //     ],
-                //     'application_fee_amount' => $taxNew,
-                //     'receipt_email' => 'saurav@futureprofilez.com',
-                // ],
-                // 'customer_email' => 'saurav@futureprofilez.com',
 
-            ]);
+
+            // $sessionCreate = $stripe->paymentLinks->create([
+            //     'line_items' => $lineItems,
+            //     'on_behalf_of' => $getdata[0]->owner->account_id,
+            //     'application_fee_amount' => $taxNew,
+            //     'transfer_data' => ['destination' => $getdata[0]->owner->account_id],
+            // ]);
+
+            // $sessionCreate = $stripe->checkout->sessions->create([
+            //     'success_url' => route('checkout.success', [$owner_id]),
+            //     'cancel_url' => route('checkout.cancel', [$owner_id]),
+            //     'line_items' => $lineItems,
+            //     'mode' => 'payment',
+            //     'payment_intent_data' => [
+            //         'transfer_data' => [
+            //             'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
+            //         ],
+            //         'application_fee_amount' => $taxNew,
+            //         'receipt_email' => 'saurav@futureprofilez.com',
+            //     ],
+            //     'customer_email' => 'naveen@internetbusinesssolutionsindia.com',
+            // ]);
 
             // $subtotal = ($sessionCreate->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
 
             // $taxNew = ($sessionCreate->amount_total / 100) - $subtotal;
 
-            session()->forget('session_id');
-            session(['session_id' => $sessionCreate->id]);
+            // session()->forget('session_id');
+            // session(['session_id' => $sessionCreate->id]);
             $stripePaymentDetail = StripePaymentDetail::create([
-                'session_id' => $sessionCreate->id,
+                // 'session_id' => $sessionCreate->id,
                 'amount_subtotal' => $subtotal,
                 'amount_total' => $sessionCreate->amount_total / 100,
                 'tax' => $taxNew,
