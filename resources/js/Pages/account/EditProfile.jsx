@@ -90,19 +90,19 @@ export default function EditProfile({ user }) {
                             <label className="mb-1">Display Name</label>
                             <input type="text" name="name" defaultValue={user?.name || ''}
                                 onChange={(e) => setData('name', e.target.value)}
-                                class="form-input px-2 py-2 border w-full rounded-md" />
+                                className="form-input px-2 py-2 border w-full rounded-md" />
                         </li>
                         <li className="mb-2">
                             <label className="mb-1">Username</label>
                             <input defaultValue={user?.username || ''} onChange={(e) => setData("username", e.target.value)}
-                                type="text" name="username" class="form-input px-2 py-2 border w-full rounded-md" placeholder='Spennypiggy.com/warner99' onKeyUp={(e) => {setUsername(e.target.value)}}/>
+                                type="text" name="username" className="form-input px-2 py-2 border w-full rounded-md" placeholder='Spennypiggy.com/warner99' onKeyUp={(e) => {setUsername(e.target.value)}}/>
                         </li>
                         <li><strong className='d-block text-start mb-4' >Profile URL : https://www.spennypiggy.co/{username}</strong></li>
                         <li className="mb-3">
                             <label className="mb-1">Bio</label>
                             <textarea defaultValue={user?.bio || ''}
                                 onChange={(e) => setData("bio", e.target.value)}
-                                name="bio" class="form-input px-2 py-2 border w-full rounded-md"
+                                name="bio" className="form-input px-2 py-2 border w-full rounded-md"
                                 placeholder='Bio' />
                         </li>
                     </ul>

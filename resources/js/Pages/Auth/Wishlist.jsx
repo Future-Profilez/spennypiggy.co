@@ -10,9 +10,14 @@ import Accordion from "react-bootstrap/Accordion";
 import uploadedimg from "../../../assets/img/uploadedimg.png";
 import Popup from "@/Components/Popup";
 import { router } from "@inertiajs/react";
+import {  Pagination, Navigation  } from 'swiper/modules';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/navigation';
+
 
 export default function Wishlist(props) {
-
     const { categories, auth, fetchingcats, item, editpop } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
@@ -48,11 +53,18 @@ export default function Wishlist(props) {
         );
     };
 
+    const imageLinks = [
+        'be9060ab-1a76-452f-b805-1c71d9af4fb7',
+        '01bbc3bd-7e79-4dc0-817c-2c260da43c20',
+        'f0c45dc9-cc56-4955-a406-7527004a1373',
+        '4c42426a-1396-49e2-8b46-2381a2ae5d7b'
+    ];
+
     const { data, setData, post, processing, errors, reset } = useForm({
         wishname: item && item.wishname ? item.wishname : "",
         price: item && item.price ? item.price : "",
         item_url: item && item.item_url ? item.item_url : "",
-        thumbnail: item && item.thumbnail ? item.thumbnail : "" ,
+        thumbnail: item && item.thumbnail ? item.thumbnail : imageLinks[0] ,
         subscription: item && item.subscription ? item.subscription : "",
         subscription_period: item && item.subscription_period ? item.subscription_period : "" ,
         repeat_purchase: item && item.repeat_purchase ? item.repeat_purchase : 0,
@@ -60,8 +72,15 @@ export default function Wishlist(props) {
     });
     const [period, setPeriod] = useState(data.subscription_period || item && item.subscription_period );
 
-    useEffect(()=>{ 
-    }, [item && item.uuid]);
+    
+
+    const onSlideChange = (swiper) => {
+        setData("thumbnail", imageLinks[swiper && swiper.activeIndex]);
+    };
+
+    // useEffect(()=>{ 
+    //     setData("thumbnail", imageLinks[0]);
+    // }, [item && item.uuid]);
 
     const setSubs = (e) => {
         setData("subscription", e);
@@ -77,6 +96,7 @@ export default function Wishlist(props) {
             setCheckboxes(checkboxes.filter((item) => item !== value));
         }
     };
+
     const getFileUID = async (data) => {
         let ss = data?.uuid;
         setThumbnail(ss);
@@ -151,6 +171,8 @@ export default function Wishlist(props) {
         }
     };
 
+    
+
     return (
             <Popup modalclass='pinkmodal' size='md' action={close}
                 classes={`${editpop ? "editpop"  : 'btn-pink lg px-4'}`}
@@ -221,11 +243,27 @@ export default function Wishlist(props) {
                                                     Choose Image or Upload
                                                 </label>
 
-                                                <div className="default-wish-img mb-1">
+                                                {item && item.perma_link ? <div className="default-wish-img mb-1">
                                                     <img src={item && item.perma_link || uploadedimg}
                                                         className="img-fluid"
                                                     />
-                                                </div>
+                                                </div> :
+                                                    <Swiper spaceBetween={0}
+                                                        pagination={{ clickable: true }}
+                                                        navigation={true}  onSlideChange={onSlideChange}
+                                                        modules={[Pagination, Navigation]}
+                                                        slidesPerView={1} >
+                                                        {imageLinks && imageLinks.map((image)=>{ 
+                                                            return <SwiperSlide key={`swiper-item-${image}`} >
+                                                                <div className="default-wish-img mb-1">
+                                                                    <img src={`https://ucarecdn.com/${image}/`} className="img-fluid" />
+                                                                </div>
+                                                            </SwiperSlide>
+                                                        })}
+                                                    </Swiper>
+                                                 }
+
+                                                <h4 className="mt-2 mb-2 w-100 text-center"  >OR</h4>
                                                 <GlobalUploader
                                                     clear={clear}
                                                     sendFile={getFileUID}

@@ -1,15 +1,14 @@
 import React from 'react';
-import miniplantimg from '../../assets/img/miniplantimg.jpg';
-import { Link } from '@inertiajs/react';
-import ToCart from './ToCart';
 import ShareProfile from './ShareProfile';
-import AddCart from './AddCart';
 import { useState } from 'react';
 import uploadedimg from '../../assets/img/uploadedimg.png';
 import { useEffect } from 'react';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import Wishlist from '@/Pages/Auth/Wishlist';
 import PriceFormat from '@/includes/PriceFormat';
+const AddCart = React.lazy(() => import('./AddCart'));
 
 export default function Wishlistbox(props) {
 
@@ -37,43 +36,58 @@ export default function Wishlistbox(props) {
   }
  
   const price = () => { 
-    if(!IsloggedIn && itm.subscription !== 2){
-      const p = (+itm.price) + (+itm.tax_amount)
-      return p
-    } else { 
+    // if(!IsloggedIn && itm.subscription !== 2){
+    //   const p = (+itm.price) + (+itm.tax_amount)
+    //   return p
+    // } else { 
       return itm.price;
-    }
+    // }
   };
+
+  console.log("itm",itm);
+
+  const renderTooltip = (props) => (
+    <Tooltip id="button-tooltip" {...props}>
+      *not including 20% service fee.
+    </Tooltip>
+  );
+  
   
   return <>
       <div className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
         {IsloggedIn ?   
           <Wishlist item={itm} editpop={true} fetchingcats={fetchingcats} categories={categories} />  
           : 
-        <AddCart 
-         IsloggedIn={IsloggedIn} auth={auth} item={itm} uuid={itm.uuid} action={open} /> 
+          <AddCart  IsloggedIn={IsloggedIn} auth={auth} item={itm} uuid={itm.uuid} action={open} />  
         }
-
-      <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
-        <img src={itm?.perma_link ? itm?.perma_link : uploadedimg} alt='img' className='' />
-      </div>
-      <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
-        <div>
-          <h4 className={`fon-bold text-dark ${itm.subscription == '2' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>
-          <h5 className='font-CeraGRBold text-dark'>{format(price())}</h5>
+        <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
+          <img src={itm?.perma_link ? itm?.perma_link : uploadedimg} alt='img' className='' />
         </div>
-        {itm.subscription == '2' ? 
-          <div className='crowd pt-2'>
-          <ProgressBar now={itm.fullfill_amount} max={itm.price} />
-          <p className='mt-1 mb-0 text-small' >{getPercentage(itm.price, itm.fullfill_amount)}% granted</p>
-          </div> 
-        : '' }
-      </div>
-      <div className='sharelinks'>
-        <ShareProfile username={itm.wishname} custom={`${window.location.href}?item=${itm.uuid}`} >
-          <div className='text-pink font-GillSans'>Share Link</div>
-        </ShareProfile>
-      </div>
+        <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
+          <div>
+            <h4 className={`fon-bold text-dark ${itm.subscription == '2' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>
+            <h5 className='font-CeraGRBold text-dark'>{format(price())}
+              <OverlayTrigger
+                placement="right"
+                delay={{ show: 250, hide: 400 }}
+                overlay={renderTooltip} >
+                <button className='tooltipbtn' >?</button>
+              </OverlayTrigger>
+            </h5>
+          </div>
+          {itm.subscription == '2' ? 
+            <div className='crowd pt-2'>
+            <ProgressBar now={itm.fullfill_amount} max={itm.price} />
+            <p className='mt-1 mb-0 text-small' >{getPercentage(itm.price, itm.fullfill_amount)}% granted</p>
+            </div> 
+          : '' }
+        </div>
+
+        <div className='sharelinks'>
+          <ShareProfile username={itm.wishname} custom={`${window.location.href}?item=${itm.uuid}`} >
+            <div className='text-pink font-GillSans'>Share Link</div>
+          </ShareProfile>
+        </div>
     </div>
   </>
 }

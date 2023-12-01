@@ -1,102 +1,73 @@
+import React from "react";
+import  LoaderButton from "@/Components/LoaderButton";
 import { useAlerts } from '@/Components/Alerts';
-import LoaderButton from '@/Components/LoaderButton';
 import axios from 'axios';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import DeviceID from "@/includes/DeviceID";
 
-export default function ToCart({ actionfrom, checkoutbtn, ItemAdded, item, crowd, pending, uuid, text, classes, custom, removeItem, type, is_cart, amount, isEqual }) {
-
+export default function ToCart({ 
+    is_surprise, surprise_amount, surprise_message, owner, 
+    auth, actionfrom, checkoutbtn, ItemAdded, item, crowd, pending, uuid, text, classes, custom, removeItem, type, is_cart, amount, isEqual }) {
+    
+    const deviceID  = DeviceID();
+    console.log("deviceID",deviceID )
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [loading, setLoading] = useState(false);
-    const [is_Cart, setis_Cart] = useState(is_cart);
-
-    const removeGiftItem = () => { 
-        axios.get(`remove-surprise-from-cart/${uuid}`).then(resp => {
-            if (resp.data.success) {
-                successAlert(resp.data.msg);
-                window.location = '/cart';
-            } 
-            if (resp.data.error) {
-                errorAlert(resp.data.msg);
-            } 
-        }).catch(_err => {
-            console.error("error", _err);
-        });
-    }
 
     const addtocart = async (sets) => {
-        if(item && item.product == 'surprise'){
-            removeGiftItem();
-            return false;
-        } else { 
-            if(item && item.subscription == "2" && isEqual){
-                toast.error(`Wish item funding is completed.`);
-                return false;
+        function check(){
+            if (checkoutbtn) {
+                window.location = "/cart";
             }
-            if (!item?.is_cart && crowd && !amount) {
-                toast.error(`Please enter a amount to gift this item. `);
-                return false;
-            }
-            if (crowd && amount > pending) {
-                toast.error(`Amount can not be more than remaining amount £${pending}. `);
-                return false;
-            }
-    
-            if (amount && amount < 50) {
-                toast.error("Amount must be greater than 50.");
-                return false;
-            }
-            setLoading(true);
-            axios.get(`/add-to-cart/${uuid}${amount ? `/${amount}` : ''}`).then(resp => {
-                if (resp.data.success) {
-                    if (resp.data.added == true) {
-                        successAlert(resp.data.msg);
-                        setis_Cart(true);
-                        ItemAdded("added");
-                        if(sets == 1){
-                        }
-                        if(sets == 2){
-                            window.location = '/cart';
-                        }
-                    } else {
-                        successAlert(resp.data.msg);
-                        setis_Cart(false);
-                        ItemAdded("removed");
-                        
-                    }
-                    if (resp.data.uuid) {
-                        removeItem && removeItem(uuid);
-                    }
-                    if (checkoutbtn) {
-                        window.location = '/cart';
-                    }
-                } else {
-                    errorAlert(resp.data.msg);
-                }
-                if(actionfrom){
-                    window.location = '/cart';
-                }
-                setLoading(false);
-            }).catch(_err => {
-                console.error("error", _err);
-                setLoading(false);
-            });
         }
+        if (item && item.subscription == "2" && isEqual) {
+            toast.error(`Wish item funding is completed.`);
+            return false;
+        }
+        if (!item?.is_cart && crowd && !amount) {
+            toast.error(`Please enter a amount to gift this item.`);
+            return false;
+        }
+        if (crowd && amount > pending) {
+            toast.error(`Amount can not be more than remaining amount £${pending}.`);
+            return false;
+        }
+        // if (amount && amount < 50) {
+        //     toast.error("Amount must be greater than 50.");
+        //     return false;
+        // }
+        setLoading(true);
+        console.log("auth",auth)
+        axios.get(`/add-to-cart/${uuid}/${deviceID}${amount ? `/${amount}` : ''}`).then(resp => {
+        if (resp.data.success) {
+            if (resp.data.added == true) {
+                successAlert(resp.data.msg);
+                ItemAdded && ItemAdded("added");
+                check();
+            } else {
+                successAlert(resp.data.msg);
+            }
+            if (resp.data.uuid) {
+                removeItem && removeItem(uuid);
+            }
+            } else { errorAlert(resp.data.msg);
+            }
+            setLoading(false);
+        }).catch(_err => {
+            console.error("error", _err);
+            setLoading(false);
+        });
     };
-
-    
 
     return <>
         {custom ?
-            <div onClick={addtocart} >{custom}</div>
-            :
-                <LoaderButton disabled={loading} onClick={()=>addtocart(1)}
-                    className={`flex  ${classes} mx-auto`}
-                    spinnerClassName='fill-red-600'>
-                    {loading ? "Proccessing" : is_Cart ? "Remove From Cart" : text }
-                </LoaderButton>
-           
+            <div onClick={addtocart} >{custom}</div> :
+            <LoaderButton disabled={loading} onClick={()=>addtocart(1)}
+                className={`flex ${classes} mx-auto`}
+                spinnerClassName='fill-red-600'>
+                {loading ? "Proccessing" : text }
+            </LoaderButton>
         }
     </>
 }
-

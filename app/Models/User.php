@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 use App\Uploadcare;
 use App\WatermarkHelper;
@@ -106,5 +106,4 @@ class User extends Authenticatable
         }
         return $url;
     }
-    
 }

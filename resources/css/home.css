@@ -5,12 +5,22 @@
 .headtitle{width:33.33%;font-size:24px;text-transform:uppercase;}
 .spennylogo{width:auto;max-width:270px;}
 .cartLogin{width:33.33%;display:flex;align-items:center;align-content:center;justify-content:flex-end;}
-button.closemega{position:absolute;right:30px;top:30px;}
+.closemega{position:absolute;right:30px;top:30px;}
 .welcome{margin:20px auto 0;display:flex;align-items:center;align-content:center;justify-content:space-between;}
 .welcomeHeading{color:var(--pink);font-size:65px;line-height:62.5px;}
 .welcomeTitle{color:var(--pink);font-size:35px;line-height:62.5px;}
 .welcomeLeft{width:60%;}
 .welcomeRt{width:40%;}
+.spennylogo img {
+   width: 100%;
+   height: 100%;
+}
+.funboximg span.lazy-load-image-background, 
+.spennylogo .lazy-load-image-background , 
+.welcomeRt span.lazy-load-image-background {
+   width: auto !important;
+   height: auto !important;
+}
 .wishlistbtn a{transform:rotate(-11deg);}
 .wishlistbtn{margin-top:60px;}
 .welcomeTitle{transform:rotate(352deg);-webkit-text-stroke:1px #e6ea81;text-transform:capitalize !important;text-shadow:2px 2px 0 #e6ea81;}
@@ -20,7 +30,7 @@ button.closemega{position:absolute;right:30px;top:30px;}
 .MegaMenu{display:none;opacity:0;transition:all ease .3s;position:fixed;top:0;left:0;right:0;width:100%;height:100vh;background:var(--pink);align-items:stretch;align-content:stretch;justify-content:center;z-index:9999;}
 .menuImg{width:50%;border-right:1px solid var(--yellow);padding:120px 40px 40px 40px;display:inline-flex;align-items:flex-start;align-content:flex-start;justify-content:center;}
 .menuList{width:50%;display:flex;align-items:center;align-content:center;justify-content:flex-start;padding:25px 100px 25px 70px;}
-.menuList ul li{margin:0 0 20px;}
+.menuList ul li{margin:0 0 10px;}
 .menuList ul li a{color:var(--light-Yellow,var(--yellow));font-family:var(--heading-font);font-size:6vh;font-style:normal;text-transform:uppercase;}
 .Open{transition:all ease .3s;}
 .Open .MegaMenu{display:flex;opacity:1;transition:all ease .3s;}
@@ -84,7 +94,7 @@ margin:30px 0 0 0;}
 .loginform{border-radius:30px 30px;}
 .loginheadbox .mintbg{width:30px;height:30px;display:inline-block;border-radius:60px;border:1px solid var(--black);vertical-align:middle;margin:0 10px 0 0;}
 .loginheadbox .bluebg{width:30px;height:30px;border-radius:60px;border:1px solid var(--black);display:inline-block;vertical-align:middle;}
-.loginform form{padding:50px 35px 60px;}
+.loginform form{padding:40px 50px;}
 .loginform form ul li{margin:0 0 40px;}
 .loginform form ul li label{display:block;width:100%;color:#333;font-family:var(--parabold-font);font-size:18px;font-style:normal;font-weight:400;line-height:120%;letter-spacing:-1.26px;text-transform:uppercase;margin:0 0 10px;}
 .loginform form ul li input{border-radius:12px;border:1px solid var(--black);background:var(--white);box-shadow:4px 4px 0px 0px var(--black);display:block;width:100%;padding:20px 20px;transition:all ease .3s}
@@ -97,7 +107,7 @@ margin:30px 0 0 0;}
 .userManageRt{width:773px;padding:0 0 0 35px;}
 select#country{text-transform:capitalize;border-radius:10px;border:1px solid var(--mint)!important;background:var(--black);padding:11px 10px 12px;color:var(--mint);font-family:var(--font-CeraGRBold);font-size:20px;font-style:normal;font-weight:400;letter-spacing:-1.8px;min-width:121px;}
 select#country:hover,select#country:focus{outline:none;box-shadow:none;}
-.wishlistcntbox{border-radius:20px;}
+.wishlistcntbox{border-radius:20px;overflow:hidden;}
 .wishlistimg{overflow:hidden;}
 .wishlistimg img{width:100%;object-fit:cover;}
 .wishlistcntbox.shadow-voilet{box-shadow:6px 6px 0 0 var(--voilet);}
@@ -257,7 +267,7 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 .userphotobox > img{object-fit:cover;}
 .cartbanner img{width:100%;height:100%;max-height:220px;}
 .wishlistdetial h5 .font-CeraGRBold{font-family:var(--font-CeraGR) !important;font-weight:800 !important;}
-.wishlistimg img{border-radius:15px;}
+.wishlistimg img{border-radius:0 0 20px 20px;}
 .wishlistdetial h5{font-family:var(--font-CeraGR) !important;font-weight:bolder !important;}
 .content-pr-modal{min-width:500px !important;height:100vh;max-height:80vh;border-radius:16px;overflow:auto;}
 .content-pr-modal iframe{width:100%;height:100%;background:transparent;padding:10px;}
@@ -265,7 +275,7 @@ ul.socialmedia a svg{width:30px;height:30px;}
 ul.socialmedia a img{width:35px;height:35px;}
 .progress{background:#ECCEDB;height:9px;}
 .progress-bar{background:var(--pink);}
-.wishlistimg img{height:190px;border-radius:20px;}
+.wishlistimg img{height:190px;border-radius:0 0 20px 20px;}
 .updateavatar.modal .modal-content{margin:30px;}
 .updateavatar.modal{background:rgb(0 0 0 / 52%);}
 .userProfile{position:sticky;top:20px;}
@@ -335,7 +345,6 @@ button.editProfile{padding:10px 10px;font-size:18px;}
 .userManageHead .btn-pink-md{width:190px;height:46px;border-radius:9px;font-size:16px;}
 .addsocial ul li a svg{width:14px;height:14px;vertical-align:middle;}
 select#country{width:150px;padding:10px 10px;font-size:18px;}
-.wishlistcntbox{border-radius:10px!important;}
 .wishlistdetial{padding:15px;}
 .wishlistdetial h3{font-size:15px;}
 .wishlistPage{padding-top:10px;}
@@ -367,8 +376,8 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .headermain{padding-top:15px;padding-bottom:20px;}
 .header{padding:0px 13px;box-shadow:3px 6px 0 0 var(--mint);border-radius:10px;}
 .spennylogo{margin:-10px 0 0 -20px;}
-button.closemega{position:absolute;right:31px;top:26px;}
-button.closemega svg{width:56px;top:10px;}
+.closemega{position:absolute;right:31px;top:26px;}
+.closemega svg{width:56px;top:10px;}
 .headtitle{display:none;}
 .menuList ul li{margin-bottom:10px;}
 .menuList ul li a{font-size:3vh;}
@@ -465,9 +474,7 @@ button.closemega svg{width:56px;top:10px;}
 .noResult h2.headingLg{font-size:40px;line-height:44px;}
 .welcomeTitle{transform:rotate(-8deg);}
 .funpart{padding-bottom:0px;}
-.welcomeTitle {
-  text-transform: uppercase !important;
-}
+.welcomeTitle{text-transform:uppercase !important;}
 }
 @media(max-width:575px){.wishlistdetial{min-height:125px;}
 .funboxs{position:sticky;top:20px;}
@@ -499,7 +506,7 @@ button.cartLink svg{width:50px;height:50px;}
 .userphotobox{height:190px;}
 .loginform form{padding:20px;}
 .pass.greybox{padding:0 !important;background:transparent;}
-.wishlistimg img{height:140px !important;}
+.wishlistimg img{height:160px !important;}
 .btn-pink.lg,.btn-pink.lg2{padding:15px;letter-spacing:1px;font-size:16px !important;}
 }
 @media(max-width:449px){.userphoto{left:7px;}
@@ -511,14 +518,17 @@ button.cartLink svg{width:50px;height:50px;}
 select#country{width:100%;margin-bottom:10px;}
 .wishlistcntbox{max-width:100%;width:100%;}
 }
-@media(max-width:400px){.headingMd{font-size:44px !important;line-height:45px !important;}
+@media(max-width:400px){.wishlistimg img{height:230px!important;}
+.wishlistdetial h4{font-size:20px !important;}
+.wishlistdetial h5{font-size:20px !important;margin:10px 0 !important;}
+.headingMd{font-size:44px !important;line-height:45px !important;}
 .userManageRt > .row > div{width:100% !important;}
 .spennylogo img{max-width:120px;}
 .welcomeHeading{font-size:35px;line-height:40px;}
 .noResult h2.headingLg{font-size:25px;line-height:30px;}
 .menuImg img{max-width:119px;}
-button.closemega svg{width:48px;}
-button.closemega{top:18px;}
+.closemega svg{width:48px;}
+.closemega{top:18px;}
 }
 /* msg text */
 div#msgText h3{font-size:15px;color:#fff;margin-bottom:7px;}
@@ -538,3 +548,9 @@ div#msgText p.valid svg path{stroke:#27b227;}
 div#msgText p{display:flex;align-items:flex-start;}
 .loginPage .username-text{font-size:15px !important;padding:10px 4px 0px 4px;margin-bottom:0 !important;}
 .site-counter{position:absolute;background:#8c52ff;color:#fff;width:23px;height:23px !important;line-height:25px !important;border-radius:50%;font-size:11px;font-weight:bold !important;right:-2px;top:-9px;}
+.modal-content{border-radius:30px;}
+.swiper-button-next,.swiper-button-prev{border-radius:10px;background:#fff;padding:10px;width:35px !important;height:35px !important;}
+.swiper-button-next:after,.swiper-button-prev:after{width:20px !important;height:20px !important;font-size:21px !important;margin-left:3px;color:#000;font-weight:bolder !important;}
+.swiper-button-prev:after{margin-left:0 !important;margin-right:3px !important;}
+.tooltipbtn{width:13px;height:14px;background:#000;color:#fff;font-size:11px;border-radius:50%;margin-left:6px;display:inline-block;}
+.text-small{font-size:14px;}

@@ -7,7 +7,6 @@ export default function SiteMetas(){
         <title>Spenny Piggy</title>
         <meta charSet="utf-8" />
         <link rel="canonical" href="https://spennypiggy.co" />
-        <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,maximum-scale=2" />
         <link rel="manifest" href="/site.webmanifest" />
         <link rel="mask-icon" href="/favicon.ico" />
         <link rel="icon" href="/favicon.ico" />

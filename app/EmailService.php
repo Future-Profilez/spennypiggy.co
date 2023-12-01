@@ -4,6 +4,7 @@ namespace App;
 
 use App\Mail\Checkout;
 use App\Mail\CheckoutToUser;
+use App\Mail\ForgotPassEmail;
 use App\Mail\SubscriptionMail;
 use App\Mail\VerifyEmail;
 use App\Mail\Welcome;
@@ -43,7 +44,7 @@ class EmailService
         }
     }
 
-    public static function checkOutUser($data, $anon, $surprise, $message)
+    public static function checkOutUser($data, $anon, $surprise, $message, $anonname)
     {
         try {
             $emailData = [
@@ -56,7 +57,7 @@ class EmailService
             ];
 
             Mail::to($emailData['to'])
-                ->send(new Checkout($data, $anon, $surprise, $message));
+                ->send(new Checkout($data, $anon, $surprise, $message, $anonname));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
@@ -108,6 +109,16 @@ class EmailService
         try {
             Mail::to($data['to'])
                 ->send(new VerifyEmail($data));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+    public static function ForgotPassword($data)
+    {
+        try {
+            Mail::to($data['to'])
+                ->send(new ForgotPassEmail($data));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }

@@ -94,16 +94,9 @@ class StripeController extends Controller
                         'email' => "jack@spennypiggy.co",
                         'first_name' => "Jack",
                         'last_name' => "Smith",
-                        'dob' => [
-                            'day' => 29,
-                            'month' => 7,
-                            'year' => 1994
-                        ],
                         'phone' => "2045873148"
                     ]
                 ];
-
-
                 $account = StripeControl::createAccount($payload);
                 $user->account_id = $account->id;
                 $user->country = $country;
@@ -133,8 +126,6 @@ class StripeController extends Controller
             return redirect(route("stripe.index"))->with("error", "Internal server error:" . $e->getMessage());
         }
     }
-
-
 
 
     /**
@@ -181,19 +172,16 @@ class StripeController extends Controller
     }
 
     /* create checkout */
-
-    public function createCheckout($owner_id, Request $request)
+    public function createCheckout($owner_id)
     {
         try {
-            if (!empty($request)) {
+            if (!empty(request()->query('message'))) {
                 $wordLimit = 100;
-                $message = $request->message;
+                $message = request()->query('message');
 
                 if (str_word_count($message) > $wordLimit) {
                     return redirect()->back()->with("error", "Max limit for message is 100 words");
                 }
-
-                $from = $request->from;
             }
 
             $user = User::findOrFail(Auth::id());
@@ -212,36 +200,46 @@ class StripeController extends Controller
 
                 $lineItems[] = [
                     'price' => $priceId ?? '',
-                    'quantity' => 1,
+                    'quantity' => $dd->quantity,
                 ];
-
-                if (!empty($dd->wish->subscription)) {
-                    if ($dd->wish->subscription == 2) {
-                        $amountadd = $dd->wish->fullfill_amount + $dd->amount;
-                        $dd->wish->update(['fullfill_amount' => $amountadd]);
-                    }
-                }
 
                 $subtotal += $dd->amount;
                 $taxNew += $dd->tax;
             }
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+
+
+            // $sessionCreate = $stripe->paymentLinks->create([
+            //     'line_items' => $lineItems,
+            //     'on_behalf_of' => $getdata[0]->owner->account_id,
+            //     'application_fee_amount' => $taxNew,
+            //     'transfer_data' => ['destination' => $getdata[0]->owner->account_id],
+            // ]);
+
             $sessionCreate = $stripe->checkout->sessions->create([
                 'success_url' => route('checkout.success', [$owner_id]),
                 'cancel_url' => route('checkout.cancel', [$owner_id]),
                 'line_items' => $lineItems,
                 'mode' => 'payment',
+                'payment_intent_data' => [
+                    'transfer_data' => [
+                        'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
+                    ],
+                    'application_fee_amount' => $taxNew,
+                    'receipt_email' => 'saurav@futureprofilez.com',
+                ],
+                'customer_email' => 'naveen@internetbusinesssolutionsindia.com',
             ]);
 
             // $subtotal = ($sessionCreate->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
 
             // $taxNew = ($sessionCreate->amount_total / 100) - $subtotal;
 
-            session()->forget('session_id');
-            session(['session_id' => $sessionCreate->id]);
+            // session()->forget('session_id');
+            // session(['session_id' => $sessionCreate->id]);
             $stripePaymentDetail = StripePaymentDetail::create([
-                'session_id' => $sessionCreate->id,
+                // 'session_id' => $sessionCreate->id,
                 'amount_subtotal' => $subtotal,
                 'amount_total' => $sessionCreate->amount_total / 100,
                 'tax' => $taxNew,
@@ -250,7 +248,7 @@ class StripeController extends Controller
                 'payment_method_type' => optional($sessionCreate->payment_method_types)[0],
                 'user_id' => Auth::id(),
                 'owner_id' => $owner_id,
-                'name' => $from ?? '',
+                'name' => request()->query('from') ?? '',
                 'message' => $message ?? '',
                 'session_created' => $sessionCreate->created,
                 'session_expires_at' => $sessionCreate->expires_at,
@@ -262,7 +260,7 @@ class StripeController extends Controller
 
             return Inertia::location($sessionCreate->url);
         } catch (\Throwable $th) {
-            Log::error("Error in createCheckout: " . $th->getMessage());
+            // Log::error("Error in createCheckout: " . $th->getMessage());
             throw $th;
         }
     }
@@ -306,6 +304,9 @@ class StripeController extends Controller
                         $subscription->end_at = $end;
                         $subscription->status = 1;
                         $subscription->save();
+                    } elseif ($dd->wish->subscription == 2) {
+                        $dd->wish->fullfill_amount += $dd->amount;
+                        $dd->wish->save();
                     }
                 }
             }
@@ -326,10 +327,11 @@ class StripeController extends Controller
                     'tax' => $dd->tax,
                 ]);
                 $payment_data->refresh();
+                $message = $stripeid->message;
                 if ($dd->wish_id == NULL) {
-                    CheckoutUser::dispatch($payment_data, false, $dd, $stripeid->message);
+                    CheckoutUser::dispatch($payment_data, false, $dd, $message, false);
                 } else {
-                    CheckoutUser::dispatch($payment_data, false, false, $stripeid->message);
+                    CheckoutUser::dispatch($payment_data, false, false, $message, false);
                 }
             }
 
@@ -358,82 +360,138 @@ class StripeController extends Controller
     }
 
     /* Anonymous checkout */
-    public function createAnonymousCheckout($wishid = null, $amount = null)
+    // public function createAnonymousCheckout($wishid = null, $amount = null)
+    // {
+    //     try {
+    //         $wishdata = WishItem::whereId($wishid)->first();
+    //         $lineItems = [];
+    //         if ($wishdata->subscription == 2) {
+    //             if (!empty($amount)) {
+    //                 session()->forget('user_fullfill_amount');
+    //                 session(['user_fullfill_amount' => $amount]);
+
+    //                 $totalamount = $amount + ($amount * env('TAX_PERCENTAGE') / 100);
+
+    //                 try {
+    //                     $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+    //                     $stripe_client = $stripe->products->create([
+    //                         'name' => $wishdata->wishname,
+    //                         'images' => [$wishdata->perma_link],
+    //                         "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $totalamount * 100],
+    //                     ]);
+    //                 } catch (\Throwable $th) {
+    //                     echo $th;
+    //                     die;
+    //                     return back()->with('error', $th);
+    //                 }
+
+    //                 $lineItems[] = [
+    //                     'price' => $stripe_client->default_price ?? '',
+    //                     'quantity' => 1,
+    //                 ];
+    //             } else {
+    //                 return back()->with('error', 'Please enter a valid amount.');
+    //             }
+    //         } else {
+    //             $lineItems[] = [
+    //                 'price' => $wishdata->price_id ?? '',
+    //                 'quantity' => 1,
+    //             ];
+    //         }
+
+    //         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+    //         $sessioncreate = $stripe->checkout->sessions->create([
+    //             'success_url' => route('checkout.anonymous.success', [$wishdata->id]),
+    //             'cancel_url' => route('checkout.anonymous.cancel', [$wishdata->id]),
+    //             'line_items' => $lineItems,
+    //             'mode' => 'payment',
+    //         ]);
+
+    //         $callbackData = $sessioncreate;
+    //         $subtotal = ($callbackData->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
+    //         $taxnew = ($callbackData->amount_total / 100) - ($subtotal);
+
+    //         session()->forget('anonymous_session_id');
+    //         session(['anonymous_session_id' => $callbackData->id]);
+    //         $stripeid = StripePaymentDetail::create([
+    //             'session_id' => $callbackData->id,
+    //             'amount_subtotal' => $subtotal,
+    //             'amount_total' => $callbackData->amount_total / 100,
+    //             'tax' => $taxnew,
+    //             'currency' => $callbackData->currency,
+    //             'owner_id' => $wishdata->user_id,
+    //             'payment_method_config_detail_id' => optional($callbackData->payment_method_configuration_details)->id,
+    //             'payment_method_type' => optional($callbackData->payment_method_types)[0],
+    //             'session_created' => $callbackData->created,
+    //             'session_expires_at' => $callbackData->expires_at,
+    //             'created_at' => Carbon::now(),
+    //             'updated_at' => Carbon::now(),
+    //         ]);
+    //         $stripeid->refresh();
+
+    //         return Inertia::location($sessioncreate->url);
+    //     } catch (\Throwable $th) {
+    //         throw $th;
+    //     }
+    // }
+
+    public function createAnonymousCheckout($device_id)
     {
         try {
-            $wishdata = WishItem::whereId($wishid)->first();
-            $lineItems = [];
-            if ($wishdata->subscription == 2) {
-                if (!empty($amount)) {
-                    session()->forget('user_fullfill_amount');
-                    session(['user_fullfill_amount' => $amount]);
+            // \Log::info(request()->query('name'));
+            $cart = UserCart::where('device_id', $device_id)->where('status', 1)->get();
 
-                    $totalamount = $amount + ($amount * env('TAX_PERCENTAGE') / 100);
+            if (!empty($cart)) {
 
-                    try {
-                        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-                        $stripe_client = $stripe->products->create([
-                            'name' => $wishdata->wishname,
-                            'images' => [$wishdata->perma_link],
-                            "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $totalamount * 100],
-                        ]);
-                    } catch (\Throwable $th) {
-                        echo $th;
-                        die;
-                        return back()->with('error', $th);
-                    }
+                $lineItems = [];
+                foreach ($cart as $key => $value) {
 
                     $lineItems[] = [
-                        'price' => $stripe_client->default_price ?? '',
-                        'quantity' => 1,
+                        'price' => !empty($value->priceid) ? $value->priceid : $value->wish->price_id,
+                        'quantity' => $value->quantity,
                     ];
-                } else {
-                    return back()->with('error', 'Please enter a valid amount.');
                 }
-            } else {
-                $lineItems[] = [
-                    'price' => $wishdata->price_id ?? '',
-                    'quantity' => 1,
-                ];
+
+                $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+                $sessioncreate = $stripe->checkout->sessions->create([
+                    'success_url' => route('checkout.anonymous.success', [$device_id]),
+                    'cancel_url' => route('checkout.anonymous.cancel', [$device_id]),
+                    'line_items' => $lineItems,
+                    'mode' => 'payment',
+                ]);
+
+                $callbackData = $sessioncreate;
+                $subtotal = ($callbackData->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
+                $taxnew = ($callbackData->amount_total / 100) - ($subtotal);
+
+                session()->forget('anonymous_session_id');
+                session(['anonymous_session_id' => $callbackData->id]);
+                $stripeid = StripePaymentDetail::create([
+                    'session_id' => $callbackData->id,
+                    'amount_subtotal' => $subtotal,
+                    'amount_total' => $callbackData->amount_total / 100,
+                    'tax' => $taxnew,
+                    'currency' => $callbackData->currency,
+                    'owner_id' => $cart[0]->owner_id,
+                    'payment_method_config_detail_id' => optional($callbackData->payment_method_configuration_details)->id,
+                    'payment_method_type' => optional($callbackData->payment_method_types)[0],
+                    'session_created' => $callbackData->created,
+                    'name' => request()->query('from') ?? null,
+                    'message' => request()->query('message') ?? null,
+                    'session_expires_at' => $callbackData->expires_at,
+                    'created_at' => Carbon::now(),
+                    'updated_at' => Carbon::now(),
+                ]);
+                $stripeid->refresh();
+
+                return Inertia::location($sessioncreate->url);
             }
-
-            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-            $sessioncreate = $stripe->checkout->sessions->create([
-                'success_url' => route('checkout.anonymous.success', [$wishdata->id]),
-                'cancel_url' => route('checkout.anonymous.cancel', [$wishdata->id]),
-                'line_items' => $lineItems,
-                'mode' => 'payment',
-            ]);
-
-            $callbackData = $sessioncreate;
-            $subtotal = ($callbackData->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
-            $taxnew = ($callbackData->amount_total / 100) - ($subtotal);
-
-            session()->forget('anonymous_session_id');
-            session(['anonymous_session_id' => $callbackData->id]);
-            $stripeid = StripePaymentDetail::create([
-                'session_id' => $callbackData->id,
-                'amount_subtotal' => $subtotal,
-                'amount_total' => $callbackData->amount_total / 100,
-                'tax' => $taxnew,
-                'currency' => $callbackData->currency,
-                'owner_id' => $wishdata->user_id,
-                'payment_method_config_detail_id' => optional($callbackData->payment_method_configuration_details)->id,
-                'payment_method_type' => optional($callbackData->payment_method_types)[0],
-                'session_created' => $callbackData->created,
-                'session_expires_at' => $callbackData->expires_at,
-                'created_at' => Carbon::now(),
-                'updated_at' => Carbon::now(),
-            ]);
-            $stripeid->refresh();
-
-            return Inertia::location($sessioncreate->url);
         } catch (\Throwable $th) {
-            throw $th;
+            //throw $th;
         }
     }
 
-    public function anonymousSuccessCheckout($id = null, $cart_id = null)
+    public function anonymousSuccessCheckout($device_id)
     {
         try {
             $sessionId = session('anonymous_session_id');
@@ -443,44 +501,34 @@ class StripeController extends Controller
             ]);
             $stripeid = StripePaymentDetail::where('session_id', $sessionId)->first();
 
+            $cart = UserCart::where('device_id', $device_id)->where('status', 1)->get();
 
-            if ($id != 0) {
-                $getdata = WishItem::whereId($id)->first();
-                if ($getdata->subscription == 2) {
-                    $amount = session('user_fullfill_amount');
-                    $tax = $amount * env('TAX_PERCENTAGE') / 100;
-                    $getdata->fullfill_amount += $amount;
-                    $getdata->save();
-                } else {
-                    $amount = $getdata->price;
-                    $tax = $getdata->tax_amount;
+            foreach ($cart as $key => $value) {
+                $amount = $value->amount;
+                $tax = $value->tax;
+                if ($value->wish_id != null) {
+                    if ($value->wish->subscription == 2) {
+                        $value->wish->fullfill_amount += $amount;
+                        $value->wish->save();
+                    }
                 }
-                $username = $getdata->user->username;
-            } else {
-                $cartdata = UserCart::whereId($cart_id)->first();
-                $amount = $stripeid->amount_total;
-                $tax = $stripeid->tax;
-                $username = $cartdata->owner->username;
+
+                $data = StripePaymentItems::create([
+                    'uuid' => Uuid::uuid4(),
+                    'stripe_payment_id' => $stripeid->id,
+                    'wish_item_id' => $value->wish_id ?? null,
+                    'amount' => $amount,
+                    'tax' => $tax,
+                ]);
+                $data->refresh();
+                $value->status = 0;
+                $value->save();
+                // $dd->wish_id == NULL
+                CheckoutUser::dispatch($data, true, false, false, $stripeid->name);
             }
 
-            $data = StripePaymentItems::create([
-                'uuid' => Uuid::uuid4(),
-                'stripe_payment_id' => $stripeid->id,
-                'user_cart_id' => $cart_id ?? null,
-                'wish_item_id' => $getdata->id ?? null,
-                'amount' => $amount,
-                'tax' => $tax,
-            ]);
-            $data->refresh();
-            Log::info("Cartid" . $cart_id);
-            // $dd->wish_id == NULL
-            if ($data->wish_item_id == NULL) {
-                CheckoutUser::dispatch($data, true, $cartdata, false);
-            } else {
-                CheckoutUser::dispatch($data, true, false, false);
-            }
 
-            return redirect(route('user.show', [$username]))->with('success', 'Payment Successfull.');
+            return redirect(route('user.show', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
             //throw $th;
         }

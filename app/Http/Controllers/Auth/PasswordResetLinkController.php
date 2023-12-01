@@ -3,12 +3,17 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ForgotPassword;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+
 
 class PasswordResetLinkController extends Controller
 {
@@ -16,7 +21,7 @@ class PasswordResetLinkController extends Controller
      * Display the password reset link request view.
      */
     public function create(): Response
-{
+    {
         return Inertia::render('Auth/ForgotPassword', [
             'status' => session('status'),
         ]);
@@ -27,41 +32,102 @@ class PasswordResetLinkController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): RedirectResponse
-{
-    $request->validate([
-        'email' => 'required|email',
-    ]);
+    // public function store(Request $request): RedirectResponse {
+    //     $request->validate([
+    //         'email' => 'required|email',
+    //     ]);
 
-    // Attempt to send the password reset link
-    $status = Password::sendResetLink(
-        $request->only('email')
-    );
+    //     try {
+    //         $status = Password::sendResetLink(
+    //             $request->only('email')
+    //         );
 
-    // Check different cases and handle errors accordingly
-    switch ($status) {
-        case Password::RESET_LINK_SENT:
-            // Password reset link sent successfully
-            return back()->with('status', __($status));
-        
-        case Password::INVALID_USER:
-            // User with the provided email not found
-            return back()->with('error', 'Email address not found.');
+    //         switch ($status) {
+    //             case Password::RESET_LINK_SENT:
+    //                 // Password reset link sent successfully
+    //                 return back()->with('status', __($status));
 
-        case Password::RESET_THROTTLED:
-            // Too many password reset requests for this email
-            return back()->with('error', 'Too many password reset requests. Please try again later.');
+    //             case Password::INVALID_USER:
+    //                 // User with the provided email not found
+    //                 return back()->with('error', 'Email address not found.');
 
-        case Password::INVALID_TOKEN:
-            // Invalid or expired password reset token
-            return back()->with('error', 'Invalid or expired password reset token. Please request a new one.');
+    //             case Password::RESET_THROTTLED:
+    //                 // Too many password reset requests for this email
+    //                 return back()->with('error', 'Too many password reset requests. Please wait a while before trying again.');
 
-        default:
-            // Handle any other cases
-            throw ValidationException::withMessages([
-                'email' => [trans($status)],
+    //             case Password::INVALID_TOKEN:
+    //                 // Invalid or expired password reset token
+    //                 return back()->with('error', 'Invalid or expired password reset token. Please request a new one.');
+
+    //             default:
+    //                 // Handle any other cases
+    //                 throw new \Exception("Password reset failed with status: $status");
+    //         }
+    //     } catch (\Exception $e) {
+    //         // dd($e);
+    //         // Handle exceptions, log the error, and provide a generic error message to the user
+    //         return back()->with('error', 'An error occurred during the password reset process. Please try again later.');
+    //     }
+    // }
+
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+        $email = $request->input('email');
+        $user = User::where('email', $email)->first();
+        if (!empty($user)) {
+            $user->expired_at = Carbon::now()->addMinutes(10);
+            $user->save();
+            ForgotPassword::dispatch($user);
+            return response()->json([
+                "status" => true,
+                "message" => "Password reset link has been sent to your emal address. Please check your email inbox. This mail expires in 10 minutes."
             ]);
+        } else {
+            return response()->json([
+                "status" => false,
+                "message" => "Email address is invalid or did't match with our records."
+            ]);
+        }
     }
-}
 
+    public function forgotPasswordPage($uuid)
+    {
+        try {
+            return Inertia::render('Auth/ConfirmPassword', [
+                'uuid' => $uuid,
+            ]);
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+    }
+
+    public function changePassword(Request $request, $uuid)
+    {
+        \Log::info('requestdata :' . $request);
+        \Log::info('uuid :' . $uuid);
+        $request->validate([
+            'password' => 'required|min:6',
+            'confirmpassword' => 'required|same:password|min:6',
+        ]);
+        try {
+            $user = User::where('uuid', $uuid)->first();
+            if ($user->expired_at < Carbon::now()) {
+                return back()->with('error', 'Mail expired');
+            }
+            if (!empty($user)) {
+                $user->expired_at = Carbon::now();
+                $user->password = Hash::make($request->password);
+                $user->save();
+                return redirect(route('login'))->with('success', 'Password updated successfully');
+            } else {
+                return back()->with('error', 'Unable to update password');
+            }
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+    }
 }

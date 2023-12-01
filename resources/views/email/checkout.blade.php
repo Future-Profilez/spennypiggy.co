@@ -18,17 +18,18 @@
                             src="https://whoyouinto.com/emails/user/giftimg.png" alt="img"></td>
                 </tr>
                 <tr>
-                    @if(!empty($surprise))
-                    <td
-                        style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                        {{ $anon == false ? $surprise->user->name : 'Anonymous user' }} granted you a surprise gift of £{{ $surprise->amount }}🤩.
-                    </td>
+                    @if ($data->wish_item_id == null)
+                        <td
+                            style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
+                            {{ $anon == false ? $data->cart->user->name : $anonname }} granted you a surprise gift of
+                            £{{ $data->amount }}🤩.
+                        </td>
                     @else
-                    <td
-                        style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                        {{ $anon == false ? $data->cart->user->name : 'Anonymous user' }} granted you a Wish on <span
-                            style="color:#F94F97 ">{{ $data->wish->wishname ?? '' }}</span> of £{{ $data->amount }}🤩.
-                    </td>
+                        <td
+                            style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
+                            {{ $anon == false ? $data->cart->user->name : $anonname }} granted you a Wish on <span
+                                style="color:#F94F97 ">{{ $data->wish->wishname ?? '' }}</span> of £{{ $data->amount }}🤩.
+                        </td>
                     @endif
                 </tr>
                 <tr>
@@ -37,7 +38,14 @@
                         Go to <a href="#">Spenny Piggy</a> where you can see your granted wish, send a message to
                         your gifter and share your gift on social media </td>
                 </tr>
-
+                @if (!empty($messages))
+                    <tr>
+                        <td
+                            style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
+                            <b>Message :~ </b>{{ $messages ?? '' }}
+                        </td>
+                    </tr>
+                @endif
                 <tr>
                     <td style="padding:0 0 10px 0; text-align: center;">
                         <a href={{ env('APP_URL') . '/' . $data->payment->owner->username }}
@@ -48,5 +56,4 @@
             </table>
         </td>
     </tr>
-
 @endsection

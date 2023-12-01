@@ -3,12 +3,12 @@
 <head>
     <meta charset="utf-8">
     <title inertia>{{ config('app.name', 'The Best Alternative to Amazon Wishlist') }}</title>
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <!-- <link rel="preconnect" href="https://fonts.bunny.net"> -->
+    <link rel="preload" as="font" href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
     <!-- Metas start -->
     <link rel="canonical" href="https://spennypiggy.co" />
-    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,maximum-scale=2" />
-    <link rel="manifest"  href={{env("FILE_URL")."/manifest.json"}} />
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,maximum-scale=5" />
+    <link rel="manifest"  href="/manifest.json" />
     <link rel="mask-icon" href={{env("FILE_URL")."/favicon.ico"}} />
     <link rel="icon" href={{env("FILE_URL")."/favicon.ico"}} />
     <link rel="apple-touch-icon" href={{env("FILE_URL")."/favicon.ico"}} />
@@ -33,17 +33,17 @@
     <meta name="twitter:image:alt" content="The Best Alternative to Amazon Wishlist" />
     <meta name="twitter:image:src" content={{env("FILE_URL")."/site.png"}} />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-
-    <script type="text/javascript"> 
+    <script async type="text/javascript" src="/service-worker.js" ></script>
+    <!-- <script type="text/javascript"> 
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('https://d352qugnflhnxw.cloudfront.net/10954687-295e-4a13-9c92-1688e776c243/service-worker.js', {scope: '.'
+            navigator.serviceWorker.register('/service-worker.js', {scope: '.'
             }).then(function (registration) {
                 console.log('Service worker installed: ', registration.scope);
             }, function (err) {
                 console.log('Laravel PWA: ServiceWorker registration failed: ', err);
             });
         }
-    </script>
+    </script> -->
 
     <!-- Scripts -->
     @laravelPWA
@@ -53,7 +53,7 @@
     @inertiaHead
 </head>
 
-<body class="font-sans antialiased">
+<body className="font-sans antialiased">
     @inertia
 </body>
 

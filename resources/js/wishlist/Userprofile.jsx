@@ -1,9 +1,9 @@
 import React from "react";
 import userphoto from "../../assets/img/userphoto.png";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
-import SocialLinks from "@/includes/SocialLinks";
-import ShareProfile from "./ShareProfile";
-import SendSurprise from "./SendSurprise";
+const SocialLinks = React.lazy(() => import('@/includes/SocialLinks'));
+const ShareProfile = React.lazy(() => import('./ShareProfile'));
+const SendSurprise = React.lazy(() => import('./SendSurprise'));
 
 export default function Userprofile({auth, user, links, IsloggedIn }) {
     return (
@@ -47,7 +47,7 @@ export default function Userprofile({auth, user, links, IsloggedIn }) {
                 </div>
 
                 <SocialLinks links={links} />
-                {!IsloggedIn ? <SendSurprise auth={auth} owner={user && user.id} /> : ''}
+                {!IsloggedIn ? <SendSurprise auth={auth} owner={user} /> : ''}
 
                 <p className={`text-muted text-center mt-3 ${user && !user.bio ? "d-none":""}`}>
                     {(user && user.bio) || ""}

@@ -26,6 +26,7 @@ export default function Login({ status, canResetPassword }) {
         post(route('login-user'), {
             preserveScroll: true,
             onSuccess: (resp) => {
+                localStorage.removeItem("cart");
                 reset();
             },
             onError: (err) => {
@@ -75,7 +76,7 @@ export default function Login({ status, canResetPassword }) {
                                         onChange={(e) => setData('password', e.target.value)}
                                     />
 
-                                    {/* {canResetPassword && (
+                                    {canResetPassword && (
                                         <div className=' mt-4 m-auto d-table ' >
                                             <Link
                                                 href={route('password.request')}
@@ -83,7 +84,7 @@ export default function Login({ status, canResetPassword }) {
                                                 Forgot your password?
                                             </Link>
                                         </div>
-                                    )} */}
+                                    )}
                                 </li>
                             </ul>
                             

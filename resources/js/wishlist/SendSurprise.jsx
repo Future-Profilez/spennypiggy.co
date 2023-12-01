@@ -1,50 +1,60 @@
 import { useAlerts } from "@/Components/Alerts";
-import LoaderButton from "@/Components/LoaderButton";
-import Popup from "@/Components/Popup";
+import React from "react";
+import  LoaderButton from "@/Components/LoaderButton";
+const Popup = React.lazy(() => import('@/Components/Popup'));
 import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
 import { useForm } from "@inertiajs/react";
+import DeviceID from "@/includes/DeviceID";
 
 export default function SendSurprise({auth, owner}) {
-   
+   const deviceID  = DeviceID();
    const { format } = PriceFormat();
    const { successAlert, errorAlert, errorsHandling } = useAlerts();
    const [close, setClose] = useState();
    const { data, setData, post, processing, errors, reset } = useForm({
       amount:  '',
-      message: '',
+      message: ''
    });
  
+   function ItemAdded () {
+      setClose(false);
+      setTimeout(()=>{
+         setClose();
+      });
+   }
    const sendSurprize = (e) => {
+      e.preventDefault();
       if(!data.amount){
          errorAlert("Choose a valid amount.");
          return false;
       }
-      e.preventDefault();
-      post(route(`send-surprize`, {"owner_id": owner, "amount":data.amount, "message":data.message}), {
-         preserveScroll: true,
-         onSuccess: (resp) => {
-            setClose(false);
-            setTimeout(()=>{
-               setClose();
-            });
-            reset();
-            if (resp.props.flash?.success) {
-               successAlert(resp.props.flash?.success || "Added");
-           }
-           if (resp.props.flash?.error) {
-               errorAlert(resp.props.flash?.error);
-           }
-         },
-         onError: (_err) => {
-            console.error(_err);
-         }
-     });
+      post(route(`send-surprize`, {
+         "owner_id": owner && owner.id, 
+         "device_id": deviceID, 
+         "amount":data.amount, 
+         "message":data.message}), {
+            preserveScroll: true,
+            onSuccess: (resp) => {
+               ItemAdded();
+               reset();
+               if (resp.props.flash?.success) {
+                  successAlert(resp.props.flash?.success || "Added");
+            }
+            if (resp.props.flash?.error) {
+                  errorAlert(resp.props.flash?.error);
+            }
+            },
+            onError: (_err) => {
+               console.error(_err);
+            }
+      });
    };
+   console.log("surprise owner", auth)
 
     return (
         <Popup
-            modalclass="pinkmodal sendSurprize-modal"
+            modalclassName="pinkmodal sendSurprize-modal"
             space="4" size="md"
             action={close} classes={`btn-pink lg px-4 my-2 w-100`}
             text={`Send Surprise`} >
@@ -56,8 +66,8 @@ export default function SendSurprise({auth, owner}) {
                   <input
                      className="form-input w-100 rounded"
                      onChange={(e) => setData('amount', e.target.value)}
-                     type="text"
-                     placeholder="Enter"
+                     type="number"
+                     placeholder="Enter amount.. "
                   />
                   <p className="mt-1">
                      The amount is set to {format(data.amount)} GBP in the wisher's
@@ -65,9 +75,7 @@ export default function SendSurprise({auth, owner}) {
                   </p>
             </div>
             <div className="form-field mb-4">
-                  <label className="d-block text-start mb-2">
-                     Suggested use (optional)
-                  </label>
+                  <label className="d-block text-start mb-2">Suggested use (optional)</label>
                   <textarea
                      placeholder="Message..."
                      className="form-input w-100 rounded"
@@ -75,6 +83,7 @@ export default function SendSurprise({auth, owner}) {
                      type="text"
                   />
             </div>
+
             <LoaderButton onClick={sendSurprize}
                disabled={processing}
                type='submit'
@@ -82,6 +91,7 @@ export default function SendSurprise({auth, owner}) {
                   spinnerClassName="fill-red-600" >
                   {processing ? "Proccessing" : auth && auth.name ? "Add to cart" : "Send Gift"}
             </LoaderButton>
+
         </Popup>
     );
 }

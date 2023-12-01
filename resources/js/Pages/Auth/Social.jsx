@@ -2,13 +2,12 @@ import { useAlerts } from "@/Components/Alerts";
 import LoaderButton from "@/Components/LoaderButton";
 import Popup from "@/Components/Popup";
 import { useForm } from "@inertiajs/react";
+import { useEffect } from "react";
 import { useState } from "react";
-
 
 export default function Social({links}) {
 
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
-
     const [close, setClose] = useState();
 
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -23,6 +22,19 @@ export default function Social({links}) {
         manyvids: links?.manyvids ? links.manyvids : '',
         other: links?.other ? links.other : '',
     });
+
+    // useEffect(() => {
+    //     setData('twitter', links?.twitter || '');
+    //     setData('whoyouinto', links?.whoyouinto || '');
+    //     setData('reddit', links?.reddit || '');
+    //     setData('instagram', links?.instagram || '');
+    //     setData('discord', links?.discord || '');
+    //     setData('onlyfans', links?.onlyfans || '');
+    //     setData('loyalfans', links?.loyalfans || '');
+    //     setData('fansly', links?.fansly || '');
+    //     setData('manyvids', links?.manyvids || '');
+    //     setData('other', links?.other || '');
+    // }, [links]);
 
     const createSocial = (e) => {
         e.preventDefault();
@@ -50,7 +62,7 @@ export default function Social({links}) {
     };
 
     return <>
-        <Popup action={close} space='4' modalclass="pinkmodal" size="md"
+        <Popup action={close} space='4' modalclassName="pinkmodal" size="md"
             classes='' text="Add Socials" >
             <div className='editprofileModalInner  '> 
                 <div className="swishinfo">

@@ -43,19 +43,19 @@ export default function Accountsetting(props) {
                             </li>
 
                             <li>
-                                <Popup space='4' modalclass="pinkmodal" 
+                                <Popup space='4' modalclassName="pinkmodal" 
                                 text={<>Email <span className='text-gray'>{auth && auth.user && auth.user.email}</span></>} >
                                     <UpdateProfileInformation />
                                 </Popup >
                             </li>
                             <li>
-                                <Popup action={passClose} space='4' modalclass="pinkmodal" text={<>PASSWORD</>} >
+                                <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>PASSWORD</>} >
                                     <UpdatePasswordForm passwordUpdate={passwordUpdated} />
                                 </Popup>
                             </li>
 
                             <li>
-                            <Popup space='4' modalclass="pinkmodal" 
+                            <Popup space='4' modalclassName="pinkmodal" 
                                 text={<>DELETE ACCOUNT  </>} >
                                     <DeleteUserForm />
                                 </Popup >
@@ -68,9 +68,9 @@ export default function Accountsetting(props) {
                             <li className='disabled' >
                                 <div className='notification'>
                                 RECEIVE NOTIFICATION ON EMAIL 
-                                    <label class="switch">
+                                    <label className="switch">
                                         <input type="checkbox"></input>
-                                        <span class="sliderSw round"></span>
+                                        <span className="sliderSw round"></span>
                                     </label>
                                 </div>
                             </li>
