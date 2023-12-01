@@ -1,7 +1,6 @@
 @extends('email.default-2')
 @section('content')
 <tr>
-
      {{--width="100%"--}}
      {{--max-width: 296px;--}}
     <td align="center" style="padding:10px 10px 20px 10px;">
@@ -24,13 +23,19 @@
                 <td style="line-height:30px;height:30px;"></td>
             </tr>
             <tr>
-                <a style="background-color:#F94F97;color:white;border:none"><a
-                        href="{{ env('APP_URL') }}/forgot-password/{{ $data['uuid'] }}"
-                         style="padding:13px 30px 13px 30px; width: 210px;
-                         text-decoration:none; border:none;background-color: #F94F97;
-                          font-family: Arial; font-weight: bold; font-size:
-                           15px; text-align: center; color:#ffffff; cursor: pointer;"
-                        >Forgot Password</a></a>
+               <td>
+                  <a
+                          href="{{ env('APP_URL') }}/forgot-password/{{ $data['uuid'] }}"
+                           style="background-color:#F94F97;color:white;border:none;padding:13px 30px 13px 30px; width: 210px;
+                           text-decoration:none; border:none;background-color: #F94F97;
+                            font-family: Arial; font-weight: bold; font-size:
+                             15px; text-align: center; color:#ffffff; cursor: pointer;"
+                          >Forgot Password</a>
+
+               </td>
+            </tr>
+            <tr>
+                <td style="line-height:30px;height:30px;"></td>
             </tr>
         </table>
     </td>

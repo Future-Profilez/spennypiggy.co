@@ -172,18 +172,16 @@ class StripeController extends Controller
     }
 
     /* create checkout */
-    public function createCheckout($owner_id, Request $request)
+    public function createCheckout($owner_id)
     {
         try {
-            if (!empty($request)) {
+            if (!empty(request()->query('message'))) {
                 $wordLimit = 100;
-                $message = $request->message;
+                $message = request()->query('message');
 
                 if (str_word_count($message) > $wordLimit) {
                     return redirect()->back()->with("error", "Max limit for message is 100 words");
                 }
-
-                $from = $request->from;
             }
 
             $user = User::findOrFail(Auth::id());
@@ -202,7 +200,7 @@ class StripeController extends Controller
 
                 $lineItems[] = [
                     'price' => $priceId ?? '',
-                    'quantity' => 1,
+                    'quantity' => $dd->quantity,
                 ];
 
                 $subtotal += $dd->amount;
@@ -242,7 +240,7 @@ class StripeController extends Controller
                 'payment_method_type' => optional($sessionCreate->payment_method_types)[0],
                 'user_id' => Auth::id(),
                 'owner_id' => $owner_id,
-                'name' => $from ?? '',
+                'name' => request()->query('from') ?? '',
                 'message' => $message ?? '',
                 'session_created' => $sessionCreate->created,
                 'session_expires_at' => $sessionCreate->expires_at,

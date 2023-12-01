@@ -143,7 +143,7 @@ export default function UserCarts(props) {
                                 </li>
                                 <li className="w-100 mt-3">
                                     <li className="row">
-                                        <div className="col-md-6 mb-4">
+                                        <div className="col-md-12 mb-4">
                                             <label className="d-block text-start">
                                                 From
                                             </label>
@@ -156,11 +156,12 @@ export default function UserCarts(props) {
                                                 placeholder="Enter Your Name..."
                                             />
                                         </div>
-                                        <div className="col-md-6 mb-4">
+                                        <div className="col-md-12 mb-4">
                                             <label className="d-block text-start">Email </label>
+                                            <p className="text-small text-muted mb-1">Your e-mail remains private. It is used for the creator to reply to your gift with a message via Spenny Piggy</p>
                                             <input className="form-input w-100 rounded"
                                                 onChange={(e) => setEmail(e.target.value)}
-                                                type="email" placeholder="Enter Your email..."
+                                                type="email" placeholder="Enter Your Email..."
                                             />
                                         </div>
                                     </li>
@@ -176,9 +177,7 @@ export default function UserCarts(props) {
                                             name="agreeterm"
                                             className="me-2"
                                             value="agreeterm" ></input>
-                                        I agree to the Terms of Service and
-                                        Privacy Policy and the following
-                                        statements:
+                                            I agree to the <Link target='_blank' className="text-voilet" href={route("terms-and-conditions")} >Terms of Service</Link> and <a className="text-voilet" target='_blank' href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>  and the following statements:
                                     </label>
                                     <div className="tearmlist ps-3">
                                         <ul className="ps-0">
