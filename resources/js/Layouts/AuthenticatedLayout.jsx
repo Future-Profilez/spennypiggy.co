@@ -2,8 +2,9 @@ import { useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
 import { Toaster } from 'react-hot-toast';
 import { useAlerts } from '@/Components/Alerts';
-import Header from '@/includes/Header';
-import Footer from '@/includes/Footer';
+import React from 'react';
+const Footer = React.lazy(() => import('@/includes/Footer'));
+const Header = React.lazy(() => import('@/includes/Header'));
 
 export default function Authenticated(props) {
 

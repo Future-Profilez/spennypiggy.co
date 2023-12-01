@@ -1,9 +1,9 @@
 import React from "react";
 import userphoto from "../../assets/img/userphoto.png";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
-import SocialLinks from "@/includes/SocialLinks";
-import ShareProfile from "./ShareProfile";
-import SendSurprise from "./SendSurprise";
+const SocialLinks = React.lazy(() => import('@/includes/SocialLinks'));
+const ShareProfile = React.lazy(() => import('./ShareProfile'));
+const SendSurprise = React.lazy(() => import('./SendSurprise'));
 
 export default function Userprofile({auth, user, links, IsloggedIn }) {
     return (

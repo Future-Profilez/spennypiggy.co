@@ -1,9 +1,8 @@
 import React from "react";
 import giftimg from "../../assets/img/giftimg.jpg";
-import Popup from "@/Components/Popup";
+const Popup = React.lazy(() => import('@/Components/Popup'));
 import ToCart from "./ToCart";
 import uploadedimg from "../../assets/img/uploadedimg.png";
-import DirectCheckout from "./DirectCheckout";
 import ProgressBar from "react-bootstrap/ProgressBar";
 import { useState } from "react";
 import { useEffect } from "react";

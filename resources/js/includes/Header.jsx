@@ -2,7 +2,6 @@ import React from 'react';
 import { Link, Head, router } from '@inertiajs/react';
 import spennypiggy from '../../assets/img/spenny-piggy.png';
 import { useState } from 'react';
-import { useSelector } from "react-redux";
 import { useEffect } from 'react';
 import DeviceID from './DeviceID';
 import axios from 'axios';
@@ -25,7 +24,7 @@ export default function Header(props) {
           console.error("error", _err);
       });
     }
-    
+
     useEffect(()=>{
       fetchCounter();
     },[]);

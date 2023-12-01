@@ -1,10 +1,10 @@
 import React from 'react'
 import footlogo from '../../assets/img/footlogo.png';
 import { Link } from '@inertiajs/react';
-import Nocontent from './Nocontent';
 import {Helmet} from "react-helmet";
 import { useEffect } from 'react';
-import ContentPrefrences from './ContentPrefrences';
+import React from 'react';
+const ContentPrefrences = React.lazy(() => import('./ContentPrefrences'));
 
 export default function Footer(props) {
 
@@ -37,22 +37,25 @@ export default function Footer(props) {
     }
   }
 
-  useEffect(()=>{
-    configIntercom();
-  },[auth && auth?.name]);
-
-    useEffect(()=>{
-        window.dataLayer = window.dataLayer || [];
+  async function confgureGtag (){
+    window.dataLayer = window.dataLayer || [];
         function gtag(){
           dataLayer.push(arguments);
         }
         gtag('js', new Date());
         gtag('config', 'AW-11395921981');
-    },[]);
+  }
+
+  useEffect(()=>{
+    configIntercom();
+  },[auth && auth?.name]);
+
+  useEffect(()=>{
+    confgureGtag();
+  },[]);
 
   return <>
     <Helmet>
-      {/* <head> */}
         <script async type="text/javascript" src="https://app.termly.io/embed.min.js"
         data-auto-block="on" data-website-uuid="ced8ded9-995d-471a-bf54-880b8c679a81" ></script>
         <script async src="https://www.googletagmanager.com/gtag/js?id=AW-11395921981"></script>
