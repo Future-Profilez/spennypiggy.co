@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useEffect } from 'react';
 import DeviceID from './DeviceID';
 import axios from 'axios';
+import { LazyLoadImage } from 'react-lazy-load-image-component';
 
 export default function Header(props) {
 
@@ -39,7 +40,14 @@ export default function Header(props) {
               <Link href="/register" className='headtitle text-wh font-GillSans d-none d-lg-flex' > Create Wishlist </Link>
             }
             {/* <Link href={`/${ auth && auth?.username || ''}`} className='headtitle text-wh font-GillSans  d-none d-lg-flex'>Create Wishlist</Link> */}
-            <div className='spennylogo'><Link href={route('home')} ><img src={spennypiggy} /></Link></div>
+            <div className='spennylogo'><Link href={route('home')} >
+              {/* <img src={spennypiggy} alt='img' /> */}
+                  <LazyLoadImage
+                  alt={'image'}
+                  height={170} useIntersectionObserver={true} effect="blur"
+                  src={spennypiggy}
+                  width={292} />
+              </Link></div>
             <div className='cartLogin'>
               <Link href={route('cart')} as="button" className='cartLink  d-none d-xl-flex position-relative'>
                   <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36" fill="none">
@@ -54,7 +62,7 @@ export default function Header(props) {
                   <Link href={route("login")} className='btn-mint mx-3  d-none d-xl-flex'>Login</Link>
               }
 
-              <button className="cartLink position-relative"  onClick={toggleClass}>
+              <div className="cursor-pointer cartLink position-relative"  onClick={toggleClass}>
                 <svg width="58" height="59" viewBox="0 0 58 59" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <g filter="url(#filter0_d_467_5581)">
                   <rect y="0.5" width="55" height="55" rx="11" fill="#F94F97"/>
@@ -72,8 +80,8 @@ export default function Header(props) {
                   <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_467_5581" result="shape"/>
                   </filter>
                   </defs>
-                </svg>
-              </button>
+                </svg> 
+              </div>
             </div>
             </div>
           </div>
@@ -81,7 +89,7 @@ export default function Header(props) {
 
         <div className={`modelmenu ${isActive ? 'Open': null}`}>
           <div className="MegaMenu">
-              <button className="closemega" onClick={toggleClass}>
+              <div className="closemega cursor-pointer" onClick={toggleClass}>
                 <svg width="58" height="58" viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <g filter="url(#filter0_d_746_858)">
                   <rect width="55" height="55" rx="11" fill="#F94F97"/>
@@ -100,7 +108,7 @@ export default function Header(props) {
                   </filter>
                   </defs>
                   </svg>
-              </button>
+              </div>
               <div className="menuImg">
                 <img src={spennypiggy} alt="img" />
               </div>
@@ -122,7 +130,7 @@ export default function Header(props) {
                 <li><Link onClick={toggleClass} href={route("how-it-works")} >How it works</Link></li>
                 <li><a onClick={toggleClass} target='_blank' href="https://intercom.help/spenny-piggy" >FAQ's</a></li>
                 <li><a onClick={toggleClass} href="https://blog.spennypiggy.co" >Blog</a></li>
-                <li><Link onClick={(toggleClass)} className='livechat' >Need help ?</Link></li>
+                <li><a onClick={(toggleClass)} className='livechat' >Need help ?</a></li>
               </ul>
               </div>
           </div>
