@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Jobs\ForgotPassword;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -78,15 +79,17 @@ class PasswordResetLinkController extends Controller
         $email = $request->input('email');
         $user = User::where('email', $email)->first();
         if (!empty($user)) {
+            $user->expired_at = Carbon::now()->addMinutes(10);
+            $user->save();
             ForgotPassword::dispatch($user);
             return response()->json([
                 "status" => true,
-                "message"=> "Password reset link has been sent to your emal address. Please check your email inbox."
+                "message" => "Password reset link has been sent to your emal address. Please check your email inbox. This mail expires in 10 minutes."
             ]);
         } else {
             return response()->json([
                 "status" => false,
-                "message"=> "Email address is invalid or did't match with our records."
+                "message" => "Email address is invalid or did't match with our records."
             ]);
         }
     }
@@ -104,13 +107,19 @@ class PasswordResetLinkController extends Controller
 
     public function changePassword(Request $request, $uuid)
     {
+        \Log::info('requestdata :' . $request);
+        \Log::info('uuid :' . $uuid);
         $request->validate([
             'password' => 'required|min:6',
             'confirmpassword' => 'required|same:password|min:6',
         ]);
         try {
             $user = User::where('uuid', $uuid)->first();
+            if ($user->expired_at < Carbon::now()) {
+                return back()->with('error', 'Mail expired');
+            }
             if (!empty($user)) {
+                $user->expired_at = Carbon::now();
                 $user->password = Hash::make($request->password);
                 $user->save();
                 return redirect(route('login'))->with('success', 'Password updated successfully');

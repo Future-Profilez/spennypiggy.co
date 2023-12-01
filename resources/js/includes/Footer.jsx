@@ -3,7 +3,6 @@ import footlogo from '../../assets/img/footlogo.png';
 import { Link } from '@inertiajs/react';
 import {Helmet} from "react-helmet";
 import { useEffect } from 'react';
-import React from 'react';
 const ContentPrefrences = React.lazy(() => import('./ContentPrefrences'));
 
 export default function Footer(props) {

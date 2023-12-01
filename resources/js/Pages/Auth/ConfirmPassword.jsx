@@ -6,9 +6,11 @@ import PrimaryButton from "@/Components/PrimaryButton";
 import TextInput from "@/Components/TextInput";
 import { Head, useForm } from "@inertiajs/react";
 import LoaderButton from "@/Components/LoaderButton";
+import { useAlerts } from "@/Components/Alerts";
 
 export default function ConfirmPassword(props) {
     const { uuid, auth } = props;
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
     const { data, setData, post, processing, errors, reset } = useForm({
         password: "",
@@ -24,10 +26,29 @@ export default function ConfirmPassword(props) {
 
     const submit = (e) => {
         e.preventDefault();
-
-        post(route("changePassword", { uuid: uuid }));
-        // post(route("password.confirm"));
+        post(route("changePassword", { uuid: uuid }),{
+                preserveScroll: true,
+                onSuccess: (resp) => {
+                    if (resp.props.flash?.success) {
+                        successAlert(resp.props.flash?.success);
+                    }
+                    if (resp.props.flash?.error) {
+                        errorAlert(resp.props.flash?.error);
+                    }
+                    reset();
+                },
+                onError: (err) => {
+                    reset("password");
+                    Object.keys(err).map((key) => {
+                        errorAlert(err[key]);
+                    });
+                },
+            });
     };
+
+    // useEffect(() => {
+
+    // }, []);
 
     return (
         <GuestLayout auth={auth && auth.user} user={auth && auth.user}>
@@ -104,7 +125,8 @@ export default function ConfirmPassword(props) {
                             <LoaderButton
                                 spinnerClassName="fill-red-600"
                                 className="btn-pink w-100 lg lg2 mb-3  mb-md-0"
-                                disabled={processing} >
+                                disabled={processing}
+                            >
                                 {processing ? "Updating..." : "Confirm"}
                             </LoaderButton>
                         </form>
