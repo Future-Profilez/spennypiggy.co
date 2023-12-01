@@ -215,14 +215,14 @@ class StripeController extends Controller
                 'cancel_url' => route('checkout.cancel', [$owner_id]),
                 'line_items' => $lineItems,
                 'mode' => 'payment',
-                'payment_intent_data' => [
-                    'transfer_data' => [
-                        'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
-                    ],
-                    'application_fee_amount' => $taxNew,
-                    'receipt_email' => 'saurav@futureprofilez.com',
-                ],
-                'customer_email' => 'saurav@futureprofilez.com',
+                // 'payment_intent_data' => [
+                //     'transfer_data' => [
+                //         'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
+                //     ],
+                //     'application_fee_amount' => $taxNew,
+                //     'receipt_email' => 'saurav@futureprofilez.com',
+                // ],
+                // 'customer_email' => 'saurav@futureprofilez.com',
 
             ]);
 
