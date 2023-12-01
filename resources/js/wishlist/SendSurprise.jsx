@@ -1,10 +1,10 @@
 import { useAlerts } from "@/Components/Alerts";
-import LoaderButton from "@/Components/LoaderButton";
-import Popup from "@/Components/Popup";
+import React from "react";
+const LoaderButton = React.lazy(() => import('@/Components/LoaderButton'));
+const Popup = React.lazy(() => import('@/Components/Popup'));
 import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
 import { useForm } from "@inertiajs/react";
-import ToCart from "./ToCart";
 import DeviceID from "@/includes/DeviceID";
 
 export default function SendSurprise({auth, owner}) {

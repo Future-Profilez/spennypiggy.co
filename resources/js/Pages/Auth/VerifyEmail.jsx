@@ -4,30 +4,26 @@ import { Head, Link, useForm } from "@inertiajs/react";
 import { useEffect } from "react";
 import { useState } from "react";
 import axios from "axios";
+import { useAlerts } from "@/Components/Alerts";
 
 export default function VerifyEmail({ status }) {
 
     const { get, processing } = useForm({});
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
+
+    const [loading, setLoading] = useState(false);
+    const [send, setSent] = useState(false);
     const submit = (e) => {
         e.preventDefault();
+        setLoading(true);
         axios.get(`/email/send-verification-email`).then(resp => {
-            console.log("resp", resp);
-            
+            setSent(true);
+            setLoading(false);
         }).catch(_err => {
             console.error("error", _err);
+            setLoading(false);
         });
     };
-    // const [sent,setSent] = useState(0);
-    // useEffect(()=>{
-    //     setSent(sent+1);
-    //     if(sent < 1){
-    //         axios.get(`/email/send-verification-email`).then(resp => {
-    //             console.log("resp", resp)
-    //         }).catch(_err => {
-    //             console.error("error", _err);
-    //         });
-    //     }
-    // },[]);
 
     return <div className="blackbg pageheight p-4">
         <style>{`
@@ -95,8 +91,8 @@ export default function VerifyEmail({ status }) {
                     your email.</h5>
                 <form onSubmit={submit}>
                     <div className="mt-4 flex items-center justify-content-center">
-                        <PrimaryButton className="btn-pink md   py-3 px-2" disabled={processing}>
-                            {processing ? "processing" : "Send Verification Link"}
+                        <PrimaryButton className="btn-pink md   py-3 px-2" disabled={loading}>
+                            {loading ? "Sending..." : send ? " Email Sent" : "Send Verification Link"}
                         </PrimaryButton>
                     </div>
                 </form>

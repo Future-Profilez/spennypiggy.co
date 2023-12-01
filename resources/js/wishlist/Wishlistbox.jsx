@@ -1,17 +1,14 @@
 import React from 'react';
-import miniplantimg from '../../assets/img/miniplantimg.jpg';
-import { Link } from '@inertiajs/react';
-import ToCart from './ToCart';
 import ShareProfile from './ShareProfile';
-import AddCart from './AddCart';
 import { useState } from 'react';
 import uploadedimg from '../../assets/img/uploadedimg.png';
 import { useEffect } from 'react';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import Wishlist from '@/Pages/Auth/Wishlist';
 import PriceFormat from '@/includes/PriceFormat';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Tooltip from 'react-bootstrap/Tooltip';
+const AddCart = React.lazy(() => import('./AddCart'));
 
 export default function Wishlistbox(props) {
 

@@ -5,9 +5,10 @@ import PriceFormat from "@/includes/PriceFormat";
 import DeviceID from "@/includes/DeviceID";
 import axios from "axios";
 import { useEffect } from "react";
+import { useAlerts } from "@/Components/Alerts";
 
 export default function UserCarts(props) {
-
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const deviceid  = DeviceID();
     const { auth, removeFromCart } = props;
     const { format } = PriceFormat();
@@ -20,20 +21,32 @@ export default function UserCarts(props) {
     
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (auth && auth.id) {
+
+        // if(name == '' || null){
+        //     errorAlert("Name can not be empty.")
+        //     return false;
+        // }
+
+        if (auth) {
             window.location.href = `/create-checkout-session/${datas?.user?.id || ''}?message=${message}&from=${name}&email=${email}`;
         } else {
-            // setLoading(true);
-            // window.location.href =`/anonymous-create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`;
-            router.get(`/anonymous-create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`), {
-                preserveScroll: true,
-                onSuccess: (resp) => {
-                    console.log("resp", resp);
-                },
-                onError: (_err) => {
-                    console.error("cart",_err);
-                }
-            };
+            console.log("auth", auth);
+
+            axios.get(`/anonymous-create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`).then((resp)=>{
+                console.log("resp",resp);
+            }).catch((err)=>{
+                console.log("err",err)
+            });
+            
+            // , {
+            //     preserveScroll: true,
+            //     onSuccess: (resp) => {
+            //         console.log("resp", resp);
+            //     },
+            //     onError: (_err) => {
+            //         console.error("cart",_err);
+            //     }
+            // };
         }
     };
 
