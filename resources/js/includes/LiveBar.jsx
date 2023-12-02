@@ -6,7 +6,7 @@ const slideAnimation = keyframes`
     transform: translateX(0%);
   }
   100% {
-    transform: translateX(-100%);
+    transform: translateX(-50%);
   }
 `;
 
@@ -38,13 +38,20 @@ const LiveBar = () => {
       `}</style>
       <ScrollingContainer>
         <ScrollingContent>
-          {/* Repeat your content here */}
           <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
           <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
           <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
           <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
           <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          {/* Repeat as many times as needed */}
+          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
+          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
+          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
+          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
+          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
+          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
+          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
+          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
+          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
         </ScrollingContent>
       </ScrollingContainer>
     </LiveBarWrapper>

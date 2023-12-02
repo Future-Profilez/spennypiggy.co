@@ -31,23 +31,14 @@
     <meta name="twitter:image:src" content={{env("FILE_URL")."/site.png"}} />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <script async type="text/javascript" src="/service-worker.js" ></script>
-    <!-- <script type="text/javascript"> 
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/service-worker.js', {scope: '.'
-            }).then(function (registration) {
-                console.log('Service worker installed: ', registration.scope);
-            }, function (err) {
-                console.log('Laravel PWA: ServiceWorker registration failed: ', err);
-            });
-        }
-    </script> -->
 
     <!-- Scripts -->
     @laravelPWA
     @routes
     @viteReactRefresh
-    @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])
+    @vite(['resources/js/app.jsx'])
     @inertiaHead
+    <!-- "resources/js/Pages/{$page['component']}.jsx" -->
 </head>
 
 <body className="font-sans antialiased">

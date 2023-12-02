@@ -10,6 +10,7 @@ environments:
         build:
             - 'composer install --no-dev'
             - 'php artisan event:cache'
+            - 'php artisan optimize:clear'
             - 'npm ci && npm run build && rm -rf node_modules'
         deploy:
             - 'php artisan migrate --force'
@@ -22,6 +23,7 @@ environments:
         build:
             - 'composer install --no-dev'
             - 'php artisan event:cache'
+            - 'php artisan optimize:clear'
             - 'npm ci && npm run build && rm -rf node_modules'
         deploy:
             - 'php artisan migrate --force'
