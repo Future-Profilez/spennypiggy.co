@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\CheckoutController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TestController;
@@ -41,6 +42,8 @@ Route::middleware('auth')->group(function () {
 Route::prefix("test")->name("test.")->group(function(){
     Route::prefix("stripe")->name("stripe.")->group(function(){
         Route::get("search", [TestController::class, "stripeSearch"])->name("search");
+        Route::get("checkout", [CheckoutController::class, 'testCheckout'])->name('checkout');
+        Route::get('checkout-callback/{status?}', [CheckoutController::class, 'testCallback'])->name("callback");
     });
     Route::get("email", [TestController::class, "testEmail"]);
 });

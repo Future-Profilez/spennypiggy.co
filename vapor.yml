@@ -2,11 +2,15 @@ id: 54327
 name: SpennyPiggy
 environments:
     production:
-        memory: 1024
-        cli-memory: 512
+        memory: 3072
+        queue-memory: 1024
+        cli-memory: 1024
+        warm: 10
+        gateway-version: 2
         runtime: 'php-8.2:al2'
         domain: spennypiggy.co
         database: spennypiggy-db
+        database-proxy: true
         build:
             - 'composer install --no-dev'
             - 'php artisan event:cache'
