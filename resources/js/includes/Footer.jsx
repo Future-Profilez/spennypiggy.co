@@ -116,23 +116,23 @@ export default function Footer(props) {
         confgureGtag();
     }, []);
 
-    useEffect(() => {
-        scriptjs(
-            [
-                "https://app.termly.io/embed.min.js",
-                "https://www.googletagmanager.com/gtag/js?id=AW-11395921981",
-            ],
-            "footer"
-        );
-    }, []);
+    // useEffect(() => {
+    //     scriptjs(
+    //         [
+    //             "https://app.termly.io/embed.min.js",
+    //             "https://www.googletagmanager.com/gtag/js?id=AW-11395921981",
+    //         ],
+    //         "footer"
+    //     );
+    // }, []);
 
     return (
         <>
-            {/* <Helmet>
-        <script async defer type="text/javascript" src="https://app.termly.io/embed.min.js"
-        data-auto-block="on" data-website-uuid="ced8ded9-995d-471a-bf54-880b8c679a81" ></script>
-        <script async defer src="https://www.googletagmanager.com/gtag/js?id=AW-11395921981"></script>
-    </Helmet> */}
+            <Helmet>
+                <script async defer type="text/javascript" src="https://app.termly.io/embed.min.js"
+                data-auto-block="on" data-website-uuid="ced8ded9-995d-471a-bf54-880b8c679a81" ></script>
+                <script async defer src="https://www.googletagmanager.com/gtag/js?id=AW-11395921981"></script>
+            </Helmet>
             <div>
                 <div id="footer" className="footer">
                     <div className="containerbox">
