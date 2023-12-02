@@ -75,7 +75,7 @@ class WishitemController extends Controller
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         } else {
 
-            $taxamount = $request->price * env('TAX_PERCENTAGE') / 100;
+            $taxamount = $request->price * env('TAX_PERCENTAGE', 20) / 100;
             $createpriceid = ceil($request->price) + ceil($taxamount);
             $wish = WishItem::create([
                 "user_id" => Auth::id(),
