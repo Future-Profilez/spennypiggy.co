@@ -146,6 +146,8 @@ Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
 
 Route::get('/anonymous-create-checkout-session/{device_id}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
 
+// Route::get('/anonymous-create-checkout-session/{device_id}', [StripeController::class, 'createAnonymousCheckout'])->name('anonymous.create.checkout');
+
 Route::get('/anonymous-sucess-checkout/{id}', [StripeController::class, 'anonymousSuccessCheckout'])->name('checkout.anonymous.success');
 
 Route::get('/anonymous-cancel-checkout/{id}', [StripeController::class, 'anonymousCancelCheckout'])->name('checkout.anonymous.cancel');

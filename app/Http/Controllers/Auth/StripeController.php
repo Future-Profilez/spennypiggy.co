@@ -278,7 +278,6 @@ class StripeController extends Controller
     public function successCheckout($owner_id)
     {
         try {
-            $user = User::where('id', Auth::id())->first();
             $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $owner_id)->where('status', 1)->get();
 
             foreach ($getdata as $dd) {
