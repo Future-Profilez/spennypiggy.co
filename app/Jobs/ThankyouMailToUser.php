@@ -14,15 +14,15 @@ class ThankyouMailToUser implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
     public $payment;
-    public $message;
+    public $mess;
 
     /**
      * Create a new job instance.
      */
-    public function __construct($payment, $message)
+    public function __construct($payment, $mess)
     {
         $this->payment = $payment;
-        $this->message = $message;
+        $this->mess = $mess;
     }
 
     /**
@@ -30,6 +30,6 @@ class ThankyouMailToUser implements ShouldQueue
      */
     public function handle(): void
     {
-        EmailService::thankyouUser($this->payment, $this->message);
+        EmailService::thankyouUser($this->payment, $this->mess);
     }
 }

@@ -1,3 +1,4 @@
+import { useAlerts } from '@/Components/Alerts';
 import LoaderButton from '@/Components/LoaderButton';
 import Popup from '@/Components/Popup';
 import  axios   from 'axios';
@@ -9,16 +10,23 @@ export default function SayThanks({payment_id}) {
    const [close,setClose] = useState();
    const [message,setMessage] = useState();
    const [loading,setloading] = useState(false);
+   const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
    const saythankyou = () => { 
          setloading(true);
-         axios.get(`say-thankyou/${payment_id}/${message}`).then(resp => {
-            console.log("resp",resp)
+         axios.post(`say-thankyou/${payment_id}`, {
+            "messages":message
+         }).then(resp => {
+           if(resp.data.success){
+               successAlert(resp.data.message);
+               setClose(false);
+               setTimeout(()=>{
+                  setClose();
+               },1000);
+           } else {
+               errorAlert(resp.data.message);
+           }
             setloading(false);
-            setClose(false);
-            setTimeout(()=>{
-               setClose();
-            },1000);
          }).catch(_err => {
              console.error("error", _err);
              setloading(false);

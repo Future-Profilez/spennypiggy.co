@@ -186,7 +186,6 @@ class CheckoutController extends Controller
                     CheckoutUser::dispatch($payment_data, false, false, $message);
                 }
             }
-
             CheckoutMailToUser::dispatch($stripeid);
 
             return redirect(route('user.show', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
