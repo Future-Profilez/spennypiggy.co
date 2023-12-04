@@ -6,6 +6,7 @@ use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\SaveWishlist;
 use App\Jobs\SendUserGiftMail;
+use App\Jobs\ThankyouMailToUser;
 use App\Jobs\WelcomeUser;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
@@ -658,5 +659,21 @@ class WishitemController extends Controller
                 "counter" => $items,
             ]);
         }
+    }
+
+    public function wishtrackerItems(){
+        $user = Auth::user();
+        $tracks = StripePaymentItems::whereHas("wish", function($q) use($user){
+            $q->where('user_id',$user->id);
+        })->with(['wish.user'])->get();
+        return Inertia::render('tracker/Wishtracker', [
+            "tracks" => $tracks,
+        ]);
+    }
+
+    public function sayThanks($payment_id, $message){
+        $payment = StripePaymentItems::where("id", $payment_id)->first();
+        ThankyouMailToUser::dispatch($payment, $message);
+        return back()->with('success', 'Message send !!');
     }
 }

@@ -123,4 +123,15 @@ class EmailService
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }
+
+    
+    public static function thankyouUser($data)
+    {
+        try {
+            Mail::to($data['to'])
+                ->send(new ForgotPassEmail($data));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
 }

@@ -2,7 +2,7 @@ id: 54327
 name: SpennyPiggy
 environments:
     production:
-        memory: 3072
+        memory: 3008
         queue-memory: 1024
         cli-memory: 1024
         warm: 10
@@ -19,7 +19,8 @@ environments:
         deploy:
             - 'php artisan migrate --force'
     development:
-        memory: 1024
+        memory: 3008
+        queue-memory: 1024
         cli-memory: 512
         runtime: 'php-8.2:al2'
         domain: dev.spennypiggy.co

@@ -52,6 +52,10 @@ const LiveBar = () => {
           <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
           <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
           <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
+          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
+          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
+          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
+          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
         </ScrollingContent>
       </ScrollingContainer>
     </LiveBarWrapper>

@@ -1,7 +1,7 @@
 import { Link, Head } from "@inertiajs/react";
 import React from 'react';
 import Hero from './home/Hero';
-const Guest = React.lazy(() => import('@/Layouts/GuestLayout'));
+import Guest from '@/Layouts/GuestLayout';
 const LiveBar = React.lazy(() => import('@/includes/LiveBar'));
 const FunPart = React.lazy(() => import('./home/FunPart'));
 const WhyLove = React.lazy(() => import('./home/WhyLove'));
