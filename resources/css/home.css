@@ -559,5 +559,5 @@ div#msgText p{display:flex;align-items:flex-start;}
 .mytable td{color:#fff;}
 .mytable table{width:100%;}
 .mytable{padding:15px 20px;background:#161616;border-radius:20px;}
-.mytable td{padding:15px 0;}
+.mytable td{padding:15px 15px;}
 .mytable tr:not(:last-child) td{border-bottom:1px solid #232323;}

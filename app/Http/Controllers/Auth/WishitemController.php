@@ -671,9 +671,13 @@ class WishitemController extends Controller
         ]);
     }
 
-    public function sayThanks($payment_id, $message){
+    public function sayThanks(Request $request,$payment_id){
+        
         $payment = StripePaymentItems::where("id", $payment_id)->first();
-        ThankyouMailToUser::dispatch($payment, $message);
-        return back()->with('success', 'Message send !!');
+        ThankyouMailToUser::dispatch($payment, $request->messages);
+        return response()->json([
+            "success" => true,
+            "message" => 'Message sent !!',
+        ]);
     }
 }

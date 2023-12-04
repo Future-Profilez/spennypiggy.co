@@ -123,7 +123,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('wish-tracker', [WishitemController::class, 'wishtrackerItems'])->name('wish-tracker')->middleware('mustHaveToVerify');
     
-    Route::get('say-thankyou/{payment_id}/{message}', [WishitemController::class, 'sayThanks'])->name('say-thankyou');
+    Route::post('/say-thankyou/{payment_id}', [WishitemController::class, 'sayThanks'])->name('say-thankyou');
 
     Route::get('/stripe', function () {
         return Inertia::render('stripe/Stripe');
