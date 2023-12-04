@@ -672,7 +672,6 @@ class WishitemController extends Controller
     }
 
     public function sayThanks(Request $request,$payment_id){
-        
         $payment = StripePaymentItems::where("id", $payment_id)->first();
         ThankyouMailToUser::dispatch($payment, $request->messages);
         return response()->json([
