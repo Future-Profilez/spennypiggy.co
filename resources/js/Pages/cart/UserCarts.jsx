@@ -8,7 +8,7 @@ import { useEffect } from "react";
 
 export default function UserCarts(props) {
 
-    const deviceid  = DeviceID();
+    const deviceid = DeviceID();
     const { auth, removeFromCart } = props;
     const { format } = PriceFormat();
     const datas = props.data;
@@ -17,7 +17,7 @@ export default function UserCarts(props) {
     const [name, setName] = useState(null);
     const [email, setEmail] = useState(null);
     const [loading, setLoading] = useState(false);
-    
+
     const handleSubmit = (e) => {
         e.preventDefault();
 
@@ -25,16 +25,16 @@ export default function UserCarts(props) {
             window.location.href = `/create-checkout-session/${datas?.user?.id || ''}?message=${message}&from=${name}&email=${email}`;
         } else {
             // setLoading(true);
-            // window.location.href =`/anonymous-create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`;
-            router.get(`/anonymous-create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`), {
-                preserveScroll: true,
-                onSuccess: (resp) => {
-                    console.log("resp", resp);
-                },
-                onError: (_err) => {
-                    console.error("cart",_err);
-                }
-            };
+            window.location.href =`/create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`;
+            // router.get(`/create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`), {
+            //     preserveScroll: true,
+            //     onSuccess: (resp) => {
+            //         console.log("resp", resp);
+            //     },
+            //     onError: (_err) => {
+            //         console.error("cart", _err);
+            //     }
+            // };
         }
     };
 
@@ -47,17 +47,17 @@ export default function UserCarts(props) {
         // }).catch(_err => {
         //     console.error("error", _err);
         // });
-        router.get(`/remove-from-cart/${id}`,{
-                preserveScroll: true,
-                onSuccess: (resp) => {
-                    console.log("resp", resp);
-                    const updatedItems = items.filter(item => item.uuid !== id);
-                    setItems(updatedItems);
-                },
-                onError: (_err) => {
-                    console.error("error", _err);
-                }
+        router.get(`/remove-from-cart/${id}`, {
+            preserveScroll: true,
+            onSuccess: (resp) => {
+                console.log("resp", resp);
+                const updatedItems = items.filter(item => item.uuid !== id);
+                setItems(updatedItems);
+            },
+            onError: (_err) => {
+                console.error("error", _err);
             }
+        }
         );
 
     };
@@ -65,47 +65,47 @@ export default function UserCarts(props) {
     const [subtotal, setsubtotal] = useState();
     const [fee, setFee] = useState(0.2 * subtotal);
 
-    function updateTotals (p){
+    function updateTotals(p) {
         const value = items && items.reduce((total, item) => +total + +item.price * (+item.quantity || 1), 0) + p;
         setsubtotal(value);
         setFee(0.2 * value);
     }
 
-    const quantityUpdate = (type, amount) =>{ 
-        if(type == 'add'){
-            const updated = subtotal+amount;
+    const quantityUpdate = (type, amount) => {
+        if (type == 'add') {
+            const updated = subtotal + amount;
             setsubtotal(updated)
             setFee(0.2 * updated);
-        }else {
-            const updated = subtotal-amount;
+        } else {
+            const updated = subtotal - amount;
             setsubtotal(updated)
             setFee(0.2 * updated);
         }
     }
 
-    useEffect(()=>{
+    useEffect(() => {
         updateTotals(0);
-    },[items]);
+    }, [items]);
 
     return (
         <div className="px-2">
             <div className="my-4 cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
                 <div className="cartMain">
                     <h2 className="pb-1 wishtitle">
-                        Wish Basket for {datas?.user?.name || ""} 
+                        Wish Basket for {datas?.user?.name || ""}
                         <Link className="text-voilet"
-                        href={`/${datas?.user?.username || ""}`} >
+                            href={`/${datas?.user?.username || ""}`} >
                             @{datas?.user?.username || ""}
                         </Link>
                     </h2>
                     <p className="pb-4">
-                        You are about to send a payout to 
+                        You are about to send a payout to
                         <strong> {datas?.user?.name || ""} </strong> to fund their
-                        wishes. 
+                        wishes.
                     </p>
                     <div className="CartItemBox">
                         {items && items.map((c, i) => {
-                            return <CartItem quantityUpdate={quantityUpdate}  removeCart={removeCart} data={c} key={i} />;
+                            return <CartItem quantityUpdate={quantityUpdate} removeCart={removeCart} data={c} key={i} />;
                         })}
                     </div>
 
@@ -113,7 +113,7 @@ export default function UserCarts(props) {
                         <div className="cartSubTotal text-right mt-1">
                             <span>Platform Fee :</span>{" "}
                             <strong className="text-end">
-                                {format(fee  || "")}
+                                {format(fee || "")}
                             </strong>
                         </div>
                         <div className="cartSubTotal text-right mt-1">
@@ -178,7 +178,7 @@ export default function UserCarts(props) {
                                             name="agreeterm"
                                             className="me-2"
                                             value="agreeterm" ></input>
-                                            I agree to the <Link target='_blank' className="text-voilet" href={route("terms-and-conditions")} >Terms of Service</Link> and <a className="text-voilet" target='_blank' href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>  and the following statements:
+                                        I agree to the <Link target='_blank' className="text-voilet" href={route("terms-and-conditions")} >Terms of Service</Link> and <a className="text-voilet" target='_blank' href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>  and the following statements:
                                     </label>
                                     <div className="tearmlist ps-3">
                                         <ul className="ps-0">

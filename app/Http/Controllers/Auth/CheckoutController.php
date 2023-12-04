@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -57,8 +58,8 @@ class CheckoutController extends Controller
                     'quantity' => $dd->quantity,
                 ];
 
-                $subtotal += $dd->amount;
-                $taxNew += $dd->tax;
+                $subtotal += $dd->amount * $dd->quantity;
+                $taxNew += $dd->tax * $dd->quantity;
             }
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
@@ -72,10 +73,11 @@ class CheckoutController extends Controller
                     'transfer_data' => [
                         'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
                     ],
-                    'application_fee_amount' => $taxNew,
-                    'receipt_email' => 'saurav@futureprofilez.com',
+                    'application_fee_amount' => $taxNew * 100,
+                    'on_behalf_of'  => $getdata[0]->owner->account_id,
                 ],
-                'customer_email' => 'naveen@internetbusinesssolutionsindia.com',
+                // 'customer' => $getdata[0]->user->account_id ?? '',
+                'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email
             ]);
 
             // $subtotal = ($sessionCreate->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
@@ -111,16 +113,6 @@ class CheckoutController extends Controller
         }
     }
 
-
-    public function retrive($id)
-    {
-        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-        $data = $stripe->checkout->sessions->retrieve(
-            $id,
-            []
-        );
-    }
-
     public function successCheckout($id)
     {
         try {
@@ -132,6 +124,7 @@ class CheckoutController extends Controller
 
             foreach ($getdata as $dd) {
                 $dd->status = 0;
+                $dd->quantity = 0;
                 $dd->save();
 
                 if (!empty($dd->wish->subscription)) {
@@ -180,18 +173,23 @@ class CheckoutController extends Controller
                 ]);
                 $payment_data->refresh();
                 $message = $stripeid->message;
-                if ($dd->wish_id == NULL) {
-                    CheckoutUser::dispatch($payment_data, false, $dd, $message);
+                if (Auth::check()) {
+                    if ($dd->wish_id == NULL) {
+                        CheckoutUser::dispatch($payment_data, false, $dd, $message);
+                    } else {
+                        CheckoutUser::dispatch($payment_data, false, false, $message);
+                    }
                 } else {
-                    CheckoutUser::dispatch($payment_data, false, false, $message);
+                    CheckoutUser::dispatch($payment_data, true, false, false, $stripeid->name);
                 }
             }
-
-            CheckoutMailToUser::dispatch($stripeid);
+            if (Auth::check()) {
+                CheckoutMailToUser::dispatch($stripeid);
+            }
 
             return redirect(route('user.show', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
-            Log::info('error:' . $th);
+            // Log::info('error:' . $th);
         }
     }
 
@@ -216,13 +214,14 @@ class CheckoutController extends Controller
      *
      * @return mixed
      */
-    public function testCheckout(){
+    public function testCheckout()
+    {
         $carts = UserCart::whereOwnerId(1)->get();
         $owner = User::findOrFail(1);
 
         $items = [];
         $tax = 0;
-        foreach($carts as $c){
+        foreach ($carts as $c) {
             $items[] = [
                 'price'     => $c->priceid ?? $c->wish->price_id,
                 'quantity'  => $c->quantity
@@ -241,7 +240,7 @@ class CheckoutController extends Controller
                 'on_behalf_of'  => $owner->account_id
             ],
             'success_url'   => route("test.stripe.callback"),
-            'cancel_url'    => route("test.stripe.callback",["status" => "cancel"])
+            'cancel_url'    => route("test.stripe.callback", ["status" => "cancel"])
         ];
 
         $session = StripeControl::createCheckoutSession($payload);
@@ -255,7 +254,8 @@ class CheckoutController extends Controller
      * @param string $session Checkout Session Id
      * @param string $status Checkout Status
      */
-    public function testCallback($status = "success"){
+    public function testCallback($status = "success")
+    {
         $sessionId = Session::get("checkout_session");
 
         $session = StripeControl::getCheckoutSession($sessionId);
