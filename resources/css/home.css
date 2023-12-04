@@ -11,16 +11,8 @@
 .welcomeTitle{color:var(--pink);font-size:35px;line-height:62.5px;}
 .welcomeLeft{width:60%;}
 .welcomeRt{width:40%;}
-.spennylogo img {
-   width: 100%;
-   height: 100%;
-}
-.funboximg span.lazy-load-image-background, 
-.spennylogo .lazy-load-image-background , 
-.welcomeRt span.lazy-load-image-background {
-   width: auto !important;
-   height: auto !important;
-}
+.spennylogo img{width:100%;height:100%;}
+.funboximg span.lazy-load-image-background,.spennylogo .lazy-load-image-background,.welcomeRt span.lazy-load-image-background{width:auto !important;height:auto !important;}
 .wishlistbtn a{transform:rotate(-11deg);}
 .wishlistbtn{margin-top:60px;}
 .welcomeTitle{transform:rotate(352deg);-webkit-text-stroke:1px #e6ea81;text-transform:capitalize !important;text-shadow:2px 2px 0 #e6ea81;}
@@ -508,9 +500,7 @@ button.cartLink svg{width:50px;height:50px;}
 .pass.greybox{padding:0 !important;background:transparent;}
 .wishlistimg img{height:160px !important;}
 .btn-pink.lg,.btn-pink.lg2{padding:15px;letter-spacing:1px;font-size:16px !important;}
-.welcomeRt {
-   padding: 10px 0px;
-}
+.welcomeRt{padding:10px 0px;}
 }
 @media(max-width:449px){.userphoto{left:7px;}
 .socialmedia{margin-top:2px!important;}
@@ -520,10 +510,7 @@ button.cartLink svg{width:50px;height:50px;}
 .footlinks ul li a{font-size:15px;}
 select#country{width:100%;margin-bottom:10px;}
 .wishlistcntbox{max-width:100%;width:100%;}
-.welcomeTitle {
-   font-size: 27px;
-   line-height: 34px;
-}
+.welcomeTitle{font-size:27px;line-height:34px;}
 }
 @media(max-width:400px){.wishlistimg img{height:230px!important;}
 .wishlistdetial h4{font-size:20px !important;}
@@ -531,7 +518,7 @@ select#country{width:100%;margin-bottom:10px;}
 .headingMd{font-size:44px !important;line-height:45px !important;}
 .userManageRt > .row > div{width:100% !important;}
 .spennylogo img{max-width:120px;}
-.welcomeHeading{font-size:44px; }
+.welcomeHeading{font-size:44px;}
 .noResult h2.headingLg{font-size:25px;line-height:30px;}
 .menuImg img{max-width:119px;}
 .closemega svg{width:48px;}
@@ -561,14 +548,16 @@ div#msgText p{display:flex;align-items:flex-start;}
 .swiper-button-prev:after{margin-left:0 !important;margin-right:3px !important;}
 .tooltipbtn{width:13px;height:14px;background:#000;color:#fff;font-size:11px;border-radius:50%;margin-left:6px;display:inline-block;}
 .text-small{font-size:14px;}
-@keyframes fade {
-   0%{
-      opacity: 0; transition:0.6s;
-   }
-   100%{
-      opacity: 1; transition:0.6s;
-   }
+@keyframes fade{0%{opacity:0;transition:0.6s;}
+100%{opacity:1;transition:0.6s;}
 }
-.welcomeRt {
-   animation: fade 0.5s linear; transition:0.6s;
-}
+.welcomeRt{animation:fade 0.5s linear;transition:0.6s;}
+.wishtracker .nav.nav-tabs li button{background:transparent;color:#d2d2d2;border:0 !important;padding:14px 14px 14px 0px !important;margin-right:40px;font-size:20px;border-bottom:2px solid #000 !important;}
+.wishtracker .nav.nav-tabs li button.active{color:#f94f97;border-color:#f94f97 !important;}
+.wishtracker .nav.nav-tabs{border:0;}
+.disabled{opacity:0.6;}
+.mytable td{color:#fff;}
+.mytable table{width:100%;}
+.mytable{padding:15px 20px;background:#161616;border-radius:20px;}
+.mytable td{padding:15px 0;}
+.mytable tr:not(:last-child) td{border-bottom:1px solid #232323;}

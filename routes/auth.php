@@ -116,6 +116,14 @@ Route::middleware('auth')->group(function () {
     Route::get('account', function () {
         return Inertia::render('accountsetting/Accountsetting');
     })->name("account")->middleware('mustHaveToVerify');
+    
+    // Route::get('wish-tracker', function () {
+    //     return Inertia::render('tracker/Wishtracker');
+    // })->name("wish-tracker")->middleware('mustHaveToVerify');
+
+    Route::get('wish-tracker', [WishitemController::class, 'wishtrackerItems'])->name('wish-tracker')->middleware('mustHaveToVerify');
+    
+    Route::get('say-thankyou/{payment_id}/{message}', [WishitemController::class, 'sayThanks'])->name('say-thankyou');
 
     Route::get('/stripe', function () {
         return Inertia::render('stripe/Stripe');

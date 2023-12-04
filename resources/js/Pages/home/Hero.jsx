@@ -26,11 +26,10 @@ export default function Hero({auth}) {
                </div>
            </div>
            <div className="welcomeRt">
-               <LazyLoadImage
+               <img
                alt={"image"} 
                height={377.63}
                src={addwishlistimg} 
-               useIntersectionObserver={true} effect="blur"
                width={474} />
            </div>
        </div>

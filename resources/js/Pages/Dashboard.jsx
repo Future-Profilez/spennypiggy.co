@@ -24,6 +24,7 @@ export default function Dashboard(props) {
         sociallinks,
         slinks,
     } = props;
+
     const [its, setIts] = useState(items);
     const [loading, setLoading] = useState(false);
     const fetchingcats = (e) => {
@@ -49,8 +50,8 @@ export default function Dashboard(props) {
         (auth && auth.user && auth.user.username) == (user && user.username)
     );
     const { cartCounter, setCartCounter } = useState();
-
     console.log("props", props);
+    
     return (
         <Guest auth={auth.user} user={user}>
             <Head title={user && user.name} />

@@ -14,8 +14,8 @@ export default function UserCarts(props) {
     const datas = props.data;
     const [isChecked, setIsChecked] = useState(false);
     const [message, setMessage] = useState(null);
-    const [name, setName] = useState(null);
-    const [email, setEmail] = useState(null);
+    const [name, setName] = useState(auth && auth.name || '');
+    const [email, setEmail] = useState(auth && auth.email || '');
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = (e) => {
@@ -25,7 +25,7 @@ export default function UserCarts(props) {
             window.location.href = `/create-checkout-session/${datas?.user?.id || ''}?message=${message}&from=${name}&email=${email}`;
         } else {
             // setLoading(true);
-            window.location.href =`/create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`;
+            window.location.href = `/create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`;
             // router.get(`/create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`), {
             //     preserveScroll: true,
             //     onSuccess: (resp) => {
@@ -40,13 +40,6 @@ export default function UserCarts(props) {
 
     const [items, setItems] = useState(datas?.items);
     const removeCart = (id) => {
-        // axios.get(`/remove-from-cart/${id}`).then(resp => {
-        //     console.log("resp", resp);
-        //     const updatedItems = items.filter(item => item.uuid !== id);
-        //     setItems(updatedItems);
-        // }).catch(_err => {
-        //     console.error("error", _err);
-        // });
         router.get(`/remove-from-cart/${id}`, {
             preserveScroll: true,
             onSuccess: (resp) => {
@@ -152,7 +145,7 @@ export default function UserCarts(props) {
                                                 className="form-input w-100 rounded"
                                                 onChange={(e) =>
                                                     setName(e.target.value)
-                                                }
+                                                } value={name}
                                                 type="text"
                                                 placeholder="Enter Your Name..."
                                             />
@@ -160,7 +153,9 @@ export default function UserCarts(props) {
                                         <div className="col-md-12 mb-4">
                                             <label className="d-block text-start">Email </label>
                                             <p className="text-small text-muted mb-1">Your e-mail remains private. It is used for the creator to reply to your gift with a message via Spenny Piggy</p>
-                                            <input className="form-input w-100 rounded"
+                                            <input className={`${auth.email ? 'disabled' : ''} form-input w-100 rounded`}
+                                                value={auth.email}
+                                                disabled={auth.email ? true : false}
                                                 onChange={(e) => setEmail(e.target.value)}
                                                 type="email" placeholder="Enter Your Email..."
                                             />
