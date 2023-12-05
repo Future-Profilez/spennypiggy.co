@@ -6,6 +6,7 @@ use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\SaveWishlist;
 use App\Jobs\SendUserGiftMail;
+use App\Jobs\ThankyouMailToUser;
 use App\Jobs\WelcomeUser;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
@@ -75,7 +76,7 @@ class WishitemController extends Controller
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         } else {
 
-            $taxamount = $request->price * env('TAX_PERCENTAGE') / 100;
+            $taxamount = $request->price * env('TAX_PERCENTAGE', 20) / 100;
             $createpriceid = ceil($request->price) + ceil($taxamount);
             $wish = WishItem::create([
                 "user_id" => Auth::id(),
@@ -658,5 +659,25 @@ class WishitemController extends Controller
                 "counter" => $items,
             ]);
         }
+    }
+
+    public function wishtrackerItems(){
+        $user = Auth::user();
+        $tracks = StripePaymentItems::whereHas("wish", function($q) use($user){
+            $q->where('user_id',$user->id);
+        })->with(['wish.user'])->get();
+        return Inertia::render('tracker/Wishtracker', [
+            "tracks" => $tracks,
+        ]);
+    }
+
+    public function sayThanks(Request $request,$payment_id){
+        
+        $payment = StripePaymentItems::where("id", $payment_id)->first();
+        ThankyouMailToUser::dispatch($payment, $request->messages);
+        return response()->json([
+            "success" => true,
+            "message" => 'Message sent !!',
+        ]);
     }
 }

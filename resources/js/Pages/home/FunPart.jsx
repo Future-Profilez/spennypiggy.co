@@ -2,6 +2,8 @@ import React from 'react'
 import sharewishimg01 from "../../../assets/img/sharewishimg01.png";
 import receivegiftimg from "../../../assets/img/receivegiftimg.png";
 import thankfansimg from "../../../assets/img/thankfansimg.png";
+import { LazyLoadImage } from 'react-lazy-load-image-component';
+
 export default function FunPart() {
   return (
    <div className="funpart">
@@ -11,7 +13,12 @@ export default function FunPart() {
        </h2>
        <div className="funboxs mintbg shadow-black border-black mb-10">
            <div className="funboximg">
-               <img src={sharewishimg01} alt="img" />
+               <LazyLoadImage
+               alt={"image"} useIntersectionObserver={true} effect="blur"
+               height={326}
+               src={sharewishimg01}
+               width={468} />
+               {/* <img  alt="img" /> */}
            </div>
 
            <div className="funcnt">
@@ -38,13 +45,23 @@ export default function FunPart() {
                </p>
            </div>
            <div className="funboximg">
-               <img src={receivegiftimg} alt="img" />
+               <LazyLoadImage
+               alt={"image"} useIntersectionObserver={true} effect="blur"
+               height={298}
+               src={receivegiftimg}
+               width={490} />
+               {/* <img src={receivegiftimg} alt="img" /> */}
            </div>
        </div>
 
        <div className="funboxs bluebg shadow-black border-black mb-10">
            <div className="funboximg">
-               <img src={thankfansimg} alt="img" />
+               {/* <img src={thankfansimg} alt="img" /> */}
+               <LazyLoadImage
+               alt={"image"}
+               height={278} useIntersectionObserver={true} effect="blur"
+               src={thankfansimg}
+               width={430} />
            </div>
 
            <div className="funcnt">

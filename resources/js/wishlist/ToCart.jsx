@@ -1,5 +1,5 @@
 import React from "react";
-const LoaderButton = React.lazy(() => import('@/Components/LoaderButton'));
+import  LoaderButton from "@/Components/LoaderButton";
 import { useAlerts } from '@/Components/Alerts';
 import axios from 'axios';
 import { useState } from 'react';
@@ -33,10 +33,10 @@ export default function ToCart({
             toast.error(`Amount can not be more than remaining amount £${pending}.`);
             return false;
         }
-        if (amount && amount < 50) {
-            toast.error("Amount must be greater than 50.");
-            return false;
-        }
+        // if (amount && amount < 50) {
+        //     toast.error("Amount must be greater than 50.");
+        //     return false;
+        // }
         setLoading(true);
         console.log("auth",auth)
         axios.get(`/add-to-cart/${uuid}/${deviceID}${amount ? `/${amount}` : ''}`).then(resp => {

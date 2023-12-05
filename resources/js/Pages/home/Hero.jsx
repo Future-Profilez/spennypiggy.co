@@ -1,6 +1,8 @@
 import React from 'react'
 import { Link, Head } from "@inertiajs/react";
 import addwishlistimg from "../../../assets/img/addwishlistimg.png";
+import { LazyLoadImage } from 'react-lazy-load-image-component';
+// import { LazyLoadImage } from 'react-lazy-load-image-component';
 
 export default function Hero({auth}) {
   return (
@@ -24,7 +26,11 @@ export default function Hero({auth}) {
                </div>
            </div>
            <div className="welcomeRt">
-               <img src={addwishlistimg} alt="img" />
+               <img
+               alt={"image"} 
+               height={377.63}
+               src={addwishlistimg} 
+               width={474} />
            </div>
        </div>
    </div>

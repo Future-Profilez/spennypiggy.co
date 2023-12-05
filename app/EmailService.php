@@ -6,6 +6,7 @@ use App\Mail\Checkout;
 use App\Mail\CheckoutToUser;
 use App\Mail\ForgotPassEmail;
 use App\Mail\SubscriptionMail;
+use App\Mail\ThankyouUser;
 use App\Mail\VerifyEmail;
 use App\Mail\Welcome;
 use App\Mail\Wishlist;
@@ -74,7 +75,6 @@ class EmailService
                 'email' => $data->user->email,
                 'uuid' => $data->user->uuid,
             ];
-
             Mail::to($emailData['to'])
                 ->send(new CheckoutToUser($data));
         } catch (TransportException $e) {
@@ -114,11 +114,26 @@ class EmailService
         }
     }
 
-    public static function ForgotPassword($data)
-    {
+    public static function ForgotPassword($data){
         try {
             Mail::to($data['to'])
                 ->send(new ForgotPassEmail($data));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+    
+    public static function thankyouUser($payment, $mess) {
+        try {
+            $emailData = [
+                'to' => $payment->payment->user->email,
+                'name' => $payment->payment->user->name,
+                'username' => $payment->payment->user->username,
+                'phone' => $payment->payment->user->phone,
+                'email' => $payment->payment->user->email,
+                'uuid' => $payment->payment->user->uuid,
+            ];
+            Mail::to($emailData['to'])->send(new ThankyouUser($payment, $mess));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }

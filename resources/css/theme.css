@@ -4,18 +4,21 @@
 
 @font-face {
   font-family: 'CeraGRBold';
+  font-display: swap;
   src: 
        url('../assets/fonts/CeraGRBold.woff') format('woff'),
        url('../assets/fonts/CeraGRBold.woff2') format('woff2');
 }
 
 @font-face {
+  font-display: swap;
   font-family: 'CeraGRMedium';
   src:
        url('../assets/fonts/CeraGRMedium.woff2') format('woff2'),
        url('../assets/fonts/CeraGRMedium.woff') format('woff');
 }
 @font-face {
+  font-display: swap;
   font-family: 'gulfs';
   src:
        url('../assets/fonts/newfont.woff2') format('woff2'),

@@ -5,46 +5,34 @@ import PriceFormat from "@/includes/PriceFormat";
 import DeviceID from "@/includes/DeviceID";
 import axios from "axios";
 import { useEffect } from "react";
-import { useAlerts } from "@/Components/Alerts";
 
 export default function UserCarts(props) {
-    const { successAlert, errorAlert, errorsHandling } = useAlerts();
-    const deviceid  = DeviceID();
+
+    const deviceid = DeviceID();
     const { auth, removeFromCart } = props;
     const { format } = PriceFormat();
     const datas = props.data;
     const [isChecked, setIsChecked] = useState(false);
     const [message, setMessage] = useState(null);
-    const [name, setName] = useState(null);
-    const [email, setEmail] = useState(null);
+    const [name, setName] = useState(auth && auth.name || '');
+    const [email, setEmail] = useState(auth && auth.email || '');
     const [loading, setLoading] = useState(false);
-    
+
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // if(name == '' || null){
-        //     errorAlert("Name can not be empty.")
-        //     return false;
-        // }
-
-        if (auth) {
+        if (auth && auth.id) {
             window.location.href = `/create-checkout-session/${datas?.user?.id || ''}?message=${message}&from=${name}&email=${email}`;
         } else {
-            console.log("auth", auth);
-
-            axios.get(`/anonymous-create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`).then((resp)=>{
-                console.log("resp",resp);
-            }).catch((err)=>{
-                console.log("err",err)
-            });
-            
-            // , {
+            // setLoading(true);
+            window.location.href = `/create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`;
+            // router.get(`/create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`), {
             //     preserveScroll: true,
             //     onSuccess: (resp) => {
             //         console.log("resp", resp);
             //     },
             //     onError: (_err) => {
-            //         console.error("cart",_err);
+            //         console.error("cart", _err);
             //     }
             // };
         }
@@ -52,24 +40,17 @@ export default function UserCarts(props) {
 
     const [items, setItems] = useState(datas?.items);
     const removeCart = (id) => {
-        // axios.get(`/remove-from-cart/${id}`).then(resp => {
-        //     console.log("resp", resp);
-        //     const updatedItems = items.filter(item => item.uuid !== id);
-        //     setItems(updatedItems);
-        // }).catch(_err => {
-        //     console.error("error", _err);
-        // });
-        router.get(`/remove-from-cart/${id}`,{
-                preserveScroll: true,
-                onSuccess: (resp) => {
-                    console.log("resp", resp);
-                    const updatedItems = items.filter(item => item.uuid !== id);
-                    setItems(updatedItems);
-                },
-                onError: (_err) => {
-                    console.error("error", _err);
-                }
+        router.get(`/remove-from-cart/${id}`, {
+            preserveScroll: true,
+            onSuccess: (resp) => {
+                console.log("resp", resp);
+                const updatedItems = items.filter(item => item.uuid !== id);
+                setItems(updatedItems);
+            },
+            onError: (_err) => {
+                console.error("error", _err);
             }
+        }
         );
 
     };
@@ -77,47 +58,47 @@ export default function UserCarts(props) {
     const [subtotal, setsubtotal] = useState();
     const [fee, setFee] = useState(0.2 * subtotal);
 
-    function updateTotals (p){
+    function updateTotals(p) {
         const value = items && items.reduce((total, item) => +total + +item.price * (+item.quantity || 1), 0) + p;
         setsubtotal(value);
         setFee(0.2 * value);
     }
 
-    const quantityUpdate = (type, amount) =>{ 
-        if(type == 'add'){
-            const updated = subtotal+amount;
+    const quantityUpdate = (type, amount) => {
+        if (type == 'add') {
+            const updated = subtotal + amount;
             setsubtotal(updated)
             setFee(0.2 * updated);
-        }else {
-            const updated = subtotal-amount;
+        } else {
+            const updated = subtotal - amount;
             setsubtotal(updated)
             setFee(0.2 * updated);
         }
     }
 
-    useEffect(()=>{
+    useEffect(() => {
         updateTotals(0);
-    },[items]);
+    }, [items]);
 
     return (
         <div className="px-2">
             <div className="my-4 cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
                 <div className="cartMain">
                     <h2 className="pb-1 wishtitle">
-                        Wish Basket for {datas?.user?.name || ""} 
+                        Wish Basket for {datas?.user?.name || ""}
                         <Link className="text-voilet"
-                        href={`/${datas?.user?.username || ""}`} >
+                            href={`/${datas?.user?.username || ""}`} >
                             @{datas?.user?.username || ""}
                         </Link>
                     </h2>
                     <p className="pb-4">
-                        You are about to send a payout to 
+                        You are about to send a payout to
                         <strong> {datas?.user?.name || ""} </strong> to fund their
-                        wishes. 
+                        wishes.
                     </p>
                     <div className="CartItemBox">
                         {items && items.map((c, i) => {
-                            return <CartItem quantityUpdate={quantityUpdate}  removeCart={removeCart} data={c} key={i} />;
+                            return <CartItem quantityUpdate={quantityUpdate} removeCart={removeCart} data={c} key={i} />;
                         })}
                     </div>
 
@@ -125,7 +106,7 @@ export default function UserCarts(props) {
                         <div className="cartSubTotal text-right mt-1">
                             <span>Platform Fee :</span>{" "}
                             <strong className="text-end">
-                                {format(fee  || "")}
+                                {format(fee || "")}
                             </strong>
                         </div>
                         <div className="cartSubTotal text-right mt-1">
@@ -164,7 +145,7 @@ export default function UserCarts(props) {
                                                 className="form-input w-100 rounded"
                                                 onChange={(e) =>
                                                     setName(e.target.value)
-                                                }
+                                                } value={name}
                                                 type="text"
                                                 placeholder="Enter Your Name..."
                                             />
@@ -172,7 +153,9 @@ export default function UserCarts(props) {
                                         <div className="col-md-12 mb-4">
                                             <label className="d-block text-start">Email </label>
                                             <p className="text-small text-muted mb-1">Your e-mail remains private. It is used for the creator to reply to your gift with a message via Spenny Piggy</p>
-                                            <input className="form-input w-100 rounded"
+                                            <input className={`${auth.email ? 'disabled' : ''} form-input w-100 rounded`}
+                                                value={auth.email}
+                                                disabled={auth.email ? true : false}
                                                 onChange={(e) => setEmail(e.target.value)}
                                                 type="email" placeholder="Enter Your Email..."
                                             />
@@ -190,7 +173,7 @@ export default function UserCarts(props) {
                                             name="agreeterm"
                                             className="me-2"
                                             value="agreeterm" ></input>
-                                            I agree to the <Link target='_blank' className="text-voilet" href={route("terms-and-conditions")} >Terms of Service</Link> and <a className="text-voilet" target='_blank' href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>  and the following statements:
+                                        I agree to the <Link target='_blank' className="text-voilet" href={route("terms-and-conditions")} >Terms of Service</Link> and <a className="text-voilet" target='_blank' href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>  and the following statements:
                                     </label>
                                     <div className="tearmlist ps-3">
                                         <ul className="ps-0">
