@@ -39,8 +39,8 @@ export default function Register() {
 
     useEffect(() => {
         return () => {
-            reset('password', 'password_confirmation');
-            setmypass('');
+            // reset('password', 'password_confirmation');
+            // setmypass('');
         };
     }, []);
 
@@ -87,7 +87,7 @@ export default function Register() {
                 }
             },
             onError: (err) => {
-                reset("password");
+                // reset("password");
                 Object.keys(err).map((key) => {
                     errorAlert(err[key]);
                 });

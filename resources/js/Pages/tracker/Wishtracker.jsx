@@ -8,6 +8,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import SayThanks from "./SayThanks";
 import Collapse from "react-bootstrap/Collapse";
 import { useState } from "react";
+import axios from "axios";
 import Confetti from "@/includes/Confetti";
 
 export default function Wishtracker(props) {
@@ -22,19 +23,29 @@ export default function Wishtracker(props) {
 
         const [open, setOpen] = useState(false);
         const [checked, setChecked] = useState(false);
+
         const openState = () => {
             setOpen(!open);
         }
 
+        function controlStatus(){
+            axios.post(`/read-status/${n.id}/${n.sender ? 'user' : 'owner'}`).then(resp => {
+                 console.error("resp", resp);
+            }).catch(_err => {
+                 console.error("error", _err);
+            });
+        }
+
         return (
-            <Confetti onclick={openState} classes="w-100" >
+            <Confetti sender={n && n.sender} 
+                owner={n && n.is_read_owner} 
+                onclick={controlStatus} classes="w-100" >
                 <div className="trackItem cursor-pointer shadow-pink box  mb-4">
                     <div onClick={openState}
                         aria-controls="example-collapse-text" aria-expanded={open}
                         className=" cursor-pointer trackbar d-flex align-items-center justify-content-between" >
                         <div className="text-dark">
-                            <Avatar
-                                name={n && n.wish.user && n.wish.user.name}
+                            <Avatar name={n && n.wish.user && n.wish.user.name}
                                 username={n && n.wish.user && n.wish.user.username}
                                 src={
                                     (n && n.wish.user && n.wish.user.avatar) ||
