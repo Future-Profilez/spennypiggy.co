@@ -22,6 +22,7 @@ body{position:relative;font-family:var(--para-font);}
 */
 .pinkbg{background:var(--pink);}
 .mintbg{background:var(--mint);}
+.redbg{background:#d34141;}
 .bluebg{background:var(--voilet);}
 .whbg{background:var(--white);}
 .blackbg{background:var(--black);}

@@ -4,42 +4,26 @@ import confetti from 'canvas-confetti';
 export default function Confetti  ({children, onclick, classes}) {
 
    const startConfetti = () => {
-      onclick && onclick();
+     onclick && onclick();
      const button = document.getElementById('button-conf');
-     button.className = 'loading';
-
      const rect = button.getBoundingClientRect();
-     const center = {
-       x: rect.left + rect.width / 2,
-       y: rect.top + rect.height / 2,
-     };
-   //   const origin = {
-   //     x: center.x / window.innerWidth /2 ,
-   //     y: center.y / window.innerHeight,
-   //   };
      const origin = {
-      x: 0.5,  // Center horizontally
-      y: 0.1,    // Top of the screen
+      x: 0.5,  
+      y: 0.1, 
     };
-
-     // Canvas && confetti settings
      const myCanvas = document.createElement('canvas');
      document.body.appendChild(myCanvas);
      const defaults = {
        disableForReducedMotion: true,
      };
      const colors = ['#05EFB8', '#8C52FF', '#E6EA7B', '#F94F97', '#05EFB8', '#8C52FF', '#E6EA7B', '#F94F97'];
-
-     // Confetti function to be more realistic
      function fire(particleRatio, opts) {
        confetti(
          Object.assign({}, defaults, opts, {
-           particleCount: Math.floor(100 * particleRatio),
+           particleCount: Math.floor(200 * particleRatio),
          })
        );
      }
-
-     // Finished state confetti
      setTimeout(() => {
        fire(0.25, {
          spread: 26,
@@ -85,9 +69,9 @@ export default function Confetti  ({children, onclick, classes}) {
 
   return (
     <>
-        <button className={classes} id="button-conf" onClick={startConfetti} >
+        <div className={classes} id="button-conf" onClick={startConfetti} >
          {children}
-        </button>
+        </div>
     </>
   );
 };
