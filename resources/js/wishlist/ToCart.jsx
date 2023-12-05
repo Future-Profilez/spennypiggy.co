@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import DeviceID from "@/includes/DeviceID";
 
 export default function ToCart({ 
-    is_surprise, surprise_amount, surprise_message, owner, 
+    sub, surprise_amount, surprise_message, owner, 
     auth, actionfrom, checkoutbtn, ItemAdded, item, crowd, pending, uuid, text, classes, custom, removeItem, type, is_cart, amount, isEqual }) {
     
     const deviceID  = DeviceID();
@@ -39,7 +39,7 @@ export default function ToCart({
         // }
         setLoading(true);
         console.log("auth",auth)
-        axios.get(`/add-to-cart/${uuid}/${deviceID}${amount ? `/${amount}` : ''}`).then(resp => {
+        axios.get(`/add-to-cart/${uuid}/${deviceID}${sub ? `/${sub}` : '/onetime'}${amount ? `/${amount}/` : ''}`).then(resp => {
         if (resp.data.success) {
             if (resp.data.added == true) {
                 successAlert(resp.data.msg);

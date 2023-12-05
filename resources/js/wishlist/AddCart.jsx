@@ -10,6 +10,11 @@ import PriceFormat from "@/includes/PriceFormat";
 export default function AddCart(props) {
     
 
+    const [sub ,setSub] = useState(false);
+    function getSubscription(e) {
+        setSub(e.target.value)
+    }
+
     const { format } = PriceFormat();
     const { auth, action, uuid, item, IsloggedIn } = props;
     const [cartamount, setcartamount] = useState(null);
@@ -38,10 +43,9 @@ export default function AddCart(props) {
     const price = () => { 
         return item.price
     };
+ 
 
-    const checkoutnow = () => { 
-        window.location = '/cart';
-    }
+    
    
     return (
         <Popup size="md" 
@@ -98,9 +102,9 @@ export default function AddCart(props) {
 
                 {item.subscription == "1" ?  (
                     <>
-                        <p className="mb-0">Subscription interval </p>
-                        <div className="croud-add w-100">
-                            <select className="w-100">
+                        <p className="mb-1">Subscription interval </p>
+                        <div className="croud-add w-100 mb-3">
+                            <select onChange={getSubscription} className="w-100">
                                 <option value={false} >One Time Purchase</option>
                                 <option value={item.subscription_period} >
                                 Paid Every
@@ -120,7 +124,7 @@ export default function AddCart(props) {
                 ) :''}
 
                 <div className=" pb-2">
-                    <ToCart ItemAdded={ItemAdded}  auth={auth} 
+                    <ToCart sub={sub} ItemAdded={ItemAdded}  auth={auth} 
                         pending={item.price - item.fullfill_amount}
                         crowd={item.subscription == 2}
                         amount={cartamount} 
@@ -131,7 +135,7 @@ export default function AddCart(props) {
                         classes={`btn-pink lg w-100 mb-3 font-CeraGR ${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
                         uuid={uuid}
                     />
-                    <ToCart auth={auth} 
+                    <ToCart sub={sub} auth={auth} 
                         ItemAdded={ItemAdded}
                         pending={item.price - item.fullfill_amount}
                         crowd={item.subscription == 2}
