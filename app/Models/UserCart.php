@@ -22,6 +22,7 @@ class UserCart extends Model
         'tax',
         'priceid',
         'message',
+        'is_subscribed',
         "status",
         'deleted_at',
     ];
