@@ -90,7 +90,7 @@ export default function Header(props) {
         <div className={`modelmenu ${isActive ? 'Open': null}`}>
           <div className="MegaMenu">
               <div className="closemega cursor-pointer" onClick={toggleClass}>
-                <svg width="58" height="58" viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg width="58" height="58" viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <g filter="url(#filter0_d_746_858)">
                   <rect width="55" height="55" rx="11" fill="#F94F97"/>
                   <rect x="0.55" y="0.55" width="53.9" height="53.9" rx="10.45" stroke="#E6EA7B" strokeWidth="1.1"/>
@@ -118,8 +118,7 @@ export default function Header(props) {
                   <>
                     <li><Link onClick={toggleClass} href={"/account"} >My Account</Link></li>
                     <li><Link onClick={toggleClass} href={`/wish-tracker`} >Wish Tracker</Link></li>
-                    {/* <li><Link onClick={toggleClass} href={`/${auth&& auth?.username || ''}`} >Create Wishlist</Link></li> */}
-                    <li><Link onClick={toggleClass}  method="get" href={route('logout')} >Logout</Link></li>
+                    <li className='d-block d-lg-none' ><Link onClick={toggleClass}  method="get" href={route('logout')} >Logout</Link></li>
                   </>
                   :
                   <>
@@ -127,7 +126,7 @@ export default function Header(props) {
                     <li><Link onClick={toggleClass} href={route("login")} >Login</Link></li>
                   </>
                 }
-                <li><Link onClick={toggleClass} href={"/cart"} >Cart</Link></li>
+                <li className='d-block d-lg-none' ><Link onClick={toggleClass} href={"/cart"} >Cart</Link></li>
                 <li><Link onClick={toggleClass} href={route("how-it-works")} >How it works</Link></li>
                 <li><a onClick={toggleClass} target='_blank' href="https://intercom.help/spenny-piggy" >FAQ's</a></li>
                 <li><a onClick={toggleClass} href="https://blog.spennypiggy.co" >Blog</a></li>

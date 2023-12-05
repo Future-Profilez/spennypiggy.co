@@ -1,12 +1,13 @@
 import { useAlerts } from '@/Components/Alerts';
 import LoaderButton from '@/Components/LoaderButton';
-import Popup from '@/Components/Popup';
+ 
 import  axios   from 'axios';
 import React from 'react'
 import { useState } from 'react'
 
-export default function SayThanks({payment_id}) {
+export default function SayThanks(props) {
 
+   const { name, payment_id } = props;
    const [close,setClose] = useState();
    const [message,setMessage] = useState();
    const [loading,setloading] = useState(false);
@@ -35,30 +36,20 @@ export default function SayThanks({payment_id}) {
 
    return (
       <>   
-         <Popup modalclassName="pinkmodal"
-               space="4" size="md" action={close} 
-               classes={`btn-pink sm px-2 my-2 w-100`}
-               text={`Thanks`} >
-
-               <h2 className="text-uppercase font-GillSans pb-4 font-large">Say Thanks</h2>
-
-
-               <div className="form-field mb-4">
-                  <label className="d-block text-start mb-2">Message..</label>
-                  <textarea
-                     placeholder="Say Something..."
-                     className="form-input w-100 rounded"
-                     onChange={(e) => setMessage(e.target.value)}
-                     type="text"
-                  />
-               </div>
-               <LoaderButton onClick={saythankyou}
-                  disabled={loading}
-                  className="flex w-100  btn-pink lg mx-auto"
-                  spinnerClassName="fill-red-600" >
-                     {loading ? "Sending..." : "Send"}
-               </LoaderButton>
-         </Popup>
+         <div className="form-field mb-4 border-top pt-4 mt-4">
+            <h2 className='heading'  >Send a thankyou note to {name} :</h2>
+            <textarea placeholder="Say Something..."
+               className="form-input w-100 rounded"
+               onChange={(e) => setMessage(e.target.value)} type="text"
+            />
+         </div>
+         
+         <LoaderButton onClick={saythankyou}
+            disabled={loading}
+            className="flex px-4  mb-3 btn-pink lg mx-auto"
+            spinnerClassName="fill-red-600" >
+               {loading ? "Sending..." : "Say Thanks"}
+         </LoaderButton>
       </>
    )
 }

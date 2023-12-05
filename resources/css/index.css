@@ -34,7 +34,7 @@ h2.wishtitle{font-size:24px;font-weight:900;}
 }
 .loadingtext{font-size:20px;line-height:inherit !important;}
 .text-large{font-size:20px;}
-.croud-add input{border-radius:10px;background:#f2f2f2;border:1px solid #ccc;padding:12px 15px;}
+.croud-add input, .croud-add select{border-radius:10px;background:#f2f2f2;border:1px solid #ccc;padding:12px 15px;}
 /* modal css */
 .pinkmodal.modal .modal-content{border-radius:25px;border:2px solid var(--pink);box-shadow:10px 10px 0 0 var(--pink);}
 

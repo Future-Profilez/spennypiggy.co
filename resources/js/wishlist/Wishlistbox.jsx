@@ -61,6 +61,7 @@ export default function Wishlistbox(props) {
           <AddCart  IsloggedIn={IsloggedIn} auth={auth} item={itm} uuid={itm.uuid} action={open} />  
         }
         <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
+          
           <img src={itm?.perma_link ? itm?.perma_link : uploadedimg} alt='img' className='' />
         </div>
         <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
@@ -81,6 +82,10 @@ export default function Wishlistbox(props) {
             <p className='mt-1 mb-0 text-small' >{getPercentage(itm.price, itm.fullfill_amount)}% granted</p>
             </div> 
           : '' }
+          {itm && itm.subscription == '1' ? <div className='subscribletag' >
+          Subscribable
+          </div> : ''}
+
         </div>
 
         <div className='sharelinks'>

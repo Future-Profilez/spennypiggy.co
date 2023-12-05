@@ -36,12 +36,7 @@ export default function AddCart(props) {
     }
 
     const price = () => { 
-        // if(!IsloggedIn && item.subscription !== 2){
-        //     const p = (+item.price) + (+item.tax_amount)
-        //     return p
-        // } else { 
-          return item.price
-        // }
+        return item.price
     };
 
     const checkoutnow = () => { 
@@ -100,6 +95,29 @@ export default function AddCart(props) {
                 ) : (
                     ""
                 )}
+
+                {item.subscription == "1" ?  (
+                    <>
+                        <p className="mb-0">Subscription interval </p>
+                        <div className="croud-add w-100">
+                            <select className="w-100">
+                                <option value={false} >One Time Purchase</option>
+                                <option value={item.subscription_period} >
+                                Paid Every
+                                {item.subscription_period == 'daily' ? "Day" : ''}
+                                {item.subscription_period == 'weekly' ? "Week" : ''}
+                                {item.subscription_period == 'montly' ? "Month" : ''}
+                                </option>
+                            </select>
+                            {/* <input
+                                onChange={(e) => setcartamount(e.target.value)}
+                                placeholder="Eg. 50"
+                                type="number" 
+                                className="form-control mt-1"
+                            /> */}
+                        </div>
+                    </>
+                ) :''}
 
                 <div className=" pb-2">
                     <ToCart ItemAdded={ItemAdded}  auth={auth} 
