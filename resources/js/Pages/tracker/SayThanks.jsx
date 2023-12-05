@@ -38,15 +38,14 @@ export default function SayThanks(props) {
       <>   
          <div className="form-field mb-4 border-top pt-4 mt-4">
             <h2 className='heading'  >Send a thankyou note to {name} :</h2>
-            <textarea placeholder="Say Something..."
+            <textarea rows={5} placeholder="Say Something..."
                className="form-input w-100 rounded"
                onChange={(e) => setMessage(e.target.value)} type="text"
             />
          </div>
-         
          <LoaderButton onClick={saythankyou}
             disabled={loading}
-            className="flex px-4  mb-3 btn-pink lg mx-auto"
+            className="flex px-4  mb-3 btn-pink sm mx-auto"
             spinnerClassName="fill-red-600" >
                {loading ? "Sending..." : "Say Thanks"}
          </LoaderButton>

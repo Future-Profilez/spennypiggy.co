@@ -44,3 +44,9 @@ h2.wishtitle{font-size:24px;font-weight:900;}
   border-radius: 10px;
   width: 100%;
 }
+.identity {
+  color: #fff;
+  padding: 6px 15px;
+  border-radius: 11px;
+  font-size: 11px;
+}

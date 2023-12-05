@@ -113,12 +113,6 @@ export default function AddCart(props) {
                                 {item.subscription_period == 'montly' ? "Month" : ''}
                                 </option>
                             </select>
-                            {/* <input
-                                onChange={(e) => setcartamount(e.target.value)}
-                                placeholder="Eg. 50"
-                                type="number" 
-                                className="form-control mt-1"
-                            /> */}
                         </div>
                     </>
                 ) :''}
