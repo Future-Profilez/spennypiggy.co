@@ -10,6 +10,7 @@ import Collapse from "react-bootstrap/Collapse";
 import { useState } from "react";
 import axios from "axios";
 import Confetti from "@/includes/Confetti";
+import Nocontent from "@/includes/Nocontent";
 
 export default function Wishtracker(props) {
 
@@ -20,16 +21,14 @@ export default function Wishtracker(props) {
     console.log("tracks", tracks);
     
     const Wish = ({ n }) => {
-
         const [open, setOpen] = useState(false);
-        const [checked, setChecked] = useState(false);
-
-        const openState = () => {
-            setOpen(!open);
-        }
-
+        const [isUserRead, setIsUserRead] = useState(n && n.is_read_user);
+        const [isOwnerRead, setIsOwnerRead] =useState(n && n.is_read_owner);
+        const openState = () => { setOpen(!open)}
         function controlStatus(){
-            axios.post(`/read-status/${n.id}/${n.sender ? 'user' : 'owner'}`).then(resp => {
+            openState();
+            setIsOwnerRead(1);
+            axios.get(`/read-status/${n.id}/${n.sender ? 'user' : 'owner'}`).then(resp => {
                  console.error("resp", resp);
             }).catch(_err => {
                  console.error("error", _err);
@@ -38,9 +37,10 @@ export default function Wishtracker(props) {
 
         return (
             <Confetti sender={n && n.sender} 
-                owner={n && n.is_read_owner} 
+            is_read_owner={isOwnerRead} 
                 onclick={controlStatus} classes="w-100" >
-                <div className="trackItem cursor-pointer shadow-pink box  mb-4">
+                <div className="trackItem cursor-pointer shadow-pink box mb-4">
+                    {/* <h2 className="granted-wish mb-2" >New Wish Granted</h2> */}
                     <div onClick={openState}
                         aria-controls="example-collapse-text" aria-expanded={open}
                         className=" cursor-pointer trackbar d-flex align-items-center justify-content-between" >
@@ -146,7 +146,9 @@ export default function Wishtracker(props) {
                                         return (
                                             <Wish n={n} key={`track-${i}`} />
                                         );
-                                    })}
+                                 })}
+                                 {tracks && tracks.length < 1 ? 
+                                 <Nocontent text="nothing to see" /> : '' }
                             </div>
                         </Tab>
                         {/* <Tab eventKey="2" title="Subscriptions">

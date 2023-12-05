@@ -1,15 +1,18 @@
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
 
-export default function Confetti  ({sender, owner, children, onclick, classes}) {
+export default function Confetti  ({sender, is_read_owner, children, onclick, classes}) {
 
    const startConfetti = () => {
-    if(!sender){
+     console.log("clicked")
+     if(sender){
+       return false;
+    }
+      console.log("clicked 1")
+    if(is_read_owner == 1){
       return false;
     }
-    if(owner !== 1 ){
-      return false;
-    }
+    console.log("clicked 2")
     onclick && onclick();
     const button = document.getElementById('button-conf');
     const rect = button.getBoundingClientRect();

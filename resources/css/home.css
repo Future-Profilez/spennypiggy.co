@@ -575,3 +575,9 @@ div#msgText p{display:flex;align-items:flex-start;}
 .table table tr:not(:last-child) td{border-bottom:1px solid #dedede;}
 .table table{width:100%;}
 .subscribletag{padding:8px 15px;background:#eaeaea;border-radius:15px !important;width:fit-content;font-size:14px;margin-top:13px;}
+
+
+.granted-wish {
+   font-size: 20px;
+   color: var(--mint) !important;
+}
