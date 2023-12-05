@@ -43,7 +43,11 @@ export default function Wishtracker(props) {
                             />
                         </div>
                         <div className="text-muted rightbar d-flex align-items-center ">
-                            <div className="identity redbg" >Paid</div>
+                            {n && n.wish.sender ?
+                                <div className="identity redbg" >Paid</div>
+                                : 
+                                <div className="identity mintbg" >Recieved</div>
+                            }
                             <div className="angle-icon">
                                 <svg
                                     viewBox="0 0 24 24"
