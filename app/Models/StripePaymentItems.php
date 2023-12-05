@@ -46,7 +46,7 @@ class StripePaymentItems extends Model
     {
         $sender = false;
         if (Auth::check()) {
-            $sender = $this->wish->user_id == Auth::id() ? true : false;
+            $sender = $this->wish->user_id == Auth::id() ? false : true;
         }
         return $sender;
     }
