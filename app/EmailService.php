@@ -122,8 +122,8 @@ class EmailService
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }
-    
-    public static function thankyouUser($payment, $mess) {
+
+    public static function thankyouUser($payment) {
         try {
             $emailData = [
                 'to' => $payment->payment->user->email,
@@ -133,7 +133,7 @@ class EmailService
                 'email' => $payment->payment->user->email,
                 'uuid' => $payment->payment->user->uuid,
             ];
-            Mail::to($emailData['to'])->send(new ThankyouUser($payment, $mess));
+            Mail::to($emailData['to'])->send(new ThankyouUser($payment));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }

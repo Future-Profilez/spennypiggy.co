@@ -12,7 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('stripe_payment_items', function (Blueprint $table) {
-            //
+            $table->text('message')->after('tax')->nullable();
+            $table->string('message_media')->after('message')->nullable();
+            $table->tinyInteger('is_read_user')->after('message_media')->default(0);
+            $table->tinyInteger('is_read_owner')->after('is_read_user')->default(0);
         });
     }
 

@@ -661,22 +661,40 @@ class WishitemController extends Controller
         }
     }
 
-    public function wishtrackerItems(){
+    public function wishtrackerItems()
+    {
         $user = Auth::user();
-        $tracks = StripePaymentItems::whereHas("wish", function($q) use($user){
-            $q->where('user_id',$user->id);
+        $tracks = StripePaymentItems::whereHas("wish", function ($q) use ($user) {
+            $q->where('user_id', $user->id);
         })->with(['wish.user'])->get();
         return Inertia::render('tracker/Wishtracker', [
             "tracks" => $tracks,
         ]);
     }
 
-    public function sayThanks(Request $request,$payment_id){
+    public function sayThanks(Request $request, $payment_id)
+    {
         $payment = StripePaymentItems::where("id", $payment_id)->first();
-        ThankyouMailToUser::dispatch($payment, $request->messages);
+        $payment->message = $request->message;
+        $payment->save();
+        ThankyouMailToUser::dispatch($payment);
         return response()->json([
             "success" => true,
             "message" => 'Message sent !!',
         ]);
+    }
+
+
+    public function readStatus($payment_id, $type)
+    {
+        $payment = StripePaymentItems::where("id", $payment_id)->first();
+        if ($type == 'owner') {
+            $payment->is_read_owner = 1;
+        } elseif ($type == 'user') {
+            $payment->is_read_user = 1;
+        }
+        $payment->save();
+
+        return Inertia::render('tracker/Wishtracker');
     }
 }
