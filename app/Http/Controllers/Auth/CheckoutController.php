@@ -123,9 +123,6 @@ class CheckoutController extends Controller
             }
 
             foreach ($getdata as $dd) {
-                $dd->status = 0;
-                $dd->quantity = 0;
-                $dd->save();
 
                 if (!empty($dd->wish->subscription)) {
 
@@ -150,10 +147,13 @@ class CheckoutController extends Controller
                             $subscription->save();
                         }
                     } elseif ($dd->wish->subscription == 2) {
-                        $dd->wish->fullfill_amount += $dd->amount;
+                        $dd->wish->fullfill_amount += $dd->amount * $dd->quantity;
                         $dd->wish->save();
                     }
                 }
+                $dd->status = 0;
+                $dd->quantity = 0;
+                $dd->save();
             }
 
             $sessionId = session('session_id');
@@ -189,7 +189,7 @@ class CheckoutController extends Controller
 
             return redirect(route('user.show', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
-            // Log::info('error:' . $th);
+            return redirect(route('user.show', [$stripeid->owner->username]))->with('error', 'Something went wrong!');
         }
     }
 
