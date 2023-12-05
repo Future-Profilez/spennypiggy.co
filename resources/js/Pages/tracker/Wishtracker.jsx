@@ -1,73 +1,141 @@
 import React from "react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import { Head } from "@inertiajs/react";
-import Tab from 'react-bootstrap/Tab';
-import Tabs from 'react-bootstrap/Tabs';
+import Tab from "react-bootstrap/Tab";
+import Tabs from "react-bootstrap/Tabs";
 import { Link } from "react-router-dom";
 import Avatar from "@/includes/Avatar";
 import PriceFormat from "@/includes/PriceFormat";
 import SayThanks from "./SayThanks";
+import Button from "react-bootstrap/Button";
+import Collapse from "react-bootstrap/Collapse";
+import { useState } from "react";
+import Confetti from "@/includes/Confetti";
 
 export default function Wishtracker(props) {
+    const { format } = PriceFormat();
+    const { auth, user, tracks } = props;
+    console.log("tracks", tracks);
+    
+    const Wish = ({ n }) => {
+        const [open, setOpen] = useState(false);
+        const openState = () => {
+            setOpen(!open);
+            
+        }
 
-      const { format } = PriceFormat();
+        return (
+            <div className="trackItem cursor-pointer shadow-pink box  mb-4">
+                <div onClick={openState}
+                    aria-controls="example-collapse-text" aria-expanded={open}
+                    className=" cursor-pointer trackbar d-flex align-items-center justify-content-between" >
+                    <div className="text-dark">
+                        <Avatar
+                            name={n && n.wish.user && n.wish.user.name}
+                            username={n && n.wish.user && n.wish.user.username}
+                            src={
+                                (n && n.wish.user && n.wish.user.avatar) ||
+                                "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"
+                            }
+                        />
+                    </div>
+                    <div className="text-muted rightbar d-flex align-items-center ">
+                        <Confetti classes="btn-pink sm px-4" >Open</Confetti>
+                        <div className="angle-icon">
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                                <g
+                                    id="SVGRepo_tracerCarrier"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                ></g>
+                                <g id="SVGRepo_iconCarrier">
+                                    {" "}
+                                    <path
+                                        d="M12 14.5C11.9015 14.5005 11.8038 14.4813 11.7128 14.4435C11.6218 14.4057 11.5392 14.3501 11.47 14.28L8 10.78C7.90861 10.6391 7.86719 10.4715 7.88238 10.3042C7.89756 10.1369 7.96848 9.97954 8.08376 9.85735C8.19904 9.73515 8.352 9.65519 8.51814 9.63029C8.68428 9.6054 8.85396 9.63699 9 9.72003L12 12.72L15 9.72003C15.146 9.63699 15.3157 9.6054 15.4819 9.63029C15.648 9.65519 15.801 9.73515 15.9162 9.85735C16.0315 9.97954 16.1024 10.1369 16.1176 10.3042C16.1328 10.4715 16.0914 10.6391 16 10.78L12.5 14.28C12.3675 14.4144 12.1886 14.4931 12 14.5Z"
+                                        fill="#000000"
+                                    ></path>{" "}
+                                </g>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <Collapse in={open}>
+                    <div id="example-collapse-text">
+                        <div className="track-summary mt-4">
+                            
+                            <div className="table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <td>Item</td>
+                                        <td>Name</td>
+                                        <td>Price</td>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <div className="wish-item" >
+                                                <img src={n.wish && n.wish.perma_link} alt="image" className="img-fluid" />
+                                            </div>
+                                        </td>
+                                        <td>{n.wish && n.wish.wishname} </td>
+                                        <td>1 x {format(n.amount)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            </div>
 
+                            {/* <div className="d-flex align-items-center" >
+                                <div className="wishcontent ps-3" >
+                                    <h2>{n.wish && n.wish.wishname}</h2>
+                                    <h3 className="text-dark">Price </h3>
+                                    <p className="text-dark">Date : {n.created_at}</p>
+                                </div>
+                            </div> */}
 
-   const {auth, user, tracks} = props;
-   console.log("tracks",tracks);
+                            <p className="mt-2" >Sender Note : </p>
+                            <p>You are awesome !!</p>
 
-      // const Wish = () => {
-      //       return <div  >
-                  
-      //       </div>
-      // }
+                            <SayThanks name={n && n.wish.user && n.wish.user.name} payment_id={n.id} />
 
-      return (
-            <Authenticated auth={auth.user} user={user}>
-                  <Head title={"Wish Tracker"} />
-                  <div className="wishtracker blackbg min-h-screen pb-5">
-                  <div className="containerbox blackbg">
-                        <Tabs defaultActiveKey="1" id="tracker-tab" className="mb-3">
-                              <Tab eventKey="1" title="Wish Tracker">
-                                    <div className="table-responsive mytable" >
-                                          <table >
-                                                <thead>
-                                                      <tr>
-                                                            <td>Gifter</td>
-                                                            <td>Wish Name</td>
-                                                            <td>Amount</td>
-                                                            <td>Date</td>
-                                                            <td>Message</td>
-                                                            <td align="center" >Action</td>
-                                                      </tr>
-                                                </thead>
-                                                <tbody>
-                                                      {tracks && tracks.map((n, i)=>{
-                                                            return <tr>
-                                                                  <td>
-                                                                        <Avatar 
-                                                                        name={n && n.wish.user && n.wish.user.name}
-                                                                        username={n && n.wish.user && n.wish.user.username}
-                                                                        src={n && n.wish.user && n.wish.user.avatar || "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"}
-                                                                        />
-                                                                  </td>
-                                                                  <td>{n.wish.wishname}</td>
-                                                                  <td>{format(n.amount)}</td>
-                                                                  <td>{n.created_at}</td>
-                                                                  <td>{`N/A`}</td>
-                                                                  <td><SayThanks payment_id={n.id} /></td>
-                                                            </tr>
-                                                      })}
-                                                </tbody>
-                                          </table>
-                                    </div>
-                              </Tab>
-                              <Tab eventKey="2" title="Subscriptions">
-                                    22
-                              </Tab>
-                        </Tabs> 
-                  </div>
-                  </div>
-            </Authenticated>
-      );
+                        </div>
+                    </div>
+                </Collapse>
+            </div>
+        );
+    };
+
+    return (
+        <Authenticated auth={auth.user} user={user}>
+            <Head title={"Wish Tracker"} />
+            <div className="wishtracker blackbg min-h-screen pb-5">
+                <div className="containerbox blackbg">
+                    <Tabs
+                        defaultActiveKey="1"
+                        id="tracker-tab"
+                        className="mb-3" >
+                        <Tab eventKey="1" title="Wish Tracker">
+                            <div className="tracks mt-4">
+                                {tracks &&
+                                    tracks.map((n, i) => {
+                                        return (
+                                            <Wish n={n} key={`track-${i}`} />
+                                        );
+                                    })}
+                            </div>
+                        </Tab>
+                        {/* <Tab eventKey="2" title="Subscriptions">
+                            Change Items 
+                        </Tab> */}
+                    </Tabs>
+                </div>
+            </div>
+        </Authenticated>
+    );
 }
