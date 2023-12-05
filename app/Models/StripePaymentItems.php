@@ -4,10 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class StripePaymentItems extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
+
+    protected $dates = ['deleted_at'];
 
     protected $fillable = [
         'uuid',
@@ -16,6 +19,7 @@ class StripePaymentItems extends Model
         'user_cart_id',
         'amount',
         'tax',
+        'deleted_at'
     ];
 
     public function payment()
