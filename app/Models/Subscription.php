@@ -18,7 +18,8 @@ class Subscription extends Model
         'wish_id',
         'start_at',
         'end_at',
-        'status'
+        'status',
+        'deleted_at',
     ];
 
 

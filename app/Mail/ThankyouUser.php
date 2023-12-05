@@ -11,17 +11,16 @@ class ThankyouUser extends Mailable
     use Queueable, SerializesModels;
 
     public $payment;
-    public $mess;
+
 
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($payment, $mess)
+    public function __construct($payment)
     {
         $this->payment = $payment;
-        $this->mess = $mess;
     }
 
     /**
