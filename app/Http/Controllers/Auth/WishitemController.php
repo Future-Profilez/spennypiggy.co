@@ -667,7 +667,9 @@ class WishitemController extends Controller
     {
         $user = Auth::user();
         $tracks = StripePaymentItems::whereHas("wish", function ($q) use ($user) {
-            $q->where('user_id', $user->id);
+            $q->where('user_id', $user->id)->orWhereHas('payment', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            });
         })->with(['wish.user'])->get();
         return Inertia::render('tracker/Wishtracker', [
             "tracks" => $tracks,
