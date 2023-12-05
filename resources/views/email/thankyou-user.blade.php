@@ -5,16 +5,22 @@
         <table cellspacing="0" cellpadding="0" border="0"
             style="width: 100%; text-align: center;">
             <tr>
-                <td style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 22px; line-height: 30px;  color: 141414; text-align: left; text-align: center;">
-                 <b class="text-transform:capitalize;color:#F94F97 " > {{ $payment->payment->user->name }} send a thankyou message for you.</b>
+               <td style="line-height:50px;height:50px;"></td>
+           </tr>
+            <tr>
+                <td style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 22px; line-height: 30px;  color:F94F97; text-align: left; text-align: center;">
+                  <b class="text-transform:capitalize;color:#F94F97 " > {{ $payment->payment->owner->name }} send a thankyou message for you.</b>
                 </td>
             </tr>
             <tr>
-               <td style=" padding: 0 0 25px 0; text-align: center;"><img src="https://whoyouinto.com/emails/user/giftimg.png" alt="img"></td>
+               <td style="line-height:20px;height:20px;"></td>
+           </tr>
+            <tr>
+               <td style=" padding: 0 0 25px 0; text-align: center;"><img style="max-width: 170px;" src="https://whoyouinto.com/emails/user/thankyou.png" alt="img"></td>
             </tr>
             <tr>
-                <td style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                    <b class="text-transform:capitalize" > {{ $payment->payment->user->name }} Say "{{ $mess }}".<b> 
+                <td style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color:#000000; text-align: left; text-align: center;">
+                    <b class="text-transform:capitalize" >{{ $mess }}.</b> 
                 </td>
             </tr>
             <tr>

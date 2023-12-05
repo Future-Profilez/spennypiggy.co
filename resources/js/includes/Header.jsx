@@ -117,7 +117,8 @@ export default function Header(props) {
                 {loggedIn ?
                   <>
                     <li><Link onClick={toggleClass} href={"/account"} >My Account</Link></li>
-                    <li><Link onClick={toggleClass} href={`/${auth&& auth?.username || ''}`} >Create Wishlist</Link></li>
+                    <li><Link onClick={toggleClass} href={`/wish-tracker`} >Wish Tracker</Link></li>
+                    {/* <li><Link onClick={toggleClass} href={`/${auth&& auth?.username || ''}`} >Create Wishlist</Link></li> */}
                     <li><Link onClick={toggleClass}  method="get" href={route('logout')} >Logout</Link></li>
                   </>
                   :
