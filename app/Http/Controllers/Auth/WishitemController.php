@@ -678,6 +678,8 @@ class WishitemController extends Controller
                 $q->user = $q->payment->owner;
             }
 
+            $q->wish = $q->wish ?? false;
+
             return $q;
         });
         return Inertia::render('tracker/Wishtracker', [
@@ -688,7 +690,7 @@ class WishitemController extends Controller
     public function sayThanks(Request $request, $payment_id)
     {
         $payment = StripePaymentItems::where("id", $payment_id)->first();
-        $payment->message = $request->message;
+        $payment->message = $request->messages;
         $payment->save();
         ThankyouMailToUser::dispatch($payment);
         return response()->json([
