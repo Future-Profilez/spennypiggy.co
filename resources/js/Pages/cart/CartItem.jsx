@@ -65,7 +65,7 @@ export default function CartItem({data, removeCart, quantityUpdate}) {
             </div>
 
 
-            <div className='cartProRtbox mt-3 mt-sm-0 items-center'>
+            <div className='cartProRtbox mt-3 items-center'>
                 <div className="quty flex items-center me-4 ">
                     <button disabled={quantity == 1} onClick={decrementCount}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">

@@ -18,12 +18,17 @@ import 'swiper/css/navigation';
 
 
 export default function Wishlist(props) {
-    const { categories, auth, fetchingcats, item, editpop } = props;
+    const { categories, auth, fetchingcats, item, editpop, openPop } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
     const [defaultKey, setDefaultKey] = useState(item && item.subscription !== null ? +(item.subscription) : null);
     const [clear, setClear] = useState();
     const [close, setClose] = useState();
+    
+    useEffect(()=>{
+        setClose(openPop);
+    },[openPop]);
+
     const [repeat, setRepeat] = useState(true);
     const [thumbnail, setThumbnail] = useState("");
     const [adding, setAdding] = useState(false);

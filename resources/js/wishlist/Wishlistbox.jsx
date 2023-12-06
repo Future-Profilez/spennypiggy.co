@@ -9,14 +9,15 @@ import ProgressBar from 'react-bootstrap/ProgressBar';
 import Wishlist from '@/Pages/Auth/Wishlist';
 import PriceFormat from '@/includes/PriceFormat';
 const AddCart = React.lazy(() => import('./AddCart'));
+import Button from 'react-bootstrap/Button';
 
 export default function Wishlistbox(props) {
 
   const { format } = PriceFormat();
-
   const { itm, itemid, auth, IsloggedIn, fetchingcats, categories } = props;
   const [itemUID, setItemUID] = useState(itemid);
   const [open, setOpen] = useState();
+
   const openAddtocart = () => {
     setOpen(true);
     setTimeout(()=>{
@@ -36,44 +37,30 @@ export default function Wishlistbox(props) {
   }
  
   const price = () => { 
-    // if(!IsloggedIn && itm.subscription !== 2){
-    //   const p = (+itm.price) + (+itm.tax_amount)
-    //   return p
-    // } else { 
       return itm.price;
-    // }
   };
-
-  console.log("itm",itm);
 
   const renderTooltip = (props) => (
     <Tooltip id="button-tooltip" {...props}>
       *not including 20% service fee.
     </Tooltip>
   );
-  
-  
+
   return <>
       <div className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
         {IsloggedIn ?   
-          <Wishlist item={itm} editpop={true} fetchingcats={fetchingcats} categories={categories} />  
+          <Wishlist openPop={open} item={itm} editpop={true} fetchingcats={fetchingcats} categories={categories} />  
           : 
           <AddCart  IsloggedIn={IsloggedIn} auth={auth} item={itm} uuid={itm.uuid} action={open} />  
         }
         <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
-          
           <img src={itm?.perma_link ? itm?.perma_link : uploadedimg} alt='img' className='' />
         </div>
         <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
           <div>
             <h4 className={`fon-bold text-dark ${itm.subscription == '2' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>
-            <h5 className='font-CeraGRBold text-dark'>{format(price())}
-              <OverlayTrigger
-                placement="right"
-                delay={{ show: 250, hide: 400 }}
-                overlay={renderTooltip} >
-                <button className='tooltipbtn' >?</button>
-              </OverlayTrigger>
+            <h5 className='font-CeraGRBold text-dark titleprice'>{format(price())}
+                <button className='tooltipbtn' >?<p>*not including 20% service fee.</p></button>
             </h5>
           </div>
           {itm.subscription == '2' ? 
@@ -85,9 +72,7 @@ export default function Wishlistbox(props) {
           {itm && itm.subscription == '1' ? <div className='subscribletag' >
           Subscribable
           </div> : ''}
-
         </div>
-
         <div className='sharelinks'>
           <ShareProfile username={itm.wishname} custom={`${window.location.href}?item=${itm.uuid}`} >
             <div className='text-pink font-GillSans'>Share Link</div>
