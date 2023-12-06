@@ -4,11 +4,11 @@ import confetti from 'canvas-confetti';
 export default function Confetti  ({sender, is_read_owner, children, onclick, classes}) {
 
    const startConfetti = () => {
-     console.log("clicked")
-     if(sender){
+    console.log("clicked")
+    if(sender){
        return false;
     }
-      console.log("clicked 1")
+    console.log("clicked 1")
     if(is_read_owner == 1){
       return false;
     }

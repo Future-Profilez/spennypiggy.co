@@ -1,3 +1,5 @@
+.box{padding:15px;border-radius:20px;background:#fff;}
+
 .containerbox{max-width:1215px;margin:auto;padding:0 15px;}
 .heroSec{background:var(--black);padding:10px 15px 80px;}
 .carticon svg path{fill:var(--black);}
@@ -612,7 +614,6 @@ div#msgText p{display:flex;align-items:flex-start;}
 .mytable tr:not(:last-child) td{border-bottom:1px solid #232323;}
 .rightbar h2{font-size:20px;font-weight:600;font-family:var(--heading-font) !important;}
 .angle-icon svg{width:60px;}
-.box{padding:15px;border-radius:20px;background:#fff;}
 .wish-item img{object-fit:cover;border-radius:10px !important;width:50px;height:50px;background:#fff;border:1px solid #000;}
 .wishcontent h2{font-size:18px;}
 .wishcontent h3{font-size:16px;font-weight:700;color:#000 !important;margin:3px 0;}
@@ -627,8 +628,8 @@ div#msgText p{display:flex;align-items:flex-start;}
 
 
 .granted-wish {
-   font-size: 20px;
-   color: var(--mint) !important;
+   font-size: 22px;
+   color: var(--pink) !important;
 }
 
 button.editpop {
@@ -637,5 +638,5 @@ button.editpop {
 
 /* .trackItem.new { */
 .trackItem {
-   background: var(--yellow) !important;
+   /* background: var(--yellow) !important; */
 }
