@@ -218,8 +218,28 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 .tearmlist{padding:0 0 0 36px;}
 .tearmlist ul li{color:#666;font-size:15px;font-style:normal;font-weight:400;line-height:150%;letter-spacing:-0.65px;margin:0 0 7px;list-style:disc;}
 .quty{border:1px solid var(--gray);border-radius:5px;}
-.qutynum{font-size:20px;width:40px;height:43px;text-align:center;border-left:1px solid var(--gray);border-right:1px solid var(--gray);display:inline-flex;align-items:center;align-content:center;justify-content:center;line-height:23px;}
-.quty button{width:40px;height:43px;font-size:25px;display:flex;align-items:center;align-content:center;justify-content:center;}
+.qutynum {
+   font-size: 16px;
+   width: 34px;
+   height: 33px;
+   text-align: center;
+   border-left: 1px solid var(--gray);
+   border-right: 1px solid var(--gray);
+   display: inline-flex;
+   align-items: center;
+   align-content: center;
+   justify-content: center;
+   line-height: 23px;
+}
+.quty button {
+   width: 33px;
+   height: 33px;
+   font-size: 18px !important;
+   display: flex;
+   align-items: center;
+   align-content: center;
+   justify-content: center;
+}
 .cartlist.shadow-purple{box-shadow:5px 8px 0 0 var(--purple);}
 /* strip */
 .stripbox{max-width:741px;width:90%;}
