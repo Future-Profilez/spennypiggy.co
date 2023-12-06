@@ -57,6 +57,7 @@ export default function ToCart({
         }).catch(_err => {
             console.error("error", _err);
             setLoading(false);
+            errorAlert("Something went wrong !!.");
         });
     };
 
