@@ -12,7 +12,7 @@ import axios from "axios";
 import Confetti from "@/includes/Confetti";
 import Nocontent from "@/includes/Nocontent";
 import userphoto from "../../../assets/img/userphoto.png";
-
+const defaultsec = 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/';
 export default function Wishtracker(props) {
 
     const { format } = PriceFormat();
@@ -28,6 +28,7 @@ export default function Wishtracker(props) {
         const openState = () => { setOpen(!open) }
         function controlStatus() {
             openState();
+            return false;
             setIsOwnerRead(1);
             axios.get(`/read-status/${n.id}/${n.sender ? 'user' : 'owner'}`).then(resp => {
                 console.error("resp", resp);
@@ -121,7 +122,7 @@ export default function Wishtracker(props) {
                                 <p className="mt-2" >Sender Note : </p>
                                 <p>You are awesome !!</p>
 
-                                <SayThanks name={n && n.user && n.user.name} payment_id={n.id} />
+                                {n && n.sender == false ? <SayThanks name={n && n.user && n.user.name} payment_id={n.id} />:''}
 
                             </div>
                         </div>

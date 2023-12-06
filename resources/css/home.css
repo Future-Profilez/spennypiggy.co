@@ -571,6 +571,35 @@ div#msgText p{display:flex;align-items:flex-start;}
 @keyframes fade{0%{opacity:0;transition:0.6s;}
 100%{opacity:1;transition:0.6s;}
 }
+.tooltipbtn p {
+   position: absolute;
+   background: #000;
+   padding: 10px;
+   border-radius: 11px;
+   font-size: 14px;
+   max-width: 290px;
+   left: -58px; z-index: 2;
+   top: 20px;
+   width: 130px;
+   display: none;
+}
+.tooltipbtn {
+   position: relative;
+}
+
+.tooltipbtn p:after {
+   content: "";
+   width: 10px;
+   height: 10px;
+   background: #000;
+   position: absolute;
+   left: 40px;
+   top: -3px;
+   transform: rotate(45deg);
+}
+.titleprice:hover .tooltipbtn p  {
+   display: block !important;
+}
 .welcomeRt{animation:fade 0.5s linear;transition:0.6s;}
 .wishtracker .nav.nav-tabs li button{background:transparent;color:#d2d2d2;border:0 !important;padding:14px 14px 14px 0px !important;margin-right:40px;font-size:20px;border-bottom:2px solid #000 !important;}
 .wishtracker .nav.nav-tabs li button.active{color:#f94f97;border-color:#f94f97 !important;}
@@ -600,4 +629,8 @@ div#msgText p{display:flex;align-items:flex-start;}
 .granted-wish {
    font-size: 20px;
    color: var(--mint) !important;
+}
+
+button.editpop {
+   display: none !important;
 }
