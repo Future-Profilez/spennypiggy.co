@@ -1,13 +1,12 @@
 import { useAlerts } from '@/Components/Alerts';
 import LoaderButton from '@/Components/LoaderButton';
- 
 import  axios   from 'axios';
 import React from 'react'
 import { useState } from 'react'
 
 export default function SayThanks(props) {
 
-   const { name, payment_id } = props;
+   const { name, payment_id, getMessageStatus } = props;
    const [close,setClose] = useState();
    const [message,setMessage] = useState();
    const [loading,setloading] = useState(false);
@@ -24,6 +23,7 @@ export default function SayThanks(props) {
                setTimeout(()=>{
                   setClose();
                },1000);
+               getMessageStatus(message);
            } else {
                errorAlert(resp.data.message);
            }
