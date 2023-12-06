@@ -20,7 +20,8 @@ class StripePaymentItems extends Model
         'user_cart_id',
         'amount',
         'tax',
-        'deleted_at'
+        'deleted_at',
+        'quantity'
     ];
 
     protected $appends = [

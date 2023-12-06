@@ -170,6 +170,7 @@ class CheckoutController extends Controller
                     'user_cart_id' => $dd->id,
                     'amount' => $dd->amount,
                     'tax' => $dd->tax,
+                    'quantity' => $dd->quantity
                 ]);
                 $payment_data->refresh();
                 $message = $stripeid->message;

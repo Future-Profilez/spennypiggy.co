@@ -10,6 +10,7 @@ use App\Jobs\ThankyouMailToUser;
 use App\Jobs\WelcomeUser;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
+use App\Models\Subscription;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserCategory;
@@ -668,7 +669,7 @@ class WishitemController extends Controller
         $user = Auth::user();
         $tracks = StripePaymentItems::whereHas('payment', function ($query) use ($user) {
             $query->where('user_id', $user->id)->orWhere('owner_id', $user->id);
-        })->get();
+        })->with(['wish'])->orderBy('created_at','DESC')->get();
 
         $trackData = $tracks->map(function ($q) {
 
@@ -678,10 +679,9 @@ class WishitemController extends Controller
                 $q->user = $q->payment->owner;
             }
 
-            $q->wish = $q->wish ?? false;
-
             return $q;
         });
+
         return Inertia::render('tracker/Wishtracker', [
             "tracks" => $trackData,
         ]);
@@ -709,6 +709,70 @@ class WishitemController extends Controller
             $payment->is_read_user = 1;
         }
         $payment->save();
+
+        return Inertia::render('tracker/Wishtracker');
+    }
+
+
+    public function creatorSubscriptions(){
+
+        $subs = Subscription::where('owner_id',Auth::id())->orderBy('updated_at','DESC')->get();
+
+        $data = [];
+        foreach ($subs as $key => $value) {
+            $data[] = [
+                'user' => [
+                    'name' => $value->user->name,
+                    'username' => $value->user->username,
+                    'avatar_url' => $value->user->avatar_url,
+                    'cover_url' => $value->user->cover_url,
+                    'email' => $value->user->email,
+                ],
+                'wish' => [
+                    'wishname' => $value->wish->wishname,
+                    'price' => $value->wish->price,
+                    'tax_amount' => $value->wish->tax_amount,
+                    'item_url' => $value->wish->item_url,
+                    'perma_link' => $value->wish->perma_link,
+                ],
+                'uuid' => $value->uuid,
+                'start_at' => $value->start_at,
+                'end_at' => $value->end_at,
+                'status' => $value->status,
+            ];
+        }
+
+        return Inertia::render('tracker/Wishtracker');
+    }
+
+
+    public function userSubscribed(){
+        
+        $subs = Subscription::where('user_id',Auth::id())->get();
+
+        $data = [];
+        foreach ($subs as $key => $value) {
+            $data[] = [
+                'owner' => [
+                    'name' => $value->owner->name,
+                    'username' => $value->owner->username,
+                    'avatar_url' => $value->owner->avatar_url,
+                    'cover_url' => $value->owner->cover_url,
+                    'email' => $value->owner->email,
+                ],
+                'wish' => [
+                    'wishname' => $value->wish->wishname,
+                    'price' => $value->wish->price,
+                    'tax_amount' => $value->wish->tax_amount,
+                    'item_url' => $value->wish->item_url,
+                    'perma_link' => $value->wish->perma_link,
+                ],
+                'uuid' => $value->uuid,
+                'start_at' => $value->start_at,
+                'end_at' => $value->end_at,
+                'status' => $value->status,
+            ];
+        }
 
         return Inertia::render('tracker/Wishtracker');
     }

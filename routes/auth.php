@@ -98,6 +98,10 @@ Route::middleware('auth')->group(function () {
 
         Route::get('wish-tracker', [WishitemController::class, 'wishtrackerItems'])->name('wish-tracker');
 
+        Route::get('subscriptions', [WishitemController::class, 'creatorSubscriptions'])->name('subscriptions');
+
+        Route::get('subscribed', [WishitemController::class, 'userSubscribed'])->name('subscribed');
+
         Route::get('/read-status/{payment_id}/{type}', [WishitemController::class, 'readStatus'])->name('read-status');
 
         Route::get('/stripe', function () {

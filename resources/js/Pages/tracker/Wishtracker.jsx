@@ -100,11 +100,11 @@ export default function Wishtracker(props) {
                                             <tr>
                                                 <td>
                                                     <div className="wish-item" >
-                                                        <img src={n.wish && n.wish.perma_link} alt="image" className="img-fluid" />
+                                                        <img src={n.wish && n.wish.perma_link || "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"} alt="image" className="img-fluid" />
                                                     </div>
                                                 </td>
-                                                <td>{n.wish && n.wish.wishname} </td>
-                                                <td>1 x {format(n.amount)}</td>
+                                                <td>{n.wish && n.wish.wishname || 'Surprise Gift'} </td>
+                                                <td>{n.quantity} x {format(n.amount)}</td>
                                             </tr>
                                         </tbody>
                                     </table>
