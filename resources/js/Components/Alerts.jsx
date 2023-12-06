@@ -9,7 +9,7 @@ export const useAlerts = () => {
      * @param {Number} duration MiliSeconds
      * @returns {void}
      */
-    const successAlert = (message, position = "top-right", duration = 10000) => {
+    const successAlert = (message, position = "top-right", duration = 3000) => {
         toast.success(message, {
             duration: duration,
             position: position,
@@ -25,7 +25,7 @@ export const useAlerts = () => {
      * @param {Number} duration MiliSeconds
      * @returns {void}
      */
-    const errorAlert = (message, position = "top-right", duration = 10000) => {
+    const errorAlert = (message, position = "top-right", duration = 3000) => {
         toast.error(message, {
             duration: duration,
             position: position,
@@ -40,7 +40,7 @@ export const useAlerts = () => {
      * @param {Number} duration MiliSeconds
      * @returns {void}
      */
-    const warningAlert = (message, position = "top-right", duration = 10000) => {
+    const warningAlert = (message, position = "top-right", duration = 3000) => {
         toast(message, {
             duration: duration,
             position: position,

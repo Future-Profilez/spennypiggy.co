@@ -13,6 +13,10 @@
         </tr> --}}
 
             <tr>
+               <td style="line-height:20px;height:320px;"></td>
+           </tr>
+
+            <tr>
                 <td style=" padding: 0 0 25px 0; text-align: center;"><img
                         src="https://whoyouinto.com/emails/user/giftimg.png" alt="img"></td>
             </tr>
@@ -27,7 +31,7 @@
             </tr>
 
             <tr>
-                <td style="line-height:30px;height:30px;"></td>
+                <td style="line-height:20px;height:20px;"></td>
             </tr>
 
             <tr>
@@ -43,7 +47,7 @@
                 </td>
             </tr>
             <tr>
-               <td style="line-height:30px;height:30px;"></td>
+               <td style="line-height:20px;height:320px;"></td>
            </tr>
 
         </table>
