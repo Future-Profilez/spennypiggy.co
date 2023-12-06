@@ -13,6 +13,7 @@ use Ramsey\Uuid\Uuid;
 class WishItem extends Model
 {
     use HasFactory, SoftDeletes;
+    protected $dates = ['deleted_at'];
 
     protected $fillable = [
         "user_id",
@@ -27,7 +28,8 @@ class WishItem extends Model
         "repeat_purchase",
         "category",
         "fullfill_amount",
-        'tax_amount'
+        'tax_amount',
+        'deleted_at'
     ];
 
     protected $appends = [
