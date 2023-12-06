@@ -634,3 +634,8 @@ div#msgText p{display:flex;align-items:flex-start;}
 button.editpop {
    display: none !important;
 }
+
+/* .trackItem.new { */
+.trackItem {
+   background: var(--yellow) !important;
+}

@@ -18,6 +18,9 @@ export default function Wishtracker(props) {
     const { format } = PriceFormat();
     const { auth, user, tracks } = props;
 
+    
+
+
     console.log("props", props);
     console.log("tracks", tracks);
 
@@ -25,8 +28,15 @@ export default function Wishtracker(props) {
         const [open, setOpen] = useState(false);
         const [isUserRead, setIsUserRead] = useState(n && n.is_read_user);
         const [isOwnerRead, setIsOwnerRead] = useState(n && n.is_read_owner);
+        
+        const [msgSent, setMsgSent] = useState(false);
+        const getMessageStatus = (e) => { 
+            setMsgSent(e);
+        }
+    
         const openState = () => { setOpen(!open) }
-        function controlStatus() {
+        function controlStatus(e) {
+            e.preventDefault();
             openState();
             return false;
             setIsOwnerRead(1);
@@ -105,7 +115,7 @@ export default function Wishtracker(props) {
                                                     </div>
                                                 </td>
                                                 <td>{n.wish && n.wish.wishname || 'Surprise Gift'} </td>
-                                                <td>{n.quantity} x {format(n.amount)}</td>
+                                                <td>{n.quantity || 1} x {format(n.amount)}</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -122,7 +132,17 @@ export default function Wishtracker(props) {
                                 <p className="mt-2" >Sender Note : </p>
                                 <p>You are awesome !!</p>
 
-                                {n && n.sender == false ? <SayThanks name={n && n.user && n.user.name} payment_id={n.id} />:''}
+                                {msgSent ? <div className="msgSent my-2" >
+                                    <p className="mt-2" >Thankyou Note : </p>
+                                    <p>{msgSent}</p>
+                                </div> : ''}
+
+                                {n && n.sender == false && !msgSent ? 
+                                    <SayThanks 
+                                    getMessageStatus={getMessageStatus} 
+                                    name={n && n.user && n.user.name} 
+                                    payment_id={n.id} />
+                                : ''}
 
                             </div>
                         </div>
