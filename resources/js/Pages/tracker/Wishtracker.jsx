@@ -12,7 +12,7 @@ import axios from "axios";
 import Confetti from "@/includes/Confetti";
 import Nocontent from "@/includes/Nocontent";
 import userphoto from "../../../assets/img/userphoto.png";
-
+const defaultsec = 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/';
 export default function Wishtracker(props) {
 
     const { format } = PriceFormat();
@@ -28,6 +28,7 @@ export default function Wishtracker(props) {
         const openState = () => { setOpen(!open) }
         function controlStatus() {
             openState();
+            return false;
             setIsOwnerRead(1);
             axios.get(`/read-status/${n.id}/${n.sender ? 'user' : 'owner'}`).then(resp => {
                 console.error("resp", resp);
@@ -100,10 +101,10 @@ export default function Wishtracker(props) {
                                             <tr>
                                                 <td>
                                                     <div className="wish-item" >
-                                                        <img src={n.wish && n.wish.perma_link} alt="image" className="img-fluid" />
+                                                        <img src={n.wish && n.wish.perma_link || defaultsec} alt="image" className="img-fluid" />
                                                     </div>
                                                 </td>
-                                                <td>{n.wish && n.wish.wishname} </td>
+                                                <td>{n.wish && n.wish.wishname || "Surprise Gift"} </td>
                                                 <td>1 x {format(n.amount)}</td>
                                             </tr>
                                         </tbody>
