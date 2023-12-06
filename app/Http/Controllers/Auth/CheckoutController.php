@@ -126,7 +126,7 @@ class CheckoutController extends Controller
 
                 if (!empty($dd->wish->subscription)) {
 
-                    if ($dd->wish->subscription == 1) {
+                    if ($dd->wish->subscription == 1 && $dd->is_subscribed == 1) {
                         if (Auth::check()) {
                             if ($dd->wish->subscription_period == 'daily') {
                                 $end = Carbon::now()->addDay(1);

@@ -153,9 +153,9 @@ export default function UserCarts(props) {
                                         <div className="col-md-12 mb-4">
                                             <label className="d-block text-start">Email </label>
                                             <p className="text-small text-muted mb-1">Your e-mail remains private. It is used for the creator to reply to your gift with a message via Spenny Piggy</p>
-                                            <input className={`${auth.email ? 'disabled' : ''} form-input w-100 rounded`}
-                                                value={auth.email}
-                                                disabled={auth.email ? true : false}
+                                            <input className={`${auth && auth.email ? 'disabled' : ''} form-input w-100 rounded`}
+                                                value={auth && auth.email}
+                                                disabled={auth && auth.email ? true : false}
                                                 onChange={(e) => setEmail(e.target.value)}
                                                 type="email" placeholder="Enter Your Email..."
                                             />
