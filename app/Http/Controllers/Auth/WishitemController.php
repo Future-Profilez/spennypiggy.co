@@ -679,6 +679,9 @@ class WishitemController extends Controller
                 $q->user = $q->payment->owner;
             }
 
+            $q->cart_message = $q->payment->message ?? null;
+            $q->surprise_message = $q->cart->message ?? null;
+
             return $q;
         });
 

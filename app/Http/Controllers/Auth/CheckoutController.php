@@ -151,9 +151,6 @@ class CheckoutController extends Controller
                         $dd->wish->save();
                     }
                 }
-                $dd->status = 0;
-                $dd->quantity = 0;
-                $dd->save();
             }
 
             $sessionId = session('session_id');
@@ -183,6 +180,9 @@ class CheckoutController extends Controller
                 } else {
                     CheckoutUser::dispatch($payment_data, true, false, false, $stripeid->name);
                 }
+                $dd->status = 0;
+                $dd->quantity = 0;
+                $dd->save();
             }
             if (Auth::check()) {
                 CheckoutMailToUser::dispatch($stripeid);

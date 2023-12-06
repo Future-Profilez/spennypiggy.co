@@ -26,7 +26,7 @@ export default function Wishtracker(props) {
         const [isUserRead, setIsUserRead] = useState(n && n.is_read_user);
         const [isOwnerRead, setIsOwnerRead] = useState(n && n.is_read_owner);
         
-        const [msgSent, setMsgSent] = useState(false);
+        const [msgSent, setMsgSent] = useState(n && n.message);
         const getMessageStatus = (e) => { 
             setMsgSent(e);
         }
@@ -84,7 +84,6 @@ export default function Wishtracker(props) {
                         <Collapse in={open}>
                             <div id="example-collapse-text">
                                 <div className="track-summary mt-4">
-
                                     <div className="table">
                                         <table>
                                             <thead>
@@ -101,19 +100,24 @@ export default function Wishtracker(props) {
                                                             <img src={n.wish && n.wish.perma_link || "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"} alt="image" className="img-fluid" />
                                                         </div>
                                                     </td>
-                                                    <td>{n.wish && n.wish.wishname || 'Surprise Gift'} </td>
+                                                    <td>
+                                                        <p>{n.wish && n.wish.wishname || 'Surprise Gift'}</p>
+                                                        <p className="text-muted text-small">{n && n.surprise_message}</p>
+                                                         </td>
                                                     <td>{n.quantity || 1} x {format(n.amount)}</td>
                                                 </tr>
                                             </tbody>
                                         </table>
                                     </div>
 
-                                    <p className="mt-2" >Sender Note : </p>
-                                    <p>You are awesome !!</p>
+                                    {n && n.cart_message ? <div>
+                                        <p className="mt-2" >Sender Note : </p>
+                                        <p className="text-muted">{n && n.cart_message}</p>
+                                    </div> : ''}
 
                                     {msgSent ? <div className="msgSent my-2" >
                                         <p className="mt-2" >Thankyou Note : </p>
-                                        <p>{msgSent}</p>
+                                        <p className="text-muted">{msgSent}</p>
                                     </div> : ''}
 
                                     {n && n.sender == false && !msgSent ? 
