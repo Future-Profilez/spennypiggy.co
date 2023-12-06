@@ -11,6 +11,7 @@ import { useState } from "react";
 import axios from "axios";
 import Confetti from "@/includes/Confetti";
 import Nocontent from "@/includes/Nocontent";
+import userphoto from "../../../assets/img/userphoto.png";
 
 export default function Wishtracker(props) {
 
@@ -19,25 +20,25 @@ export default function Wishtracker(props) {
 
     console.log("props", props);
     console.log("tracks", tracks);
-    
+
     const Wish = ({ n }) => {
         const [open, setOpen] = useState(false);
         const [isUserRead, setIsUserRead] = useState(n && n.is_read_user);
-        const [isOwnerRead, setIsOwnerRead] =useState(n && n.is_read_owner);
-        const openState = () => { setOpen(!open)}
-        function controlStatus(){
+        const [isOwnerRead, setIsOwnerRead] = useState(n && n.is_read_owner);
+        const openState = () => { setOpen(!open) }
+        function controlStatus() {
             openState();
             setIsOwnerRead(1);
             axios.get(`/read-status/${n.id}/${n.sender ? 'user' : 'owner'}`).then(resp => {
-                 console.error("resp", resp);
+                console.error("resp", resp);
             }).catch(_err => {
-                 console.error("error", _err);
+                console.error("error", _err);
             });
         }
 
         return (
-            <Confetti sender={n && n.sender} 
-            is_read_owner={isOwnerRead} 
+            <Confetti sender={n && n.sender}
+                is_read_owner={isOwnerRead}
                 onclick={controlStatus} classes="w-100" >
                 <div className="trackItem cursor-pointer shadow-pink box mb-4">
                     {/* <h2 className="granted-wish mb-2" >New Wish Granted</h2> */}
@@ -45,18 +46,18 @@ export default function Wishtracker(props) {
                         aria-controls="example-collapse-text" aria-expanded={open}
                         className=" cursor-pointer trackbar d-flex align-items-center justify-content-between" >
                         <div className="text-dark">
-                            <Avatar name={n && n.wish.user && n.wish.user.name}
-                                username={n && n.wish.user && n.wish.user.username}
+                            <Avatar name={n && n.user && n.user.name || 'Anonymous'}
+                                username={n && n.user && n.user.username || 'anonymous'}
                                 src={
-                                    (n && n.wish.user && n.wish.user.avatar) ||
-                                    "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"
+                                    (n && n.user && n.user.avatar_url) ||
+                                    userphoto
                                 }
                             />
                         </div>
                         <div className="text-muted rightbar d-flex align-items-center ">
-                            {n && n.wish.sender ?
+                            {n && n.sender ?
                                 <div className="identity redbg" >Paid</div>
-                                : 
+                                :
                                 <div className="identity mintbg" >Recieved</div>
                             }
                             <div className="angle-icon">
@@ -85,28 +86,28 @@ export default function Wishtracker(props) {
                     <Collapse in={open}>
                         <div id="example-collapse-text">
                             <div className="track-summary mt-4">
-                                
+
                                 <div className="table">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <td>Item</td>
-                                            <td>Name</td>
-                                            <td>Price</td>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>
-                                                <div className="wish-item" >
-                                                    <img src={n.wish && n.wish.perma_link} alt="image" className="img-fluid" />
-                                                </div>
-                                            </td>
-                                            <td>{n.wish && n.wish.wishname} </td>
-                                            <td>1 x {format(n.amount)}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <td>Item</td>
+                                                <td>Name</td>
+                                                <td>Price</td>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>
+                                                    <div className="wish-item" >
+                                                        <img src={n.wish && n.wish.perma_link} alt="image" className="img-fluid" />
+                                                    </div>
+                                                </td>
+                                                <td>{n.wish && n.wish.wishname} </td>
+                                                <td>1 x {format(n.amount)}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
 
                                 {/* <div className="d-flex align-items-center" >
@@ -120,7 +121,7 @@ export default function Wishtracker(props) {
                                 <p className="mt-2" >Sender Note : </p>
                                 <p>You are awesome !!</p>
 
-                                <SayThanks name={n && n.wish.user && n.wish.user.name} payment_id={n.id} />
+                                <SayThanks name={n && n.user && n.user.name} payment_id={n.id} />
 
                             </div>
                         </div>
@@ -146,13 +147,13 @@ export default function Wishtracker(props) {
                                         return (
                                             <Wish n={n} key={`track-${i}`} />
                                         );
-                                 })}
-                                 {tracks && tracks.length < 1 ? 
-                                 <Nocontent text="nothing to see" /> : '' }
+                                    })}
+                                {tracks && tracks.length < 1 ?
+                                    <Nocontent text="nothing to see" /> : ''}
                             </div>
                         </Tab>
                         {/* <Tab eventKey="2" title="Subscriptions">
-                            Change Items 
+                            Change Items
                         </Tab> */}
                     </Tabs>
                 </div>
