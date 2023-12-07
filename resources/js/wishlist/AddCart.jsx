@@ -9,7 +9,7 @@ import { useEffect } from "react";
 import PriceFormat from "@/includes/PriceFormat";
 export default function AddCart(props) {
 
-    const [sub ,setSub] = useState(false);
+    const [sub ,setSub] = useState('onetime');
     function getSubscription(e) {
         setSub(e.target.value)
     }
@@ -31,6 +31,9 @@ export default function AddCart(props) {
 
     useEffect(()=>{
         setClose(action);
+        return  () => {
+            setSub('onetime');
+        }
     },[action])
 
     const getPercentage = (actual, paid) => { 
@@ -100,12 +103,12 @@ export default function AddCart(props) {
                         <p className="mb-1">Subscription interval </p>
                         <div className="croud-add w-100 mb-3">
                             <select onChange={getSubscription} className="w-100">
-                                <option value={false} >One Time Purchase</option>
+                                <option value={'onetime'} >One Time Purchase</option>
                                 <option value={item.subscription_period} >
                                 Paid Every
                                 {item.subscription_period == 'daily' ? " Day" : ''}
                                 {item.subscription_period == 'weekly' ? " Week" : ''}
-                                {item.subscription_period == 'montly' ? " Month" : ''}
+                                {item.subscription_period == 'monthly' ? " Month" : ''}
                                 </option>
                             </select>
                         </div>

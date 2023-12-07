@@ -40,7 +40,7 @@ export default function ToCart({
         }
         setLoading(true);
         console.log("auth",auth)
-        axios.get(`/add-to-cart/${uuid}/${deviceID}${sub ? `/${sub}` : '/onetime'}${amount ? `/${amount}/` : ''}`).then(resp => {
+        axios.get(`/add-to-cart/${uuid}/${deviceID}${sub ? `/${sub}` : '/onetime' }${amount ? `/${amount}/` : ''}`).then(resp => {
         if (resp.data.success) {
             if (resp.data.added == true) {
                 successAlert(resp.data.msg);

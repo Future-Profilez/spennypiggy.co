@@ -3,13 +3,10 @@ import ShareProfile from './ShareProfile';
 import { useState } from 'react';
 import uploadedimg from '../../assets/img/uploadedimg.png';
 import { useEffect } from 'react';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Tooltip from 'react-bootstrap/Tooltip';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import Wishlist from '@/Pages/Auth/Wishlist';
 import PriceFormat from '@/includes/PriceFormat';
 const AddCart = React.lazy(() => import('./AddCart'));
-import Button from 'react-bootstrap/Button';
 
 export default function Wishlistbox(props) {
 
@@ -64,9 +61,7 @@ export default function Wishlistbox(props) {
             <p className='mt-1 mb-0 text-small' >{getPercentage(itm.price, itm.fullfill_amount)}% granted</p>
             </div> 
           : '' }
-          {itm && itm.subscription == '1' ? <div className='subscribletag' >
-          Subscribable
-          </div> : ''}
+          {itm && itm.subscription == '1' ? <div className='subscribletag' > Subscribable </div> : ''}
         </div>
         <div className='sharelinks'>
           <ShareProfile username={itm.wishname} custom={`${window.location.href}?item=${itm.uuid}`} >
