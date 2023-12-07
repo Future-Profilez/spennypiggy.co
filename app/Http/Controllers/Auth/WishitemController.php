@@ -243,21 +243,16 @@ class WishitemController extends Controller
     {
 
         $query = WishCategory::orderBy('created_at', 'DESC');
-
         if ($category != 'all') {
             $query->where('category_id', $category);
         }
-
         $itemId = $query->whereHas('wish', function ($q) use ($user_id) {
             $q->where('user_id', $user_id);
         })->pluck('wish_id');
-
-
         $user = User::where('id', $user_id)->first();
         $items = Wishitem::whereIn('id', $itemId)->latest()->get();
         // $items = WishItem::whereUserId($user->id)->latest()->get();
         $categories = UserCategory::whereUserId($user->id)->latest()->get();
-
         return redirect(route('user.show', ['username', $user->username, 'filter' => true]));
         // return response()->json(["items" => $items])->header('Content-Type', 'application/json');
     }
@@ -366,18 +361,23 @@ class WishitemController extends Controller
         }
     }
 
+    public function clearCart($deviceid, $ownerid) {
+        $query = UserCart::where('owner_id', $ownerid)->where('status', 1);
+        if (Auth::check()) {
+            $query->where('user_id', Auth::id());
+        } else {
+            $query->where('device_id', $deviceid);
+        }
+        $query->update(['status' => 0]);
+        $this->cartItems();
+    }
+
     public function removeSurpriseFromCart($uuid)
     {
         $cart = UserCart::whereUuid($uuid)->first();
         $cart->status = 0;
         $cart->save();
         return back()->with('success', 'Item removed from cart');
-        // return response()->json([
-        //     "success" => true,
-        //     'added' => false,
-        //     'msg' => "Item removed from cart",
-        //     "uuid" => $cart->uuid,
-        // ]);
     }
 
     public function cartItems()
