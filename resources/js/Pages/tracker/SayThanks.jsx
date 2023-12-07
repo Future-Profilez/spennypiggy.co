@@ -5,15 +5,19 @@ import  axios   from 'axios';
 import React from 'react'
 import { useState } from 'react'
 import st from "../../../css/uploader.module.css";
+import { useEffect } from 'react';
 
 export default function SayThanks(props) {
-   
+
    const [clear, setClear] = useState();
+   useEffect(()=>{
+      setClear(clearAction);
+   }, [clearAction]);
+
    const [msgMedia, setMsgMedia] = useState();
    const getFileUID = async (data) => {
-      console.log("data",  data);
       setMsgMedia(data)
-  };
+   };
    const { name, payment_id, getMessageStatus } = props;
    const [close,setClose] = useState();
    const [message,setMessage] = useState();
@@ -37,6 +41,7 @@ export default function SayThanks(props) {
                   setClose();
                },1000);
                getMessageStatus(message);
+               setClear(new Date());
            } else {
                errorAlert(resp.data.message);
            }
