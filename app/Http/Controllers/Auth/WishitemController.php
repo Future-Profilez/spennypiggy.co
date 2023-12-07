@@ -709,8 +709,7 @@ class WishitemController extends Controller
     }
 
 
-    public function readStatus($payment_id, $type)
-    {
+    public function readStatus($payment_id, $type){
         $payment = StripePaymentItems::where("id", $payment_id)->first();
         if ($type == 'owner') {
             $payment->is_read_owner = 1;
@@ -718,16 +717,12 @@ class WishitemController extends Controller
             $payment->is_read_user = 1;
         }
         $payment->save();
-
         return Inertia::render('tracker/Wishtracker');
     }
 
 
-    public function creatorSubscriptions()
-    {
-
+    public function creatorSubscriptions(){
         $subs = Subscription::where('owner_id', Auth::id())->orderBy('updated_at', 'DESC')->get();
-
         $data = [];
         foreach ($subs as $key => $value) {
             $data[] = [
@@ -751,16 +746,11 @@ class WishitemController extends Controller
                 'status' => $value->status,
             ];
         }
-
         return Inertia::render('tracker/Wishtracker');
     }
 
-
-    public function userSubscribed()
-    {
-
+    public function userSubscribed(){
         $subs = Subscription::where('user_id', Auth::id())->get();
-
         $data = [];
         foreach ($subs as $key => $value) {
             $data[] = [
@@ -784,7 +774,6 @@ class WishitemController extends Controller
                 'status' => $value->status,
             ];
         }
-
         return Inertia::render('tracker/Wishtracker');
     }
 }
