@@ -45,7 +45,7 @@ export default function Cart(props) {
                         {!loading && <>
                             { cartsItems && cartsItems.length ? <>
                                     {cartsItems.map((c, i) => {
-                                        return <UserCarts auth={auth && auth.user} key={`user-cart-${i}`} data={c} />;
+                                        return <UserCarts  auth={auth && auth.user} key={`user-cart-${i}`} data={c} />;
                                     })}
                                 </>
                                 : (

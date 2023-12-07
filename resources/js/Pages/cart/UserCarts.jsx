@@ -16,29 +16,35 @@ export default function UserCarts(props) {
     const [message, setMessage] = useState(null);
     const [name, setName] = useState(auth && auth.name || '');
     const [email, setEmail] = useState(auth && auth.email || '');
-    const [loading, setLoading] = useState(false);
 
     const handleSubmit = (e) => {
         e.preventDefault();
         if (auth && auth.id) {
             window.location.href = `/create-checkout-session/${datas?.user?.id || ''}?message=${message}&from=${name}&email=${email}`;
         } else {
-            // setLoading(true);
             window.location.href = `/create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`;
-            // router.get(`/create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`), {
-            //     preserveScroll: true,
-            //     onSuccess: (resp) => {
-            //         console.log("resp", resp);
-            //     },
-            //     onError: (_err) => {
-            //         console.error("cart", _err);
-            //     }
-            // };
         }
     };
 
-    const clearcart = () => {
-        
+    const [loading, setLoading] = useState(false);
+    const [cartCleared, setCartCleared] = useState(false);
+    const clearcart = (ownerid, index) => {
+        setLoading(true);
+        router.get(`/clear-cart/${deviceid}/${ownerid}`, {
+            preserveScroll: true,
+            onSuccess: (resp) => {
+                console.log("resp", resp);
+                setCartCleared(true);
+                setLoading(false);
+                if(index == 0){
+                    window.location.reload = false;
+                }
+            },
+            onError: (_err) => {
+                console.error("error", _err);
+                setLoading(false);
+            }
+        });
     }
 
     const [items, setItems] = useState(datas?.items);
@@ -84,18 +90,18 @@ export default function UserCarts(props) {
     }, [items]);
 
     return (
-        <div className="px-2">
+        <div className={`${cartCleared ? "d-none" : ''} px-2`}>
             <div className="my-4 cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
                 <div className="cartMain">
                     <h2 className="pb-1 wishtitle">
                         Wish Basket for {datas?.user?.name || ""}
                         <Link className="text-voilet"
                             href={`/${datas?.user?.username || ""}`} >
-                            @{datas?.user?.username || ""}
+                             @{datas?.user?.username || ""}
                         </Link>
                     </h2>
                     <p className="pb-4">
-                        You are about to send a payout to
+                        You are about to send a payout to 
                         <strong> {datas?.user?.name || ""} </strong> to fund their
                         wishes.
                     </p>
@@ -220,7 +226,7 @@ export default function UserCarts(props) {
                                 </li>
                             </ul>
                             <div className="mt-4 d-flex align-items-center justify-content-between" >
-                                <button onClick={clearcart} className={`btn-pink md mt-3 px-4 text-center`} > Clear </button>
+                                <button type="button" onClick={()=>clearcart(datas?.user?.id)} className={`btn-pink md mt-3 px-4 text-center`} > {loading ? "Wait.." : "Clear" } </button>
                                 <button type="submit" className={`${isChecked ? "":"disabled"} btn-pink md mt-3 text-center`} >Checkout </button>
                             </div>
                         </form>

@@ -121,6 +121,8 @@ Route::get('/remove-from-cart/{uuid}', [WishitemController::class, 'removeSurpri
 
 Route::get('/add-to-cart/{uuid}/{device_id}/{sub}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
 
+Route::get('/clear-cart/{device_id}/{ownerid}', [WishitemController::class, 'clearCart'])->name('clear-cart');
+
 Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 
 Route::get('anonymous-cart/{deviceId}', [WishitemController::class, 'anonymousCartItems'])->name('anonymous-cart');

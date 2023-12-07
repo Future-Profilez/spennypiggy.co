@@ -103,9 +103,9 @@ export default function AddCart(props) {
                                 <option value={false} >One Time Purchase</option>
                                 <option value={item.subscription_period} >
                                 Paid Every
-                                {item.subscription_period == 'daily' ? "Day" : ''}
-                                {item.subscription_period == 'weekly' ? "Week" : ''}
-                                {item.subscription_period == 'montly' ? "Month" : ''}
+                                {item.subscription_period == 'daily' ? " Day" : ''}
+                                {item.subscription_period == 'weekly' ? " Week" : ''}
+                                {item.subscription_period == 'montly' ? " Month" : ''}
                                 </option>
                             </select>
                         </div>
