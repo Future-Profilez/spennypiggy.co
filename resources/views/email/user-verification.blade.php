@@ -13,7 +13,7 @@
         </tr> --}}
 
             <tr>
-               <td style="line-height:20px;height:320px;"></td>
+               <td style="line-height:20px;height:20px;"></td>
            </tr>
 
             <tr>
@@ -47,7 +47,7 @@
                 </td>
             </tr>
             <tr>
-               <td style="line-height:20px;height:320px;"></td>
+               <td style="line-height:20px;height:20px;"></td>
            </tr>
 
         </table>

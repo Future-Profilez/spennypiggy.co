@@ -18,10 +18,8 @@ export default function Wishtracker(props) {
     const { format } = PriceFormat();
     const { auth, user, tracks } = props;
 
-    console.log("props", props);
-    console.log("tracks", tracks);
-
     const Wish = ({ n }) => {
+
         const [open, setOpen] = useState(false);
         const [isUserRead, setIsUserRead] = useState(n && n.is_read_user);
         const [isOwnerRead, setIsOwnerRead] = useState(n && n.is_read_owner);
@@ -94,7 +92,7 @@ export default function Wishtracker(props) {
                                                 <tr>
                                                     <td>
                                                         <div className="wish-item" >
-                                                            <img src={n.wish && n.wish.perma_link || "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"} alt="image" className="img-fluid" />
+                                                            <img src={n.wish && n.wish.perma_link || defaultsec} alt="image" className="img-fluid" />
                                                         </div>
                                                     </td>
                                                     <td>
