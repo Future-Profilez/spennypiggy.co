@@ -39,12 +39,7 @@ export default function Wishlistbox(props) {
   const price = () => { 
       return itm.price;
   };
-
-  const renderTooltip = (props) => (
-    <Tooltip id="button-tooltip" {...props}>
-      *not including 20% service fee.
-    </Tooltip>
-  );
+  
 
   return <>
       <div className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
@@ -58,7 +53,7 @@ export default function Wishlistbox(props) {
         </div>
         <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
           <div>
-            <h4 className={`fon-bold text-dark ${itm.subscription == '2' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>
+            <h4 className={`fon-bold text-dark ${itm.subscription !== '0' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>
             <h5 className='font-CeraGRBold text-dark titleprice'>{format(price())}
                 <button className='tooltipbtn' >?<p>*not including 20% service fee.</p></button>
             </h5>

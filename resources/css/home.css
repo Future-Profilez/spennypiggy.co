@@ -425,7 +425,7 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .welcomeTitle{margin-bottom:0rem;}
 .wishlistbtn{text-align:center;display:flex;justify-content:center;}
 .wishlistbtnFixed{position:fixed;bottom:5px;z-index:9;border:none;width:87%;transform:inherit!important;margin:auto;left:0;right:0;}
-.wishlistbutton:before{content:'+';font-size:25px;margin-right:6px;}
+.wishlistbutton:not(.log):before{content:'+';font-size:25px;margin-right:6px;}
 .wishlistbtnFixed a{border:1px solid var(--mint) !important;background:var(--black);box-shadow:none!important;transform:inherit!important;border-radius:19px !important;width:100%!important;margin:auto;padding:27px 20px!important;font-size:22px!important;}
 .creatorslider .swiper-slide.swiper-slide-next .happyclientSec{transform:inherit;}
 .wishlistbtnFixed{margin:0px !important;width:auto;padding:15px !important;bottom:0 !important;}
@@ -495,7 +495,7 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .loveboxes h3.headingSm{margin-bottom:0;}
 .editprofileModalInner,.innermodel{width:100% !important;}
 .welcomeTitle{margin:auto;}
-button.cartLink svg{width:50px;height:50px;}
+button.cartLink svg{width:37px;height:37px;}
 .carticon svg{width:30px;}
 .wishlistbox{flex-wrap:wrap;justify-content:center!important;}
 .wishlistcntbox{margin-bottom:20px;}

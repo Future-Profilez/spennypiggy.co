@@ -14,6 +14,10 @@
                         New <span style="color: #8C52FF">Granted Wish</span> on <br> Spenny Piggy 🎁 </td>
                 </tr>
                 <tr>
+                    <td style="line-height:20px;height:20px;"></td>
+                </tr>
+
+                <tr>
                     <td style=" padding: 0 0 25px 0; text-align: center;"><img
                             src="https://whoyouinto.com/emails/user/giftimg.png" alt="img"></td>
                 </tr>

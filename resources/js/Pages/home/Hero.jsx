@@ -17,7 +17,8 @@ export default function Hero({auth}) {
                    Get Your Lifestyle funded! 🎁
                </h3>
                <div className="mt-6 wishlistbtn wishlistbtnFixed rotate-btn">
-                  {auth?.user?.username ? <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink wishlistbutton lg w-2/5 shadow-mint border-mint" > Create Wishlist </Link>
+                  {auth?.user?.username ? 
+                  <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink wishlistbutton lg w-2/5 shadow-mint border-mint log" > My Wishlist </Link>
                   :  <Link href="/register" className="btn-pink wishlistbutton lg w-2/5 shadow-mint border-mint" > Create Wishlist </Link>
                   }
                </div>

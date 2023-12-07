@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import cartproductimg from '../../../assets/img/cartproductimg.png';
 import PriceFormat from "@/includes/PriceFormat";
-import { router } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
 import axios from "axios";
 
@@ -10,29 +9,16 @@ export default function CartItem({data, removeCart, quantityUpdate}) {
     const { format } = PriceFormat();
     const [quantity, setQuantity] = useState(data && data.quantity || 1);
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
-
     const [intialItem, setInitialItem] = useState();
+
     const updatequantity = (quantity) => {
         axios.get(`cart-update-quantity/${data && data.uuid}/${quantity}`).then(resp => {
-            console.log("resp", resp);
+            // console.log("resp", resp);
         }).catch(_err => {
             console.error("error", _err);
             errorAlert("Unable to update quantity.")
             setQuantity(intialItem);
         });
-
-        // router.get(`cart-update-quantity/${data && data.uuid}/${quantity}`,{
-        //         preserveScroll: true,
-        //         onSuccess: (resp) => {
-        //             console.log("resp", resp);
-        //         },
-        //         onError: (_err) => {
-        //             console.error("error", _err);
-        //             errorAlert("Unable to update quantity.")
-        //             setQuantity(intialItem);
-        //         }
-        //     }
-        // );
     };
 
     async function incrementCount(){

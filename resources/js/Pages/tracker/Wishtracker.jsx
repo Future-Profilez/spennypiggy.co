@@ -50,9 +50,11 @@ export default function Wishtracker(props) {
                         <div onClick={openState}
                             aria-controls="example-collapse-text" aria-expanded={open}
                             className=" cursor-pointer trackbar " >
+                            
                             {n && !n.sender && isOwnerRead !== 1 ? <div className="newwish justify-content-between py-2 d-flex align-items-center">
                                 <h2 className="granted-wish  font-GillSans " >New Wish Granted. Tap to see</h2>
                             </div> : ''}
+
                             <div className="d-flex align-items-center justify-content-between">
                                 <div className="text-dark">
                                     <Avatar name={n && n.user && n.user.name || 'Anonymous'}
@@ -77,10 +79,6 @@ export default function Wishtracker(props) {
                                 </div>
                             </div>
                         </div> 
-
-                        
-                       
-
                         <Collapse in={open}>
                             <div id="example-collapse-text">
                                 <div className="track-summary mt-4">
@@ -90,7 +88,6 @@ export default function Wishtracker(props) {
                                                 <tr>
                                                     <td>Item</td>
                                                     <td>Name</td>
-                                                    <td>Price</td>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -103,8 +100,8 @@ export default function Wishtracker(props) {
                                                     <td>
                                                         <p>{n.wish && n.wish.wishname || 'Surprise Gift'}</p>
                                                         <p className="text-muted text-small">{n && n.surprise_message}</p>
-                                                         </td>
-                                                    <td>{n.quantity || 1} x {format(n.amount)}</td>
+                                                        <p className="text-muted text-small">{n.quantity || 1} x {format(n.amount)}</p>
+                                                    </td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -138,8 +135,8 @@ export default function Wishtracker(props) {
     return (
         <Authenticated auth={auth.user} user={user}>
             <Head title={"Wish Tracker"} />
-            <div className="wishtracker blackbg min-h-screen pb-5">
-                <div className="containerbox blackbg">
+            <div className=" wishtracker blackbg min-h-screen pb-5">
+                <div className="containerbox blackbg cartPage">
                     <Tabs
                         defaultActiveKey="1"
                         id="tracker-tab"

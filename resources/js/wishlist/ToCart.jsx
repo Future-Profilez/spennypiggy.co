@@ -5,15 +5,20 @@ import axios from 'axios';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import DeviceID from "@/includes/DeviceID";
+import { useDispatch, useSelector } from "react-redux";
+import { add_to_cart } from "@/Pages/redux/UserSlice";
 
 export default function ToCart({ 
+
     sub, surprise_amount, surprise_message, owner, 
     auth, actionfrom, checkoutbtn, ItemAdded, item, crowd, pending, uuid, text, classes, custom, removeItem, type, is_cart, amount, isEqual }) {
     
     const deviceID  = DeviceID();
-    console.log("deviceID",deviceID )
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [loading, setLoading] = useState(false);
+
+    const dispatch = useDispatch();
+    const cart = useSelector(state => state.data.cart.cart);
 
     const addtocart = async (sets) => {
         function check(){
@@ -33,10 +38,6 @@ export default function ToCart({
             toast.error(`Amount can not be more than remaining amount £${pending}.`);
             return false;
         }
-        // if (amount && amount < 50) {
-        //     toast.error("Amount must be greater than 50.");
-        //     return false;
-        // }
         setLoading(true);
         console.log("auth",auth)
         axios.get(`/add-to-cart/${uuid}/${deviceID}${sub ? `/${sub}` : '/onetime'}${amount ? `/${amount}/` : ''}`).then(resp => {
@@ -45,6 +46,7 @@ export default function ToCart({
                 successAlert(resp.data.msg);
                 ItemAdded && ItemAdded("added");
                 check();
+                dispatch(add_to_cart(cart+1));
             } else {
                 successAlert(resp.data.msg);
             }

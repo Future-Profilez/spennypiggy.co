@@ -6,6 +6,8 @@ import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
 import { useForm } from "@inertiajs/react";
 import DeviceID from "@/includes/DeviceID";
+import { useDispatch, useSelector } from "react-redux";
+import { add_to_cart } from "../Pages/redux/UserSlice";
 
 export default function SendSurprise({auth, owner}) {
    const deviceID  = DeviceID();
@@ -23,10 +25,18 @@ export default function SendSurprise({auth, owner}) {
          setClose();
       });
    }
+
+   const dispatch = useDispatch();
+   const cart = useSelector(state => state.data.cart.cart);
+
    const sendSurprize = (e) => {
       e.preventDefault();
       if(!data.amount){
          errorAlert("Choose a valid amount.");
+         return false;
+      }
+      if(!data.message){
+         errorAlert("Message can not be empty.");
          return false;
       }
       post(route(`send-surprize`, {
@@ -40,6 +50,7 @@ export default function SendSurprise({auth, owner}) {
                reset();
                if (resp.props.flash?.success) {
                   successAlert(resp.props.flash?.success || "Added");
+                  dispatch(add_to_cart(cart+1));
             }
             if (resp.props.flash?.error) {
                   errorAlert(resp.props.flash?.error);
@@ -50,7 +61,6 @@ export default function SendSurprise({auth, owner}) {
             }
       });
    };
-   console.log("surprise owner", auth)
 
     return (
         <Popup

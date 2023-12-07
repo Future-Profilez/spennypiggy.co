@@ -3,11 +3,11 @@ import { createSlice, combineReducers } from "@reduxjs/toolkit";
 const cartSlice = createSlice({
     name: "cart",
     initialState: {
-        cart: [],
+        cart: false,
     },
     reducers: {
         add_to_cart: (state, action) => {
-            state.cart.push(action.payload);
+            state.cart = action.payload;
         },
     },
 });
@@ -24,8 +24,6 @@ const userSlice = createSlice({
     },
 });
 
-
-// Combine the reducers into a single root reducer
 const rootReducer = combineReducers({
     cart: cartSlice.reducer,
     user: userSlice.reducer,

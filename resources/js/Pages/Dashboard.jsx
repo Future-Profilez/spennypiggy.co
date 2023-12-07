@@ -15,7 +15,6 @@ import PaymentDashboard from "./stripe/PaymentDashboard";
 
 export default function Dashboard(props) {
     const {
-        cart_count,
         auth,
         items,
         categories,
@@ -29,13 +28,11 @@ export default function Dashboard(props) {
     const [loading, setLoading] = useState(false);
     const fetchingcats = (e) => {
         setLoading(true);
-        axios
-            .get(`${user.username}/${e}`)
+        axios.get(`${user.username}/${e}`)
             .then((resp) => {
                 setIts(resp.data.items);
                 setLoading(false);
-            })
-            .catch((_err) => {
+            }).catch((_err) => {
                 console.error("error", _err);
                 setLoading(false);
             });
@@ -49,8 +46,6 @@ export default function Dashboard(props) {
     const [IsloggedIn, setIsLoggedIn] = useState(
         (auth && auth.user && auth.user.username) == (user && user.username)
     );
-    const { cartCounter, setCartCounter } = useState();
-    console.log("props", props);
     
     return (
         <Guest auth={auth.user} user={user}>
@@ -150,8 +145,7 @@ export default function Dashboard(props) {
                                                     onChange={showCategory}
                                                     name="country"
                                                     autoComplete="country-name"
-                                                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6"
-                                                >
+                                                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6">
                                                     <option value={"all"}>
                                                         {"All"}
                                                     </option>
@@ -159,11 +153,8 @@ export default function Dashboard(props) {
                                                         categories.map(
                                                             (c, i) => {
                                                                 return  <option key={`cats-${i}`}
-                                                                        value={c.id}
-                                                                    >
-                                                                        {
-                                                                            c.category
-                                                                        }
+                                                                        value={c.id} >
+                                                                        {c.category}
                                                                     </option>
                                                             }
                                                         )}
@@ -184,13 +175,6 @@ export default function Dashboard(props) {
 
                                     {loading ? <LoadingScreen /> : ""}
                                     <div className="row">
-                                        {/* {!IsloggedIn && user?.stripe_details_submitted !== 1 ?
-                                        <div className='col-md-12 p-5 notactive' >
-                                            <h5 className='loadingtext w-full text-center text-white  mb-1'>{user.name}'s WishList not activated yet.</h5>
-                                            <p className='text-center  text-white text-large ' >Until they activate their wishlist, this user won't be able to receive gifts</p>
-                                        </div> :
-                                     ''
-                                    } */}
 
                                         {IsloggedIn ||
                                         user?.stripe_details_submitted == 1 ? (

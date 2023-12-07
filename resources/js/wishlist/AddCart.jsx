@@ -8,13 +8,11 @@ import { useState } from "react";
 import { useEffect } from "react";
 import PriceFormat from "@/includes/PriceFormat";
 export default function AddCart(props) {
-    
 
     const [sub ,setSub] = useState(false);
     function getSubscription(e) {
         setSub(e.target.value)
     }
-
     const { format } = PriceFormat();
     const { auth, action, uuid, item, IsloggedIn } = props;
     const [cartamount, setcartamount] = useState(null);
@@ -43,9 +41,6 @@ export default function AddCart(props) {
     const price = () => { 
         return item.price
     };
- 
-
-    
    
     return (
         <Popup size="md" 
@@ -60,7 +55,7 @@ export default function AddCart(props) {
             </div>
             <div className="bannerrr p-4">
                 <div className="cartbanner">
-                    <img src={item.perma_link ? item.perma_link:uploadedimg} alt="img" />
+                    <img src={item.perma_link ? item.perma_link : uploadedimg} alt="img" />
                 </div>
                 <div className="cartTitle text-center">{item.wishname}</div>
                 <div className="cartPrice font-CeraGRBold text-voilet mt-1 mb-3 text-center">

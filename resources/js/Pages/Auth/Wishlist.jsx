@@ -77,8 +77,6 @@ export default function Wishlist(props) {
     });
     const [period, setPeriod] = useState(data.subscription_period || item && item.subscription_period );
 
-    
-
     const onSlideChange = (swiper) => {
         setData("thumbnail", imageLinks[swiper && swiper.activeIndex]);
     };
