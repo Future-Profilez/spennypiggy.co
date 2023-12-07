@@ -20,7 +20,6 @@ export default function UserCarts(props) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-
         if (auth && auth.id) {
             window.location.href = `/create-checkout-session/${datas?.user?.id || ''}?message=${message}&from=${name}&email=${email}`;
         } else {
@@ -37,6 +36,10 @@ export default function UserCarts(props) {
             // };
         }
     };
+
+    const clearcart = () => {
+        
+    }
 
     const [items, setItems] = useState(datas?.items);
     const removeCart = (id) => {
@@ -216,12 +219,10 @@ export default function UserCarts(props) {
                                     </div>
                                 </li>
                             </ul>
-                            <button
-                                type="submit"
-                                className={`${isChecked ? "" : "disabled"
-                                    }  btn-pink md mt-3 w-1/2 text-center m-auto`} >
-                                Checkout
-                            </button>
+                            <div className="mt-4 d-flex align-items-center justify-content-between" >
+                                <button onClick={clearcart} className={`btn-pink md mt-3 px-4 text-center`} > Clear </button>
+                                <button type="submit" className={`${isChecked ? "":"disabled"} btn-pink md mt-3 text-center`} >Checkout </button>
+                            </div>
                         </form>
                     </div>
                 </div>

@@ -31,7 +31,7 @@ class VerifyEmail extends Mailable
     public function build()
     {
         try {
-            $subject = 'Verify email from spanny piggy platform.';
+            $subject = 'Verify email on Spenny Piggy.';
             return $this->view('email.user-verification')
                 ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
                 ->subject($subject);
