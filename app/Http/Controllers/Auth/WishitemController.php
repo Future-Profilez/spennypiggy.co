@@ -699,7 +699,7 @@ class WishitemController extends Controller
         $payment = StripePaymentItems::where("id", $payment_id)->first();
         $payment->message = $request->messages;
         $payment->message_media = $media['uuid'] ?? null;
-        $payment->message_media = $media['contentInfo']['mime']['type'] ?? null;
+        $payment->media_type = $media['contentInfo']['mime']['type'] ?? null;
         $payment->save();
         ThankyouMailToUser::dispatch($payment);
         return response()->json([
