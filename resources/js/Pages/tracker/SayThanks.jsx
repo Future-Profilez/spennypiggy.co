@@ -8,6 +8,7 @@ import st from "../../../css/uploader.module.css";
 import { useEffect } from 'react';
 
 export default function SayThanks(props) {
+   const { name, payment_id, getMessageStatus, clearAction } = props;
 
    const [clear, setClear] = useState();
    useEffect(()=>{
@@ -16,9 +17,9 @@ export default function SayThanks(props) {
 
    const [msgMedia, setMsgMedia] = useState();
    const getFileUID = async (data) => {
-      setMsgMedia(data)
+      setMsgMedia(data);
    };
-   const { name, payment_id, getMessageStatus } = props;
+
    const [close,setClose] = useState();
    const [message,setMessage] = useState();
    const [loading,setloading] = useState(false);

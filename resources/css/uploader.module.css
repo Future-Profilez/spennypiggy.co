@@ -67,7 +67,7 @@
     --l10n-done-upload: 0;
     --l10n-done: "Hide";
     --cfg-show-empty-list: 0;
-    --cfg-img-only: 1;
+    --cfg-img-only: 0;
     --cfg-remove-copyright: 1;
     --cfg-max-concurrent-requests: 4;
     --cfg-multipart-max-attempts: 3;
