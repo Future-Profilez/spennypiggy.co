@@ -8,6 +8,7 @@ use App\Jobs\SaveWishlist;
 use App\Jobs\SendUserGiftMail;
 use App\Jobs\ThankyouMailToUser;
 use App\Jobs\WelcomeUser;
+use App\Mail\CheckError;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\Subscription;
@@ -20,6 +21,7 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
@@ -669,7 +671,7 @@ class WishitemController extends Controller
         $user = Auth::user();
         $tracks = StripePaymentItems::whereHas('payment', function ($query) use ($user) {
             $query->where('user_id', $user->id)->orWhere('owner_id', $user->id);
-        })->with(['wish'])->orderBy('created_at','DESC')->get();
+        })->with(['wish'])->orderBy('created_at', 'DESC')->get();
 
         $trackData = $tracks->map(function ($q) {
 
@@ -717,9 +719,10 @@ class WishitemController extends Controller
     }
 
 
-    public function creatorSubscriptions(){
+    public function creatorSubscriptions()
+    {
 
-        $subs = Subscription::where('owner_id',Auth::id())->orderBy('updated_at','DESC')->get();
+        $subs = Subscription::where('owner_id', Auth::id())->orderBy('updated_at', 'DESC')->get();
 
         $data = [];
         foreach ($subs as $key => $value) {
@@ -749,9 +752,10 @@ class WishitemController extends Controller
     }
 
 
-    public function userSubscribed(){
-        
-        $subs = Subscription::where('user_id',Auth::id())->get();
+    public function userSubscribed()
+    {
+
+        $subs = Subscription::where('user_id', Auth::id())->get();
 
         $data = [];
         foreach ($subs as $key => $value) {
