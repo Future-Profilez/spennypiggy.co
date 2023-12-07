@@ -7,8 +7,8 @@ import { useState } from 'react'
 import st from "../../../css/uploader.module.css";
 
 export default function SayThanks(props) {
+   
    const [clear, setClear] = useState();
-
    const [msgMedia, setMsgMedia] = useState();
    const getFileUID = async (data) => {
       console.log("data",  data);
@@ -21,10 +21,14 @@ export default function SayThanks(props) {
    const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
    const saythankyou = () => { 
+         if(!message){
+            errorAlert("Message can not be empty.");
+            return false;
+         }
          setloading(true);
          axios.post(`say-thankyou/${payment_id}`, {
             "messages":message,
-            "message_media":msgMedia
+            "message_media":msgMedia ? msgMedia : null
          }).then(resp => {
            if(resp.data.success){
                successAlert(resp.data.message);
@@ -51,7 +55,7 @@ export default function SayThanks(props) {
                className="form-input w-100 rounded"
                onChange={(e) => setMessage(e.target.value)} type="text"
             />
-
+            <p className='mb-2 mt-3' >Choose Video or Picture</p>
             <GlobalUploader
                clear={clear}
                sendFile={getFileUID}

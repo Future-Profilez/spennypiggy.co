@@ -116,12 +116,12 @@ export default function Wishtracker(props) {
                                         <p className="text-muted">{msgSent}</p>
                                     </div> : ''}
 
-                                    {n && n.sender == false && !msgSent ? 
+                                    {/* {n && n.sender == false && !msgSent ?  */}
                                         <SayThanks 
                                         getMessageStatus={getMessageStatus} 
                                         name={n && n.user && n.user.name} 
                                         payment_id={n.id} />
-                                    : ''}
+                                    {/* : ''} */}
 
                                 </div>
                             </div>
