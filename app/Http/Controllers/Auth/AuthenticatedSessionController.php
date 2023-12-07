@@ -128,10 +128,18 @@ class AuthenticatedSessionController extends Controller
             if ($category != 'all') {
                 $query->where('category_id', $category);
             }
+
             $itemId = $query->whereHas('wish', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             })->pluck('wish_id');
-            $items = WishItem::whereIn('id', $itemId)->with(['user'])->latest()->get();
+
+            $q = WishItem::with(['user']);
+            if ($category != 'all') {
+                $q->whereIn('id', $itemId);
+            } else {
+                $q->where('user_id', $user->id);
+            }
+            $items = $q->latest()->get();
             return response()->json([
                 "success" => true,
                 "items" => $items,
