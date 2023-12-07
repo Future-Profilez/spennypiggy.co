@@ -41,6 +41,7 @@ export default function SayThanks(props) {
                setTimeout(()=>{
                   setClose();
                },1000);
+               // , msgMedia
                getMessageStatus(message);
                setClear(new Date());
            } else {

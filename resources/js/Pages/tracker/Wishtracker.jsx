@@ -113,6 +113,10 @@ export default function Wishtracker(props) {
                                     {msgSent ? <div className="msgSent my-2" >
                                         <p className="mt-2" >Thankyou Note : </p>
                                         <p className="text-muted">{msgSent}</p>
+                                        <div className="message-media" >
+                                            <img src="" alt="image" />
+                                            <video controls src="" />
+                                        </div>
                                     </div> : ''}
 
                                     {/* {n && n.sender == false && !msgSent ?  */}
