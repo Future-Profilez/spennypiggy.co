@@ -58,20 +58,24 @@ class StripePaymentItems extends Model
     public function getMessageUrlAttribute()
     {
         $url = false;
-        if ($this->message_media != null) {
-            $api = Uploadcare::getApiObj()->file();
-            $info = $api->fileInfo($this->message_media)->getContentInfo();
-            $width = $info->getImage()->getWidth();
-            $height = $info->getImage()->getHeight();
+        if (!empty($this->message_media)) {
+            if ($this->media_type == 'image') {
+                $api = Uploadcare::getApiObj()->file();
+                $info = $api->fileInfo($this->message_media)->getContentInfo();
+                $width = $info->getImage()->getWidth();
+                $height = $info->getImage()->getHeight();
 
-            $watermark = WatermarkHelper::getWatermarkImage($width, $height);
-            $check = "";
-            $wm = "spennypiggy.co~s" . $this->username;
-            $textWm = WatermarkHelper::addUcTextWatermark($width, $height);
-            $wm = urlencode($wm);
-            $fontsize = $textWm['fontsize'];
-            $check = "-/preview/-/text_align/left/center/-/font/$fontsize/fff/-/text/80px8p/8p,100p/$wm/";
-            $url = Uploadcare::getUrl($this->message_media, $this->type, $watermark, $check);
+                $watermark = WatermarkHelper::getWatermarkImage($width, $height);
+                $check = "";
+                $wm = "spennypiggy.co~s" . $this->username;
+                $textWm = WatermarkHelper::addUcTextWatermark($width, $height);
+                $wm = urlencode($wm);
+                $fontsize = $textWm['fontsize'];
+                $check = "-/preview/-/text_align/left/center/-/font/$fontsize/fff/-/text/80px8p/8p,100p/$wm/";
+                $url = Uploadcare::getUrl($this->message_media, $this->media_type, $watermark, $check);
+            } else {
+                $url = Uploadcare::getUrl($this->message_media, $this->media_type, false, false);
+            }
         }
 
         return $url;
