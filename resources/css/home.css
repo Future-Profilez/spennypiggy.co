@@ -1,5 +1,4 @@
 .box{padding:15px;border-radius:20px;background:#fff;}
-
 .containerbox{max-width:1215px;margin:auto;padding:0 15px;}
 .heroSec{background:var(--black);padding:10px 15px 80px;}
 .carticon svg path{fill:var(--black);}
@@ -220,28 +219,8 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 .tearmlist{padding:0 0 0 36px;}
 .tearmlist ul li{color:#666;font-size:15px;font-style:normal;font-weight:400;line-height:150%;letter-spacing:-0.65px;margin:0 0 7px;list-style:disc;}
 .quty{border:1px solid var(--gray);border-radius:5px;}
-.qutynum {
-   font-size: 16px;
-   width: 34px;
-   height: 33px;
-   text-align: center;
-   border-left: 1px solid var(--gray);
-   border-right: 1px solid var(--gray);
-   display: inline-flex;
-   align-items: center;
-   align-content: center;
-   justify-content: center;
-   line-height: 23px;
-}
-.quty button {
-   width: 33px;
-   height: 33px;
-   font-size: 18px !important;
-   display: flex;
-   align-items: center;
-   align-content: center;
-   justify-content: center;
-}
+.qutynum{font-size:16px;width:34px;height:33px;text-align:center;border-left:1px solid var(--gray);border-right:1px solid var(--gray);display:inline-flex;align-items:center;align-content:center;justify-content:center;line-height:23px;}
+.quty button{width:33px;height:33px;font-size:18px !important;display:flex;align-items:center;align-content:center;justify-content:center;}
 .cartlist.shadow-purple{box-shadow:5px 8px 0 0 var(--purple);}
 /* strip */
 .stripbox{max-width:741px;width:90%;}
@@ -573,35 +552,10 @@ div#msgText p{display:flex;align-items:flex-start;}
 @keyframes fade{0%{opacity:0;transition:0.6s;}
 100%{opacity:1;transition:0.6s;}
 }
-.tooltipbtn p {
-   position: absolute;
-   background: #000;
-   padding: 10px;
-   border-radius: 11px;
-   font-size: 14px;
-   max-width: 290px;
-   left: -58px; z-index: 2;
-   top: 20px;
-   width: 130px;
-   display: none;
-}
-.tooltipbtn {
-   position: relative;
-}
-
-.tooltipbtn p:after {
-   content: "";
-   width: 10px;
-   height: 10px;
-   background: #000;
-   position: absolute;
-   left: 40px;
-   top: -3px;
-   transform: rotate(45deg);
-}
-.titleprice:hover .tooltipbtn p  {
-   display: block !important;
-}
+.tooltipbtn p{position:absolute;background:#000;padding:10px;border-radius:11px;font-size:14px;max-width:290px;left:-58px;z-index:2;top:20px;width:130px;display:none;}
+.tooltipbtn{position:relative;}
+.tooltipbtn p:after{content:"";width:10px;height:10px;background:#000;position:absolute;left:40px;top:-3px;transform:rotate(45deg);}
+.titleprice:hover .tooltipbtn p{display:block !important;}
 .welcomeRt{animation:fade 0.5s linear;transition:0.6s;}
 .wishtracker .nav.nav-tabs li button{background:transparent;color:#d2d2d2;border:0 !important;padding:14px 14px 14px 0px !important;margin-right:40px;font-size:20px;border-bottom:2px solid #000 !important;}
 .wishtracker .nav.nav-tabs li button.active{color:#f94f97;border-color:#f94f97 !important;}
@@ -625,25 +579,7 @@ div#msgText p{display:flex;align-items:flex-start;}
 .table table tr:not(:last-child) td{border-bottom:1px solid #dedede;}
 .table table{width:100%;}
 .subscribletag{padding:8px 15px;background:#eaeaea;border-radius:15px !important;width:fit-content;font-size:14px;margin-top:13px;}
-
-
-.granted-wish {
-   font-size: 22px;
-   color: var(--pink) !important;
-}
-
-button.editpop {
-   display: none !important;
-}
-
-.message-media {
-   border-radius: 20px;
-   overflow: hidden;
-   background: #000;
-}
-.message-media img,
-.message-media video {
-   width: 100%; object-fit: cover;
-   height: 100%;
-   max-height: 500px;
-}
+.granted-wish{font-size:22px;color:var(--pink) !important;}
+button.editpop{display:none !important;}
+.message-media{border-radius:20px;overflow:hidden;background:#000;border:1px solid #ccc;}
+.message-media img,.message-media video{width:100%;object-fit:cover;height:100%;max-height:500px;}

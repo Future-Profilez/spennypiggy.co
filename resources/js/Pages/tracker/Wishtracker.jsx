@@ -27,8 +27,12 @@ export default function Wishtracker(props) {
         const [isOwnerRead, setIsOwnerRead] = useState(n && n.is_read_owner);
         
         const [msgSent, setMsgSent] = useState(n && n.message);
-        const getMessageStatus = (e) => { 
-            setMsgSent(e);
+        const [media_type, setmedia_type] = useState(n && n.media_type);
+        const [message_url, setmessage_url] = useState(n && n.message_url);
+        const getMessageStatus = (m , f) => { 
+            setmessage_url(f.cdnUrl);
+            setmedia_type(f.contentInfo &&  f.contentInfo.mime.type);
+            setMsgSent(m);
         }
     
         const openState = () => { setOpen(!open) }
@@ -115,21 +119,21 @@ export default function Wishtracker(props) {
                                     {msgSent ? <div className="msgSent my-2" >
                                         <p className="mt-2" >Thankyou Note : </p>
                                         <p className="text-muted">{msgSent}</p>
-                                        <div className="message-media" >
-                                            {n && n.media_type == 'image' ?
-                                                <img src={n &&n.message_url} alt="image" /> 
+                                        {n && n.message_media ? <div className="message-media my-2" >
+                                            {media_type == 'image' ?
+                                                <img src={ message_url} alt="image" /> 
                                              :
-                                                <video controls src={n && n.message_url} />
+                                                <video playsInline={false} controlsList="nodownload" controls src={ message_url} />
                                             }
-                                        </div>
+                                        </div> :''}
                                     </div> : ''}
 
-                                    {/* {n && n.sender == false && !msgSent ?  */}
+                                   {n && n.sender == false && !msgSent ?  
                                         <SayThanks clearAction={open}
                                         getMessageStatus={getMessageStatus} 
                                         name={n && n.user && n.user.name} 
                                         payment_id={n.id} />
-                                    {/* : ''} */}
+                                    : ''}   
 
                                 </div>
                             </div>
