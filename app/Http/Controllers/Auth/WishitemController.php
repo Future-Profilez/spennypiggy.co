@@ -361,7 +361,8 @@ class WishitemController extends Controller
         }
     }
 
-    public function clearCart($deviceid, $ownerid) {
+    public function clearCart($deviceid, $ownerid)
+    {
         $query = UserCart::where('owner_id', $ownerid)->where('status', 1);
         if (Auth::check()) {
             $query->where('user_id', Auth::id());
@@ -696,6 +697,7 @@ class WishitemController extends Controller
     {
         $payment = StripePaymentItems::where("id", $payment_id)->first();
         $payment->message = $request->messages;
+        $payment->message_media = $request->message_media;
         $payment->save();
         ThankyouMailToUser::dispatch($payment);
         return response()->json([

@@ -91,9 +91,6 @@ class StripeController extends Controller
                             'line1' => '55 Colmore Row',
                             'postal_code' => 'B3 2AA'
                         ],
-                        'email' => "jack@spennypiggy.co",
-                        'first_name' => "Jack",
-                        'last_name' => "Smith",
                         'phone' => "2045873148"
                     ]
                 ];

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Uploadcare;
+use App\WatermarkHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -25,7 +27,8 @@ class StripePaymentItems extends Model
     ];
 
     protected $appends = [
-        'sender'
+        'sender',
+        'message_url'
     ];
 
     public function payment()
@@ -50,5 +53,27 @@ class StripePaymentItems extends Model
             $sender = $this->payment->owner_id == Auth::id() ? false : true;
         }
         return $sender;
+    }
+
+    public function getMessageUrlAttribute()
+    {
+        $url = false;
+        if ($this->message_media != null) {
+            $api = Uploadcare::getApiObj()->file();
+            $info = $api->fileInfo($this->message_media)->getContentInfo();
+            $width = $info->getImage()->getWidth();
+            $height = $info->getImage()->getHeight();
+
+            $watermark = WatermarkHelper::getWatermarkImage($width, $height);
+            $check = "";
+            $wm = "spennypiggy.co~s" . $this->username;
+            $textWm = WatermarkHelper::addUcTextWatermark($width, $height);
+            $wm = urlencode($wm);
+            $fontsize = $textWm['fontsize'];
+            $check = "-/preview/-/text_align/left/center/-/font/$fontsize/fff/-/text/80px8p/8p,100p/$wm/";
+            $url = Uploadcare::getUrl($this->message_media, $this->type, $watermark, $check);
+        }
+
+        return $url;
     }
 }
