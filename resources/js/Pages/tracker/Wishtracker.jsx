@@ -18,6 +18,8 @@ export default function Wishtracker(props) {
     const { format } = PriceFormat();
     const { auth, user, tracks } = props;
 
+    console.log("tracks",tracks)
+
     const Wish = ({ n }) => {
 
         const [open, setOpen] = useState(false);
@@ -114,8 +116,11 @@ export default function Wishtracker(props) {
                                         <p className="mt-2" >Thankyou Note : </p>
                                         <p className="text-muted">{msgSent}</p>
                                         <div className="message-media" >
-                                            <img src="" alt="image" />
-                                            <video controls src="" />
+                                            {n && n.media_type == 'image' ?
+                                                <img src={n &&n.message_url} alt="image" /> 
+                                             :
+                                                <video controls src={n && n.message_url} />
+                                            }
                                         </div>
                                     </div> : ''}
 

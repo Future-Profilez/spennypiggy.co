@@ -636,7 +636,14 @@ button.editpop {
    display: none !important;
 }
 
-/* .trackItem.new { */
-.trackItem {
-   /* background: var(--yellow) !important; */
+.message-media {
+   border-radius: 20px;
+   overflow: hidden;
+   background: #000;
+}
+.message-media img,
+.message-media video {
+   width: 100%; object-fit: cover;
+   height: 100%;
+   max-height: 500px;
 }
