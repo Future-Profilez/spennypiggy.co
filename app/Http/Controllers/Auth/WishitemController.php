@@ -695,9 +695,11 @@ class WishitemController extends Controller
 
     public function sayThanks(Request $request, $payment_id)
     {
+        $media = $request->message_media;
         $payment = StripePaymentItems::where("id", $payment_id)->first();
         $payment->message = $request->messages;
-        $payment->message_media = $request->message_media;
+        $payment->message_media = $media['uuid'] ?? null;
+        $payment->message_media = $media['contentInfo']['mime']['type'] ?? null;
         $payment->save();
         ThankyouMailToUser::dispatch($payment);
         return response()->json([
