@@ -31,7 +31,7 @@ class ThankyouUser extends Mailable
     public function build()
     {
         try {
-            $subject = 'Thank You from ' . $this->payment->payment->user->name . ' !!';
+            $subject = 'Thank You from ' . $this->payment->payment->owner->name . ' !!';
             return $this->view('email.thankyou-user')
                 ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
                 ->subject($subject);

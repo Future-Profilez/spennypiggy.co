@@ -17,7 +17,6 @@ export default function Wishtracker(props) {
 
     const { format } = PriceFormat();
     const { auth, user, tracks } = props;
-    console.log("tracks",tracks);
 
     const Wish = ({ n }) => {
 
@@ -117,7 +116,7 @@ export default function Wishtracker(props) {
                                     </div> : ''}
 
                                     {/* {n && n.sender == false && !msgSent ?  */}
-                                        <SayThanks 
+                                        <SayThanks clearAction={open}
                                         getMessageStatus={getMessageStatus} 
                                         name={n && n.user && n.user.name} 
                                         payment_id={n.id} />
