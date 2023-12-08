@@ -35,6 +35,9 @@
                                 style="color:#F94F97 ">{{ $data->wish->wishname ?? '' }}</span> of £{{ $data->amount }}🤩.
                         </td>
                     @endif
+
+                    <!-- Lucky you! <br></br>
+                            You’ve just received a surprise gift on Spenny Piggy for £5 🎁🥳 -->
                 </tr>
                 <tr>
                     <td
