@@ -25,19 +25,22 @@
                     @if ($data->wish_item_id == null)
                         <td
                             style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                            {{ $anon == false ? $data->cart->user->name : $anonname }} granted you a surprise gift of
-                            £{{ $data->amount }}🤩.
+                            Lucky you! <br></br>
+                            {{ $anon == false ? $data->cart->user->name : $anonname }} just granted a surprise gift on Spenny Piggy for £{{ $data->amount }} 🎁🥳 .
+                            <!-- {{ $anon == false ? $data->cart->user->name : $anonname }} granted you a surprise gift of
+                            £{{ $data->amount }}🤩. -->
                         </td>
                     @else
                         <td
                             style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                            {{ $anon == false ? $data->cart->user->name : $anonname }} granted you a Wish on <span
+                            <!-- {{ $anon == false ? $data->cart->user->name : $anonname }} granted you a Wish on <span
                                 style="color:#F94F97 ">{{ $data->wish->wishname ?? '' }}</span> of £{{ $data->amount }}🤩.
-                        </td>
-                    @endif
+                         -->
+                            Lucky you! <br></br>
+                            {{ $anon == false ? $data->cart->user->name : $anonname }} just granted wish of {{ $data->wish->wishname ?? 'surprise gift' }} on Spenny Piggy for £{{ $data->amount }} 🎁🥳 .
 
-                    <!-- Lucky you! <br></br>
-                            You’ve just received a surprise gift on Spenny Piggy for £5 🎁🥳 -->
+                            </td>
+                    @endif
                 </tr>
                 <tr>
                     <td

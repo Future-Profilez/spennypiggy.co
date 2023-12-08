@@ -85,7 +85,7 @@ export default function SendSurprise({auth, owner}) {
                   </p>
             </div>
             <div className="form-field mb-4">
-                  <label className="d-block text-start mb-2">Suggested use (optional)</label>
+                  <label className="d-block text-start mb-2">Suggested use (Required)</label>
                   <textarea
                      placeholder="Message..."
                      className="form-input w-100 rounded"

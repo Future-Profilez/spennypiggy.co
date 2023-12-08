@@ -10,9 +10,10 @@
                 <tr>
                     <td
                         style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                            <span style="color:#F94F97 ">
-                            Thankyou for granted a wish of {{ $data->owner->name }} on  Spenny Piggy of amount £{{ $data->amount_subtotal }} 🎁
-                            </span>
+                        <span style="color:#F94F97 ">
+                            Thank you! <br></br> 
+                            You’ve just granted a surprise gift on Spenny Piggy for £{{ $data->amount_subtotal }} 🎁🥳
+                        </span>
                     </td>
                 </tr>
                 <tr>
@@ -20,7 +21,7 @@
                         style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
                         Go to <a href="spennypiggy.co">Spenny Piggy</a> where you can see your granted wish, send a message to
                         your gifter and share your gift on social media </td>
-                </tr>
+                    </tr>
                 <tr>
                     <td style="padding:0 0 10px 0; text-align: center;">
                         <a href={{ env('APP_URL') . '/' . $data->user->username }}

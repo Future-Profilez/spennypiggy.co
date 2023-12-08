@@ -40,7 +40,7 @@ class Checkout extends Mailable
     public function build()
     {
         try {
-            $subject = 'Surprise Gift Granted on Spenny Piggy! ';
+            $subject = 'You’ve just received a surprise gift on Spenny Piggy.';
             return $this->view('email.checkout')
                 ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
                 ->subject($subject);
