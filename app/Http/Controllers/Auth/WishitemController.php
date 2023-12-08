@@ -674,6 +674,8 @@ class WishitemController extends Controller
             $query->where('user_id', $user->id)->orWhere('owner_id', $user->id);
         })->with(['wish'])->orderBy('created_at', 'DESC')->get();
 
+        $creator_subs = Subscription::where('owner_id', Auth::id())->orderBy('updated_at', 'DESC')->get();
+
         $trackData = $tracks->map(function ($q) {
 
             if (Auth::id() == $q->payment->owner_id) {
