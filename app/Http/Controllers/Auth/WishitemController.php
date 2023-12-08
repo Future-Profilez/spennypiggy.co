@@ -674,8 +674,8 @@ class WishitemController extends Controller
             $query->where('user_id', $user->id)->orWhere('owner_id', $user->id);
         })->with(['wish'])->orderBy('created_at', 'DESC')->get();
 
-        $creator_subs = Subscription::where('owner_id', Auth::id())->orderBy('updated_at', 'DESC')->get();
-        $user_subs = Subscription::where('user_id', Auth::id())->get();
+        $creator_subs = Subscription::where('owner_id', Auth::id())->with(['user', 'wish'])->orderBy('updated_at', 'DESC')->get();
+        $user_subs = Subscription::where('user_id', Auth::id())->with(['owner', 'wish'])->get();
 
         $trackData = $tracks->map(function ($q) use ($creator_subs, $user_subs) {
 
@@ -688,14 +688,13 @@ class WishitemController extends Controller
             $q->cart_message = $q->payment->message ?? null;
             $q->surprise_message = $q->cart->message ?? null;
 
-            $q->creator_subs = $creator_subs;
-            $q->user_subs = $user_subs;
-
             return $q;
         });
 
         return Inertia::render('tracker/Wishtracker', [
             "tracks" => $trackData,
+            "creator_subs" => $creator_subs,
+            "user_subs" => $user_subs
         ]);
     }
 
