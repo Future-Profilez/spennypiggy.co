@@ -19,7 +19,7 @@ export default function Wishtracker(props) {
 
     const { format } = PriceFormat();
     const { auth, user, tracks } = props;
-    console.log("tracks",tracks)
+    console.log("props", props);
 
     const Wish = ({ n }) => {
 
