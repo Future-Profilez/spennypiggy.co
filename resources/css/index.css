@@ -22,7 +22,7 @@ body.modal-open{overflow:hidden;}
 @keyframes load{0%{opacity:0;}
 100%{opacity:1;}
 }
-.modelmenu.Open{-webkit-animation:load .2s linear;animation:load linear 0.2s;}
+/* .modelmenu.Open{-webkit-animation:load .2s linear;animation:load linear 0.2s;} */
 .userphoto img{width:90px;height:90px;object-fit:cover;}
 h2.wishtitle{font-size:24px;font-weight:900;}
 .userManageRt{width:100% !important;padding:0 0 0 0px !important;}
@@ -37,8 +37,6 @@ h2.wishtitle{font-size:24px;font-weight:900;}
 .croud-add input, .croud-add select{border-radius:10px;background:#f2f2f2;border:1px solid #ccc;padding:12px 15px;}
 /* modal css */
 .pinkmodal.modal .modal-content{border-radius:25px;border:2px solid var(--pink);box-shadow:10px 10px 0 0 var(--pink);}
-
-
 .custom-country-select select {
   padding: 10px 16px;
   border-radius: 10px;
@@ -46,7 +44,9 @@ h2.wishtitle{font-size:24px;font-weight:900;}
 }
 .identity {
   color: #fff;
-  padding: 6px 15px;
+  font-family: var(--parabold-font);
+  font-weight: 900 !important;
+  padding: 6px 5px;
   border-radius: 11px;
-  font-size: 11px;
+  font-size: 15px;
 }

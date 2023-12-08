@@ -16,7 +16,6 @@ export default function ToCart({
     const deviceID  = DeviceID();
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [loading, setLoading] = useState(false);
-
     const dispatch = useDispatch();
     const cart = useSelector(state => state.data.cart.cart);
 

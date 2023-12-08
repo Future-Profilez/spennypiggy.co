@@ -132,7 +132,6 @@ export default function Header(props) {
                     <li><Link onClick={toggleClass} href={"/account"} >My Account</Link></li>
                     <li><Link onClick={toggleClass} href={`/${auth && auth?.username || ''}`} >My Wishlist</Link></li>
                     <li><Link onClick={toggleClass} href={`/wish-tracker`} >Wish Tracker</Link></li>
-                    <li className='d-block d-lg-none' ><Link onClick={toggleClass}  method="get" href={route('logout')} >Logout</Link></li>
                   </>
                   :
                   <>
