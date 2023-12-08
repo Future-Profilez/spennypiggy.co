@@ -15,7 +15,6 @@ import userphoto from "../../../assets/img/userphoto.png";
 const defaultsec = 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 
-
 export default function Wishtracker(props) {
 
     const { format } = PriceFormat();
@@ -159,9 +158,6 @@ export default function Wishtracker(props) {
             </Confetti>
         );
     };
-
-    // const
-    
 
     return (
         <Authenticated auth={auth.user} user={user}>

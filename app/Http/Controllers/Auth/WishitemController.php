@@ -728,7 +728,6 @@ class WishitemController extends Controller
         return Inertia::render('tracker/Wishtracker');
     }
 
-
     public function creatorSubscriptions()
     {
         $subs = Subscription::where('owner_id', Auth::id())->orderBy('updated_at', 'DESC')->get();
