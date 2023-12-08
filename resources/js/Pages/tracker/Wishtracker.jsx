@@ -1,6 +1,6 @@
 import React from "react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
-import { Head } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
 import Avatar from "@/includes/Avatar";
@@ -14,15 +14,31 @@ import Nocontent from "@/includes/Nocontent";
 import userphoto from "../../../assets/img/userphoto.png";
 const defaultsec = 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
+import { useAlerts } from "@/Components/Alerts";
+import LoaderButton from "@/Components/LoaderButton";
 
 export default function Wishtracker(props) {
+    
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
+
+    const TruncatedString = ({ inputString, maxLength }) => {
+        if (inputString?.length <= maxLength) {
+          return <span>{inputString}</span>;
+        }
+        const truncatedString = `${inputString?.slice(0, 7)}..`;
+        return <span>{truncatedString}</span>;
+    };
 
     const { format } = PriceFormat();
-    const { auth, user, tracks } = props;
+    const { auth, user, tracks, user_subs, creator_subs    } = props;
     console.log("props", props);
+    const [stab, setStab] = useState(1)
+    const handleTabs = (e) => {
+        setStab(e);
+    }
+
 
     const Wish = ({ n }) => {
-
         const [open, setOpen] = useState(false);
         const [isUserRead, setIsUserRead] = useState(n && n.is_read_user);
         const [isOwnerRead, setIsOwnerRead] = useState(n && n.is_read_owner);
@@ -58,6 +74,8 @@ export default function Wishtracker(props) {
             setIsOwnerRead(1);
         }
 
+        
+
         return (
             <Confetti sender={n && n.sender}
                 is_read_owner={isOwnerRead}
@@ -74,8 +92,9 @@ export default function Wishtracker(props) {
                             <div className="d-flex align-items-center justify-content-between">
                                 <div className="text-dark">
                                     <Avatar name={`From : ${n && n.user && n.user.name || 'Anonymous'}`}
-                                        link={n.wish && n.wish.username || null}
-                                        username={n.wish && n.wish.wishname || 'Surprise Gift'}
+                                        link={n.user && n.user.username || null}
+                                        subhead={n.wish && n.wish.wishname || 'Surprise Gift'}
+                                        username={n.user && n.user.username || 'Surprise Gift'}
                                         src={(n && n.user && n.user.avatar_url) || userphoto}
                                     />
                                 </div>
@@ -159,6 +178,35 @@ export default function Wishtracker(props) {
         );
     };
 
+    const CancelSub = ({id, status}) => {
+        
+        const [loading, setLoading] = useState(false);
+        const [manageStatus, setmanageStatus] = useState(status == 1 ? false : true);
+        
+        const cancel = (id) => { 
+            setLoading(true);
+            setmanageStatus(true)
+            router.get(`cancel-subscription/${id}`)
+            .then((resp) => {
+                successAlert("Subscription has been cancelled.")
+                setLoading(false);
+                console.log("resp", resp);
+                setmanageStatus(false);
+            }).catch((_err) => {
+                console.error("error", _err);
+                setLoading(false);
+            });
+        }
+
+        return <>
+            <button disabled={manageStatus} onClick={()=>cancel(id)}
+                className={`${manageStatus ? "disabled" : ''} btn-pink sm w-100 px-2 mt-3`} >
+                {loading ? "Wait.." : manageStatus ? "Cancelled" : "Cancel Subscription" }
+            </button>
+        </>
+    }
+    
+
     return (
         <Authenticated auth={auth.user} user={user}>
             <Head title={"Wish Tracker"} />
@@ -167,9 +215,9 @@ export default function Wishtracker(props) {
                     <Tabs
                         defaultActiveKey="1"
                         id="tracker-tab"
-                        className="mb-3" >
+                        className="mb-4 " >
                         <Tab eventKey="1" title="Wish Tracker">
-                            <div className="tracks mt-4">
+                            <div className="tracks mt-4 pt-4">
                                 {tracks &&
                                     tracks.map((n, i) => {
                                         return (
@@ -181,7 +229,98 @@ export default function Wishtracker(props) {
                             </div>
                         </Tab>
                         <Tab eventKey="2" title="Subscriptions">
-                            Change Items
+                            
+                            <div className="subsctabs d-flex mb-4 mt-4 pt-4" >
+                                <button onClick={()=>handleTabs(1)} className={`${stab == 1 ? "active" : '' } me-3 btn`} >Active Subscription </button>
+                                <button onClick={()=>handleTabs(0)} className={`${stab == 0 ? "active" : '' } me-3 btn`} >My Subscribed</button>
+                            </div>
+
+                            <div className="row" >
+                                {stab == 0 ? 
+                                <>
+                                    {user_subs && user_subs.map((s, i)=>{
+                                        return <div key={`subscription-${i}`} className="col-sm-6 mb-4" >
+                                            <div className="subsbox box p-4" >
+                                                <h2 className="plantitle" >{s && s.wish && s.wish.wishname}</h2>
+                                               
+                                                <ul className="ps-0 mt-3" >
+                                                     
+                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                        <p className="text-muted">Item Owner</p>
+                                                        <p className="text-dark text-capitalize" ><Link href={`/${s && s.owner && s.owner.username}`} className="text-voilet" >{s && s.owner && s.owner.name || 'Anonymous'}</Link></p>
+                                                    </li>
+                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                        <p className="text-muted">Subscription Period</p>
+                                                        <p className="text-dark text-capitalize" >{s && s.wish && s.wish.subscription_period}</p>
+                                                    </li>
+                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                        <p className="text-muted">Price</p>
+                                                        <p className="text-dark text-capitalize" >{format(s && s.wish && s.wish.price)}</p>
+                                                    </li>
+                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                        <p className="text-muted">Start Date</p>
+                                                        <p className="text-dark text-capitalize" >{s && s.start_at}</p>
+                                                    </li>
+                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                        <p className="text-muted">Status</p>
+                                                        <p className="text-dark text-capitalize" >{s && s.status ? <span className="badge bg-success" >Active</span> : <span className="badge bg-danger" >Expired</span> }</p>
+                                                    </li>
+                                                </ul>
+
+                                                <CancelSub status={s && s.status} id={s && s.id} />
+                                                
+                                            </div>
+                                        </div>
+                                    })}
+                                    {user_subs && user_subs.length < 1 ? 
+                                     <Nocontent classes="mt-5" text={"Nothing to see."} /> :''}
+                                </>
+                                :
+                                <>
+                                    {creator_subs && creator_subs.map((s, i)=>{
+                                            return <div key={`subscription-${i}`} className="col-sm-6 mb-4" >
+                                            <div className="subsbox box p-3" >
+                                                <Avatar name={<TruncatedString inputString={s && s.user && s.user.name || 'Anonymous'} maxLength={10} />}
+                                                    username={`${s && s.user && s.user.username || 'Anonymous'}`}
+                                                    src={`${s && s.user && s.user.avatar || userphoto }`}
+                                                />
+                                                <ul className="ps-0 mt-3" >
+                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                        <p className="text-muted">Subscription Item</p>
+                                                        <p className="text-dark text-capitalize wishname-text" >{s && s.wish && s.wish.wishname}</p>
+                                                    </li>
+                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                        <p className="text-muted">Subscription Period</p>
+                                                        <p className="text-dark text-capitalize" >{s && s.wish && s.wish.subscription_period}</p>
+                                                    </li>
+                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                        <p className="text-muted">Price</p>
+                                                        <p className="text-dark text-capitalize" >{format(s && s.wish && s.wish.price)}</p>
+                                                    </li>
+                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                        <p className="text-muted">Start Date</p>
+                                                        <p className="text-dark text-capitalize" >{s && s.start_at}</p>
+                                                    </li>
+                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                        <p className="text-muted">End Date</p>
+                                                        <p className="text-dark text-capitalize" >{s && s.end_at}</p>
+                                                    </li>
+                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                        <p className="text-muted">Status</p>
+                                                        <p className="text-dark text-capitalize" >{s && s.status ? <span className="badge bg-success" >Active</span> : <span className="badge bg-danger" >Expired</span> }</p>
+                                                    </li>
+                                                </ul>
+                                                
+                                            </div>
+                                        </div>
+                                    })}
+
+                                    {creator_subs && creator_subs.length < 1 ? 
+                                     <Nocontent classes="mt-5" text={"Nothing to see."} /> :''}
+                                </>
+                        }
+                            </div>
+
                         </Tab>
                     </Tabs>
                 </div>

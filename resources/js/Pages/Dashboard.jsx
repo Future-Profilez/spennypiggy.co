@@ -173,11 +173,9 @@ export default function Dashboard(props) {
                                         )}
                                     </div>
 
-                                    {loading ? <LoadingScreen /> : ""}
+                                    {loading ? <LoadingScreen /> : "" }
                                     <div className="row">
-
-                                        {IsloggedIn ||
-                                        user?.stripe_details_submitted == 1 ? (
+                                        {IsloggedIn || user?.stripe_details_submitted == 1 ? (
                                             <>
                                                 {its && its.length ? (
                                                     !loading &&
@@ -217,20 +215,18 @@ export default function Dashboard(props) {
                                                 )}
                                             </>
                                         ) : (
-                                            <>
-                                                <div className="col-md-12 p-5 my-5 notactive">
-                                                    <h5 className="loadingtext w-full text-center text-white  mb-1">
-                                                        {user.name}'s WishList
-                                                        not activated yet.
-                                                    </h5>
-                                                    <p className="text-center  text-white text-large ">
-                                                        Until they activate
-                                                        their wishlist, this
-                                                        user won't be able to
-                                                        receive gifts
-                                                    </p>
-                                                </div>
-                                            </>
+                                            <div className="col-md-12 p-5 my-5 notactive">
+                                                <h5 className="loadingtext w-full text-center text-white  mb-1">
+                                                    {user.name}'s WishList
+                                                    not activated yet.
+                                                </h5>
+                                                <p className="text-center  text-white text-large ">
+                                                    Until they activate
+                                                    their wishlist, this
+                                                    user won't be able to
+                                                    receive gifts
+                                                </p>
+                                            </div>
                                         )}
                                     </div>
                                 </div>

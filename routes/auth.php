@@ -101,6 +101,8 @@ Route::middleware('auth')->group(function () {
         Route::get('subscriptions', [WishitemController::class, 'creatorSubscriptions'])->name('subscriptions');
 
         Route::get('subscribed', [WishitemController::class, 'userSubscribed'])->name('subscribed');
+        
+        Route::get('cancel-subscription/{subscription_id}', [WishitemController::class, 'cancelSubscription'])->name('cancel-subscription');
 
         Route::get('/read-status/{payment_id}/{type}', [WishitemController::class, 'readStatus'])->name('read-status');
 

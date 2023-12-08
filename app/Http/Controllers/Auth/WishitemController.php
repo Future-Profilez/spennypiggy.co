@@ -784,4 +784,11 @@ class WishitemController extends Controller
         }
         return Inertia::render('tracker/Wishtracker');
     }
+
+    public function cancelSubscription($subscription_id) {
+            $item = Subscription::where('id', $subscription_id)->first();
+            $item->status = 0;
+            $item->save();
+            return Inertia::render('tracker/Wishtracker');
+        }
 }

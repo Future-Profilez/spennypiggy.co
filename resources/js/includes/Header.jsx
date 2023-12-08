@@ -24,7 +24,6 @@ export default function Header(props) {
     // },[cart]);
 
     const [count, setCount] = useState();
-    console.log("add_to_cart", count);
 
     const { auth, user } = props;
     const [loggedIn, setLoggedIn] = useState((auth && auth.username));
@@ -32,7 +31,6 @@ export default function Header(props) {
 
     async function fetchCounter () {
       axios.get(`counter/${deviceid}`).then((resp)=>{
-          console.log("resp", resp.data.counter);
           setCount(resp.data.counter);
           dispatch(add_to_cart(resp.data.counter));
       }).catch((_err)=>{

@@ -30,7 +30,7 @@
     <meta name="twitter:image:alt" content="The Best Alternative to Amazon Wishlist" />
     <meta name="twitter:image:src" content={{env("FILE_URL")."/site.png"}} />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <script async type="text/javascript" src="/service-worker.js" ></script>
+    <!-- <script async type="text/javascript" src="/service-worker.js" ></script> -->
 
     <!-- Scripts -->
     @laravelPWA
