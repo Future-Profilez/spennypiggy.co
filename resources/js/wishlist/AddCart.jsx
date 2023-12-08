@@ -7,14 +7,28 @@ import ProgressBar from "react-bootstrap/ProgressBar";
 import { useState } from "react";
 import { useEffect } from "react";
 import PriceFormat from "@/includes/PriceFormat";
+import { useAlerts } from "@/Components/Alerts";
 export default function AddCart(props) {
-
-    const [sub ,setSub] = useState('onetime');
-    function getSubscription(e) {
-        setSub(e.target.value)
-    }
-    const { format } = PriceFormat();
     const { auth, action, uuid, item, IsloggedIn } = props;
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
+    const [sub, setSub] = useState('daily');
+
+    async function getSubscription(e) {
+        if(!auth){
+            return false;
+        }
+        setSub(e.target.value);
+    }
+
+    async function handleAuthsub(){
+        if(!auth){
+            errorAlert("You must log in first to subscribe an item.")
+            return false;
+        }
+    }
+
+
+    const { format } = PriceFormat();
     const [cartamount, setcartamount] = useState(null);
     const [close, setClose] = useState(action);
     const [is_cart, setIs_cart] = useState(item && item?.is_cart);
@@ -34,7 +48,7 @@ export default function AddCart(props) {
         return  () => {
             setSub('onetime');
         }
-    },[action])
+    },[action]);
 
     const getPercentage = (actual, paid) => { 
         const r = (paid/actual)*100;
@@ -102,10 +116,9 @@ export default function AddCart(props) {
                     <>
                         <p className="mb-1">Subscription interval </p>
                         <div className="croud-add w-100 mb-3">
-                            <select onChange={getSubscription} className="w-100">
-                                <option value={'onetime'} >One Time Purchase</option>
-                                <option value={item.subscription_period} >
-                                Paid Every
+                            <select onChange={getSubscription} onClick={handleAuthsub} className="w-100">
+                                <option id={"option-period"} value={'onetime'} >One Time Purchase</option>
+                                <option disabled={auth ? false : true} value={item.subscription_period} > Paid Every
                                 {item.subscription_period == 'daily' ? " Day" : ''}
                                 {item.subscription_period == 'weekly' ? " Week" : ''}
                                 {item.subscription_period == 'monthly' ? " Month" : ''}

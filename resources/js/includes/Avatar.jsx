@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from "@inertiajs/react";
-export default function Avatar({src, name, username, url}) {
+export default function Avatar({src, name, username, url, link}) {
   return <>
       <style>{`
          .avatar{ border:1px solid #fff; width:60px;height:60px;max-width:60px;max-height:60px;border-radius:13px;overflow:hidden;}
@@ -12,13 +12,13 @@ export default function Avatar({src, name, username, url}) {
       `}</style>
 
       <div className="avatar-wrap" >
-         <Link href={url ? url : `/${username}`} className="useravatar" >
+         <Link href={url ? url : `/${link ? link : ''}`} className="useravatar" >
             <div className="avatar" >
                   <img src={src}alt="image-avatar" className="img-fluid" />
             </div>
             <div className="avatar-content" >
                   <h2>{name}</h2>
-                  <p>@{username}</p>
+                  <p>{username}</p>
             </div>
          </Link>
       </div>

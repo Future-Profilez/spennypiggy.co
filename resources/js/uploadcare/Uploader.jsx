@@ -1,12 +1,10 @@
 import * as LR from "@uploadcare/blocks";
 import { useCallback, useEffect, useRef } from "react";
-
 LR.registerBlocks(LR);
 
 export default function GlobalUploader({ options, sendFile, clear }) {
-
+    
     const dataOutputRef = useRef();
-
     const handleUploaderEvent = useCallback((e) => {
         const { data } = e.detail;
         sendFile(data[0]);
@@ -17,7 +15,7 @@ export default function GlobalUploader({ options, sendFile, clear }) {
             dataOutputRef.current.uploadCollection.clearAll();
             dataOutputRef.current.$['*modalActive'] = false;
         }
-    };
+    }; 
 
     useEffect(() => {
         handleResetUploader();
@@ -26,15 +24,12 @@ export default function GlobalUploader({ options, sendFile, clear }) {
     useEffect(() => {
         const el = dataOutputRef && dataOutputRef.current;
         el && el.addEventListener("lr-data-output", handleUploaderEvent);
-        return () => {
-            el && el.removeEventListener("lr-data-output", handleUploaderEvent);
-        };
+        return () => { el && el.removeEventListener("lr-data-output", handleUploaderEvent); };
     }, [handleUploaderEvent]);
 
     return <>
-
         <lr-file-uploader-minimal
-            class={options}
+            class={options} 
             css-src="https://cdn.jsdelivr.net/npm/@uploadcare/blocks@0.25.0/web/lr-file-uploader-minimal.min.css">
             <lr-data-output
                 use-event ref={dataOutputRef}
@@ -43,6 +38,5 @@ export default function GlobalUploader({ options, sendFile, clear }) {
                 onEvent={handleUploaderEvent}>
             </lr-data-output>
         </lr-file-uploader-minimal>
-
     </>
 }
