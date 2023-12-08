@@ -675,8 +675,9 @@ class WishitemController extends Controller
         })->with(['wish'])->orderBy('created_at', 'DESC')->get();
 
         $creator_subs = Subscription::where('owner_id', Auth::id())->orderBy('updated_at', 'DESC')->get();
+        $user_subs = Subscription::where('user_id', Auth::id())->get();
 
-        $trackData = $tracks->map(function ($q) {
+        $trackData = $tracks->map(function ($q) use ($creator_subs, $user_subs) {
 
             if (Auth::id() == $q->payment->owner_id) {
                 $q->user = $q->payment->user ?? false;
@@ -686,6 +687,9 @@ class WishitemController extends Controller
 
             $q->cart_message = $q->payment->message ?? null;
             $q->surprise_message = $q->cart->message ?? null;
+
+            $q->creator_subs = $creator_subs;
+            $q->user_subs = $user_subs;
 
             return $q;
         });
