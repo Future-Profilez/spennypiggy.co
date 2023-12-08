@@ -120,9 +120,7 @@ class WishitemController extends Controller
                 $wish->save();
             }
 
-            // $user = User::whereId(Auth::id())->first();
-            //send email
-            // SaveWishlist::dispatch($user);
+          
             return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
         }
     }
