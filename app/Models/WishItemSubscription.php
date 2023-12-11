@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Ramsey\Uuid\Uuid;
+
+class WishItemSubscription extends Model
+{
+    use HasFactory, SoftDeletes;
+
+    protected $fillable =   [
+        'uuid',
+        'stripe_id',
+        'wish_item_id',
+        'user_id',
+        'guest_name',
+        'guest_email',
+        'currency',
+        'amount',
+        'tax',
+        'recurring_for',
+        'recurring_type',
+        'end',
+        'upcoming_payment'
+    ];
+
+    protected $casts = [
+        'end'   =>  'datetime',
+        'upcoming_payment'  =>  'datetime'
+    ];
+
+    public static function boot()
+    {
+        parent::boot();
+        static::creating(fn($s) =>  $s->uuid = Uuid::uuid4());
+    }
+}

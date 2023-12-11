@@ -101,7 +101,7 @@ export default function UserCarts(props) {
                         </Link>
                     </h2>
                     <p className="pb-4">
-                        You are about to send a payout to 
+                        You are about to send a payout to
                         <strong> {datas?.user?.name || ""} </strong> to fund their
                         wishes.
                     </p>
@@ -220,6 +220,10 @@ export default function UserCarts(props) {
                                                 "CHECKOUT", I will have created
                                                 a legally binding e-signature to
                                                 this agreement.
+                                            </li>
+                                            <li>
+                                                By providing an e-mail, you confirm that you are happy to receive marketing updates.
+                                                You can opt out at anytime.
                                             </li>
                                         </ul>
                                     </div>

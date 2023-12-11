@@ -24,7 +24,7 @@ export default function Wishlist(props) {
     const [defaultKey, setDefaultKey] = useState(item && item.subscription !== null ? +(item.subscription) : null);
     const [clear, setClear] = useState();
     const [close, setClose] = useState();
-    
+
     useEffect(()=>{
         setClose(openPop);
     },[openPop]);
@@ -81,7 +81,7 @@ export default function Wishlist(props) {
         setData("thumbnail", imageLinks[swiper && swiper.activeIndex]);
     };
 
-    // useEffect(()=>{ 
+    // useEffect(()=>{
     //     setData("thumbnail", imageLinks[0]);
     // }, [item && item.uuid]);
 
@@ -147,7 +147,7 @@ export default function Wishlist(props) {
                     errorAlert(resp.props.flash?.success || "Added");
                 },
             });
-        } else { 
+        } else {
             post(route("save_wish_item"), {
                 preserveScroll: true,
                 onSuccess: (resp) => {
@@ -157,7 +157,7 @@ export default function Wishlist(props) {
                     }
                     if(resp.props.flash?.error){
                         errorAlert(resp.props.flash?.error || "Something went wrong.")
-                    }  
+                    }
                     setClose(false);
                     setClear(new Date());
                     setTimeout(() => {
@@ -174,7 +174,7 @@ export default function Wishlist(props) {
         }
     };
 
-    
+
 
     return (
             <Popup modalclass='pinkmodal' size='md' action={close}
@@ -198,7 +198,7 @@ export default function Wishlist(props) {
                                                 <input
                                                     id="wishname"
                                                     name="wishname"
-                                                    type="text"  
+                                                    type="text"
                                                     placeholder="Eg. Buy me a coffee"
                                                     value={data.wishname}
                                                     className="form-input px-2 py-2 border w-full rounded-md"
@@ -256,7 +256,7 @@ export default function Wishlist(props) {
                                                         navigation={true}  onSlideChange={onSlideChange}
                                                         modules={[Pagination, Navigation]}
                                                         slidesPerView={1} >
-                                                        {imageLinks && imageLinks.map((image)=>{ 
+                                                        {imageLinks && imageLinks.map((image)=>{
                                                             return <SwiperSlide key={`swiper-item-${image}`} >
                                                                 <div className="default-wish-img mb-1">
                                                                     <img src={`https://ucarecdn.com/${image}/`} className="img-fluid" />
@@ -286,14 +286,14 @@ export default function Wishlist(props) {
                                                     <Accordion.Body>
                                                         <div className="singlewishbox">
                                                             <div className="repeatpurchase text-start">
-                                                                <label for="allow">
+                                                                <label htmlFor="allow">
                                                                     <input
                                                                         checked={repeat}
                                                                         type="checkbox"
                                                                         id="allow"
                                                                         name="repeat_purchase"
                                                                         onChange={rpValue}
-                                                                    /> 
+                                                                    />
                                                                     Allow Repeat
                                                                     Purchases
                                                                 </label>
@@ -331,7 +331,7 @@ export default function Wishlist(props) {
                                                                 recurring basis.
                                                             </strong>
                                                             <div className="repeatpurchase text-start">
-                                                                <label for="daily">
+                                                                <label htmlFor="daily">
                                                                     <input
                                                                         checked={
                                                                             period ==
@@ -351,7 +351,7 @@ export default function Wishlist(props) {
                                                                 </label>
                                                             </div>
                                                             <div className="repeatpurchase mt-2 text-start">
-                                                                <label for="weekly">
+                                                                <label htmlFor="weekly">
                                                                     <input
                                                                         checked={
                                                                             period ==
@@ -371,7 +371,7 @@ export default function Wishlist(props) {
                                                                 </label>
                                                             </div>
                                                             <div className="repeatpurchase mt-2 text-start">
-                                                                <label for="monthly">
+                                                                <label htmlFor="monthly">
                                                                     <input
                                                                         checked={period == "monthly"}
                                                                         type="radio"
@@ -408,7 +408,7 @@ export default function Wishlist(props) {
                                         </div>
 
                                         <div className="publish text-start">
-                                        {editpop ? 
+                                        {editpop ?
                                         <LoaderButton
                                             disabled={processing}
                                             type="submit"
@@ -416,7 +416,7 @@ export default function Wishlist(props) {
                                             spinnerClassName="fill-red-600" >
                                             {processing ? "Updating.." : "Update Wish"}
                                         </LoaderButton>
-                                     : 
+                                     :
                                         <>
                                             <strong>
                                                 Categorize this wish ( Optional
@@ -437,14 +437,14 @@ export default function Wishlist(props) {
                                                                 <div className="repeatpurchase mb-2 text-start">
                                                                     <label
                                                                         className="text-capitalize"
-                                                                        for={"categories" + i}>
+                                                                        htmlFor={"categories" + i}>
                                                                         <input
                                                                             type="checkbox"
                                                                             id={"categories" + i}
                                                                             value={c.id}
                                                                             name="category"
                                                                             onChange={catValue}
-                                                                        /> 
+                                                                        />
                                                                         {c.category}
                                                                     </label>
                                                                 </div>
@@ -471,17 +471,17 @@ export default function Wishlist(props) {
                                                 type="submit"
                                                 className="flex w-100 btn-pink lg mx-auto"
                                                 spinnerClassName="fill-red-600" >
-                                                {processing ? "Proccessing" : "Add Wish"}
+                                                {processing ? "Processing" : "Add Wish"}
                                             </LoaderButton>
                                             </> }
                                         </div>
-                                        
+
                                     </form>
                                 </div>
                             </Tab>
                             {/* <Tab eventKey="2" title="Prefill with URL">
                                     Tab content for Profile
-                                </Tab> 
+                                </Tab>
                             */}
                         </Tabs>
                     </div>
@@ -489,4 +489,3 @@ export default function Wishlist(props) {
             </Popup>
     );
 }
- 

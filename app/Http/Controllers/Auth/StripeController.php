@@ -81,7 +81,7 @@ class StripeController extends Controller
                     'business_type' => 'individual',
                     'business_profile' => [
                         'url'   =>  "https://spennypiggy.com/{$user->username}",
-                        'mcc'   => '5947'
+                        'mcc'   => '5262' //marketplaces - older - 5947
                     ],
                     'default_currency' => 'GBP',
                     'individual' => [
@@ -144,6 +144,7 @@ class StripeController extends Controller
             $account = StripeControl::getAccount($user->account_id);
             if (empty($user->stripe_details_submitted)) {
                 $user->stripe_details_submitted = $account->details_submitted ?? NULL;
+                $user->default_currency = $account->default_currency;
                 $user->save();
             }
             return redirect(route("user.show", ["username" => $user->username]))->with("success", "Stripe connected.");
@@ -540,4 +541,70 @@ class StripeController extends Controller
 
         return back()->with('error', 'Payment unsuccessfull.');
     }
+
+    /**
+     * Create Subscription
+     *
+     * @param Request $request
+     * @param string $uuid WishItem UUID
+     * @param string $reccure Subscription Reccurning - onetime or Continue
+     * @return mixed
+     */
+    public function wishItemSubscribe(Request $request, $uuid, $reccure = 'continue')
+    {
+        $wish = WishItem::whereUuid($uuid)->first();
+
+        if(!$wish){
+            return redirect()->back()->with('error', 'Wish item not found!');
+        }
+
+        if($request->isMethod("POST"))
+        {
+            $request->validate([
+                'name'  =>  [
+                    'required',
+                    'string',
+                    'min:3',
+                    'max:50'
+                ],
+                'email' =>  [
+                    'required',
+                    'email:dns'
+                ]
+            ]);
+
+            $payload = [
+                "mode"  =>  'subscripion',
+                'lineitems' =>  [
+                    [
+                        'price' => $wish->price_id,
+                        'quantity' => 1,
+                    ]
+                ],
+                'subscription_data' =>  [
+                    'application_fee_percent'   =>  env('TAX_PERCENTAGE', 20),
+                    'transfer_data' => [
+                        'destination' => $wish->owner->account_id, // Creator's connected account ID
+                    ],
+                    'on_behalf_of'  => $wish->owner->account_id,
+                    'cancel_at_period_end'  =>  true,
+                    'description'   => "Subscription for {$wish->wishname} of {$wish->owner->username}."
+                ],
+                'customer_email'    =>  $request->email,
+            ];
+
+            $session = StripeControl::createCheckoutSession($payload);
+            return response()->json([
+                'success'   => true,
+                'session'   => $session
+            ]);
+
+
+        }
+
+    }
+
+    /**
+     * Handle Checkout Session
+     */
 }

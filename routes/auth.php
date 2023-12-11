@@ -77,7 +77,7 @@ Route::middleware('auth')->group(function () {
 
         Route::post('save_social_links', [SocialLinksController::class, 'saveSocialLinks'])->name('save_social_links');
 
-        Route::post('save_wish_item', [WishitemController::class, 'saveWishItem'])->name('save_wish_item');
+        Route::post('save_wish_item', [WishitemController::class, 'addWishItem'])->name('save_wish_item');
 
         Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
 
@@ -101,7 +101,7 @@ Route::middleware('auth')->group(function () {
         Route::get('subscriptions', [WishitemController::class, 'creatorSubscriptions'])->name('subscriptions');
 
         Route::get('subscribed', [WishitemController::class, 'userSubscribed'])->name('subscribed');
-        
+
         Route::get('cancel-subscription/{subscription_id}', [WishitemController::class, 'cancelSubscription'])->name('cancel-subscription');
 
         Route::get('/read-status/{payment_id}/{type}', [WishitemController::class, 'readStatus'])->name('read-status');
