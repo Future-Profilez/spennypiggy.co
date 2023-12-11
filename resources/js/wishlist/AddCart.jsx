@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useEffect } from "react";
 import PriceFormat from "@/includes/PriceFormat";
 import { useAlerts } from "@/Components/Alerts";
+import { Link } from "@inertiajs/react";
 export default function AddCart(props) {
     const { auth, action, uuid, item, IsloggedIn } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
@@ -33,7 +34,7 @@ export default function AddCart(props) {
     const [close, setClose] = useState(action);
     const [is_cart, setIs_cart] = useState(item && item?.is_cart);
 
-    const ItemAdded = (e) => { 
+    const ItemAdded = (e) => {
         if(e == 'added'){
             setIs_cart(true);
         }
@@ -50,20 +51,20 @@ export default function AddCart(props) {
         }
     },[action]);
 
-    const getPercentage = (actual, paid) => { 
+    const getPercentage = (actual, paid) => {
         const r = (paid/actual)*100;
         return r.toFixed(1);
     }
 
-    const price = () => { 
+    const price = () => {
         return item.price
     };
-   
+
     return (
-        <Popup size="md" 
-            action={close} 
-            modalclassName="pinkmodal" 
-            classes="d-none" > 
+        <Popup size="md"
+            action={close}
+            modalclassName="pinkmodal"
+            classes="d-none" >
             <div className="addCartModalHead rounded-3xl relative ">
                 <h2 className="font-GillSans text-bl uppercase pt-8 text-lg relative z-1 px-3 text-center"> Add to Cart </h2>
             </div>
@@ -86,7 +87,7 @@ export default function AddCart(props) {
                             <input
                                 onChange={(e) => setcartamount(e.target.value)}
                                 placeholder="Eg. 50"
-                                type="number" 
+                                type="number"
                                 className="form-control mt-1"
                             />
                         </div>
@@ -112,7 +113,7 @@ export default function AddCart(props) {
                     ""
                 )}
 
-                {item.subscription == "1" ?  (
+                {/* {item.subscription == "1" ?  (
                     <>
                         <p className="mb-1">Subscription interval </p>
                         <div className="croud-add w-100 mb-3">
@@ -126,13 +127,24 @@ export default function AddCart(props) {
                             </select>
                         </div>
                     </>
-                ) :''}
+                ) :''} */}
 
-                <div className=" pb-2">
-                    <ToCart sub={sub} ItemAdded={ItemAdded}  auth={auth} 
+                {item.subscription == 1
+                ? <div className=" pb-2">
+                    <Link className="inline-flex items-center px-4 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 false flex btn-pink lg w-100 mb-3 font-CeraGR  mx-auto" href={route('wish.subscribe.checkout',{uuid: item.uuid, reccure: 'onetime'})}>
+                        OneTime Purchase
+                    </Link>
+                    <Link className="inline-flex items-center px-4 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 false flex btn-pink lg w-100 mb-3 font-CeraGR  mx-auto" href={route('wish.subscribe.checkout',{uuid: item.uuid})}>
+                        Pay Every {item.subscription_period == 'daily' ? " Day" : ''}
+                        {item.subscription_period == 'weekly' ? " Week" : ''}
+                        {item.subscription_period == 'monthly' ? " Month" : ''}
+                    </Link>
+                </div>
+                : <div className=" pb-2">
+                    <ToCart sub={sub} ItemAdded={ItemAdded}  auth={auth}
                         pending={item.price - item.fullfill_amount}
                         crowd={item.subscription == 2}
-                        amount={cartamount} 
+                        amount={cartamount}
                         item={item}
                         isEqual={item.price <= item.fullfill_amount}
                         is_cart={is_cart}
@@ -140,11 +152,11 @@ export default function AddCart(props) {
                         classes={`btn-pink lg w-100 mb-3 font-CeraGR ${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
                         uuid={uuid}
                     />
-                    <ToCart sub={sub} auth={auth} 
+                    <ToCart sub={sub} auth={auth}
                         ItemAdded={ItemAdded}
                         pending={item.price - item.fullfill_amount}
                         crowd={item.subscription == 2}
-                        amount={cartamount} 
+                        amount={cartamount}
                         item={item}
                         isEqual={item.price <= item.fullfill_amount}
                         is_cart={is_cart}
@@ -154,6 +166,9 @@ export default function AddCart(props) {
                         uuid={uuid}
                     />
                 </div>
+
+            }
+
             </div>
         </Popup>
     );

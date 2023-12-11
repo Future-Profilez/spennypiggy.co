@@ -14,6 +14,7 @@ class WishItemSubscription extends Model
     protected $fillable =   [
         'uuid',
         'stripe_id',
+        'session_id',
         'wish_item_id',
         'user_id',
         'guest_name',
@@ -23,6 +24,7 @@ class WishItemSubscription extends Model
         'tax',
         'recurring_for',
         'recurring_type',
+        'surprise_message',
         'end',
         'upcoming_payment'
     ];
@@ -36,5 +38,10 @@ class WishItemSubscription extends Model
     {
         parent::boot();
         static::creating(fn($s) =>  $s->uuid = Uuid::uuid4());
+    }
+
+    public function wish_item()
+    {
+        return $this->belongsTo(WishItem::class);
     }
 }

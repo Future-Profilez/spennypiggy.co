@@ -160,3 +160,8 @@ Route::get('/files/{filename}', function (string $filename) {
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
 
 Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
+
+Route::prefix("wish")->name("wish.")->group(function(){
+    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}' ,[StripeController::class, 'wishItemSubscribe'])->name("subscribe.checkout");
+    Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleSubscription'])->name('subscribe.handle');
+});
