@@ -39,7 +39,7 @@ export default function Wishlistbox(props) {
   
 
   return <>
-      <div className='wishlistcntbox mb-4 whbg relative  shadow-voilet '>
+      <div className='wishlistcntbox mb-3 mb-sm-4 whbg relative  shadow-voilet '>
         {IsloggedIn ?   
           <Wishlist openPop={open} item={itm} editpop={true} fetchingcats={fetchingcats} categories={categories} />  
           : 

@@ -174,7 +174,7 @@ export default function Dashboard(props) {
                                     </div>
 
                                     {loading ? <LoadingScreen /> : "" }
-                                    <div className="row">
+                                    <div className="row items-lists">
                                         {IsloggedIn || user?.stripe_details_submitted == 1 ? (
                                             <>
                                                 {its && its.length ? (

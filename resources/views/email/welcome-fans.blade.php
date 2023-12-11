@@ -39,11 +39,11 @@
 
             <tr>
               <td style="padding:0 0 10px 0; text-align: center;">
-                 <a target="_blank" href="spennypiggy.co" style="padding:13px 30px 13px 30px; width: 100%; 
+                 <a target="_blank" href="spennypiggy.co" style="border-radius:30px;padding:13px 30px 13px 30px; width: 100%; 
                  border:none;background-color: #F94F97; 
                  font-family: Arial; font-weight: bold;  text-decoration: none;
                  font-size: 16px; text-align: center; 
-                 color:#ffffff; cursor: pointer;">My Spenny Piggy Page</a>
+                 color:#ffffff; cursor: pointer;">My Wishlist</a>
               </td>
            </tr>
         </table>

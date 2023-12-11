@@ -20,6 +20,7 @@ class WishItem extends Model
         "stripe_product_id",
         "wishname",
         "price",
+        "currency",
         'price_id',
         "item_url",
         "thumbnail",

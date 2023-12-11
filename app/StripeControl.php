@@ -11,6 +11,16 @@ use Stripe\StripeClient;
 
 class StripeControl
 {
+    /**
+     * Subscription Periods
+     * @var array
+     */
+    public static $periods = [
+        "daily"     =>  'day',
+        'weekly'    =>  'week',
+        'monthly'   =>  'month',
+        'yearly'    =>  'year'
+    ];
 
     /**
      * Stripe Client
@@ -207,6 +217,28 @@ class StripeControl
         self::setClient();
         try {
             return self::$client->checkout->sessions->retrieve($sessionId);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Create a Stripe Product
+     *
+     * @param array $payload Product Payload
+     * @return Throwable|\Stripe\Product
+     */
+    public static function createProduct($payload)
+    {
+        self::setClient();
+        try {
+            return self::$client->products->create($payload);
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());
         } catch (InvalidRequestException $e) {

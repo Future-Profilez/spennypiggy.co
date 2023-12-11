@@ -20,7 +20,7 @@ export default function Footer(props) {
                     created_at: auth && auth?.createdAt, // Signup date as a Unix timestamp
                 };
                 (function () {
-                  var w = window;
+                    var w = window;
                     var ic = w.Intercom;
                     if (typeof ic === "function") {
                         ic("reattach_activator");
@@ -104,7 +104,7 @@ export default function Footer(props) {
             dataLayer.push(arguments);
         }
         gtag("js", new Date());
-        gtag("config", "AW-11395921981");
+        gtag("config", "G-9F1M3QZZB3");
     }
 
     useEffect(() => {
@@ -118,83 +118,48 @@ export default function Footer(props) {
     return (
         <>
             <Helmet>
-                <script async type="text/javascript" src="https://app.termly.io/embed.min.js"
-                data-auto-block="on" data-website-uuid="ced8ded9-995d-471a-bf54-880b8c679a81" ></script>
-                <script async src="https://www.googletagmanager.com/gtag/js?id=AW-11395921981"></script>
+                <script async type="text/javascript" src="https://app.termly.io/embed.min.js" data-auto-block="on" data-website-uuid="ced8ded9-995d-471a-bf54-880b8c679a81" ></script>
+                <script async src="https://www.googletagmanager.com/gtag/js?id=G-9F1M3QZZB3" ></script>
             </Helmet>
             <div>
                 <div id="footer" className="footer">
                     <div className="containerbox">
                         <div className="footlogo">
-                              <LazyLoadImage
-                                  alt={"image"}
-                                  height={"auto"}
-                                  src={footlogo}
-                                  width={"auto"}
-                              />
+                            <LazyLoadImage
+                                alt={"image"}
+                                height={"auto"}
+                                src={footlogo}
+                                width={"auto"}
+                            />
                         </div>
                         <div className="footlinksbox">
                             <div className="footlinks">
                                 <ul>
                                     <li>
-                                        <a
-                                            target="_blank"
-                                            href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
-                                        >
-                                            Privacy Policy
-                                        </a>
+                                        <a target="_blank" href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>
                                     </li>
                                     <li>
-                                        <a
-                                            target="_blank"
-                                            href="https://app.termly.io/document/cookie-policy/45944c26-6e99-4065-833a-8fa224fb8e20"
-                                        >
-                                            Cookie Policy
-                                        </a>
+                                        <a target="_blank" href="https://app.termly.io/document/cookie-policy/45944c26-6e99-4065-833a-8fa224fb8e20"> Cookie Policy </a>
                                     </li>
                                     <li>
-                                        <a
-                                            target="_blank"
-                                            href="https://app.termly.io/document/acceptable-use/458f5fac-0c41-406f-a02f-b50adff1ec9c"
-                                        >
-                                            Acceptable Use Policy
-                                        </a>
+                                        <a target="_blank" href="https://app.termly.io/document/acceptable-use/458f5fac-0c41-406f-a02f-b50adff1ec9c" > Acceptable Use Policy </a>
                                     </li>
                                     <li>
-                                        <a
-                                            target="_blank"
-                                            href="https://app.termly.io/notify/696baafc-17cd-4a28-b758-a8f597cf2ad6"
-                                        >
-                                            DSAR Form
-                                        </a>
+                                        <a target="_blank" href="https://app.termly.io/notify/696baafc-17cd-4a28-b758-a8f597cf2ad6" > DSAR Form </a>
                                     </li>
                                     <li>
-                                        <a
-                                            target="_blank"
-                                            href="https://intercom.help/spenny-piggy"
-                                        >
-                                            FAQ's
-                                        </a>
+                                        <a target="_blank" href="https://intercom.help/spenny-piggy" > FAQ's </a>
                                     </li>
                                     <li>
-                                        <Link href={route("how-it-works")}>
-                                            How it works
-                                        </Link>
+                                        <Link href={route("how-it-works")}> How it works </Link>
                                     </li>
                                     <li>
-                                        <a href="https://blog.spennypiggy.co">
-                                            Blog
-                                        </a>
+                                        <a href="https://blog.spennypiggy.co"> Blog </a>
                                     </li>
                                     <li>
-                                        <Link
-                                            href={route("terms-and-conditions")}
-                                        >
-                                            Terms
-                                        </Link>
+                                        <Link href={route("terms-and-conditions")}> Terms </Link>
                                     </li>
                                     <li>
-                                        {" "}
                                         <ContentPrefrences classes="m-auto d-table" />{" "}
                                     </li>
                                 </ul>

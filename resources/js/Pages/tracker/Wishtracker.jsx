@@ -147,7 +147,7 @@ export default function Wishtracker(props) {
                                     </div> : ''}
 
                                     {msgSent ? <div className="msgSent my-2" >
-                                        <p className="mt-2" >Thankyou Note : </p>
+                                        <p className="mt-2" >Thank you note : </p>
                                         <p className="text-muted">{msgSent}</p>
                                         {message_media ? <div className="message-media my-2" >
                                             {media_type == 'image' ?

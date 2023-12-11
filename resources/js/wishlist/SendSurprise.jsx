@@ -99,7 +99,7 @@ export default function SendSurprise({auth, owner}) {
                type='submit'
                   className="flex w-100 btn-pink lg mx-auto"
                   spinnerClassName="fill-red-600" >
-                  {processing ? "Proccessing" : auth && auth.name ? "Add to cart" : "Send Gift"}
+                  {processing ? "Processing" : auth && auth.name ? "Add to cart" : "Send Gift"}
             </LoaderButton>
 
         </Popup>

@@ -8,7 +8,7 @@
                         style="padding: 0 0 15px 0; font-family: Arial; font-weight: normal; font-size: 15px; color: #666666; text-align: center; line-height: 18px;">
                         Hey {{ $name ?? 'user' }}</td>
                 </tr>
-                <tr>
+                <tr> 
                     <td
                         style="padding: 0 0 10px 0; font-family: Arial; font-weight: bold; font-size: 22px; color: #0D0D0D; text-align: center; line-height: 25px;">
                         Welcome to spenny piggy </td>

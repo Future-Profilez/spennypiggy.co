@@ -38,7 +38,7 @@
                 <td>
                     <a 
                         href="{{ env('APP_URL') }}/user/{{ $data['uuid'] }}"
-                        style="background-color:#F94F97;color:white;border:none; padding:13px 30px 13px 30px; width: 210px;
+                        style="border-radius:30px;background-color:#F94F97;color:white;border:none; padding:13px 30px 13px 30px; width: 210px;
                         text-decoration:none; border:none;background-color: #F94F97;
                         font-family: Arial; font-weight: bold; font-size:
                         15px; text-align: center; color:#ffffff; cursor: pointer;"

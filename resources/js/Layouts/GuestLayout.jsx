@@ -27,7 +27,7 @@ export default function Guest(props) {
         }
     },[]);
 
-    console.log("props guest", props);
+    // console.log("props guest", props);
 
     return <>
         <Header auth={auth ||''} />

@@ -505,11 +505,28 @@ select#country{width:100%;margin-bottom:10px;}
 .wishlistcntbox{max-width:100%;width:100%;}
 .welcomeTitle{font-size:27px;line-height:34px;}
 }
-@media(max-width:400px){.wishlistimg img{height:230px!important;}
-.wishlistdetial h4{font-size:20px !important;}
-.wishlistdetial h5{font-size:20px !important;margin:10px 0 !important;}
-.headingMd{font-size:44px !important;line-height:45px !important;}
-.userManageRt > .row > div{width:100% !important;}
+@media(max-width:430px){
+   .subscribletag{padding:5px 13px !important;font-size:10px !important;}
+   .wishlistimg img{height:140px !important;}
+   .crowd .text-small{font-size:13px !important;}
+   .wishlistdetial h5{font-size:15px;}
+   .progress{background:#ECCEDB;height:5px;}
+   .sharelinks button{font-size:14px;}
+   .sharelinks{padding:4px;}
+   .wishlistdetial{padding:12px;}
+   .wishlistdetial{min-height:106px;}
+   .items-lists {
+      margin-left: -8px;
+      margin-right: -8px;
+   }
+   .row.items-lists > div {
+      padding: 0 8px !important;
+  }
+  .wishlistcntbox.shadow-voilet {
+   box-shadow: 4px 4px 0 0 var(--voilet);
+}
+}
+@media(max-width:400px){.headingMd{font-size:44px !important;line-height:45px !important;}
 .spennylogo img{max-width:120px;}
 .welcomeHeading{font-size:44px;}
 .noResult h2.headingLg{font-size:25px;line-height:30px;}

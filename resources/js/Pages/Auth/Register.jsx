@@ -246,7 +246,7 @@ export default function Register() {
                                     </label>
                                 </div>
                                 <div className='wishlistbtn  rotate-btn text-center flex justify-center mt-4'>
-                                    <LoaderButton disabled={processing} className='btn-pink lg lg2 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Proccessing" : " Create Account"}</LoaderButton>
+                                    <LoaderButton disabled={processing} className='btn-pink lg lg2 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Create Account"}</LoaderButton>
                                 </div>
                             </div>
                         </form>
