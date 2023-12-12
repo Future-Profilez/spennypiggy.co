@@ -142,13 +142,13 @@ class AuthenticatedSessionController extends Controller
             }
             $items = $q->latest()->get();
 
-            $query = WishItem::where('is_pin', 1)->with(['user']);
+            $pin = WishItem::where('is_pin', 1)->with(['user']);
             if ($category != 'all') {
-                $q->whereIn('id', $itemId);
+                $pin->whereIn('id', $itemId);
             } else {
-                $q->where('user_id', $user->id);
+                $pin->where('user_id', $user->id);
             }
-            $pinned = $query->get();
+            $pinned = $pin->get();
             return response()->json([
                 "success" => true,
                 "items" => ['list' => $items, "pinned" => $pinned],
