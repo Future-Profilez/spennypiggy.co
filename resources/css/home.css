@@ -280,6 +280,7 @@ ul.socialmedia a img{width:35px;height:35px;}
 .profilePhotoImg.dp{position:absolute;bottom:-40px;left:50%;transform:translateX(-50%);border-radius:50% !important;overflow:hidden;}
 .tersms-accept{font-size:16px !important;}
 div#msgText p b{font-weight:700 !important;padding:0 4px;color:#000;}
+
 /* Responsive */
 @media(max-width:1500px){.loveboxes{padding:0 20px;}
 .loveboxes img{max-width:160px;}
