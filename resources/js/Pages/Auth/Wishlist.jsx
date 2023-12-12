@@ -124,7 +124,6 @@ export default function Wishlist(props) {
 
     const createWishList = (e) => {
         e.preventDefault();
-
         if(!setuped){
             errorAlert("You need to connect your account with stripe first.")
             return false;
