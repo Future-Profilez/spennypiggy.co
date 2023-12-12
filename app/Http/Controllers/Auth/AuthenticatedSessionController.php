@@ -134,13 +134,21 @@ class AuthenticatedSessionController extends Controller
                 $q->where('user_id', $user->id);
             })->pluck('wish_id');
 
-            $q = WishItem::with(['user']);
+            $q = WishItem::where('is_pin', 0)->with(['user']);
             if ($category != 'all') {
                 $q->whereIn('id', $itemId);
             } else {
                 $q->where('user_id', $user->id);
             }
             $items = $q->latest()->get();
+
+            $query = WishItem::where('is_pin', 1)->with(['user']);
+            if ($category != 'all') {
+                $q->whereIn('id', $itemId);
+            } else {
+                $q->where('user_id', $user->id);
+            }
+            $pinned = $query->first();
             return response()->json([
                 "success" => true,
                 "items" => $items,
@@ -150,14 +158,15 @@ class AuthenticatedSessionController extends Controller
             ]);
         } else {
             if ($user) {
-                $items = WishItem::whereUserId($user->id)->with(['user'])->latest()->get();
+                $items = WishItem::where('is_pin', 0)->whereUserId($user->id)->with(['user'])->latest()->get();
+                $pinned = WishItem::where('is_pin', 1)->whereUserId($user->id)->with(['user'])->first();
             }
         }
 
         return Inertia::render('Dashboard', [
             "itemid" => $user,
             "user" => $user,
-            "items" => $items,
+            "items" => ['list' => $items, "pinned" => $pinned],
             "categories" => $categories,
             "itemid" => $itemdid,
             "sociallinks" => $sociallinks,
@@ -184,5 +193,4 @@ class AuthenticatedSessionController extends Controller
             //throw $th;
         }
     }
-   
 }
