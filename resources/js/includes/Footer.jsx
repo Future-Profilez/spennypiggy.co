@@ -106,15 +106,12 @@ export default function Footer(props) {
         gtag("js", new Date());
         gtag("config", "G-9F1M3QZZB3");
     }
-
     useEffect(() => {
         configIntercom();
     }, [auth && auth?.name]);
-
     useEffect(() => {
         confgureGtag();
     }, []);
-
     return (
         <>
             <Helmet>

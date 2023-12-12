@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Jobs\CheckoutMailToUser;
 use App\Jobs\CheckoutUser;
+use App\Jobs\SubscriptionCancelAtEnd;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\WishItem;
+use App\Models\WishItemSubscription;
 use App\StripeControl;
 use Carbon\Carbon;
 use Exception;
@@ -552,7 +554,7 @@ class StripeController extends Controller
      */
     public function wishItemSubscribe(Request $request, $uuid, $reccure = 'continue')
     {
-        $wish = WishItem::whereUuid($uuid)->first();
+        $wish = WishItem::whereUuid($uuid)->with('user')->first();
 
         if(!$wish){
             return redirect()->back()->with('error', 'Wish item not found!');
@@ -570,41 +572,126 @@ class StripeController extends Controller
                 'email' =>  [
                     'required',
                     'email:dns'
+                ],
+                'message'   =>  [
+                    'sometimes',
+                    'nullable',
+                    'string',
+                    'max:800'
                 ]
             ]);
 
+            $sub = WishItemSubscription::create([
+                'wish_item_id'  =>  $wish->id,
+                'user_id'       =>  Auth::id(),
+                'guest_name'    =>  $request->name,
+                'guest_email'   =>  $request->email,
+                'currency'      =>  $wish->currency,
+                'amount'        =>  $wish->price,
+                'tax'           =>  $wish->tax_amount,
+                'recurring_for' =>  $reccure,
+                'recurring_type'=>  $wish->subscription_period,
+                'surprise_message'  =>  $request->message ?? NULL
+            ]);
+
+            $fee_per = ($wish->tax_amount/($wish->price + $wish->tax_amount)) * 100;
             $payload = [
-                "mode"  =>  'subscripion',
-                'lineitems' =>  [
+                "mode"  =>  'subscription',
+                'line_items' =>  [
                     [
                         'price' => $wish->price_id,
                         'quantity' => 1,
                     ]
                 ],
                 'subscription_data' =>  [
-                    'application_fee_percent'   =>  env('TAX_PERCENTAGE', 20),
+                    'application_fee_percent'   =>  number_format($fee_per, 2),
                     'transfer_data' => [
-                        'destination' => $wish->owner->account_id, // Creator's connected account ID
+                        'destination' => $wish->user->account_id, // Creator's connected account ID
                     ],
-                    'on_behalf_of'  => $wish->owner->account_id,
-                    'cancel_at_period_end'  =>  true,
-                    'description'   => "Subscription for {$wish->wishname} of {$wish->owner->username}."
+                    'on_behalf_of'  => $wish->user->account_id,
+                    // 'cancel_at_period_end'  =>  $reccure == 'onetime',
+                    'description'   => "Subscription for {$wish->wishname} of {$wish->user->username}."
                 ],
                 'customer_email'    =>  $request->email,
+                'success_url'       =>  route('wish.subscribe.handle',['uuid' => $sub->uuid, 'status' => "success"]),
+                'cancel_url'       =>  route('wish.subscribe.handle',['uuid' => $sub->uuid, 'status' => "cancel"]),
             ];
 
-            $session = StripeControl::createCheckoutSession($payload);
-            return response()->json([
-                'success'   => true,
-                'session'   => $session
-            ]);
+            try {
+                $session = StripeControl::createCheckoutSession($payload);
+                $sub->update([
+                    'session_id' =>  $session->id
+                ]);
+
+                return Inertia::location($session->url);
+            } catch (Exception $e) {
+                return back()->with('error', $e->getMessage());
+            }
+            // return response()->json([
+            //     'success'   => true,
+            //     'session'   => $session
+            // ]);
 
 
         }
 
+        return Inertia::render('cart/SubCheckout', [
+            'wish'  => $wish,
+            'reccure'   => $reccure
+        ]);
     }
 
     /**
      * Handle Checkout Session
+     *
+     * @param string $uuid Subscription UUID
+     * @param string $status Status of Subscription
+     * @return mixed
      */
+    public function handleSubscription($uuid, $status)
+    {
+        $sub = WishItemSubscription::whereUuid($uuid)->first();
+        if(!$sub){
+            return to_route('home')->with("error", 'Insufficient data!');
+        }
+        if($sub->status !== 'initiated'){
+            return to_route('home')->with("error", 'Subscription already processed!');
+        }
+        try {
+            $session = StripeControl::getCheckoutSession($sub->session_id);
+            $sub->status = $session->payment_status;
+            if($session->payment_status == 'paid') {
+                $sub->stripe_id = $session->subscription;
+                $current = Carbon::now();
+                if($sub->recurring_type == 'daily'){
+                    $current->addDay();
+                } else if($sub->recurring_type == 'weekly') {
+                    $current->addWeek();
+                } else if($sub->recurring_type == "monthly") {
+                    $current->addMonth();
+                } else {
+                    $current->addYear();
+                }
+                $sub->upcoming_payment = $current;
+                $sub->save();
+
+                if($sub->recurring_for == 'onetime'){
+                    SubscriptionCancelAtEnd::dispatch($sub);
+                }
+
+                return to_route('user.show',['username' => $sub->wish_item->user->username])->with('success', "Subscription Success. If you have paid for one time, subscription will be autocanceled on period end.");
+            }
+
+            $sub->save();
+            return to_route('user.show',['username' => $sub->wish_item->user->username])->with('warning', "Subscription is in {$session->payment_status} status.");
+
+        } catch (Exception $e){
+            return to_route('user.show',['username' => $sub->wish_item->user->username])->with('error', $e->getMessage());
+        }
+        // return response()->json([
+        //     'success'   =>  true,
+        //     'session'   =>  $session,
+        //     'status'    =>  $status
+        // ]);
+    }
 }
