@@ -148,7 +148,7 @@ class AuthenticatedSessionController extends Controller
             } else {
                 $q->where('user_id', $user->id);
             }
-            $pinned = $query->first();
+            $pinned = $query->get();
             return response()->json([
                 "success" => true,
                 "items" => $items,
@@ -159,7 +159,7 @@ class AuthenticatedSessionController extends Controller
         } else {
             if ($user) {
                 $items = WishItem::where('is_pin', 0)->whereUserId($user->id)->with(['user'])->latest()->get();
-                $pinned = WishItem::where('is_pin', 1)->whereUserId($user->id)->with(['user'])->first();
+                $pinned = WishItem::where('is_pin', 1)->whereUserId($user->id)->with(['user'])->get();
             }
         }
 
