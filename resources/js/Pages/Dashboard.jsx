@@ -48,7 +48,9 @@ export default function Dashboard(props) {
         (auth && auth.user && auth.user.username) == (user && user.username)
     );
 
-    
+    console.log("items",items)
+
+
     
     return (
         <Guest auth={auth.user} user={user}>
