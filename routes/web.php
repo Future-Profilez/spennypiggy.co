@@ -46,6 +46,7 @@ Route::prefix("test")->name("test.")->group(function(){
         Route::get('checkout-callback/{status?}', [CheckoutController::class, 'testCallback'])->name("callback");
     });
     Route::get("email", [TestController::class, "testEmail"]);
+    Route::get("rates/{c?}", [TestController::class, "getRates"]);
 });
 
 require __DIR__.'/auth.php';
