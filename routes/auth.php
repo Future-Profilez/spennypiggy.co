@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
+use Illuminate\Support\Facades\Http;
 
 // Route::get('/frd', function () {
 //     print_r('ffff');
@@ -156,7 +157,10 @@ Route::get('/files/{filename}', function (string $filename) {
     return Storage::response($fullPath);
 });
 
+
 /*check username exist*/
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
 
 Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
+
+

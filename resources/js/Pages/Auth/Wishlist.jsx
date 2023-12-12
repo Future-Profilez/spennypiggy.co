@@ -15,6 +15,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
+import PinWish from "@/includes/PinWish";
 
 
 export default function Wishlist(props) {
@@ -189,6 +190,7 @@ export default function Wishlist(props) {
                             className="mb-3" >
                             <Tab eventKey="1" title="Custom">
                                 <div className="wishinfo">
+                                    {/* <PinWish /> */}
                                     <form onSubmit={createWishList}>
                                         <ul className="ps-0" >
                                             <li className="mb-4">
@@ -474,6 +476,7 @@ export default function Wishlist(props) {
                                                 {processing ? "Processing" : "Add Wish"}
                                             </LoaderButton>
                                             </> }
+
                                         </div>
 
                                     </form>

@@ -14,6 +14,7 @@ import LoadingScreen from "@/includes/LoadingScreen";
 import PaymentDashboard from "./stripe/PaymentDashboard";
 
 export default function Dashboard(props) {
+    
     const {
         auth,
         items,

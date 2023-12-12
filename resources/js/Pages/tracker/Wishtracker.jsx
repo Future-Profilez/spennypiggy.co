@@ -12,15 +12,13 @@ import axios from "axios";
 import Confetti from "@/includes/Confetti";
 import Nocontent from "@/includes/Nocontent";
 import userphoto from "../../../assets/img/userphoto.png";
-const defaultsec = 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import { useAlerts } from "@/Components/Alerts";
-import LoaderButton from "@/Components/LoaderButton";
+const defaultsec = 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/';
 
 export default function Wishtracker(props) {
     
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
-
     const TruncatedString = ({ inputString, maxLength }) => {
         if (inputString?.length <= maxLength) {
           return <span>{inputString}</span>;
@@ -31,18 +29,15 @@ export default function Wishtracker(props) {
 
     const { format } = PriceFormat();
     const { auth, user, tracks, user_subs, creator_subs    } = props;
-    console.log("props", props);
     const [stab, setStab] = useState(1)
     const handleTabs = (e) => {
         setStab(e);
     }
 
-
     const Wish = ({ n }) => {
         const [open, setOpen] = useState(false);
         const [isUserRead, setIsUserRead] = useState(n && n.is_read_user);
         const [isOwnerRead, setIsOwnerRead] = useState(n && n.is_read_owner);
-        
         const [message_media, setmessage_media] = useState(n && n.message_media);
         const [msgSent, setMsgSent] = useState(n && n.message);
         const [media_type, setmedia_type] = useState(n && n.media_type);
@@ -73,8 +68,6 @@ export default function Wishtracker(props) {
             openState();
             setIsOwnerRead(1);
         }
-
-        
 
         return (
             <Confetti sender={n && n.sender}
@@ -113,7 +106,7 @@ export default function Wishtracker(props) {
                                 </div>
                             </div>
                         </div> 
-                        <Collapse in={open}>
+                        <Collapse in={open} >
                             <div id="example-collapse-text">
                                 <div className="track-summary mt-4">
                                     <div className="table">

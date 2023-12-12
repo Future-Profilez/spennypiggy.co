@@ -14,7 +14,6 @@ export default function Wishlistbox(props) {
   const { itm, itemid, auth, IsloggedIn, fetchingcats, categories } = props;
   const [itemUID, setItemUID] = useState(itemid);
   const [open, setOpen] = useState();
-
   const openAddtocart = () => {
     setOpen(true);
     setTimeout(()=>{
@@ -34,7 +33,7 @@ export default function Wishlistbox(props) {
   }
  
   const price = () => { 
-      return itm.price;
+   return itm.price;
   };
   
 
@@ -53,7 +52,7 @@ export default function Wishlistbox(props) {
             <h4 className={`fon-bold text-dark ${itm.subscription !== '0' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>
             <h5 className='font-CeraGRBold text-dark titleprice'>{format(price())}
                 <button className='tooltipbtn' >?<p>*not including 20% service fee.</p></button>
-            </h5>
+            </h5> 
           </div>
           {itm.subscription == '2' ? 
             <div className='crowd pt-2'>

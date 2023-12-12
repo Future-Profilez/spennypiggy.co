@@ -2,6 +2,8 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
+    <meta name="robots" content="index, follow">
+    <meta name="googlebot" content="index,follow"/>
     <title inertia>{{ config('app.name', 'The Best Alternative to Amazon Wishlist') }}</title>
     <link rel="canonical" href="https://spennypiggy.co" />
     <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,maximum-scale=5" />
@@ -31,8 +33,6 @@
     <meta name="twitter:image:src" content={{env("FILE_URL")."/site.png"}} />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <!-- <script async type="text/javascript" src="/service-worker.js" ></script> -->
-
-    <!-- Scripts -->
     @laravelPWA
     @routes
     @viteReactRefresh
