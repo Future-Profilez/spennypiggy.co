@@ -166,6 +166,7 @@ export default function Dashboard(props) {
                                         </div>
                                         {IsloggedIn ? (
                                             <Wishlist
+                                                setuped={auth.user.stripe_details_submitted == 1 ? true : false}
                                                 fetchingcats={fetchingcats}
                                                 categories={categories}
                                             />

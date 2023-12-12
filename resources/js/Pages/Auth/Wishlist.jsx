@@ -19,7 +19,7 @@ import PinWish from "@/includes/PinWish";
 
 
 export default function Wishlist(props) {
-    const { categories, auth, fetchingcats, item, editpop, openPop } = props;
+    const { categories, auth, fetchingcats, item, editpop, openPop, setuped } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
     const [defaultKey, setDefaultKey] = useState(item && item.subscription !== null ? +(item.subscription) : null);
@@ -124,6 +124,11 @@ export default function Wishlist(props) {
 
     const createWishList = (e) => {
         e.preventDefault();
+
+        if(!setuped){
+            errorAlert("You need to connect your account with stripe first.")
+            return false;
+        }
         if(editpop ){
             post(route(`update_wish_item`, [item && item.uuid]), {
                 preserveScroll: true,

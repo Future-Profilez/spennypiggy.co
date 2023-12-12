@@ -64,7 +64,7 @@
 .footer{padding:70px 0;}
 .footerbox{max-width:120px;}
 .footer{padding:50px 0 0;}
-.footer .containerbox{display:flex;align-items:flex-start;align-content:flex-start;justify-content:space-between;flex-wrap:wrap;}
+/* .footer .containerbox{display:flex;align-items:flex-start;align-content:flex-start;justify-content:space-between;flex-wrap:wrap;} */
 .footlogo{width:100%;text-align:center;display:flex;align-items:center;align-content:center;max-width:190px;margin:auto;}
 .footlinks ul{display:flex;align-items:center;align-content:center;justify-content:center;flex-wrap:wrap;}
 .footlogo a{margin:auto;}
