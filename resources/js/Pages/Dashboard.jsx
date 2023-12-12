@@ -47,6 +47,8 @@ export default function Dashboard(props) {
     const [IsloggedIn, setIsLoggedIn] = useState(
         (auth && auth.user && auth.user.username) == (user && user.username)
     );
+
+    
     
     return (
         <Guest auth={auth.user} user={user}>
@@ -183,22 +185,12 @@ export default function Dashboard(props) {
                                                     !loading &&
                                                     its.map((c, i) => {
                                                         return <div key={`wish-item-${i}`} className="col-xl-4 col-lg-6 col-6">
-                                                                <Wishlistbox
-                                                                    fetchingcats={
-                                                                        fetchingcats
-                                                                    }
-                                                                    categories={
-                                                                        categories
-                                                                    }
-                                                                    IsloggedIn={
-                                                                        IsloggedIn
-                                                                    }
-                                                                    auth={
-                                                                        auth.user
-                                                                    }
-                                                                    itemid={
-                                                                        itemid
-                                                                    }
+                                                                <Wishlistbox 
+                                                                    fetchingcats={fetchingcats}
+                                                                    categories={categories}
+                                                                    IsloggedIn={IsloggedIn}
+                                                                    auth={auth.user}
+                                                                    itemid={itemid}
                                                                     itm={c}
                                                                     key={`wish-${c.uuid}`}
                                                                 />
