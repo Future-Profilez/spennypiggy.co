@@ -110,6 +110,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/stripe', function () {
             return Inertia::render('stripe/Stripe');
         })->middleware(['auth', 'verified'])->name('stripe');
+
+        Route::get('/pin-item/{wish_id}/', [WishitemController::class, 'pinItem'])->name('pin-item');
     });
 });
 
@@ -163,7 +165,7 @@ Route::get('check-username/{username}', [AuthenticatedSessionController::class, 
 
 Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
 
-Route::prefix("wish")->name("wish.")->group(function(){
-    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}' ,[StripeController::class, 'wishItemSubscribe'])->name("subscribe.checkout");
+Route::prefix("wish")->name("wish.")->group(function () {
+    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name("subscribe.checkout");
     Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleSubscription'])->name('subscribe.handle');
 });

@@ -141,49 +141,51 @@ class WishitemController extends Controller
      */
     public function addWishItem(Request $request)
     {
-        $request->validate([
-            "wishname" => [
-                "required",
-                "string",
-                "min:4",
-                "max:255"
+        $request->validate(
+            [
+                "wishname" => [
+                    "required",
+                    "string",
+                    "min:4",
+                    "max:255"
+                ],
+                "price" => [
+                    "required",
+                    "numeric",
+                    "min:0"
+                ],
+                "item_url" => [
+                    "nullable"
+                ],
+                "fullfill_amount" => [
+                    "nullable"
+                ],
+                "thumbnail" => [
+                    "sometimes",
+                    "nullable"
+                ],
+                "subscription" => [
+                    "required",
+                    "integer",
+                    Rule::in([0, 1, 2])
+                ],
+                "subscription_period" => [
+                    "required_if:subscription,1",
+                    new ValidSubscriptionPeriod
+                ],
+                "repeat_purchase" => [
+                    "sometimes",
+                    "nullable"
+                ],
+                "category" => [
+                    "sometimes",
+                    "nullable"
+                ]
             ],
-            "price" => [
-                "required",
-                "numeric",
-                "min:0"
-            ],
-            "item_url" => [
-                "nullable"
-            ],
-            "fullfill_amount" => [
-                "nullable"
-            ],
-            "thumbnail" => [
-                "sometimes",
-                "nullable"
-            ],
-            "subscription" => [
-                "required",
-                "integer",
-                Rule::in([0, 1, 2])
-            ],
-            "subscription_period" => [
-                "required_if:subscription,1",
-                new ValidSubscriptionPeriod
-            ],
-            "repeat_purchase" => [
-                "sometimes",
-                "nullable"
-            ],
-            "category" => [
-                "sometimes",
-                "nullable"
+            [
+                'subscription_period.required_if'   =>  'Please select subscription period'
             ]
-        ],
-        [
-            'subscription_period.required_if'   =>  'Please select subscription period'
-        ]);
+        );
 
         // return response()->json([
         //     "data" => $request->all()
@@ -223,8 +225,7 @@ class WishitemController extends Controller
             }
         }
 
-        if(in_array($request->subscription, [0, 1]))
-        {
+        if (in_array($request->subscription, [0, 1])) {
 
             $productPayload = [
                 "name"  =>  $wish->wishname,
@@ -236,8 +237,7 @@ class WishitemController extends Controller
                 "url"   =>  $request->item_url ?? env('APP_URL') . '/' . $user->username . "?item=$wish->uuid/"
             ];
 
-            if($request->subscription == 1)
-            {
+            if ($request->subscription == 1) {
                 $productPayload['default_price_data']['recurring']  =   [
                     'interval'  =>  StripeControl::$periods[$request->subscription_period],
                     'interval_count'    =>  1
@@ -251,7 +251,7 @@ class WishitemController extends Controller
                 $wish->save();
             } catch (Exception $e) {
                 $wish->delete();
-                return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: ".$e->getMessage());
+                return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
             }
         }
 
@@ -916,10 +916,16 @@ class WishitemController extends Controller
         return Inertia::render('tracker/Wishtracker');
     }
 
-    public function cancelSubscription($subscription_id) {
-            $item = Subscription::where('id', $subscription_id)->first();
-            $item->status = 0;
-            $item->save();
-            return Inertia::render('tracker/Wishtracker');
-        }
+    public function cancelSubscription($subscription_id)
+    {
+        $item = Subscription::where('id', $subscription_id)->first();
+        $item->status = 0;
+        $item->save();
+        return Inertia::render('tracker/Wishtracker');
+    }
+
+
+    public function pinItem($wish_id){
+        
+    }
 }
