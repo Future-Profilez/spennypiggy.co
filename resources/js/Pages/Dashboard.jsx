@@ -42,7 +42,9 @@ export default function Dashboard(props) {
         setLoading(true);
         axios.get(`${user.username}/${e}`)
             .then((resp) => {
-                setIts(resp.data.items);
+                console.log("resp",resp)
+                const result = resp.data.items;
+                conCat(result.pinned || [], result.list || []);
                 setLoading(false);
             }).catch((_err) => {
                 console.error("error", _err);
