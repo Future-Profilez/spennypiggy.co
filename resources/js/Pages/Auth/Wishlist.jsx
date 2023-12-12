@@ -194,7 +194,7 @@ export default function Wishlist(props) {
                             className="mb-3" >
                             <Tab eventKey="1" title="Custom">
                                 <div className="wishinfo">
-                                    {/* <PinWish /> */}
+                                   
                                     <form onSubmit={createWishList}>
                                         <ul className="ps-0" >
                                             <li className="mb-4">

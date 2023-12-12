@@ -59,12 +59,13 @@ export default function SubCheckout({auth, wish, reccure}) {
                                 <div>
                                     <div className='cartProdTitle ps-3'>{wish.wishname}</div>
                                     {data.message ? <div className='surprise-message ps-3'>Surprise Message : {data.message}</div> : ''}
+                                    <div className="badge bg-info text-dark me-4 ms-3 ">
+                                    Pay {reccure == 'onetime' ? `Onetime` : wish.subscription_period}
+                                </div>
                                 </div>
                             </div>
                             <div className='cartProRtbox mt-3 items-center'>
-                                <div className="quty flex items-center me-4 ">
-                                    Pay {reccure == 'onetime' ? `Onetime` : wish.subscription_period}
-                                </div>
+                               
                                 <div className='cartPric pe-4'>
                                     {format(wish.price)}
                                 </div>
@@ -193,11 +194,10 @@ export default function SubCheckout({auth, wish, reccure}) {
                                     </div>
                                 </li>
                             </ul>
-                            <div className="mt-4 d-flex align-items-center justify-content-between" >
+                            <div className="mt-4 d-flex align-items-center justify-content-center" >
                                 <button type="submit"
-                                    className={`${!data.agree || processing ? "disabled" : ""} btn-pink md mt-3 text-center`}
-                                    disabled={!data.agree || processing}
-                                >
+                                    className={`${!data.agree || processing ? "disabled" : ""} btn-pink md px-4 mt-3 text-center`}
+                                    disabled={!data.agree || processing}>
                                     {processing ? 'Processing...' : 'Subscribe'}
                                 </button>
                             </div>

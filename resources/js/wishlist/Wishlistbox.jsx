@@ -7,6 +7,10 @@ import ProgressBar from 'react-bootstrap/ProgressBar';
 import Wishlist from '@/Pages/Auth/Wishlist';
 import PriceFormat from '@/includes/PriceFormat';
 const AddCart = React.lazy(() => import('./AddCart'));
+import Dropdown from 'react-bootstrap/Dropdown';
+import DropdownButton from 'react-bootstrap/DropdownButton';
+import PinWish from '@/includes/PinWish';
+
 
 export default function Wishlistbox(props) {
 
@@ -44,9 +48,20 @@ export default function Wishlistbox(props) {
           : 
           <AddCart  IsloggedIn={IsloggedIn} auth={auth} item={itm} uuid={itm.uuid} action={open} />  
         }
+          <DropdownButton className='wishedit' id="dropdown-basic-button" title={<div className='dots' >
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>}>
+            <Dropdown.Item>
+              <PinWish id={itm.id} text="Pin item on the top" />
+            </Dropdown.Item>
+          </DropdownButton>
         <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
           <img src={itm?.perma_link ? itm?.perma_link : uploadedimg} alt='img' className='' />
         </div>
+
+
         <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
           <div>
             <h4 className={`fon-bold text-dark ${itm.subscription !== '0' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>

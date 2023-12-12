@@ -1,6 +1,16 @@
-export default function PinWish(){
-   return <div className="mb-3">
-      <p>Pin to top of the profile</p>
-      <button className="btn bg-info text-white mt-2" >Pin to top</button>
-   </div>
+import axios from 'axios';
+export default function PinWish({text, id}){
+   
+   const pin = (e) => {
+      if(!id){ 
+         return false;
+      }
+      axios.get(`/pin-item/${id}`).then((resp) => {
+         console.log("resp", resp);
+      }).catch((_err) => {
+         console.error("error", _err);
+      });
+   };
+
+   return <button onClick={pin} >{text}</button>
 }
