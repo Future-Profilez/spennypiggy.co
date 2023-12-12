@@ -112,7 +112,9 @@ export default function Footer(props) {
     useEffect(() => {
         confgureGtag();
     }, []);
+ 
 
+ 
     
     return (
         <>
