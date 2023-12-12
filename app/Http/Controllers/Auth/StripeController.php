@@ -562,7 +562,7 @@ class StripeController extends Controller
 
         if ($request->isMethod("POST")) {
             $request->validate([
-                'name'  =>  [
+                'name' => [
                     'required',
                     'string',
                     'min:3',

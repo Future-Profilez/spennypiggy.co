@@ -28,6 +28,7 @@ class WishItem extends Model
         "subscription_period",
         "repeat_purchase",
         "category",
+        'is_pin',
         "fullfill_amount",
         'tax_amount',
         'deleted_at'

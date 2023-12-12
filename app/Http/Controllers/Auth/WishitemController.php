@@ -925,7 +925,25 @@ class WishitemController extends Controller
     }
 
 
-    public function pinItem($wish_id){
-        
+    public function pinItem($wish_id)
+    {
+        $item = WishItem::where('id', $wish_id)->first();
+
+        if ($item->user_id == Auth::id()) {
+            WishItem::where('user_id', Auth::id())->update(['is_pin' => 0]);
+
+            $item->is_pin = 1;
+            $item->save();
+
+            return response()->json([
+                'status' => true,
+                'msg' => 'Item is pinned'
+            ]);
+        } else {
+            return response()->json([
+                'status' => false,
+                'msg' => 'You can pin only your wishlist!'
+            ]);
+        }
     }
 }
