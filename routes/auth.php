@@ -160,6 +160,8 @@ Route::get('/files/{filename}', function (string $filename) {
 });
 
 
+Route::post('subs-status/', [AuthenticatedSessionController::class, 'subscriptionStatus'])->name('subs-status');
+
 /*check username exist*/
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
 
