@@ -12,6 +12,8 @@ import Guest from "@/Layouts/GuestLayout";
 import Nocontent from "@/includes/Nocontent";
 import LoadingScreen from "@/includes/LoadingScreen";
 import PaymentDashboard from "./stripe/PaymentDashboard";
+import { useEffect } from "react";
+import { useMemo } from "react";
 
 export default function Dashboard(props) {
     
@@ -24,8 +26,17 @@ export default function Dashboard(props) {
         sociallinks,
         slinks,
     } = props;
+    const [its, setIts] = useState();
 
-    const [its, setIts] = useState(items);
+    async function conCat(pinned, items){
+        const result = pinned.concat(items);
+        setIts(result);
+        return result;
+    }
+    useMemo(()=>{
+        conCat(items.pinned || [], items.list || []);
+    },[]);
+
     const [loading, setLoading] = useState(false);
     const fetchingcats = (e) => {
         setLoading(true);
@@ -48,7 +59,7 @@ export default function Dashboard(props) {
         (auth && auth.user && auth.user.username) == (user && user.username)
     );
 
-    console.log("items",items)
+    console.log("props",props)
 
 
     
