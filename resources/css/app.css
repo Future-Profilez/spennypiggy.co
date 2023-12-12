@@ -54,7 +54,7 @@ body{position:relative;font-family:var(--para-font);}
 
 
 .dots span{display:block;width:5px;height:5px;border-radius:50%;background:#fff;margin:3px 0;}
-.wishedit.dropdown button#dropdown-basic-button{position:absolute;top:5px;right:5px;background:transparent;
+.wishedit.dropdown button#dropdown-basic-button{z-index: 1; position:absolute;top:5px;right:5px;background:transparent;
   border:0 !important;padding:10px 17px;}
 .wishedit.dropdown button#dropdown-basic-button:after{display:none;}
 .dropdown-menu {border-radius: 15px !important;padding: 0 !important; }
