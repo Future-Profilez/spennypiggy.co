@@ -151,7 +151,7 @@ class AuthenticatedSessionController extends Controller
             $pinned = $query->get();
             return response()->json([
                 "success" => true,
-                "items" => $items,
+                "items" => ['list' => $items, "pinned" => $pinned],
                 "categories" => $categories,
                 "itemid" => $itemdid,
                 "sociallinks" => $sociallinks,
