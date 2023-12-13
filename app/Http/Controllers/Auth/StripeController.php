@@ -25,6 +25,7 @@ use Ramsey\Uuid\Uuid;
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
 use Stripe\StripeClient;
+use Stripe\Webhook;
 
 class StripeController extends Controller
 {
@@ -84,7 +85,7 @@ class StripeController extends Controller
                     'business_type' => 'individual',
                     'business_profile' => [
                         'url'   =>  "https://spennypiggy.co/{$user->username}",
-                        'mcc'   => '5947' //marketplaces - older - 5262
+                        'mcc'   => '7278' //marketplaces - older - 5262
                     ],
                     'default_currency' => 'GBP',
                     'individual' => [
@@ -697,10 +698,72 @@ class StripeController extends Controller
 
     public function subscriptionStatus(Request $request)
     {
-        $stripe = new StripeWebhookStatus;
-        $stripe->data = $request;
-        $stripe->save();
 
-        return "Data saved";
+        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+
+        // This is your Stripe CLI webhook secret for testing your endpoint locally.
+        $endpoint_secret = 'whsec_qNWOiTkgFFtKhrjRNWKfwWXUyWdSSIyo';
+
+        $payload = @file_get_contents('php://input');
+        $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
+        $event = null;
+
+        try {
+            $event = Webhook::constructEvent(
+                $payload,
+                $sig_header,
+                $endpoint_secret
+            );
+        } catch (\UnexpectedValueException $e) {
+            // Invalid payload
+            http_response_code(400);
+            exit();
+        } catch (\Stripe\Exception\SignatureVerificationException $e) {
+            // Invalid signature
+            http_response_code(400);
+            exit();
+        }
+
+        $invoice = null;
+        // Handle the event
+        switch ($event->type) {
+            case 'invoice.created':
+                $invoice = $event->data->object;
+            case 'invoice.deleted':
+                $invoice = $event->data->object;
+            case 'invoice.finalization_failed':
+                $invoice = $event->data->object;
+            case 'invoice.finalized':
+                $invoice = $event->data->object;
+            case 'invoice.marked_uncollectible':
+                $invoice = $event->data->object;
+            case 'invoice.paid':
+                $invoice = $event->data->object;
+            case 'invoice.payment_action_required':
+                $invoice = $event->data->object;
+            case 'invoice.payment_failed':
+                $invoice = $event->data->object;
+            case 'invoice.payment_succeeded':
+                $invoice = $event->data->object;
+            case 'invoice.sent':
+                $invoice = $event->data->object;
+            case 'invoice.upcoming':
+                $invoice = $event->data->object;
+            case 'invoice.updated':
+                $invoice = $event->data->object;
+            case 'invoice.voided':
+                $invoice = $event->data->object;
+                // ... handle other event types
+            default:
+                echo 'Received unknown event type ' . $event->type;
+        }
+
+        if (!empty($invoice)) {
+            $stripe = new StripeWebhookStatus;
+            $stripe->data = $invoice;
+            $stripe->save();
+        }
+
+        return true;
     }
 }

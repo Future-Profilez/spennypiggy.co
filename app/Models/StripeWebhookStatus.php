@@ -10,4 +10,9 @@ class StripeWebhookStatus extends Model
     use HasFactory;
 
     public $table = 'stripe_webhook_status';
+
+
+    protected $fillable = [
+        'data'
+    ];
 }

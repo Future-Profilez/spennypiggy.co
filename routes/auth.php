@@ -17,6 +17,7 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WishtenderController;
+use App\Http\Middleware\VerifyCsrfToken;
 use App\Models\User;
 use App\Models\WishItem;
 use Illuminate\Support\Facades\Auth;
@@ -24,6 +25,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
+use App\StripeControl;
 use Illuminate\Support\Facades\Http;
 
 // Route::get('/frd', function () {
@@ -161,7 +163,7 @@ Route::get('/files/{filename}', function (string $filename) {
 });
 
 
-Route::post('subs-status/', [AuthenticatedSessionController::class, 'subscriptionStatus'])->name('subs-status');
+Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status')->withoutMiddleware(VerifyCsrfToken::class);
 
 
 /* wishtender */
