@@ -118,4 +118,10 @@ class User extends Authenticatable
         }
         return $url;
     }
+
+    public function stripePaymentDetails()
+    {
+        return $this->hasMany(StripePaymentDetail::class, 'owner_id');
+    }
+
 }

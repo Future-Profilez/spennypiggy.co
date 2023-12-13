@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\CheckoutController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
+use App\Http\Controllers\Auth\LeaderBoardController;
 use App\Http\Controllers\Auth\MyController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
@@ -16,7 +17,6 @@ use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\WishtenderController;
 use App\Models\User;
 use App\Models\WishItem;
 use Illuminate\Support\Facades\Auth;
@@ -165,8 +165,8 @@ Route::post('subs-status/', [AuthenticatedSessionController::class, 'subscriptio
 
 
 /* wishtender */
-Route::post('wishtender-wishes', [WishtenderController::class, 'wishtenderWishers'])->name('wishtender-wishes');
-Route::post('largest-gifts', [WishtenderController::class, 'largestGifts'])->name('largest-gifts');
+Route::post('wishtender-wishes', [LeaderBoardController::class, 'wishtenderWishers'])->name('wishtender-wishes');
+Route::post('largest-gifts', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
 
 /*check username exist*/
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
