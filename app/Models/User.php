@@ -124,4 +124,8 @@ class User extends Authenticatable
         return $this->hasMany(StripePaymentDetail::class, 'owner_id');
     }
 
+    public function wishItems()
+    {
+        return $this->hasMany(WishItem::class, 'user_id');
+    }
 }

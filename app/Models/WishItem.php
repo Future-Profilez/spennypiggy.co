@@ -99,4 +99,9 @@ class WishItem extends Model
 
         return $is_cart;
     }
+
+    public function wishItemsSubscription()
+    {
+        return $this->hasMany(WishItemSubscription::class, 'wish_item_id');
+    }
 }
