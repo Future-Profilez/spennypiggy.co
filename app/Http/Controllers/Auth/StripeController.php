@@ -692,4 +692,11 @@ class StripeController extends Controller
         //     'status'    =>  $status
         // ]);
     }
+
+
+    public function subscriptionStatus(Request $request)
+    {
+        print_r($request);
+        die;
+    }
 }

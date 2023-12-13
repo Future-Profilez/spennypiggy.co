@@ -50,4 +50,9 @@ class StripePaymentDetail extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+    public function stripePaymentItems()
+    {
+        return $this->hasMany(StripePaymentItems::class, 'stripe_payment_id');
+    }
 }
