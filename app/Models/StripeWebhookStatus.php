@@ -8,4 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class StripeWebhookStatus extends Model
 {
     use HasFactory;
+
+    public $table = 'stripe_webhook_status';
 }
