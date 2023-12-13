@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\CheckoutController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
+use App\Http\Controllers\Auth\LeaderBoardController;
 use App\Http\Controllers\Auth\MyController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
@@ -16,8 +17,11 @@ use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
+<<<<<<< HEAD
 use App\Http\Controllers\WishtenderController;
 use App\Http\Middleware\VerifyCsrfToken;
+=======
+>>>>>>> 70c0017ffb63060b57d99b70d55dfa4a1911fc3b
 use App\Models\User;
 use App\Models\WishItem;
 use Illuminate\Support\Facades\Auth;
@@ -165,10 +169,12 @@ Route::get('/files/{filename}', function (string $filename) {
 
 Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status')->withoutMiddleware(VerifyCsrfToken::class);
 
-
 /* wishtender */
-Route::post('wishtender-wishes', [WishtenderController::class, 'wishtenderWishers'])->name('wishtender-wishes');
-Route::post('largest-gifts', [WishtenderController::class, 'largestGifts'])->name('largest-gifts');
+Route::post('wishtender-wishes', [LeaderBoardController::class, 'wishtenderWishers'])->name('wishtender-wishes');
+
+Route::post('largest-gifts', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
+
+Route::get('/leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('/leaderboard');
 
 /*check username exist*/
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
