@@ -47,31 +47,37 @@ class TestController extends Controller
      */
     public function getRates($c = 'GBP')
     {
-        $resp = CurrencyExchange::getRates($c);
-        // $resp = Storage::disk('public')->get('currencies.json');
-        // $currs = json_decode($resp, true);
-        // foreach($currs as $iso => $c) {
-        //     Currency::firstOrCreate([
-        //         'ISO'           => $iso,
-        //         'name'          => $c['name'],
-        //         'demonym'       => $c['demonym'],
-        //         'majorSingle'   => $c['majorSingle'],
-        //         'majorPlural'   => $c['majorPlural'],
-        //         'ISOnum'        => $c['ISOnum'],
-        //         'symbol'        => $c['symbol'],
-        //         'symbolNative' => $c['symbolNative'],
-        //         'minorSingle'   => $c['minorSingle'],
-        //         'minorPlural'   => $c['minorPlural'],
-        //         'ISOdigits'     => $c['ISOdigits'] ?? 2,
-        //         'numToBasic'    => $c['numToBasic'] ?? 100,
-        //     ]);
-        // }
-        if($resp["success"] && !empty($resp['data']['conversion_rates']))
-        {
-            foreach($resp['data']['conversion_rates'] as $iso => $rate) {
-                Currency::where('ISO', $iso)->update(['conversion_rate' => number_format($rate, 4)]);
-            }
+        /** For iniserting records */
+        $resp = Storage::disk('public')->get('currencies.json');
+        $currs = json_decode($resp, true);
+        foreach($currs as $iso => $c) {
+            Currency::firstOrCreate([
+                'ISO'           => $iso,
+                'name'          => $c['name'],
+                'demonym'       => $c['demonym'],
+                'majorSingle'   => $c['majorSingle'],
+                'majorPlural'   => $c['majorPlural'],
+                'ISOnum'        => $c['ISOnum'],
+                'symbol'        => $c['symbol'],
+                'symbolNative' => $c['symbolNative'],
+                'minorSingle'   => $c['minorSingle'],
+                'minorPlural'   => $c['minorPlural'],
+                'ISOdigits'     => $c['ISOdigits'] ?? 2,
+                'numToBasic'    => $c['numToBasic'] ?? 100,
+            ]);
         }
+
+        /** For updating Currency Exchange rates */
+        // $resp = CurrencyExchange::getRates($c);
+        // if($resp["success"] && !empty($resp['data']['conversion_rates']))
+        // {
+        //     foreach($resp['data']['conversion_rates'] as $iso => $rate) {
+        //         // $rate = str_replace(',', '', (string)$rate);
+        //         // $rate = number_format((float)$rate, 4);
+        //         Currency::where('ISO', $iso)->update(['conversion_rate' => $rate]);
+        //     }
+        // }
+
         $all = Currency::all();
         return response()->json($all);
     }

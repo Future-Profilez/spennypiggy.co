@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('currencies', function (Blueprint $table) {
             $table->id();
             $table->string('ISO', 10)->comment("ISO Code");
-            $table->string('conversion_rate', 20)->nullable()->comment("Base is GBP");
+            $table->float('conversion_rate', 10,4)->nullable()->comment("Base is GBP");
             $table->string('name', 100);
             $table->string('demonym', 100)->nullable();
             $table->string('majorSingle', 100)->nullable();
