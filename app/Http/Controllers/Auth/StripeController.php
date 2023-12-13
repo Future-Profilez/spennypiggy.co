@@ -8,6 +8,7 @@ use App\Jobs\CheckoutUser;
 use App\Jobs\SubscriptionCancelAtEnd;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
+use App\Models\StripeWebhookStatus;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Models\UserCart;
@@ -696,7 +697,10 @@ class StripeController extends Controller
 
     public function subscriptionStatus(Request $request)
     {
-        print_r($request);
-        die;
+        $stripe = new StripeWebhookStatus;
+        $stripe->data = $request;
+        $stripe->save();
+
+        return "Data saved";
     }
 }
