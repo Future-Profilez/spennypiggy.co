@@ -45,8 +45,6 @@ export default function Wishlistbox(props) {
       <div className='wishlistcntbox mb-3 mb-sm-4 whbg relative  shadow-voilet '>
         {IsloggedIn ?
           <>
-            
-
             <Wishlist openPop={open} item={itm} editpop={true} fetchingcats={fetchingcats} categories={categories} />  
           </>   
           : 
@@ -70,7 +68,6 @@ export default function Wishlistbox(props) {
         <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
           <img src={itm?.perma_link ? itm?.perma_link : uploadedimg} alt='img' className='' />
         </div>
-
 
         <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
           <div>

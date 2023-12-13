@@ -40,16 +40,15 @@ export default function Dashboard(props) {
     const [loading, setLoading] = useState(false);
     const fetchingcats = (e) => {
         setLoading(true);
-        axios.get(`${user.username}/${e}`)
-            .then((resp) => {
-                console.log("resp",resp)
-                const result = resp.data.items;
-                conCat(result.pinned || [], result.list || []);
-                setLoading(false);
-            }).catch((_err) => {
-                console.error("error", _err);
-                setLoading(false);
-            });
+        axios.get(`${user.username}/${e}`).then((resp) => {
+            console.log("resp",resp)
+            const result = resp.data.items;
+            conCat(result.pinned || [], result.list || []);
+            setLoading(false);
+        }).catch((_err) => {
+            console.error("error", _err);
+            setLoading(false);
+        });
     };
 
     const showCategory = (e) => {

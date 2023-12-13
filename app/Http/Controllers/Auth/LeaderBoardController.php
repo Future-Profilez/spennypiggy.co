@@ -13,17 +13,15 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class LeaderBoardController extends Controller
 {
-    public function wishtenderWishers(Request $request)
+    public function wishtenderWishers( $type)
     {
         try {
-            $request->validate([
-                "type" => ["required", "string"],
-            ]);
-            $perPage = $request->input('per_page', 10);
-            if (!empty($request->type)) {
+            
+            // $perPage = $request->input('per_page', 10);
+            if (!empty($type)) {
                 if (
-                    $request->type == 'monthly' || $request->type == 'weekly' ||
-                    $request->type == 'daily'
+                    $type == 'monthly' || $type == 'weekly' ||
+                    $type == 'daily'
                 ) {
                     $details = User::with(['stripePaymentDetails' => function ($query) {
                         $query->with(['stripePaymentItems' => function ($q) {

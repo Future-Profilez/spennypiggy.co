@@ -160,14 +160,15 @@ Route::get('/files/{filename}', function (string $filename) {
     return Storage::response($fullPath);
 });
 
-
 Route::post('subs-status/', [AuthenticatedSessionController::class, 'subscriptionStatus'])->name('subs-status');
-
 
 /* wishtender */
 Route::post('wishtender-wishes', [LeaderBoardController::class, 'wishtenderWishers'])->name('wishtender-wishes');
+
 Route::post('largest-gifts', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
 
+Route::get('/leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('/leaderboard');
+ 
 /*check username exist*/
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
 
