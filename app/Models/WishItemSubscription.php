@@ -37,11 +37,16 @@ class WishItemSubscription extends Model
     public static function boot()
     {
         parent::boot();
-        static::creating(fn($s) =>  $s->uuid = Uuid::uuid4());
+        static::creating(fn ($s) =>  $s->uuid = Uuid::uuid4());
     }
 
     public function wish_item()
     {
         return $this->belongsTo(WishItem::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

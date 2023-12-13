@@ -16,6 +16,7 @@ use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\WishtenderController;
 use App\Models\User;
 use App\Models\WishItem;
 use Illuminate\Support\Facades\Auth;
@@ -161,6 +162,11 @@ Route::get('/files/{filename}', function (string $filename) {
 
 
 Route::post('subs-status/', [AuthenticatedSessionController::class, 'subscriptionStatus'])->name('subs-status');
+
+
+/* wishtender */
+Route::post('wishtender-wishes', [WishtenderController::class, 'wishtenderWishers'])->name('wishtender-wishes');
+Route::post('largest-gifts', [WishtenderController::class, 'largestGifts'])->name('largest-gifts');
 
 /*check username exist*/
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
