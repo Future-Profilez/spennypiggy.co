@@ -164,6 +164,7 @@ export default function Footer(props) {
                                     <li>
                                         <ContentPrefrences classes="m-auto d-table" />{" "}
                                     </li>
+                                    
                                 </ul>
                             </div>
                         </div>
