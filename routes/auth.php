@@ -17,11 +17,8 @@ use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
-<<<<<<< HEAD
 use App\Http\Controllers\WishtenderController;
 use App\Http\Middleware\VerifyCsrfToken;
-=======
->>>>>>> 70c0017ffb63060b57d99b70d55dfa4a1911fc3b
 use App\Models\User;
 use App\Models\WishItem;
 use Illuminate\Support\Facades\Auth;
