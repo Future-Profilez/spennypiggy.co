@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Inertia\Inertia;
 
 class LeaderBoardController extends Controller
 {
@@ -71,6 +72,7 @@ class LeaderBoardController extends Controller
                             'coverimg' =>  $query->cover_url,
                             'top' => $rank / 100,
                         ];
+                        $rank++;
                     }
                     return response()->json([
                         "success" => true,
@@ -115,11 +117,15 @@ class LeaderBoardController extends Controller
                         'coverimg' =>  $query->cover_url,
                         'top' => $rank / 100,
                     ];
+                    $rank++;
                 }
-                return response()->json([
-                    "success" => true,
-                    'data' => $data,
-                    "message" => 'Wishtender wishes get successfully',
+                // return response()->json([
+                //     "success" => true,
+                //     'data' => $data,
+                //     "message" => 'Wishtender wishes get successfully',
+                // ]);
+                return Inertia::render('leaderboard/Board', [
+                    "data" => $data,
                 ]);
             }
         } catch (\Exception $e) {

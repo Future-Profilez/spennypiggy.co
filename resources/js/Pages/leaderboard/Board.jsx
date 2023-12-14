@@ -8,7 +8,7 @@ import { useState } from "react";
 export default function Board(props) {
 
     const { auth } = props;
-    console.log("props", props);
+    console.log("props leaderboard ", props);
 
     const [ranks, setranks]  = useState([]);
     const [period, setPeriod] = useState("weekly")
