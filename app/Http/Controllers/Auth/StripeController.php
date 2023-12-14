@@ -676,6 +676,8 @@ class StripeController extends Controller
                 $sub->upcoming_payment = $current;
                 $sub->save();
 
+                
+
                 if ($sub->recurring_for == 'onetime') {
                     SubscriptionCancelAtEnd::dispatch($sub);
                 }
@@ -758,10 +760,19 @@ class StripeController extends Controller
                 echo 'Received unknown event type ' . $event->type;
         }
 
+        if ($event->type == "invoice.updated") {
+        }
+
         if (!empty($invoice)) {
-            $stripe = new StripeWebhookStatus;
-            $stripe->data = $invoice;
-            $stripe->save();
+            $subs = WishItemSubscription::where('stripe_id', $event->data->object->subscription)->first();
+
+            if (!empty($subs)) {
+                $stripe = new StripeWebhookStatus;
+                $stripe->susbcription_id = $subs->id;
+                $stripe->invoice_type = $event->type;
+                $stripe->data = $invoice;
+                $stripe->save();
+            }
         }
 
         return true;
