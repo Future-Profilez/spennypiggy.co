@@ -676,7 +676,15 @@ class StripeController extends Controller
                 $sub->upcoming_payment = $current;
                 $sub->save();
 
-                
+                $timestamp = strtotime($current); // Convert date to Unix timestamp
+                $formattedTimestamp = date('U', $timestamp);
+
+                $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+
+                $stripe->subscriptions->update(
+                    $sub->stripe_id,
+                    ['proration_date' => $formattedTimestamp]
+                );
 
                 if ($sub->recurring_for == 'onetime') {
                     SubscriptionCancelAtEnd::dispatch($sub);
