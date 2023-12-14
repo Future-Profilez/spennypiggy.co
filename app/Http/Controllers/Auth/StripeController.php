@@ -775,7 +775,7 @@ class StripeController extends Controller
 
             if (!empty($subs)) {
                 $stripe = new StripeWebhookStatus;
-                $stripe->susbcription_id = $subs->id;
+                $stripe->subscription_id = $subs->id;
                 $stripe->invoice_type = $event->type;
                 $stripe->data = $event;
                 $stripe->save();
