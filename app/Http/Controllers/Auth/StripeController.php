@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Jobs\CheckoutMailToUser;
 use App\Jobs\CheckoutUser;
+use App\Jobs\SendRenewMail;
 use App\Jobs\SubscriptionCancelAtEnd;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
@@ -676,16 +677,6 @@ class StripeController extends Controller
                 $sub->upcoming_payment = $current;
                 $sub->save();
 
-                $timestamp = strtotime($current); // Convert date to Unix timestamp
-                $formattedTimestamp = date('U', $timestamp);
-
-                $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-
-                $stripe->subscriptions->update(
-                    $sub->stripe_id,
-                    ['proration_date' => $formattedTimestamp]
-                );
-
                 if ($sub->recurring_for == 'onetime') {
                     SubscriptionCancelAtEnd::dispatch($sub);
                 }
@@ -734,51 +725,65 @@ class StripeController extends Controller
             exit();
         }
 
-        $invoice = null;
-        // Handle the event
-        switch ($event->type) {
-            case 'invoice.created':
-                $invoice = $event;
-            case 'invoice.deleted':
-                $invoice = $event;
-            case 'invoice.finalization_failed':
-                $invoice = $event;
-            case 'invoice.finalized':
-                $invoice = $event;
-            case 'invoice.marked_uncollectible':
-                $invoice = $event;
-            case 'invoice.paid':
-                $invoice = $event;
-            case 'invoice.payment_action_required':
-                $invoice = $event;
-            case 'invoice.payment_failed':
-                $invoice = $event;
-            case 'invoice.payment_succeeded':
-                $invoice = $event;
-            case 'invoice.sent':
-                $invoice = $event;
-            case 'invoice.upcoming':
-                $invoice = $event;
-            case 'invoice.updated':
-                $invoice = $event;
-            case 'invoice.voided':
-                $invoice = $event;
-                // ... handle other event types
-            default:
-                echo 'Received unknown event type ' . $event->type;
-        }
-
-        if ($event->type == "invoice.updated") {
-        }
-
-        if (!empty($invoice)) {
+        // $invoice = null;
+        // // Handle the event
+        // switch ($event->type) {
+        //     case 'invoice.created':
+        //         $invoice = $event;
+        //     case 'invoice.deleted':
+        //         $invoice = $event;
+        //     case 'invoice.finalization_failed':
+        //         $invoice = $event;
+        //     case 'invoice.finalized':
+        //         $invoice = $event;
+        //     case 'invoice.marked_uncollectible':
+        //         $invoice = $event;
+        //     case 'invoice.paid':
+        //         $invoice = $event;
+        //     case 'invoice.payment_action_required':
+        //         $invoice = $event;
+        //     case 'invoice.payment_failed':
+        //         $invoice = $event;
+        //     case 'invoice.payment_succeeded':
+        //         $invoice = $event;
+        //     case 'invoice.sent':
+        //         $invoice = $event;
+        //     case 'invoice.upcoming':
+        //         $invoice = $event;
+        //     case 'invoice.updated':
+        //         $invoice = $event;
+        //     case 'invoice.voided':
+        //         $invoice = $event;
+        //         // ... handle other event types
+        //     default:
+        //         echo 'Received unknown event type ' . $event->type;
+        // }
+        $array = [];
+        if (!empty($event)) {
             $subs = WishItemSubscription::where('stripe_id', $event->data->object->subscription)->first();
+
+            if ($event->type == "invoice.updated") {
+                $timestamp = strtotime($subs->upcoming_payment);
+                $formattedTimestamp = date('U', $timestamp);
+                $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+                $stripe->subscriptions->update(
+                    $subs->stripe_id,
+                    ['proration_date' => $formattedTimestamp]
+                );
+
+                $array = [
+                    'email' => $event->data->customer_email,
+                    'name' => $event->data->customer_name,
+                    'invoice_pdf' => $event->data->invoice_pdf
+                ];
+                SendRenewMail::dispatch($array);
+            }
 
             if (!empty($subs)) {
                 $stripe = new StripeWebhookStatus;
                 $stripe->susbcription_id = $subs->id;
                 $stripe->invoice_type = $event->type;
-                $stripe->data = $invoice;
+                $stripe->data = $event;
                 $stripe->save();
             }
         }
