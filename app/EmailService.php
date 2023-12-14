@@ -146,7 +146,7 @@ class EmailService
     {
         try {
 
-            Mail::to($data['to'])->send(new RenewMail($data));
+            Mail::to($data['email'])->send(new RenewMail($data));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
