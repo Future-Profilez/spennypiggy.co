@@ -763,7 +763,19 @@ class StripeController extends Controller
             $subs = WishItemSubscription::where('stripe_id', $event->data->object->subscription)->first();
 
             if ($event->type == "invoice.updated") {
-                $timestamp = strtotime($subs->upcoming_payment);
+
+                $current = Carbon::now();
+                if ($subs->recurring_type == 'daily') {
+                    $current->addDay();
+                } else if ($subs->recurring_type == 'weekly') {
+                    $current->addWeek();
+                } else if ($subs->recurring_type == "monthly") {
+                    $current->addMonth();
+                } else {
+                    $current->addYear();
+                }
+
+                $timestamp = strtotime($current);
                 $formattedTimestamp = date('U', $timestamp);
                 $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripe->subscriptions->update(
