@@ -677,13 +677,6 @@ class StripeController extends Controller
                 $sub->upcoming_payment = $current;
                 $sub->save();
 
-                $timestamp = strtotime($current);
-                $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-                $stripe->subscriptions->update(
-                    $sub->stripe_id,
-                    ['billing_cycle_anchor' => 'now', 'proration_date' => $timestamp]
-                );
-
                 if ($sub->recurring_for == 'onetime') {
                     SubscriptionCancelAtEnd::dispatch($sub);
                 }
@@ -771,30 +764,12 @@ class StripeController extends Controller
 
             if ($event->type == "invoice.updated" && !empty($subs)) {
 
-                $current = Carbon::now();
-                if ($subs->recurring_type == 'daily') {
-                    $current->addDay();
-                } else if ($subs->recurring_type == 'weekly') {
-                    $current->addWeek();
-                } else if ($subs->recurring_type == "monthly") {
-                    $current->addMonth();
-                } else {
-                    $current->addYear();
-                }
-
-                $timestamp = strtotime($current);
-                $formattedTimestamp = date('U', $timestamp);
-                $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-                $stripe->subscriptions->update(
-                    $subs->stripe_id,
-                    ['billing_cycle_anchor' => 'now', 'proration_date' => $formattedTimestamp]
-                );
-
                 $array = [
                     'email' => $event->data->customer_email,
                     'name' => $event->data->customer_name,
                     'invoice_pdf' => $event->data->invoice_pdf
                 ];
+
                 SendRenewMail::dispatch($array);
             }
 
