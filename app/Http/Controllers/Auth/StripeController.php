@@ -772,6 +772,9 @@ class StripeController extends Controller
                     'invoice_pdf' => $event->data->invoice_pdf
                 ];
 
+                $subs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+                $subs->save();
+
                 SendRenewMail::dispatch($array);
             }
 
