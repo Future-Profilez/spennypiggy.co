@@ -282,7 +282,7 @@ ul.socialmedia a img{width:35px;height:35px;}
 .tersms-accept{font-size:16px !important;}
 div#msgText p b{font-weight:700 !important;padding:0 4px;color:#000;}
 .pinned-badge svg{width:17px;height:17px;fill:#fff;}
-.pinned-badge{display:flex;text-transform:uppercase;justify-content:start;position:absolute;top:10px;left:10px;align-items:center;background:#f64c96 !important;color:#fff !important;}
+.pinned-badge{display:flex;text-transform:uppercase;justify-content:flex-start;position:absolute;top:10px;left:10px;align-items:center;background:#f64c96 !important;color:#fff !important;}
 
 
 /* Responsive */
