@@ -175,6 +175,11 @@ Route::post('largest-gifts', [LeaderBoardController::class, 'largestGifts'])->na
 Route::get('/leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('/leaderboard');
 
 /*check username exist*/
+Route::get('/data-check', function () {
+    $ret = StripeControl::getSubscription("sub_1OND8tG7xsNScLmXLFzAhobA");
+
+    return $ret;
+});
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
 
 Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');

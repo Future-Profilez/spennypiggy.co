@@ -762,6 +762,8 @@ class StripeController extends Controller
         if (!empty($event)) {
             $subs = WishItemSubscription::where('stripe_id', $event->data->object->subscription)->first();
 
+            $ret = StripeControl::getSubscription($event->data->object->subscription);
+
             if ($event->type == "invoice.updated" && !empty($subs)) {
 
                 $array = [

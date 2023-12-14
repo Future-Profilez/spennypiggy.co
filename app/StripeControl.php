@@ -272,4 +272,28 @@ class StripeControl
             throw new Exception("Stripe API Error: " . $e->getMessage());
         }
     }
+
+
+    /**
+     * Update A Subscriptions
+     *
+     * @param string $sub_id Subscription Id
+     * @param array $payload Update Payload
+     * @return Throwable|\Stripe\Subscription
+     */
+    public static function getSubscription($sub_id)
+    {
+        self::setClient();
+        try {
+            return self::$client->subscriptions->retrieve($sub_id, []);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
 }
