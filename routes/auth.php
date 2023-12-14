@@ -166,7 +166,6 @@ Route::get('/files/{filename}', function (string $filename) {
 
 Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status')->withoutMiddleware(VerifyCsrfToken::class);
 
-Route::post('subs-update-event/', [StripeController::class, 'subscriptionUpdateEvent'])->name('subs-update-event')->withoutMiddleware(VerifyCsrfToken::class);
 
 /* wishtender */
 Route::post('wishtender-wishes', [LeaderBoardController::class, 'wishtenderWishers'])->name('wishtender-wishes');

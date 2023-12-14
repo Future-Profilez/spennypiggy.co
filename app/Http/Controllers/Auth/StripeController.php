@@ -678,11 +678,10 @@ class StripeController extends Controller
                 $sub->save();
 
                 $timestamp = strtotime($current);
-                $formattedTimestamp = date('U', $timestamp);
                 $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripe->subscriptions->update(
                     $sub->stripe_id,
-                    ['billing_cycle_anchor' => 'now', 'proration_date' => $formattedTimestamp]
+                    ['billing_cycle_anchor' => 'now', 'proration_date' => $timestamp]
                 );
 
                 if ($sub->recurring_for == 'onetime') {
