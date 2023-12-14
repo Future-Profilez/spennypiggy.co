@@ -10,7 +10,7 @@ const JoinUs = React.lazy(() => import('@/Components/JoinUs'));
 
 export default function Home({ auth, laravelVersion, user }) {
 
-    return <> 
+    return <>
         <LiveBar />
         <Guest auth={auth.user} user={auth.user}>
             <Head title="Welcome" />

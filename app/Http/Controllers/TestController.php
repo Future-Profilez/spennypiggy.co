@@ -81,4 +81,18 @@ class TestController extends Controller
         $all = Currency::all();
         return response()->json($all);
     }
+
+    /**
+     * Get Currency Data
+     *
+     * @return mixed
+     */
+    public function testCurrencyData()
+    {
+        return response()->json([
+            'success'   =>  true,
+            'rate'      =>  Currency::rates(),
+            'symbol'    => Currency::symbols()
+        ]);
+    }
 }

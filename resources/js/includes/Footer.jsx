@@ -112,8 +112,8 @@ export default function Footer(props) {
     useEffect(() => {
         confgureGtag();
     }, []);
- 
-    
+
+
     return (
         <>
             <Helmet>
@@ -132,7 +132,7 @@ export default function Footer(props) {
                                 width={"auto"}
                             />
                         </div>
-                        
+
                         <div className="footlinksbox">
                             <div className="footlinks">
                                 <ul>
@@ -163,7 +163,7 @@ export default function Footer(props) {
                                     <li>
                                         <ContentPrefrences classes="m-auto d-table" />{" "}
                                     </li>
-                                    
+
                                 </ul>
                             </div>
                         </div>
