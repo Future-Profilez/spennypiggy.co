@@ -104,4 +104,5 @@ class WishItem extends Model
     {
         return $this->hasMany(WishItemSubscription::class, 'wish_item_id');
     }
+
 }

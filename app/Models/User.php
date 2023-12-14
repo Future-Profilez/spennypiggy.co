@@ -141,4 +141,12 @@ class User extends Authenticatable
             'id'
         );
     }
+
+
+    public function subscriptions()
+    {
+        return $this->hasManyThrough(WishItemSubscription::class, WishItem::class, 'user_id', 'wish_item_id', 'id', 'id');
+    }
 }
+
+

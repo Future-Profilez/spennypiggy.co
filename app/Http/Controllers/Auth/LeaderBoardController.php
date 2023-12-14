@@ -13,73 +13,70 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class LeaderBoardController extends Controller
 {
-    public function wishtenderWishers($type)
+    public function wishtenderWishers($type = null)
     {
         try {
-            if (!empty($type)) {
-                if (
-                    $type == 'monthly' || $type == 'weekly' ||
-                    $type == 'daily'
-                ) {
+            if (!empty($type) || $type != null) {
+                if ($type == 'monthly' || $type == 'weekly' || $type == 'daily') {
 
-                    $data = User::whereHas('paymentitems', function ($q) {
-                        $q->sum('amount')->orderByRaw('amount DESC');
-                    })->whereHas('subscriptions', function ($q) {
-                        $q->sum('amount')->orderByRaw('amount DESC');
-                    })->get();
-                    echo "<pre>";
-                    print_r($data->toArray());
-                    die;
+                    $currentMonth = Carbon::now()->month;
+                    $currentYear = Carbon::now()->year;
+                    $currentWeekStartDate = Carbon::now()->startOfWeek();
+                    $currentWeekEndDate = Carbon::now()->endOfWeek();
+                    $currentDate = Carbon::today();
 
+                    $querydata = User::whereHas('paymentitems', function ($q) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
+                        $q->selectRaw('owner_id, SUM(amount) as total_amount')
+                            ->groupBy('owner_id')
+                            ->orderByRaw('total_amount DESC');
+                        if ($type == 'monthly') {
+                            $q->where('stripe_payment_details.payment_status', 'paid')
+                                ->whereMonth('stripe_payment_items.created_at', $currentMonth)
+                                ->whereYear('stripe_payment_items.created_at', $currentYear);
+                        } elseif ($type == 'weekly') {
+                            $q->where('stripe_payment_details.payment_status', 'paid')
+                                ->whereBetween('stripe_payment_items.created_at', [$currentWeekStartDate, $currentWeekEndDate]);
+                        } else {
+                            $q->where('stripe_payment_details.payment_status', 'paid')
+                                ->whereDate('stripe_payment_items.created_at', $currentDate);
+                        }
+                    })->orWhereHas(
+                        'subscriptions',
+                        function ($q) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
+                            $q->selectRaw('wish_item_subscriptions.user_id, SUM(amount) as total_amount')
+                                ->groupBy('wish_item_subscriptions.user_id')
+                                ->orderByRaw('total_amount DESC');
+                            if ($type == 'monthly') {
+                                $q->where('wish_item_subscriptions.status', 'paid')
+                                    ->whereMonth('wish_item_subscriptions.created_at', $currentMonth)
+                                    ->whereYear('wish_item_subscriptions.created_at', $currentYear);
+                            } elseif ($type == 'weekly') {
+                                $q->where('wish_item_subscriptions.status', 'paid')
+                                    ->whereBetween('wish_item_subscriptions.created_at', [$currentWeekStartDate, $currentWeekEndDate]);
+                            } else {
+                                $q->where('wish_item_subscriptions.status', 'paid')
+                                    ->whereDate('wish_item_subscriptions.created_at', $currentDate);
+                            }
+                        }
+                    )->get();
 
-
-                    // $items = User::with(['stripePaymentDetails' => function ($query) use ($type) {
-                    //     $query->with(['stripePaymentItems' => function ($q, $request) use ($type) {
-                    //         if ($type == 'monthly') {
-                    //             $q->whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year);
-                    //         } elseif ($type == 'weekly') {
-                    //             $q->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])->with(['owner']);
-                    //         } else {
-                    //             $q->whereDate('created_at', Carbon::today())->with(['owner']);
-                    //         }
-                    //         $q->groupBy('owner_id')->selectRaw('owner_id, COUNT(*) as payment_count')->orderByDesc('payment_count');
-                    //     }]);
-                    // }])->get();
-
-                    $subscriptions = WishItemSubscription::where('status', 'paid')
-                        ->where('recurring_type', $type)
-                        ->with(['wish_item.user'])
-                        ->groupBy('wish_item_id')
-                        ->selectRaw('wish_item_id, COUNT(*) as payment_count')
-                        ->orderByDesc('payment_count')
-                        ->get();
-
-                    $datafirst = [];
-                    $rankfirst = 1;
-                    foreach ($items as $item) {
-                        $datafirst[] = [
-                            'rank' => $rankfirst,
-                            'name' => $item->name ?? '',
-                            'username' => $item->username ?? '',
-                            'profile' => $item->avatar_url ?? '',
-                            'top' => $rankfirst / 100 . '%',
+                    $data = [];
+                    $rank = 1;
+                    foreach ($querydata as $query) {
+                        $data[] = [
+                            'rank' => $rank,
+                            'name' => $query->name ?? '',
+                            'username' => $query->username ?? '',
+                            'avatar' => $query->avatar_url,
+                            'coverimg' =>  $query->cover_url,
+                            'top' => $rank / 100,
                         ];
-                        $rankfirst++;
                     }
-
-
-                    $datasecond = [];
-                    $ranksecond = 1;
-                    foreach ($subscriptions as $subscription) {
-                        $datasecond[] = [
-                            'rank' => $ranksecond,
-                            'name' => $subscription->wish_item->user->name ?? '',
-                            'username' => $subscription->wish_item->user->username ?? '',
-                            'profile' => $subscription->wish_item->user->avatar_url ?? '',
-                            'top' => $ranksecond / 100 . '%',
-                        ];
-                        $ranksecond++;
-                    }
+                    return response()->json([
+                        "success" => true,
+                        'data' => $data,
+                        "message" => 'Wishtender wishes get successfully',
+                    ]);
                 } else {
                     return response()->json([
                         "success" => false,
@@ -87,9 +84,42 @@ class LeaderBoardController extends Controller
                     ]);
                 }
             } else {
+                $currentMonth = Carbon::now()->month;
+                $currentYear = Carbon::now()->year;
+
+                $querydata = User::whereHas('paymentitems', function ($q) use ($type, $currentMonth, $currentYear) {
+                    $q->selectRaw('owner_id, SUM(amount) as total_amount')
+                        ->groupBy('owner_id')
+                        ->orderByRaw('total_amount DESC')->where('stripe_payment_details.payment_status', 'paid')
+                        ->whereMonth('stripe_payment_items.created_at', $currentMonth)
+                        ->whereYear('stripe_payment_items.created_at', $currentYear);
+                })->orWhereHas(
+                    'subscriptions',
+                    function ($q) use ($type, $currentMonth, $currentYear) {
+                        $q->selectRaw('wish_item_subscriptions.user_id, SUM(amount) as total_amount')
+                            ->groupBy('wish_item_subscriptions.user_id')
+                            ->orderByRaw('total_amount DESC')->where('wish_item_subscriptions.status', 'paid')
+                            ->whereMonth('wish_item_subscriptions.created_at', $currentMonth)
+                            ->whereYear('wish_item_subscriptions.created_at', $currentYear);
+                    }
+                )->get();
+
+                $data = [];
+                $rank = 1;
+                foreach ($querydata as $query) {
+                    $data[] = [
+                        'rank' => $rank,
+                        'name' => $query->name ?? '',
+                        'username' => $query->username ?? '',
+                        'avatar' => $query->avatar_url,
+                        'coverimg' =>  $query->cover_url,
+                        'top' => $rank / 100,
+                    ];
+                }
                 return response()->json([
-                    "success" => false,
-                    "message" => 'Please enter type',
+                    "success" => true,
+                    'data' => $data,
+                    "message" => 'Wishtender wishes get successfully',
                 ]);
             }
         } catch (\Exception $e) {

@@ -40,13 +40,17 @@ class WishItemSubscription extends Model
         static::creating(fn ($s) =>  $s->uuid = Uuid::uuid4());
     }
 
+    // public function wish_item()
+    // {
+    //     return $this->belongsTo(WishItem::class);
+    // }
     public function wish_item()
     {
-        return $this->belongsTo(WishItem::class);
+        return $this->belongsTo(WishItem::class, 'wish_item_id');
     }
 
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
+    // public function user()
+    // {
+    //     return $this->belongsTo(User::class, 'user_id');
+    // }
 }
