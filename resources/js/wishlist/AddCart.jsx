@@ -113,21 +113,7 @@ export default function AddCart(props) {
                     ""
                 )}
 
-                {/* {item.subscription == "1" ?  (
-                    <>
-                        <p className="mb-1">Subscription interval </p>
-                        <div className="croud-add w-100 mb-3">
-                            <select onChange={getSubscription} onClick={handleAuthsub} className="w-100">
-                                <option id={"option-period"} value={'onetime'} >One Time Purchase</option>
-                                <option disabled={auth ? false : true} value={item.subscription_period} > Paid Every
-                                {item.subscription_period == 'daily' ? " Day" : ''}
-                                {item.subscription_period == 'weekly' ? " Week" : ''}
-                                {item.subscription_period == 'monthly' ? " Month" : ''}
-                                </option>
-                            </select>
-                        </div>
-                    </>
-                ) :''} */}
+                
 
                 {item.subscription == 1
                 ? <div className=" pb-2">

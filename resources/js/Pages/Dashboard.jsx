@@ -82,7 +82,7 @@ export default function Dashboard(props) {
                                         links={sociallinks}
                                         user={user}
                                     />
-                                    {/* <Link href={route('change.currency', {c:'INR'})}>INR</Link> */}
+                                    <Link href={route('change.currency', {c:'INR'})}>INR</Link>
                                     <div className="userProfileDate pt-0">
                                         {IsloggedIn ? (
                                             <>

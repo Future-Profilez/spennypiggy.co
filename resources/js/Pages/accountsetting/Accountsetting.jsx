@@ -7,6 +7,7 @@ import UpdateProfileInformation from '../Profile/Partials/UpdateProfileInformati
 import UpdatePasswordForm from '../Profile/Partials/UpdatePasswordForm';
 import DeleteUserForm from '../Profile/Partials/DeleteUserForm';
 import PaymentDashboard from '../stripe/PaymentDashboard';
+import ChangeCurrency from '@/Components/ChangeCurrency';
 
 export default function Accountsetting(props) {
     console.log("props aa",props);
@@ -51,6 +52,11 @@ export default function Accountsetting(props) {
                             <li>
                                 <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>PASSWORD</>} >
                                     <UpdatePasswordForm passwordUpdate={passwordUpdated} />
+                                </Popup>
+                            </li>
+                            <li>
+                                <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>DISPLAY CURRENCY</>} >
+                                    <ChangeCurrency />
                                 </Popup>
                             </li>
 
