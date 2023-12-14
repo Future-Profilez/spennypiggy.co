@@ -12,17 +12,31 @@ export default function Avatar({src, name, username,  subhead, url, link}) {
          .avatar-content h2{margin-bottom:2px;font-size:18px;}
       `}</style>
 
-      <div className="avatar-wrap" >
-         <Link href={url ? url : `/${link ? link : username}`} className="useravatar" >
-            <div className="avatar" >
-                  <img src={src}alt="image-avatar" className="img-fluid" />
+      {username ? 
+         <div className="avatar-wrap" >
+            <Link href={url ? url : `/${link ? link : username}`} className="useravatar" >
+               <div className="avatar" >
+                     <img src={src}alt="image-avatar" className="img-fluid" />
+               </div>
+               <div className="avatar-content" >
+                     <h2>{name}</h2>
+                     <p>{subhead ? subhead : username}</p>
+               </div>
+            </Link>
+         </div>  
+         :
+         <div className="avatar-wrap" >
+            <div className="useravatar" >
+               <div className="avatar" >
+                     <img src={src}alt="image-avatar" className="img-fluid" />
+               </div>
+               <div className="avatar-content" >
+                     <h2>{name}</h2>
+                     {subhead ? <p>{subhead ? subhead : 'username' }</p> : ''}
+               </div>
             </div>
-            <div className="avatar-content" >
-                  <h2>{name}</h2>
-                  <p>{subhead ? subhead : username}</p>
-            </div>
-         </Link>
-      </div>
+         </div> 
+      }
   </>
  
 }

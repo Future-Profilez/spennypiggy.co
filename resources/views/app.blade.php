@@ -15,7 +15,7 @@
     <link rel="apple-touch-icon-precomposed" href="{{ URL::asset('/favicon.ico') }}" />
     <link rel="shortcut icon" href="{{ URL::asset('/favicon.ico') }}" />
     <meta name="msapplication-TileColor" content="#05EFB8" />
-    <meta name="msapplication-TileImage" content="{{ URL::asset('/site.png') }}">
+    <meta name="msapplication-TileImage" content="{{ URL::asset('/siteicon.png') }}">
     <meta name="theme-color" content="#05EFB8" />
     <meta name="description" content="For spicy creators to Safely recieve financial gifts" />
     <meta name="keywords"
@@ -23,16 +23,16 @@
     <meta property="og:title" content="The Best Alternative to Amazon Wishlist" />
     <meta property="og:type" content="video.movie" />
     <meta property="og:url" content="spennypiggy.co" />
-    <meta property="og:image" content="{{ URL::asset('/site.png') }}" />
+    <meta property="og:image" content="{{ URL::asset('/siteicon.png') }}" />
     <meta property="og:site_name" content="spennypiggy.co" />
     <meta property="og:description" content="For spicy creators to Safely recieve financial gifts" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="The Best Alternative to Amazon Wishlist" />
     <meta name="twitter:description" content="For spicy creators to Safely recieve financial gifts" />
-    <meta name="twitter:image" content="{{ URL::asset('/site.png') }}" />
+    <meta name="twitter:image" content="{{ URL::asset('/siteicon.png') }}" />
     <meta name="twitter:site" content="@spennypiggy" />
     <meta name="twitter:image:alt" content="The Best Alternative to Amazon Wishlist" />
-    <meta name="twitter:image:src" content="{{ URL::asset('/site.png') }}" />
+    <meta name="twitter:image:src" content="{{ URL::asset('/siteicon.png') }}" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <!-- <script async type="text/javascript" src="/service-worker.js"></script> -->
 
