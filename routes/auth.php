@@ -167,12 +167,7 @@ Route::get('/files/{filename}', function (string $filename) {
 Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status')->withoutMiddleware(VerifyCsrfToken::class);
 
 /* wishtender */
-<<<<<<< HEAD
-Route::post('wishtender-wishes', [LeaderBoardController::class, 'wishtenderWishers'])->name('wishtender-wishes');
-
-=======
 Route::get('wishtender-wishes/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('wishtender-wishes');
->>>>>>> 9dcbedfef2d9d137a8f589cf71ef59a135f529c2
 Route::post('largest-gifts', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
 
 Route::get('/leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('/leaderboard');

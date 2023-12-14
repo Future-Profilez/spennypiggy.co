@@ -13,36 +13,11 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class LeaderBoardController extends Controller
 {
-<<<<<<< HEAD
-    public function wishtenderWishers( $type)
-    {
-        try {
-            
-            // $perPage = $request->input('per_page', 10);
-            if (!empty($type)) {
-                if (
-                    $type == 'monthly' || $type == 'weekly' ||
-                    $type == 'daily'
-                ) {
-                    $details = User::with(['stripePaymentDetails' => function ($query) {
-                        $query->with(['stripePaymentItems' => function ($q) {
-                        //   $q->;
-                        }]);
-                    }])->get();
-                    //  $details = WishItemSubscription::where('status', 'paid')
-                    //         ->where('recurring_type', $request->type)
-                    //         ->with(['user'])
-                    //         ->groupBy('user_id')
-                    //         ->selectRaw('user_id, COUNT(*) as payment_count')
-                    //         ->orderByDesc('payment_count')
-                    //         ->get();
-=======
     public function wishtenderWishers($type = null)
     {
         try {
             if (!empty($type) || $type != null) {
                 if ($type == 'monthly' || $type == 'weekly' || $type == 'daily') {
->>>>>>> 9dcbedfef2d9d137a8f589cf71ef59a135f529c2
 
                     $currentMonth = Carbon::now()->month;
                     $currentYear = Carbon::now()->year;
