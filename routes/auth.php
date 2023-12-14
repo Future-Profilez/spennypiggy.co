@@ -165,7 +165,7 @@ Route::post('subs-status/', [AuthenticatedSessionController::class, 'subscriptio
 
 
 /* wishtender */
-Route::post('wishtender-wishes', [LeaderBoardController::class, 'wishtenderWishers'])->name('wishtender-wishes');
+Route::get('wishtender-wishes/{type}', [LeaderBoardController::class, 'wishtenderWishers'])->name('wishtender-wishes');
 Route::post('largest-gifts', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
 
 /*check username exist*/

@@ -128,4 +128,17 @@ class User extends Authenticatable
     {
         return $this->hasMany(WishItem::class, 'user_id');
     }
+
+
+    public function paymentitems()
+    {
+        return $this->hasManyThrough(
+            StripePaymentItems::class,
+            StripePaymentDetail::class,
+            'owner_id',
+            'stripe_payment_id',
+            'id',
+            'id'
+        );
+    }
 }

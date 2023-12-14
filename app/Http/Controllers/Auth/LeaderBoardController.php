@@ -13,33 +13,41 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class LeaderBoardController extends Controller
 {
-    public function wishtenderWishers(Request $request)
+    public function wishtenderWishers($type)
     {
         try {
-            $request->validate([
-                "type" => ["required", "string"],
-            ]);
-            $perPage = $request->input('per_page', 10);
-            if (!empty($request->type)) {
+            if (!empty($type)) {
                 if (
-                    $request->type == 'monthly' || $request->type == 'weekly' ||
-                    $request->type == 'daily'
+                    $type == 'monthly' || $type == 'weekly' ||
+                    $type == 'daily'
                 ) {
-                    $items = User::with(['stripePaymentDetails' => function ($query) {
-                        $query->with(['stripePaymentItems' => function ($q, $request) {
-                            if ($request->type == 'monthly') {
-                                $q->whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year);
-                            } elseif ($request->type == 'weekly') {
-                                $q->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])->with(['owner']);
-                            } else {
-                                $q->whereDate('created_at', Carbon::today())->with(['owner']);
-                            }
-                            $q->groupBy('owner_id')->selectRaw('owner_id, COUNT(*) as payment_count')->orderByDesc('payment_count');
-                        }]);
-                    }])->get();
+
+                    $data = User::whereHas('paymentitems', function ($q) {
+                        $q->sum('amount')->orderByRaw('amount DESC');
+                    })->whereHas('subscriptions', function ($q) {
+                        $q->sum('amount')->orderByRaw('amount DESC');
+                    })->get();
+                    echo "<pre>";
+                    print_r($data->toArray());
+                    die;
+
+
+
+                    // $items = User::with(['stripePaymentDetails' => function ($query) use ($type) {
+                    //     $query->with(['stripePaymentItems' => function ($q, $request) use ($type) {
+                    //         if ($type == 'monthly') {
+                    //             $q->whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year);
+                    //         } elseif ($type == 'weekly') {
+                    //             $q->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])->with(['owner']);
+                    //         } else {
+                    //             $q->whereDate('created_at', Carbon::today())->with(['owner']);
+                    //         }
+                    //         $q->groupBy('owner_id')->selectRaw('owner_id, COUNT(*) as payment_count')->orderByDesc('payment_count');
+                    //     }]);
+                    // }])->get();
 
                     $subscriptions = WishItemSubscription::where('status', 'paid')
-                        ->where('recurring_type', $request->type)
+                        ->where('recurring_type', $type)
                         ->with(['wish_item.user'])
                         ->groupBy('wish_item_id')
                         ->selectRaw('wish_item_id, COUNT(*) as payment_count')
@@ -88,6 +96,7 @@ class LeaderBoardController extends Controller
             return response()->json([
                 "success" => false,
                 "message" => 'Something went wrong',
+                "error" => $e
             ]);
         }
     }
