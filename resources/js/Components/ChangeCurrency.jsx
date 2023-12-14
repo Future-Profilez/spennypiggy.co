@@ -5,11 +5,11 @@ import { useForm } from "@inertiajs/react";
 import Select from 'react-select';
 import { useState } from "react";
 
-export default function ChangeCurrency({text}) {
+export default function ChangeCurrency({defaultvalue}) {
 
    const { successAlert, errorAlert } = useAlerts();
    const { data, setData, get, processing, errors, reset } = useForm({
-      currency:  '',
+      currency: defaultvalue ,
    });
 
    const currencies = [
@@ -64,6 +64,8 @@ export default function ChangeCurrency({text}) {
             <label className="d-block text-start mb-2">Display Currency</label>
             <Select  classNamePrefix="react-select" className="react-select my-4 " 
                options={currencies}
+               placeholder={data.currency|| 'Select..'}
+               defaultValue={data.currency}
                onChange={(e) => handleSelect(e)}
             />
       </div>

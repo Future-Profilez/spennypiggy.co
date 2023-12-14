@@ -11,7 +11,7 @@ import ChangeCurrency from '@/Components/ChangeCurrency';
 
 export default function Accountsetting(props) {
     console.log("props aa",props);
-    const {auth, user} = props;
+    const {auth, user, global_currency} = props;
     const [passClose, setSassClose] = useState(null);
 
     const passwordUpdated = () => { 
@@ -55,8 +55,8 @@ export default function Accountsetting(props) {
                                 </Popup>
                             </li>
                             <li>
-                                <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>DISPLAY CURRENCY</>} >
-                                    <ChangeCurrency />
+                                <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>DISPLAY CURRENCY <span className='text-gray'>{global_currency}</span></>} >
+                                    <ChangeCurrency defaultvalue={global_currency} />
                                 </Popup>
                             </li>
 
