@@ -762,6 +762,8 @@ class StripeController extends Controller
         if (!empty($event)) {
             $subs = WishItemSubscription::where('stripe_id', $event->data->object->subscription)->first();
 
+            $ret = StripeControl::getSubscription($event->data->object->subscription);
+
             if ($event->type == "invoice.updated" && !empty($subs)) {
 
                 $array = [
@@ -769,6 +771,9 @@ class StripeController extends Controller
                     'name' => $event->data->customer_name,
                     'invoice_pdf' => $event->data->invoice_pdf
                 ];
+
+                $subs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+                $subs->save();
 
                 SendRenewMail::dispatch($array);
             }

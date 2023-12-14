@@ -7,6 +7,10 @@
                     <td style="line-height:20px;height:20px;"></td>
                 </tr>
                 <tr>
+                    <td style=" padding: 0 0 25px 0; text-align: center;"><img style="max-width: 140px;"
+                    src="https://whoyouinto.com/emails/user/thankyou.png" alt="img"></td>
+                </tr>
+                <tr> 
                     <td
                         style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 22px; line-height: 30px;  color:F94F97; text-align: left; text-align: center;">
                         <br class="text-transform:capitalize;color:#F94F97 "> {{ $payment->payment->owner->name }} sent you <br></br>
@@ -14,26 +18,53 @@
                          </b>
                     </td>
                 </tr>
-
                 <tr>
                     <td style="line-height:20px;height:20px;"></td>
                 </tr>
 
-                <tr>
-                    <td style=" padding: 0 0 25px 0; text-align: center;"><img style="max-width: 140px;"
-                    src="https://whoyouinto.com/emails/user/thankyou.png" alt="img"></td>
-                </tr>
+              
 
-                <tr>
-                    <td style="line-height:10px;height:10px;"></td>
-                </tr>
+                @if (!empty($payment->message))                    
                 <tr>
                     <td
-                        style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color:#000000; text-align: left; text-align: center;">
-                        <b class="text-transform:capitalize">{{ $payment->message ?? '' }}.</b>
+                        style="padding: 0 0 15px 0; font-family: Arial; font-weight: normal;  
+                        font-size: 16px; line-height: 24px;  color:#000000; text-align: left; text-align: center;">
+                        <b class="text-transform:capitalize">{{ $payment->message }}</b>
                     </td>
                 </tr>
+                @endif
+                <tr>
+                    <td style="line-height:20px;height:20px;"></td>
+                </tr>
 
+                @if (!empty($payment->message_media))
+                <tr>
+                    <td>
+                        <table cellpadding="0" cellspacing="0" style=" max-width:280px;" >
+                        <tbody></tbody>
+                            @if ($payment->media_type == 'image')
+                            <tr>
+                                <img style="border-radius:20px; max-height:300px; 
+                                object-fit:cover;" src="https://ucarecdn.com/{{ $payment->message_media ?? '' }}/" alt="img" />
+                            </tr>
+                            @endif
+                
+                            @if ($payment->media_type == 'video')
+                            <tr>
+                                <td
+                                    style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color:#000000; text-align: left; text-align: center;">
+                                    <b class="text-transform:capitalize">{{ $payment->payment->owner->name }} has attached a video message.Click "See Message" to find the video message.</b>
+                                </td>
+                            </tr>
+                            @endif
+                        </table>
+                    </td>
+                </tr>
+                @endif                    
+                
+                <tr>
+                    <td style="line-height:20px;height:20px;"></td>
+                </tr>
                 <tr>
                     <td style="padding:0 0 10px 0; text-align: center;">
                         <a href="{{env('APP_URL')/wish-tracker}"

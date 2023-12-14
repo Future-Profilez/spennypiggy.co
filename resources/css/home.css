@@ -282,7 +282,7 @@ ul.socialmedia a img{width:35px;height:35px;}
 .tersms-accept{font-size:16px !important;}
 div#msgText p b{font-weight:700 !important;padding:0 4px;color:#000;}
 .pinned-badge svg{width:17px;height:17px;fill:#fff;}
-.pinned-badge{display:flex;text-transform:uppercase;justify-content:start;position:absolute;top:10px;left:10px;align-items:center;background:#f64c96 !important;color:#fff !important;}
+.pinned-badge{display:flex;text-transform:uppercase;justify-content:flex-start;position:absolute;top:10px;left:10px;align-items:center;background:#f64c96 !important;color:#fff !important;}
 
 
 /* Responsive */
@@ -571,9 +571,11 @@ div#msgText p{display:flex;align-items:flex-start;}
 .tooltipbtn p:after{content:"";width:10px;height:10px;background:#000;position:absolute;left:40px;top:-3px;transform:rotate(45deg);}
 .titleprice:hover .tooltipbtn p{display:block !important;}
 .welcomeRt{animation:menu 0.5s linear;transition:0.6s;}
-.wishtracker .nav.nav-tabs li button{background:transparent;color:#ffffff;border:0 !important;padding:10px 14px 10px 0px !important;margin-right:40px;font-size:20px;border-bottom:2px solid transparent !important;}
+.wishtracker .nav.nav-tabs li:first-child button{margin-right:10px;}
+.wishtracker .nav.nav-tabs li button{background:transparent;color:#ffffff;
+   border:0 !important;padding:10px 14px 10px 0px !important;font-size:20px;border-bottom:2px solid transparent !important;}
 .wishtracker .nav.nav-tabs li button.active{color:#f94f97;border-color:#f94f97 !important;}
-.wishtracker .nav.nav-tabs{border:0;border-radius:20px;padding:0px 20px;}
+.wishtracker .nav.nav-tabs{border:0;border-radius:20px;padding:0px 0px;}
 .disabled{opacity:0.6;}
 .mytable td{color:#fff;}
 .mytable table{width:100%;}

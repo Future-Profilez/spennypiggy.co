@@ -13,7 +13,6 @@ export default function Cart(props) {
     const deviceid = DeviceID();
     const { auth, user, carts } = props;
     const [ cartsItems, setCartItems ] = useState(carts);
-    console.log("cart props", props);
 
     const [loading, setLoading]= useState(false);
     const fetchCartItem = (e) => { 
