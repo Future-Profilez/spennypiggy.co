@@ -677,6 +677,14 @@ class StripeController extends Controller
                 $sub->upcoming_payment = $current;
                 $sub->save();
 
+                $timestamp = strtotime($current);
+                $formattedTimestamp = date('U', $timestamp);
+                $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+                $stripe->subscriptions->update(
+                    $sub->stripe_id,
+                    ['billing_cycle_anchor' => 'now', 'proration_date' => $formattedTimestamp]
+                );
+
                 if ($sub->recurring_for == 'onetime') {
                     SubscriptionCancelAtEnd::dispatch($sub);
                 }
@@ -762,7 +770,7 @@ class StripeController extends Controller
         if (!empty($event)) {
             $subs = WishItemSubscription::where('stripe_id', $event->data->object->subscription)->first();
 
-            if ($event->type == "invoice.updated") {
+            if ($event->type == "invoice.updated" && !empty($subs)) {
 
                 $current = Carbon::now();
                 if ($subs->recurring_type == 'daily') {
@@ -780,7 +788,7 @@ class StripeController extends Controller
                 $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripe->subscriptions->update(
                     $subs->stripe_id,
-                    ['proration_date' => $formattedTimestamp]
+                    ['billing_cycle_anchor' => 'now', 'proration_date' => $formattedTimestamp]
                 );
 
                 $array = [
