@@ -123,4 +123,29 @@ class User extends Authenticatable
         return $this->hasMany(StripePaymentDetail::class, 'owner_id');
     }
 
+    public function wishItems()
+    {
+        return $this->hasMany(WishItem::class, 'user_id');
+    }
+
+
+    public function paymentitems()
+    {
+        return $this->hasManyThrough(
+            StripePaymentItems::class,
+            StripePaymentDetail::class,
+            'owner_id',
+            'stripe_payment_id',
+            'id',
+            'id'
+        );
+    }
+
+
+    public function subscriptions()
+    {
+        return $this->hasManyThrough(WishItemSubscription::class, WishItem::class, 'user_id', 'wish_item_id', 'id', 'id');
+    }
 }
+
+

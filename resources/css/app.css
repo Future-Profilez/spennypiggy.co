@@ -73,26 +73,41 @@
 .toppercentage.income{color:green;font-size:16px;background:#05efb83b;padding:5px 15px;border-radius:10px;}
 .postions{display:flex;align-items:flex-end;}
 .postions .position{margin:0 10px;width:100%;}
-.profile-image{width:130px;height:130px;margin:auto;display:table;margin-top:-80px;}
+.profile-image{padding:5px;background:linear-gradient(2.92deg,var(--mint) -4.71%,var(--voilet) 28.23%,var(--yellow) 56%,var(--pink) 83.76%);width:130px;height:130px;margin:auto;display:table;margin-top:-80px;border-radius:50%;overflow:hidden;}
+.profile-image img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
 .rank-position{padding:15px;background:var(--pink);width:fit-content;margin:auto;margin-top:20px;}
 .rank-position h2{text-shadow:2px 2px 1px #e6ea82;-webkit-text-stroke:1px #e6ea82;color:var(--pink);font-size:43px;}
 .position-2 .rank-position{padding-bottom:30px;}
 .position-1 .rank-position{padding-bottom:70px;margin-top:30px;}
 .position-3 .rank-position{padding-bottom:4px;margin-top:9px;}
+.changePeriod{display:flex;}
+.changePeriod button{color:#808080;font-size:20px;padding:10px 2px;border-bottom:2px solid transparent;margin:0 10px;}
+.changePeriod button.active{border-bottom:2px solid var(--mint);color:#fff;}
+.postions .position-1{background:var(--voilet) !important;}
+.postions .position-1 .profile-content *{color:#fff !important;}
+.loading-state{opacity:0.6;filter:blur(5);pointer-events:none;}
+.rank_lists.largest{position:sticky;top:20px;}
+.time-hrs{display:flex;margin:0 -8px;}
+.time-hrs button{background:#ededed;width:100%;text-align:center;border-radius:11px;padding:8px;margin:0 8px;}
+.time-hrs button.active,.time-hrs button:hover{background:#777;color:#fff;}
 
-.changePeriod {
-  display: flex;
+
+@media(max-width:767px){
+.profile-image{width:70px;height:70px;padding:3px;margin-top:-50px;}
+.rank-position h2{font-size:25px;}
+.profile-content h2{font-size:16px;}
+.profile-content p{font-size:15px;}
+.postions .position{margin:0 5px;box-shadow:5px 5px 0 0 var(--pink) !important;}
+.profile.p-3{padding:10px !important;padding-bottom:0 !important;}
+.rank-position{padding:10px;}
+.position-2 .rank-position{padding-bottom:20px;}
+.position-1 .rank-position{padding-bottom:50px;margin-top:20px;}
+.changePeriod{justify-content:center;}
+.text-bl{text-align:center !important;}
 }
-
-.changePeriod button {
-  color: #808080;
-  font-size: 20px;
-  padding: 10px 2px;
-  border-bottom: 2px solid transparent;
-  margin: 0 10px;
+@media(max-width:400px){
+.profile-image{width:50px;height:50px;padding:2px;margin-top:-30px;}
+.rank_lists a:last-child {
+  border: 0;
 }
-
-.changePeriod button.active {
-  border-bottom: 2px solid var(--mint);
-  color: #fff;
 }
