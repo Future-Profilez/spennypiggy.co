@@ -676,6 +676,8 @@ class StripeController extends Controller
                 $sub->upcoming_payment = $current;
                 $sub->save();
 
+                
+
                 if ($sub->recurring_for == 'onetime') {
                     SubscriptionCancelAtEnd::dispatch($sub);
                 }
@@ -728,40 +730,49 @@ class StripeController extends Controller
         // Handle the event
         switch ($event->type) {
             case 'invoice.created':
-                $invoice = $event->data->object;
+                $invoice = $event;
             case 'invoice.deleted':
-                $invoice = $event->data->object;
+                $invoice = $event;
             case 'invoice.finalization_failed':
-                $invoice = $event->data->object;
+                $invoice = $event;
             case 'invoice.finalized':
-                $invoice = $event->data->object;
+                $invoice = $event;
             case 'invoice.marked_uncollectible':
-                $invoice = $event->data->object;
+                $invoice = $event;
             case 'invoice.paid':
-                $invoice = $event->data->object;
+                $invoice = $event;
             case 'invoice.payment_action_required':
-                $invoice = $event->data->object;
+                $invoice = $event;
             case 'invoice.payment_failed':
-                $invoice = $event->data->object;
+                $invoice = $event;
             case 'invoice.payment_succeeded':
-                $invoice = $event->data->object;
+                $invoice = $event;
             case 'invoice.sent':
-                $invoice = $event->data->object;
+                $invoice = $event;
             case 'invoice.upcoming':
-                $invoice = $event->data->object;
+                $invoice = $event;
             case 'invoice.updated':
-                $invoice = $event->data->object;
+                $invoice = $event;
             case 'invoice.voided':
-                $invoice = $event->data->object;
+                $invoice = $event;
                 // ... handle other event types
             default:
                 echo 'Received unknown event type ' . $event->type;
         }
 
+        if ($event->type == "invoice.updated") {
+        }
+
         if (!empty($invoice)) {
-            $stripe = new StripeWebhookStatus;
-            $stripe->data = $invoice;
-            $stripe->save();
+            $subs = WishItemSubscription::where('stripe_id', $event->data->object->subscription)->first();
+
+            if (!empty($subs)) {
+                $stripe = new StripeWebhookStatus;
+                $stripe->susbcription_id = $subs->id;
+                $stripe->invoice_type = $event->type;
+                $stripe->data = $invoice;
+                $stripe->save();
+            }
         }
 
         return true;
