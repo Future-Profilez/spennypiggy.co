@@ -14,10 +14,9 @@ import LoadingScreen from "@/includes/LoadingScreen";
 import PaymentDashboard from "./stripe/PaymentDashboard";
 import { useEffect } from "react";
 import { useMemo } from "react";
-import TwitterLogin from "./twitter/TwitterLogin";
+import { Helmet } from "react-helmet";
 
 export default function Dashboard(props) {
-
     const {
         auth,
         items,
@@ -63,16 +62,16 @@ export default function Dashboard(props) {
 
     console.log("props dashboard",props)
 
-
-
     return (
         <Guest auth={auth.user} user={user}>
+            <Helmet> 
+                <meta name="twitter:image" content={user && user.avatar_url} />
+            </Helmet>
             <Head title={user && user.name} />
-            <TwitterLogin />
             <div className='wishlistPage blackbg pt-8 pb-14 '>
                 <div className='containerbox'>
                     <div className='wishbanner d-lg-block d-none'>
-                        <img className='w-full  border-black border-2 shadow-mint rounded-2xl' src={user?.cover_url || wishlistbannerimg} alt='img' />
+                        <img className='w-full border-black border-2 shadow-mint rounded-2xl' src={user?.cover_url || wishlistbannerimg} alt='img' />
                     </div>
                     <div className="wishManage">
                         <div className="row">

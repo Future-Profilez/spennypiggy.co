@@ -8,6 +8,7 @@ import UpdatePasswordForm from '../Profile/Partials/UpdatePasswordForm';
 import DeleteUserForm from '../Profile/Partials/DeleteUserForm';
 import PaymentDashboard from '../stripe/PaymentDashboard';
 import ChangeCurrency from '@/Components/ChangeCurrency';
+import TwitterLogin from '../twitter/TwitterLogin';
 
 export default function Accountsetting(props) {
     console.log("props aa",props);
@@ -56,19 +57,21 @@ export default function Accountsetting(props) {
                             </li>
                             <li>
                                 <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>DISPLAY CURRENCY <span className='text-gray'>{global_currency}</span></>} >
-                                    <ChangeCurrency defaultvalue={global_currency} />
+                                    <ChangeCurrency udefaultvalue={global_currency} />
                                 </Popup>
                             </li>
 
+ 
                             <li>
-                            <Popup space='4' modalclassName="pinkmodal" 
-                                text={<>DELETE ACCOUNT  </>} >
-                                    <DeleteUserForm />
-                                </Popup >
-                            </li>
-
-                            <li className='disabled' >
-                                <Link>SET UP AUTO TWEET <img src={closeblacksm} alt="img" /></Link>
+                                <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>
+                                { auth && auth.user && auth.user.twitter_username ? `AUTO TWEET` : 'SET UP AUTO TWEET'}
+                                <div className='d-flex' >
+                                <img src={closeblacksm} alt="img" className='me-2' />
+                                { auth && auth.user && auth.user.twitter_username ? `@${auth.user.twitter_username}` : ''}
+                                </div>
+                                </>} >
+                                    <TwitterLogin  username={auth && auth.user && auth.user.twitter_username || false}  />
+                                </Popup>
                             </li>
 
                             <li className='disabled' >
@@ -79,6 +82,13 @@ export default function Accountsetting(props) {
                                         <span className="sliderSw round"></span>
                                     </label>
                                 </div>
+                            </li>
+
+                            <li>
+                                <Popup space='4' modalclassName="pinkmodal" 
+                                text={<>DELETE ACCOUNT  </>} >
+                                    <DeleteUserForm />
+                                </Popup >
                             </li>
                             
                         </ul>
