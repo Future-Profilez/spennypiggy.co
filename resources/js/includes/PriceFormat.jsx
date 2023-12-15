@@ -4,7 +4,7 @@ export default function PriceFormat(){
     const format = (amount, currency = 'GBP') => {
         const {rates, global_currency} = usePage().props;
         const upCorrency = currency.toUpperCase();
-        if(rates[upCorrency] || false){
+        if(global_currency && rates[upCorrency] || false){
             const toGBP = rates[upCorrency] * amount;
             const toGlobal = toGBP * rates[global_currency];
             console.log("toGlobal", amount, toGlobal)
@@ -32,7 +32,7 @@ export default function PriceFormat(){
     const formatMultiPrice = (amount, currency = 'GBP') => {
         const {rates, global_currency} = usePage().props;
         const upCorrency = currency.toUpperCase();
-        if(rates[upCorrency] || false){
+        if(global_currency && rates[upCorrency] || false){
             const toGBP = rates[upCorrency] * amount;
             const toGlobal = toGBP * rates[global_currency];
 

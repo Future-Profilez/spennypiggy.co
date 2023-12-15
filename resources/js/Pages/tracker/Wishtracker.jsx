@@ -156,14 +156,13 @@ export default function Wishtracker(props) {
                                         </div> :''}
                                     </div> : ''}
  
-                                    {/* {n && n.sender == false && !msgSent ?   : ''} */}
+                                    {n && n.sender == false && !msgSent ?  
                                         <SayThanks clearAction={open}
                                         getMessageStatus={getMessageStatus} 
                                         name={n && n.user && n.user.name} 
                                         payment_id={n.id} />
-                                      
-                                        
-
+                                    : ''}
+                                    
                                 </div>
                             </div>
                         </Collapse>

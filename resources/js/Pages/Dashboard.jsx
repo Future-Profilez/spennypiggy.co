@@ -60,13 +60,8 @@ export default function Dashboard(props) {
         (auth && auth.user && auth.user.username) == (user && user.username)
     );
 
-    console.log("props dashboard",props)
-
     return (
         <Guest auth={auth.user} user={user}>
-            <Helmet> 
-                <meta name="twitter:image" content={user && user.avatar_url} />
-            </Helmet>
             <Head title={user && user.name} />
             <div className='wishlistPage blackbg pt-8 pb-14 '>
                 <div className='containerbox'>

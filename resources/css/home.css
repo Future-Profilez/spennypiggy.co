@@ -432,8 +432,8 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .loveboxes img{margin:0 auto 15px;}
 .footer .containerbox{flex-wrap:wrap;justify-content:center;}
 .footer{padding:20px 0 85px;}
-.footlogo{width:100%;text-align:center;margin:0 0 10px;}
-.footlogo a img{max-width:140px;margin:auto;}
+.footlogo{ text-align:center;margin:0 0 10px;}
+.footlogo a img{max-width:140px;}
 .footlinksbox{width:100%;}
 .footlinks{margin:20px 0 0;}
 .footlinks ul li{padding:0 8px;}
