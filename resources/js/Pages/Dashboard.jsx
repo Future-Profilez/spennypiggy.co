@@ -14,6 +14,7 @@ import LoadingScreen from "@/includes/LoadingScreen";
 import PaymentDashboard from "./stripe/PaymentDashboard";
 import { useEffect } from "react";
 import { useMemo } from "react";
+import TwitterLogin from "./twitter/TwitterLogin";
 
 export default function Dashboard(props) {
 
@@ -23,7 +24,7 @@ export default function Dashboard(props) {
         categories,
         user,
         itemid,
-        sociallinks,
+        sociallinks, global_currency,
         slinks,
     } = props;
     const [its, setIts] = useState();
@@ -60,13 +61,14 @@ export default function Dashboard(props) {
         (auth && auth.user && auth.user.username) == (user && user.username)
     );
 
-    // console.log("props",props)
+    console.log("props dashboard",props)
 
 
 
     return (
         <Guest auth={auth.user} user={user}>
             <Head title={user && user.name} />
+            <TwitterLogin />
             <div className='wishlistPage blackbg pt-8 pb-14 '>
                 <div className='containerbox'>
                     <div className='wishbanner d-lg-block d-none'>
@@ -82,7 +84,7 @@ export default function Dashboard(props) {
                                         links={sociallinks}
                                         user={user}
                                     />
-                                    <Link href={route('change.currency', {c:'INR'})}>INR</Link>
+                                    {/* <Link href={route('change.currency', {c:'INR'})}>INR</Link> */}
                                     <div className="userProfileDate pt-0">
                                         {IsloggedIn ? (
                                             <>
@@ -170,8 +172,7 @@ export default function Dashboard(props) {
                                                     {categories &&
                                                         categories.map(
                                                             (c, i) => {
-                                                                return  <option key={`cats-${i}`}
-                                                                        value={c.id} >
+                                                                return <option key={`cats-${i}`} value={c.id} >
                                                                         {c.category}
                                                                     </option>
                                                             }
@@ -201,6 +202,7 @@ export default function Dashboard(props) {
                                                     its.map((c, i) => {
                                                         return <div key={`wish-item-${i}`} className="col-xl-4 col-lg-6 col-6">
                                                                 <Wishlistbox
+                                                                    currency={global_currency}
                                                                     fetchingcats={fetchingcats}
                                                                     categories={categories}
                                                                     IsloggedIn={IsloggedIn}

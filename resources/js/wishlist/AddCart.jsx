@@ -10,6 +10,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import { useAlerts } from "@/Components/Alerts";
 import { Link } from "@inertiajs/react";
 export default function AddCart(props) {
+
     const { auth, action, uuid, item, IsloggedIn } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [sub, setSub] = useState('daily');
@@ -29,7 +30,7 @@ export default function AddCart(props) {
     }
 
 
-    const { format } = PriceFormat();
+    const { format , formatMultiPrice} = PriceFormat();
     const [cartamount, setcartamount] = useState(null);
     const [close, setClose] = useState(action);
     const [is_cart, setIs_cart] = useState(item && item?.is_cart);
@@ -56,9 +57,9 @@ export default function AddCart(props) {
         return r.toFixed(1);
     }
 
-    const price = () => {
-        return item.price
-    };
+    
+
+ 
 
     return (
         <Popup size="md"
@@ -77,7 +78,7 @@ export default function AddCart(props) {
                 </div>
                 <div className="cartTitle text-center">{item.wishname}</div>
                 <div className="cartPrice font-CeraGRBold text-voilet mt-1 mb-3 text-center">
-                    {format(price())}
+                    {formatMultiPrice(item.price, item?.currency || 'GBP')}
                 </div>
 
                 {item.subscription == "2" ? (
@@ -93,8 +94,8 @@ export default function AddCart(props) {
                         </div>
                         <div className="crowd pt-2 mb-4">
                             <ProgressBar
-                                now={item.fullfill_amount}
-                                max={item.price}
+                                now={formatMultiPrice(item.fullfill_amount, item?.currency || 'GBP')}
+                                max={formatMultiPrice(item.price, item?.currency || 'GBP')}
                             />
                             <div className="d-flex align-items-center justify-content-between">
                                 <p className="mt-1 mb-0 text-small">
@@ -104,7 +105,7 @@ export default function AddCart(props) {
                                     )}% granted
                                 </p>
                                 <p className="mt-1 mb-0 text-small">
-                                    Remaining  {format(item.price - item.fullfill_amount)}
+                                    Remaining  {formatMultiPrice(item.price - item.fullfill_amount, item?.currency || 'GBP')}
                                 </p>
                             </div>
                         </div>
@@ -113,10 +114,8 @@ export default function AddCart(props) {
                     ""
                 )}
 
-                
-
-                {item.subscription == 1
-                ? <div className=" pb-2">
+                {item.subscription == 1 ? 
+                <div className=" pb-2">
                     <Link className="inline-flex items-center px-4 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 false flex btn-pink lg w-100 mb-3 font-CeraGR  mx-auto" href={route('wish.subscribe.checkout',{uuid: item.uuid, reccure: 'onetime'})}>
                         OneTime Purchase
                     </Link>

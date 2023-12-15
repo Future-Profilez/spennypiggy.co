@@ -34,7 +34,7 @@ export default function ToCart({
             return false;
         }
         if (crowd && amount > pending) {
-            toast.error(`Amount can not be more than remaining amount £${pending}.`);
+            toast.error(`Amount can not be more than remaining amount.`);
             return false;
         }
         setLoading(true);

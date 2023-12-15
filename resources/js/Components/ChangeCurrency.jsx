@@ -4,9 +4,11 @@ import  LoaderButton from "@/Components/LoaderButton";
 import { useForm } from "@inertiajs/react";
 import Select from 'react-select';
 import { useState } from "react";
+import { usePage } from '@inertiajs/react';
 
 export default function ChangeCurrency({defaultvalue}) {
-
+   
+   const { flash } = usePage().props;
    const { successAlert, errorAlert } = useAlerts();
    const { data, setData, get, processing, errors, reset } = useForm({
       currency: defaultvalue ,
@@ -35,7 +37,7 @@ export default function ChangeCurrency({defaultvalue}) {
       e.preventDefault();
       get(route(`change.currency`,
       {c:data.currency}
-      ), {
+      ),{
             preserveScroll: true,
             onSuccess: (resp) => {
                if (flash?.error) {
