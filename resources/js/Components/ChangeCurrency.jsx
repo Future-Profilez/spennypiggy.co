@@ -57,7 +57,6 @@ export default function ChangeCurrency({defaultvalue}) {
             }
       });
    };
-
    return <>
       <h2 className="text-uppercase font-GillSans pb-4 font-large"> Display Currency </h2>
       <div className="form-field mb-4">
