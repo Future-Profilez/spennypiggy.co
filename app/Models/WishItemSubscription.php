@@ -49,8 +49,8 @@ class WishItemSubscription extends Model
         return $this->belongsTo(WishItem::class, 'wish_item_id');
     }
 
-    // public function user()
-    // {
-    //     return $this->belongsTo(User::class, 'user_id');
-    // }
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }

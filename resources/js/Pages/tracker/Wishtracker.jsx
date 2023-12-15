@@ -69,6 +69,8 @@ export default function Wishtracker(props) {
             setIsOwnerRead(1);
         }
 
+
+        console.log("props track", props)
         return (
             <Confetti sender={n && n.sender}
                 is_read_owner={isOwnerRead}

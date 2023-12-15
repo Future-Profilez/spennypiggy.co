@@ -7,7 +7,6 @@ export default function PriceFormat(){
         if(global_currency && rates[upCorrency] || false){
             const toGBP = rates[upCorrency] * amount;
             const toGlobal = toGBP * rates[global_currency];
-            console.log("toGlobal", amount, toGlobal)
             return new Intl.NumberFormat('en-GB', {
                 style: 'currency',
                 currency: global_currency,
@@ -35,9 +34,6 @@ export default function PriceFormat(){
         if(global_currency && rates[upCorrency] || false){
             const toGBP = rates[upCorrency] * amount;
             const toGlobal = toGBP * rates[global_currency];
-
-            console.log("toGlobal", amount, toGlobal)
-
             return new Intl.NumberFormat('en-GB', {
                 style: 'currency',
                 currency: global_currency,

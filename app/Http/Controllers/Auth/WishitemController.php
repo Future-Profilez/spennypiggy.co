@@ -17,6 +17,7 @@ use App\Models\UserCart;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
 use App\Models\WishItem;
+use App\Models\WishItemSubscription;
 use App\Rules\ValidSubscriptionPeriod;
 use App\StripeControl;
 use Carbon\Carbon;
@@ -806,8 +807,13 @@ class WishitemController extends Controller
             $query->where('user_id', $user->id)->orWhere('owner_id', $user->id);
         })->with(['wish'])->orderBy('created_at', 'DESC')->get();
 
-        $creator_subs = Subscription::where('owner_id', Auth::id())->with(['user', 'wish'])->orderBy('updated_at', 'DESC')->get();
-        $user_subs = Subscription::where('user_id', Auth::id())->with(['owner', 'wish'])->get();
+        // $creator_subs = Subscription::where('owner_id', Auth::id())->with(['user', 'wish'])->orderBy('updated_at', 'DESC')->get();
+        $creator_subs = WishItemSubscription::with(['wish_item'=>function($q){
+            $q->where('user_id', Auth::id());
+        }])->with(['user', 'wish_item'])->orderBy('updated_at', 'DESC')->get();
+           
+        print_r($creator_subs);die;
+        // $user_subs = Subscription::where('user_id', Auth::id())->with(['owner', 'wish'])->get();
 
         $trackData = $tracks->map(function ($q) use ($creator_subs, $user_subs) {
 

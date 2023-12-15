@@ -11,7 +11,7 @@ import { useAlerts } from "@/Components/Alerts";
 import { Link } from "@inertiajs/react";
 export default function AddCart(props) {
 
-    const { auth, action, uuid, item, IsloggedIn } = props;
+    const { auth, action, uuid, item, currency } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [sub, setSub] = useState('daily');
 
@@ -57,10 +57,6 @@ export default function AddCart(props) {
         return r.toFixed(1);
     }
 
-    
-
- 
-
     return (
         <Popup size="md"
             action={close}
@@ -84,10 +80,11 @@ export default function AddCart(props) {
                 {item.subscription == "2" ? (
                     <>
                         <p className="mb-0">Amount </p>
-                        <div className="croud-add">
+                        <div className="croud-add  global-currency-wrap ">
+                            <div className="global-currency" >{currency || "GBP"}</div>
                             <input
                                 onChange={(e) => setcartamount(e.target.value)}
-                                placeholder="Eg. 50"
+                                placeholder={`Eg. 50`}
                                 type="number"
                                 className="form-control mt-1"
                             />
@@ -126,7 +123,7 @@ export default function AddCart(props) {
                     </Link>
                 </div>
                 : <div className=" pb-2">
-                    <ToCart sub={sub} ItemAdded={ItemAdded}  auth={auth}
+                    <ToCart currency={currency} sub={sub} ItemAdded={ItemAdded}  auth={auth}
                         pending={item.price - item.fullfill_amount}
                         crowd={item.subscription == 2}
                         amount={cartamount}
@@ -137,7 +134,7 @@ export default function AddCart(props) {
                         classes={`btn-pink lg w-100 mb-3 font-CeraGR ${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
                         uuid={uuid}
                     />
-                    <ToCart sub={sub} auth={auth}
+                    <ToCart currency={currency} sub={sub} auth={auth}
                         ItemAdded={ItemAdded}
                         pending={item.price - item.fullfill_amount}
                         crowd={item.subscription == 2}

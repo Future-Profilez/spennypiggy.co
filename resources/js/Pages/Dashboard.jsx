@@ -60,6 +60,8 @@ export default function Dashboard(props) {
         (auth && auth.user && auth.user.username) == (user && user.username)
     );
 
+    console.log("Dashboard props", props)
+
     return (
         <Guest auth={auth.user} user={user}>
             <Head title={user && user.name} />
@@ -202,6 +204,7 @@ export default function Dashboard(props) {
                                                                     IsloggedIn={IsloggedIn}
                                                                     auth={auth.user}
                                                                     itemid={itemid}
+                                                                    setuped={auth.user.stripe_details_submitted == 1 ? true : false}
                                                                     itm={c}
                                                                     key={`wish-${c.uuid}`}
                                                                 />

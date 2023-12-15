@@ -15,7 +15,7 @@ import PinWish from '@/includes/PinWish';
 export default function Wishlistbox(props) {
 
   const { format, formatMultiPrice } = PriceFormat();
-  const { itm, itemid, auth, IsloggedIn, fetchingcats, categories } = props;
+  const { currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped } = props;
   const [itemUID, setItemUID] = useState(itemid);
   const [open, setOpen] = useState();
   const openAddtocart = () => {
@@ -45,10 +45,10 @@ export default function Wishlistbox(props) {
       <div className='wishlistcntbox mb-3 mb-sm-4 whbg relative  shadow-voilet '>
         {IsloggedIn ?
           <>
-            <Wishlist openPop={open} item={itm} editpop={true} fetchingcats={fetchingcats} categories={categories} />
+            <Wishlist currency={currency} setuped={setuped} openPop={open} item={itm} editpop={true} fetchingcats={fetchingcats} categories={categories} />
           </>
           :
-          <AddCart  IsloggedIn={IsloggedIn} auth={auth} item={itm} uuid={itm.uuid} action={open} />
+          <AddCart currency={currency} IsloggedIn={IsloggedIn} auth={auth} item={itm} uuid={itm.uuid} action={open} />
         }
 
        { IsloggedIn ? <DropdownButton
