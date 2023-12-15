@@ -155,13 +155,14 @@ export default function Wishtracker(props) {
                                             }
                                         </div> :''}
                                     </div> : ''}
-
-                                    {n && n.sender == false && !msgSent ?   
+ 
+                                    {/* {n && n.sender == false && !msgSent ?   : ''} */}
                                         <SayThanks clearAction={open}
                                         getMessageStatus={getMessageStatus} 
                                         name={n && n.user && n.user.name} 
                                         payment_id={n.id} />
-                                      : ''}  
+                                      
+                                        
 
                                 </div>
                             </div>
@@ -209,13 +210,11 @@ export default function Wishtracker(props) {
                         defaultActiveKey="1"
                         id="tracker-tab"
                         className="mb-4 " >
-                        <Tab eventKey="1" title="Wish Tracker">
+                        <Tab eventKey="1"  title="Wish Tracker">
                             <div className="tracks mt-4 pt-4">
                                 {tracks &&
                                     tracks.map((n, i) => {
-                                        return (
-                                            <Wish n={n} key={`track-${i}`} />
-                                        );
+                                        return <Wish n={n} key={`track-${i}`} />;
                                     })}
                                 {tracks && tracks.length < 1 ?
                                     <Nocontent text="nothing to see" /> : ''}

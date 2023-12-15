@@ -14,6 +14,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\SocialLinksController;
 use App\Http\Controllers\Auth\StripeController;
+use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
@@ -166,6 +167,7 @@ Route::get('/files/{filename}', function (string $filename) {
 
 Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status')->withoutMiddleware(VerifyCsrfToken::class);
 
+
 /* wishtender */
 Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('wishtender-wishes');
 Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
@@ -173,6 +175,13 @@ Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts
 Route::get('/leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('/leaderboard');
 
 /*check username exist*/
+// Route::get('/data-check', function () {
+//     $ret = StripeControl::getSubscription("sub_1OND8tG7xsNScLmXLFzAhobA");
+
+//     return $ret;
+// });
+Route::get('twitter-token/', [TwitterController::class, 'twitterAuthUrl']);
+Route::get('twitter/login', [TwitterController::class, 'twitterLogin']);
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
 
 Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');

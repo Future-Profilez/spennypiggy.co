@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Jobs\CheckoutMailToUser;
 use App\Jobs\CheckoutUser;
+use App\Jobs\SendRenewMail;
 use App\Jobs\SubscriptionCancelAtEnd;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
@@ -724,44 +725,66 @@ class StripeController extends Controller
             exit();
         }
 
-        $invoice = null;
-        // Handle the event
-        switch ($event->type) {
-            case 'invoice.created':
-                $invoice = $event->data->object;
-            case 'invoice.deleted':
-                $invoice = $event->data->object;
-            case 'invoice.finalization_failed':
-                $invoice = $event->data->object;
-            case 'invoice.finalized':
-                $invoice = $event->data->object;
-            case 'invoice.marked_uncollectible':
-                $invoice = $event->data->object;
-            case 'invoice.paid':
-                $invoice = $event->data->object;
-            case 'invoice.payment_action_required':
-                $invoice = $event->data->object;
-            case 'invoice.payment_failed':
-                $invoice = $event->data->object;
-            case 'invoice.payment_succeeded':
-                $invoice = $event->data->object;
-            case 'invoice.sent':
-                $invoice = $event->data->object;
-            case 'invoice.upcoming':
-                $invoice = $event->data->object;
-            case 'invoice.updated':
-                $invoice = $event->data->object;
-            case 'invoice.voided':
-                $invoice = $event->data->object;
-                // ... handle other event types
-            default:
-                echo 'Received unknown event type ' . $event->type;
-        }
+        // $invoice = null;
+        // // Handle the event
+        // switch ($event->type) {
+        //     case 'invoice.created':
+        //         $invoice = $event;
+        //     case 'invoice.deleted':
+        //         $invoice = $event;
+        //     case 'invoice.finalization_failed':
+        //         $invoice = $event;
+        //     case 'invoice.finalized':
+        //         $invoice = $event;
+        //     case 'invoice.marked_uncollectible':
+        //         $invoice = $event;
+        //     case 'invoice.paid':
+        //         $invoice = $event;
+        //     case 'invoice.payment_action_required':
+        //         $invoice = $event;
+        //     case 'invoice.payment_failed':
+        //         $invoice = $event;
+        //     case 'invoice.payment_succeeded':
+        //         $invoice = $event;
+        //     case 'invoice.sent':
+        //         $invoice = $event;
+        //     case 'invoice.upcoming':
+        //         $invoice = $event;
+        //     case 'invoice.updated':
+        //         $invoice = $event;
+        //     case 'invoice.voided':
+        //         $invoice = $event;
+        //         // ... handle other event types
+        //     default:
+        //         echo 'Received unknown event type ' . $event->type;
+        // }
+        $array = [];
+        if (!empty($event)) {
+            $subs = WishItemSubscription::where('stripe_id', $event->data->object->subscription)->first();
 
-        if (!empty($invoice)) {
-            $stripe = new StripeWebhookStatus;
-            $stripe->data = $invoice;
-            $stripe->save();
+            $ret = StripeControl::getSubscription($event->data->object->subscription);
+
+            if ($event->type == "invoice.updated" && !empty($subs)) {
+
+                $array = [
+                    'email' => $event->data->customer_email,
+                    'name' => $event->data->customer_name,
+                    'invoice_pdf' => $event->data->invoice_pdf
+                ];
+
+                $subs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+                $subs->save();
+
+                SendRenewMail::dispatch($array);
+            }
+
+            if (!empty($subs)) {
+                $stripe = new StripeWebhookStatus;
+                $stripe->subscription_id = $subs->id;
+                $stripe->invoice_type = $event->type;
+                $stripe->data = $event;
+                $stripe->save();
+            }
         }
 
         return true;
