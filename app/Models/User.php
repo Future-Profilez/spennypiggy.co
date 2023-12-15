@@ -60,7 +60,8 @@ class User extends Authenticatable
 
     protected $appends = [
         'avatar_url',
-        'cover_url'
+        'cover_url',
+        'twitter_username'
     ];
 
     /**
@@ -146,6 +147,16 @@ class User extends Authenticatable
     {
         return $this->hasManyThrough(WishItemSubscription::class, WishItem::class, 'user_id', 'wish_item_id', 'id', 'id');
     }
+    public function twitter_token()
+    {
+        return $this->hasOne(TwitterToken::class)->latestOfMany();
+    }
+
+    public function getTwitterUsernameAttribute()
+    {
+        return $this->twitter_token->username ?? false;
+    }
+
 }
 
 

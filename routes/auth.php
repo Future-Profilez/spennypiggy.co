@@ -14,10 +14,10 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\SocialLinksController;
 use App\Http\Controllers\Auth\StripeController;
+use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\TwitterController;
 use App\Http\Controllers\WishtenderController;
 use App\Http\Middleware\VerifyCsrfToken;
 use App\Models\User;
@@ -117,6 +117,12 @@ Route::middleware('auth')->group(function () {
         })->middleware(['auth', 'verified'])->name('stripe');
 
         Route::get('/pin-item/{wish_id}/', [WishitemController::class, 'pinItem'])->name('pin-item');
+
+        // Twitter
+        Route::prefix("twitter")->name("x.")->group(function(){
+            Route::get('init', [TwitterController::class, 'authInit'])->name('init');
+            Route::get('authorize', [TwitterController::class, 'handleAuth'])->name('handle');
+        });
     });
 });
 
@@ -175,7 +181,6 @@ Route::get('/leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWis
 /*check username exist*/
 Route::get('/data-check', function () {
     $ret = StripeControl::getSubscription("sub_1OND8tG7xsNScLmXLFzAhobA");
-
     return $ret;
 });
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');

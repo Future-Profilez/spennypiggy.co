@@ -9,6 +9,7 @@ export default function TwitterLogin() {
       // }).catch((_err) => {
       //     console.error("error", _err);
       // });
+      route('x.init')
   }
 
   return (
