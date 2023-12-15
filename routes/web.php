@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\CheckoutController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TestController;
 use Illuminate\Foundation\Application;
@@ -61,6 +62,7 @@ Route::prefix("test")->name("test.")->group(function(){
     Route::get("email", [TestController::class, "testEmail"]);
     Route::get("rates/{c?}", [TestController::class, "getRates"]);
     Route::get("c-data", [TestController::class, "testCurrencyData"]);
+    Route::get("x-token", [TwitterController::class, 'testToken']);
 });
 
 require __DIR__.'/auth.php';

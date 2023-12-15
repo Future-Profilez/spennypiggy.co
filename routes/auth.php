@@ -14,6 +14,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\SocialLinksController;
 use App\Http\Controllers\Auth\StripeController;
+use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
@@ -116,6 +117,12 @@ Route::middleware('auth')->group(function () {
         })->middleware(['auth', 'verified'])->name('stripe');
 
         Route::get('/pin-item/{wish_id}/', [WishitemController::class, 'pinItem'])->name('pin-item');
+
+        // Twitter
+        Route::prefix("twitter")->name("x.")->group(function(){
+            Route::get('init', [TwitterController::class, 'authInit'])->name('init');
+            Route::get('authorize', [TwitterController::class, 'handleAuth'])->name('handle');
+        });
     });
 });
 

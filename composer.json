@@ -17,6 +17,7 @@
         "laravel/tinker": "^2.8",
         "laravel/vapor-cli": "^1.60",
         "laravel/vapor-core": "^2.33",
+        "noweh/twitter-api-v2-php": "^3.4",
         "silviolleite/laravelpwa": "^2.0",
         "spatie/emoji": "^4.0",
         "stripe/stripe-php": "^13.2",

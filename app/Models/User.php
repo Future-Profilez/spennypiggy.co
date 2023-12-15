@@ -60,7 +60,8 @@ class User extends Authenticatable
 
     protected $appends = [
         'avatar_url',
-        'cover_url'
+        'cover_url',
+        'twitter_username'
     ];
 
     /**
@@ -121,6 +122,16 @@ class User extends Authenticatable
     public function stripePaymentDetails()
     {
         return $this->hasMany(StripePaymentDetail::class, 'owner_id');
+    }
+
+    public function twitter_token()
+    {
+        return $this->hasOne(TwitterToken::class)->latestOfMany();
+    }
+
+    public function getTwitterUsernameAttribute()
+    {
+        return $this->twitter_token->username ?? false;
     }
 
 }
