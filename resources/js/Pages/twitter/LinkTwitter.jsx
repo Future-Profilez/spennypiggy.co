@@ -4,7 +4,7 @@ import { useForm } from '@inertiajs/react';
 import LoaderButton from '@/Components/LoaderButton';
 import twitter from '../../../assets/img/twitterpost.png';
 
-export default function TwitterLogin(props) {
+export default function LinkTwitter(props) {
 
   const { username } = props;
   const { data, setData, get, processing, errors, reset } = useForm();
@@ -43,7 +43,7 @@ export default function TwitterLogin(props) {
 
     {username ? 
     <div className='step2' >
-      JHhsdgfhjsdg
+      <p className='text-center' >Linked Account : @{username}</p>
     </div> : 
     <div className='step1' >
       <p className='text-large text-center px-5 mb-4' >Set up Twitter to auto tweet when you receive a gift.</p>

@@ -80,7 +80,7 @@ export default function SendSurprise({auth, owner}) {
                      placeholder="Enter amount.. "
                   />
                   <p className="mt-1">
-                     The amount is set to {format(data.amount)} GBP in the wisher's
+                     The amount is set to {format(data.amount)} in the wisher's
                      currency
                   </p>
             </div>

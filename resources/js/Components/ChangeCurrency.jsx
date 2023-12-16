@@ -5,13 +5,14 @@ import { useForm } from "@inertiajs/react";
 import Select from 'react-select';
 import { useState } from "react";
 import { usePage } from '@inertiajs/react';
+import Dropdown from 'react-bootstrap/Dropdown';
 
-export default function ChangeCurrency({defaultvalue}) {
+export default function ChangeCurrency({defaultvalue, changer}) {
    
    const { flash } = usePage().props;
    const { successAlert, errorAlert } = useAlerts();
    const { data, setData, get, processing, errors, reset } = useForm({
-      currency: defaultvalue ,
+      currency: defaultvalue,
    });
 
    const currencies = [
@@ -34,10 +35,9 @@ export default function ChangeCurrency({defaultvalue}) {
    }
 
    const changeCurrency = (e) => {
-      e.preventDefault();
-      get(route(`change.currency`,
-      {c:data.currency}
-      ),{
+      // e.preventDefault();
+      console.log(e)
+      get(route(`change.currency`, { c: e } ),{
             preserveScroll: true,
             onSuccess: (resp) => {
                if (flash?.error) {
@@ -59,24 +59,49 @@ export default function ChangeCurrency({defaultvalue}) {
             }
       });
    };
+
+   const changec = (value) => {
+      setData('currency',value);
+      changeCurrency(value);
+      setSelectedCurrency(value);
+   }
+
    return <>
-      <h2 className="text-uppercase font-GillSans pb-4 font-large"> Display Currency </h2>
-      <div className="form-field mb-4">
-            <label className="d-block text-start mb-2">Display Currency</label>
-            <Select  classNamePrefix="react-select" className="react-select my-4 " 
-               options={currencies}
-               placeholder={data.currency|| 'Select..'}
-               defaultValue={data.currency}
-               onChange={(e) => handleSelect(e)}
-            />
-      </div>
-      
-      <LoaderButton onClick={changeCurrency}
-         disabled={processing}
-         type='submit'
-            className="flex w-100 btn-pink lg mx-auto"
-            spinnerClassName="fill-red-600" >
-            {processing ? "Updating.." : "Update"}
-      </LoaderButton>
+      {changer ? 
+         <>
+         <Dropdown>
+            <Dropdown.Toggle variant="info" id="pricebasic">
+               <span className="mb-0 text-white display-inline" > {defaultvalue}</span>
+            </Dropdown.Toggle>
+            <Dropdown.Menu>
+               {currencies && currencies.map((c, i)=>{
+                  return <Dropdown.Item key={`c-${i}`} onClick={()=>changec(c.value)}>
+                     {c.label}
+                  </Dropdown.Item>
+               })}
+            </Dropdown.Menu>
+            </Dropdown>
+         </>
+         : 
+         <>
+            <h2 className="text-uppercase font-GillSans pb-4 font-large"> Display Currency </h2>
+            <div className="form-field mb-4">
+                  <label className="d-block text-start mb-2">Display Currency</label>
+                  <Select  classNamePrefix="react-select" className="react-select my-4 " 
+                     options={currencies}
+                     placeholder={data.currency|| 'Select..'}
+                     defaultValue={data.currency}
+                     onChange={(e) => handleSelect(e)}
+                  />
+            </div>
+            <LoaderButton onClick={()=>changeCurrency(data.currency)}
+               disabled={processing}
+               type='submit'
+                  className="flex w-100 btn-pink lg mx-auto"
+                  spinnerClassName="fill-red-600" >
+                  {processing ? "Updating.." : "Update"}
+            </LoaderButton>
+         </>
+      }
    </>
 }

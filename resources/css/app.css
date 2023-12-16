@@ -78,15 +78,28 @@
 .global-currency-wrap {
   position: relative;
 }
+.subsctabs {
+  max-width: 575px;
+}
 
 /* end */
-@media(max-width:575px){.shadow-mint{box-shadow:7px 7px 0 0 var(--mint);}
+@media(max-width:575px){
+  .shadow-mint{box-shadow:7px 7px 0 0 var(--mint);}
 .shadow-black{box-shadow:7px 7px 0 0 rgba(0,0,0,1);}
 .shadow-voilet{box-shadow:7px 7px 0 0 var(--voilet);}
 .shadow-mint{box-shadow:7px 7px 0 0 var(--mint);}
 .shadow-pink{box-shadow:7px 7px 0 0 var(--pink);}
 .shadow-purple{box-shadow:7px 7px 0 0 var(--purple);}
 .modal-content{max-width:calc(100% - 30px);margin:auto;}
+
+.trackbar > div {
+  display: block !important;
+}
+
+.rightbar {
+  justify-content: space-between !important;
+}
+
 }
 .rounded-lg{border-radius:20px;}
 .sno p{font-size:25px;}

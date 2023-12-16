@@ -8,7 +8,7 @@ import UpdatePasswordForm from '../Profile/Partials/UpdatePasswordForm';
 import DeleteUserForm from '../Profile/Partials/DeleteUserForm';
 import PaymentDashboard from '../stripe/PaymentDashboard';
 import ChangeCurrency from '@/Components/ChangeCurrency';
-import TwitterLogin from '../twitter/TwitterLogin';
+import LinkTwitter from '../twitter/LinkTwitter';
 
 export default function Accountsetting(props) {
     console.log("props aa",props);
@@ -34,7 +34,7 @@ export default function Accountsetting(props) {
                     </div>
                     <div className='accsettingList p-4'>
                         <ul>
-                            <li>  {auth && auth.user && auth.user.stripe_details_submitted == 1 ? 
+                            <li>{auth && auth.user && auth.user.stripe_details_submitted == 1 ? 
                             <>
                                <PaymentDashboard classes='w-100 text-dark paymentbutton' text={<>PAYMENT DASHBOARD <span className='text-mint'>Connected</span></>} />
                             </> 
@@ -57,7 +57,7 @@ export default function Accountsetting(props) {
                             </li>
                             <li>
                                 <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>DISPLAY CURRENCY <span className='text-gray'>{global_currency}</span></>} >
-                                    <ChangeCurrency udefaultvalue={global_currency} />
+                                    <ChangeCurrency defaultvalue={global_currency} />
                                 </Popup>
                             </li>
 
@@ -70,7 +70,7 @@ export default function Accountsetting(props) {
                                 { auth && auth.user && auth.user.twitter_username ? `@${auth.user.twitter_username}` : ''}
                                 </div>
                                 </>} >
-                                    <TwitterLogin  username={auth && auth.user && auth.user.twitter_username || false}  />
+                                    <LinkTwitter  username={auth && auth.user && auth.user.twitter_username || false}  />
                                 </Popup>
                             </li>
 
