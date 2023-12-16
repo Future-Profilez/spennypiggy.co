@@ -119,7 +119,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/pin-item/{wish_id}/', [WishitemController::class, 'pinItem'])->name('pin-item');
 
         // Twitter
-        Route::prefix("twitter")->name("x.")->group(function(){
+        Route::prefix("twitter")->name("x.")->group(function () {
             Route::get('init', [TwitterController::class, 'authInit'])->name('init');
             Route::get('authorize', [TwitterController::class, 'handleAuth'])->name('handle');
         });
@@ -129,6 +129,8 @@ Route::middleware('auth')->group(function () {
 Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
 
 Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity');
+
+Route::get('cancel-subs/{uuid}', [StripeController::class, 'cancelSubs'])->name('cancel-subs');
 
 Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
     ->name('password.request');

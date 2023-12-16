@@ -808,7 +808,7 @@ class WishitemController extends Controller
         $creator_subs = WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
             $q->where('user_id', $user->id);
         })->with(['user', 'wish_item'])->orderBy('updated_at', 'DESC')->get();
-        $user_subs = WishItemSubscription::where('user_id', Auth::id())->with(['wish_item','wish_item.user'])->get();
+        $user_subs = WishItemSubscription::where('user_id', Auth::id())->with(['wish_item', 'wish_item.user'])->get();
         $trackData = $tracks->map(function ($q) {
 
             if (Auth::id() == $q->payment->owner_id) {

@@ -775,7 +775,8 @@ class StripeController extends Controller
                 $array = [
                     'email' => $event->data->object->customer_email,
                     'name' => $event->data->object->customer_name,
-                    'invoice_pdf' => $event->data->object->invoice_pdf
+                    'invoice_pdf' => $event->data->object->invoice_pdf,
+                    'uuid' => $subs->uuid
                 ];
 
                 $subs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
@@ -794,5 +795,16 @@ class StripeController extends Controller
         }
 
         return true;
+    }
+
+
+    public function cancelSubs($uuid)
+    {
+        $subs = WishItemSubscription::where('uuid', $uuid)->first();
+        $subs->status = "cancelled";
+        $subs->save();
+
+        StripeControl::cancelSubscription($subs->stripe_id);
+        return to_route('user.show', ['username' => $subs->wish_item->user->username])->with('success', "Subscription is cancelled for wish {$subs->wish_item->wishname}.");
     }
 }
