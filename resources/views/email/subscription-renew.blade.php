@@ -38,7 +38,7 @@
                 <tr>
                     <td
                         style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                        <b>Invoice :~ </b>{{ $data['invoice_pdf'] ?? '' }}
+                        <b>Invoice :~ <a href="{{ $data['invoice_pdf'] ?? '' }}">See Invoice</a></b>
                     </td>
                 </tr>
                 <br><br>
