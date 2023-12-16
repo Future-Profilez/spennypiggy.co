@@ -7,6 +7,7 @@ use App\Mail\CheckoutToUser;
 use App\Mail\ForgotPassEmail;
 use App\Mail\RenewMail;
 use App\Mail\SubscriptionMail;
+use App\Mail\SubsMail;
 use App\Mail\ThankyouUser;
 use App\Mail\VerifyEmail;
 use App\Mail\Welcome;
@@ -147,6 +148,16 @@ class EmailService
         try {
 
             Mail::to($data['email'])->send(new RenewMail($data));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+    public static function sendSubscribedMail($data)
+    {
+        try {
+
+            Mail::to($data->wish_item->user->email)->send(new SubsMail($data));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
