@@ -14,16 +14,16 @@ import LoadingScreen from "@/includes/LoadingScreen";
 import PaymentDashboard from "./stripe/PaymentDashboard";
 import { useEffect } from "react";
 import { useMemo } from "react";
+import { Helmet } from "react-helmet";
 
 export default function Dashboard(props) {
-
     const {
         auth,
         items,
         categories,
         user,
         itemid,
-        sociallinks,
+        sociallinks, global_currency,
         slinks,
     } = props;
     const [its, setIts] = useState();
@@ -60,9 +60,7 @@ export default function Dashboard(props) {
         (auth && auth.user && auth.user.username) == (user && user.username)
     );
 
-    // console.log("props",props)
-
-
+    console.log("Dashboard props", props)
 
     return (
         <Guest auth={auth.user} user={user}>
@@ -70,7 +68,7 @@ export default function Dashboard(props) {
             <div className='wishlistPage blackbg pt-8 pb-14 '>
                 <div className='containerbox'>
                     <div className='wishbanner d-lg-block d-none'>
-                        <img className='w-full  border-black border-2 shadow-mint rounded-2xl' src={user?.cover_url || wishlistbannerimg} alt='img' />
+                        <img className='w-full border-black border-2 shadow-mint rounded-2xl' src={user?.cover_url || wishlistbannerimg} alt='img' />
                     </div>
                     <div className="wishManage">
                         <div className="row">
@@ -170,8 +168,7 @@ export default function Dashboard(props) {
                                                     {categories &&
                                                         categories.map(
                                                             (c, i) => {
-                                                                return  <option key={`cats-${i}`}
-                                                                        value={c.id} >
+                                                                return <option key={`cats-${i}`} value={c.id} >
                                                                         {c.category}
                                                                     </option>
                                                             }
@@ -201,11 +198,13 @@ export default function Dashboard(props) {
                                                     its.map((c, i) => {
                                                         return <div key={`wish-item-${i}`} className="col-xl-4 col-lg-6 col-6">
                                                                 <Wishlistbox
+                                                                    currency={global_currency}
                                                                     fetchingcats={fetchingcats}
                                                                     categories={categories}
                                                                     IsloggedIn={IsloggedIn}
                                                                     auth={auth.user}
                                                                     itemid={itemid}
+                                                                    setuped={auth.user.stripe_details_submitted == 1 ? true : false}
                                                                     itm={c}
                                                                     key={`wish-${c.uuid}`}
                                                                 />

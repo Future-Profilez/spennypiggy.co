@@ -45,7 +45,7 @@ Route::middleware('auth')->group(function () {
 
 // Select Default Currency
 Route::get('/currency/{c}', function(Request $request, $c){
-    if(in_array($c, ['USD', 'GBP', 'EUR', 'INR']))
+    if(in_array($c, ['USD','GBP','EUR','INR','AUD','JPY','HKD','CAD','CHF','SEK','NZD']))
     {
         Cookie::queue('currency', $c, 60*24*365);
         return back()->with('success', "Currency set to $c");

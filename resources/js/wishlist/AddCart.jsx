@@ -10,7 +10,8 @@ import PriceFormat from "@/includes/PriceFormat";
 import { useAlerts } from "@/Components/Alerts";
 import { Link } from "@inertiajs/react";
 export default function AddCart(props) {
-    const { auth, action, uuid, item, IsloggedIn } = props;
+
+    const { auth, action, uuid, item, currency } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [sub, setSub] = useState('daily');
 
@@ -29,7 +30,7 @@ export default function AddCart(props) {
     }
 
 
-    const { format } = PriceFormat();
+    const { format , formatMultiPrice} = PriceFormat();
     const [cartamount, setcartamount] = useState(null);
     const [close, setClose] = useState(action);
     const [is_cart, setIs_cart] = useState(item && item?.is_cart);
@@ -56,10 +57,6 @@ export default function AddCart(props) {
         return r.toFixed(1);
     }
 
-    const price = () => {
-        return item.price
-    };
-
     return (
         <Popup size="md"
             action={close}
@@ -77,24 +74,25 @@ export default function AddCart(props) {
                 </div>
                 <div className="cartTitle text-center">{item.wishname}</div>
                 <div className="cartPrice font-CeraGRBold text-voilet mt-1 mb-3 text-center">
-                    {format(price())}
+                    {formatMultiPrice(item.price, item?.currency || 'GBP')}
                 </div>
 
                 {item.subscription == "2" ? (
                     <>
                         <p className="mb-0">Amount </p>
-                        <div className="croud-add">
+                        <div className="croud-add  global-currency-wrap ">
+                            <div className="global-currency" >{currency || "GBP"}</div>
                             <input
                                 onChange={(e) => setcartamount(e.target.value)}
-                                placeholder="Eg. 50"
+                                placeholder={`Eg. 50`}
                                 type="number"
                                 className="form-control mt-1"
                             />
                         </div>
                         <div className="crowd pt-2 mb-4">
                             <ProgressBar
-                                now={item.fullfill_amount}
-                                max={item.price}
+                                now={formatMultiPrice(item.fullfill_amount, item?.currency || 'GBP')}
+                                max={formatMultiPrice(item.price, item?.currency || 'GBP')}
                             />
                             <div className="d-flex align-items-center justify-content-between">
                                 <p className="mt-1 mb-0 text-small">
@@ -104,7 +102,7 @@ export default function AddCart(props) {
                                     )}% granted
                                 </p>
                                 <p className="mt-1 mb-0 text-small">
-                                    Remaining  {format(item.price - item.fullfill_amount)}
+                                    Remaining  {formatMultiPrice(item.price - item.fullfill_amount, item?.currency || 'GBP')}
                                 </p>
                             </div>
                         </div>
@@ -113,24 +111,8 @@ export default function AddCart(props) {
                     ""
                 )}
 
-                {/* {item.subscription == "1" ?  (
-                    <>
-                        <p className="mb-1">Subscription interval </p>
-                        <div className="croud-add w-100 mb-3">
-                            <select onChange={getSubscription} onClick={handleAuthsub} className="w-100">
-                                <option id={"option-period"} value={'onetime'} >One Time Purchase</option>
-                                <option disabled={auth ? false : true} value={item.subscription_period} > Paid Every
-                                {item.subscription_period == 'daily' ? " Day" : ''}
-                                {item.subscription_period == 'weekly' ? " Week" : ''}
-                                {item.subscription_period == 'monthly' ? " Month" : ''}
-                                </option>
-                            </select>
-                        </div>
-                    </>
-                ) :''} */}
-
-                {item.subscription == 1
-                ? <div className=" pb-2">
+                {item.subscription == 1 ? 
+                <div className=" pb-2">
                     <Link className="inline-flex items-center px-4 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 false flex btn-pink lg w-100 mb-3 font-CeraGR  mx-auto" href={route('wish.subscribe.checkout',{uuid: item.uuid, reccure: 'onetime'})}>
                         OneTime Purchase
                     </Link>
@@ -141,7 +123,7 @@ export default function AddCart(props) {
                     </Link>
                 </div>
                 : <div className=" pb-2">
-                    <ToCart sub={sub} ItemAdded={ItemAdded}  auth={auth}
+                    <ToCart currency={currency} sub={sub} ItemAdded={ItemAdded}  auth={auth}
                         pending={item.price - item.fullfill_amount}
                         crowd={item.subscription == 2}
                         amount={cartamount}
@@ -152,7 +134,7 @@ export default function AddCart(props) {
                         classes={`btn-pink lg w-100 mb-3 font-CeraGR ${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
                         uuid={uuid}
                     />
-                    <ToCart sub={sub} auth={auth}
+                    <ToCart currency={currency} sub={sub} auth={auth}
                         ItemAdded={ItemAdded}
                         pending={item.price - item.fullfill_amount}
                         crowd={item.subscription == 2}

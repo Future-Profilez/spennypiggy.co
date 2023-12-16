@@ -69,6 +69,8 @@ export default function Wishtracker(props) {
             setIsOwnerRead(1);
         }
 
+
+        console.log("props track", props)
         return (
             <Confetti sender={n && n.sender}
                 is_read_owner={isOwnerRead}
@@ -156,14 +158,13 @@ export default function Wishtracker(props) {
                                         </div> :''}
                                     </div> : ''}
  
-                                    {/* {n && n.sender == false && !msgSent ?   : ''} */}
+                                    {n && n.sender == false && !msgSent ?  
                                         <SayThanks clearAction={open}
                                         getMessageStatus={getMessageStatus} 
                                         name={n && n.user && n.user.name} 
                                         payment_id={n.id} />
-                                      
-                                        
-
+                                    : ''}
+                                    
                                 </div>
                             </div>
                         </Collapse>
