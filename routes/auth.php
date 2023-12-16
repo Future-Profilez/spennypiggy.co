@@ -117,6 +117,12 @@ Route::middleware('auth')->group(function () {
         })->middleware(['auth', 'verified'])->name('stripe');
 
         Route::get('/pin-item/{wish_id}/', [WishitemController::class, 'pinItem'])->name('pin-item');
+
+        // Twitter
+        Route::prefix("twitter")->name("x.")->group(function(){
+            Route::get('init', [TwitterController::class, 'authInit'])->name('init');
+            Route::get('authorize', [TwitterController::class, 'handleAuth'])->name('handle');
+        });
     });
 });
 

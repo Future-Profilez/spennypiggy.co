@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->job(new SendMailSubscriptions)->everyMinute(); // Runs MyJob every hour
+        $schedule->command("app:sync-echange-rate")->everyFiveMinutes()->withoutOverlapping(4);
     }
 
     /**

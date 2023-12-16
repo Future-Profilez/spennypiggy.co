@@ -112,8 +112,8 @@ export default function Footer(props) {
     useEffect(() => {
         confgureGtag();
     }, []);
- 
-    
+
+
     return (
         <>
             <Helmet>
@@ -133,7 +133,7 @@ export default function Footer(props) {
                                 width={"auto"}
                             />
                         </div>
-                        
+
                         <div className="footlinksbox">
                             <div className="footlinks">
                                 <ul>
@@ -164,22 +164,22 @@ export default function Footer(props) {
                                     <li>
                                         <ContentPrefrences classes="m-auto d-table" />{" "}
                                     </li>
-                                    
+
                                 </ul>
                             </div>
                         </div>
 
                         <div className="trust-pilot m-auto d-table mt-4 pb-2" >
-                            <div class="trustpilot-widget" 
-                                data-locale="en-GB" 
-                                data-template-id="56278e9abfbbba0bdcd568bc" 
-                                data-businessunit-id="6577b210459a86f997ab6735" 
+                            <div className="trustpilot-widget"
+                                data-locale="en-GB"
+                                data-template-id="56278e9abfbbba0bdcd568bc"
+                                data-businessunit-id="6577b210459a86f997ab6735"
                                 data-style-height="52px" data-style-width="100%"
-                                data-theme="dark"  
-                                data-scroll-to-list='true' 
+                                data-theme="dark"
+                                data-scroll-to-list='true'
                                 data-allow-robots="true"
-                                data-style-alignment="center" > 
-                                <a href="https://uk.trustpilot.com/review/spennypiggy.co" 
+                                data-style-alignment="center" >
+                                <a href="https://uk.trustpilot.com/review/spennypiggy.co"
                                 target="_blank" rel="noopener">Trustpilot</a>
                             </div>
                         </div>

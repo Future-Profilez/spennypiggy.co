@@ -3,50 +3,94 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Jobs\FetchSelfTwitterData;
+use App\Models\TwitterToken;
 use App\TwitterAuthService;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
+use Noweh\TwitterApi\Client;
+use Ramsey\Uuid\Uuid;
 
 class TwitterController extends Controller
 {
 
-
     /**
-     * Get Twitter Auth Token
+     * Initialize Auth Process
      *
-     * @return \Illuminate\Http\Response json
+     * @return mixed
      */
-    public function twitterAuthUrl()
+    public function authInit(Request $request)
     {
-        // $tAuth = new TwitterAuth;
-        $tAuth = new TwitterAuthService;
-        $host = request()->getHttpHost();
-        if ($host == 'localhost') {
-            // $domain = "http://$host";
-            $domain = "http://$host:3000";
-        } else {
-            $domain = "https://$host";
-        }
-
-        $resp = $tAuth->getOauthVerifier($domain . '/twitter/login');
-        return response()->json($resp, 200);
+        $state = (string)Uuid::uuid4();
+        $challenge = (string)Uuid::uuid4();
+        Session::put("x_state", $state);
+        Session::put("x_challenge", $challenge);
+        $redirectUrl = route('x.handle');
+        $url = TwitterAuthService::getAuth2Url($state, $challenge, $redirectUrl);
+        return Inertia::location($url);
+        // return response()->json([
+        //     'url' => $url
+        // ]);
     }
 
     /**
-     * Twitter Login Token Process
+     * Handle Redirection
      *
-     * @return \Illuminate\Http\Response json
+     * @param Request $request
+     * @return mixed
      */
-    public function twitterLogin(Request $request)
+    public function handleAuth(Request $request)
     {
-        $params = $request->all();
-        $tOAuth = new TwitterAuthService;
-        $resp = $tOAuth->getUserData($params['oauth_verifier'], $params['oauth_token']);
-        
-        // $params['oauth_token_secret'] = session()->get('oauth_token_secret');
-        return response()->json($resp, 200);
+        $data   =   $request->all();
+        $user   =   Auth::user();
+        $state  = Session::pull("x_state", "NONE");
+        $challenge  =   Session::pull("x_challenge");
+        if(!empty($data['code'] AND $data['state'] == $state)){
+            try {
+                $resp = TwitterAuthService::getAuthToken($data['code'], $challenge, route("x.handle"));
+                Session::remove("x_state");
+                Session::remove("x_challenge");
+                if($resp['success']){
+                    $token = TwitterToken::create([
+                        'user_id'   =>  $user->id,
+                        'token'     =>  $resp['data']['access_token'],
+                        'secret'    =>  $resp['data']['token_type'],
+                        'refresh_token' =>  $resp['data']['refresh_token'],
+                        'expires_at'    => Carbon::now()->addSeconds($resp['data']['expires_in'])
+                    ]);
+
+                    FetchSelfTwitterData::dispatch($token);
+
+                    return to_route('user.show',['username' => $user->username])->with('success', 'X.com successfully setup for Auto-tweets.');
+                }
+                return to_route('user.show',['username' => $user->username])->with('error', 'Failed to connect. '.$resp['data']['error_description']);
+
+            } catch (Exception $e) {
+                return to_route('user.show',['username' => $user->username])->with('error', 'Failed to connect. '.$e->getMessage());
+            }
+        }
+        return to_route('user.show',['username' => $user->username])->with('error', 'Invalid payload!');
+    }
+
+    /**
+     * Test Twitter
+     *
+     * @return mixed
+     */
+    public function testToken()
+    {
+
+        $content = Storage::disk('public')->get('default4.png');
+        $token = TwitterToken::find(1);
+        // $token = TwitterAuthService::checkToken($token);
+
+        // $resp = TwitterAuthService::postTweet($token, 'Welcome to spennypiggy...');
+        $resp = TwitterAuthService::uploadMedia($token, base64_encode($content));
+        return response()->json($resp);
     }
 }
