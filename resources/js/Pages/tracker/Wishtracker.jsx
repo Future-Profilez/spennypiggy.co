@@ -192,10 +192,9 @@ export default function Wishtracker(props) {
                 setLoading(false);
             });
         }
-
         return <>
-            <button disabled={manageStatus} onClick={()=>cancel(id)}
-                className={`${manageStatus ? "disabled" : ''} btn-pink sm w-100 px-2 mt-3`} >
+            <button disabled={status !== "initiated"} onClick={()=>cancel(id)}
+                className={`${status !== "initiated" ? "disabled" : ''} btn-pink sm w-100 px-2 mt-3`} >
                 {loading ? "Wait.." : manageStatus ? "Cancelled" : "Cancel Subscription" }
             </button>
         </>
@@ -239,23 +238,23 @@ export default function Wishtracker(props) {
                                                         
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                             <p className="text-muted">Item Owner</p>
-                                                            <p className="text-dark text-capitalize" ><Link href={`/${s && s.owner && s.owner.username}`} className="text-voilet" >{s && s.owner && s.owner.name || 'Anonymous'}</Link></p>
+                                                            <p className="text-dark text-capitalize" ><Link href={`/${s && s.username || s && s.guest_name}`} className="text-voilet" >{s && s.guest_name || 'Anonymous'}</Link></p>
                                                         </li>
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                             <p className="text-muted">Subscription Period</p>
-                                                            <p className="text-dark text-capitalize" >{s && s.wish && s.wish.subscription_period}</p>
+                                                            <p className="text-dark text-capitalize" >{s && s.recurring_type}</p>
                                                         </li>
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                             <p className="text-muted">Price</p>
-                                                            <p className="text-dark text-capitalize" >{format(s && s.wish && s.wish.price)}</p>
+                                                            <p className="text-dark text-capitalize" >{format(s && s.amount)}</p>
                                                         </li>
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                             <p className="text-muted">Start Date</p>
-                                                            <p className="text-dark text-capitalize" >{s && s.start_at}</p>
+                                                            <p className="text-dark text-capitalize" >{s && s.created_at}</p>
                                                         </li>
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                             <p className="text-muted">Status</p>
-                                                            <p className="text-dark text-capitalize" >{s && s.status ? <span className="badge bg-success" >Active</span> : <span className="badge bg-danger" >Expired</span> }</p>
+                                                            <p className="text-dark text-capitalize" >{s && s.status == "initiated" ? <span className="badge bg-success" >{s && s.status}</span> : <span className="badge bg-danger" >Expired</span> }</p>
                                                         </li>
                                                     </ul>
 
@@ -282,23 +281,19 @@ export default function Wishtracker(props) {
                                                     <ul className="ps-0 mt-3" >
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                             <p className="text-muted">Subscription Item</p>
-                                                            <p className="text-dark text-capitalize wishname-text" >{s && s.wish && s.wish.wishname}</p>
+                                                            <p className="text-dark text-capitalize wishname-text" >{s && s.wish_item && s.wish_item.wishname}</p>
                                                         </li>
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                             <p className="text-muted">Subscription Period</p>
-                                                            <p className="text-dark text-capitalize" >{s && s.wish && s.wish.subscription_period}</p>
+                                                            <p className="text-dark text-capitalize" >{s && s.wish_item && s.wish_item.subscription_period}</p>
                                                         </li>
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                             <p className="text-muted">Price</p>
-                                                            <p className="text-dark text-capitalize" >{format(s && s.wish && s.wish.price)}</p>
+                                                            <p className="text-dark text-capitalize" >{format(s && s.wish_item && s.wish_item.price)}</p>
                                                         </li>
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                             <p className="text-muted">Start Date</p>
-                                                            <p className="text-dark text-capitalize" >{s && s.start_at}</p>
-                                                        </li>
-                                                        <li className="mt-2 d-flex justify-content-between border-top py-2">
-                                                            <p className="text-muted">End Date</p>
-                                                            <p className="text-dark text-capitalize" >{s && s.end_at}</p>
+                                                            <p className="text-dark text-capitalize" >{s && s.created_at}</p>
                                                         </li>
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                             <p className="text-muted">Status</p>
