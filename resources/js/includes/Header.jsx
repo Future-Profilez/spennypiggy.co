@@ -15,6 +15,8 @@ import { usePage } from "@inertiajs/react";
 export default function Header(props) {
 
     const {rates, global_currency} = usePage().props;
+    const { auth, user } = props;
+
     const deviceid = DeviceID();
     const [isActive, setActive] = useState(false);
     const toggleClass = () => setActive(!isActive);
@@ -28,7 +30,6 @@ export default function Header(props) {
 
     const [count, setCount] = useState();
 
-    const { auth, user } = props;
     const [loggedIn, setLoggedIn] = useState((auth && auth.username));
     const dispatch = useDispatch();
 
@@ -66,8 +67,9 @@ export default function Header(props) {
 
 
             <div className='cartLogin'>
-
+            {auth.stripe_details_submitted == 1 ? '' :
               <ChangeCurrency defaultvalue={global_currency} changer={true} />
+             }
 
               <Link href={route('cart')} as="button" className='cartLink d-flex me-3 position-relative'>
                   <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36" fill="none">

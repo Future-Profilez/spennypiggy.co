@@ -16,19 +16,20 @@ export default function ChangeCurrency({defaultvalue, changer}) {
    });
 
    const currencies = [
-      { value: 'GBP', label: '£ British Pound Sterling' },
-      { value: 'USD', label: '$ United States Dollar' },
-      { value: 'AUD', label: '$ Australian Dollar' },
-      { value: 'EUR', label: '€ Euro' },
-      { value: 'JPY', label: '¥ Japanese Yen' },
-      { value: 'HKD', label: '$ Hong Kong Dollar' },
-      { value: 'CAD', label: '$ Canadian Dollar' },
-      { value: 'CHF', label: 'Swiss Franc' },
-      { value: 'SEK', label: 'Swedish Krona' },
-      { value: 'NZD', label: '$ New Zealand Dollar' },
-   ];
+      { value: 'GBP', label: '£ British Pound Sterling', symbolAndCode: '£ GBP' },
+      { value: 'USD', label: '$ United States Dollar', symbolAndCode: '$ USD' },
+      { value: 'AUD', label: '$ Australian Dollar', symbolAndCode: '$ AUD' },
+      { value: 'EUR', label: '€ Euro', symbolAndCode: '€ EUR' },
+      { value: 'JPY', label: '¥ Japanese Yen', symbolAndCode: '¥ JPY' },
+      { value: 'HKD', label: '$ Hong Kong Dollar', symbolAndCode: '$ HKD' },
+      { value: 'CAD', label: '$ Canadian Dollar', symbolAndCode: '$ CAD' },
+      { value: 'CHF', label: 'Swiss Franc', symbolAndCode: 'CHF CHF' },
+      { value: 'SEK', label: 'Swedish Krona', symbolAndCode: 'SEK SEK' },
+      { value: 'NZD', label: '$ New Zealand Dollar', symbolAndCode: '$ NZD' },
+    ];
+    
 
-   const [selectedCurrency, setSelectedCurrency] = useState(null);
+   const [selectedCurrency, setSelectedCurrency] = useState(defaultvalue);
    const handleSelect = (e) => {
       setSelectedCurrency(e.value);
       setData('currency', e.value);
@@ -60,10 +61,10 @@ export default function ChangeCurrency({defaultvalue, changer}) {
       });
    };
 
-   const changec = (value) => {
+   const changec = (value, name) => {
       setData('currency',value);
       changeCurrency(value);
-      setSelectedCurrency(value);
+      setSelectedCurrency(name);
    }
 
    return <>
@@ -71,11 +72,11 @@ export default function ChangeCurrency({defaultvalue, changer}) {
          <>
          <Dropdown>
             <Dropdown.Toggle variant="info" id="pricebasic">
-               <span className="mb-0 text-white display-inline" > {defaultvalue}</span>
+               <span className="mb-0 text-white display-inline" > {selectedCurrency ? selectedCurrency : "$N/A"}</span>
             </Dropdown.Toggle>
             <Dropdown.Menu>
                {currencies && currencies.map((c, i)=>{
-                  return <Dropdown.Item key={`c-${i}`} onClick={()=>changec(c.value)}>
+                  return <Dropdown.Item key={`c-${i}`} onClick={()=>changec(c.value, c.symbolAndCode)}>
                      {c.label}
                   </Dropdown.Item>
                })}
