@@ -36,7 +36,6 @@
                 <tr>
                     <td style="line-height:20px;height:20px;"></td>
                 </tr>
-
                 @if (!empty($payment->message_media))
                 <tr>
                     <td>
