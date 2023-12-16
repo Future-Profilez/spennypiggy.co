@@ -1,31 +1,22 @@
+import React from 'react';
 import { Head, Link } from "@inertiajs/react";
-import Wishlist from "./Auth/Wishlist";
-import Wishlistbox from "@/wishlist/Wishlistbox";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
-import Userprofile from "@/wishlist/Userprofile";
-import EditProfile from "@/Pages/account/EditProfile";
-import ShareProfile from "@/wishlist/ShareProfile";
+const Wishlist = React.lazy(() => import('./Auth/Wishlist'));
+const Wishlistbox = React.lazy(() => import('@/wishlist/Wishlistbox'));
+const Userprofile = React.lazy(() => import('@/wishlist/Userprofile'));
+const EditProfile = React.lazy(() => import('@/Pages/account/EditProfile'));
+const ShareProfile = React.lazy(() => import('@/wishlist/ShareProfile'));
+const Nocontent = React.lazy(() => import('@/includes/Nocontent'));
+const LoadingScreen = React.lazy(() => import('@/includes/LoadingScreen'));
+const Social = React.lazy(() => import('./Auth/Social'));
+const PaymentDashboard = React.lazy(() => import('./stripe/PaymentDashboard'));
 import { useState } from "react";
-import Social from "./Auth/Social";
 import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
-import Nocontent from "@/includes/Nocontent";
-import LoadingScreen from "@/includes/LoadingScreen";
-import PaymentDashboard from "./stripe/PaymentDashboard";
-import { useEffect } from "react";
 import { useMemo } from "react";
-import { Helmet } from "react-helmet";
 
 export default function Dashboard(props) {
-    const {
-        auth,
-        items,
-        categories,
-        user,
-        itemid,
-        sociallinks, global_currency,
-        slinks,
-    } = props;
+    const{auth, items, categories, user, itemid, sociallinks, global_currency, slinks}= props;
     const [its, setIts] = useState();
 
     async function conCat(pinned, items){
@@ -85,10 +76,7 @@ export default function Dashboard(props) {
                                         {IsloggedIn ? (
                                             <>
                                                 <EditProfile user={auth.user} />
-                                                {auth.user &&
-                                                auth.user
-                                                    .stripe_details_submitted ==
-                                                    1 ? (
+                                                {auth.user && auth.user.stripe_details_submitted == 1 ? (
                                                     <PaymentDashboard
                                                         classes="btn-pink lg w-100 mt-4"
                                                         text="Payment Dashboard"
@@ -180,7 +168,7 @@ export default function Dashboard(props) {
                                         </div>
                                         {IsloggedIn ? (
                                             <Wishlist
-                                                setuped={auth.user.stripe_details_submitted == 1 ? true : false}
+                                                setuped={auth.user && auth.user.stripe_details_submitted == 1 ? true : false}
                                                 fetchingcats={fetchingcats}
                                                 categories={categories}
                                             />
@@ -193,9 +181,7 @@ export default function Dashboard(props) {
                                     <div className="row items-lists">
                                         {IsloggedIn || user?.stripe_details_submitted == 1 ? (
                                             <>
-                                                {its && its.length ? (
-                                                    !loading &&
-                                                    its.map((c, i) => {
+                                                {its && its.length ? ( !loading && its.map((c, i) => {
                                                         return <div key={`wish-item-${i}`} className="col-xl-4 col-lg-6 col-6">
                                                                 <Wishlistbox
                                                                     currency={global_currency}
@@ -204,7 +190,7 @@ export default function Dashboard(props) {
                                                                     IsloggedIn={IsloggedIn}
                                                                     auth={auth.user}
                                                                     itemid={itemid}
-                                                                    setuped={auth.user.stripe_details_submitted == 1 ? true : false}
+                                                                    setuped={auth && auth.user && auth.user.stripe_details_submitted == 1 ? true : false}
                                                                     itm={c}
                                                                     key={`wish-${c.uuid}`}
                                                                 />
