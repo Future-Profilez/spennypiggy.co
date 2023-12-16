@@ -36,11 +36,10 @@
                 <tr>
                     <td style="line-height:20px;height:20px;"></td>
                 </tr>
-
                 @if (!empty($payment->message_media))
                 <tr>
                     <td>
-                        <table cellpadding="0" cellspacing="0" style=" max-width:280px;" >
+                        <table cellpadding="0" cellspacing="0" style="max-width:280px;margin: auto;" >
                         <tbody></tbody>
                             @if ($payment->media_type == 'image')
                             <tr>

@@ -232,7 +232,7 @@ export default function Wishtracker(props) {
                                         {user_subs && user_subs.map((s, i)=>{
                                             return <div key={`subscription-${i}`} className="col-sm-6 mb-4" >
                                                 <div className="subsbox box p-4" >
-                                                    <h2 className="plantitle" >{s && s.wish && s.wish.wishname}</h2>
+                                                    <h2 className="plantitle" >{s && s.wish_item && s.wish_item.wishname}</h2>
                                                 
                                                     <ul className="ps-0 mt-3" >
                                                         
