@@ -62,7 +62,7 @@ Route::prefix("test")->name("test.")->group(function(){
     Route::get("email", [TestController::class, "testEmail"]);
     Route::get("rates/{c?}", [TestController::class, "getRates"]);
     Route::get("c-data", [TestController::class, "testCurrencyData"]);
-    Route::get("x-token", [TwitterController::class, 'testToken']);
+    Route::get("x-api", [TwitterController::class, 'testToken']);
 });
 
 require __DIR__.'/auth.php';

@@ -11,7 +11,9 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Noweh\TwitterApi\Client;
 use Ramsey\Uuid\Uuid;
 
 class TwitterController extends Controller
@@ -82,15 +84,13 @@ class TwitterController extends Controller
      */
     public function testToken()
     {
+
+        $content = Storage::disk('public')->get('default4.png');
         $token = TwitterToken::find(1);
-        $resp = TwitterAuthService::getSelf($token);
-        // if($resp['success'])
-        // {
-        //     $token->update([
-        //         'twitter_id'    =>  $resp['data']['id'],
-        //         'username'      =>  $resp['data']['username'],
-        //     ]);
-        // }
+        // $token = TwitterAuthService::checkToken($token);
+
+        // $resp = TwitterAuthService::postTweet($token, 'Welcome to spennypiggy...');
+        $resp = TwitterAuthService::uploadMedia($token, base64_encode($content));
         return response()->json($resp);
     }
 }

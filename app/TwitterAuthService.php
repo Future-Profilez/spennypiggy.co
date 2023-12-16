@@ -4,19 +4,18 @@ namespace App;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Http;
+use Noweh\TwitterApi\Client;
 
 class TwitterAuthService {
     private static $consumerKey;
 
     private static $consumerSecret;
 
-    private static $signatureMethod = 'HMAC-SHA1';
-
-    private static $oauthVersion = '2.0';
-
-    private static $http_status;
-    private static $callback;
-
+    /**
+     * Twitter APIv2 Client
+     * @var \Noweh\TwitterApi\Client
+     */
+    public static $xClient;
 
     /**
      * Set basic configurations
@@ -140,6 +139,64 @@ class TwitterAuthService {
             'success'   =>  true,
             'data'      =>  $req->json('data')
         ];
+    }
 
+    /**
+     * Upload a file to Tweetter
+     * only Image
+     * @param \App\Models\TwitterToken $token
+     * @param string $content base64 encoded Content
+     * @return array
+     */
+    public static function uploadMedia($token,  $content) : array
+    {
+        self::setConfigs();
+        $token  =   self::checkToken($token);
+        $payload    =   [
+            'media_category'    =>  'tweet_image',
+            'media_data'        =>  $content,
+            'taged_user_ids'    =>[
+                "1715527416569876480"
+            ]
+        ];
+
+        $req    =   Http::acceptJson()
+            ->withToken($token->token)
+            // ->withBasicAuth(self::$consumerKey, self::$consumerSecret)
+            ->asForm()
+            ->post('https://upload.twitter.com/1.1/media/upload.json', $payload);
+        return [
+            'success'   =>  $req->status(),
+            'data'      =>  $req->json(),
+            'body'      =>  $req->body()
+        ];
+    }
+
+    /**
+     * Post A Tweet
+     *
+     * @param \App\Models\TwitterToken $token
+     * @param string $text Twitter Text
+     * @param array $mediaIds Media IDs in array
+     * @return array
+     */
+    public static function postTweet($token, $text, $mediaIds = []) : array
+    {
+        $token  =   self::checkToken($token);
+        $payload = [
+            "text"  =>  $text
+        ];
+        if(!empty($mediaIds)) {
+            $payload["media"]   =   [
+                "media_ids" =>  $mediaIds,
+                "tagged_user_ids"   => ["1715527416569876480"] //@SpennyPiggy
+            ];
+        }
+        $req    =   Http::acceptJson()->withToken($token->token)
+            ->post('https://api.twitter.com/2/tweets', $payload);
+        return [
+            'success'   =>  $req->successful(),
+            'data'      =>  $req->json()
+        ];
     }
 }
