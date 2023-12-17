@@ -3,10 +3,12 @@ name: SpennyPiggy
 environments:
   production:
     memory: 3008
-    queue-memory: 1024
-    cli-memory: 1024
+    queue-memory: 2048
+    cli-memory: 2048
     warm: 10
     gateway-version: 2
+    timeout: 30
+    cache: spennypiggy-cache
     runtime: "php-8.2:al2"
     domain: spennypiggy.co
     database: spennypiggy-db
