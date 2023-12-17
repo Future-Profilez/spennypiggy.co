@@ -4,11 +4,11 @@ import  LoaderButton from "@/Components/LoaderButton";
 import { useForm } from "@inertiajs/react";
 import Select from 'react-select';
 import { useState } from "react";
-import { usePage } from '@inertiajs/react';
+import { usePage, Link } from '@inertiajs/react';
 import Dropdown from 'react-bootstrap/Dropdown';
 
 export default function ChangeCurrency({defaultvalue, changer}) {
-   
+
    const { flash } = usePage().props;
    const { successAlert, errorAlert } = useAlerts();
    const { data, setData, get, processing, errors, reset } = useForm({
@@ -27,7 +27,7 @@ export default function ChangeCurrency({defaultvalue, changer}) {
       { value: 'SEK', label: 'Swedish Krona', symbolAndCode: 'SEK SEK' },
       { value: 'NZD', label: '$ New Zealand Dollar', symbolAndCode: '$ NZD' },
     ];
-    
+
 
    const [selectedCurrency, setSelectedCurrency] = useState(defaultvalue);
    const handleSelect = (e) => {
@@ -37,7 +37,7 @@ export default function ChangeCurrency({defaultvalue, changer}) {
 
    const changeCurrency = (e) => {
       // e.preventDefault();
-      console.log(e)
+    //   console.log(e)
       get(route(`change.currency`, { c: e } ),{
             preserveScroll: true,
             onSuccess: (resp) => {
@@ -68,7 +68,7 @@ export default function ChangeCurrency({defaultvalue, changer}) {
    }
 
    return <>
-      {changer ? 
+      {changer ?
          <>
          <Dropdown>
             <Dropdown.Toggle variant="info" id="pricebasic">
@@ -76,19 +76,17 @@ export default function ChangeCurrency({defaultvalue, changer}) {
             </Dropdown.Toggle>
             <Dropdown.Menu>
                {currencies && currencies.map((c, i)=>{
-                  return <Dropdown.Item key={`c-${i}`} onClick={()=>changec(c.value, c.symbolAndCode)}>
-                     {c.label}
-                  </Dropdown.Item>
+                  return <Link className="dropdown-item" href={route('change.currency', {c:c.value})} key={`currency-selector-${c.value}`}>{c.label}</Link>
                })}
             </Dropdown.Menu>
             </Dropdown>
          </>
-         : 
+         :
          <>
             <h2 className="text-uppercase font-GillSans pb-4 font-large"> Display Currency </h2>
             <div className="form-field mb-4">
                   <label className="d-block text-start mb-2">Display Currency</label>
-                  <Select  classNamePrefix="react-select" className="react-select my-4 " 
+                  <Select  classNamePrefix="react-select" className="react-select my-4 "
                      options={currencies}
                      placeholder={data.currency|| 'Select..'}
                      defaultValue={data.currency}

@@ -14,8 +14,8 @@ import { usePage } from "@inertiajs/react";
 
 export default function Header(props) {
 
-    const {rates, global_currency} = usePage().props;
-    const { auth, user } = props;
+    const {rates, global_currency, auth, user} = usePage().props;
+    // const { auth, user } = props;
 
     const deviceid = DeviceID();
     const [isActive, setActive] = useState(false);
@@ -67,7 +67,7 @@ export default function Header(props) {
 
 
             <div className='cartLogin'>
-            {auth.stripe_details_submitted == 1 ? '' :
+            {auth?.stripe_details_submitted == 1 ? '' :
               <ChangeCurrency defaultvalue={global_currency} changer={true} />
              }
 
@@ -102,7 +102,7 @@ export default function Header(props) {
                   <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_467_5581" result="shape"/>
                   </filter>
                   </defs>
-                </svg> 
+                </svg>
               </div>
             </div>
             </div>
@@ -154,7 +154,7 @@ export default function Header(props) {
                 <li><a onClick={toggleClass} target='_blank' href="https://intercom.help/spenny-piggy" >FAQ's</a></li>
                 <li><a onClick={toggleClass} href="https://blog.spennypiggy.co" >Blog</a></li>
                 <li><a onClick={(toggleClass)} className='livechat' >Need help ?</a></li>
-              
+
                 {auth && auth?.username ?
                    <li className='d-block d-lg-none' ><Link onClick={toggleClass}  method="get" href={route('logout')} >Logout</Link></li>
                   : ''
