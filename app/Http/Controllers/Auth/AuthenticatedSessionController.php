@@ -68,50 +68,50 @@ class AuthenticatedSessionController extends Controller
         if (!$user) {
             return Inertia::render('NotFound');
         }
-        SeoMeta::addTag('title', "{$user->name} - Spennypiggy | The Best Alternative to Amazon Wishlist");
-        $slinks = [];
-        $sociallinks = [];
-        if (!empty($user)) {
-            $slinks = SocialLinks::where('user_id', $user->id)->first();
+        SeoMeta::addTag('title', "{$user->name} - Spennypiggy | Spenny Piggy - Financial Gifts, Donations & Memberships");
+        // $slinks = [];
+        // $sociallinks = [];
+        // if (!empty($user)) {
+        //     $slinks = SocialLinks::where('user_id', $user->id)->first();
 
-            if (!empty($slinks)) {
-                $sociallinks = array(
-                    array(
-                        'social' => 'whoyouinto',
-                        'url'    => $slinks->whoyouinto ?? null,
-                    ),
-                    array(
-                        'social' => 'twitter',
-                        'url'    => $slinks->twitter ?? null,
-                    ),
-                    array(
-                        'social' => 'instagram',
-                        'url'    => $slinks->instagram ?? null,
-                    ), array(
-                        'social' => 'reddit',
-                        'url'    => $slinks->reddit ?? null,
-                    ), array(
-                        'social' => 'discord',
-                        'url'    => $slinks->discord ?? null,
-                    ), array(
-                        'social' => 'onlyfans',
-                        'url'    => $slinks->onlyfans ?? null,
-                    ), array(
-                        'social' => 'loyalfans',
-                        'url'    => $slinks->loyalfans ?? null,
-                    ), array(
-                        'social' => 'fansly',
-                        'url'    => $slinks->fansly ?? null,
-                    ), array(
-                        'social' => 'manyvids',
-                        'url'    => $slinks->manyvids ?? null,
-                    ), array(
-                        'social' => 'other',
-                        'url'    => $slinks->other ?? null,
-                    )
-                );
-            }
-        }
+        //     if (!empty($slinks)) {
+        //         $sociallinks = array(
+        //             array(
+        //                 'social' => 'whoyouinto',
+        //                 'url'    => $slinks->whoyouinto ?? null,
+        //             ),
+        //             array(
+        //                 'social' => 'twitter',
+        //                 'url'    => $slinks->twitter ?? null,
+        //             ),
+        //             array(
+        //                 'social' => 'instagram',
+        //                 'url'    => $slinks->instagram ?? null,
+        //             ), array(
+        //                 'social' => 'reddit',
+        //                 'url'    => $slinks->reddit ?? null,
+        //             ), array(
+        //                 'social' => 'discord',
+        //                 'url'    => $slinks->discord ?? null,
+        //             ), array(
+        //                 'social' => 'onlyfans',
+        //                 'url'    => $slinks->onlyfans ?? null,
+        //             ), array(
+        //                 'social' => 'loyalfans',
+        //                 'url'    => $slinks->loyalfans ?? null,
+        //             ), array(
+        //                 'social' => 'fansly',
+        //                 'url'    => $slinks->fansly ?? null,
+        //             ), array(
+        //                 'social' => 'manyvids',
+        //                 'url'    => $slinks->manyvids ?? null,
+        //             ), array(
+        //                 'social' => 'other',
+        //                 'url'    => $slinks->other ?? null,
+        //             )
+        //         );
+        //     }
+        // }
 
 
         if (!empty(request()->query('item'))) {
@@ -155,7 +155,6 @@ class AuthenticatedSessionController extends Controller
                 "items" => ['list' => $items, "pinned" => $pinned],
                 "categories" => $categories,
                 "itemid" => $itemdid,
-                "sociallinks" => $sociallinks,
             ]);
         } else {
             if ($user) {
@@ -170,10 +169,77 @@ class AuthenticatedSessionController extends Controller
             "items" => ['list' => $items, "pinned" => $pinned],
             "categories" => $categories,
             "itemid" => $itemdid,
-            "sociallinks" => $sociallinks,
-            "slinks" => $slinks
+            // "sociallinks" => $sociallinks,
+            // "slinks" => $slinks
         ]);
     }
+
+    public function sociallinks($username) {
+        try {
+            $user = User::where('username', $username)->first();
+            $slinks = [];
+            $sociallinks = [];
+            if (!empty($user)) {
+                $slinks = SocialLinks::where('user_id', $user->id)->first();
+                if (!empty($slinks)) {
+                    $sociallinks = array(
+                        array(
+                            'social' => 'whoyouinto',
+                            'url'    => $slinks->whoyouinto ?? null,
+                        ),
+                        array(
+                            'social' => 'twitter',
+                            'url'    => $slinks->twitter ?? null,
+                        ),
+                        array(
+                            'social' => 'instagram',
+                            'url'    => $slinks->instagram ?? null,
+                        ), array(
+                            'social' => 'reddit',
+                            'url'    => $slinks->reddit ?? null,
+                        ), array(
+                            'social' => 'discord',
+                            'url'    => $slinks->discord ?? null,
+                        ), array(
+                            'social' => 'onlyfans',
+                            'url'    => $slinks->onlyfans ?? null,
+                        ), array(
+                            'social' => 'loyalfans',
+                            'url'    => $slinks->loyalfans ?? null,
+                        ), array(
+                            'social' => 'fansly',
+                            'url'    => $slinks->fansly ?? null,
+                        ), array(
+                            'social' => 'manyvids',
+                            'url'    => $slinks->manyvids ?? null,
+                        ), array(
+                            'social' => 'other',
+                            'url'    => $slinks->other ?? null,
+                        )
+                    );
+                } else {
+                    return response()->json([
+                        "success" => false,
+                        "sociallinks" => [],
+                        "slinks" => []
+                    ]);
+                }
+            } else {
+                return response()->json([
+                    "success" => false,
+                    "msg" => 'User not found !!'
+                ]);
+            }
+            return response()->json([
+                "success" => true,
+                "sociallinks" => $sociallinks,
+                "slinks" => $slinks
+            ]);
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+    }
+
 
     public function checkUserName($username)
     {

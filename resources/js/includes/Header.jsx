@@ -13,22 +13,12 @@ import ChangeCurrency from '@/Components/ChangeCurrency';
 import { usePage } from "@inertiajs/react";
 
 export default function Header(props) {
-    const { rates, global_currency, auth, user } = usePage().props;
-    // const { auth, user } = props;
+    const { global_currency, auth } = usePage().props;
     const deviceid = DeviceID();
     const [isActive, setActive] = useState(false);
     const toggleClass = () => setActive(!isActive);
-
     const cart = useSelector(state => state.data.cart.cart);
-    // useEffect(()=>{
-    //   if(cart !== count){
-    //     setCount(cart);
-    //   }
-    // },[cart]);
-
     const [count, setCount] = useState();
-
-    const [loggedIn, setLoggedIn] = useState((auth && auth.username));
     const dispatch = useDispatch();
 
     async function fetchCounter() {
@@ -43,6 +33,7 @@ export default function Header(props) {
     useEffect(() => {
         fetchCounter();
     }, [cart]);
+
     console.log(`auth user header:`, auth);
 
     return <>

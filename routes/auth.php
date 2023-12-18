@@ -167,6 +167,11 @@ Route::get('/terms-and-conditions', function () {
     return Inertia::render('Terms');
 })->name("terms-and-conditions");
 
+
+Route::get('/promotion-terms', function () {
+    return Inertia::render('Promotions');
+})->name("promotion-terms");
+
 Route::get('/files/{filename}', function (string $filename) {
     $fullPath = asset($filename);
     return Storage::response($fullPath);
@@ -189,6 +194,8 @@ Route::get('/leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWis
 Route::get('twitter-token/', [TwitterController::class, 'twitterAuthUrl']);
 Route::get('twitter/login', [TwitterController::class, 'twitterLogin']);
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
+
+Route::get('sociallinks/{username}', [AuthenticatedSessionController::class, 'sociallinks'])->name('user.sociallinks');
 
 Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
 

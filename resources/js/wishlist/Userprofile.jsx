@@ -4,23 +4,27 @@ import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
 const SocialLinks = React.lazy(() => import('@/includes/SocialLinks'));
 const ShareProfile = React.lazy(() => import('./ShareProfile'));
 const SendSurprise = React.lazy(() => import('./SendSurprise'));
+import { LazyLoadImage } from 'react-lazy-load-image-component';
 
 export default function Userprofile({auth, user, links, IsloggedIn }) {
     return (
         <div className="userprofilesec rounded-3xl whbg">
             <div className="userphotobox pinkbg pink-shadow flex justify-center relative">
-                <img
-                    className="d-lg-none"
-                    src={(user && user?.cover_url) || wishlistbannerimg}
-                    alt="img"
-                />
+                <LazyLoadImage
+                alt={"image"} useIntersectionObserver={true} effect="blur"
+                height={308}
+                className="d-lg-none"
+                src={(user && user?.cover_url) || wishlistbannerimg}
+                width={690} />
+                
             </div>
             <div className="userPr p-4">
                 <div className="userphoto">
-                    <img
-                        src={user && user.avatar_url ? user.avatar_url:userphoto}
-                        alt="img"
-                    />
+                    <LazyLoadImage
+                    alt={"image"} useIntersectionObserver={true} effect="blur"
+                    height={200}
+                    src={user && user.avatar_url ? user.avatar_url:userphoto}
+                    width={200} />
                 </div>
                 <h2 className="font-GillSans">{user && user.name}</h2>
                 <div className="userId flex items-center justify-center">

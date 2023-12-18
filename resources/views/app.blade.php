@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="robots" content="index, follow">
     <meta name="googlebot" content="index,follow" />
-    {{-- <title inertia>The Best Alternative to Amazon Wishlist</title> --}}
+    {{-- <title inertia>    le> --}}
     {!! \App\SeoMeta::render() !!}
     <link rel="canonical" href="https://spennypiggy.co" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -18,21 +18,21 @@
     <meta name="msapplication-TileColor" content="#05EFB8" />
     <meta name="msapplication-TileImage" content="{{ URL::asset('/siteicon.png') }}">
     <meta name="theme-color" content="#05EFB8" />
-    <meta name="description" content="For spicy creators to Safely recieve financial gifts" />
+    <meta name="description" content="Send tributes, adopt bills & more. Safe for Spicy Creators who receive 100% payouts!" />
     <meta name="keywords"
-        content="The Best Alternative to Amazon Wishlist, For spicy creators to Safely recieve financial gifts, Create Wishlist, Share Wishlist, Add Wishlist, Recieve Gifts, Send Gifts, Fans Funding." />
-    <meta property="og:title" content="The Best Alternative to Amazon Wishlist" />
+        content="Financial Gifts, Donations & Memberships, Send tributes, adopt bills & more. Safe for Spicy Creators who receive 100% payouts!, Create Wishlist, Share Wishlist, Add Wishlist, Recieve Gifts, Send Gifts, Fans Funding. The Best Alternative to Amazon Wishlist" />
+    <meta property="og:title" content="Financial Gifts, Donations & Memberships" />
     <meta property="og:type" content="video.movie" />
     <meta property="og:url" content="spennypiggy.co" />
     <meta property="og:image" content="{{ URL::asset('/siteicon.png') }}" />
     <meta property="og:site_name" content="spennypiggy.co" />
-    <meta property="og:description" content="For spicy creators to Safely recieve financial gifts" />
+    <meta property="og:description" content="Send tributes, adopt bills & more. Safe for Spicy Creators who receive 100% payouts!" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="The Best Alternative to Amazon Wishlist" />
-    <meta name="twitter:description" content="For spicy creators to Safely recieve financial gifts" />
+    <meta name="twitter:title" content="Financial Gifts, Donations & Memberships" />
+    <meta name="twitter:description" content="Send tributes, adopt bills & more. Safe for Spicy Creators who receive 100% payouts!" />
     <meta name="twitter:image" content="{{ URL::asset('/siteicon.png') }}" />
     <meta name="twitter:site" content="@spennypiggy" />
-    <meta name="twitter:image:alt" content="The Best Alternative to Amazon Wishlist" />
+    <meta name="twitter:image:alt" content="Financial Gifts, Donations & Memberships" />
     <meta name="twitter:image:src" content="{{ URL::asset('/siteicon.png') }}" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <!-- <script async type="text/javascript" src="/service-worker.js"></script> -->

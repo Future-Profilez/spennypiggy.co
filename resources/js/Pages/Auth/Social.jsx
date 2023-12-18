@@ -5,12 +5,12 @@ import { useForm } from "@inertiajs/react";
 import { useEffect } from "react";
 import { useState } from "react";
 
-export default function Social({links}) {
+export default function Social({links, updatedLinks}) {
 
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [close, setClose] = useState();
 
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, processing, reset } = useForm({
         twitter: links?.twitter ? links.twitter : '',
         whoyouinto: links?.whoyouinto ? links.whoyouinto : '',
         reddit: links?.reddit ? links.reddit : '',
@@ -23,18 +23,18 @@ export default function Social({links}) {
         other: links?.other ? links.other : '',
     });
 
-    // useEffect(() => {
-    //     setData('twitter', links?.twitter || '');
-    //     setData('whoyouinto', links?.whoyouinto || '');
-    //     setData('reddit', links?.reddit || '');
-    //     setData('instagram', links?.instagram || '');
-    //     setData('discord', links?.discord || '');
-    //     setData('onlyfans', links?.onlyfans || '');
-    //     setData('loyalfans', links?.loyalfans || '');
-    //     setData('fansly', links?.fansly || '');
-    //     setData('manyvids', links?.manyvids || '');
-    //     setData('other', links?.other || '');
-    // }, [links]);
+    useEffect(() => {
+        setData('twitter', links?.twitter || '');
+        setData('whoyouinto', links?.whoyouinto || '');
+        setData('reddit', links?.reddit || '');
+        setData('instagram', links?.instagram || '');
+        setData('discord', links?.discord || '');
+        setData('onlyfans', links?.onlyfans || '');
+        setData('loyalfans', links?.loyalfans || '');
+        setData('fansly', links?.fansly || '');
+        setData('manyvids', links?.manyvids || '');
+        setData('other', links?.other || '');
+    }, [links]);
 
     const createSocial = (e) => {
         e.preventDefault();
@@ -44,6 +44,7 @@ export default function Social({links}) {
                 reset();
                 if(resp.props.flash?.success){
                     successAlert(resp.props.flash?.success || "Updated successfully.");
+                    updatedLinks && updatedLinks(new Date());
                 }
                 if(resp.props.flash?.error){
                     errorAlert(resp.props.flash?.error || "Something went wrong.")
