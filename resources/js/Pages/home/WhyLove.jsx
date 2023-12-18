@@ -12,7 +12,7 @@ export default function WhyLove() {
             <h2 className="headingMd text-shadow-black text-mint text-center w-full mb-16">
                   Why we love <br /> Spenny piggy
             </h2>
-            <div className="loveboxes">
+            <div className="loveboxes px-4">
                   <LazyLoadImage
                   alt={"image"}
                   height={"auto"} useIntersectionObserver={true} effect="blur"
@@ -22,12 +22,11 @@ export default function WhyLove() {
                      100% payout
                   </h3>
                   <p className="text-wh">
-                     We're all about creators, so they get every
-                     cent they earn - no middlemen.
+                  Non UK creators may receive a reduced or increased payout due to currency conversions.
                   </p>
             </div>
 
-            <div className="loveboxes">
+            <div className="loveboxes px-4">
                   <LazyLoadImage
                   alt={"image"} useIntersectionObserver={true} effect="blur"
                   height={"auto"}
@@ -42,7 +41,7 @@ export default function WhyLove() {
                   </p>
             </div>
 
-            <div className="loveboxes">
+            <div className="loveboxes px-4">
                   <LazyLoadImage
                   alt={"image"}
                   height={"auto"} useIntersectionObserver={true} effect="blur"

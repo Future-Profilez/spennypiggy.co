@@ -124,7 +124,7 @@ export default function Footer(props) {
 
                 <div id="footer" className="footer">
                     <div className="containerbox">
-                        <div className="footlogo">
+                        <div className="footlogo m-auto d-table">
                             <LazyLoadImage
                                 alt={"image"}
                                 height={"auto"}
@@ -159,6 +159,9 @@ export default function Footer(props) {
                                     </li>
                                     <li>
                                         <Link href={route("terms-and-conditions")}> Terms </Link>
+                                    </li>
+                                    <li>
+                                        <Link href={route("promotion-terms")}> Promotion Terms </Link>
                                     </li>
                                     <li>
                                         <ContentPrefrences classes="m-auto d-table" />{" "}

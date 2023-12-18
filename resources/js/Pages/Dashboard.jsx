@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState,useMemo, useEffect }  from 'react';
 import { Head, Link } from "@inertiajs/react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
 const Wishlist = React.lazy(() => import('./Auth/Wishlist'));
@@ -10,15 +10,38 @@ const Nocontent = React.lazy(() => import('@/includes/Nocontent'));
 const LoadingScreen = React.lazy(() => import('@/includes/LoadingScreen'));
 const Social = React.lazy(() => import('./Auth/Social'));
 const PaymentDashboard = React.lazy(() => import('./stripe/PaymentDashboard'));
-import { useState } from "react";
 import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
-import { useMemo } from "react";
+import { LazyLoadImage } from 'react-lazy-load-image-component';
 
 export default function Dashboard(props) {
-    const{auth, items, categories, user, itemid, sociallinks, global_currency, slinks}= props;
-    const [its, setIts] = useState();
 
+    const{auth, items, categories, user, itemid, global_currency }= props;
+    const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
+    const [loading, setLoading] = useState(false);
+    const [socialLinks, setSocialLinks] = useState([]);
+    const [ sLinks, setLinks ] = useState([]);
+    const fetchingLinks = () => { 
+        axios.get(`sociallinks/${user.username}`).then((resp) => {
+            console.log("resp",resp);
+            setSocialLinks(resp.data.sociallinks)
+            setLinks(resp.data.slinks)
+        }).catch((_err) => {
+            console.error("error", _err);
+        });  
+    }
+    useEffect(()=>{
+        setTimeout(()=>{
+            fetchingLinks();
+        },2000);
+    },[]);
+    function updatedLinks(){
+        fetchingLinks();
+    }
+
+
+
+    const [its, setIts] = useState();
     async function conCat(pinned, items){
         const result = pinned.concat(items);
         setIts(result);
@@ -28,7 +51,6 @@ export default function Dashboard(props) {
         conCat(items.pinned || [], items.list || []);
     },[]);
 
-    const [loading, setLoading] = useState(false);
     const fetchingcats = (e) => {
         setLoading(true);
         axios.get(`${user.username}/${e}`).then((resp) => {
@@ -41,17 +63,11 @@ export default function Dashboard(props) {
             setLoading(false);
         });
     };
-
     const showCategory = (e) => {
         const v = e.target.value;
         fetchingcats(v);
     };
-
-    const [IsloggedIn, setIsLoggedIn] = useState(
-        (auth && auth.user && auth.user.username) == (user && user.username)
-    );
-
-    // console.log("Dashboard props", props)
+    
 
     return (
         <Guest auth={auth.user} user={user}>
@@ -59,7 +75,11 @@ export default function Dashboard(props) {
             <div className='wishlistPage blackbg pt-8 pb-14 '>
                 <div className='containerbox'>
                     <div className='wishbanner d-lg-block d-none'>
-                        <img className='w-full border-black border-2 shadow-mint rounded-2xl' src={user?.cover_url || wishlistbannerimg} alt='img' />
+                        <LazyLoadImage
+                        alt={"image"} useIntersectionObserver={true} effect="blur"
+                        height={390}
+                        className='w-full border-black border-2 shadow-mint rounded-2xl' src={user?.cover_url || wishlistbannerimg}
+                        width={1185} />
                     </div>
                     <div className="wishManage">
                         <div className="row">
@@ -68,7 +88,7 @@ export default function Dashboard(props) {
                                     <Userprofile
                                         auth={auth && auth.user}
                                         IsloggedIn={IsloggedIn}
-                                        links={sociallinks}
+                                        links={socialLinks}
                                         user={user}
                                     />
                                     {/* <Link href={route('change.currency', {c:'INR'})}>INR</Link> */}
@@ -102,8 +122,8 @@ export default function Dashboard(props) {
                                                 <div className="addsocial flex">
                                                     <ul>
                                                         <li>
-                                                            <Social
-                                                                links={slinks}
+                                                            <Social updatedLinks={updatedLinks}
+                                                                links={sLinks}
                                                             />
                                                         </li>
                                                         <li>

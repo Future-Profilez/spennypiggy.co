@@ -15,7 +15,7 @@ class SeoMeta   {
      * @var arrya
      */
     protected static $tags = [
-        'title' => 'Spennypiggy | The Best Alternative to Amazon Wishlist'
+        'title' => 'Spennypiggy | Spenny Piggy - Financial Gifts, Donations & Memberships'
     ];
 
     /**

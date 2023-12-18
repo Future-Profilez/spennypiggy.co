@@ -7,7 +7,7 @@ export default function Dashboard(props) {
         <Guest auth={auth.user} user={user}>
             <Head title={'Terms and Conditions'} />
             <div className="wishlistPage blackbg pt-8 pb-14 ">
-                <div className="containerbox static-page">
+                <div className="containerbox static-page p-3">
                     <h1>Important Terms and Conditions</h1>
 
                     <p>

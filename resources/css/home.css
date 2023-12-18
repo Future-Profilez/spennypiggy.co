@@ -1,3 +1,4 @@
+.wishlistimg span{display:block !important;width:100% !important;height:100% !important;}
 .box{padding:15px;border-radius:20px;background:#fff;}
 .containerbox{max-width:1215px;margin:auto;padding:0 15px;}
 .heroSec{background:var(--black);padding:10px 15px 80px;}
@@ -14,9 +15,9 @@
 .welcomeRt{width:40%;}
 .spennylogo img{width:100%;height:100%;}
 .funboximg span.lazy-load-image-background,.spennylogo .lazy-load-image-background,.welcomeRt span.lazy-load-image-background{width:auto !important;height:auto !important;}
-.wishlistbtn a{transform:rotate(-11deg);}
+.wishlistbtn a:not(.wishlistbutton){transform:rotate(-11deg);}
 .wishlistbtn{margin-top:60px;}
-.welcomeTitle{transform:rotate(352deg);-webkit-text-stroke:1px #e6ea81;text-transform:capitalize !important;text-shadow:2px 2px 0 #e6ea81;}
+.welcomeTitle{ -webkit-text-stroke:1px #e6ea81;text-transform:capitalize !important;text-shadow:2px 2px 0 #e6ea81;}
 .btn-pink.shadow-mint{box-shadow:6px 6px 0 0 var(--mint);border:2px solid var(--mint);}
 .btn-pink.shadow-mint:hover{box-shadow:10px 10px 0 0 var(--mint);}
 /* mega Menu */
@@ -64,7 +65,8 @@
 .footer{padding:70px 0;}
 .footerbox{max-width:120px;}
 .footer{padding:50px 0 0;}
-/* .footer .containerbox{display:flex;align-items:flex-start;align-content:flex-start;justify-content:space-between;flex-wrap:wrap;} */
+/* .footer .containerbox{display:flex;align-items:flex-start;align-content:flex-start;justify-content:space-between;flex-wrap:wrap;}
+*/
 .footlogo{width:100%;text-align:center;display:flex;align-items:center;align-content:center;max-width:190px;margin:auto;}
 .footlinks ul{display:flex;align-items:center;align-content:center;justify-content:center;flex-wrap:wrap;}
 .footlogo a{margin:auto;}
@@ -74,8 +76,7 @@
 .footlinks ul li:last-child{border-right:none;}
 .footlinks ul li a{color:var(--text-black);font-family:var(--font-CeraGR);font-size:16px;font-style:normal;font-weight:400;line-height:20px;}
 .footlinks ul li a:hover,.footlinks ul li a:focus{color:var(--black);text-decoration:underline;}
-.copyright{padding:10px 0;border-top:1px solid var(--gray);color:var(--black);font-family:var(--font-CeraGR);
-   font-size:16px;font-style:normal;font-weight:400;line-height:250%;text-align:center;}
+.copyright{padding:10px 0;border-top:1px solid var(--gray);color:var(--black);font-family:var(--font-CeraGR);font-size:16px;font-style:normal;font-weight:400;line-height:250%;text-align:center;}
 .loginform{width:90%;max-width:576px;}
 .loginheadbox{padding:30px 40px;border-radius:25px 25px 0 0;}
 .loginform{border-radius:30px 30px;}
@@ -283,16 +284,10 @@ ul.socialmedia a img{width:35px;height:35px;}
 div#msgText p b{font-weight:700 !important;padding:0 4px;color:#000;}
 .pinned-badge svg{width:17px;height:17px;fill:#fff;}
 .pinned-badge{display:flex;text-transform:uppercase;justify-content:flex-start;position:absolute;top:10px;left:10px;align-items:center;background:#f64c96 !important;color:#fff !important;}
-#pricebasic {
-   padding: 4px 10px;
-   border: 0 !important;
-   margin-right: 10px;
-}
-#pricebasic:after {
-   display: none !important;
-}
-
-
+#pricebasic{padding:4px 10px;border:0 !important;margin-right:10px;}
+#pricebasic:after{display:none !important;}
+.userphotobox > span,.userphotobox > span > img{width:100% !important;height:100% !important;display:block !important;object-fit:cover;}
+.userphoto span{height:auto !important;width:auto !important;display:block !important;}
 /* Responsive */
 @media(max-width:1500px){.loveboxes{padding:0 20px;}
 .loveboxes img{max-width:160px;}
@@ -353,7 +348,7 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .welcomeHeading{font-size:50px;line-height:55px;}
 .welcomeTitle{margin-bottom:50px;font-size:22px;line-height:25px;}
 .wishlistbtn .w-2\/5{width:15rem}
-.itsfree{padding-inline-start:4rem;}
+.itsfree{padding-inline-start:4rem; text-align: center !important; }
 .welcomeTitle{margin-bottom:3rem;}
 .headingMd{font-size:45px;line-height:50px;}
 .headingSm{font-size:40px;line-height:43px;}
@@ -440,7 +435,7 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .loveboxes img{margin:0 auto 15px;}
 .footer .containerbox{flex-wrap:wrap;justify-content:center;}
 .footer{padding:20px 0 85px;}
-.footlogo{ text-align:center;margin:0 0 10px;}
+.footlogo{text-align:center;margin:0 0 10px;}
 .footlogo a img{max-width:140px;}
 .footlinksbox{width:100%;}
 .footlinks{margin:20px 0 0;}
@@ -470,12 +465,10 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .howWorkTab{margin-top:25px;padding-bottom:20px;}
 /* No Result */
 .noResult h2.headingLg{font-size:40px;line-height:44px;}
-.welcomeTitle{transform:rotate(-8deg);}
 .funpart{padding-bottom:0px;}
 .welcomeTitle{text-transform:uppercase !important;}
 }
-@media(max-width:575px){
-.menu-toggle svg{width:45px;height:45px;}
+@media(max-width:575px){.menu-toggle svg{width:45px;height:45px;}
 .wishlistdetial{min-height:125px;}
 .funboxs{position:sticky;top:20px;}
 .loveboxes h3.headingSm{margin-bottom:0;}
@@ -520,26 +513,18 @@ select#country{width:100%;margin-bottom:10px;}
 .wishlistcntbox{max-width:100%;width:100%;}
 .welcomeTitle{font-size:27px;line-height:34px;}
 }
-@media(max-width:430px){
-   .subscribletag{padding:5px 13px !important;font-size:10px !important;}
-   .wishlistimg img{height:140px !important;}
-   .crowd .text-small{font-size:13px !important;}
-   .wishlistdetial h5{font-size:15px;}
-   .progress{background:#ECCEDB;height:5px;}
-   .sharelinks button{font-size:14px;}
-   .sharelinks{padding:4px;}
-   .wishlistdetial{padding:12px;}
-   .wishlistdetial{min-height:106px;}
-   .items-lists {
-      margin-left: -8px;
-      margin-right: -8px;
-   }
-   .row.items-lists > div {
-      padding: 0 8px !important;
-  }
-  .wishlistcntbox.shadow-voilet {
-   box-shadow: 4px 4px 0 0 var(--voilet);
-}
+@media(max-width:430px){.subscribletag{padding:5px 13px !important;font-size:10px !important;}
+.wishlistimg img{height:140px !important;}
+.crowd .text-small{font-size:13px !important;}
+.wishlistdetial h5{font-size:15px;}
+.progress{background:#ECCEDB;height:5px;}
+.sharelinks button{font-size:14px;}
+.sharelinks{padding:4px;}
+.wishlistdetial{padding:12px;}
+.wishlistdetial{min-height:106px;}
+.items-lists{margin-left:-8px;margin-right:-8px;}
+.row.items-lists > div{padding:0 8px !important;}
+.wishlistcntbox.shadow-voilet{box-shadow:4px 4px 0 0 var(--voilet);}
 }
 @media(max-width:400px){.headingMd{font-size:44px !important;line-height:45px !important;}
 .spennylogo img{max-width:120px;}
@@ -582,8 +567,7 @@ div#msgText p{display:flex;align-items:flex-start;}
 .titleprice:hover .tooltipbtn p{display:block !important;}
 .welcomeRt{animation:menu 0.5s linear;transition:0.6s;}
 .wishtracker .nav.nav-tabs li:first-child button{margin-right:10px;}
-.wishtracker .nav.nav-tabs li button{background:transparent;color:#ffffff;
-   border:0 !important;padding:10px 14px 10px 0px !important;font-size:20px;border-bottom:2px solid transparent !important;}
+.wishtracker .nav.nav-tabs li button{background:transparent;color:#ffffff;border:0 !important;padding:10px 14px 10px 0px !important;font-size:20px;border-bottom:2px solid transparent !important;}
 .wishtracker .nav.nav-tabs li button.active{color:#f94f97;border-color:#f94f97 !important;}
 .wishtracker .nav.nav-tabs{border:0;border-radius:20px;padding:0px 0px;}
 .disabled{opacity:0.6;}
