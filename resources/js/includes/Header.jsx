@@ -13,7 +13,6 @@ import ChangeCurrency from '@/Components/ChangeCurrency';
 import { usePage } from "@inertiajs/react";
 
 export default function Header(props) {
-
     const { rates, global_currency, auth, user } = usePage().props;
     // const { auth, user } = props;
     const deviceid = DeviceID();
