@@ -199,7 +199,6 @@ class StripeController extends Controller
             $subtotal = 0;
             $taxNew = 0;
             foreach ($getdata as $dd) {
-                // $priceId = $dd->wish->subscription == 2 ? $dd->priceid : $dd->wish->price_id;
                 $priceId = $dd->priceid != Null ? $dd->priceid : $dd->wish->price_id;
 
                 $lineItems[] = [
@@ -213,14 +212,6 @@ class StripeController extends Controller
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
-
-            // $sessionCreate = $stripe->paymentLinks->create([
-            //     'line_items' => $lineItems,
-            //     'on_behalf_of' => $getdata[0]->owner->account_id,
-            //     'application_fee_amount' => $taxNew,
-            //     'transfer_data' => ['destination' => $getdata[0]->owner->account_id],
-            // ]);
-
             $sessionCreate = $stripe->checkout->sessions->create([
                 'success_url' => route('checkout.success', [$owner_id]),
                 'cancel_url' => route('checkout.cancel', [$owner_id]),
@@ -231,19 +222,12 @@ class StripeController extends Controller
                         'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
                     ],
                     'application_fee_amount' => $taxNew,
-                    'receipt_email' => 'saurav@futureprofilez.com',
+                    'receipt_email' => $user->email,
                 ],
-                'customer_email' => 'naveen@internetbusinesssolutionsindia.com',
+                'customer_email' => $user->email,
             ]);
 
-            // $subtotal = ($sessionCreate->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
-
-            // $taxNew = ($sessionCreate->amount_total / 100) - $subtotal;
-
-            // session()->forget('session_id');
-            // session(['session_id' => $sessionCreate->id]);
             $stripePaymentDetail = StripePaymentDetail::create([
-                // 'session_id' => $sessionCreate->id,
                 'amount_subtotal' => $subtotal,
                 'amount_total' => $sessionCreate->amount_total / 100,
                 'tax' => $taxNew,
@@ -264,8 +248,7 @@ class StripeController extends Controller
 
             return Inertia::location($sessionCreate->url);
         } catch (\Throwable $th) {
-            // Log::error("Error in createCheckout: " . $th->getMessage());
-            throw $th;
+            return back()->with('error', 'Something went wrong.');
         }
     }
 
