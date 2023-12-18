@@ -12,6 +12,7 @@ use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\StripeWebhookStatus;
 use App\Models\Subscription;
+use App\Models\TipGoal;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\WishItem;
@@ -789,5 +790,13 @@ class StripeController extends Controller
 
         StripeControl::cancelSubscription($subs->stripe_id);
         return to_route('user.show', ['username' => $subs->wish_item->user->username])->with('success', "Subscription is cancelled for wish {$subs->wish_item->wishname}.");
+    }
+
+
+    public function tipToJar($uuid)
+    {
+        $goal = TipGoal::where('uuid', $uuid)->first();
+
+        
     }
 }

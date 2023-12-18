@@ -50,12 +50,12 @@ class TwitterController extends Controller
         $user   =   Auth::user();
         $state  = Session::pull("x_state", "NONE");
         $challenge  =   Session::pull("x_challenge");
-        if(!empty($data['code'] AND $data['state'] == $state)){
+        if (!empty($data['code'] and $data['state'] == $state)) {
             try {
                 $resp = TwitterAuthService::getAuthToken($data['code'], $challenge, route("x.handle"));
                 Session::remove("x_state");
                 Session::remove("x_challenge");
-                if($resp['success']){
+                if ($resp['success']) {
                     $token = TwitterToken::create([
                         'user_id'   =>  $user->id,
                         'token'     =>  $resp['data']['access_token'],
@@ -66,15 +66,14 @@ class TwitterController extends Controller
 
                     FetchSelfTwitterData::dispatch($token);
 
-                    return to_route('user.show',['username' => $user->username])->with('success', 'X.com successfully setup for Auto-tweets.');
+                    return to_route('user.show', ['username' => $user->username])->with('success', 'X.com successfully setup for Auto-tweets.');
                 }
-                return to_route('user.show',['username' => $user->username])->with('error', 'Failed to connect. '.$resp['data']['error_description']);
-
+                return to_route('user.show', ['username' => $user->username])->with('error', 'Failed to connect. ' . $resp['data']['error_description']);
             } catch (Exception $e) {
-                return to_route('user.show',['username' => $user->username])->with('error', 'Failed to connect. '.$e->getMessage());
+                return to_route('user.show', ['username' => $user->username])->with('error', 'Failed to connect. ' . $e->getMessage());
             }
         }
-        return to_route('user.show',['username' => $user->username])->with('error', 'Invalid payload!');
+        return to_route('user.show', ['username' => $user->username])->with('error', 'Invalid payload!');
     }
 
     /**
@@ -82,15 +81,27 @@ class TwitterController extends Controller
      *
      * @return mixed
      */
-    public function testToken()
+    public static function testToken($wish)
     {
 
         $content = Storage::disk('public')->get('default4.png');
         $token = TwitterToken::find(1);
         // $token = TwitterAuthService::checkToken($token);
+        // $twitterClient = new Client(env('TWITTER_CONSUMER_KEY'), env('TWITTER_CONSUMER_SECRET'), $token->refresh_token);
 
-        // $resp = TwitterAuthService::postTweet($token, 'Welcome to spennypiggy...');
-        $resp = TwitterAuthService::uploadMedia($token, base64_encode($content));
+        // try {
+        // Upload media (image, video, etc.)
+        // $media = $twitterClient->uploadMedia('path/to/your/image.jpg', MediaType::IMAGE);
+
+        // // Post a tweet with media attachment
+        // $response = $twitterClient->postTweet([
+        //     'text' => $tweet,
+        //     'media_ids' => $media->media_id_string,
+        // ]);
+        $tweet = "New wishlist added: " . $wish->wishname . "! Check it out at " . env('APP_URL') . "/" . $wish->user->username;
+
+        $resp = TwitterAuthService::postTweet($token, $tweet);
+        // $resp = TwitterAuthService::uploadMedia($token, base64_encode($content));
         return response()->json($resp);
     }
 }

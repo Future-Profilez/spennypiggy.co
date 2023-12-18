@@ -123,6 +123,8 @@ Route::middleware('auth')->group(function () {
             Route::get('init', [TwitterController::class, 'authInit'])->name('init');
             Route::get('authorize', [TwitterController::class, 'handleAuth'])->name('handle');
         });
+
+        Route::post('add-goal', [WishitemController::class, 'addTipGoal'])->name('add-goal');
     });
 });
 
