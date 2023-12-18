@@ -10,6 +10,7 @@ use App\Models\UserCategory;
 use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\Providers\RouteServiceProvider;
+use App\SeoMeta;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -67,7 +68,7 @@ class AuthenticatedSessionController extends Controller
         if (!$user) {
             return Inertia::render('NotFound');
         }
-
+        SeoMeta::addTag('title', "{$user->name} - Spennypiggy | The Best Alternative to Amazon Wishlist");
         $slinks = [];
         $sociallinks = [];
         if (!empty($user)) {

@@ -75,7 +75,7 @@ export default function Wishlistbox(props) {
             <h5 className='font-CeraGRBold text-dark titleprice'>{formatMultiPrice(price(), itm?.currency || 'GBP')}
                 <button className='tooltipbtn' >?<p>*not including 20% service fee.</p></button>
             </h5>
-          </div> 
+          </div>
           {itm.subscription == '2' ?
             <div className='crowd pt-2'>
             <ProgressBar now={itm.fullfill_amount} max={itm.price} />

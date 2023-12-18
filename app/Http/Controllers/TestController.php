@@ -6,6 +6,7 @@ use App\CurrencyExchange;
 use App\Mail\Welcome;
 use App\Models\Currency;
 use App\Models\User;
+use App\SeoMeta;
 use App\StripeControl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -94,5 +95,26 @@ class TestController extends Controller
             'rate'      =>  Currency::rates(),
             'symbol'    => Currency::symbols()
         ]);
+    }
+
+    /**
+     * Test Meta Tags
+     *
+     * @return mixed
+     */
+    public function testMeta()
+    {
+        SeoMeta::addTag('title', 'This is test SEO');
+        SeoMeta::addTag('link', [
+            'rel'   =>  'canonical',
+            'href'  =>  'https://spennypiggy.co'
+        ]);
+        SeoMeta::addTag('meta', [
+            'viewport'  =>  'width=device-width,initial-scale=1'
+        ]);
+        SeoMeta::addTag('meta', 'name="msapplication-TileColor" content="#05EFB8"');
+
+        $str = SeoMeta::render();
+        die($str);
     }
 }

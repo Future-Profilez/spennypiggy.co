@@ -174,7 +174,7 @@ export default function UserCarts(props) {
                                 </li>
                                 <li className="cheklistbox">
                                     <label
-                                        for="agreeterm"
+                                        htmlFor="agreeterm"
                                         className="text-start" >
                                         <input
                                             onChange={(e) => setIsChecked(e.target.checked)}

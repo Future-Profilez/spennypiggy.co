@@ -5,9 +5,10 @@
     <meta charset="utf-8">
     <meta name="robots" content="index, follow">
     <meta name="googlebot" content="index,follow" />
-    <title inertia>{{ config('app.name', 'The Best Alternative to Amazon Wishlist') }}</title>
+    {{-- <title inertia>The Best Alternative to Amazon Wishlist</title> --}}
+    {!! \App\SeoMeta::render() !!}
     <link rel="canonical" href="https://spennypiggy.co" />
-    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,maximum-scale=5" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link rel="manifest" href="{{ URL::asset('/manifest.json') }}" />
     <link rel="mask-icon" href="{{ URL::asset('/favicon.ico') }}" />
     <link rel="icon" href="{{ URL::asset('/favicon.ico') }}" />
@@ -36,7 +37,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <!-- <script async type="text/javascript" src="/service-worker.js"></script> -->
     <script type="text/javascript" src="//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js"></script>
-    @laravelPWA
+    {{-- @laravelPWA --}}
     @routes
     @viteReactRefresh
     @vite(['resources/js/app.jsx'])
