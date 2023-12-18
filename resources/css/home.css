@@ -318,7 +318,10 @@ div#msgText p b{font-weight:700 !important;padding:0 4px;color:#000;}
 */
 .loginPage h2.headingLg{font-size:50px;line-height:60px;}
 }
-@media(max-width:991px){.userPr{width:-moz-fit-content !important;width:fit-content !important;margin:auto;margin-top:-78px;}
+@media(max-width:991px){
+.wishManage{padding:0;}
+.userPr{width:-moz-fit-content !important;width:fit-content !important;margin:auto;margin-top:-78px;}
+
 .userphoto{margin:auto !important;padding-bottom:12px;margin-top:-30px;}
 .containerbox{max-width:740px;}
 .MegaMenu{flex-wrap:wrap;align-items:flex-start;align-content:flex-start;}
@@ -383,7 +386,6 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 */
 .userId a{margin-left:2px!important;}
 .userProfileDate{position:relative;}
-.wishManage{padding:0;}
 .userProfile{margin:0 auto;width:100%;}
 .userManageRt{padding:0;width:100%;}
 .wishlistModal{min-width:300px;}
@@ -599,3 +601,9 @@ button.editpop{display:none !important;}
 .subsctabs button{background:#404040;color:#fff;border-radius:30px !important;padding:6px 20px;}
 .subsctabs button.active,.subsctabs button:hover{color:#fff;background:#f45595;}
 .plantitle{font-size:22px;}
+
+.wishbanner span {
+  width: 100% !important;
+  display: block !important;
+  height: 100% !important;
+}
