@@ -35,7 +35,7 @@
     <meta name="twitter:image:src" content="{{ URL::asset('/siteicon.png') }}" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <!-- <script async type="text/javascript" src="/service-worker.js"></script> -->
-
+    <script type="text/javascript" src="//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js"></script>
     @laravelPWA
     @routes
     @viteReactRefresh

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\CheckoutMailToUser;
 use App\Jobs\CheckoutUser;
 use App\Jobs\SendRenewMail;
+use App\Jobs\SubscribedMail;
 use App\Jobs\SubscriptionCancelAtEnd;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
@@ -677,8 +678,13 @@ class StripeController extends Controller
                 $sub->upcoming_payment = $current;
                 $sub->save();
 
+
+
+
                 if ($sub->recurring_for == 'onetime') {
                     SubscriptionCancelAtEnd::dispatch($sub);
+                } else {
+                    SubscribedMail::dispatch($sub);
                 }
 
                 return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('success', "Subscription Success. If you have paid for one time, subscription will be autocanceled on period end.");
@@ -767,9 +773,10 @@ class StripeController extends Controller
             if ($event->type == "invoice.updated" && !empty($subs)) {
 
                 $array = [
-                    'email' => $event->data->customer_email,
-                    'name' => $event->data->customer_name,
-                    'invoice_pdf' => $event->data->invoice_pdf
+                    'email' => $event->data->object->customer_email,
+                    'name' => $event->data->object->customer_name,
+                    'invoice_pdf' => $event->data->object->invoice_pdf,
+                    'uuid' => $subs->uuid
                 ];
 
                 $subs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
@@ -788,5 +795,16 @@ class StripeController extends Controller
         }
 
         return true;
+    }
+
+
+    public function cancelSubs($uuid)
+    {
+        $subs = WishItemSubscription::where('uuid', $uuid)->first();
+        $subs->status = "cancelled";
+        $subs->save();
+
+        StripeControl::cancelSubscription($subs->stripe_id);
+        return to_route('user.show', ['username' => $subs->wish_item->user->username])->with('success', "Subscription is cancelled for wish {$subs->wish_item->wishname}.");
     }
 }

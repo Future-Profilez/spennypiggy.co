@@ -32,4 +32,29 @@ class Currency extends Model
         'updated_at',
         'deleted_at'
     ];
+
+    /**
+     * Get Only Exchange Rates
+     *
+     * @return array
+     */
+    public static function rates()
+    {
+        return self::whereNotNull('conversion_rate')
+            ->orderBy('ISO')
+            ->pluck('conversion_rate', 'ISO');
+    }
+
+    /**
+     * Get Currency Symbol like USD => $
+     *
+     * @param $type symbol or symbolNative
+     * @return array
+     */
+    public static function symbols($type = 'symbolNative')
+    {
+        return self::whereNotNull($type)
+            ->orderBy('ISO')
+            ->pluck($type, 'ISO');
+    }
 }

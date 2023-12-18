@@ -2,10 +2,11 @@ import React from 'react'
 import { Link, Head } from "@inertiajs/react";
 import addwishlistimg from "../../../assets/img/addwishlistimg.png";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
-// import { LazyLoadImage } from 'react-lazy-load-image-component';
+import TrustBox from './TrustBox';
 
 export default function Hero({auth}) {
-  return (
+  return <>
+     
    <div className="heroSec">
    <div className="containerbox">
        <div className="welcome">
@@ -25,6 +26,7 @@ export default function Hero({auth}) {
                <div className="itsfree mt-4 ps-24">
                    It’s Free 🎉
                </div>
+               <TrustBox />
            </div>
            <div className="welcomeRt">
                <img
@@ -36,5 +38,5 @@ export default function Hero({auth}) {
        </div>
    </div>
 </div>
-  )
+</>
 }

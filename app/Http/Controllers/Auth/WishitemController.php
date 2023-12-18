@@ -17,6 +17,7 @@ use App\Models\UserCart;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
 use App\Models\WishItem;
+use App\Models\WishItemSubscription;
 use App\Rules\ValidSubscriptionPeriod;
 use App\StripeControl;
 use Carbon\Carbon;
@@ -539,7 +540,6 @@ class WishitemController extends Controller
                 ];
             }
 
-
             $cart = [];
             $key = 0;
             foreach ($groupedWishes as $value) {
@@ -805,21 +805,19 @@ class WishitemController extends Controller
         $tracks = StripePaymentItems::whereHas('payment', function ($query) use ($user) {
             $query->where('user_id', $user->id)->orWhere('owner_id', $user->id);
         })->with(['wish'])->orderBy('created_at', 'DESC')->get();
-
-        $creator_subs = Subscription::where('owner_id', Auth::id())->with(['user', 'wish'])->orderBy('updated_at', 'DESC')->get();
-        $user_subs = Subscription::where('user_id', Auth::id())->with(['owner', 'wish'])->get();
-
-        $trackData = $tracks->map(function ($q) use ($creator_subs, $user_subs) {
+        $creator_subs = WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->with(['user', 'wish_item'])->orderBy('updated_at', 'DESC')->get();
+        $user_subs = WishItemSubscription::where('user_id', Auth::id())->with(['wish_item', 'wish_item.user'])->get();
+        $trackData = $tracks->map(function ($q) {
 
             if (Auth::id() == $q->payment->owner_id) {
                 $q->user = $q->payment->user ?? false;
             } elseif (Auth::id() == $q->payment->user_id) {
                 $q->user = $q->payment->owner;
             }
-
             $q->cart_message = $q->payment->message ?? null;
             $q->surprise_message = $q->cart->message ?? null;
-
             return $q;
         });
 
@@ -887,6 +885,8 @@ class WishitemController extends Controller
         }
         return Inertia::render('tracker/Wishtracker');
     }
+
+
 
     public function userSubscribed()
     {

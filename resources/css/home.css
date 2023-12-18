@@ -283,6 +283,14 @@ ul.socialmedia a img{width:35px;height:35px;}
 div#msgText p b{font-weight:700 !important;padding:0 4px;color:#000;}
 .pinned-badge svg{width:17px;height:17px;fill:#fff;}
 .pinned-badge{display:flex;text-transform:uppercase;justify-content:flex-start;position:absolute;top:10px;left:10px;align-items:center;background:#f64c96 !important;color:#fff !important;}
+#pricebasic {
+   padding: 4px 10px;
+   border: 0 !important;
+   margin-right: 10px;
+}
+#pricebasic:after {
+   display: none !important;
+}
 
 
 /* Responsive */
@@ -432,8 +440,8 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .loveboxes img{margin:0 auto 15px;}
 .footer .containerbox{flex-wrap:wrap;justify-content:center;}
 .footer{padding:20px 0 85px;}
-.footlogo{width:100%;text-align:center;margin:0 0 10px;}
-.footlogo a img{max-width:140px;margin:auto;}
+.footlogo{ text-align:center;margin:0 0 10px;}
+.footlogo a img{max-width:140px;}
 .footlinksbox{width:100%;}
 .footlinks{margin:20px 0 0;}
 .footlinks ul li{padding:0 8px;}
@@ -466,12 +474,14 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .funpart{padding-bottom:0px;}
 .welcomeTitle{text-transform:uppercase !important;}
 }
-@media(max-width:575px){.wishlistdetial{min-height:125px;}
+@media(max-width:575px){
+.menu-toggle svg{width:45px;height:45px;}
+.wishlistdetial{min-height:125px;}
 .funboxs{position:sticky;top:20px;}
 .loveboxes h3.headingSm{margin-bottom:0;}
 .editprofileModalInner,.innermodel{width:100% !important;}
 .welcomeTitle{margin:auto;}
-button.cartLink svg{width:37px;height:37px;}
+button.cartLink svg{width:34px;height:34px;}
 .carticon svg{width:30px;}
 .wishlistbox{flex-wrap:wrap;justify-content:center!important;}
 .wishlistcntbox{margin-bottom:20px;}
