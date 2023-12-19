@@ -74,55 +74,54 @@ class AuthenticatedSessionController extends Controller
             $itemdid = false;
         }
 
-        // $items = [];
-        // $categories = [];
-        // if (!empty($user)) {
-        //     $categories = UserCategory::whereUserId($user->id)->latest()->get();
-        // }
-        // if ($category && $user) {
-        //     $query = WishCategory::orderBy('created_at', 'DESC');
-        //     if ($category != 'all') {
-        //         $query->where('category_id', $category);
-        //     }
+        $items = [];
+        $categories = [];
+        if (!empty($user)) {
+            $categories = UserCategory::whereUserId($user->id)->latest()->get();
+        }
+        if ($category && $user) {
+            $query = WishCategory::orderBy('created_at', 'DESC');
+            if ($category != 'all') {
+                $query->where('category_id', $category);
+            }
 
-        //     $itemId = $query->whereHas('wish', function ($q) use ($user) {
-        //         $q->where('user_id', $user->id);
-        //     })->pluck('wish_id');
+            $itemId = $query->whereHas('wish', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->pluck('wish_id');
 
-        //     $q = WishItem::where('is_pin', 0)->with(['user']);
-        //     if ($category != 'all') {
-        //         $q->whereIn('id', $itemId);
-        //     } else {
-        //         $q->where('user_id', $user->id);
-        //     }
-        //     $items = $q->latest()->get();
+            $q = WishItem::where('is_pin', 0)->with(['user']);
+            if ($category != 'all') {
+                $q->whereIn('id', $itemId);
+            } else {
+                $q->where('user_id', $user->id);
+            }
+            $items = $q->latest()->get();
 
-        //     $pin = WishItem::where('is_pin', 1)->with(['user']);
-        //     if ($category != 'all') {
-        //         $pin->whereIn('id', $itemId);
-        //     } else {
-        //         $pin->where('user_id', $user->id);
-        //     }
-        //     $pinned = $pin->get();
-        //     return response()->json([
-        //         "success" => true,
-        //         "items" => ['list' => $items, "pinned" => $pinned],
-        //         "categories" => $categories,
-        //         "itemid" => $itemdid,
-        //     ]);
-        // } else {
-        //     if ($user) {
-        //         $items = WishItem::where('is_pin', 0)->whereUserId($user->id)->with(['user'])->latest()->get();
-        //         $pinned = WishItem::where('is_pin', 1)->whereUserId($user->id)->with(['user'])->get();
-        //     }
-        // }
+            $pin = WishItem::where('is_pin', 1)->with(['user']);
+            if ($category != 'all') {
+                $pin->whereIn('id', $itemId);
+            } else {
+                $pin->where('user_id', $user->id);
+            }
+            $pinned = $pin->get();
+            return response()->json([
+                "success" => true,
+                "items" => ['list' => $items, "pinned" => $pinned],
+                "categories" => $categories,
+                "itemid" => $itemdid,
+            ]);
+        } else {
+            if ($user) {
+                $items = WishItem::where('is_pin', 0)->whereUserId($user->id)->with(['user'])->latest()->get();
+                $pinned = WishItem::where('is_pin', 1)->whereUserId($user->id)->with(['user'])->get();
+            }
+        }
 
         return Inertia::render('Dashboard', [
-            // "itemid" => $user,
             "user" => $user,
-            // "items" => ['list' => $items, "pinned" => $pinned],
-            // "categories" => $categories,
-            // "itemid" => $itemdid,
+            "items" => ['list' => $items, "pinned" => $pinned],
+            "categories" => $categories,
+            "itemid" => $itemdid,
         ]);
     }
 

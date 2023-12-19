@@ -50,7 +50,7 @@ export default function Dashboard(props) {
         return result;
     }
     useMemo(()=>{
-        conCat(items.pinned || [], items.list || []);
+        conCat(items && items.pinned || [], items && items.list || []);
     },[]);
 
     const fetchingcats = (e) => {
@@ -58,7 +58,7 @@ export default function Dashboard(props) {
         axios.get(`${user.username}/${e}`).then((resp) => {
             console.log("resp",resp)
             const result = resp.data.items;
-            conCat(result.pinned || [], result.list || []);
+            conCat(result && result.pinned || [], result && result.list || []);
             setLoading(false);
         }).catch((_err) => {
             console.error("error", _err);
@@ -70,6 +70,8 @@ export default function Dashboard(props) {
         fetchingcats(v);
     };
     
+
+    console.log("width", window.innerWidth())
 
     return <>
             <Guest auth={auth.user} user={user}>
