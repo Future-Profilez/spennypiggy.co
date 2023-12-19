@@ -838,7 +838,8 @@ class WishitemController extends Controller
     {
         $media = $request->message_media;
         $payment = StripePaymentItems::where("id", $payment_id)->first();
-        $payment->message = $request->messages;
+        // $payment->message = $request->messages;
+        $payment->thankyou_message = $request->messages;
         $payment->is_read_user = 0;
         $payment->message_media = $media['uuid'] ?? null;
         $payment->media_type = $media['contentInfo']['mime']['type'] ?? null;
