@@ -50,7 +50,6 @@ class CheckoutController extends Controller
             $subtotal = 0;
             $taxNew = 0;
             foreach ($getdata as $dd) {
-                // $priceId = $dd->wish->subscription == 2 ? $dd->priceid : $dd->wish->price_id;
                 $priceId = $dd->priceid != Null ? $dd->priceid : $dd->wish->price_id;
 
                 $lineItems[] = [
@@ -76,13 +75,9 @@ class CheckoutController extends Controller
                     'application_fee_amount' => $taxNew * 100,
                     'on_behalf_of'  => $getdata[0]->owner->account_id,
                 ],
-                // 'customer' => $getdata[0]->user->account_id ?? '',
-                'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email
+                'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
+                'currency' => 'eur',
             ]);
-
-            // $subtotal = ($sessionCreate->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
-
-            // $taxNew = ($sessionCreate->amount_total / 100) - $subtotal;
 
             session()->forget('session_id');
             session(['session_id' => $sessionCreate->id]);

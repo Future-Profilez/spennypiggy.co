@@ -46,15 +46,17 @@
                 <tr>
                     <td
                         style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                        To cancel the subscription click on the link below.</td>
+                        To cancel the subscription click on the link <a
+                            href={{ env('APP_URL') . '/cancel-subs/' . $data['uuid'] }}>
+                            Click Here</a>.</td>
                 </tr>
-                <tr>
+                {{-- <tr>
                     <td
                         style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
                         <b>Cancel :~ <a href={{ env('APP_URL') . '/cancel-subs/' . $data['uuid'] }}>
                                 Click Here</a></b>
                     </td>
-                </tr>
+                </tr> --}}
             </table>
         </td>
     </tr>
