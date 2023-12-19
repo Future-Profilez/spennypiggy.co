@@ -118,7 +118,6 @@ class AuthenticatedSessionController extends Controller
         }
 
         return Inertia::render('Dashboard', [
-            "itemid" => $user,
             "user" => $user,
             "items" => ['list' => $items, "pinned" => $pinned],
             "categories" => $categories,
