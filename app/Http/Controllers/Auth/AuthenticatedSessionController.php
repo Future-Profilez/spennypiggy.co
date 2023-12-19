@@ -66,10 +66,16 @@ class AuthenticatedSessionController extends Controller
         if (!$user) {
             return Inertia::render('NotFound');
         }
+        if (!empty(request()->query('item'))) {
+            $itemdid = request()->query('item');
+        } else {
+            $itemdid = false;
+        }
         SeoMeta::addTag('title', "{$user->name} - Spenny Piggy - Financial Gifts, Donations & Memberships");
         return Inertia::render('Dashboard', [ 
             "username" => $username,
             "user" => $user,
+            "itemid" => $itemdid,
         ]);
     }
 

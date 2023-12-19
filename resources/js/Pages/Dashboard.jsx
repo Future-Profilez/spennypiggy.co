@@ -18,7 +18,7 @@ import useWidthCount from '@/Components/useWidthCount';
 
 export default function Dashboard(props) {
 
-    const{ auth, user, username, global_currency }= props;
+    const{ auth, user, username, global_currency, itemid }= props;
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
 
     const [loading, setLoading] = useState(false);
@@ -216,18 +216,18 @@ export default function Dashboard(props) {
                                         {IsloggedIn || user?.stripe_details_submitted == 1 ? (
                                             <>
                                                 {its && its.length ? ( !loading && its.map((c, i) => {
-                                                        return <div key={`wish-item-${i}`} className="col-xl-4 col-lg-6 col-6">
-                                                                <Wishlistbox
-                                                                    currency={global_currency}
-                                                                    fetchingcats={fetchingcats}
-                                                                    categories={categories}
-                                                                    IsloggedIn={IsloggedIn}
-                                                                    auth={auth.user}
-                                                                    itemid={"itemid"}
-                                                                    setuped={auth && auth.user && auth.user.stripe_details_submitted == 1 ? true : false}
-                                                                    itm={c}
-                                                                    key={`wish-${c.uuid}`}
-                                                                />
+                                                    return <div key={`wish-item-${i}`} className="col-xl-4 col-lg-6 col-6">
+                                                            <Wishlistbox
+                                                                currency={global_currency}
+                                                                fetchingcats={fetchingcats}
+                                                                categories={categories}
+                                                                IsloggedIn={IsloggedIn}
+                                                                auth={auth.user}
+                                                                itemid={itemid}
+                                                                setuped={auth && auth.user && auth.user.stripe_details_submitted == 1 ? true : false}
+                                                                itm={c}
+                                                                key={`wish-${c.uuid}`}
+                                                            />
                                                         </div>
                                                     })
                                                 ) : (
