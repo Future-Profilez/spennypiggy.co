@@ -5,7 +5,7 @@ export default function Promotions(props) {
     const { auth, user } = props;
     return (
         <Guest auth={auth.user} user={user}>
-            <Head title={'Promotions Terms'} />
+            <Head title={'Promotions Terms'}  />
             <div className="wishlistPage blackbg pt-8 pb-14 ">
                 <div className="containerbox static-page p-3">
                 <h1>110% First Month Payment Campaign</h1>

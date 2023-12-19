@@ -57,10 +57,9 @@ export default function Header(props) {
 
 
                     <div className='cartLogin'>
-                        {/* {auth?.user?.stripe_details_submitted == 1 ? '' :
+                        {auth?.user?.stripe_details_submitted == 1 ? '' :
                             <ChangeCurrency defaultvalue={global_currency} changer={true} />
-                        } */}
-                        <ChangeCurrency defaultvalue={global_currency} changer={true} />
+                        }
 
                         <Link href={route('cart')} as="button" className='cartLink d-flex me-3 position-relative'>
                             <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36" fill="none">
