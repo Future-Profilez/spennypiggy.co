@@ -57,7 +57,7 @@ export default function Header(props) {
 
 
                     <div className='cartLogin'>
-                        {auth?.user?.stripe_details_submitted == 1 ? '' :
+                        {auth?.user?.stripe_details_submitted === 1 ? '' :
                             <ChangeCurrency defaultvalue={global_currency} changer={true} />
                         }
 
