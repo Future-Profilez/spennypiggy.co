@@ -98,7 +98,7 @@ class TwitterController extends Controller
         //     'text' => $tweet,
         //     'media_ids' => $media->media_id_string,
         // ]);
-        $tweet = "New wishlist added: " . $wish->wishname . "! Check it out at https://dev.spennypiggy.co/saurav_ "; //env('APP_URL') . "/" . $wish->user->username;
+        $tweet = "New wishlist added: " . $wish->wishname . "! Check it out at " . env('APP_URL') . "/" . $wish->user->username;
 
         $resp = TwitterAuthService::postTweet($token, $tweet);
         // $resp = TwitterAuthService::uploadMedia($token, base64_encode($content));

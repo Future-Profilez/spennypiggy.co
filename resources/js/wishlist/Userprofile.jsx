@@ -6,16 +6,16 @@ const ShareProfile = React.lazy(() => import('./ShareProfile'));
 const SendSurprise = React.lazy(() => import('./SendSurprise'));
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 
-export default function Userprofile({auth, user, links, IsloggedIn }) {
+export default function Userprofile({auth, user, links, IsloggedIn, w }) {
+
     return (
         <div className="userprofilesec rounded-3xl whbg">
             <div className="userphotobox pinkbg pink-shadow flex justify-center relative">
-                <LazyLoadImage
+                {w < 992 ? <LazyLoadImage
                 alt={"image"} useIntersectionObserver={true} effect="blur"
                 height={308}
-                className="d-lg-none"
                 src={(user && user?.cover_url) || wishlistbannerimg}
-                width={690} />
+                width={690} /> : ''}
                 
             </div>
             <div className="userPr p-4">

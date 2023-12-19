@@ -9,95 +9,110 @@ const ShareProfile = React.lazy(() => import('@/wishlist/ShareProfile'));
 const Nocontent = React.lazy(() => import('@/includes/Nocontent'));
 const LoadingScreen = React.lazy(() => import('@/includes/LoadingScreen'));
 const Social = React.lazy(() => import('./Auth/Social'));
+const VersionUpdate = React.lazy(() => import('@/Components/VersionUpdate'));
 const PaymentDashboard = React.lazy(() => import('./stripe/PaymentDashboard'));
 import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
-import CoinsAnimations from '@/Components/CoinsAnimations';
-import VersionUpdate from '@/Components/VersionUpdate';
+import useWidthCount from '@/Components/useWidthCount';
 
 export default function Dashboard(props) {
 
-    const { auth, items, categories, user, itemid, global_currency } = props;
+    const { auth, user, username, global_currency, itemid } = props;
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
+
     const [loading, setLoading] = useState(false);
     const [socialLinks, setSocialLinks] = useState([]);
     const [sLinks, setLinks] = useState([]);
+    const [categories, setcategories] = useState([]);
+
+    async function conCat(pinned, items) {
+        const result = pinned.concat(items);
+        setIts(result);
+    }
+
+    const fetch_categories = async (e) => {
+        axios.get(`/user_category/${username}`).then((resp) => {
+            console.log("resp categories", resp);
+            setcategories(resp.data.categories);
+        }).catch((_err) => {
+            console.error("error", _err);
+        });
+    };
+
     const fetchingLinks = () => {
-        axios.get(`sociallinks/${user.username}`).then((resp) => {
-            console.log("resp", resp);
+        axios.get(`sociallinks/${username}`).then((resp) => {
+            console.log("links", resp.data);
             setSocialLinks(resp.data.sociallinks)
             setLinks(resp.data.slinks)
         }).catch((_err) => {
             console.error("error", _err);
         });
     }
-    useEffect(() => {
-        setTimeout(() => {
-            fetchingLinks();
-        }, 2000);
-    }, []);
-    function updatedLinks() {
-        fetchingLinks();
-    }
-
 
 
     const [its, setIts] = useState();
-    async function conCat(pinned, items) {
-        const result = pinned.concat(items);
-        setIts(result);
-        return result;
-    }
-    useMemo(() => {
-        conCat(items && items.pinned || [], items && items.list || []);
-    }, []);
-
     const fetchingcats = (e) => {
         setLoading(true);
-        axios.get(`${user.username}/${e}`).then((resp) => {
-            console.log("resp", resp)
-            const result = resp.data.items;
-            conCat(result && result.pinned || [], result && result.list || []);
-            setLoading(false);
-        }).catch((_err) => {
-            console.error("error", _err);
-            setLoading(false);
-        });
+
+        fetch(`/user_info/${username}${e ? `/${e}` : ''}`)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then((data) => {
+                console.log("resp info", data);
+                setLoading(false);
+                const result = data && data.items;
+                conCat(result && result.pinned || [], result && result.list || []);
+            })
+            .catch((error) => {
+                console.error("error", error);
+                setLoading(false);
+            });
     };
+
+
     const showCategory = (e) => {
         const v = e.target.value;
         fetchingcats(v);
     };
 
+    useEffect(() => {
+        fetchingcats();
+        fetch_categories();
+        fetchingLinks();
+    }, []);
 
-    // console.log("width", window.innerWidth())
+
+    const w = useWidthCount();
+
 
     return <>
         <Guest auth={auth.user} user={user}>
             <Head title={user && user.name} />
-            <CoinsAnimations />
             <div className='wishlistPage blackbg pt-8 pb-14 '>
                 <div className='containerbox'>
                     <VersionUpdate />
-                    <div className='wishbanner d-lg-block d-none'>
+                    {w > 991 ? <div className='wishbanner '>
                         <LazyLoadImage
                             alt={"image"} useIntersectionObserver={true} effect="blur"
                             height={390}
                             className='w-full border-black border-2 shadow-mint rounded-2xl' src={user?.cover_url || wishlistbannerimg}
                             width={1185} />
-                    </div>
+                    </div> : ''}
                     <div className="wishManage">
                         <div className="row">
                             <div className="col-lg-4">
                                 <div className="userProfile whbg rounded-3xl shadow-voilet border-2">
-                                    <Userprofile
+                                    <Userprofile w={w}
                                         auth={auth && auth.user}
                                         IsloggedIn={IsloggedIn}
                                         links={socialLinks}
                                         user={user}
                                     />
-                                    {/* <Link href={route('change.currency', {c:'INR'})}>INR</Link> */}
                                     <div className="userProfileDate pt-0">
                                         {IsloggedIn ? (
                                             <>
@@ -119,8 +134,7 @@ export default function Dashboard(props) {
                                                         </p>
                                                         <Link
                                                             href={"/stripe"}
-                                                            className="btn-pink lg"
-                                                        >
+                                                            className="btn-pink lg" >
                                                             Finish Setup
                                                         </Link>
                                                     </div>
@@ -128,9 +142,7 @@ export default function Dashboard(props) {
                                                 <div className="addsocial flex">
                                                     <ul>
                                                         <li>
-                                                            <Social updatedLinks={updatedLinks}
-                                                                links={sLinks}
-                                                            />
+                                                            <Social updatedLinks={fetchingLinks} links={sLinks} />
                                                         </li>
                                                         <li>
                                                             <ShareProfile
@@ -169,7 +181,6 @@ export default function Dashboard(props) {
                                 <div className="userManageRt mt-8">
                                     <div className="userManageHead flex items-center justify-between mb-8">
                                         <div>
-                                            {/* {its && its.length ? ( */}
                                             <select
                                                 id="country"
                                                 onChange={showCategory}
@@ -188,12 +199,9 @@ export default function Dashboard(props) {
                                                         }
                                                     )}
                                             </select>
-                                            {/* ) : (
-                                                    ""
-                                                )} */}
                                         </div>
                                         {IsloggedIn ? (
-                                            <Wishlist
+                                            <Wishlist updateCategory={fetch_categories}
                                                 setuped={auth.user && auth.user.stripe_details_submitted == 1 ? true : false}
                                                 fetchingcats={fetchingcats}
                                                 categories={categories}

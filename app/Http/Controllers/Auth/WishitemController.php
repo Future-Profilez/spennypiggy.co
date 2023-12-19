@@ -254,9 +254,9 @@ class WishitemController extends Controller
                 $wish->price_id = $product->default_price;
                 $wish->save();
 
-                // if (isset($request->post_twitter) && $request->post_twitter == 1) {
-                TwitterController::testToken($wish);
-                // }
+                if (isset($request->post_twitter) && $request->post_twitter == 1) {
+                    TwitterController::testToken($wish);
+                }
             } catch (Exception $e) {
                 $wish->delete();
                 return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());

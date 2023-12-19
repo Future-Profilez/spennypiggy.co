@@ -6,7 +6,7 @@ import { LazyLoadImage } from 'react-lazy-load-image-component';
 
 export default function FunPart() {
   return (
-   <div className="funpart">
+   <div className="funpart whbg">
    <div className="containerbox">
        <h2 className="headingMd text-shadow-black">
            let’s dive into <br /> the fun part{" "}

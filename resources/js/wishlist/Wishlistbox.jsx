@@ -11,12 +11,18 @@ import Dropdown from 'react-bootstrap/Dropdown';
 import DropdownButton from 'react-bootstrap/DropdownButton';
 import PinWish from '@/includes/PinWish';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
+import { usePage } from '@inertiajs/react';
 
 
 export default function Wishlistbox(props) {
 
+  const page  = usePage();
+  console.log("page",page);
+  
   const { format, formatMultiPrice } = PriceFormat();
   const { currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped } = props;
+
+  // itemid
   const [itemUID, setItemUID] = useState(itemid);
   const [open, setOpen] = useState();
   const openAddtocart = () => {
