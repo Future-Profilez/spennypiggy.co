@@ -19,7 +19,7 @@ import PinWish from "@/includes/PinWish";
 
 
 export default function Wishlist(props) {
-    const { categories, auth, fetchingcats, item, editpop, openPop, setuped } = props;
+    const { categories, auth, fetchingcats, updateCategory,  item, editpop, openPop, setuped } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
     const [defaultKey, setDefaultKey] = useState(item && item.subscription !== null ? +(item.subscription) : null);
@@ -49,6 +49,7 @@ export default function Wishlist(props) {
                         errorAlert(resp.props.flash?.error);
                     }
                     setAdding(false);
+                    updateCategory();
                 },
                 onError: (_err) => {
                     console.table("error", _err);

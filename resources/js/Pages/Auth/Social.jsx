@@ -62,6 +62,9 @@ export default function Social({links, updatedLinks}) {
         });
     };
 
+    console.log("data",data)
+    console.log("links",links)
+
     return <>
         <Popup action={close} space='4' modalclassName="pinkmodal" size="md"
             classes='' text="Add Socials" >
@@ -73,8 +76,8 @@ export default function Social({links, updatedLinks}) {
                             <li className="mb-4 col-md-6">
                                 <label className="mb-2 text-start d-block">Whoyouinto</label>
                                 <input id="whoyouinto"
-                                    name="whoyouinto"
-                                    type="text" placeholder="URL"
+                                    name="whoyouinto" defaultValue={links?.whoyouinto || ''}
+                                    type="text" placeholder={'URL'}
                                     value={data?.whoyouinto||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('whoyouinto', e.target.value)}

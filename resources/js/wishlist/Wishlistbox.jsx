@@ -15,6 +15,7 @@ import { LazyLoadImage } from 'react-lazy-load-image-component';
 
 export default function Wishlistbox(props) {
 
+  
   const { format, formatMultiPrice } = PriceFormat();
   const { currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped } = props;
   const [itemUID, setItemUID] = useState(itemid);
