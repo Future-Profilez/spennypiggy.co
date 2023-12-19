@@ -64,6 +64,7 @@ Route::prefix("test")->name("test.")->group(function(){
     Route::get("c-data", [TestController::class, "testCurrencyData"]);
     Route::get("x-api", [TwitterController::class, 'testToken']);
     Route::get("meta", [TestController::class, 'testMeta']);
+    Route::get("x-1", [TestController::class, 'testX']);
 });
 
 require __DIR__.'/auth.php';

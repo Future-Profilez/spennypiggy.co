@@ -122,6 +122,7 @@ Route::middleware('auth')->group(function () {
         Route::prefix("twitter")->name("x.")->group(function () {
             Route::get('init', [TwitterController::class, 'authInit'])->name('init');
             Route::get('authorize', [TwitterController::class, 'handleAuth'])->name('handle');
+            // Route::get('authorize', [TwitterController::class, 'handleOauth1'])->name('handle');
         });
 
         Route::post('add-goal', [WishitemController::class, 'addTipGoal'])->name('add-goal');
