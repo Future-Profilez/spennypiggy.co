@@ -80,7 +80,6 @@ class WishItem extends Model
         }
         return $url;
     }
-
     public function categories()
     {
         return $this->hasMany(WishCategory::class, 'wish_id');
