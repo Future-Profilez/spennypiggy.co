@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\CheckoutMailToUser;
 use App\Jobs\CheckoutUser;
@@ -23,6 +24,7 @@ class CheckoutController extends Controller
     /* create checkout */
     public function createCheckout($id)
     {
+        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         try {
             if (!empty(request()->query('message'))) {
                 $wordLimit = 100;
@@ -50,11 +52,17 @@ class CheckoutController extends Controller
             $subtotal = 0;
             $taxNew = 0;
             foreach ($getdata as $dd) {
-                $priceId = $dd->priceid != Null ? $dd->priceid : $dd->wish->price_id;
+
+                $amount = $dd->amount + $dd->tax;
 
                 $lineItems[] = [
-                    'price' => $priceId ?? '',
+                    // 'price' => $dd->stripe_product_id ?? '',
                     'quantity' => $dd->quantity,
+                    'price_data' => [
+                        'currency' => $currency,
+                        'product' => $dd->wish->stripe_product_id ?? '',
+                        'unit_amount_decimal' => Helpers::priceFormat('usd', $amount) * 100
+                    ]
                 ];
 
                 $subtotal += $dd->amount * $dd->quantity;
@@ -75,7 +83,8 @@ class CheckoutController extends Controller
                     'application_fee_amount' => $taxNew * 100,
                     'on_behalf_of'  => $getdata[0]->owner->account_id,
                 ],
-                'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email
+                'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
+                // 'currency' => 'usd',
             ]);
 
             session()->forget('session_id');

@@ -16,7 +16,7 @@ export default function Works(props) {
   return (
     <Authenticated auth={auth?.user || ''} >
         <Head title={"How it works"} />
-        <div className='pt-20 howitmain'>
+        <div className='pt-20 howitmain whbg'>
             <div className='containerbox'>
                 <h2 className='headingMd text-shadow-black text-center mb-4'>How it works</h2>
                 <p className='text-center'>Setting up your wishlist on Spenny Piggy only takes a few minutes. Add gifts from our <br/> partner brand catalog or any other retailer in the world.</p>

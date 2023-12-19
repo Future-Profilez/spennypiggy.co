@@ -2,6 +2,7 @@
 
 namespace App;
 
+use App\Models\Currency;
 use Illuminate\Support\Facades\Storage;
 use Image;
 
@@ -36,5 +37,19 @@ class Helpers
         }
 
         return false;
+    }
+
+
+    public static function priceFormat($currency, $amount)
+    {
+        $cur = Currency::where('ISO', strtoupper($currency))->first();
+
+        $gbp = Currency::where('ISO', 'GBP')->first();
+
+        $rate = $cur->conversion_rate * $amount;
+
+        $real = $rate * $gbp->conversion_rate;
+
+        return round($real, 2, PHP_ROUND_HALF_UP);
     }
 }

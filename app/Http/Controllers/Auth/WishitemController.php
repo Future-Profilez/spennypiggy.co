@@ -198,21 +198,22 @@ class WishitemController extends Controller
             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive,
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         }
-        $taxamount = $request->price * env('TAX_PERCENTAGE', 20) / 100;
-        $createpriceid = ceil($request->price) + ceil($taxamount);
+        $price = round($request->price, 2, PHP_ROUND_HALF_UP);
+        $taxamount = round(($price * env('TAX_PERCENTAGE', 20) / 100), 2, PHP_ROUND_HALF_UP);
+        $createpriceid = $price + $taxamount;
         $user = User::find(Auth::id());
 
         $wish = WishItem::create([
             "user_id" => Auth::id(),
             'wishname' => $request->wishname,
-            'price' => ceil($request->price),
+            'price' => $price,
             'currency' => $user->default_currency,
             'item_url' => $request->item_url != "" ? $request->item_url : null,
             'thumbnail' => $request->thumbnail ?? null,
             'subscription' => $request->subscription,
             'subscription_period' => $request->subscription_period ?? null,
             'repeat_purchase' => $request->repeat_purchase ?? 0,
-            'tax_amount' => ceil($taxamount),
+            'tax_amount' => $taxamount,
             // 'category' => $request->category ?? null,
         ]);
 
@@ -235,7 +236,7 @@ class WishitemController extends Controller
                 "images" => [$wish->perma_link],
                 "default_price_data"    =>  [
                     "currency"  =>  $user->default_currency,
-                    "unit_amount_decimal"   => $createpriceid * 100,
+                    "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
                 ],
                 "url"   =>  $request->item_url ?? env('APP_URL') . '/' . $user->username . "?item=$wish->uuid/"
             ];
@@ -398,6 +399,7 @@ class WishitemController extends Controller
 
     public function addToCart($uuid, $device_id, $sub, $amount = null)
     {
+        $amount = round($amount, 2, PHP_ROUND_HALF_UP);
         $wishitem = WishItem::where('uuid', $uuid)->first();
         if (Auth::check()) {
             if (Auth::id() == $wishitem->user_id) {
@@ -438,13 +440,13 @@ class WishitemController extends Controller
             $cart->is_subscribed = ($sub == 'onetime' || $sub == false) ? 0 : 1;
             if ($wishitem->subscription == 2) {
                 $fullfillamount = $amount;
-                $tax =  ceil($amount * env('TAX_PERCENTAGE') / 100);
+                $tax =  round(($amount * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
                 $createpriceid = $amount + $tax;
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripe_client = $stripe->products->create([
                     'name' => $wishitem->wishname,
                     'images' => [$wishitem->perma_link],
-                    "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
+                    "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100],
                 ]);
                 $priceid = $stripe_client->default_price;
             } else {
@@ -720,19 +722,22 @@ class WishitemController extends Controller
             return redirect()->back()->with("error", "Max limit for message is 100 words");
         }
 
+        $price = round($request->amount, 2, PHP_ROUND_HALF_UP);
+        $tax = round(($request->amount * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
+
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
         $stripe_client = $stripe->products->create([
             'name' => 'Surprise Gift',
             'images' => ['https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/'],
-            "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => ((ceil($request->amount) + ceil($request->amount * env('TAX_PERCENTAGE') / 100)) * 100)],
+            "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => ($price + $tax) * 100],
         ]);
 
         if (!Auth::check()) {
             UserCart::create([
                 'device_id' => $request->device_id,
                 'owner_id' => $request->owner_id ?? null,
-                'amount' => $request->amount ?? 0,
-                'tax' => ceil($request->amount * env('TAX_PERCENTAGE') / 100),
+                'amount' => $price,
+                'tax' => $tax,
                 'priceid' => $stripe_client->default_price,
                 'message' => $request->message,
                 'quantity' => 1,
@@ -743,8 +748,8 @@ class WishitemController extends Controller
             UserCart::create([
                 'user_id' => Auth::id(),
                 'owner_id' => $request->owner_id ?? null,
-                'amount' => $request->amount ?? 0,
-                'tax' => ceil($request->amount * env('TAX_PERCENTAGE') / 100),
+                'amount' => $price,
+                'tax' => $tax,
                 'priceid' => $stripe_client->default_price,
                 'message' => $request->message,
                 'quantity' => 1,

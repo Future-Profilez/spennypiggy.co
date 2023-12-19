@@ -581,7 +581,7 @@ class StripeController extends Controller
                 'surprise_message'  =>  $request->message ?? NULL
             ]);
 
-            $fee_per = ($wish->tax_amount / ($wish->price + $wish->tax_amount)) * 100;
+            $fee_per = round(($wish->tax_amount / ($wish->price + $wish->tax_amount)) * 100, 2, PHP_ROUND_HALF_UP);
             $payload = [
                 "mode"  =>  'subscription',
                 'line_items' =>  [
@@ -796,7 +796,5 @@ class StripeController extends Controller
     public function tipToJar($uuid)
     {
         $goal = TipGoal::where('uuid', $uuid)->first();
-
-        
     }
 }

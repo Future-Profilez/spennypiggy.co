@@ -19,7 +19,7 @@ import PinWish from "@/includes/PinWish";
 
 
 export default function Wishlist(props) {
-    const { categories, auth, fetchingcats, item, editpop, openPop, setuped } = props;
+    const { categories, auth, fetchingcats, updateCategory,  item, editpop, openPop, setuped } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
     const [defaultKey, setDefaultKey] = useState(item && item.subscription !== null ? +(item.subscription) : null);
@@ -49,6 +49,7 @@ export default function Wishlist(props) {
                         errorAlert(resp.props.flash?.error);
                     }
                     setAdding(false);
+                    updateCategory();
                 },
                 onError: (_err) => {
                     console.table("error", _err);
@@ -75,6 +76,7 @@ export default function Wishlist(props) {
         subscription_period: item && item.subscription_period ? item.subscription_period : "" ,
         repeat_purchase: item && item.repeat_purchase ? item.repeat_purchase : 0,
         category: item && item.category ? item.category : 0,
+        post_twitter: item && item.post_twitter ? item.post_twitter : 0,
     });
     const [period, setPeriod] = useState(data.subscription_period || item && item.subscription_period );
 
@@ -121,6 +123,13 @@ export default function Wishlist(props) {
     useEffect(() => {
         setData("thumbnail", thumbnail);
     }, [thumbnail]);
+    
+    
+    const [atweet, setAutotweet] = useState(false)
+    const autoTweet = (e) => { 
+        setAutotweet(e.target.checked)
+        setData("post_twitter", atweet ? 1 : 0);
+    }
 
     const createWishList = (e) => {
         e.preventDefault();
@@ -178,8 +187,6 @@ export default function Wishlist(props) {
             });
         }
     };
-
-
 
     return (
             <Popup modalclass='pinkmodal' size='md' action={close}
@@ -298,8 +305,7 @@ export default function Wishlist(props) {
                                                                         type="checkbox"
                                                                         id="allow"
                                                                         name="repeat_purchase"
-                                                                        onChange={rpValue}
-                                                                    />
+                                                                        onChange={rpValue} />
                                                                     Allow Repeat
                                                                     Purchases
                                                                 </label>
@@ -412,6 +418,28 @@ export default function Wishlist(props) {
                                                 </Accordion.Item>
                                             </Accordion>
                                         </div>
+
+
+
+                                        <div className="twitter-an mt-3 pt-2">
+                                            <div className="repeatpurchase mt-1 mb-2 text-start">
+                                                <label
+                                                    className="text-capitalize" htmlFor={"twitter-announcement"}>
+                                                    <input type="checkbox"
+                                                        checked={atweet}
+                                                        id={'twitter-announcement'}
+                                                        name="category"
+                                                        onChange={autoTweet}
+                                                    />
+                                                    Auto Tweet 
+                                                </label>
+
+                                            </div>
+                                                <p className="text-small text-muted" >
+                                                Enable auto tweet for this item.
+                                            </p>
+                                        </div>
+
 
                                         <div className="publish text-start">
                                         {editpop ?
