@@ -448,7 +448,7 @@ class WishitemController extends Controller
                     'images' => [$wishitem->perma_link],
                     "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100],
                 ]);
-                $priceid = $stripe_client->default_price;
+                $priceid = $stripe_client->id;
             } else {
                 $fullfillamount = $wishitem->price;
                 $tax = $wishitem->tax_amount;
@@ -475,7 +475,7 @@ class WishitemController extends Controller
                     'images' => [$wishitem->perma_link],
                     "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $createpriceid * 100],
                 ]);
-                $priceid = $stripe_client->default_price;
+                $priceid = $stripe_client->id;
             } else {
                 $fullfillamount = $wishitem->price;
                 $tax = $wishitem->tax_amount;
