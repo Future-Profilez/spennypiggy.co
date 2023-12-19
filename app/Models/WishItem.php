@@ -61,19 +61,20 @@ class WishItem extends Model
     {
         $url = false;
         if (!empty($this->thumbnail)) {
-            $api = Uploadcare::getApiObj()->file();
-            $info = $api->fileInfo($this->thumbnail)->getContentInfo();
-            $width = $info->getImage()->getWidth();
-            $height = $info->getImage()->getHeight();
+            // $api = Uploadcare::getApiObj()->file();
+            // $info = $api->fileInfo($this->thumbnail)->getContentInfo();
+            // $width = $info->getImage()->getWidth();
+            // $height = $info->getImage()->getHeight();
 
-            $watermark = WatermarkHelper::getWatermarkImage($width, $height);
-            $check = "";
-            $wm = "spennypiggy.co~s" . $this->user->username;
-            $textWm = WatermarkHelper::addUcTextWatermark($width, $height);
-            $wm = urlencode($wm);
-            $fontsize = $textWm['fontsize'];
-            $check = "-/preview/-/text_align/left/center/-/font/$fontsize/fff/-/text/80px8p/8p,100p/$wm/";
-            $url = Uploadcare::getUrl($this->thumbnail, $this->type, $watermark, $check);
+            // $watermark = WatermarkHelper::getWatermarkImage($width, $height);
+            // $check = "";
+            // $wm = "spennypiggy.co~s" . $this->user->username;
+            // $textWm = WatermarkHelper::addUcTextWatermark($width, $height);
+            // $wm = urlencode($wm);
+            // $fontsize = $textWm['fontsize'];
+            // $check = "-/preview/-/text_align/left/center/-/font/$fontsize/fff/-/text/80px8p/8p,100p/$wm/";
+            // $url = Uploadcare::getUrl($this->thumbnail, $this->type, $watermark, $check);
+            $url = "https://ucarecdn.com/" . $this->thumbnail . "/";
         } else {
             $url = "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/";
         }
@@ -104,5 +105,4 @@ class WishItem extends Model
     {
         return $this->hasMany(WishItemSubscription::class, 'wish_item_id');
     }
-
 }

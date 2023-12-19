@@ -75,7 +75,8 @@ class CheckoutController extends Controller
                     'application_fee_amount' => $taxNew * 100,
                     'on_behalf_of'  => $getdata[0]->owner->account_id,
                 ],
-                'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email
+                'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
+                'currency' => 'eur',
             ]);
 
             session()->forget('session_id');
