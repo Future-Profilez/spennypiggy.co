@@ -7,10 +7,12 @@ import UpdateProfileInformation from '../Profile/Partials/UpdateProfileInformati
 import UpdatePasswordForm from '../Profile/Partials/UpdatePasswordForm';
 import DeleteUserForm from '../Profile/Partials/DeleteUserForm';
 import PaymentDashboard from '../stripe/PaymentDashboard';
+import ChangeCurrency from '@/Components/ChangeCurrency';
+import LinkTwitter from '../twitter/LinkTwitter';
 
 export default function Accountsetting(props) {
     console.log("props aa",props);
-    const {auth, user} = props;
+    const {auth, user, global_currency} = props;
     const [passClose, setSassClose] = useState(null);
 
     const passwordUpdated = () => { 
@@ -32,7 +34,7 @@ export default function Accountsetting(props) {
                     </div>
                     <div className='accsettingList p-4'>
                         <ul>
-                            <li>  {auth && auth.user && auth.user.stripe_details_submitted == 1 ? 
+                            <li>{auth && auth.user && auth.user.stripe_details_submitted == 1 ? 
                             <>
                                <PaymentDashboard classes='w-100 text-dark paymentbutton' text={<>PAYMENT DASHBOARD <span className='text-mint'>Connected</span></>} />
                             </> 
@@ -53,16 +55,23 @@ export default function Accountsetting(props) {
                                     <UpdatePasswordForm passwordUpdate={passwordUpdated} />
                                 </Popup>
                             </li>
-
                             <li>
-                            <Popup space='4' modalclassName="pinkmodal" 
-                                text={<>DELETE ACCOUNT  </>} >
-                                    <DeleteUserForm />
-                                </Popup >
+                                <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>DISPLAY CURRENCY <span className='text-gray'>{global_currency}</span></>} >
+                                    <ChangeCurrency defaultvalue={global_currency} />
+                                </Popup>
                             </li>
 
-                            <li className='disabled' >
-                                <Link>SET UP AUTO TWEET <img src={closeblacksm} alt="img" /></Link>
+ 
+                            <li>
+                                <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>
+                                { auth && auth.user && auth.user.twitter_username ? `AUTO TWEET` : 'SET UP AUTO TWEET'}
+                                <div className='d-flex' >
+                                <img src={closeblacksm} alt="img" className='me-2' />
+                                { auth && auth.user && auth.user.twitter_username ? `@${auth.user.twitter_username}` : ''}
+                                </div>
+                                </>} >
+                                    <LinkTwitter  username={auth && auth.user && auth.user.twitter_username || false}  />
+                                </Popup>
                             </li>
 
                             <li className='disabled' >
@@ -73,6 +82,13 @@ export default function Accountsetting(props) {
                                         <span className="sliderSw round"></span>
                                     </label>
                                 </div>
+                            </li>
+
+                            <li>
+                                <Popup space='4' modalclassName="pinkmodal" 
+                                text={<>DELETE ACCOUNT  </>} >
+                                    <DeleteUserForm />
+                                </Popup >
                             </li>
                             
                         </ul>

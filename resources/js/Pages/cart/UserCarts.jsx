@@ -10,7 +10,8 @@ export default function UserCarts(props) {
 
     const deviceid = DeviceID();
     const { auth, removeFromCart } = props;
-    const { format } = PriceFormat();
+    const { format, formatMultiPrice } = PriceFormat();
+
     const datas = props.data;
     const [isChecked, setIsChecked] = useState(false);
     const [message, setMessage] = useState(null);
@@ -115,19 +116,19 @@ export default function UserCarts(props) {
                         <div className="cartSubTotal text-right mt-1">
                             <span>Platform Fee :</span>{" "}
                             <strong className="text-end">
-                                {format(fee || "")}
+                                {formatMultiPrice(fee || "")}
                             </strong>
                         </div>
                         <div className="cartSubTotal text-right mt-1">
                             <span>Subtotal :</span>{" "}
                             <strong className="text-end">
-                                {format(subtotal || "")}
+                                {formatMultiPrice(subtotal || "")}
                             </strong>
                         </div>
                         <div className="cartSubTotal text-right mt-1">
                             <strong className="text-dark">Total :</strong>{" "}
                             <strong className="text-end">
-                                {format(fee + subtotal || "")}
+                                {formatMultiPrice(fee + subtotal || "")}
                             </strong>
                         </div>
                     </div>
@@ -173,7 +174,7 @@ export default function UserCarts(props) {
                                 </li>
                                 <li className="cheklistbox">
                                     <label
-                                        for="agreeterm"
+                                        htmlFor="agreeterm"
                                         className="text-start" >
                                         <input
                                             onChange={(e) => setIsChecked(e.target.checked)}

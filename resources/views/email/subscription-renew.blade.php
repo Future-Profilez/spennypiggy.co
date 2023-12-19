@@ -38,9 +38,25 @@
                 <tr>
                     <td
                         style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                        <b>Invoice :~ </b>{{ $data['invoice_pdf'] ?? '' }}
+                        <b>Invoice :~ <a href="{{ $data['invoice_pdf'] ?? '' }}">See Invoice</a></b>
                     </td>
                 </tr>
+                <br><br>
+
+                <tr>
+                    <td
+                        style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
+                        To cancel the subscription click on the link <a
+                            href={{ env('APP_URL') . '/cancel-subs/' . $data['uuid'] }}>
+                            Click Here</a>.</td>
+                </tr>
+                {{-- <tr>
+                    <td
+                        style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
+                        <b>Cancel :~ <a href={{ env('APP_URL') . '/cancel-subs/' . $data['uuid'] }}>
+                                Click Here</a></b>
+                    </td>
+                </tr> --}}
             </table>
         </td>
     </tr>

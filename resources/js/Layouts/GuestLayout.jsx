@@ -1,8 +1,8 @@
 import { usePage } from '@inertiajs/react';
 import { Toaster } from 'react-hot-toast';
 import { useAlerts } from '@/Components/Alerts';
-import { useEffect } from 'react';
-import React from 'react';
+import React, { useEffect } from 'react';
+import VersionUpdate from '@/Components/VersionUpdate';
 const Footer = React.lazy(() => import('@/includes/Footer'));
 const Header = React.lazy(() => import('@/includes/Header'));
 

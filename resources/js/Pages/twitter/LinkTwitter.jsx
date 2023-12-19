@@ -1,0 +1,64 @@
+import React from 'react';
+import axios from 'axios';
+import { useForm } from '@inertiajs/react';
+import LoaderButton from '@/Components/LoaderButton';
+import twitter from '../../../assets/img/twitterpost.png';
+
+export default function LinkTwitter(props) {
+
+  const { username } = props;
+  const { data, setData, get, processing, errors, reset } = useForm();
+
+  const loginTwitter = (e) => {
+      e.preventDefault();
+      get(route('x.init')),{
+        preserveScroll: true,
+        onSuccess: (resp) => {
+          console.log("resp",resp);
+        },
+        onError: (_err) => {
+            console.error(_err);
+            errorAlert("Failed to change display currency.")
+        }
+      };
+   };
+      
+
+  return (
+    <>
+    <h2 className="text-uppercase font-GillSans pb-4 font-large text-center px-5"> Twitter Integration </h2>
+    <div className='twitter-steps' >
+      <div className='step-t active'>
+        <div className='step-no ' >1</div>
+        <p>Link Twitter</p>
+      </div>
+      <div className='step-saprate'>
+      </div>
+      <div className={`step-t ${username ? 'active' : ''}`}>
+        <div className='step-no' >2</div>
+        <p>Link Settings</p>
+      </div>
+    </div>
+
+
+    {username ? 
+    <div className='step2' >
+      <p className='text-center' >Linked Account : @{username}</p>
+    </div> : 
+    <div className='step1' >
+      <p className='text-large text-center px-5 mb-4' >Set up Twitter to auto tweet when you receive a gift.</p>
+      <div className='twitter-img' >
+        <img src={twitter} alt='twitter' className='w-100 rounded-lg mt-3' />
+      </div>
+      <LoaderButton onClick={loginTwitter}
+          disabled={processing}
+          type='submit'
+            className="flex w-100 btn-pink mt-4 lg mx-auto"
+            spinnerClassName="fill-red-600" >
+            {processing ? "Processing.." : "Link Twitter"}
+        </LoaderButton>
+    </div>
+    }
+    </>
+  )
+}

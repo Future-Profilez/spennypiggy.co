@@ -33,4 +33,3 @@ createInertiaApp({
         showSpinner: false,
     },
 });
- 

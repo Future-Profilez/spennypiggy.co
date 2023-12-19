@@ -8,11 +8,11 @@ import DeviceID from "@/includes/DeviceID";
 import { useDispatch, useSelector } from "react-redux";
 import { add_to_cart } from "@/Pages/redux/UserSlice";
 
-export default function ToCart({ 
+export default function ToCart({
 
-    sub, surprise_amount, surprise_message, owner, 
+    sub, surprise_amount, surprise_message, owner,
     auth, actionfrom, checkoutbtn, ItemAdded, item, crowd, pending, uuid, text, classes, custom, removeItem, type, is_cart, amount, isEqual }) {
-    
+
     const deviceID  = DeviceID();
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [loading, setLoading] = useState(false);
@@ -33,12 +33,12 @@ export default function ToCart({
             toast.error(`Please enter a amount to gift this item.`);
             return false;
         }
-        if (crowd && amount > pending) {
-            toast.error(`Amount can not be more than remaining amount £${pending}.`);
-            return false;
-        }
+        // if (crowd && amount > pending) {
+        //     toast.error(`Amount can not be more than remaining amount.`);
+        //     return false;
+        // }
         setLoading(true);
-        console.log("auth",auth)
+        // console.log("auth",auth)
         axios.get(`/add-to-cart/${uuid}/${deviceID}${sub ? `/${sub}` : '/onetime' }${amount ? `/${amount}/` : ''}`).then(resp => {
         if (resp.data.success) {
             if (resp.data.added == true) {

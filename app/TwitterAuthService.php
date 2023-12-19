@@ -1,283 +1,202 @@
 <?php
 namespace App;
 
+use Carbon\Carbon;
+use Exception;
+use Illuminate\Support\Facades\Http;
+use Noweh\TwitterApi\Client;
+
 class TwitterAuthService {
-    private $consumerKey;
+    private static $consumerKey;
 
-    private $consumerSecret;
+    private static $consumerSecret;
 
-    private $signatureMethod = 'HMAC-SHA1';
+    /**
+     * Twitter APIv2 Client
+     * @var \Noweh\TwitterApi\Client
+     */
+    public static $xClient;
 
-    private $oauthVersion = '1.0';
-
-    private $http_status = "";
-    private $callback = 'http://localhost/twitter/login';
-
-    public function __construct()
+    /**
+     * Set basic configurations
+     * @return void
+     */
+    public static function setConfigs()
     {
-        $this->consumerKey = env('TWITTER_CONSUMER_KEY', null);
-        $this->consumerSecret = env('TWITTER_CONSUMER_SECRET', null);
+        if(!isset(self::$consumerKey)){
+            self::$consumerKey      = env('TWITTER_CONSUMER_KEY', null);
+            self::$consumerSecret   = env('TWITTER_CONSUMER_SECRET', null);
+        }
     }
 
     /**
-     * Twitter OAuth Url generate
+     * Generate Authorize URL For OAuth2.o
      *
-     * @param string $callback='' Callback url after auth
+     * @param string $state State Verification
+     * @param string $challenge Code Challenge
+     * @param string $redirectUrl Callback URL
      * @return string
      */
-    public function getOauthVerifier($callback = '')
+    public static function getAuth2Url($state, $challenge, $redirectUrl) : string
     {
-        if(!empty($callback)){
-            $this->callback = $callback;
-        }
-        $resp = $this->getRequestToken();
-        if($resp['status']){
+        self::setConfigs();
+        $scopes =   'tweet.read%20users.read%20tweet.write%20offline.access';
+        $params =   [
+            'response_type' =>  'code',
+            'client_id'     =>  self::$consumerKey,
+            'redirect_uri'  =>  $redirectUrl,
+            'state'         =>  $state,
+            'code_challenge'=>  $challenge,
+            'code_challenge_method' =>  'plain'
+        ];
 
-            $authUrl = "https://api.twitter.com/oauth/authenticate";
-            $redirectUrl = $authUrl . "?oauth_token=" . $resp['token']["request_token"];
-
-            return [
-                'status' => true,
-                'url' => $redirectUrl,
-                // 'secret' => $requestResponse['request_token_secret']
-            ];
-        } else {
-            // $resp['c'] = $this->callback;
-            return $resp;
-        }
+        return "https://twitter.com/i/oauth2/authorize?" . http_build_query($params) . "&scope=$scopes";
     }
 
-    public function getRequestToken()
+    /**
+     * Get Token after Callback
+     *
+     * @param string $code Authorized Code returned from Twitter
+     * @param string $challenge Challenge Code
+     * @param string $redirectUrl Callback URL
+     * @return array
+     */
+    public static function getAuthToken($code, $challenge, $redirectUrl)
     {
-        $url = "https://api.twitter.com/oauth/request_token";
-
-        $params = array(
-            'oauth_callback' => $this->callback,
-            "oauth_consumer_key" => $this->consumerKey,
-            "oauth_nonce" => $this->getToken(42),
-            "oauth_signature_method" => $this->signatureMethod,
-            "oauth_timestamp" => time(),
-            "oauth_version" => $this->oauthVersion,
-        );
-
-        $params['oauth_signature'] = $this->createSignature('POST', $url, $params);
-
-
-        $oauthHeader = $this->generateOauthHeader($params);
-
-        $response = $this->curlHttp('POST', $url, $oauthHeader);
-
-        $responseVariables = array();
-        parse_str($response, $responseVariables);
-
-        $tokenResponse = array();
-
-        if(empty($responseVariables["oauth_token"])){
-            return [
-                'status' => false,
-                'msg'    => $response
-            ];
-        }
-
-        $tokenResponse["request_token"] = $responseVariables["oauth_token"];
-        $tokenResponse["request_token_secret"] = $responseVariables["oauth_token_secret"];
+        self::setConfigs();
+        $req = Http::acceptJson()
+        ->withBasicAuth(self::$consumerKey, self::$consumerSecret)
+        ->asForm()
+            ->post('https://api.twitter.com/2/oauth2/token', [
+                "grant_type" => "authorization_code",
+                "code" => $code,
+                "client_id" => self::$consumerKey,
+                "redirect_uri" => $redirectUrl,
+                "code_verifier" => $challenge,
+            ]);
 
         return [
-            'status' => true,
-            'token'  => $tokenResponse
+            'success'   =>  $req->successful(),
+            // 'body'      =>  $req->body(),
+            'data'      =>  $req->json()
         ];
-        // return $tokenResponse;
     }
 
-    public function getAccessToken($oauthVerifier, $oauthToken, $oauthTokenSecret)
+    /**
+     * Refresh Auth Token
+     *
+     * @param \App\Models\TwitterToken $token
+     * @return Throwable|\App\Models\TwitterToken
+     */
+    public static function refreshToken($token)
     {
-        $url = 'https://api.twitter.com/oauth/access_token';
-
-        $oauthPostData = array(
-            'oauth_verifier' => $oauthVerifier
-        );
-
-        $params = array(
-            "oauth_consumer_key" => $this->consumerKey,
-            "oauth_nonce" => $this->getToken(42),
-            "oauth_signature_method" => $this->signatureMethod,
-            "oauth_timestamp" => time(),
-            "oauth_token" => $oauthToken,
-            "oauth_version" => $this->oauthVersion
-        );
-
-        $params['oauth_signature'] = $this->createSignature('POST', $url, $params, $oauthTokenSecret);
-
-        $oauthHeader = $this->generateOauthHeader($params);
-
-        $response = $this->curlHttp('POST', $url, $oauthHeader, $oauthPostData);
-        // $fp = fopen("eg.log", "a");
-        // fwrite($fp, "AccessToken: " . $response . "\n");
-
-        $responseVariables = array();
-        parse_str($response, $responseVariables);
-
-        if(empty($responseVariables['oauth_token'])){
-            return [
-                'status' => false,
-                'msg' => $response
-            ];
+        self::setConfigs();
+        $req = Http::acceptJson()->asForm()
+                ->withBasicAuth(self::$consumerKey, self::$consumerSecret)
+                ->post('https://api.twitter.com/2/oauth2/token', [
+                    'grant_type'    =>  'refresh_token',
+                    'client_id'     =>  self::$consumerKey,
+                    'refresh_token' =>  $token->refresh_token
+                ]);
+        if($req->successful()){
+            $token->token   =   $req->json('access_token');
+            $token->refresh_token    =  $req->json('refresh_token');
+            $token->expires_at  =   Carbon::now()->addSeconds($req->json('expires_in'));
+            $token->save();
+            return $token;
         }
 
-        $tokenResponse = array();
-        $tokenResponse["access_token"] = $responseVariables["oauth_token"];
-        $tokenResponse["access_token_secret"] = $responseVariables["oauth_token_secret"];
+        throw new Exception($req->json('error') .":". $req->json('error_description'));
+    }
+
+    /**
+     * Check & Update refresh token if Expired
+     *
+     * @param \App\Models\TwitterToken $token
+     * @return Throwable|\App\Models\TwitterToken
+     */
+    public static function checkToken($token)
+    {
+        if($token->expires_at->isPast()){
+            $token = self::refreshToken($token);
+        }
+        return $token->refresh();
+    }
+
+    /**
+     * Get Self Details
+     *
+     * @param \App\Models\TwitterToken $token
+     * @return array
+     */
+    public static function getSelf($token)
+    {
+        $token  =   self::checkToken($token);
+        $req    =   Http::acceptJson()->withToken($token->token)
+            ->get('https://api.twitter.com/2/users/me');
 
         return [
-            'status' => true,
-            'token'  => $tokenResponse
+            'success'   =>  true,
+            'data'      =>  $req->json('data')
         ];
-        // return $tokenResponse;
     }
 
-    public function getUserData($oauthVerifier, $oauthToken, $oauthTokenSecret = '')
+    /**
+     * Upload a file to Tweetter
+     * only Image
+     * @param \App\Models\TwitterToken $token
+     * @param string $content base64 encoded Content
+     * @return array
+     */
+    public static function uploadMedia($token,  $content) : array
     {
-        $resp = $this->getAccessToken($oauthVerifier, $oauthToken, $oauthTokenSecret);
-
-        if($resp['status']){
-
-            $url = 'https://api.twitter.com/1.1/account/verify_credentials.json';
-
-            $params = [
-                "oauth_consumer_key" => $this->consumerKey,
-                "oauth_nonce" => $this->getToken(42),
-                "oauth_signature_method" => $this->signatureMethod,
-                "oauth_timestamp" => time(),
-                "oauth_token" => $resp['token']["access_token"],
-                "oauth_version" => $this->oauthVersion,
-                // "include_email" => 'true',
-                // 'include_entities' => 'false',
-                // 'skip_status' => 'true'
-
-            ];
-            $urlParams = [ // url params for endpoint
-				'include_email' => 'true'
-            ];
-            $params['oauth_signature'] = $this->createSignature('GET', $url, $params, $resp['token']["access_token_secret"], $urlParams);
-
-            $oauthHeader = $this->generateOauthHeader($params);
-
-            $response = $this->curlHttp('GET', $url, $oauthHeader, $urlParams);
-
-            return [
-                'status' => true,
-                'user'   => json_decode($response, true),
-                'token'  => $resp['token']
-            ];
-        } else {
-            return $resp;
-        }
-
-    }
-
-    public function curlHttp($httpRequestMethod, $url, $oauthHeader, $post_data = null)
-    {
-
-        $ch = curl_init();
-        // $fp = fopen("eg.log", "a");
-        // fwrite($fp, "Header: " . $oauthHeader . "\n");
-
-        $headers = array(
-            "Authorization: OAuth " . $oauthHeader
-        );
-
-        $options = [
-            CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_HEADER => false,
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_SSL_VERIFYPEER => false,
+        self::setConfigs();
+        $token  =   self::checkToken($token);
+        $payload    =   [
+            'media_category'    =>  'tweet_image',
+            'media_data'        =>  $content,
+            'taged_user_ids'    =>[
+                "1715527416569876480"
+            ]
         ];
-        if($httpRequestMethod == 'POST') {
-            $options[CURLOPT_POST] = true;
 
-        }
-        if(!empty($post_data)) {
-            if($httpRequestMethod == 'POST')
-                $options[CURLOPT_POSTFIELDS] = $post_data;
-            else
-                $options[CURLOPT_URL] .= '?' . http_build_query( $post_data );
-        }
-        curl_setopt_array($ch, $options);
-        $response = curl_exec($ch);
-
-        $this->http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        return $response;
+        $req    =   Http::acceptJson()
+            ->withToken($token->token)
+            // ->withBasicAuth(self::$consumerKey, self::$consumerSecret)
+            ->asForm()
+            ->post('https://upload.twitter.com/1.1/media/upload.json', $payload);
+        return [
+            'success'   =>  $req->status(),
+            'data'      =>  $req->json(),
+            'body'      =>  $req->body()
+        ];
     }
 
-    public function generateOauthHeader($params)
+    /**
+     * Post A Tweet
+     *
+     * @param \App\Models\TwitterToken $token
+     * @param string $text Twitter Text
+     * @param array $mediaIds Media IDs in array
+     * @return array
+     */
+    public static function postTweet($token, $text, $mediaIds = []) : array
     {
-        foreach ($params as $k => $v) {
-
-            $oauthParamArray[] = $k . '="' . rawurlencode($v) . '"';
+        $token  =   self::checkToken($token);
+        $payload = [
+            "text"  =>  $text
+        ];
+        if(!empty($mediaIds)) {
+            $payload["media"]   =   [
+                "media_ids" =>  $mediaIds,
+                "tagged_user_ids"   => ["1715527416569876480"] //@SpennyPiggy
+            ];
         }
-        $oauthHeader = implode(', ', $oauthParamArray);
-
-        return $oauthHeader;
-    }
-
-    public function createSignature($httpRequestMethod, $url, $params, $tokenSecret = '', $urlParams = [])
-    {
-        $authorizationParams = array_merge( $params, $urlParams );
-        // make sure to sort
-        uksort( $authorizationParams, 'strcmp' );
-
-        $strParams = rawurlencode(http_build_query($authorizationParams));
-
-        $baseString = $httpRequestMethod . "&" . rawurlencode($url) . "&" . $strParams;
-
-        // $fp = fopen("eg.log", "a");
-        // fwrite($fp, "Baaaase: " . $baseString . "\n");
-
-        $signKey = $this->generateSignatureKey($tokenSecret);
-        $oauthSignature = base64_encode(hash_hmac('sha1', $baseString, $signKey, true));
-
-        return $oauthSignature;
-    }
-
-    public function generateSignatureKey($tokenSecret)
-    {
-        $signKey = rawurlencode($this->consumerSecret) . "&";
-        if (! empty($tokenSecret)) {
-            $signKey = $signKey . rawurlencode($tokenSecret);
-        }
-        return $signKey;
-    }
-
-    public function getToken($length)
-    {
-        $token = "";
-        $codeAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        $codeAlphabet .= "abcdefghijklmnopqrstuvwxyz";
-        $codeAlphabet .= "0123456789";
-        $max = strlen($codeAlphabet) - 1;
-        for ($i = 0; $i < $length; $i ++) {
-            $token .= $codeAlphabet[$this->cryptoRandSecure(0, $max)];
-        }
-        return $token;
-    }
-
-    public function cryptoRandSecure($min, $max)
-    {
-        $range = $max - $min;
-        if ($range < 1) {
-            return $min; // not so random...
-        }
-        $log = ceil(log($range, 2));
-        $bytes = (int) ($log / 8) + 1; // length in bytes
-        $bits = (int) $log + 1; // length in bits
-        $filter = (int) (1 << $bits) - 1; // set all lower bits to 1
-        do {
-            $rnd = hexdec(bin2hex(openssl_random_pseudo_bytes($bytes)));
-            $rnd = $rnd & $filter; // discard irrelevant bits
-        } while ($rnd >= $range);
-        return $min + $rnd;
+        $req    =   Http::acceptJson()->withToken($token->token)
+            ->post('https://api.twitter.com/2/tweets', $payload);
+        return [
+            'success'   =>  $req->successful(),
+            'data'      =>  $req->json()
+        ];
     }
 }

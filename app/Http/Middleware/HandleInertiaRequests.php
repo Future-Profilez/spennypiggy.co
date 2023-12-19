@@ -2,9 +2,12 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Currency;
 use App\Models\UserCart;
 use App\Models\WishItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
 use Tightenco\Ziggy\Ziggy;
 
@@ -53,8 +56,10 @@ class HandleInertiaRequests extends Middleware
                     "info" => $request->session()->get("info"),
                 ];
             },
-            'cart_count' => $items
-        
+            'cart_count'=>  $items,
+            // 'symbols'   =>  Currency::symbols(),
+            'rates'     =>  Currency::rates(),
+            'global_currency'   =>  Cookie::get('currency')
         ];
     }
 }

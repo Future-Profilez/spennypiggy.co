@@ -69,6 +69,8 @@ export default function Wishtracker(props) {
             setIsOwnerRead(1);
         }
 
+
+        console.log("props track", props)
         return (
             <Confetti sender={n && n.sender}
                 is_read_owner={isOwnerRead}
@@ -156,13 +158,12 @@ export default function Wishtracker(props) {
                                         </div> :''}
                                     </div> : ''}
  
-                                    {/* {n && n.sender == false && !msgSent ?   : ''} */}
+                                    {n && n.sender == false && !msgSent ?  
                                         <SayThanks clearAction={open}
                                         getMessageStatus={getMessageStatus} 
                                         name={n && n.user && n.user.name} 
                                         payment_id={n.id} />
-                                      
-                                        
+                                    : ''}
 
                                 </div>
                             </div>
@@ -191,10 +192,9 @@ export default function Wishtracker(props) {
                 setLoading(false);
             });
         }
-
         return <>
-            <button disabled={manageStatus} onClick={()=>cancel(id)}
-                className={`${manageStatus ? "disabled" : ''} btn-pink sm w-100 px-2 mt-3`} >
+            <button disabled={status !== "initiated"} onClick={()=>cancel(id)}
+                className={`${status !== "initiated" ? "disabled" : ''} btn-pink sm w-100 px-2 mt-3`} >
                 {loading ? "Wait.." : manageStatus ? "Cancelled" : "Cancel Subscription" }
             </button>
         </>
@@ -222,96 +222,93 @@ export default function Wishtracker(props) {
                         </Tab>
                         <Tab eventKey="2" title="Subscriptions">
                             
-                            <div className="subsctabs d-flex mb-4 mt-4 pt-4" >
-                                <button onClick={()=>handleTabs(1)} className={`${stab == 1 ? "active" : '' } me-3 btn`} >Active Subscription </button>
-                                <button onClick={()=>handleTabs(0)} className={`${stab == 0 ? "active" : '' } me-3 btn`} >My Subscribed</button>
+                            <div className="subsctabs d-block d-sm-flex mb-4" >
+                                <button onClick={()=>handleTabs(1)} className={`${stab == 1 ? "active" : '' } me-3 btn w-100 mt-2`} >Active Subscription </button>
+                                <button onClick={()=>handleTabs(0)} className={`${stab == 0 ? "active" : '' } me-3 btn w-100 mt-2`} >My Subscribed</button>
                             </div>
 
-                            <div className="row" >
-                                {stab == 0 ? 
-                                <>
-                                    {user_subs && user_subs.map((s, i)=>{
-                                        return <div key={`subscription-${i}`} className="col-sm-6 mb-4" >
-                                            <div className="subsbox box p-4" >
-                                                <h2 className="plantitle" >{s && s.wish && s.wish.wishname}</h2>
-                                               
-                                                <ul className="ps-0 mt-3" >
-                                                     
-                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
-                                                        <p className="text-muted">Item Owner</p>
-                                                        <p className="text-dark text-capitalize" ><Link href={`/${s && s.owner && s.owner.username}`} className="text-voilet" >{s && s.owner && s.owner.name || 'Anonymous'}</Link></p>
-                                                    </li>
-                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
-                                                        <p className="text-muted">Subscription Period</p>
-                                                        <p className="text-dark text-capitalize" >{s && s.wish && s.wish.subscription_period}</p>
-                                                    </li>
-                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
-                                                        <p className="text-muted">Price</p>
-                                                        <p className="text-dark text-capitalize" >{format(s && s.wish && s.wish.price)}</p>
-                                                    </li>
-                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
-                                                        <p className="text-muted">Start Date</p>
-                                                        <p className="text-dark text-capitalize" >{s && s.start_at}</p>
-                                                    </li>
-                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
-                                                        <p className="text-muted">Status</p>
-                                                        <p className="text-dark text-capitalize" >{s && s.status ? <span className="badge bg-success" >Active</span> : <span className="badge bg-danger" >Expired</span> }</p>
-                                                    </li>
-                                                </ul>
-
-                                                <CancelSub status={s && s.status} id={s && s.id} />
+                                {stab == 0 ?  <>
+                                    <div className="row" >
+                                        {user_subs && user_subs.map((s, i)=>{
+                                            return <div key={`subscription-${i}`} className="col-sm-6 mb-4" >
+                                                <div className="subsbox box p-4" >
+                                                    <h2 className="plantitle" >{s && s.wish_item && s.wish_item.wishname}</h2>
                                                 
+                                                    <ul className="ps-0 mt-3" >
+                                                        
+                                                        <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                            <p className="text-muted">Item Owner</p>
+                                                            <p className="text-dark text-capitalize" ><Link href={`/${s && s.username || s && s.guest_name}`} className="text-voilet" >{s && s.guest_name || 'Anonymous'}</Link></p>
+                                                        </li>
+                                                        <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                            <p className="text-muted">Subscription Period</p>
+                                                            <p className="text-dark text-capitalize" >{s && s.recurring_type}</p>
+                                                        </li>
+                                                        <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                            <p className="text-muted">Price</p>
+                                                            <p className="text-dark text-capitalize" >{format(s && s.amount)}</p>
+                                                        </li>
+                                                        <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                            <p className="text-muted">Start Date</p>
+                                                            <p className="text-dark text-capitalize" >{s && s.created_at}</p>
+                                                        </li>
+                                                        <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                            <p className="text-muted">Status</p>
+                                                            <p className="text-dark text-capitalize" >{s && s.status == "initiated" ? <span className="badge bg-success" >{s && s.status}</span> : <span className="badge bg-danger" >Expired</span> }</p>
+                                                        </li>
+                                                    </ul>
+
+                                                    <CancelSub status={s && s.status} id={s && s.id} />
+                                                    
+                                                </div>
                                             </div>
-                                        </div>
-                                    })}
+                                        })}
+                                    </div>
                                     {user_subs && user_subs.length < 1 ? 
-                                     <Nocontent classes="mt-5" text={"Nothing to see."} /> :''}
+                                     <Nocontent classes="mt-5" text={"Nothing to see."} /> :
+                                    ''}
                                 </>
                                 :
                                 <>
-                                    {creator_subs && creator_subs.map((s, i)=>{
-                                            return <div key={`subscription-${i}`} className="col-sm-6 mb-4" >
-                                            <div className="subsbox box p-3" >
-                                                <Avatar name={<TruncatedString inputString={s && s.user && s.user.name || 'Anonymous'} maxLength={10} />}
-                                                    username={`${s && s.user && s.user.username || 'Anonymous'}`}
-                                                    src={`${s && s.user && s.user.avatar || userphoto }`}
-                                                />
-                                                <ul className="ps-0 mt-3" >
-                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
-                                                        <p className="text-muted">Subscription Item</p>
-                                                        <p className="text-dark text-capitalize wishname-text" >{s && s.wish && s.wish.wishname}</p>
-                                                    </li>
-                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
-                                                        <p className="text-muted">Subscription Period</p>
-                                                        <p className="text-dark text-capitalize" >{s && s.wish && s.wish.subscription_period}</p>
-                                                    </li>
-                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
-                                                        <p className="text-muted">Price</p>
-                                                        <p className="text-dark text-capitalize" >{format(s && s.wish && s.wish.price)}</p>
-                                                    </li>
-                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
-                                                        <p className="text-muted">Start Date</p>
-                                                        <p className="text-dark text-capitalize" >{s && s.start_at}</p>
-                                                    </li>
-                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
-                                                        <p className="text-muted">End Date</p>
-                                                        <p className="text-dark text-capitalize" >{s && s.end_at}</p>
-                                                    </li>
-                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
-                                                        <p className="text-muted">Status</p>
-                                                        <p className="text-dark text-capitalize" >{s && s.status ? <span className="badge bg-success" >Active</span> : <span className="badge bg-danger" >Expired</span> }</p>
-                                                    </li>
-                                                </ul>
-                                                
+                                    <div className="row" >
+                                        {creator_subs && creator_subs.map((s, i)=>{
+                                                return <div key={`subscription-${i}`} className="col-sm-6 mb-4" >
+                                                <div className="subsbox box p-3" >
+                                                    <Avatar name={<TruncatedString inputString={s && s.user && s.user.name || 'Anonymous'} maxLength={10} />}
+                                                        username={`${s && s.user && s.user.username || 'Anonymous'}`}
+                                                        src={`${s && s.user && s.user.avatar || userphoto }`}
+                                                    />
+                                                    <ul className="ps-0 mt-3" >
+                                                        <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                            <p className="text-muted">Subscription Item</p>
+                                                            <p className="text-dark text-capitalize wishname-text" >{s && s.wish_item && s.wish_item.wishname}</p>
+                                                        </li>
+                                                        <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                            <p className="text-muted">Subscription Period</p>
+                                                            <p className="text-dark text-capitalize" >{s && s.wish_item && s.wish_item.subscription_period}</p>
+                                                        </li>
+                                                        <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                            <p className="text-muted">Price</p>
+                                                            <p className="text-dark text-capitalize" >{format(s && s.wish_item && s.wish_item.price)}</p>
+                                                        </li>
+                                                        <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                            <p className="text-muted">Start Date</p>
+                                                            <p className="text-dark text-capitalize" >{s && s.created_at}</p>
+                                                        </li>
+                                                        <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                            <p className="text-muted">Status</p>
+                                                            <p className="text-dark text-capitalize" >{s && s.status ? <span className="badge bg-success" >Active</span> : <span className="badge bg-danger" >Expired</span> }</p>
+                                                        </li>
+                                                    </ul>
+                                                    
+                                                </div>
                                             </div>
-                                        </div>
-                                    })}
-
+                                        })}
+                                    </div>
                                     {creator_subs && creator_subs.length < 1 ? 
                                      <Nocontent classes="mt-5" text={"Nothing to see."} /> :''}
                                 </>
                         }
-                            </div>
 
                         </Tab>
                     </Tabs>

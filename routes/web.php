@@ -2,9 +2,13 @@
 
 use App\Http\Controllers\Auth\CheckoutController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TestController;
 use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -39,6 +43,16 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+// Select Default Currency
+Route::get('/currency/{c}', function(Request $request, $c){
+    if(in_array($c, ['USD','GBP','EUR','INR','AUD','JPY','HKD','CAD','CHF','SEK','NZD']))
+    {
+        Cookie::queue('currency', $c, 60*24*365);
+        return back()->with('success', "Currency set to $c");
+    }
+    return back()->with('error', 'Invalid Currency!');
+})->name('change.currency');
+
 Route::prefix("test")->name("test.")->group(function(){
     Route::prefix("stripe")->name("stripe.")->group(function(){
         Route::get("search", [TestController::class, "stripeSearch"])->name("search");
@@ -47,6 +61,9 @@ Route::prefix("test")->name("test.")->group(function(){
     });
     Route::get("email", [TestController::class, "testEmail"]);
     Route::get("rates/{c?}", [TestController::class, "getRates"]);
+    Route::get("c-data", [TestController::class, "testCurrencyData"]);
+    Route::get("x-api", [TwitterController::class, 'testToken']);
+    Route::get("meta", [TestController::class, 'testMeta']);
 });
 
 require __DIR__.'/auth.php';

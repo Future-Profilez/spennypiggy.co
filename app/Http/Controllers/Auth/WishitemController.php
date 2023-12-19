@@ -12,11 +12,13 @@ use App\Mail\CheckError;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\Subscription;
+use App\Models\TipGoal;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
 use App\Models\WishItem;
+use App\Models\WishItemSubscription;
 use App\Rules\ValidSubscriptionPeriod;
 use App\StripeControl;
 use Carbon\Carbon;
@@ -27,6 +29,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use Ramsey\Uuid\Nonstandard\Uuid as NonstandardUuid;
 use Ramsey\Uuid\Uuid;
 use Stripe\StripeClient;
 
@@ -249,6 +252,10 @@ class WishitemController extends Controller
                 $wish->stripe_product_id = $product->id;
                 $wish->price_id = $product->default_price;
                 $wish->save();
+
+                if (isset($request->post_twitter) && $request->post_twitter == 1) {
+                    TwitterController::testToken($wish);
+                }
             } catch (Exception $e) {
                 $wish->delete();
                 return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
@@ -539,7 +546,6 @@ class WishitemController extends Controller
                 ];
             }
 
-
             $cart = [];
             $key = 0;
             foreach ($groupedWishes as $value) {
@@ -805,21 +811,19 @@ class WishitemController extends Controller
         $tracks = StripePaymentItems::whereHas('payment', function ($query) use ($user) {
             $query->where('user_id', $user->id)->orWhere('owner_id', $user->id);
         })->with(['wish'])->orderBy('created_at', 'DESC')->get();
-
-        $creator_subs = Subscription::where('owner_id', Auth::id())->with(['user', 'wish'])->orderBy('updated_at', 'DESC')->get();
-        $user_subs = Subscription::where('user_id', Auth::id())->with(['owner', 'wish'])->get();
-
-        $trackData = $tracks->map(function ($q) use ($creator_subs, $user_subs) {
+        $creator_subs = WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->with(['user', 'wish_item'])->orderBy('updated_at', 'DESC')->get();
+        $user_subs = WishItemSubscription::where('user_id', Auth::id())->with(['wish_item', 'wish_item.user'])->get();
+        $trackData = $tracks->map(function ($q) {
 
             if (Auth::id() == $q->payment->owner_id) {
                 $q->user = $q->payment->user ?? false;
             } elseif (Auth::id() == $q->payment->user_id) {
                 $q->user = $q->payment->owner;
             }
-
             $q->cart_message = $q->payment->message ?? null;
             $q->surprise_message = $q->cart->message ?? null;
-
             return $q;
         });
 
@@ -888,6 +892,8 @@ class WishitemController extends Controller
         return Inertia::render('tracker/Wishtracker');
     }
 
+
+
     public function userSubscribed()
     {
         $subs = Subscription::where('user_id', Auth::id())->get();
@@ -946,5 +952,69 @@ class WishitemController extends Controller
                 'msg' => 'You can pin only your wishlist!'
             ]);
         }
+    }
+
+
+    public function addTipGoal(Request $request)
+    {
+        $request->validate(
+            [
+                "name" => [
+                    "required",
+                    "string",
+                ],
+                "target" => [
+                    "required",
+                    "numeric",
+                ],
+                "default_price" => [
+                    "nullable"
+                ],
+            ]
+        );
+
+        $user = User::where('id', Auth::id())->first();
+
+        $taxamount = $request->default_price * env('TAX_PERCENTAGE', 20) / 100;
+        $createpriceid = ceil($request->default_price) + ceil($taxamount);
+
+        $goal = TipGoal::create([
+            'uuid' => Uuid::uuid4(),
+            'user_id' => $user->id,
+            'name' => $request->name,
+            'target' => $request->target,
+            'default_price' => $request->default_price,
+            'tax_amount' => $taxamount
+        ]);
+
+        $productPayload = [
+            "name"  =>  $goal->name,
+            "images" => ["https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"],
+            "default_price_data"    =>  [
+                "currency"  =>  $user->default_currency,
+                "unit_amount_decimal"   => $createpriceid * 100,
+            ],
+            "url"   => env('APP_URL') . '/' . $user->username . "?goal=$goal->uuid/"
+        ];
+
+
+        try {
+            $product = StripeControl::createProduct($productPayload);
+            $goal->product_id = $product->id;
+            $goal->price_id = $product->default_price;
+            $goal->save();
+
+            // if (isset($request->post_twitter) && $request->post_twitter == 1) {
+            //     TwitterController::testToken($wish);
+            // }
+        } catch (Exception $e) {
+            $goal->delete();
+            return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
+        }
+
+        return response()->json([
+            'status' => true,
+            'msg' => "Tip Goal added successfully!"
+        ]);
     }
 }

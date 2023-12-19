@@ -117,12 +117,22 @@ Route::middleware('auth')->group(function () {
         })->middleware(['auth', 'verified'])->name('stripe');
 
         Route::get('/pin-item/{wish_id}/', [WishitemController::class, 'pinItem'])->name('pin-item');
+
+        // Twitter
+        Route::prefix("twitter")->name("x.")->group(function () {
+            Route::get('init', [TwitterController::class, 'authInit'])->name('init');
+            Route::get('authorize', [TwitterController::class, 'handleAuth'])->name('handle');
+        });
+
+        Route::post('add-goal', [WishitemController::class, 'addTipGoal'])->name('add-goal');
     });
 });
 
 Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
 
 Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity');
+
+Route::get('cancel-subs/{uuid}', [StripeController::class, 'cancelSubs'])->name('cancel-subs');
 
 Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
     ->name('password.request');
@@ -159,14 +169,17 @@ Route::get('/terms-and-conditions', function () {
     return Inertia::render('Terms');
 })->name("terms-and-conditions");
 
+
+Route::get('/promotion-terms', function () {
+    return Inertia::render('Promotions');
+})->name("promotion-terms");
+
 Route::get('/files/{filename}', function (string $filename) {
     $fullPath = asset($filename);
     return Storage::response($fullPath);
 });
 
-
 Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status')->withoutMiddleware(VerifyCsrfToken::class);
-
 
 /* wishtender */
 Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('wishtender-wishes');
@@ -183,6 +196,8 @@ Route::get('/leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWis
 Route::get('twitter-token/', [TwitterController::class, 'twitterAuthUrl']);
 Route::get('twitter/login', [TwitterController::class, 'twitterLogin']);
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
+
+Route::get('sociallinks/{username}', [AuthenticatedSessionController::class, 'sociallinks'])->name('user.sociallinks');
 
 Route::get('/{username}/{category?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
 

@@ -57,8 +57,8 @@ return [
         ],
         'shortcuts' => [
             [
-                'name' => 'The Best Alternative to Amazon Wishlist - Spenny Piggy',
-                'description' => 'For spicy creators to Safely recieve financial gifts',
+                'name' => 'Spenny Piggy - Financial Gifts, Donations & Memberships - Spenny Piggy',
+                'description' => 'Send tributes, adopt bills & more. Safe for Spicy Creators who receive 100% payouts!',
                 'url' => '/',
                 'icons' => [
                     "src" => "/favicon-32x32.png",
