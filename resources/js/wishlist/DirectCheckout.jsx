@@ -13,17 +13,6 @@ export default function DirectCheckout({ item, amount, classes }) {
             return false;
         }
         setLoading(true);
-        // axios.get(`/anonymous-create-checkout-session/${item.price_id || ''}/${quantity}`).then(resp => {
-        //   // successAlert(resp.data.msg);
-        //   console.log("resp",resp)
-        //     setLoading(false);
-        //   }).catch(_err => {
-        //     console.error("error", _err);
-        //     setLoading(false);
-        //   })
-        // window.location.href = `/anonymous-create-checkout-session/${
-        //     item.price_id || ""
-        // }/${quantity}`;
         window.location.href = `/anonymous-create-checkout-session/${
             item.id || ""
         }/${amount || ""}`;

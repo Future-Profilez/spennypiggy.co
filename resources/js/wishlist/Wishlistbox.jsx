@@ -17,8 +17,6 @@ import { usePage } from '@inertiajs/react';
 export default function Wishlistbox(props) {
 
   const page  = usePage();
-  console.log("page",page);
-  
   const { format, formatMultiPrice } = PriceFormat();
   const { currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped } = props;
 

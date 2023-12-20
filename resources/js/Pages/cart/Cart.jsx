@@ -18,7 +18,6 @@ export default function Cart(props) {
     const fetchCartItem = (e) => { 
         setLoading(true);
         Axios.get(`anonymous-cart/${deviceid}`).then(resp => {
-            console.log("resp", resp.data.carts);
             setCartItems(resp.data.carts);
             setLoading(false);
         }).catch(_err => {

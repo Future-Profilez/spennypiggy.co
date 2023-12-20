@@ -36,8 +36,6 @@ export default function ChangeCurrency({defaultvalue, changer}) {
    }
 
    const changeCurrency = (e) => {
-      // e.preventDefault();
-    //   console.log(e)
       get(route(`change.currency`, { c: e } ),{
             preserveScroll: true,
             onSuccess: (resp) => {

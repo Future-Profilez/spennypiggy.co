@@ -34,7 +34,6 @@ export default function UserCarts(props) {
         router.get(`/clear-cart/${deviceid}/${ownerid}`, {
             preserveScroll: true,
             onSuccess: (resp) => {
-                console.log("resp", resp);
                 setCartCleared(true);
                 setLoading(false);
                 if(index == 0){
@@ -53,7 +52,6 @@ export default function UserCarts(props) {
         router.get(`/remove-from-cart/${id}`, {
             preserveScroll: true,
             onSuccess: (resp) => {
-                console.log("resp", resp);
                 const updatedItems = items.filter(item => item.uuid !== id);
                 setItems(updatedItems);
             },

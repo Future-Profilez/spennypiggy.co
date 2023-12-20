@@ -11,7 +11,6 @@ import ChangeCurrency from '@/Components/ChangeCurrency';
 import LinkTwitter from '../twitter/LinkTwitter';
 
 export default function Accountsetting(props) {
-    console.log("props aa",props);
     const {auth, user, global_currency} = props;
     const [passClose, setSassClose] = useState(null);
 

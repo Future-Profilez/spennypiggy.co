@@ -14,7 +14,6 @@ export default function LinkTwitter(props) {
       get(route('x.init')),{
         preserveScroll: true,
         onSuccess: (resp) => {
-          console.log("resp",resp);
         },
         onError: (_err) => {
             console.error(_err);
