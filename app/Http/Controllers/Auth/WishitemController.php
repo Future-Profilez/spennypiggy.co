@@ -108,8 +108,8 @@ class WishitemController extends Controller
                 foreach ($request->category as $key => $value) {
                     $wish_cat = new WishCategory();
                     $wish_cat->uuid = Uuid::uuid4();
-                    $wish_cat->wish_id = $wish->id;
-                    $wish_cat->category_id = $value;
+                    $wish_cat->wish_item_id = $wish->id;
+                    $wish_cat->user_category_id = $value;
                     $wish_cat->save();
                 }
             }
@@ -223,8 +223,8 @@ class WishitemController extends Controller
             foreach ($request->category as $key => $value) {
                 $wish_cat = new WishCategory();
                 $wish_cat->uuid = Uuid::uuid4();
-                $wish_cat->wish_id = $wish->id;
-                $wish_cat->category_id = $value;
+                $wish_cat->wish_item_id = $wish->id;
+                $wish_cat->user_category_id = $value;
                 $wish_cat->save();
             }
         }
@@ -305,8 +305,8 @@ class WishitemController extends Controller
                     $updatedata->refresh();
                     if (!empty($request->category)) {
                         foreach ($request->category as $key => $value) {
-                            WishCategory::where('wish_id', $updatedata->id)->update([
-                                'category_id' => $value
+                            WishCategory::where('wish_item_id', $updatedata->id)->update([
+                                'user_category_id' => $value
                             ]);
                             // $wish_cat = new WishCategory();
                             // $wish_cat->uuid = Uuid::uuid4();
@@ -383,11 +383,11 @@ class WishitemController extends Controller
 
         $query = WishCategory::orderBy('created_at', 'DESC');
         if ($category != 'all') {
-            $query->where('category_id', $category);
+            $query->where('user_category_id', $category);
         }
         $itemId = $query->whereHas('wish', function ($q) use ($user_id) {
             $q->where('user_id', $user_id);
-        })->pluck('wish_id');
+        })->pluck('wish_item_id');
         $user = User::where('id', $user_id)->first();
         $items = Wishitem::whereIn('id', $itemId)->latest()->get();
         // $items = WishItem::whereUserId($user->id)->latest()->get();

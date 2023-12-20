@@ -142,4 +142,27 @@ class TestController extends Controller
         $resp = TwitterAuthService::postTweet($token, $tweet);
         return response()->json($resp);
     }
+
+    /**
+     * Test WishItems Optimization
+     *
+     * @param int $c Category Id
+     * @return mixed
+     */
+    public function testItems($c = null)
+    {
+        $user   =   User::find(1);
+        $query  = $user->wishItems();
+        $query->when($c, function ($query) use ($c) {
+            // If $categoryID is specified, filter by the specific category
+            $query->whereHas('wishCategories', function ($query) use ($c) {
+                $query->where('user_category_id', $c);
+            });
+        });
+        $items = $query->orderBy('is_pin', 'DESC')->latest()->get();
+
+        return response()->json([
+            'items' =>  $items
+        ]);
+    }
 }

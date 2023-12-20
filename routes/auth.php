@@ -202,6 +202,7 @@ Route::get('sociallinks/{username}', [AuthenticatedSessionController::class, 'so
 
 Route::get('/{username}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
 Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');
+Route::get('/items/{username}/{category_id?}', [AuthenticatedSessionController::class, 'userItems'])->name('user.items');
 Route::get('/user_category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.info');
 
 Route::prefix("wish")->name("wish.")->group(function () {
