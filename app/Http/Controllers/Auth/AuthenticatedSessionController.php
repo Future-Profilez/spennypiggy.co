@@ -173,7 +173,7 @@ class AuthenticatedSessionController extends Controller
             $user = User::where('username', $username)->first();
             $categories = [];
             if (!empty($user)) {
-                $categories = $user->usercategories();
+                $categories = $user->user_categories()->get();
                 // $categories = UserCategory::whereUserId($user->id)->latest()->get();
             }
             return response()->json([
@@ -192,7 +192,7 @@ class AuthenticatedSessionController extends Controller
             $slinks = [];
             $sociallinks = [];
             if (!empty($user)) {
-                $slinks = $user->sociallinks();
+                $slinks = $user->social_links()->get();
                 if (!empty($slinks)) {
                     $sociallinks = [
                         [
