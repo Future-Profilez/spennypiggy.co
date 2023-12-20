@@ -376,7 +376,7 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .header{padding:0px 13px;box-shadow:3px 6px 0 0 var(--mint);border-radius:10px;}
 .spennylogo{margin:-10px 0 0 -20px;}
 .closemega{position:absolute;right:31px;top:30px;}
-.closemega svg{width:56px;top:10px;}
+.closemega svg{width:43px;top:10px;}
 .headtitle{display:none;}
 .menuList ul li{margin-bottom:10px;}
 .menuList ul li a{font-size:3vh;}
