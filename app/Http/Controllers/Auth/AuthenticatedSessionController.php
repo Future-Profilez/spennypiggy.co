@@ -56,12 +56,13 @@ class AuthenticatedSessionController extends Controller
 
         return redirect(route("login"))->with("success", "Logged out successfully.");
     }
- 
+
 
     /**
      * Private user profile info
      */
-    public function getUserProfile($username){
+    public function getUserProfile($username)
+    {
         $user = User::where('username', $username)->first();
         if (!$user) {
             return Inertia::render('NotFound');
@@ -88,48 +89,49 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
-    public function user_info($username, $category = false) {
-            $user = User::where('username', $username)->first();
-            $items = [];
-            if ($category && $user) {
-                $query = WishCategory::orderBy('created_at', 'DESC');
-                if ($category != 'all') {
-                    $query->where('user_category_id', $category);
-                }
-
-                $itemId = $query->whereHas('wish', function ($q) use ($user) {
-                    $q->where('user_id', $user->id);
-                })->pluck('wish_item_id');
-
-                $q = WishItem::where('is_pin', 0)->with(['user']);
-                if ($category != 'all') {
-                    $q->whereIn('id', $itemId);
-                } else {
-                    $q->where('user_id', $user->id);
-                }
-                $items = $q->latest()->get();
-
-                $pin = WishItem::where('is_pin', 1)->with(['user']);
-                if ($category != 'all') {
-                    $pin->whereIn('id', $itemId);
-                } else {
-                    $pin->where('user_id', $user->id);
-                }
-                $pinned = $pin->get();
-                return response()->json([
-                    "success" => true,
-                    "items" => ['list' => $items, "pinned" => $pinned],
-                ]);
-            } else {
-                if ($user) {
-                    $items = WishItem::where('is_pin', 0)->whereUserId($user->id)->with(['user'])->latest()->get();
-                    $pinned = WishItem::where('is_pin', 1)->whereUserId($user->id)->with(['user'])->get();
-                }
+    public function user_info($username, $category = false)
+    {
+        $user = User::where('username', $username)->first();
+        $items = [];
+        if ($category && $user) {
+            $query = WishCategory::orderBy('created_at', 'DESC');
+            if ($category != 'all') {
+                $query->where('user_category_id', $category);
             }
+
+            $itemId = $query->whereHas('wish', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->pluck('wish_item_id');
+
+            $q = WishItem::where('is_pin', 0)->with(['user']);
+            if ($category != 'all') {
+                $q->whereIn('id', $itemId);
+            } else {
+                $q->where('user_id', $user->id);
+            }
+            $items = $q->latest()->get();
+
+            $pin = WishItem::where('is_pin', 1)->with(['user']);
+            if ($category != 'all') {
+                $pin->whereIn('id', $itemId);
+            } else {
+                $pin->where('user_id', $user->id);
+            }
+            $pinned = $pin->get();
             return response()->json([
                 "success" => true,
                 "items" => ['list' => $items, "pinned" => $pinned],
             ]);
+        } else {
+            if ($user) {
+                $items = WishItem::where('is_pin', 0)->whereUserId($user->id)->with(['user'])->latest()->get();
+                $pinned = WishItem::where('is_pin', 1)->whereUserId($user->id)->with(['user'])->get();
+            }
+        }
+        return response()->json([
+            "success" => true,
+            "items" => ['list' => $items, "pinned" => $pinned],
+        ]);
     }
 
     /**
@@ -142,8 +144,7 @@ class AuthenticatedSessionController extends Controller
     public function userItems($username, $category_id = null)
     {
         $user = User::firstWhere('username', $username);
-        if($user)
-        {
+        if ($user) {
             $items = $user->wishItems()
                 ->when($category_id, function ($query) use ($category_id) {
                     // If $categoryID is specified, filter by the specific category
@@ -166,12 +167,14 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
-    public function user_category($username) {
+    public function user_category($username)
+    {
         try {
             $user = User::where('username', $username)->first();
             $categories = [];
             if (!empty($user)) {
-                $categories = UserCategory::whereUserId($user->id)->latest()->get();
+                $categories = $user->userCategories();
+                // $categories = UserCategory::whereUserId($user->id)->latest()->get();
                 return response()->json([
                     "success" => true,
                     "categories" => $categories,
@@ -187,55 +190,57 @@ class AuthenticatedSessionController extends Controller
         }
     }
 
-    public function sociallinks($username) {
+    public function sociallinks($username)
+    {
         try {
             $user = User::where('username', $username)->first();
             $slinks = [];
             $sociallinks = [];
             if (!empty($user)) {
-                $slinks = SocialLinks::where('user_id', $user->id)->first();
+                $slinks = $user->socialLinks();
                 if (!empty($slinks)) {
-                    $sociallinks = array(
-                        array(
+                    $sociallinks = [
+                        [
                             'social' => 'whoyouinto',
                             'url'    => $slinks->whoyouinto ?? null,
-                        ),
-                        array(
+                        ],
+                        [
                             'social' => 'twitter',
                             'url'    => $slinks->twitter ?? null,
-                        ),
-                        array(
+                        ],
+                        [
                             'social' => 'instagram',
                             'url'    => $slinks->instagram ?? null,
-                        ), array(
+                        ],
+                        [
                             'social' => 'reddit',
                             'url'    => $slinks->reddit ?? null,
-                        ), array(
+                        ],
+                        [
                             'social' => 'discord',
                             'url'    => $slinks->discord ?? null,
-                        ), array(
+                        ],
+                        [
                             'social' => 'onlyfans',
                             'url'    => $slinks->onlyfans ?? null,
-                        ), array(
+                        ],
+                        [
                             'social' => 'loyalfans',
                             'url'    => $slinks->loyalfans ?? null,
-                        ), array(
+                        ],
+                        [
                             'social' => 'fansly',
                             'url'    => $slinks->fansly ?? null,
-                        ), array(
+                        ],
+                        [
                             'social' => 'manyvids',
                             'url'    => $slinks->manyvids ?? null,
-                        ), array(
+                        ],
+                        [
                             'social' => 'other',
                             'url'    => $slinks->other ?? null,
-                        )
-                    );
-                } else {
-                    return response()->json([
-                        "success" => false,
-                        "sociallinks" => [],
-                        "slinks" => []
-                    ]);
+                        ]
+                    ];
                 }
             } else {
                 return response()->json([

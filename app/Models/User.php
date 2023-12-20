@@ -161,4 +161,9 @@ class User extends Authenticatable
     {
         return $this->twitter_token->username ?? false;
     }
+
+    public function socialLinks()
+    {
+        return $this->hasOne(SocialLinks::class, 'user_id');
+    }
 }
