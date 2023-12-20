@@ -39,7 +39,7 @@ export default function Wishtracker(props) {
         const [isUserRead, setIsUserRead] = useState(n && n.is_read_user);
         const [isOwnerRead, setIsOwnerRead] = useState(n && n.is_read_owner);
         const [message_media, setmessage_media] = useState(n && n.message_media);
-        const [msgSent, setMsgSent] = useState(n && n.message);
+        const [msgSent, setMsgSent] = useState(n && n.thankyou_message);
         const [media_type, setmedia_type] = useState(n && n.media_type);
         const [message_url, setmessage_url] = useState(n && n.message_url);
         const getMessageStatus = (m , f) => { 
@@ -55,7 +55,6 @@ export default function Wishtracker(props) {
             setIsUserRead(1)
             e.preventDefault();
             axios.get(`/read-status/${n.id}/${n.sender ? 'user' : 'owner'}`).then(resp => {
-                console.error("resp", resp);
                 return true;
             }).catch(_err => {
                 console.error("error", _err);
@@ -170,6 +169,8 @@ export default function Wishtracker(props) {
             </Confetti>
         );
     };
+
+    console.log("tracks",tracks)
 
     const CancelSub = ({id, status}) => {
         
