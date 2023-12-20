@@ -439,8 +439,6 @@ export default function Wishlist(props) {
                                                 Enable auto tweet for this item.
                                             </p>
                                         </div> */}
-
-
                                         <div className="publish text-start">
                                         {editpop ?
                                         <LoaderButton

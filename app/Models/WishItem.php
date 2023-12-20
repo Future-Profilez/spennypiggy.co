@@ -78,6 +78,7 @@ class WishItem extends Model
         } else {
             $url = "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/";
         }
+        
         return $url;
     }
     public function categories()
