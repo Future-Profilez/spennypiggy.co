@@ -391,7 +391,7 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .userProfileDate{position:relative;}
 .userProfile{margin:0 auto;width:100%;}
 .userManageRt{padding:0;width:100%;}
-.wishlistModal{min-width:300px;}
+/* .wishlistModal{min-width:300px;} */
 .wishinfo{padding:10px 15px 20px;}
 .joinus{padding:50px 15px 50px;}
 .editProfilePhoto{padding:0 15px;}

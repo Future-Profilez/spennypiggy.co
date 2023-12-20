@@ -7,8 +7,6 @@ import cartproductimg from '../../../assets/img/cartproductimg.png';
 export default function SubCheckout(props) {
 
     const {auth, wish, reccure} = props;
-    console.log("auth", auth);
-
     const { format } = PriceFormat();
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
     const [email, setEmail] = useState(auth && auth.user && auth.user.email || '');

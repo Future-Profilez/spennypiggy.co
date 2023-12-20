@@ -8,7 +8,6 @@ import LargestGifts from "./LargestGifts";
 
 export default function Board(props) {
     const { auth, data } = props;
-    console.log("props leaderboard ", props);
 
     const [positions, setPositions] = useState([]);
     const [ranks, setRanks] = useState([]);

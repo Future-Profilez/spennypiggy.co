@@ -38,7 +38,6 @@ export default function ToCart({
         //     return false;
         // }
         setLoading(true);
-        // console.log("auth",auth)
         axios.get(`/add-to-cart/${uuid}/${deviceID}${sub ? `/${sub}` : '/onetime' }${amount ? `/${amount}/` : ''}`).then(resp => {
         if (resp.data.success) {
             if (resp.data.added == true) {

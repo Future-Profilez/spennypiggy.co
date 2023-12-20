@@ -69,8 +69,6 @@ export default function Wishtracker(props) {
             setIsOwnerRead(1);
         }
 
-
-        console.log("props track", props)
         return (
             <Confetti sender={n && n.sender}
                 is_read_owner={isOwnerRead}
@@ -185,7 +183,6 @@ export default function Wishtracker(props) {
             .then((resp) => {
                 successAlert("Subscription has been cancelled.")
                 setLoading(false);
-                console.log("resp", resp);
                 setmanageStatus(false);
             }).catch((_err) => {
                 console.error("error", _err);

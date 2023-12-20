@@ -466,7 +466,7 @@ export default function Wishlist(props) {
                                             </p>
 
                                             <div className="catslists">
-                                                {categories &&
+                                                {categories && categories.length &&
                                                     categories.map((c, i) => {
                                                         return (
                                                             <>

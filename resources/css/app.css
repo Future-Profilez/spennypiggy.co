@@ -55,7 +55,7 @@
 .dropdown-menu{border-radius:15px !important;padding:0 !important;}
 .dropdown-item{padding:10px 20px !important;border-radius:15px !important;}
 .dropdown-menu:focus{background:#fbfbfb !important;}
-.dropdown-menu:after{content:"";width:10px;height:10px;background:#fff;position:absolute;top:-4px;right:15px;transform:rotate(45deg);}
+.dropdown-menu:after{content:"";width:10px;height:10px;background:#fff;position:absolute;top:-4px;left:15px;transform:rotate(45deg);}
 .wishedit.dropdown button#dropdown-basic-button{padding:6px 11px;}
 .btn-pink.lg2{padding:20px;letter-spacing:1px;font-size:20px !important;}
 .twitter-steps{display:flex;justify-content:space-between;padding:20px;align-items:center;}

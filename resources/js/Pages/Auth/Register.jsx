@@ -37,17 +37,6 @@ export default function Register() {
         password_confirmation: '',
     });
 
-    useEffect(() => {
-        return () => {
-            // reset('password', 'password_confirmation');
-            // setmypass('');
-        };
-    }, []);
-
-    useEffect(() => {
-        console.log("data",data)
-    }, [data]);
-
     const termsaccept = () => {
         errorAlert("Please check accept terms & conditions checkbox");
         checkRef.current.focus();

@@ -62,9 +62,6 @@ export default function Social({links, updatedLinks}) {
         });
     };
 
-    console.log("data",data)
-    console.log("links",links)
-
     return <>
         <Popup action={close} space='4' modalclassName="pinkmodal" size="md"
             classes='' text="Add Socials" >

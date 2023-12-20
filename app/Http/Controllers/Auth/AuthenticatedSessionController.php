@@ -72,15 +72,14 @@ class AuthenticatedSessionController extends Controller
         } else {
             $itemdid = false;
         }
-
         SeoMeta::addTag('title', "{$user->name} - Spenny Piggy - Financial Gifts, Donations & Memberships");
         SeoMeta::addTag('meta', [
             ' name'   =>  'twitter:image',
-            'content'  =>  'https://ucarecdn.com/96eb6cc4-14a3-4f53-9a56-39acb88653f4/-/overlay/4c42426a-1396-49e2-8b46-2381a2ae5d7b/50px50p/center/'
+            'content'  =>  'https://ucarecdn.com/5354001d-972c-460f-9c48-72b96fd4f5c1/-/overlay/4c42426a-1396-49e2-8b46-2381a2ae5d7b/50px50p/center/'
         ]);
         SeoMeta::addTag('meta', [
             'property'   =>  'og:image',
-            'content'  =>  'https://ucarecdn.com/96eb6cc4-14a3-4f53-9a56-39acb88653f4/-/overlay/4c42426a-1396-49e2-8b46-2381a2ae5d7b/50px50p/center/'
+            'content'  =>  'https://ucarecdn.com/5354001d-972c-460f-9c48-72b96fd4f5c1/-/overlay/4c42426a-1396-49e2-8b46-2381a2ae5d7b/50px50p/center/'
         ]);
         return Inertia::render('Dashboard', [
             "username" => $username,

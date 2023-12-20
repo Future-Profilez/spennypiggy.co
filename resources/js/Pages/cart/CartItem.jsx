@@ -13,7 +13,6 @@ export default function CartItem({data, removeCart, quantityUpdate}) {
 
     const updatequantity = (quantity) => {
         axios.get(`cart-update-quantity/${data && data.uuid}/${quantity}`).then(resp => {
-            // console.log("resp", resp);
         }).catch(_err => {
             console.error("error", _err);
             errorAlert("Unable to update quantity.")

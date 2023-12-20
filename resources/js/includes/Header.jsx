@@ -34,8 +34,6 @@ export default function Header(props) {
         fetchCounter();
     }, [cart]);
 
-    console.log(`auth user header:`, auth);
-
     return <>
         <div className='blackbg headermain py-14'>
             <div className='containerbox'>
