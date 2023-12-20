@@ -192,7 +192,7 @@ class AuthenticatedSessionController extends Controller
             $slinks = [];
             $sociallinks = [];
             if (!empty($user)) {
-                $slinks = $user->social_links()->get();
+                $slinks = $user->social_links()->first();
                 if (!empty($slinks)) {
                     $sociallinks = [
                         [
