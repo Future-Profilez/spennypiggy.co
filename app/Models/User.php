@@ -130,7 +130,7 @@ class User extends Authenticatable
         return $this->hasManyThrough(WishItem::class, UserCategory::class, 'user_id', 'user_id', 'id', 'id');
     }
 
-    public function userCategories()
+    public function usercategories()
     {
         return $this->hasMany(UserCategory::class, 'user_id');
     }
@@ -162,7 +162,7 @@ class User extends Authenticatable
         return $this->twitter_token->username ?? false;
     }
 
-    public function socialLinks()
+    public function sociallinks()
     {
         return $this->hasOne(SocialLinks::class, 'user_id');
     }
