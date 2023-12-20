@@ -33,7 +33,6 @@ export default function Dashboard(props) {
 
     const fetch_categories = async (e) => {
         axios.get(`/user_category/${username}`).then((resp) => {
-            console.log("resp categories", resp);
             setcategories(resp.data.categories);
         }).catch((_err) => {
             console.error("error", _err);
@@ -42,7 +41,6 @@ export default function Dashboard(props) {
 
     const fetchingLinks = () => {
         axios.get(`sociallinks/${username}`).then((resp) => {
-            console.log("links", resp.data);
             setSocialLinks(resp.data.sociallinks)
             setLinks(resp.data.slinks)
         }).catch((_err) => {
@@ -63,7 +61,6 @@ export default function Dashboard(props) {
                 return response.json();
             })
             .then((data) => {
-                console.log("resp info", data);
                 setLoading(false);
                 const result = data && data.items;
                 conCat(result && result.pinned || [], result && result.list || []);
