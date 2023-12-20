@@ -17,7 +17,7 @@ class StripePaymentItems extends Model
 
     protected $fillable = [
         'uuid',
-        'stripe_payment_id',
+        'stripe_payment_detail_id',
         'wish_item_id',
         'user_cart_id',
         'amount',
@@ -33,7 +33,7 @@ class StripePaymentItems extends Model
 
     public function payment()
     {
-        return $this->belongsTo(StripePaymentDetail::class, 'stripe_payment_id');
+        return $this->belongsTo(StripePaymentDetail::class, 'stripe_payment_detail_id');
     }
 
     public function wish()
@@ -59,7 +59,7 @@ class StripePaymentItems extends Model
     {
         $url = false;
         if (!empty($this->message_media)) {
-            
+
             // if ($this->media_type == 'image') {
             //     $api = Uploadcare::getApiObj()->file();
             //     $info = $api->fileInfo($this->message_media)->getContentInfo();
@@ -78,7 +78,7 @@ class StripePaymentItems extends Model
             //     $url = Uploadcare::getUrl($this->message_media, $this->media_type, false, false);
             // }
 
-            $url =  'https://ucarecdn.com/'. $this->message_media . '/';
+            $url =  'https://ucarecdn.com/' . $this->message_media . '/';
         }
 
         return $url;

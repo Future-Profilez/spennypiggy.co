@@ -53,6 +53,6 @@ class StripePaymentDetail extends Model
 
     public function stripePaymentItems()
     {
-        return $this->hasMany(StripePaymentItems::class, 'stripe_payment_id');
+        return $this->hasMany(StripePaymentItems::class, 'stripe_payment_detail_id');
     }
 }

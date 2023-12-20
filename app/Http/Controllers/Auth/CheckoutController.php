@@ -60,7 +60,7 @@ class CheckoutController extends Controller
                     'quantity' => $dd->quantity,
                     'price_data' => [
                         'currency' => $currency,
-                        'product' => $dd->wish_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
+                        'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
                         'unit_amount_decimal' => Helpers::priceFormat($currency, $amount) * 100
                     ]
                 ];
@@ -143,7 +143,7 @@ class CheckoutController extends Controller
                             $subscription = new Subscription();
                             $subscription->user_id = $dd->user_id;
                             $subscription->owner_id = $dd->owner_id;
-                            $subscription->wish_id = $dd->wish_id;
+                            $subscription->wish_id = $dd->wish_item_id;
                             $subscription->start_at = Carbon::now();
                             $subscription->end_at = $end;
                             $subscription->status = 1;
@@ -165,8 +165,8 @@ class CheckoutController extends Controller
             foreach ($getdata as $dd) {
                 $payment_data = StripePaymentItems::create([
                     'uuid' => Uuid::uuid4(),
-                    'stripe_payment_id' => $stripeid->id,
-                    'wish_item_id' => $dd->wish_id ?? Null,
+                    'stripe_payment_detail_id' => $stripeid->id,
+                    'wish_item_id' => $dd->wish_item_id ?? Null,
                     'user_cart_id' => $dd->id,
                     'amount' => $dd->amount,
                     'tax' => $dd->tax,
@@ -175,7 +175,7 @@ class CheckoutController extends Controller
                 $payment_data->refresh();
                 $message = $stripeid->message;
                 if (Auth::check()) {
-                    if ($dd->wish_id == NULL) {
+                    if ($dd->wish_item_id == NULL) {
                         CheckoutUser::dispatch($payment_data, false, $dd, $message);
                     } else {
                         CheckoutUser::dispatch($payment_data, false, false, $message);

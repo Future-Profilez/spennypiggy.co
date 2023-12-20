@@ -286,7 +286,7 @@ class StripeController extends Controller
                         $subscription = new Subscription();
                         $subscription->user_id = $dd->user_id;
                         $subscription->owner_id = $dd->owner_id;
-                        $subscription->wish_id = $dd->wish_id;
+                        $subscription->wish_id = $dd->wish_item_id;
                         $subscription->start_at = Carbon::now();
                         $subscription->end_at = $end;
                         $subscription->status = 1;
@@ -307,15 +307,15 @@ class StripeController extends Controller
             foreach ($getdata as $dd) {
                 $payment_data = StripePaymentItems::create([
                     'uuid' => Uuid::uuid4(),
-                    'stripe_payment_id' => $stripeid->id,
-                    'wish_item_id' => $dd->wish_id ?? Null,
+                    'stripe_payment_detail_id' => $stripeid->id,
+                    'wish_item_id' => $dd->wish_item_id ?? Null,
                     'user_cart_id' => $dd->id,
                     'amount' => $dd->amount,
                     'tax' => $dd->tax,
                 ]);
                 $payment_data->refresh();
                 $message = $stripeid->message;
-                if ($dd->wish_id == NULL) {
+                if ($dd->wish_item_id == NULL) {
                     CheckoutUser::dispatch($payment_data, false, $dd, $message, false);
                 } else {
                     CheckoutUser::dispatch($payment_data, false, false, $message, false);
@@ -493,7 +493,7 @@ class StripeController extends Controller
             foreach ($cart as $key => $value) {
                 $amount = $value->amount;
                 $tax = $value->tax;
-                if ($value->wish_id != null) {
+                if ($value->wish_item_id != null) {
                     if ($value->wish->subscription == 2) {
                         $value->wish->fullfill_amount += $amount;
                         $value->wish->save();
@@ -502,8 +502,8 @@ class StripeController extends Controller
 
                 $data = StripePaymentItems::create([
                     'uuid' => Uuid::uuid4(),
-                    'stripe_payment_id' => $stripeid->id,
-                    'wish_item_id' => $value->wish_id ?? null,
+                    'stripe_payment_detail_id' => $stripeid->id,
+                    'wish_item_id' => $value->wish_item_id ?? null,
                     'amount' => $amount,
                     'tax' => $tax,
                 ]);

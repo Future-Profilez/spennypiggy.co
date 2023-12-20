@@ -141,7 +141,7 @@ class User extends Authenticatable
             StripePaymentItems::class,
             StripePaymentDetail::class,
             'owner_id',
-            'stripe_payment_id',
+            'stripe_payment_detail_id',
             'id',
             'id'
         );
@@ -161,7 +161,4 @@ class User extends Authenticatable
     {
         return $this->twitter_token->username ?? false;
     }
-
 }
-
-

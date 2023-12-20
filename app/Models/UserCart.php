@@ -16,7 +16,7 @@ class UserCart extends Model
         "user_id",
         'device_id',
         "owner_id",
-        "wish_id",
+        "wish_item_id",
         'amount',
         'quantity',
         'tax',
@@ -45,6 +45,6 @@ class UserCart extends Model
 
     public function wish()
     {
-        return $this->belongsTo(WishItem::class, 'wish_id');
+        return $this->belongsTo(WishItem::class, 'wish_item_id');
     }
 }

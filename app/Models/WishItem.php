@@ -78,7 +78,7 @@ class WishItem extends Model
         } else {
             $url = "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/";
         }
-        
+
         return $url;
     }
     public function categories()
@@ -95,7 +95,7 @@ class WishItem extends Model
     {
         $is_cart = false;
         if (Auth::check()) {
-            $cart = UserCart::where('user_id', Auth::id())->where('wish_id', $this->id)->where('status', 1)->first();
+            $cart = UserCart::where('user_id', Auth::id())->where('wish_item_id', $this->id)->where('status', 1)->first();
 
             if ($cart) {
                 $is_cart = true;

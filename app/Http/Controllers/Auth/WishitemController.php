@@ -422,7 +422,7 @@ class WishitemController extends Controller
             }
         }
 
-        $cart = UserCart::where('wish_id', $wishitem->id)->where(function ($q) use ($device_id) {
+        $cart = UserCart::where('wish_item_id', $wishitem->id)->where(function ($q) use ($device_id) {
             if (Auth::check()) {
                 $q->where("user_id", Auth::id());
             } else {
@@ -485,7 +485,7 @@ class WishitemController extends Controller
                 "user_id" => Auth::check() ? Auth::id() : null,
                 "device_id" => !Auth::check() ? $device_id : null,
                 "owner_id" => $wishitem->user_id,
-                'wish_id' => $wishitem->id,
+                'wish_item_id' => $wishitem->id,
                 'quantity' => 1,
                 'status' => 1,
                 'amount' => $fullfillamount,
