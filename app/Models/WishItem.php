@@ -46,13 +46,13 @@ class WishItem extends Model
         static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 
-    protected $hidden = [
-        'thumbnail',
-        'is_pin',
-        "created_at",
-        "updated_at",
-        "deleted_at"
-    ];
+    // protected $hidden = [
+    //     'thumbnail',
+    //     'is_pin',
+    //     "created_at",
+    //     "updated_at",
+    //     "deleted_at"
+    // ];
 
 
     public function user()

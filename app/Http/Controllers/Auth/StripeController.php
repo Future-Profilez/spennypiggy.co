@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\CheckoutMailToUser;
 use App\Jobs\CheckoutUser;
@@ -544,6 +545,7 @@ class StripeController extends Controller
     {
         $wish = WishItem::whereUuid($uuid)->with('user')->first();
 
+        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         if (!$wish) {
             return redirect()->back()->with('error', 'Wish item not found!');
         }
@@ -581,17 +583,23 @@ class StripeController extends Controller
                 'surprise_message'  =>  $request->message ?? NULL
             ]);
 
-            $fee_per = round(($wish->tax_amount / ($wish->price + $wish->tax_amount)) * 100, 2, PHP_ROUND_HALF_UP);
+            $price = round($wish->price, 2, PHP_ROUND_HALF_UP);
+            $tax = round($wish->tax_amount, 2, PHP_ROUND_HALF_UP);
+
             $payload = [
                 "mode"  =>  'subscription',
                 'line_items' =>  [
                     [
-                        'price' => $wish->price_id,
                         'quantity' => 1,
+                        'price_data' => [
+                            'currency' => $currency,
+                            'product' => $wish->stipe_product_id,
+                            'unit_amount_decimal' => Helpers::priceFormat($currency, round(($price + $tax), 2, PHP_ROUND_HALF_UP)) * 100
+                        ]
                     ]
                 ],
                 'subscription_data' =>  [
-                    'application_fee_percent'   =>  number_format($fee_per, 2),
+                    'application_fee_percent'   =>  number_format($tax, 2),
                     'transfer_data' => [
                         'destination' => $wish->user->account_id, // Creator's connected account ID
                     ],
