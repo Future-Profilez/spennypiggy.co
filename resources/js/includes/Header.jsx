@@ -12,7 +12,8 @@ import { add_to_cart } from '../Pages/redux/UserSlice';
 import ChangeCurrency from '@/Components/ChangeCurrency';
 import { usePage } from "@inertiajs/react";
 
-export default function Header(props) {
+export default function Header() {
+
     const { global_currency, auth } = usePage().props;
     const deviceid = DeviceID();
     const [isActive, setActive] = useState(false);
@@ -34,6 +35,8 @@ export default function Header(props) {
         fetchCounter();
     }, [cart]);
 
+    console.log("auth", auth)
+
     return <>
         <div className='blackbg headermain py-14'>
             <div className='containerbox'>
@@ -54,7 +57,7 @@ export default function Header(props) {
                     </div>
 
                     <div className='cartLogin'>
-                        {auth?.user?.stripe_details_submitted === 1 ? '' :
+                        {auth && auth.user && auth.user.stripe_details_submitted == '1' ? '' :
                             <ChangeCurrency defaultvalue={global_currency} changer={true} />
                         }
                         <Link href={route('cart')} as="button" className='cartLink d-flex me-3 position-relative'>
