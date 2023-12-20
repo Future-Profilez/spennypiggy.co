@@ -32,7 +32,6 @@ class StripePaymentItems extends Model
     ];
 
     protected $hidden   =   [
-        'id',
         'uuid',
         'created_at',
         'updated_at',
