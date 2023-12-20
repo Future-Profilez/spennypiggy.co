@@ -175,10 +175,10 @@ export default function Dashboard(props) {
                                                 name="country"
                                                 autoComplete="country-name"
                                                 className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6">
-                                                <option value={"all"}>
+                                                <option value={""}>
                                                     {"All"}
                                                 </option>
-                                                {categories &&
+                                                {categories && categories.length &&
                                                     categories.map(
                                                         (c, i) => {
                                                             return <option key={`cats-${i}`} value={c.id} >
