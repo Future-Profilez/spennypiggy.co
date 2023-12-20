@@ -131,10 +131,15 @@ export default function Wishlist(props) {
         setData("post_twitter", e.target.checked ? 1 : 0);
     }
 
-    const createWishList = (e) => {
+    const createWishList = async (e) => {
         e.preventDefault();
+       
         if(!setuped){
             errorAlert("You need to connect your account with stripe first.")
+            return false;
+        }
+        if( data && !data.category){
+            errorAlert("Please choose a category for this item.")
             return false;
         }
         if(editpop ){
@@ -153,7 +158,7 @@ export default function Wishlist(props) {
                     setTimeout(() => {
                         setClose();
                     }, 100);
-                    fetchingcats('all');
+                    fetchingcats();
                 },
                 onError: (_err) => {
                     console.error(_err);
@@ -177,7 +182,7 @@ export default function Wishlist(props) {
                     setTimeout(() => {
                         setClose();
                     }, 100);
-                    fetchingcats('all');
+                    fetchingcats();
                 },
                 onError: (_err) => {
                     console.error(_err);
@@ -451,8 +456,7 @@ export default function Wishlist(props) {
                                      :
                                         <>
                                             <strong>
-                                                Categorize this wish ( Optional
-                                                )
+                                                Categorize this wish *
                                             </strong>
                                             <p>
                                                 Organize your wishes to help

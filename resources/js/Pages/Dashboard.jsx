@@ -20,16 +20,10 @@ export default function Dashboard(props) {
 
     const { auth, user, username, global_currency, itemid } = props;
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
-
     const [loading, setLoading] = useState(false);
     const [socialLinks, setSocialLinks] = useState([]);
     const [sLinks, setLinks] = useState([]);
     const [categories, setcategories] = useState([]);
-
-    async function conCat(pinned, items) {
-        const result = pinned.concat(items);
-        setIts(result);
-    }
 
     const fetch_categories = async (e) => {
         axios.get(`/user_category/${username}`).then((resp) => {
@@ -52,24 +46,21 @@ export default function Dashboard(props) {
     const [its, setIts] = useState();
     const fetchingcats = (e) => {
         setLoading(true);
-
-        fetch(`/user_info/${username}${e ? `/${e}` : ''}`)
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then((data) => {
-                setLoading(false);
-                const result = data && data.items;
-                conCat(result && result.pinned || [], result && result.list || []);
-            })
-            .catch((error) => {
-                console.error("error", error);
-                setLoading(false);
-            });
-    };
+        fetch(`/items/${username}${e ? `/${e}` : ''}`).then((response) => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then((data) => {
+            setLoading(false);
+            const result = data && data.items;
+            setIts(result);
+        }).catch((error) => {
+            console.error("error", error);
+            setLoading(false);
+        });
+};
 
 
     const showCategory = (e) => {
