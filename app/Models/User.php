@@ -132,7 +132,7 @@ class User extends Authenticatable
 
     public function userCategories()
     {
-        return $this->hasMany(UserCategory::class);
+        return $this->hasMany(UserCategory::class, 'user_id');
     }
 
     public function paymentitems()
