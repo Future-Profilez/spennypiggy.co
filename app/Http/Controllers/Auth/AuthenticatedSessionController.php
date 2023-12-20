@@ -56,7 +56,7 @@ class AuthenticatedSessionController extends Controller
 
         return redirect(route("login"))->with("success", "Logged out successfully.");
     }
-
+ 
 
     /**
      * Private user profile info
@@ -71,7 +71,13 @@ class AuthenticatedSessionController extends Controller
         } else {
             $itemdid = false;
         }
+        
         SeoMeta::addTag('title', "{$user->name} - Spenny Piggy - Financial Gifts, Donations & Memberships");
+        SeoMeta::addTag('meta', [
+            ' name'   =>  'twitter:image',
+            'content'  =>  'https://ucarecdn.com/96eb6cc4-14a3-4f53-9a56-39acb88653f4/-/overlay/4c42426a-1396-49e2-8b46-2381a2ae5d7b/50px50p/center/'
+        ]);
+
         return Inertia::render('Dashboard', [
             "username" => $username,
             "user" => $user,

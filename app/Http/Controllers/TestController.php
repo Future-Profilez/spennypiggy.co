@@ -117,8 +117,10 @@ class TestController extends Controller
         SeoMeta::addTag('meta', [
             'viewport'  =>  'width=device-width,initial-scale=1'
         ]);
+
         SeoMeta::addTag('meta', 'name="msapplication-TileColor" content="#05EFB8"');
 
+        SeoMeta::addTag('meta', 'name="msapplication-TileColor" content="#05EFB8"');
         $str = SeoMeta::render();
         die($str);
     }

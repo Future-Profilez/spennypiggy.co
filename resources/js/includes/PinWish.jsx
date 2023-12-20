@@ -11,7 +11,7 @@ export default function PinWish({text, id, fetchingcats}){
       axios.get(`/pin-item/${id}`).then((resp) => {
          if(resp.data.status){
             successAlert(resp.data.msg);
-            fetchingcats && fetchingcats("all")
+            fetchingcats && fetchingcats()
          }else{
             errorAlert(resp.data.msg)
          }
