@@ -31,6 +31,7 @@ class WishItem extends Model
         'is_pin',
         "fullfill_amount",
         'tax_amount',
+        'delete_reason',
         'deleted_at'
     ];
 
