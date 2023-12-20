@@ -46,7 +46,13 @@ class WishItem extends Model
     }
 
     protected $hidden = [
+        'stripe_product_id',
+        'user_id',
+        'thumbnail',
+        'category',
+        'is_pin',
         "created_at",
+        "updated_at",
         "deleted_at"
     ];
 

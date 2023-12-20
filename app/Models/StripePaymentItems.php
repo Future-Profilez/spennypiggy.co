@@ -31,6 +31,14 @@ class StripePaymentItems extends Model
         'message_url'
     ];
 
+    protected $hidden   =   [
+        'id',
+        'uuid',
+        'created_at',
+        'updated_at',
+        'deleted_at'
+    ];
+
     public function payment()
     {
         return $this->belongsTo(StripePaymentDetail::class, 'stripe_payment_detail_id');

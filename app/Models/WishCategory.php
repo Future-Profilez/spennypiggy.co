@@ -17,6 +17,13 @@ class WishCategory extends Model
         'deleted_at',
     ];
 
+    protected $hidden   =   [
+        'id',
+        'created_at',
+        'updated_at',
+        'deleted_at'
+    ];
+
     public function wish()
     {
         return $this->belongsTo(WishItem::class, 'wish_item_id');
