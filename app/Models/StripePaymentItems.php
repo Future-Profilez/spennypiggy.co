@@ -31,12 +31,12 @@ class StripePaymentItems extends Model
         'message_url'
     ];
 
-    protected $hidden   =   [
-        'uuid',
-        'created_at',
-        'updated_at',
-        'deleted_at'
-    ];
+    // protected $hidden   =   [
+    //     'uuid',
+    //     'created_at',
+    //     'updated_at',
+    //     'deleted_at'
+    // ];
 
     public function payment()
     {

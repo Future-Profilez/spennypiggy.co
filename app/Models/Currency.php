@@ -26,12 +26,12 @@ class Currency extends Model
         'numToBasic',
     ];
 
-    protected $hidden   =   [
-        'id',
-        'created_at',
-        'updated_at',
-        'deleted_at'
-    ];
+    // protected $hidden   =   [
+    //     'id',
+    //     'created_at',
+    //     'updated_at',
+    //     'deleted_at'
+    // ];
 
     /**
      * Get Only Exchange Rates

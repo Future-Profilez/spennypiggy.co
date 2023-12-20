@@ -143,6 +143,7 @@ class AuthenticatedSessionController extends Controller
     public function userItems($username, $category_id = null)
     {
         $user = User::firstWhere('username', $username);
+
         if ($user) {
             $items = $user->wishItems()
                 ->when($category_id, function ($query) use ($category_id) {
