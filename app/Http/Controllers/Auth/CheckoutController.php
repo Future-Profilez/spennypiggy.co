@@ -60,7 +60,7 @@ class CheckoutController extends Controller
                     'quantity' => $dd->quantity,
                     'price_data' => [
                         'currency' => $currency,
-                        'product' => $dd->wish->stripe_product_id ?? '',
+                        'product' => $dd->wish_id == null ? $dd->priceid : $dd->wish->stripe_product_id,
                         'unit_amount_decimal' => Helpers::priceFormat('usd', $amount) * 100
                     ]
                 ];
