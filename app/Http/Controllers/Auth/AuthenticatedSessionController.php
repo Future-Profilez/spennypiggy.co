@@ -175,16 +175,11 @@ class AuthenticatedSessionController extends Controller
             if (!empty($user)) {
                 $categories = $user->userCategories();
                 // $categories = UserCategory::whereUserId($user->id)->latest()->get();
-                return response()->json([
-                    "success" => true,
-                    "categories" => $categories,
-                ]);
-            } else {
-                return response()->json([
-                    "success" => true,
-                    "categories" => [],
-                ]);
             }
+            return response()->json([
+                "success" => true,
+                "categories" => $categories,
+            ]);
         } catch (\Throwable $th) {
             //throw $th;
         }
