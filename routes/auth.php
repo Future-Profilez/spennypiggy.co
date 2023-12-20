@@ -184,7 +184,7 @@ Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->na
 
 /* wishtender */
 Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('wishtender-wishes');
-Route::post('largest-gifts', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
+Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
 
 Route::get('/leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('/leaderboard');
 

@@ -119,11 +119,6 @@ class LeaderBoardController extends Controller
                     ];
                     $rank++;
                 }
-                // return response()->json([
-                //     "success" => true,
-                //     'data' => $data,
-                //     "message" => 'Wishtender wishes get successfully',
-                // ]);
                 return Inertia::render('leaderboard/Board', [
                     "data" => $data,
                 ]);
@@ -138,102 +133,137 @@ class LeaderBoardController extends Controller
     }
 
 
-    // public function largestGifts(Request $request)
-    // {
-    //     try {
-    //         $request->validate([
-    //             "type" => ["required", "string"],
-    //         ]);
-    //         $perPage = $request->input('per_page', 10);
+    public function largestGifts($type = null)
+    {
+        try {
+            if (!empty($type) || $type != null) {
+                if ($type == 'lasthour' || $type == 'last24hour') {
+                    $lasthour = Carbon::now()->subHour(1);
+                    $last24hour = Carbon::now()->subHour(24);
 
-    //         if (!empty($request->type)) {
-    //             if ($request->type == 'lasthour') {
-    //                 $details = StripePaymentDetail::where('payment_status', 'paid')
-    //                     ->whereMonth('created_at', Carbon::now()->month)
-    //                     ->whereYear('created_at', Carbon::now()->year)
-    //                     ->with(['owner'])
-    //                     ->groupBy('owner_id')
-    //                     ->selectRaw('owner_id, COUNT(*) as payment_count')
-    //                     ->orderByDesc('payment_count')
-    //                     ->get();
+                    // $querydata = User::whereHas('paymentitems', function ($q) use ($type, $lasthour, $last24hour) {
+                    //     $q->selectRaw('owner_id, SUM(amount) as total_amount')
+                    //         ->groupBy('owner_id')
+                    //         ->orderByRaw('total_amount DESC');
+                    //     if ($type == 'lasthour') {
+                    //         $q->where('stripe_payment_details.payment_status', 'paid')
+                    //             ->where('stripe_payment_items.created_at', '>=', $lasthour);
+                    //     } else {
+                    //         $q->where('stripe_payment_details.payment_status', 'paid')
+                    //             ->where('stripe_payment_items.created_at', '>=', $last24hour);
+                    //     }
+                    // })->orWhereHas(
+                    //     'subscriptions',
+                    //     function ($q) use ($type, $lasthour, $last24hour) {
+                    //         $q->selectRaw('wish_item_subscriptions.user_id, SUM(amount) as total_amount')
+                    //             ->groupBy('wish_item_subscriptions.user_id')
+                    //             ->orderByRaw('total_amount DESC');
+                    //         if ($type == 'lasthour') {
+                    //             $q->where('wish_item_subscriptions.status', 'paid')
+                    //                 ->where('wish_item_subscriptions.created_at', '>=', $lasthour);
+                    //         } else {
+                    //             $q->where('wish_item_subscriptions.status', 'paid')
+                    //                 ->where('wish_item_subscriptions.created_at', '>=', $last24hour);
+                    //         }
+                    //     }
+                    // )->get();
+                    // $querydata = User::whereHas('paymentitems', function ($q) use ($type, $lasthour, $last24hour) {
+                    //     $q->select('owner_id')
+                    //         ->selectRaw('SUM(amount) as total_amount')
+                    //         ->groupBy('owner_id')
+                    //         ->orderByRaw('total_amount DESC');
+                    //     if ($type == 'lasthour') {
+                    //         $q->where('stripe_payment_details.payment_status', 'paid')
+                    //             ->where('stripe_payment_items.created_at', '>=', $lasthour);
+                    //     } else {
+                    //         $q->where('stripe_payment_details.payment_status', 'paid')
+                    //             ->where('stripe_payment_items.created_at', '>=', $last24hour);
+                    //     }
+                    // })->orWhereHas('subscriptions', function ($q) use ($type, $lasthour, $last24hour) {
+                    //     $q->select('wish_item_subscriptions.user_id')
+                    //         ->selectRaw('SUM(amount) as total_amount')
+                    //         ->groupBy('wish_item_subscriptions.user_id')
+                    //         ->orderByRaw('total_amount DESC');
+                    //     if ($type == 'lasthour') {
+                    //         $q->where('wish_item_subscriptions.status', 'paid')
+                    //             ->where('wish_item_subscriptions.created_at', '>=', $lasthour);
+                    //     } else {
+                    //         $q->where('wish_item_subscriptions.status', 'paid')
+                    //             ->where('wish_item_subscriptions.created_at', '>=', $last24hour);
+                    //     }
+                    // })->get();
+                    $querydata = User::whereHas('paymentitems', function ($q) use ($type, $lasthour, $last24hour) {
+                        $q->select('owner_id')
+                            ->selectRaw('SUM(amount) as total_amount')
+                            ->groupBy('owner_id')
+                            ->orderByRaw('total_amount DESC');
+                        if ($type == 'lasthour') {
+                            $q->where('stripe_payment_details.payment_status', 'paid')
+                                ->where('stripe_payment_items.created_at', '>=', $lasthour);
+                        } else {
+                            $q->where('stripe_payment_details.payment_status', 'paid')
+                                ->where('stripe_payment_items.created_at', '>=', $last24hour);
+                        }
+                    })->orWhereHas('subscriptions', function ($q) use ($type, $lasthour, $last24hour) {
+                        $q->select('wish_item_subscriptions.user_id')
+                            ->selectRaw('SUM(amount) as total_amount')
+                            ->groupBy('wish_item_subscriptions.user_id')
+                            ->orderByRaw('total_amount DESC');
+                        if ($type == 'lasthour') {
+                            $q->where('wish_item_subscriptions.status', 'paid')
+                                ->where('wish_item_subscriptions.created_at', '>=', $lasthour);
+                        } else {
+                            $q->where('wish_item_subscriptions.status', 'paid')
+                                ->where('wish_item_subscriptions.created_at', '>=', $last24hour);
+                        }
+                    })->with('paymentitems', 'subscriptions')->get();
 
-    //                 $details = $details->paginate($perPage);
-    //                 $data = [];
-    //                 $rank = ($details->currentPage() - 1) * $perPage + 1;
+                    // echo "<pre>";
+                    // print_r($querydata);
+                    // die;
 
-    //                 foreach ($details as $detail) {
-    //                     $data[] = [
-    //                         'rank' => $rank,
-    //                         'name' => $detail->owner->name ?? '',
-    //                         'username' => $detail->owner->username ?? '',
-    //                         'profile' => $detail->owner->avatar_url ?? '',
-    //                         'top' => $rank / 100 . '%',
-    //                         'payment_count' => $detail->payment_count,
-    //                     ];
-    //                     $rank++;
-    //                 }
 
-    //                 return response()->json([
-    //                     "success" => true,
-    //                     "data" => $data,
-    //                     "message" => 'monthly data get successfully',
-    //                     "pagination" => [
-    //                         "current_page" => $details->currentPage(),
-    //                         "per_page" => $details->perPage(),
-    //                         "total" => $details->total(),
-    //                     ],
-    //                 ]);
-    //             } elseif ($request->type == 'weekly') {
-    //                 $details = StripePaymentDetail::where('payment_status', 'paid')
-    //                     ->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])->with(['owner'])
-    //                     ->groupBy('owner_id')
-    //                     ->selectRaw('owner_id, COUNT(*) as payment_count')
-    //                     ->orderByDesc('payment_count')
-    //                     ->get();
+                    // echo "<pre>";
+                    // print_r($querydata);
+                    // die;
 
-    //                 $details = $details->paginate($perPage);
-    //                 $data = [];
-    //                 $rank = ($details->currentPage() - 1) * $perPage + 1;
 
-    //                 foreach ($details as $detail) {
-    //                     $data[] = [
-    //                         'rank' => $rank,
-    //                         'name' => $detail->owner->name ?? '',
-    //                         'username' => $detail->owner->username ?? '',
-    //                         'profile' => $detail->owner->avatar_url ?? '',
-    //                         'top' => $rank / 100 . '%',
-    //                         'payment_count' => $detail->payment_count,
-    //                     ];
-    //                     $rank++;
-    //                 }
+                    // $data = [];
+                    // $rank = 1;
+                    // foreach ($querydata as $query) {
+                    //     $data[] = [
+                    //         'rank' => $rank,
+                    //         'name' => $query->name ?? '',
+                    //         'username' => $query->username ?? '',
+                    //         'avatar' => $query->avatar_url,
+                    //         'coverimg' =>  $query->cover_url,
+                    //         'top' => $rank / 100,
+                    //     ];
+                    //     $rank++;
+                    // }
+                    // return response()->json([
+                    //     "success" => true,
+                    //     'data' => $data,
+                    //     "message" => 'Wishtender wishes get successfully',
+                    // ]);
+                } else {
+                    return response()->json([
+                        "success" => false,
+                        "message" => 'Please enter valid type',
+                    ]);
+                }
+            } else {
 
-    //                 return response()->json([
-    //                     "success" => true,
-    //                     "data" => $data,
-    //                     "message" => 'weekly data get successfully',
-    //                     "pagination" => [
-    //                         "current_page" => $details->currentPage(),
-    //                         "per_page" => $details->perPage(),
-    //                         "total" => $details->total(),
-    //                     ],
-    //                 ]);
-    //             } else {
-    //                 return response()->json([
-    //                     "success" => false,
-    //                     "message" => 'Please enter valid type',
-    //                 ]);
-    //             }
-    //         } else {
-    //             return response()->json([
-    //                 "success" => false,
-    //                 "message" => 'Please enter type',
-    //             ]);
-    //         }
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             "success" => false,
-    //             "message" => 'Something went wrong',
-    //         ]);
-    //     }
-    // }
+                // return Inertia::render('leaderboard/Board', [
+                //     "data" => $data,
+                // ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                "success" => false,
+                "message" => 'Something went wrong',
+                "error" => $e
+            ]);
+        }
+    }
 }
