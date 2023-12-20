@@ -82,9 +82,13 @@ class WishItem extends Model
     }
     public function categories()
     {
-        return $this->hasMany(WishCategory::class, 'wish_id');
+        return $this->hasMany(WishCategory::class, 'wish_item_id');
     }
 
+    public function wishCategories()
+    {
+        return $this->hasMany(WishCategory::class);
+    }
 
     public function getIsCartAttribute()
     {

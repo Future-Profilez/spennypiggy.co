@@ -126,9 +126,14 @@ class User extends Authenticatable
 
     public function wishItems()
     {
-        return $this->hasMany(WishItem::class, 'user_id');
+        // return $this->hasMany(WishItem::class, 'user_id');
+        return $this->hasManyThrough(WishItem::class, UserCategory::class, 'user_id', 'user_id', 'id', 'id');
     }
 
+    public function userCategories()
+    {
+        return $this->hasMany(UserCategory::class);
+    }
 
     public function paymentitems()
     {
