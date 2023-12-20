@@ -3,14 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\CurrencyExchange;
+use App\Jobs\FetchSelfTwitterData;
 use App\Mail\Welcome;
 use App\Models\Currency;
+use App\Models\TwitterToken;
 use App\Models\User;
 use App\SeoMeta;
 use App\StripeControl;
+use App\TwitterAuth1;
+use App\TwitterAuthService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
 
 class TestController extends Controller
@@ -116,5 +121,48 @@ class TestController extends Controller
 
         $str = SeoMeta::render();
         die($str);
+    }
+
+    /**
+     * Test Tweetter OAuth1.1
+     */
+    public function testX()
+    {
+        // $resp = TwitterAuth1::getInitOuthToken();
+        $api = new TwitterAuth1;
+        // $resp = $api->getOauthVerifier();
+        // if($resp['status'])
+        // {
+        //     Session::put('x-secret', $resp['secret']);
+        // }
+        $token = TwitterToken::find(2);
+        // FetchSelfTwitterData::dispatch($token);
+        // $resp = TwitterAuthService::getSelf($token);
+        $tweet = "Auto Tweet using OAuth1.1 for Spennypiggy.co";
+        $resp = TwitterAuthService::postTweet($token, $tweet);
+        return response()->json($resp);
+    }
+
+    /**
+     * Test WishItems Optimization
+     *
+     * @param int $c Category Id
+     * @return mixed
+     */
+    public function testItems($c = null)
+    {
+        $user   =   User::find(1);
+        $query  = $user->wishItems();
+        $query->when($c, function ($query) use ($c) {
+            // If $categoryID is specified, filter by the specific category
+            $query->whereHas('wishCategories', function ($query) use ($c) {
+                $query->where('user_category_id', $c);
+            });
+        });
+        $items = $query->orderBy('is_pin', 'DESC')->latest()->get();
+
+        return response()->json([
+            'items' =>  $items
+        ]);
     }
 }

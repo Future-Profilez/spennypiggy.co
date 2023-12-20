@@ -72,7 +72,7 @@ class AuthenticatedSessionController extends Controller
             $itemdid = false;
         }
         SeoMeta::addTag('title', "{$user->name} - Spenny Piggy - Financial Gifts, Donations & Memberships");
-        return Inertia::render('Dashboard', [ 
+        return Inertia::render('Dashboard', [
             "username" => $username,
             "user" => $user,
             "itemid" => $itemdid,
@@ -85,12 +85,12 @@ class AuthenticatedSessionController extends Controller
             if ($category && $user) {
                 $query = WishCategory::orderBy('created_at', 'DESC');
                 if ($category != 'all') {
-                    $query->where('category_id', $category);
+                    $query->where('user_category_id', $category);
                 }
 
                 $itemId = $query->whereHas('wish', function ($q) use ($user) {
                     $q->where('user_id', $user->id);
-                })->pluck('wish_id');
+                })->pluck('wish_item_id');
 
                 $q = WishItem::where('is_pin', 0)->with(['user']);
                 if ($category != 'all') {
@@ -123,6 +123,40 @@ class AuthenticatedSessionController extends Controller
             ]);
     }
 
+    /**
+     * Get User Wish Items
+     *
+     * @param string $username Username
+     * @param int   $category_id Category Id
+     * @return mixed
+     */
+    public function userItems($username, $category_id = null)
+    {
+        $user = User::firstWhere('username', $username);
+        if($user)
+        {
+            $items = $user->wishItems()
+                ->when($category_id, function ($query) use ($category_id) {
+                    // If $categoryID is specified, filter by the specific category
+                    $query->whereHas('wishCategories', function ($query) use ($category_id) {
+                        $query->where('user_category_id', $category_id);
+                    });
+                })
+                ->orderBy('is_pin', 'DESC')
+                ->latest()
+                ->get();
+            return response()->json([
+                'success'   => true,
+                'items'     =>  $items
+            ]);
+        }
+        return response()->json([
+            'success'   => false,
+            'items'     => [],
+            'message'   =>  'User not found'
+        ]);
+    }
+
     public function user_category($username) {
         try {
             $user = User::where('username', $username)->first();
@@ -143,7 +177,7 @@ class AuthenticatedSessionController extends Controller
             //throw $th;
         }
     }
-    
+
     public function sociallinks($username) {
         try {
             $user = User::where('username', $username)->first();

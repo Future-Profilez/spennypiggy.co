@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\FecthXDataOAuth1;
 use App\Jobs\FetchSelfTwitterData;
 use App\Models\TwitterToken;
+use App\TwitterAuth1;
 use App\TwitterAuthService;
 use Carbon\Carbon;
 use Exception;
@@ -73,6 +75,36 @@ class TwitterController extends Controller
                 return to_route('user.show', ['username' => $user->username])->with('error', 'Failed to connect. ' . $e->getMessage());
             }
         }
+        return to_route('user.show', ['username' => $user->username])->with('error', 'Invalid payload!');
+    }
+
+    /**
+     * Handle OAuth 1.1
+     *
+     * @param Request $request
+     * @return mixed
+     */
+    public function handleOauth1(Request $request)
+    {
+        $data   =   $request->all();
+        $user   =   Auth::user();
+        if(!empty($data['oauth_token'])) {
+            $api    =   new TwitterAuth1;
+            $resp   =   $api->getAccessToken($data['oauth_verifier'] ,$data['oauth_token'], Session::pull('x-secret'));
+            if($resp['status']) {
+                $token = TwitterToken::create([
+                    'user_id'   =>  $user->id,
+                    'token'     =>  $resp['token']['access_token'],
+                    'secret'    =>  $resp['token']['access_token_secret'],
+                    'expires_at'    => Carbon::now()->addSeconds(7200)
+                ]);
+                FecthXDataOAuth1::dispatch($token);
+                return to_route('user.show', ['username' => $user->username])->with('success', 'X.com successfully setup for Auto-tweets.');
+            }
+            // return response()->json($resp);
+            return to_route('user.show', ['username' => $user->username])->with('error', 'Failed to connect. '.$resp['msg'] );
+        }
+        // return response()->json($data);
         return to_route('user.show', ['username' => $user->username])->with('error', 'Invalid payload!');
     }
 

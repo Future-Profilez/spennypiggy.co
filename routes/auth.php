@@ -122,6 +122,7 @@ Route::middleware('auth')->group(function () {
         Route::prefix("twitter")->name("x.")->group(function () {
             Route::get('init', [TwitterController::class, 'authInit'])->name('init');
             Route::get('authorize', [TwitterController::class, 'handleAuth'])->name('handle');
+            // Route::get('authorize', [TwitterController::class, 'handleOauth1'])->name('handle');
         });
 
         Route::post('add-goal', [WishitemController::class, 'addTipGoal'])->name('add-goal');
@@ -201,6 +202,7 @@ Route::get('sociallinks/{username}', [AuthenticatedSessionController::class, 'so
 
 Route::get('/{username}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
 Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');
+Route::get('/items/{username}/{category_id?}', [AuthenticatedSessionController::class, 'userItems'])->name('user.items');
 Route::get('/user_category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.info');
 
 Route::prefix("wish")->name("wish.")->group(function () {
