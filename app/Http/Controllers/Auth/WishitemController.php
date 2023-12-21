@@ -560,7 +560,7 @@ class WishitemController extends Controller
                         'name' => $value[0]['owner']['name'],
                         'username' => $value[0]['owner']['username'],
                         'uuid' => $value[0]['owner']['uuid'],
-                        'default_currency' => $value[0]['owner']['currency'],
+                        'default_currency' => $value[0]['owner']['default_currency'],
                     ],
 
                 ];
