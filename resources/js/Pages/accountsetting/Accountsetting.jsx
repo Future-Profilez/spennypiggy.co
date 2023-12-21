@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import closeblacksm from '../../../assets/img/closeblacksm.png';
 import { Head, Link } from '@inertiajs/react';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
@@ -11,6 +11,7 @@ import ChangeCurrency from '@/Components/ChangeCurrency';
 import LinkTwitter from '../twitter/LinkTwitter';
 
 export default function Accountsetting(props) {
+
     const {auth, user, global_currency} = props;
     const [passClose, setSassClose] = useState(null);
 
@@ -21,6 +22,8 @@ export default function Accountsetting(props) {
         }, 100);
     }
 
+
+    
 
     return (
         <Authenticated user={user}  auth={auth.user} >

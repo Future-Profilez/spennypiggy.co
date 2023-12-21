@@ -27,7 +27,7 @@ export default function Wishtracker(props) {
         return <span>{truncatedString}</span>;
     };
 
-    const { format } = PriceFormat();
+    const { formatMultiPrice } = PriceFormat();
     const { auth, user, tracks, user_subs, creator_subs    } = props;
     const [stab, setStab] = useState(1)
     const handleTabs = (e) => {
@@ -92,9 +92,9 @@ export default function Wishtracker(props) {
                                 </div>
                                 <div className="text-muted rightbar d-flex align-items-center ">
                                     {n && n.sender ?
-                                        <div className="identity text-danger text-nowrap" >-{format(n.amount*(+n.quantity||1))}</div>
+                                        <div className="identity text-danger text-nowrap" >-{formatMultiPrice(n.amount*(+n.quantity||1))}</div>
                                         :
-                                        <div className="identity text-success text-nowrap" >+{format(n.amount*(+n.quantity||1))}</div>
+                                        <div className="identity text-success text-nowrap" >+{formatMultiPrice(n.amount*(+n.quantity||1))}</div>
                                     }
                                     <div className="angle-icon">
                                         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" > <g id="SVGRepo_bgCarrier" stroke-width="0"></g> <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round" ></g> <g id="SVGRepo_iconCarrier">{" "}
@@ -126,7 +126,7 @@ export default function Wishtracker(props) {
                                                     <td>
                                                         <p>{n.wish && n.wish.wishname || 'Surprise Gift'}</p>
                                                         <p className="text-muted text-small">{n && n.surprise_message}</p>
-                                                        <p className="text-muted text-small">{n.quantity || 1} x {format(n.amount)}</p>
+                                                        <p className="text-muted text-small">{n.quantity || 1} x {formatMultiPrice(n.amount)}</p>
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -244,7 +244,7 @@ export default function Wishtracker(props) {
                                                         </li>
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                             <p className="text-muted">Price</p>
-                                                            <p className="text-dark text-capitalize" >{format(s && s.amount)}</p>
+                                                            <p className="text-dark text-capitalize" >{formatMultiPrice(s && s.amount)}</p>
                                                         </li>
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                             <p className="text-muted">Start Date</p>
@@ -287,7 +287,7 @@ export default function Wishtracker(props) {
                                                         </li>
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                             <p className="text-muted">Price</p>
-                                                            <p className="text-dark text-capitalize" >{format(s && s.wish_item && s.wish_item.price)}</p>
+                                                            <p className="text-dark text-capitalize" >{formatMultiPrice(s && s.wish_item && s.wish_item.price)}</p>
                                                         </li>
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                             <p className="text-muted">Start Date</p>

@@ -1,25 +1,24 @@
+import React , { useEffect, useRef, useState } from "react";
 import LoaderButton from "@/Components/LoaderButton";
 import {  useForm } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
-import GlobalUploader from "@/uploadcare/Uploader";
+import  GlobalUploader from '@/uploadcare/Uploader';
 import st from "../../../css/uploader.module.css";
-import { useEffect, useRef, useState } from "react";
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
 import Accordion from "react-bootstrap/Accordion";
 import uploadedimg from "../../../assets/img/uploadedimg.png";
-import Popup from "@/Components/Popup";
+import Popup from '@/Components/Popup';
 import { router } from "@inertiajs/react";
 import {  Pagination, Navigation  } from 'swiper/modules';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
-import PinWish from "@/includes/PinWish";
-
 
 export default function Wishlist(props) {
-    const { categories, auth, fetchingcats, updateCategory,  item, editpop, openPop, setuped } = props;
+
+    const { categories, fetchingcats, updateCategory,  currency, item, editpop, openPop, setuped } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
     const [defaultKey, setDefaultKey] = useState(item && item.subscription !== null ? +(item.subscription) : null);
@@ -83,11 +82,6 @@ export default function Wishlist(props) {
     const onSlideChange = (swiper) => {
         setData("thumbnail", imageLinks[swiper && swiper.activeIndex]);
     };
-
-    // useEffect(()=>{
-    //     setData("thumbnail", imageLinks[0]);
-    // }, [item && item.uuid]);
-
     const setSubs = (e) => {
         setData("subscription", e);
         setRepeat(true);
@@ -133,9 +127,14 @@ export default function Wishlist(props) {
 
     const createWishList = async (e) => {
         e.preventDefault();
+
+        if(currency === null){
+            errorAlert("Please choose a default currency.")
+            return false;
+        }
        
         if(!setuped){
-            errorAlert("You need to connect your account with stripe first.")
+           
             return false;
         }
         if( data && !data.category){
@@ -466,7 +465,7 @@ export default function Wishlist(props) {
                                             </p>
 
                                             <div className="catslists">
-                                                {categories && categories.length &&
+                                                {categories && categories.length ? 
                                                     categories.map((c, i) => {
                                                         return (
                                                             <>
@@ -486,7 +485,7 @@ export default function Wishlist(props) {
                                                                 </div>
                                                             </>
                                                         );
-                                                    })}
+                                                }) : ''}
                                             </div>
 
                                             <div className="cate-items mb-3 mt-4 d-flex ">

@@ -1,3 +1,6 @@
+.alert {
+  border-radius: 12px;
+}
 body {
   background: #000;
 }

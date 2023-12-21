@@ -35,7 +35,6 @@ export default function Header() {
         fetchCounter();
     }, [cart]);
 
-    console.log("auth", auth)
 
     return <>
         <div className='blackbg headermain py-14'>

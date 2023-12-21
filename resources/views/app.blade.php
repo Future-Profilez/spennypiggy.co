@@ -27,15 +27,16 @@
     <meta property="og:image" content="{{ URL::asset('/siteicon.png') }}" />
     <meta property="og:site_name" content="spennypiggy.co" />
     <meta property="og:description" content="Send tributes, adopt bills & more. Safe for Spicy Creators who receive 100% payouts!" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Financial Gifts, Donations & Memberships" />
-    <meta name="twitter:description" content="Send tributes, adopt bills & more. Safe for Spicy Creators who receive 100% payouts!" />
-    <meta name="twitter:image" content="{{ URL::asset('/siteicon.png') }}" />
-    <meta name="twitter:site" content="@spennypiggy" />
-    <meta name="twitter:image:alt" content="Financial Gifts, Donations & Memberships" />
-    <meta name="twitter:image:src" content="{{ URL::asset('/siteicon.png') }}" />
+    
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content="Financial Gifts, Donations & Memberships" />
+    <meta property="twitter:description" content="Send tributes, adopt bills & more. Safe for Spicy Creators who receive 100% payouts!" />
+    <meta property="twitter:image" content="{{ URL::asset('/siteicon.png') }}" />
+    <meta property="twitter:site" content="@spennypiggy" />
+    <meta property="twitter:image:alt" content="Financial Gifts, Donations & Memberships" />
+    <meta property="twitter:image:src" content="{{ URL::asset('/siteicon.png') }}" />
+    
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <!-- <script async type="text/javascript" src="/service-worker.js"></script> -->
     <script type="text/javascript" src="//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js"></script>
     {{-- @laravelPWA --}}
     @routes
