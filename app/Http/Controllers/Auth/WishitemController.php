@@ -560,7 +560,9 @@ class WishitemController extends Controller
                         'name' => $value[0]['owner']['name'],
                         'username' => $value[0]['owner']['username'],
                         'uuid' => $value[0]['owner']['uuid'],
+                        'default_currency' => $value[0]['owner']['currency'],
                     ],
+
                 ];
 
                 $total = 0;
@@ -593,7 +595,7 @@ class WishitemController extends Controller
                             'category' => $v['wish']['category'],
                             'url' => $v['url'],
                             'quantity' => $v['quantity'],
-                            'owner' => $v['owner']
+
                         ];
                     } else {
                         $cart[$key]['items'][$k] = [
@@ -605,7 +607,6 @@ class WishitemController extends Controller
                             'url' => $v['url'],
                             'surprise_message' => $v['surprisemessage'],
                             'quantity' => $v['quantity'],
-                            'owner' => $v['owner']
                         ];
                     }
                     // if ($v['wish']['subscription'] == 2) {
