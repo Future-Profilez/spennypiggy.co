@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { Link, router, useForm } from "@inertiajs/react";
 import PriceFormat from "@/includes/PriceFormat";
-import DeviceID from "@/includes/DeviceID";
 import cartproductimg from '../../../assets/img/cartproductimg.png';
 
 export default function SubCheckout(props) {
 
     const {auth, wish, reccure} = props;
-    const { format } = PriceFormat();
+    const { formatMultiPrice } = PriceFormat();
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
     const [email, setEmail] = useState(auth && auth.user && auth.user.email || '');
 
@@ -63,7 +62,7 @@ export default function SubCheckout(props) {
                             <div className='cartProRtbox mt-3 items-center'>
                                
                                 <div className='cartPric pe-4'>
-                                    {format(wish.price)}
+                                    {formatMultiPrice(wish.price)}
                                 </div>
                             </div>
                         </div>
@@ -73,19 +72,19 @@ export default function SubCheckout(props) {
                         <div className="cartSubTotal text-right mt-1">
                             <span>Platform Fee :</span>{" "}
                             <strong className="text-end">
-                                {format(wish.tax_amount || "")}
+                                {formatMultiPrice(wish.tax_amount || "")}
                             </strong>
                         </div>
                         <div className="cartSubTotal text-right mt-1">
                             <span>Subtotal :</span>{" "}
                             <strong className="text-end">
-                                {format(wish.price || "")}
+                                {formatMultiPrice(wish.price || "")}
                             </strong>
                         </div>
                         <div className="cartSubTotal text-right mt-1">
                             <strong className="text-dark">Total :</strong>{" "}
                             <strong className="text-end">
-                                {format(wish.tax_amount + wish.price || "")}
+                                {formatMultiPrice(wish.tax_amount + wish.price || "")}
                             </strong>
                         </div>
                     </div>
