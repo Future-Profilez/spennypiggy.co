@@ -10,11 +10,12 @@ export default function PriceFormat(){
      * @return {string}
      */
 
-    const formatMultiPrice = (amount, currency = 'GBP') => {
+    const formatMultiPrice = (amount, currency) => {
+
 
         const { rates, global_currency } = usePage().props;
 
-        const upCorrency = currency.toUpperCase();
+        const upCorrency = currency && currency.toUpperCase() || global_currency.toUpperCase();
         const up_global_currency = global_currency.toUpperCase();
         const conversion_rate = rates[upCorrency];
         const gbpamount  = amount/conversion_rate
