@@ -72,11 +72,16 @@ class AuthenticatedSessionController extends Controller
         } else {
             $itemdid = false;
         }
-
-        $image = "https://ucarecdn.com/2ab6bf9f-c6d1-4905-acaf-499b041da7ea/-/preview/900x900/-/text_align/center/center/-/font/14/000000/-/text/100px30p/100p,100p/spennypiggy.co~s".$user->username."/-/text_align/center/center/-/font/19/e6ea82/-/text/100px78p/100p,100p/".$user->name."/";
+        $userfield = $user->name;
+        $userName = str_replace(' ', '%20', $userfield);
+        $image = "https://ucarecdn.com/2ab6bf9f-c6d1-4905-acaf-499b041da7ea/-/preview/900x900/-/text_align/center/center/-/font/14/000000/-/text/100px30p/100p,100p/spennypiggy.co~s".$user->username."/-/text_align/center/center/-/font/19/e6ea82/-/text/100px78p/100p,100p/".$userName."/";
         SeoMeta::addTag('title', "{$user->name} - Spenny Piggy - Financial Gifts, Donations & Memberships");
         SeoMeta::addTag('meta', [
-            ' name'   =>  'twitter:image',
+            'name'   =>  'twitter:card',
+            'content'  =>  'summary_large_image'
+        ]);
+        SeoMeta::addTag('meta', [
+            'property'   =>  'twitter:image',
             'content'  =>  $image
         ]);
         SeoMeta::addTag('meta', [
@@ -87,11 +92,6 @@ class AuthenticatedSessionController extends Controller
             'name'   =>  'twitter:image:src',
             'content'  =>  $image
         ]);
-        SeoMeta::addTag('meta', [
-            'name'   =>  'twitter:image:src',
-            'content'  =>  $image
-        ]);
-
         return Inertia::render('Dashboard', [
             "username" => $username,
             "user" => $user,
