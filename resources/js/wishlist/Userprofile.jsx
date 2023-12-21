@@ -6,7 +6,7 @@ const ShareProfile = React.lazy(() => import('./ShareProfile'));
 const SendSurprise = React.lazy(() => import('./SendSurprise'));
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 
-export default function Userprofile({auth, user, links, IsloggedIn, w }) {
+export default function Userprofile({auth, user, links, IsloggedIn, w, currency  }) {
 
     return (
         <div className="userprofilesec rounded-3xl whbg">
