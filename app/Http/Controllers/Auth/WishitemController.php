@@ -593,6 +593,7 @@ class WishitemController extends Controller
                             'category' => $v['wish']['category'],
                             'url' => $v['url'],
                             'quantity' => $v['quantity'],
+                            'owner' => $v['owner']
                         ];
                     } else {
                         $cart[$key]['items'][$k] = [
@@ -604,6 +605,7 @@ class WishitemController extends Controller
                             'url' => $v['url'],
                             'surprise_message' => $v['surprisemessage'],
                             'quantity' => $v['quantity'],
+                            'owner' => $v['owner']
                         ];
                     }
                     // if ($v['wish']['subscription'] == 2) {
