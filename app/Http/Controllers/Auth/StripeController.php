@@ -594,7 +594,7 @@ class StripeController extends Controller
                         'quantity' => 1,
                         'price_data' => [
                             'currency' => $currency,
-                            'product' => $wish->stipe_product_id,
+                            'product' => $wish->stripe_product_id,
                             'unit_amount_decimal' => Helpers::priceFormat($wish->currency, $amount, $currency) * 100
                         ]
                     ]
