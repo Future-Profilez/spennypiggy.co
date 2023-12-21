@@ -80,19 +80,20 @@ class User extends Authenticatable
     {
         $url = false;
         if (!empty($this->avatar)) {
-            $api = Uploadcare::getApiObj()->file();
-            $info = $api->fileInfo($this->avatar)->getContentInfo();
-            $width = $info->getImage()->getWidth();
-            $height = $info->getImage()->getHeight();
+            // $api = Uploadcare::getApiObj()->file();
+            // $info = $api->fileInfo($this->avatar)->getContentInfo();
+            // $width = $info->getImage()->getWidth();
+            // $height = $info->getImage()->getHeight();
 
-            $watermark = WatermarkHelper::getWatermarkImage($width, $height);
-            $check = "";
-            $wm = "spennypiggy.co~s" . $this->username;
-            $textWm = WatermarkHelper::addUcTextWatermark($width, $height);
-            $wm = urlencode($wm);
-            $fontsize = $textWm['fontsize'];
-            $check = "-/preview/-/text_align/left/center/-/font/$fontsize/fff/-/text/80px8p/8p,100p/$wm/";
-            $url = Uploadcare::getUrl($this->avatar, $this->type, $watermark, $check);
+            // $watermark = WatermarkHelper::getWatermarkImage($width, $height);
+            // $check = "";
+            // $wm = "spennypiggy.co~s" . $this->username;
+            // $textWm = WatermarkHelper::addUcTextWatermark($width, $height);
+            // $wm = urlencode($wm);
+            // $fontsize = $textWm['fontsize'];
+            // $check = "-/preview/-/text_align/left/center/-/font/$fontsize/fff/-/text/80px8p/8p,100p/$wm/";
+            // $url = Uploadcare::getUrl($this->avatar, $this->type, $watermark, $check);
+            $url = "https://ucarecdn.com/" . $this->avatar . '/';
         }
         return $url;
     }
@@ -102,19 +103,20 @@ class User extends Authenticatable
     {
         $url = false;
         if (!empty($this->cover)) {
-            $api = Uploadcare::getApiObj()->file();
-            $info = $api->fileInfo($this->cover)->getContentInfo();
-            $width = $info->getImage()->getWidth();
-            $height = $info->getImage()->getHeight();
+            // $api = Uploadcare::getApiObj()->file();
+            // $info = $api->fileInfo($this->cover)->getContentInfo();
+            // $width = $info->getImage()->getWidth();
+            // $height = $info->getImage()->getHeight();
 
-            $watermark = WatermarkHelper::getWatermarkImage($width, $height);
-            $check = "";
-            $wm = "spennypiggy.co~s" . $this->username;
-            $textWm = WatermarkHelper::addUcTextWatermark($width, $height);
-            $wm = urlencode($wm);
-            $fontsize = $textWm['fontsize'];
-            $check = "-/preview/-/text_align/left/center/-/font/$fontsize/fff/-/text/80px8p/8p,100p/$wm/";
-            $url = Uploadcare::getUrl($this->cover, $this->type, $watermark, $check);
+            // $watermark = WatermarkHelper::getWatermarkImage($width, $height);
+            // $check = "";
+            // $wm = "spennypiggy.co~s" . $this->username;
+            // $textWm = WatermarkHelper::addUcTextWatermark($width, $height);
+            // $wm = urlencode($wm);
+            // $fontsize = $textWm['fontsize'];
+            // $check = "-/preview/-/text_align/left/center/-/font/$fontsize/fff/-/text/80px8p/8p,100p/$wm/";
+            // $url = Uploadcare::getUrl($this->cover, $this->type, $watermark, $check);
+            $url = "https://ucarecdn.com/" . $this->cover . '/';
         }
         return $url;
     }
@@ -126,8 +128,8 @@ class User extends Authenticatable
 
     public function wishItems()
     {
-        // return $this->hasMany(WishItem::class, 'user_id');
-        return $this->hasManyThrough(WishItem::class, UserCategory::class, 'user_id', 'user_id', 'id', 'id');
+        return $this->hasMany(WishItem::class, 'user_id');
+        // return $this->hasManyThrough(WishItem::class, UserCategory::class, 'user_id', 'user_id', 'id', 'id');
     }
 
     public function user_categories()

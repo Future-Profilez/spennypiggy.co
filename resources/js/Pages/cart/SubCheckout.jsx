@@ -1,15 +1,16 @@
 import { useState } from "react";
-import { Link, router, useForm } from "@inertiajs/react";
+import { Link, useForm } from "@inertiajs/react";
 import PriceFormat from "@/includes/PriceFormat";
-import DeviceID from "@/includes/DeviceID";
 import cartproductimg from '../../../assets/img/cartproductimg.png';
+import { useAlerts } from "@/Components/Alerts";
 
 export default function SubCheckout(props) {
 
     const {auth, wish, reccure} = props;
-    const { format } = PriceFormat();
+    const { formatMultiPrice } = PriceFormat();
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
     const [email, setEmail] = useState(auth && auth.user && auth.user.email || '');
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
     const {data, setData, post, processing, errors} = useForm({
         name: name,
@@ -23,12 +24,22 @@ export default function SubCheckout(props) {
         e.preventDefault();
         post(route(`wish.subscribe.checkout`,{uuid:wish.uuid, reccure:reccure}), {
             preserveScroll:true
+            // onSuccess: (resp) => {
+            //     if (resp.props.flash?.error) {
+            //           errorAlert(resp.props.flash?.error);
+            //     }
+            // },
+            // onError: (_err) => {
+            //    console.error(_err);
+            // //    if (resp.props.flash?.error) {
+            // //     errorAlert(resp.props.flash?.error);
+            // //     }
+            // }
         });
     }
 
     const [subtotal, setsubtotal] = useState();
     // const [fee, setFee] = useState(0.2 * subtotal);
-
 
     return (
         <div className={`px-2`}>
@@ -54,7 +65,7 @@ export default function SubCheckout(props) {
                                 </div>
                                 <div>
                                     <div className='cartProdTitle ps-3'>{wish.wishname}</div>
-                                    {data.message ? <div className='surprise-message ps-3'>Surprise Message : {data.message}</div> : ''}
+                                    {/* {data.message ? <div className='surprise-message ps-3'>Surprise Message : {data.message}</div> : ''} */}
                                     <div className="badge bg-info text-dark me-4 ms-3 ">
                                     Pay {reccure == 'onetime' ? `Onetime` : wish.subscription_period}
                                 </div>
@@ -63,7 +74,7 @@ export default function SubCheckout(props) {
                             <div className='cartProRtbox mt-3 items-center'>
                                
                                 <div className='cartPric pe-4'>
-                                    {format(wish.price)}
+                                    {formatMultiPrice(wish.price, wish && wish.currency)}
                                 </div>
                             </div>
                         </div>
@@ -73,19 +84,19 @@ export default function SubCheckout(props) {
                         <div className="cartSubTotal text-right mt-1">
                             <span>Platform Fee :</span>{" "}
                             <strong className="text-end">
-                                {format(wish.tax_amount || "")}
+                                {formatMultiPrice(wish.tax_amount || "", wish && wish.currency)}
                             </strong>
                         </div>
                         <div className="cartSubTotal text-right mt-1">
                             <span>Subtotal :</span>{" "}
                             <strong className="text-end">
-                                {format(wish.price || "")}
+                                {formatMultiPrice(wish.price || "", wish && wish.currency)}
                             </strong>
                         </div>
                         <div className="cartSubTotal text-right mt-1">
                             <strong className="text-dark">Total :</strong>{" "}
                             <strong className="text-end">
-                                {format(wish.tax_amount + wish.price || "")}
+                                {formatMultiPrice(wish.tax_amount + wish.price || "", wish && wish.currency)}
                             </strong>
                         </div>
                     </div>

@@ -105,6 +105,7 @@ class StripeController extends Controller
                 $account = StripeControl::createAccount($payload);
                 $user->account_id = $account->id;
                 $user->country = $country;
+                $user->default_currency = $account->default_currency;
                 $user->save();
             } catch (Exception $e) {
                 return redirect(route("stripe.index"))->with("error", "Account creation error:" . $e->getMessage());
@@ -585,7 +586,7 @@ class StripeController extends Controller
 
             $price = round($wish->price, 2, PHP_ROUND_HALF_UP);
             $tax = round($wish->tax_amount, 2, PHP_ROUND_HALF_UP);
-
+            $amount = round(($price + $tax), 2, PHP_ROUND_HALF_UP);
             $payload = [
                 "mode"  =>  'subscription',
                 'line_items' =>  [
@@ -593,8 +594,8 @@ class StripeController extends Controller
                         'quantity' => 1,
                         'price_data' => [
                             'currency' => $currency,
-                            'product' => $wish->stipe_product_id,
-                            'unit_amount_decimal' => Helpers::priceFormat($currency, round(($price + $tax), 2, PHP_ROUND_HALF_UP)) * 100
+                            'product' => $wish->stripe_product_id,
+                            'unit_amount_decimal' => Helpers::priceFormat($wish->currency, $amount, $currency) * 100
                         ]
                     ]
                 ],
@@ -801,8 +802,99 @@ class StripeController extends Controller
     }
 
 
-    public function tipToJar($uuid)
-    {
-        $goal = TipGoal::where('uuid', $uuid)->first();
-    }
+    // public function tipToJar($uuid)
+    // {
+    //     $goal = TipGoal::where('uuid', $uuid)->first();
+
+
+    //     $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+    //     if (!$wish) {
+    //         return redirect()->back()->with('error', 'Wish item not found!');
+    //     }
+
+    //     if ($request->isMethod("POST")) {
+    //         $request->validate([
+    //             'name' => [
+    //                 'required',
+    //                 'string',
+    //                 'min:3',
+    //                 'max:50'
+    //             ],
+    //             'email' =>  [
+    //                 'required',
+    //                 'email:dns'
+    //             ],
+    //             'message'   =>  [
+    //                 'sometimes',
+    //                 'nullable',
+    //                 'string',
+    //                 'max:800'
+    //             ]
+    //         ]);
+
+    //         $sub = WishItemSubscription::create([
+    //             'wish_item_id'  =>  $wish->id,
+    //             'user_id'       =>  Auth::id(),
+    //             'guest_name'    =>  $request->name,
+    //             'guest_email'   =>  $request->email,
+    //             'currency'      =>  $wish->currency,
+    //             'amount'        =>  $wish->price,
+    //             'tax'           =>  $wish->tax_amount,
+    //             'recurring_for' =>  $reccure,
+    //             'recurring_type' =>  $wish->subscription_period,
+    //             'surprise_message'  =>  $request->message ?? NULL
+    //         ]);
+
+    //         $price = round($wish->price, 2, PHP_ROUND_HALF_UP);
+    //         $tax = round($wish->tax_amount, 2, PHP_ROUND_HALF_UP);
+
+    //         $payload = [
+    //             "mode"  =>  'subscription',
+    //             'line_items' =>  [
+    //                 [
+    //                     'quantity' => 1,
+    //                     'price_data' => [
+    //                         'currency' => $currency,
+    //                         'product' => $wish->stipe_product_id,
+    //                         'unit_amount_decimal' => Helpers::priceFormat($currency, round(($price + $tax), 2, PHP_ROUND_HALF_UP)) * 100
+    //                     ]
+    //                 ]
+    //             ],
+    //             'subscription_data' =>  [
+    //                 'application_fee_percent'   =>  number_format($tax, 2),
+    //                 'transfer_data' => [
+    //                     'destination' => $wish->user->account_id, // Creator's connected account ID
+    //                 ],
+    //                 'on_behalf_of'  => $wish->user->account_id,
+    //                 // 'cancel_at_period_end'  =>  $reccure == 'onetime',
+    //                 'description'   => "Subscription for {$wish->wishname} of {$wish->user->username}."
+    //             ],
+    //             'customer_email'    =>  $request->email,
+    //             'success_url'       =>  route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
+    //             'cancel_url'       =>  route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
+    //         ];
+
+    //         try {
+    //             $session = StripeControl::createCheckoutSession($payload);
+    //             $sub->update([
+    //                 'session_id' =>  $session->id
+    //             ]);
+
+    //             return Inertia::location($session->url);
+    //         } catch (Exception $e) {
+    //             return back()->with('error', $e->getMessage());
+    //         }
+    //         // return response()->json([
+    //         //     'success'   => true,
+    //         //     'session'   => $session
+    //         // ]);
+
+
+    //     }
+
+    //     return Inertia::render('cart/SubCheckout', [
+    //         'wish'  => $wish,
+    //         'reccure'   => $reccure
+    //     ]);
+    // }
 }

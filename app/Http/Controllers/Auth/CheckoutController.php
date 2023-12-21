@@ -61,7 +61,7 @@ class CheckoutController extends Controller
                     'price_data' => [
                         'currency' => $currency,
                         'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
-                        'unit_amount_decimal' => Helpers::priceFormat($currency, $amount) * 100
+                        'unit_amount_decimal' => Helpers::priceFormat($dd->owner->default_currency, $amount, $currency) * 100
                     ]
                 ];
 

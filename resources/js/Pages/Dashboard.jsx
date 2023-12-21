@@ -11,6 +11,8 @@ const LoadingScreen = React.lazy(() => import('@/includes/LoadingScreen'));
 const Social = React.lazy(() => import('./Auth/Social'));
 const VersionUpdate = React.lazy(() => import('@/Components/VersionUpdate'));
 const PaymentDashboard = React.lazy(() => import('./stripe/PaymentDashboard'));
+const ChangeCurrency = React.lazy(() => import('@/Components/ChangeCurrency'));
+const Popup = React.lazy(() => import('@/Components/Popup'));
 import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
@@ -77,6 +79,19 @@ export default function Dashboard(props) {
 
     const w = useWidthCount();
 
+    const currencyaction = (e) => { 
+        if(e == 'open'){
+            setOpenCurrency(true)
+        }else { 
+            setOpenCurrency(false)
+        }
+    }
+    const [openCurrency, setOpenCurrency] = useState(null);
+    useEffect(()=>{
+        if(global_currency == null){
+            setOpenCurrency(true)
+        }
+    })
 
     return <>
         <Guest auth={auth.user} user={user}>
@@ -189,7 +204,9 @@ export default function Dashboard(props) {
                                             </select>
                                         </div>
                                         {IsloggedIn ? (
-                                            <Wishlist updateCategory={fetch_categories}
+                                            <Wishlist 
+                                                updateCategory={fetch_categories}
+                                                currency={global_currency}
                                                 setuped={auth.user && auth.user.stripe_details_submitted == 1 ? true : false}
                                                 fetchingcats={fetchingcats}
                                                 categories={categories}
@@ -251,6 +268,11 @@ export default function Dashboard(props) {
                     </div>
                 </div>
             </div>
+     
+            {IsloggedIn ? <Popup action={openCurrency}  space='4' modalclassName="pinkmodal" >
+                <ChangeCurrency currencyaction={currencyaction} defaultvalue={global_currency} />
+            </Popup> : ''}
+            
         </Guest>
     </>
 }

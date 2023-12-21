@@ -10,8 +10,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { add_to_cart } from "../Pages/redux/UserSlice";
 
 export default function SendSurprise({auth, owner}) {
+   
    const deviceID  = DeviceID();
-   const { format } = PriceFormat();
+   const { formatMultiPrice } = PriceFormat();
    const { successAlert, errorAlert, errorsHandling } = useAlerts();
    const [close, setClose] = useState();
    const { data, setData, post, processing, errors, reset } = useForm({
@@ -80,7 +81,7 @@ export default function SendSurprise({auth, owner}) {
                      placeholder="Enter amount.. "
                   />
                   <p className="mt-1">
-                     The amount is set to {format(data.amount)} in the wisher's
+                     The amount is set to {formatMultiPrice(data.amount)} in the wisher's
                      currency
                   </p>
             </div>

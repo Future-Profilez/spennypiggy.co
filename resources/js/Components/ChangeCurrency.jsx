@@ -7,7 +7,7 @@ import { useState } from "react";
 import { usePage, Link } from '@inertiajs/react';
 import Dropdown from 'react-bootstrap/Dropdown';
 
-export default function ChangeCurrency({defaultvalue, changer}) {
+export default function ChangeCurrency({defaultvalue, changer, currencyaction}) {
 
    const { flash } = usePage().props;
    const { successAlert, errorAlert } = useAlerts();
@@ -51,6 +51,9 @@ export default function ChangeCurrency({defaultvalue, changer}) {
               if (flash?.info) {
                   successAlert(flash.info);
               }
+              if(currencyaction){
+               currencyaction('close')
+              }
             },
             onError: (_err) => {
                console.error(_err);
@@ -83,8 +86,8 @@ export default function ChangeCurrency({defaultvalue, changer}) {
          <>
             <h2 className="text-uppercase font-GillSans pb-4 font-large"> Display Currency </h2>
             <div className="form-field mb-4">
-                  <label className="d-block text-start mb-2">Display Currency</label>
-                  <Select  classNamePrefix="react-select" className="react-select my-4 "
+                  <label className="d-block text-start">Please choose as your default display currency.</label>
+                  <Select  classNamePrefix="react-select" className="react-select mb-4 mt-2 "
                      options={currencies}
                      placeholder={data.currency|| 'Select..'}
                      defaultValue={data.currency}
