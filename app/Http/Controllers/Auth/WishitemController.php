@@ -471,9 +471,10 @@ class WishitemController extends Controller
             ]);
         } else {
             if ($wishitem->subscription == 2) {
-                $fullfillamount = $amount;
-                $tax = round(($amount * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
-                $createpriceid = $amount + $tax;
+                $price = Helpers::priceFormat(request()->cookie('currency'), $amount, $wishitem->user->default_currency);
+                $fullfillamount = $price;
+                $tax = round(($price * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
+                $createpriceid = $price + $tax;
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripe_client = $stripe->products->create([
                     'name' => $wishitem->wishname,
