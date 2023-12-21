@@ -442,9 +442,11 @@ class WishitemController extends Controller
             $cart->status = 1;
             $cart->is_subscribed = ($sub == 'onetime' || $sub == false) ? 0 : 1;
             if ($wishitem->subscription == 2) {
-                $fullfillamount = $amount;
-                $tax =  round(($amount * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
-                $createpriceid = $amount + $tax;
+
+                $price = Helpers::priceFormat(request()->cookie('currency'), $amount, $cart->owner->default_currency);
+                $fullfillamount = $price;
+                $tax =  round(($price * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
+                $createpriceid = $price + $tax;
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripe_client = $stripe->products->create([
                     'name' => $wishitem->wishname,
@@ -662,6 +664,7 @@ class WishitemController extends Controller
                     'name' => $value[0]['owner']['name'] ?? null,
                     'username' => $value[0]['owner']['username'] ?? null,
                     'uuid' => $value[0]['owner']['uuid'] ?? null,
+                    'default_currency' => $value[0]['owner']['default_currency']
                 ],
             ];
 
@@ -728,14 +731,17 @@ class WishitemController extends Controller
             return redirect()->back()->with("error", "Max limit for message is 100 words");
         }
 
-        $price = round($request->amount, 2, PHP_ROUND_HALF_UP);
-        $tax = round(($request->amount * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
+        $owner = User::where('id', $request->owner_id)->first();
+
+        $price = Helpers::priceFormat(request()->cookie('currency'), $request->amount, $owner->default_currency);
+        // $price = round($request->amount, 2, PHP_ROUND_HALF_UP);
+        $tax = round(($price * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
 
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
         $stripe_client = $stripe->products->create([
             'name' => 'Surprise Gift',
             'images' => ['https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/'],
-            "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => ($price + $tax) * 100],
+            "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100],
         ]);
 
         if (!Auth::check()) {

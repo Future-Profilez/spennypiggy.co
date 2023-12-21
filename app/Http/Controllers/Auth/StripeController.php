@@ -586,7 +586,7 @@ class StripeController extends Controller
 
             $price = round($wish->price, 2, PHP_ROUND_HALF_UP);
             $tax = round($wish->tax_amount, 2, PHP_ROUND_HALF_UP);
-
+            $amount = round(($price + $tax), 2, PHP_ROUND_HALF_UP);
             $payload = [
                 "mode"  =>  'subscription',
                 'line_items' =>  [
@@ -595,7 +595,7 @@ class StripeController extends Controller
                         'price_data' => [
                             'currency' => $currency,
                             'product' => $wish->stipe_product_id,
-                            'unit_amount_decimal' => Helpers::priceFormat($currency, round(($price + $tax), 2, PHP_ROUND_HALF_UP)) * 100
+                            'unit_amount_decimal' => Helpers::priceFormat($wish->currency, $amount, $currency) * 100
                         ]
                     ]
                 ],
