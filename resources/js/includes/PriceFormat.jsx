@@ -9,8 +9,11 @@ export default function PriceFormat(){
      * @return {string}
      */
     const formatMultiPrice = (amount, currency = 'GBP') => {
+
         const {rates, global_currency} = usePage().props;
+
         const upCorrency = currency.toUpperCase();
+
         if(global_currency && rates[upCorrency] || false){
             const toGBP = rates[upCorrency] * amount;
             const toGlobal = toGBP * rates[global_currency];
