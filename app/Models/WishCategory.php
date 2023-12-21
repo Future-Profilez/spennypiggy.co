@@ -17,11 +17,11 @@ class WishCategory extends Model
         'deleted_at',
     ];
 
-    // protected $hidden   =   [
-    //     'created_at',
-    //     'updated_at',
-    //     'deleted_at'
-    // ];
+    protected $hidden   =   [
+        'created_at',
+        'updated_at',
+        'deleted_at'
+    ];
 
     public function wish()
     {

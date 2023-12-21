@@ -40,16 +40,16 @@ class Helpers
     }
 
 
-    public static function priceFormat($currency, $amount)
+    public static function priceFormat($currency1, $amount, $currency2)
     {
-        $cur = Currency::where('ISO', strtoupper($currency))->first();
+        $def = Currency::where('ISO', strtoupper($currency1))->first();
 
-        $gbp = Currency::where('ISO', 'GBP')->first();
+        $prof = Currency::where('ISO', strtoupper($currency2))->first();
 
-        $rate = $cur->conversion_rate * $amount;
+        $gbp_price = $amount / $def->conversion_rate;
 
-        $real = $rate * $gbp->conversion_rate;
+        $prof_cur_price = $prof->conversion_rate * $gbp_price;
 
-        return round($real, 2, PHP_ROUND_HALF_UP);
+        return round($prof_cur_price, 2, PHP_ROUND_HALF_UP);
     }
 }

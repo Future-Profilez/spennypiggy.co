@@ -29,14 +29,14 @@ class WishItemSubscription extends Model
         'upcoming_payment'
     ];
 
-    // protected $hidden   =   [
-    //     'session_id',
-    //     'wish_item_id',
-    //     'user_id',
-    //     'created_at',
-    //     'updated_at',
-    //     'deleted_at'
-    // ];
+    protected $hidden   =   [
+        'session_id',
+        'wish_item_id',
+        'user_id',
+        'created_at',
+        'updated_at',
+        'deleted_at'
+    ];
 
     protected $casts = [
         'end'   =>  'datetime',

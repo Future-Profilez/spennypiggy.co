@@ -198,10 +198,13 @@ class WishitemController extends Controller
             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive,
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         }
-        $price = round($request->price, 2, PHP_ROUND_HALF_UP);
+
+        $user = User::find(Auth::id());
+        $price = Helpers::priceFormat($request->cookie('currency'), $request->price, $user->default_currency);
+
+        // $price = round($request->price, 2, PHP_ROUND_HALF_UP);
         $taxamount = round(($price * env('TAX_PERCENTAGE', 20) / 100), 2, PHP_ROUND_HALF_UP);
         $createpriceid = $price + $taxamount;
-        $user = User::find(Auth::id());
 
         $wish = WishItem::create([
             "user_id" => Auth::id(),

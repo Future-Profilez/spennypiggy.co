@@ -24,6 +24,16 @@ class TipGoal extends Model
     ];
 
 
+    protected $hidden = [
+        'id',
+        'user_id',
+        'price_id',
+        'product_id',
+        'created_at',
+        'updated_at',
+    ];
+
+
     public function user()
     {
         return $this->belongsTo(TipGoal::class, 'user_id');

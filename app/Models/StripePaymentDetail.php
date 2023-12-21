@@ -34,18 +34,18 @@ class StripePaymentDetail extends Model
         'deleted_at',
     ];
 
-    // protected $hidden   =   [
-    //     'id',
-    //     'uuid',
-    //     'session_id',
-    //     'payment_method_config_detail_id',
-    //     'payment_method_type',
-    //     'session_created',
-    //     'session_expires_at',
-    //     'created_at',
-    //     'updated_at',
-    //     'deleted_at'
-    // ];
+    protected $hidden   =   [
+        'id',
+        'uuid',
+        'session_id',
+        'payment_method_config_detail_id',
+        'payment_method_type',
+        'session_created',
+        'session_expires_at',
+        'created_at',
+        'updated_at',
+        'deleted_at'
+    ];
 
     public static function boot()
     {
