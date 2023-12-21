@@ -250,8 +250,8 @@ class StripeController extends Controller
             $stripePaymentDetail->refresh();
 
             return Inertia::location($sessionCreate->url);
-        } catch (\Throwable $th) {
-            return back()->with('error', 'Something went wrong.');
+        } catch (Exception $e) {
+            return back()->with('error', 'Something went wrong. Error: '.$e->getMessage());
         }
     }
 
@@ -546,7 +546,6 @@ class StripeController extends Controller
     {
         $wish = WishItem::whereUuid($uuid)->with('user')->first();
 
-        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         if (!$wish) {
             return redirect()->back()->with('error', 'Wish item not found!');
         }
@@ -554,9 +553,9 @@ class StripeController extends Controller
         if ($request->isMethod("POST")) {
             $request->validate([
                 'name' => [
-                    'required',
+                    'nullable',
+                    'sometimes',
                     'string',
-                    'min:3',
                     'max:50'
                 ],
                 'email' =>  [
@@ -574,7 +573,7 @@ class StripeController extends Controller
             $sub = WishItemSubscription::create([
                 'wish_item_id'  =>  $wish->id,
                 'user_id'       =>  Auth::id(),
-                'guest_name'    =>  $request->name,
+                'guest_name'    =>  $request->name ?? NULL,
                 'guest_email'   =>  $request->email,
                 'currency'      =>  $wish->currency,
                 'amount'        =>  $wish->price,
@@ -584,23 +583,40 @@ class StripeController extends Controller
                 'surprise_message'  =>  $request->message ?? NULL
             ]);
 
-            $price = round($wish->price, 2, PHP_ROUND_HALF_UP);
-            $tax = round($wish->tax_amount, 2, PHP_ROUND_HALF_UP);
-            $amount = round(($price + $tax), 2, PHP_ROUND_HALF_UP);
-            $payload = [
-                "mode"  =>  'subscription',
-                'line_items' =>  [
-                    [
-                        'quantity' => 1,
-                        'price_data' => [
-                            'currency' => $currency,
-                            'product' => $wish->stripe_product_id,
-                            'unit_amount_decimal' => Helpers::priceFormat($wish->currency, $amount, $currency) * 100
+            $currency   =   strtolower($request->cookie("currency", "GBP"));
+            $tax = number_format($wish->tax_amount, 2);
+            $price = number_format($wish->price, 2);
+
+            $fee_per = number_format(($tax/($tax+$price)) * 100, 2);
+            if( $currency == strtolower($wish->currency)){
+                $items = [
+                    "price" =>  $wish->price_id,
+                    'quantity'      =>  1,
+                ];
+            } else {
+
+                $amount = $price + $tax;
+                $unit_amount = Helpers::priceFormat($wish->currency, $amount, $currency) * 100;
+                $tax =   Helpers::priceFormat($wish->currency, $tax, $currency);
+                $items  =   [
+                    'quantity'      =>  1,
+                    'price_data'    =>   [
+                        'currency'  =>  $currency,
+                        'product'   =>  $wish->stripe_product_id,
+                        'unit_amount_decimal'   =>  $unit_amount,
+                        'recurring' =>  [
+                            'interval'  =>  StripeControl::$periods[$wish->subscription_period],
+                            'interval_count'    =>  1
                         ]
                     ]
-                ],
+                ];
+            }
+            $payload = [
+                "mode"  =>  'subscription',
+                "currency"  =>  strtolower($request->cookie("currency", "GBP")),
+                'line_items' =>  [$items],
                 'subscription_data' =>  [
-                    'application_fee_percent'   =>  number_format($tax, 2),
+                    'application_fee_percent'   =>  $fee_per,
                     'transfer_data' => [
                         'destination' => $wish->user->account_id, // Creator's connected account ID
                     ],
@@ -621,6 +637,7 @@ class StripeController extends Controller
 
                 return Inertia::location($session->url);
             } catch (Exception $e) {
+                $sub->delete();
                 return back()->with('error', $e->getMessage());
             }
             // return response()->json([

@@ -200,7 +200,7 @@ class WishitemController extends Controller
         }
 
         $user = User::find(Auth::id());
-        $price = Helpers::priceFormat($request->cookie('currency'), $request->price, $user->default_currency);
+        $price = Helpers::priceFormat($request->cookie('currency', 'GBP'), $request->price, $user->default_currency);
 
         // $price = round($request->price, 2, PHP_ROUND_HALF_UP);
         $taxamount = round(($price * env('TAX_PERCENTAGE', 20) / 100), 2, PHP_ROUND_HALF_UP);
