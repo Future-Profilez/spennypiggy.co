@@ -5,7 +5,8 @@
     <meta charset="utf-8">
     <meta name="robots" content="index, follow">
     <meta name="googlebot" content="index,follow" />
-   
+    {{-- <title inertia>    le> --}}
+    {!! \App\SeoMeta::render() !!}
     <link rel="canonical" href="https://spennypiggy.co" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link rel="manifest" href="{{ URL::asset('/manifest.json') }}" />
@@ -37,9 +38,10 @@
     <!-- <script async type="text/javascript" src="/service-worker.js"></script> -->
     <script type="text/javascript" src="//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js"></script>
     
-    {{-- <title inertia>    le> --}}
-    {!! \App\SeoMeta::render() !!}
+    
+
     {{-- @laravelPWA --}}
+
     @routes
     @viteReactRefresh
     @vite(['resources/js/app.jsx'])

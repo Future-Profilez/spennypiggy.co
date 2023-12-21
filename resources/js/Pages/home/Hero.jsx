@@ -17,8 +17,11 @@ export default function Hero({auth}) {
                <h3 className="welcomeTitle shadow-yellow text-uppercase font-GillSans my-3">
                    Get Your Lifestyle funded! 🎁
                </h3>
-               <div className="itsfree  mb-4 ps-0 text-start">
+               <div className="itsfree text-white mb-2 ps-0 text-start">
                 Proudly 🏳️‍🌈 Owned and Operated
+               </div>
+               <div className="itsfree mb-4 ps-0 text-start">
+               Its’s Free 🎉
                </div>
                <div className="mt-4 pt-2 wishlistbtn wishlistbtnFixed ">
                   {auth?.user?.username ? 

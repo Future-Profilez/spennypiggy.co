@@ -15,23 +15,16 @@ export default function Stripe(props) {
         termaccept: ''
     });
 
-    const [country, setCountry] = useState(null);
+    const [country, setCountry] = useState('GB');
     const getCountry = (e) => {
         setCountry(e);
     }
 
-    const connectStripe = (e) => {
-        if (props?.auth?.user?.account_id || false) {
-            get(route("stripe.connect", { step: "init" }));
-        }
-        else { post(route("stripe.connect", { step: "init" })) }
-    }
-
     const checkTerms = () => {
-        if (!country) {
-            errorAlert("Please choose your country.");
-            return false;
-        }
+        // if (!country) {
+        //     errorAlert("Please choose your country.");
+        //     return false;
+        // }
         if(checkRef.current.checked){
             window.location.href = route("stripe.connect", {step:"init", country:country});
             return true;
@@ -75,14 +68,16 @@ export default function Stripe(props) {
                             </li>
                         </ul>
 
-                        <strong className='d-block w-100 pt-3 mb-1'>Choose Country</strong>
-                        <Countries send={getCountry} />
+                        <p className=' alert alert-success text-center font-bold my-4' >Currently, we're accepting creators exclusively from the UK. Stay tuned for updates on international opportunities.</p>
+
+                        {/* <strong className='d-block w-100 pt-3 mb-1'>Choose Country</strong>
+                        <Countries send={getCountry} /> */}
 
                         <div className='termselect mt-4'>
                             <label htmlFor="termaccept">
                                 <p><input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept"
                                     required onChange={(e) => setData("termaccept", e.target.value)}></input>
-                                    I confirm that I will only use Spenny Piggy to receive gifts, tips, donations. I will not sell servicers or goods on my wishlist and confirm that nothing on the prohibited list above will be listed
+                                    I confirm that I will only use Spenny Piggy to receive gifts, tips, donations. I will not sell servicers or goods on my wishlist and confirm that nothing on the prohibited list above will be listed.
                                 </p></label>
                         </div>
 

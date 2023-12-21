@@ -72,15 +72,26 @@ class AuthenticatedSessionController extends Controller
         } else {
             $itemdid = false;
         }
+
+        $image = "https://ucarecdn.com/2ab6bf9f-c6d1-4905-acaf-499b041da7ea/-/preview/900x900/-/text_align/center/center/-/font/14/000000/-/text/100px30p/100p,100p/spennypiggy.co~s".$user->username."/-/text_align/center/center/-/font/19/e6ea82/-/text/100px78p/100p,100p/".$user->name."/";
         SeoMeta::addTag('title', "{$user->name} - Spenny Piggy - Financial Gifts, Donations & Memberships");
         SeoMeta::addTag('meta', [
             ' name'   =>  'twitter:image',
-            'content'  =>  'https://ucarecdn.com/5354001d-972c-460f-9c48-72b96fd4f5c1/-/overlay/4c42426a-1396-49e2-8b46-2381a2ae5d7b/50px50p/center/'
+            'content'  =>  $image
         ]);
         SeoMeta::addTag('meta', [
             'property'   =>  'og:image',
-            'content'  =>  'https://ucarecdn.com/5354001d-972c-460f-9c48-72b96fd4f5c1/-/overlay/4c42426a-1396-49e2-8b46-2381a2ae5d7b/50px50p/center/'
+            'content'  =>  $image
         ]);
+        SeoMeta::addTag('meta', [
+            'name'   =>  'twitter:image:src',
+            'content'  =>  $image
+        ]);
+        SeoMeta::addTag('meta', [
+            'name'   =>  'twitter:image:src',
+            'content'  =>  $image
+        ]);
+
         return Inertia::render('Dashboard', [
             "username" => $username,
             "user" => $user,
