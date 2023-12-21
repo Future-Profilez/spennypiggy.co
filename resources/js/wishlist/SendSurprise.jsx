@@ -10,6 +10,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { add_to_cart } from "../Pages/redux/UserSlice";
 
 export default function SendSurprise({auth, owner}) {
+   
    const deviceID  = DeviceID();
    const { formatMultiPrice } = PriceFormat();
    const { successAlert, errorAlert, errorsHandling } = useAlerts();
