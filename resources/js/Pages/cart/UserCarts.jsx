@@ -88,6 +88,8 @@ export default function UserCarts(props) {
         updateTotals(0);
     }, [items]);
 
+   
+
     return (
         <div className={`${cartCleared ? "d-none" : ''} px-2`}>
             <div className="my-4 cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
@@ -106,7 +108,8 @@ export default function UserCarts(props) {
                     </p>
                     <div className="CartItemBox">
                         {items && items.map((c, i) => {
-                            return <CartItem quantityUpdate={quantityUpdate} removeCart={removeCart} data={c} key={i} />;
+                            return <CartItem currency={datas?.user && datas?.user?.default_currency} quantityUpdate={quantityUpdate} 
+                            removeCart={removeCart} data={c} key={i} />;
                         })}
                     </div>
 
@@ -114,19 +117,19 @@ export default function UserCarts(props) {
                         <div className="cartSubTotal text-right mt-1">
                             <span>Platform Fee :</span>{" "}
                             <strong className="text-end">
-                                {formatMultiPrice(fee || "")}
+                                {formatMultiPrice(fee || "", datas?.user && datas?.user?.default_currency)}
                             </strong>
                         </div>
                         <div className="cartSubTotal text-right mt-1">
                             <span>Subtotal :</span>{" "}
                             <strong className="text-end">
-                                {formatMultiPrice(subtotal || "")}
+                                {formatMultiPrice(subtotal || "", datas?.user && datas?.user?.default_currency)}
                             </strong>
                         </div>
                         <div className="cartSubTotal text-right mt-1">
                             <strong className="text-dark">Total :</strong>{" "}
                             <strong className="text-end">
-                                {formatMultiPrice(fee + subtotal || "")}
+                                {formatMultiPrice(fee + subtotal || "", datas?.user && datas?.user?.default_currency)}
                             </strong>
                         </div>
                     </div>
