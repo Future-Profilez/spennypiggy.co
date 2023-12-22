@@ -38,6 +38,18 @@
     
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <script type="text/javascript" src="//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js"></script>
+   
+    <script>
+        const css1 = [
+            "font-size: 15px",
+            "display:block",
+            "color:#37e1ad",
+            "width: 100%",
+            "padding:30px 30px",
+        ];
+        console.log("%cWelcome to Spenny Piggy.", css1.join(";"));
+    </script>
+   
     {{-- @laravelPWA --}}
     @routes
     @viteReactRefresh

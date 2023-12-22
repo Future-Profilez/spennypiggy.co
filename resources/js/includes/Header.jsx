@@ -141,7 +141,7 @@ export default function Header() {
                         <li><Link onClick={toggleClass} href={route("how-it-works")} >How it works</Link></li>
                         <li><a onClick={toggleClass} target='_blank' href="https://intercom.help/spenny-piggy" >FAQ's</a></li>
                         <li><a onClick={toggleClass} href="https://blog.spennypiggy.co" >Blog</a></li>
-                        <li><a onClick={(toggleClass)} className='livechat' >Need help ?</a></li>
+                        <li><div  onClick={(toggleClass)} className='livechat link' >Need help ?</div></li>
 
                         {auth && auth?.user?.username ?
                             <li className='d-block d-lg-none' ><Link onClick={toggleClass} method="get" href={route('logout')} >Logout</Link></li>

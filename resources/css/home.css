@@ -31,7 +31,7 @@ body {
 .menuImg{width:50%;border-right:1px solid var(--yellow);padding:120px 40px 40px 40px;display:inline-flex;align-items:flex-start;align-content:flex-start;justify-content:center;}
 .menuList{width:50%;display:flex;align-items:center;align-content:center;justify-content:flex-start;padding:25px 100px 25px 70px;}
 .menuList ul li{margin:0 0 10px;}
-.menuList ul li a{color:var(--light-Yellow,var(--yellow));font-family:var(--heading-font);font-size:6vh;font-style:normal;text-transform:uppercase;}
+.menuList ul li a, .menuList ul li .link{color:var(--light-Yellow,var(--yellow));font-family:var(--heading-font);font-size:6vh;font-style:normal;text-transform:uppercase;}
 .Open .MegaMenu{display:flex;opacity:1;}
 /* end */
 .rotate-btn a,.rotate-btn button{transform:rotate(-7deg);}
@@ -298,13 +298,13 @@ div#msgText p b{font-weight:700 !important;padding:0 4px;color:#000;}
 @media(max-width:1500px){.loveboxes{padding:0 20px;}
 .loveboxes img{max-width:160px;}
 .loveboxes h3{font-size:38px !important;line-height:inherit !important;}
-/* .menuList ul li a{font-size:50px;line-height:52px;}
+/* .menuList ul li a, .menuList ul li .link{font-size:50px;line-height:52px;}
 */
-.menuList ul li a{font-size:6vh;}
+.menuList ul li a, .menuList ul li .link{font-size:6vh;}
 }
 @media(max-width:1240px){.containerbox{max-width:1140px;}
 .finish .btn-pink-lg{width:100%;}
-.menuList ul li a{font-size:4vh;}
+.menuList ul li a, .menuList ul li .link{font-size:4vh;}
 }
 @media(max-width:1199px){.containerbox{max-width:970px;}
 }
@@ -382,7 +382,7 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .closemega svg{width:43px;top:10px;}
 .headtitle{display:none;}
 .menuList ul li{margin-bottom:10px;}
-.menuList ul li a{font-size:3vh;}
+.menuList ul li a, .menuList ul li .link{font-size:3vh;}
 .wishbanner{display:none;}
 .accountphotosm{display:block;width:100%;}
 .socialmedia{margin-top:5px!important;}

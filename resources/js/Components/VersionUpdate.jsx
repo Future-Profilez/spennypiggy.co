@@ -33,7 +33,7 @@ export default function VersionUpdate(){
    }, []);
 
    return <>
-   <style jsx >{`.newVer{padding:15px;border-radius:10px;margin-bottom:20px;}
+   <style jsx={"true"}>{`.newVer{padding:15px;border-radius:10px;margin-bottom:20px;}
    .newVer p{color:var(--white);margin:0;}
    button.updatever{background:transparent;border:0;color:#ff6aff;font-weight:600;}
    .newVer p{color:transparent;background:linear-gradient(to left,#e3e780,#ff007b);-webkit-background-clip:text;font-size:17px;-webkit-animation:gradient-1 2s linear infinite;-moz-animation:gradient-1 2s linear infinite;-o-animation:gradient-1 2s linear infinite;animation:gradient-1 2s linear infinite;}
