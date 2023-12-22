@@ -819,81 +819,98 @@ class StripeController extends Controller
     }
 
 
-    // public function tipToJar(Request $request, $uuid)
-    // {
-    //     $goal = TipGoal::where('uuid', $uuid)->first();
+    public function tipToJar(Request $request, $uuid)
+    {
+        $goal = TipGoal::where('uuid', $uuid)->first();
 
 
-    //     $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
-    //     if (!$goal) {
-    //         return redirect()->back()->with('error', 'No tip jar found!');
-    //     }
+        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+        if (!$goal) {
+            return redirect()->back()->with('error', 'No tip jar found!');
+        }
 
-    //     if ($request->isMethod("POST")) {
-    //         $request->validate([
-    //             'name' => [
-    //                 'required',
-    //                 'string',
-    //                 'min:3',
-    //                 'max:50'
-    //             ],
-    //             'message'   =>  [
-    //                 'sometimes',
-    //                 'nullable',
-    //                 'string',
-    //                 'max:800'
-    //             ]
-    //         ]);
+        if ($request->isMethod("POST")) {
+            $request->validate([
+                'name' => [
+                    'required',
+                    'string',
+                    'min:3',
+                    'max:50'
+                ],
+                'email' =>  [
+                    'required',
+                    'email:dns'
+                ],
+                'message'   =>  [
+                    'sometimes',
+                    'nullable',
+                    'string',
+                    'max:800'
+                ]
+            ]);
 
-    //         $sub = TipGoalsPayment::create([
-    //             'tip_goal_id'  =>  $goal->id,
-    //             'user_id'       =>  Auth::id(),
-    //             'guest_name'    =>  $request->name,
-    //             'currency'      =>  $goal->currency,
-    //             'amount'        =>  $goal->default_price,
-    //             'tax'           =>  $goal->tax_amount,
-    //             'message'  =>  $request->message ?? NULL
-    //         ]);
+            $price = number_format($goal->default_price, 2);
+            $tax = number_format($goal->tax_amount, 2);
 
-    //         $price = round($goal->default_price, 2, PHP_ROUND_HALF_UP);
-    //         $tax = round($goal->tax_amount, 2, PHP_ROUND_HALF_UP);
+            $total_price = number_format($price * $request->quantity, 2);
+            $total_tax = $tax * $request->quantity;
 
-    //         $payload = [
-    //             'success_url' => route('checkout.success', [$id]),
-    //             'cancel_url' => route('checkout.cancel', [$id]),
-    //             'line_items' => $lineItems,
-    //             'mode' => 'payment',
-    //             'payment_intent_data' => [
-    //                 'transfer_data' => [
-    //                     'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
-    //                 ],
-    //                 'application_fee_amount' => $taxNew * 100,
-    //                 'on_behalf_of'  => $getdata[0]->owner->account_id,
-    //             ],
-    //             'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
-    //         ];
+            $payload = [
+                "mode"  =>  'payment',
+                'line_items' =>  [
+                    [
+                        'quantity' => $request->quantity,
+                        'price_data' => [
+                            'currency' => $currency,
+                            'product' => $goal->product_id,
+                            'unit_amount_decimal' => Helpers::priceFormat($goal->currency, round(($price + $tax), 2, PHP_ROUND_HALF_UP), $currency) * 100
+                        ]
+                    ]
+                ],
+                'payment_intent_data' => [
+                    'transfer_data' => [
+                        'destination' => $goal->user->account_id, // Creator's connected account ID
+                    ],
+                    'application_fee_amount' => $total_tax * 100,
+                    'on_behalf_of'  => $goal->user->account_id,
+                ],
+                'customer_email' =>  $request->email,
+                'success_url'       =>  route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
+                'cancel_url'       =>  route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
+            ];
 
-    //         try {
-    //             $session = StripeControl::createCheckoutSession($payload);
-    //             $sub->update([
-    //                 'session_id' =>  $session->id
-    //             ]);
+            $sub = TipGoalsPayment::create([
+                'tip_goal_id'  =>  $goal->id,
+                'user_id'       =>  Auth::id() ?? NULL,
+                'guest_name'    =>  $request->name,
+                'guest_email'    =>  $request->email,
+                'currency'      =>  $goal->currency,
+                'amount'        =>  $total_price,
+                'tax'           =>  $total_tax,
+                'message'  =>  $request->message ?? NULL
+            ]);
 
-    //             return Inertia::location($session->url);
-    //         } catch (Exception $e) {
-    //             return back()->with('error', $e->getMessage());
-    //         }
-    //         // return response()->json([
-    //         //     'success'   => true,
-    //         //     'session'   => $session
-    //         // ]);
+            try {
+                $session = StripeControl::createCheckoutSession($payload);
+                $sub->update([
+                    'session_id' =>  $session->id
+                ]);
+
+                return Inertia::location($session->url);
+            } catch (Exception $e) {
+                return back()->with('error', $e->getMessage());
+            }
+            // return response()->json([
+            //     'success'   => true,
+            //     'session'   => $session
+            // ]);
 
 
-    //     }
+        }
 
-    //     return Inertia::render('cart/SubCheckout', [
-    //         'wish'  => $wish,
-    //         'reccure'   => $reccure
-    //     ]);
-    // }
+        return Inertia::render('cart/SubCheckout', [
+            'wish'  => $wish,
+            'reccure'   => $reccure
+        ]);
+    }
 }
