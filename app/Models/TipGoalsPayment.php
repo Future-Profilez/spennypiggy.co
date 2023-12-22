@@ -9,6 +9,20 @@ class TipGoalsPayment extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'id',
+        'uuid',
+        'session_id',
+        'tip_goal_id',
+        'user_id',
+        'guest_name',
+        'guest_email',
+        'currency',
+        'amount',
+        'tax',
+        'message',
+        'status',
+    ];
 
     protected $hidden = [
         'id',
