@@ -32,7 +32,9 @@ class WishItem extends Model
         "fullfill_amount",
         'tax_amount',
         'delete_reason',
-        'deleted_at'
+        'deleted_at',
+        'edited_reason',
+        'edited_status',
     ];
 
     protected $appends = [
