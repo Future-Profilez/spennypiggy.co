@@ -117,7 +117,7 @@ export default function Dashboard(props) {
                                         links={socialLinks}
                                         user={user}
                                     />
-                                    <AddGoal />
+                                    {/* <AddGoal /> */}
                                     <div className="userProfileDate pt-0">
                                         {IsloggedIn ? (
                                             <>
