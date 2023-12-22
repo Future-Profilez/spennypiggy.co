@@ -31,6 +31,7 @@ export default function Header() {
         });
     }
 
+
     useEffect(() => {
         fetchCounter();
     }, [cart]);
@@ -57,7 +58,9 @@ export default function Header() {
 
                     <div className='cartLogin'>
                         {auth && auth.user && auth.user.stripe_details_submitted == '1' ? '' :
+                            router.page && router.page && router.page.component == 'Dashboard' ? 
                             <ChangeCurrency defaultvalue={global_currency} changer={true} />
+                            : ''
                         }
                         <Link href={route('cart')} as="button" className='cartLink d-flex me-3 position-relative'>
                             <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36" fill="none">
