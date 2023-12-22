@@ -357,10 +357,9 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .headtitle{font-size:20px;}
 .spennylogo img{max-width:150px;}
 .welcomeHeading{font-size:50px;line-height:55px;}
-.welcomeTitle{margin-bottom:50px;font-size:22px;line-height:25px;}
+.welcomeTitle{ font-size:24px;line-height:35px;}
 .wishlistbtn .w-2\/5{width:15rem}
-.itsfree{padding-inline-start:4rem; text-align: center !important; }
-.welcomeTitle{margin-bottom:3rem;}
+.itsfree{padding-inline-start:4rem; }
 .headingMd{font-size:45px;line-height:50px;}
 .headingSm{font-size:40px;line-height:43px;}
 .funboxs{height:340px;}
@@ -411,14 +410,13 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .welcomeLeft{width:100%;text-align:center;}
 .welcomeHeading{margin-bottom:25px!important;}
 .welcomeTitle.shadow-yellow{text-shadow:1px 1px 0 var(--yellow);}
-.welcomeTitle{margin-bottom:0rem;}
 .wishlistbtn{text-align:center;display:flex;justify-content:center;}
 .wishlistbtnFixed{position:fixed;bottom:5px;z-index:9;border:none;width:87%;transform:inherit!important;margin:auto;left:0;right:0;}
 .wishlistbutton:not(.log):before{content:'+';font-size:25px;margin-right:6px;}
 .wishlistbtnFixed a{border:1px solid var(--mint) !important;background:var(--black);box-shadow:none!important;transform:inherit!important;border-radius:19px !important;width:100%!important;margin:auto;padding:27px 20px!important;font-size:22px!important;}
 .creatorslider .swiper-slide.swiper-slide-next .happyclientSec{transform:inherit;}
 .wishlistbtnFixed{margin:0px !important;width:auto;padding:15px !important;bottom:0 !important;}
-.itsfree{padding-inline-start:0;}
+.itsfree{padding-inline-start:0; text-align: center !important;}
 .addsocial ul li{width:auto;padding:0 20px;}
 .addsocial ul li a{font-size:20px;line-height:20px;}
 .addsocial ul li a svg{width:24px;height:24px;}

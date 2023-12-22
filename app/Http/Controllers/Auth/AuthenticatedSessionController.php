@@ -78,15 +78,15 @@ class AuthenticatedSessionController extends Controller
         
         SeoMeta::addTag('title', "{$user->name} - Spenny Piggy - Financial Gifts, Donations & Memberships");
         
-        // SeoMeta::addTag('meta',[ 'name' => 'twitter:title','content' => 'Financial Gifts,Donations & Memberships' ]);
-        // SeoMeta::addTag('meta',[ 'name' => 'twitter:card','content' => 'summary_large_image' ]);
-        // SeoMeta::addTag('meta',[ 'name' => 'twitter:description','content' => 'Send tributes,adopt bills & more. Safe for Spicy Creators who receive 100% payouts!' ]);
-        SeoMeta::addTag('meta',[ 'name' => 'twitter:image','content' => $image ]);
-        // SeoMeta::addTag('meta',[ 'name' => 'twitter:site','content' => '@spennypiggy' ]);
-        // SeoMeta::addTag('meta',[ 'name' => 'twitter:creator','content' => '@spennypiggy' ]);
-        // SeoMeta::addTag('meta',[ 'name' => 'twitter:image:alt','content' => 'Financial Gifts,Donations & Memberships' ]);
-        // SeoMeta::addTag('meta',[ 'name' => 'twitter:image:src','content' => $image ]);
-        SeoMeta::addTag('meta',[ 'name' => 'og:image','content' => $image ]);
+        SeoMeta::addTag('meta',[ 'property' => 'twitter:title','content' => 'Financial Gifts,Donations & Memberships' ]);
+        SeoMeta::addTag('meta',[ 'property' => 'twitter:card','content' => 'summary_large_image' ]);
+        SeoMeta::addTag('meta',[ 'property' => 'twitter:description','content' => 'Send tributes,adopt bills & more. Safe for Spicy Creators who receive 100% payouts!' ]);
+        SeoMeta::addTag('meta',[ 'property' => 'twitter:image','content' => $image ]);
+        SeoMeta::addTag('meta',[ 'property' => 'twitter:site','content' => '@spennypiggy' ]);
+        SeoMeta::addTag('meta',[ 'property' => 'twitter:creator','content' => '@spennypiggy' ]);
+        SeoMeta::addTag('meta',[ 'property' => 'twitter:image:alt','content' => 'Financial Gifts,Donations & Memberships' ]);
+        SeoMeta::addTag('meta',[ 'property' => 'twitter:image:src','content' => $image ]);
+        SeoMeta::addTag('meta',[ 'property' => 'og:image','content' => $image ]);
          
         return Inertia::render('Dashboard', [
             "username" => $username,
