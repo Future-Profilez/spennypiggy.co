@@ -9,6 +9,7 @@ use App\Jobs\CheckoutUser;
 use App\Jobs\SendRenewMail;
 use App\Jobs\SubscribedMail;
 use App\Jobs\SubscriptionCancelAtEnd;
+use App\Jobs\TipJarPurchased;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\StripeWebhookStatus;
@@ -855,6 +856,17 @@ class StripeController extends Controller
             $total_price = number_format($price * $request->quantity, 2);
             $total_tax = $tax * $request->quantity;
 
+            $pay = TipGoalsPayment::create([
+                'tip_goal_id'  =>  $goal->id,
+                'user_id'       =>  Auth::id() ?? NULL,
+                'guest_name'    =>  $request->name,
+                'guest_email'    =>  $request->email,
+                'currency'      =>  $goal->currency,
+                'amount'        =>  $total_price,
+                'tax'           =>  $total_tax,
+                'message'  =>  $request->message ?? NULL
+            ]);
+
             $payload = [
                 "mode"  =>  'payment',
                 'line_items' =>  [
@@ -875,24 +887,13 @@ class StripeController extends Controller
                     'on_behalf_of'  => $goal->user->account_id,
                 ],
                 'customer_email' =>  $request->email,
-                'success_url'       =>  route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
-                'cancel_url'       =>  route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
+                'success_url'       =>  route('wish.subscribe.handle', ['uuid' => $pay->uuid, 'status' => "success"]),
+                'cancel_url'       =>  route('wish.subscribe.handle', ['uuid' => $pay->uuid, 'status' => "cancel"]),
             ];
-
-            $sub = TipGoalsPayment::create([
-                'tip_goal_id'  =>  $goal->id,
-                'user_id'       =>  Auth::id() ?? NULL,
-                'guest_name'    =>  $request->name,
-                'guest_email'    =>  $request->email,
-                'currency'      =>  $goal->currency,
-                'amount'        =>  $total_price,
-                'tax'           =>  $total_tax,
-                'message'  =>  $request->message ?? NULL
-            ]);
 
             try {
                 $session = StripeControl::createCheckoutSession($payload);
-                $sub->update([
+                $pay->update([
                     'session_id' =>  $session->id
                 ]);
 
@@ -900,17 +901,46 @@ class StripeController extends Controller
             } catch (Exception $e) {
                 return back()->with('error', $e->getMessage());
             }
-            // return response()->json([
-            //     'success'   => true,
-            //     'session'   => $session
-            // ]);
-
-
         }
 
-        return Inertia::render('cart/SubCheckout', [
-            'wish'  => $wish,
-            'reccure'   => $reccure
-        ]);
+        // return Inertia::render('cart/SubCheckout', [
+        //     'wish'  => $wish,
+        //     'reccure'   => $reccure
+        // ]);
+    }
+
+
+    /**
+     * Handle Checkout Session
+     *
+     * @param string $uuid Subscription UUID
+     * @param string $status Status of Subscription
+     * @return mixed
+     */
+    public function handleTipJarPayment($uuid, $status)
+    {
+        $tip_pay = TipGoalsPayment::whereUuid($uuid)->first();
+        if (!$tip_pay) {
+            return to_route('home')->with("error", 'Insufficient data!');
+        }
+        try {
+            $session = StripeControl::getCheckoutSession($tip_pay->session_id);
+            $tip_pay->status = $session->payment_status;
+            if ($session->payment_status == 'paid') {
+                
+                TipJarPurchased::dispatch($tip_pay);
+                return to_route('user.show', ['username' => $tip_pay->tipGoal->user->username])->with('success', "You have paid tip to the tip jar successfully!");
+            }
+
+            $tip_pay->save();
+            return to_route('user.show', ['username' => $tip_pay->tipGoal->user->username])->with('warning', "Payment is in {$session->payment_status} status.");
+        } catch (Exception $e) {
+            return to_route('user.show', ['username' => $tip_pay->tipGoal->user->username])->with('error', $e->getMessage());
+        }
+        // return response()->json([
+        //     'success'   =>  true,
+        //     'session'   =>  $session,
+        //     'status'    =>  $status
+        // ]);
     }
 }

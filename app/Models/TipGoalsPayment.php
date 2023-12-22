@@ -4,13 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Ramsey\Uuid\Uuid;
 
 class TipGoalsPayment extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'id',
         'uuid',
         'session_id',
         'tip_goal_id',
@@ -34,6 +34,12 @@ class TipGoalsPayment extends Model
         'created_at',
         'updated_at',
     ];
+
+    public static function boot()
+    {
+        parent::boot();
+        static::creating(fn ($s) =>  $s->uuid = Uuid::uuid4());
+    }
 
 
     public function user()

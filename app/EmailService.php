@@ -9,6 +9,7 @@ use App\Mail\RenewMail;
 use App\Mail\SubscriptionMail;
 use App\Mail\SubsMail;
 use App\Mail\ThankyouUser;
+use App\Mail\TipJarMail;
 use App\Mail\VerifyEmail;
 use App\Mail\Welcome;
 use App\Mail\Wishlist;
@@ -158,6 +159,15 @@ class EmailService
         try {
 
             Mail::to($data->wish_item->user->email)->send(new SubsMail($data));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+    public static function sendTipJarSubscribedMail($data)
+    {
+        try {
+            Mail::to($data->tipGoal->user->email)->send(new TipJarMail($data));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
