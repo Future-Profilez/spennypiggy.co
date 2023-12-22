@@ -819,81 +819,81 @@ class StripeController extends Controller
     }
 
 
-    public function tipToJar(Request $request, $uuid)
-    {
-        $goal = TipGoal::where('uuid', $uuid)->first();
+    // public function tipToJar(Request $request, $uuid)
+    // {
+    //     $goal = TipGoal::where('uuid', $uuid)->first();
 
 
-        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
-        if (!$goal) {
-            return redirect()->back()->with('error', 'No tip jar found!');
-        }
+    //     $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+    //     if (!$goal) {
+    //         return redirect()->back()->with('error', 'No tip jar found!');
+    //     }
 
-        if ($request->isMethod("POST")) {
-            $request->validate([
-                'name' => [
-                    'required',
-                    'string',
-                    'min:3',
-                    'max:50'
-                ],
-                'message'   =>  [
-                    'sometimes',
-                    'nullable',
-                    'string',
-                    'max:800'
-                ]
-            ]);
+    //     if ($request->isMethod("POST")) {
+    //         $request->validate([
+    //             'name' => [
+    //                 'required',
+    //                 'string',
+    //                 'min:3',
+    //                 'max:50'
+    //             ],
+    //             'message'   =>  [
+    //                 'sometimes',
+    //                 'nullable',
+    //                 'string',
+    //                 'max:800'
+    //             ]
+    //         ]);
 
-            $sub = TipGoalsPayment::create([
-                'tip_goal_id'  =>  $goal->id,
-                'user_id'       =>  Auth::id(),
-                'guest_name'    =>  $request->name,
-                'currency'      =>  $goal->currency,
-                'amount'        =>  $goal->default_price,
-                'tax'           =>  $goal->tax_amount,
-                'message'  =>  $request->message ?? NULL
-            ]);
+    //         $sub = TipGoalsPayment::create([
+    //             'tip_goal_id'  =>  $goal->id,
+    //             'user_id'       =>  Auth::id(),
+    //             'guest_name'    =>  $request->name,
+    //             'currency'      =>  $goal->currency,
+    //             'amount'        =>  $goal->default_price,
+    //             'tax'           =>  $goal->tax_amount,
+    //             'message'  =>  $request->message ?? NULL
+    //         ]);
 
-            $price = round($goal->default_price, 2, PHP_ROUND_HALF_UP);
-            $tax = round($goal->tax_amount, 2, PHP_ROUND_HALF_UP);
+    //         $price = round($goal->default_price, 2, PHP_ROUND_HALF_UP);
+    //         $tax = round($goal->tax_amount, 2, PHP_ROUND_HALF_UP);
 
-            $payload = [
-                'success_url' => route('checkout.success', [$id]),
-                'cancel_url' => route('checkout.cancel', [$id]),
-                'line_items' => $lineItems,
-                'mode' => 'payment',
-                'payment_intent_data' => [
-                    'transfer_data' => [
-                        'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
-                    ],
-                    'application_fee_amount' => $taxNew * 100,
-                    'on_behalf_of'  => $getdata[0]->owner->account_id,
-                ],
-                'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
-            ];
+    //         $payload = [
+    //             'success_url' => route('checkout.success', [$id]),
+    //             'cancel_url' => route('checkout.cancel', [$id]),
+    //             'line_items' => $lineItems,
+    //             'mode' => 'payment',
+    //             'payment_intent_data' => [
+    //                 'transfer_data' => [
+    //                     'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
+    //                 ],
+    //                 'application_fee_amount' => $taxNew * 100,
+    //                 'on_behalf_of'  => $getdata[0]->owner->account_id,
+    //             ],
+    //             'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
+    //         ];
 
-            try {
-                $session = StripeControl::createCheckoutSession($payload);
-                $sub->update([
-                    'session_id' =>  $session->id
-                ]);
+    //         try {
+    //             $session = StripeControl::createCheckoutSession($payload);
+    //             $sub->update([
+    //                 'session_id' =>  $session->id
+    //             ]);
 
-                return Inertia::location($session->url);
-            } catch (Exception $e) {
-                return back()->with('error', $e->getMessage());
-            }
-            // return response()->json([
-            //     'success'   => true,
-            //     'session'   => $session
-            // ]);
+    //             return Inertia::location($session->url);
+    //         } catch (Exception $e) {
+    //             return back()->with('error', $e->getMessage());
+    //         }
+    //         // return response()->json([
+    //         //     'success'   => true,
+    //         //     'session'   => $session
+    //         // ]);
 
 
-        }
+    //     }
 
-        return Inertia::render('cart/SubCheckout', [
-            'wish'  => $wish,
-            'reccure'   => $reccure
-        ]);
-    }
+    //     return Inertia::render('cart/SubCheckout', [
+    //         'wish'  => $wish,
+    //         'reccure'   => $reccure
+    //     ]);
+    // }
 }
