@@ -72,6 +72,7 @@ export default function Confetti  ({sender, is_read_owner, children, onclick, cl
     var unicorn4 = confetti.shapeFromText({ text: [' 🎁'], scalar});
     var unicorn5 = confetti.shapeFromText({ text: [' 🤑'], scalar});
    
+    
     var defaults = {
       spread:200,
       ticks: 200,

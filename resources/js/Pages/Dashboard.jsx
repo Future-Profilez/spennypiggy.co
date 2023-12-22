@@ -17,6 +17,7 @@ import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import useWidthCount from '@/Components/useWidthCount';
+import AddGoal from './TipJar/AddGoal';
 
 export default function Dashboard(props) {
 
@@ -91,7 +92,7 @@ export default function Dashboard(props) {
         if(global_currency == null){
             setOpenCurrency(true)
         }
-    })
+    });
 
     return <>
         <Guest auth={auth.user} user={user}>
@@ -116,6 +117,7 @@ export default function Dashboard(props) {
                                         links={socialLinks}
                                         user={user}
                                     />
+                                    <AddGoal />
                                     <div className="userProfileDate pt-0">
                                         {IsloggedIn ? (
                                             <>
