@@ -105,7 +105,6 @@ class StripeController extends Controller
                 $account = StripeControl::createAccount($payload);
                 $user->account_id = $account->id;
                 $user->country = $country;
-                $user->default_currency = $account->default_currency;
                 $user->save();
             } catch (Exception $e) {
                 return redirect(route("stripe.index"))->with("error", "Account creation error:" . $e->getMessage());
@@ -251,7 +250,7 @@ class StripeController extends Controller
 
             return Inertia::location($sessionCreate->url);
         } catch (Exception $e) {
-            return back()->with('error', 'Something went wrong. Error: '.$e->getMessage());
+            return back()->with('error', 'Something went wrong. Error: ' . $e->getMessage());
         }
     }
 
@@ -587,8 +586,8 @@ class StripeController extends Controller
             $tax = number_format($wish->tax_amount, 2);
             $price = number_format($wish->price, 2);
 
-            $fee_per = number_format(($tax/($tax+$price)) * 100, 2);
-            if( $currency == strtolower($wish->currency)){
+            $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
+            if ($currency == strtolower($wish->currency)) {
                 $items = [
                     "price" =>  $wish->price_id,
                     'quantity'      =>  1,
