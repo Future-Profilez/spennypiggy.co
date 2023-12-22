@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('wish_items', function (Blueprint $table) {
-            $table->longText('edited_reason')->nullable();
+            $table->longText('edited_reason')->after('delete_reason')->nullable();
+            $table->integer('edited_status')->after('edited_reason')->nullable()->comment('0 = edited request is in pending, 1 = edited , null = not get any request ');
         });
     }
 
@@ -23,6 +24,7 @@ return new class extends Migration
     {
         Schema::table('wish_items', function (Blueprint $table) {
             $table->dropColumn('edited_reason');
+            $table->dropColumn('edited_status');
         });
     }
 };
