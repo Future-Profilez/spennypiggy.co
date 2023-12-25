@@ -1047,7 +1047,7 @@ class WishitemController extends Controller
             ]
         ]);
 
-        WishItem::whereIn('id', $request->shuffled_items)->where('user_id', Auth::id())->get()->each(function ($item, $index) {
+        WishItem::whereIn('id', $request->shuffled_items)->get()->each(function ($item, $index) {
             $item->update(['sort' => $index + 1]);
         });
 

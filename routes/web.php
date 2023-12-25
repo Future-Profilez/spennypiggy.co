@@ -44,21 +44,21 @@ Route::middleware('auth')->group(function () {
 });
 
 // Select Default Currency
-Route::get('/currency/{c}', function(Request $request, $c){
-    if(in_array($c, ['USD','GBP','EUR','INR','AUD','JPY','HKD','CAD','CHF','SEK','NZD']))
-    {
-        Cookie::queue('currency', $c, 60*24*365);
+Route::get('/currency/{c}', function (Request $request, $c) {
+    if (in_array($c, ['USD', 'GBP', 'EUR', 'INR', 'AUD', 'JPY', 'HKD', 'CAD', 'CHF', 'SEK', 'NZD'])) {
+        Cookie::queue('currency', $c, 60 * 24 * 365);
         return back()->with('success', "Currency set to $c");
     }
     return back()->with('error', 'Invalid Currency!');
 })->name('change.currency');
 
-Route::prefix("test")->name("test.")->group(function(){
-    Route::prefix("stripe")->name("stripe.")->group(function(){
+Route::prefix("test")->name("test.")->group(function () {
+    Route::prefix("stripe")->name("stripe.")->group(function () {
         Route::get("search", [TestController::class, "stripeSearch"])->name("search");
         Route::get("checkout", [CheckoutController::class, 'testCheckout'])->name('checkout');
         Route::get('checkout-callback/{status?}', [CheckoutController::class, 'testCallback'])->name("callback");
     });
+    Route::get('adult-content-check', [TestController::class, 'testAdultContent'])->name("adult-check");
     Route::get("email", [TestController::class, "testEmail"]);
     Route::get("rates/{c?}", [TestController::class, "getRates"]);
     Route::get("c-data", [TestController::class, "testCurrencyData"]);
@@ -68,4 +68,4 @@ Route::prefix("test")->name("test.")->group(function(){
     Route::get("items/{c?}", [TestController::class, 'testItems']);
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
