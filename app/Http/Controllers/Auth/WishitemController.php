@@ -833,6 +833,7 @@ class WishitemController extends Controller
             $q->where('user_id', $user->id);
         })->with(['user', 'wish_item'])->orderBy('updated_at', 'DESC')->get();
         $user_subs = WishItemSubscription::where('user_id', Auth::id())->with(['wish_item', 'wish_item.user'])->get();
+
         $trackData = $tracks->map(function ($q) {
 
             if (Auth::id() == $q->payment->owner_id) {
@@ -944,7 +945,7 @@ class WishitemController extends Controller
 
     public function cancelSubscription($subscription_id)
     {
-        $item = Subscription::where('id', $subscription_id)->first();
+        $item = WishItemSubscription::where('id', $subscription_id)->first();
         $item->status = 0;
         $item->save();
         return Inertia::render('tracker/Wishtracker');
@@ -1034,6 +1035,25 @@ class WishitemController extends Controller
         return response()->json([
             'status' => true,
             'msg' => "Tip Goal added successfully!"
+        ]);
+    }
+
+
+    public function moveWishes(Request $request)
+    {
+        $request->validate([
+            'shuffled_items' => [
+                'required',
+            ]
+        ]);
+
+        WishItem::whereIn('id', $request->shuffled_items)->where('user_id', Auth::id())->get()->each(function ($item, $index) {
+            $item->update(['sort' => $index + 1]);
+        });
+
+        return response()->json([
+            'status' => true,
+            'msg' => "Shuffled Successfully!"
         ]);
     }
 }

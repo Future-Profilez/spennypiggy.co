@@ -126,6 +126,7 @@ Route::middleware('auth')->group(function () {
         });
 
         Route::post('add-goal', [WishitemController::class, 'addTipGoal'])->name('add-goal');
+        Route::post('move-wish', [WishitemController::class, 'moveWishes'])->name('move-wish');
     });
 });
 
@@ -187,6 +188,11 @@ Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWish
 Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
 
 Route::get('/leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('/leaderboard');
+
+Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
+    Route::post('pay/{uuid}/', [StripeController::class, 'tipToJar'])->name("pay");
+    Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
+});
 
 /*check username exist*/
 // Route::get('/data-check', function () {
