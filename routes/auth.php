@@ -194,6 +194,11 @@ Route::get('/leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWis
 
 //     return $ret;
 // });
+
+Route::get('/test', function () {
+    return Inertia::render('Test');
+})->name("test");
+
 Route::get('twitter-token/', [TwitterController::class, 'twitterAuthUrl']);
 Route::get('twitter/login', [TwitterController::class, 'twitterLogin']);
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
