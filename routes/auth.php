@@ -35,6 +35,8 @@ use Illuminate\Support\Facades\Http;
 //     die;
 // });
 
+
+
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
@@ -50,6 +52,7 @@ Route::middleware('guest')->group(function () {
         ->name('password.email');
 
     Route::get('forgot-password/{uuid}', [PasswordResetLinkController::class, 'forgotPasswordPage']);
+
 
     Route::post('change-password/{uuid}', [PasswordResetLinkController::class, 'changePassword'])->name('changePassword');
 
@@ -85,6 +88,7 @@ Route::middleware('auth')->group(function () {
 
         Route::post('save_wish_item', [WishitemController::class, 'addWishItem'])->name('save_wish_item');
 
+        
         Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
 
         Route::prefix("stripe")->name("stripe.")->group(function () {
