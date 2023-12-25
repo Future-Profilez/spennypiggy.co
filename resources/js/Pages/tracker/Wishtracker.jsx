@@ -17,7 +17,8 @@ import { useAlerts } from "@/Components/Alerts";
 const defaultsec = 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/';
 
 export default function Wishtracker(props) {
-    
+    const { auth, user, tracks, user_subs, creator_subs } = props;
+    console.log("props", props)
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const TruncatedString = ({ inputString, maxLength }) => {
         if (inputString?.length <= maxLength) {
@@ -28,7 +29,6 @@ export default function Wishtracker(props) {
     };
 
     const { formatMultiPrice } = PriceFormat();
-    const { auth, user, tracks, user_subs, creator_subs    } = props;
     const [stab, setStab] = useState(1)
     const handleTabs = (e) => {
         setStab(e);
