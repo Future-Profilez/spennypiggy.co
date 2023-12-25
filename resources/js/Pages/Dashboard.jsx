@@ -17,7 +17,8 @@ import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import useWidthCount from '@/Components/useWidthCount';
-import AddGoal from './TipJar/AddGoal';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import{ SortableContext,rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 
 export default function Dashboard(props) {
 
@@ -114,12 +115,22 @@ export default function Dashboard(props) {
         </>
     }
 
-    
+    const handleDragEnd = (event) => {
+        const { active, over } = event;
+        const activeIndex = its.findIndex((item) => item.id === active.id);
+        const overIndex = over ? its.findIndex((item) => item.id === over.id) : -1;
+        if (activeIndex !== overIndex) {
+          const updated = arrayMove(its, activeIndex, overIndex, { key: 'id' });
+          setIts(updated);
+        }
+    };
+
+
     const WishItems = () => { 
         return <>
             {IsloggedIn  ? 
                 <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                    <SortableContext strategy={rectSortingStrategy} items={languageImage}>
+                    <SortableContext strategy={rectSortingStrategy} items={its}>
                             <Items />
                     </SortableContext>
                 </DndContext>
@@ -128,6 +139,8 @@ export default function Dashboard(props) {
             }
         </>
     }
+
+
 
     return <>
         <Guest auth={auth.user} user={user}>
@@ -260,7 +273,7 @@ export default function Dashboard(props) {
                                         {IsloggedIn || user?.stripe_details_submitted == 1 ? (
                                                 <>
                                                     {its && its.length ? <>
-                                                        <WishItems its={its} />
+                                                        <WishItems />
                                                     </>
                                                     : 
                                                         <>

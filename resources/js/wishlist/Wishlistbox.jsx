@@ -12,14 +12,23 @@ import DropdownButton from 'react-bootstrap/DropdownButton';
 import PinWish from '@/includes/PinWish';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import { usePage } from '@inertiajs/react';
-
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 export default function Wishlistbox(props) {
 
+ 
+   
   const page  = usePage();
   const { format, formatMultiPrice } = PriceFormat();
   const { currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped } = props;
 
+
+  const { listeners, attributes, setNodeRef, transform } = useSortable({ id: itm.uuid });
+  const style = {
+    transform: CSS.Translate.toString(transform)
+  };
+  
   // itemid
   const [itemUID, setItemUID] = useState(itemid);
   const [open, setOpen] = useState();
@@ -47,7 +56,7 @@ export default function Wishlistbox(props) {
 
 
   return <>
-      <div className='wishlistcntbox mb-3 mb-sm-4 whbg relative  shadow-voilet '>
+      <div style={style} ref={setNodeRef} {...listeners} {...attributes}  className='wishlistcntbox mb-3 mb-sm-4 whbg relative  shadow-voilet '>
         {IsloggedIn ?
           <>
             <Wishlist currency={currency} setuped={setuped} openPop={open} item={itm} editpop={true} fetchingcats={fetchingcats} categories={categories} />
