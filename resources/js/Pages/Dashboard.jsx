@@ -126,19 +126,19 @@ export default function Dashboard(props) {
     };
 
 
-    const WishItems = () => { 
-        return <>
-            {IsloggedIn  ? 
-                <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                    <SortableContext strategy={rectSortingStrategy} items={its}>
-                            <Items />
-                    </SortableContext>
-                </DndContext>
-                : 
-                <Items />
-            }
-        </>
-    }
+    // const WishItems = () => { 
+    //     return <>
+    //         {IsloggedIn  ? 
+    //             <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+    //                 <SortableContext strategy={rectSortingStrategy} items={its}>
+    //                         <Items />
+    //                 </SortableContext>
+    //             </DndContext>
+    //             : 
+    //             <Items />
+    //         }
+    //     </>
+    // }
 
 
 
@@ -273,7 +273,8 @@ export default function Dashboard(props) {
                                         {IsloggedIn || user?.stripe_details_submitted == 1 ? (
                                                 <>
                                                     {its && its.length ? <>
-                                                        <WishItems />
+                                                        {/* <WishItems /> */}
+                                                        <Items />
                                                     </>
                                                     : 
                                                         <>
