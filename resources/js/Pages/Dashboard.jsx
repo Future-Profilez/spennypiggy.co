@@ -94,6 +94,41 @@ export default function Dashboard(props) {
         }
     });
 
+
+    const Items = () => { 
+        return <>
+        {!loading && its.map((c, i) => {
+            return <div key={`wish-item-${i}`} className="col-xl-4 col-lg-6 col-6">
+                <Wishlistbox
+                currency={global_currency}
+                fetchingcats={fetchingcats}
+                categories={categories}
+                IsloggedIn={IsloggedIn}
+                auth={auth.user}
+                itemid={itemid}
+                setuped={auth && auth.user && auth.user.stripe_details_submitted == 1 ? true : false}
+                itm={c}
+                key={`wish-${c.uuid}`} />
+            </div>
+        })}
+        </>
+    }
+
+    
+    const WishItems = () => { 
+        return <>
+            {IsloggedIn  ? 
+                <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <SortableContext strategy={rectSortingStrategy} items={languageImage}>
+                            <Items />
+                    </SortableContext>
+                </DndContext>
+                : 
+                <Items />
+            }
+        </>
+    }
+
     return <>
         <Guest auth={auth.user} user={user}>
             <Head title={user && user.name} />
@@ -212,56 +247,40 @@ export default function Dashboard(props) {
                                                 setuped={auth.user && auth.user.stripe_details_submitted == 1 ? true : false}
                                                 fetchingcats={fetchingcats}
                                                 categories={categories}
-                                            />
+                                            /> 
                                         ) : (
                                             ""
                                         )}
                                     </div>
 
                                     {loading ? <LoadingScreen /> : ""}
+
+                                    
                                     <div className="row items-lists">
                                         {IsloggedIn || user?.stripe_details_submitted == 1 ? (
-                                            <>
-                                                {its && its.length ? (!loading && its.map((c, i) => {
-                                                    return <div key={`wish-item-${i}`} className="col-xl-4 col-lg-6 col-6">
-                                                        <Wishlistbox
-                                                            currency={global_currency}
-                                                            fetchingcats={fetchingcats}
-                                                            categories={categories}
-                                                            IsloggedIn={IsloggedIn}
-                                                            auth={auth.user}
-                                                            itemid={itemid}
-                                                            setuped={auth && auth.user && auth.user.stripe_details_submitted == 1 ? true : false}
-                                                            itm={c}
-                                                            key={`wish-${c.uuid}`}
-                                                        />
-                                                    </div>
-                                                })
-                                                ) : (
-                                                    <>
-                                                        {!loading ? (
-                                                            <div className="col-md-12">
-                                                                <Nocontent text="Nothing to see." />
-                                                            </div>
-                                                        ) : (
-                                                            ""
-                                                        )}
+                                                <>
+                                                    {its && its.length ? <>
+                                                        <WishItems its={its} />
                                                     </>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <div className="col-md-12 p-5 my-5 notactive">
-                                                <h5 className="loadingtext w-full text-center text-white  mb-1">
-                                                    {user.name}'s WishList
-                                                    not activated yet.
-                                                </h5>
-                                                <p className="text-center  text-white text-large ">
-                                                    Until they activate
-                                                    their wishlist, this
-                                                    user won't be able to
-                                                    receive gifts
-                                                </p>
-                                            </div>
+                                                    : 
+                                                        <>
+                                                            {!loading &&  <div className="col-md-12"> <Nocontent text="Nothing to see." /> </div> || ''}
+                                                        </>
+                                                    }
+                                                </>
+                                            ) : (
+                                                <div className="col-md-12 p-5 my-5 notactive">
+                                                    <h5 className="loadingtext w-full text-center text-white  mb-1">
+                                                        {user.name}'s WishList
+                                                        not activated yet.
+                                                    </h5>
+                                                    <p className="text-center  text-white text-large ">
+                                                        Until they activate
+                                                        their wishlist, this
+                                                        user won't be able to
+                                                        receive gifts
+                                                    </p>
+                                                </div>
                                         )}
                                     </div>
                                 </div>

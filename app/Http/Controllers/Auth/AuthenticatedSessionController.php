@@ -57,7 +57,6 @@ class AuthenticatedSessionController extends Controller
         return redirect(route("login"))->with("success", "Logged out successfully.");
     }
 
-
     /**
      * Private user profile info
      */

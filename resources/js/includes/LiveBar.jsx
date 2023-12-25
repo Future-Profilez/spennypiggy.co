@@ -27,15 +27,19 @@ const ScrollingContent = styled.div`
 `;
 
 const LiveBar = () => {
-  return (
-    <div className='pb-2 pb-md-0 blackbg' >
+  return <>
+    <style>{`
+        .livebar p{font-size:18px;text-transform:uppercase;}
+        .barouter {
+          width:100%;
+          overflow:hidden;
+        }
+        @media(max-width:575px){
+          .livebar p{font-size:15px;}
+        }
+    `}</style>
+    <div className='pb-2 pb-md-0 blackbg barouter' >
     <LiveBarWrapper className="livebar mintbg py-3 pb-2 px-2">
-      <style>{`
-         .livebar p{font-size:18px;text-transform:uppercase;}
-         @media(max-width:575px){
-            .livebar p{font-size:15px;}
-         }
-      `}</style>
       <ScrollingContainer>
         <ScrollingContent>
           <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
@@ -60,7 +64,7 @@ const LiveBar = () => {
       </ScrollingContainer>
     </LiveBarWrapper>
     </div>
-  );
+    </>
 };
 
 export default LiveBar;

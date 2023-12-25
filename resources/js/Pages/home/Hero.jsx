@@ -29,6 +29,11 @@ export default function Hero({auth}) {
                     <Link href="/register" className="btn-pink wishlistbutton lg w-2/5 shadow-mint border-mint" > Create Wishlist </Link>
                   }
                </div>
+
+               <div className='d-flex d-md-none justify-content-center' >  
+                 <TrustBox />
+                </div>
+
            </div>
            <div className="welcomeRt">
                <img
@@ -36,9 +41,9 @@ export default function Hero({auth}) {
                height={377.63}
                src={addwishlistimg} 
                width={474} />
-                <div className='d-flex justify-content-center' >  
-                 <TrustBox />
-                </div>
+            <div className='d-none d-md-flex justify-content-center' >  
+                <TrustBox />
+            </div>
            </div>
        </div>
    </div>
