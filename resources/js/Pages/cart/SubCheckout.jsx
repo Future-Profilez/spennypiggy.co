@@ -11,7 +11,7 @@ export default function SubCheckout(props) {
     const { formatMultiPrice } = PriceFormat();
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
     const [email, setEmail] = useState(auth && auth.user && auth.user.email || '');
-    const { successAlert, errorAlert, errorsHandling } = useAlerts();
+    const { successAlert, errorAlert, warningAlert, infoAlert } = useAlerts();
 
     const {data, setData, post, processing, errors} = useForm({
         name: name,
@@ -20,27 +20,12 @@ export default function SubCheckout(props) {
         agree: false
     });
 
-    const [loading, setLoading] = useState(false);
     const handleSubmit = (e) => {
         e.preventDefault();
         post(route(`wish.subscribe.checkout`,{uuid:wish.uuid, reccure:reccure}), {
             preserveScroll:true
-            // onSuccess: (resp) => {
-            //     if (resp.props.flash?.error) {
-            //           errorAlert(resp.props.flash?.error);
-            //     }
-            // },
-            // onError: (_err) => {
-            //    console.error(_err);
-            // //    if (resp.props.flash?.error) {
-            // //     errorAlert(resp.props.flash?.error);
-            // //     }
-            // }
         });
     }
-
-    const [subtotal, setsubtotal] = useState();
-    // const [fee, setFee] = useState(0.2 * subtotal);
 
     const {flash}   = usePage().props;
     useEffect(() => {
@@ -54,7 +39,7 @@ export default function SubCheckout(props) {
             warningAlert(flash.warning);
         }
         if(flash?.info){
-            successAlert(flash.info);
+            infoAlert(flash.info);
         }
         // console.log('falsh', flash);
     },[flash]);
