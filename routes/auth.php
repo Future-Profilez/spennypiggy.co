@@ -126,7 +126,6 @@ Route::middleware('auth')->group(function () {
         });
 
         Route::post('add-goal', [WishitemController::class, 'addTipGoal'])->name('add-goal');
-        Route::post('move-wish', [WishitemController::class, 'moveWishes'])->name('move-wish');
     });
 });
 
@@ -189,22 +188,12 @@ Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts
 
 Route::get('/leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('/leaderboard');
 
-Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
-    Route::post('pay/{uuid}/', [StripeController::class, 'tipToJar'])->name("pay");
-    Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
-});
-
 /*check username exist*/
 // Route::get('/data-check', function () {
 //     $ret = StripeControl::getSubscription("sub_1OND8tG7xsNScLmXLFzAhobA");
 
 //     return $ret;
 // });
-
-Route::get('/test', function () {
-    return Inertia::render('Test');
-})->name("test");
-
 Route::get('twitter-token/', [TwitterController::class, 'twitterAuthUrl']);
 Route::get('twitter/login', [TwitterController::class, 'twitterLogin']);
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
