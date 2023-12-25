@@ -1,9 +1,8 @@
-@import 'react-lazy-load-image-component/src/effects/blur.css';body{position:relative;font-family:var(--para-font);}
-
-body, html, body > #app {
-  width: 100%;
+@import 'react-lazy-load-image-component/src/effects/blur.css';
+body{position:relative;font-family:var(--para-font);}
+.funpart { width: 100%;
+  overflow-x: hidden;
 }
-
 /* Comman Css */
  .headingLg{color:var(--pink);font-family:var(--body-font);font-size:85px;font-style:normal;font-weight:400;line-height:80px;text-transform:uppercase;text-shadow:5px 4px 0px #e6ea82;-webkit-text-stroke:1px #e6ea82;-moz-text-stroke:1px #e6ea82;-o-text-stroke:1px #e6ea82;}
 .headingMd{color:var(--pink);text-shadow:5px 4px 0px #e6ea82;font-family:var(--body-font);font-size:65px;font-style:normal;font-weight:400;line-height:60px;text-transform:uppercase;-webkit-text-stroke:1px #e6ea82;-moz-text-stroke:1px #e6ea82;-o-text-stroke:1px #e6ea82;}
