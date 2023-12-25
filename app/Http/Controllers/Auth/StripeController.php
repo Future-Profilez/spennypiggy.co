@@ -9,6 +9,7 @@ use App\Jobs\CheckoutUser;
 use App\Jobs\SendRenewMail;
 use App\Jobs\SubscribedMail;
 use App\Jobs\SubscriptionCancelAtEnd;
+use App\Jobs\TipJarPurchased;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\StripeWebhookStatus;
@@ -819,81 +820,127 @@ class StripeController extends Controller
     }
 
 
-    // public function tipToJar(Request $request, $uuid)
-    // {
-    //     $goal = TipGoal::where('uuid', $uuid)->first();
+    public function tipToJar(Request $request, $uuid)
+    {
+        $goal = TipGoal::where('uuid', $uuid)->first();
 
 
-    //     $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
-    //     if (!$goal) {
-    //         return redirect()->back()->with('error', 'No tip jar found!');
-    //     }
+        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+        if (!$goal) {
+            return redirect()->back()->with('error', 'No tip jar found!');
+        }
 
-    //     if ($request->isMethod("POST")) {
-    //         $request->validate([
-    //             'name' => [
-    //                 'required',
-    //                 'string',
-    //                 'min:3',
-    //                 'max:50'
-    //             ],
-    //             'message'   =>  [
-    //                 'sometimes',
-    //                 'nullable',
-    //                 'string',
-    //                 'max:800'
-    //             ]
-    //         ]);
+        if ($request->isMethod("POST")) {
+            $request->validate([
+                'name' => [
+                    'required',
+                    'string',
+                    'min:3',
+                    'max:50'
+                ],
+                'email' =>  [
+                    'required',
+                    'email:dns'
+                ],
+                'message'   =>  [
+                    'sometimes',
+                    'nullable',
+                    'string',
+                    'max:800'
+                ]
+            ]);
 
-    //         $sub = TipGoalsPayment::create([
-    //             'tip_goal_id'  =>  $goal->id,
-    //             'user_id'       =>  Auth::id(),
-    //             'guest_name'    =>  $request->name,
-    //             'currency'      =>  $goal->currency,
-    //             'amount'        =>  $goal->default_price,
-    //             'tax'           =>  $goal->tax_amount,
-    //             'message'  =>  $request->message ?? NULL
-    //         ]);
+            $price = number_format($goal->default_price, 2);
+            $tax = number_format($goal->tax_amount, 2);
 
-    //         $price = round($goal->default_price, 2, PHP_ROUND_HALF_UP);
-    //         $tax = round($goal->tax_amount, 2, PHP_ROUND_HALF_UP);
+            $total_price = number_format($price * $request->quantity, 2);
+            $total_tax = $tax * $request->quantity;
 
-    //         $payload = [
-    //             'success_url' => route('checkout.success', [$id]),
-    //             'cancel_url' => route('checkout.cancel', [$id]),
-    //             'line_items' => $lineItems,
-    //             'mode' => 'payment',
-    //             'payment_intent_data' => [
-    //                 'transfer_data' => [
-    //                     'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
-    //                 ],
-    //                 'application_fee_amount' => $taxNew * 100,
-    //                 'on_behalf_of'  => $getdata[0]->owner->account_id,
-    //             ],
-    //             'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
-    //         ];
+            $pay = TipGoalsPayment::create([
+                'tip_goal_id'  =>  $goal->id,
+                'user_id'       =>  Auth::id() ?? NULL,
+                'guest_name'    =>  $request->name,
+                'guest_email'    =>  $request->email,
+                'currency'      =>  $goal->currency,
+                'amount'        =>  $total_price,
+                'tax'           =>  $total_tax,
+                'message'  =>  $request->message ?? NULL
+            ]);
 
-    //         try {
-    //             $session = StripeControl::createCheckoutSession($payload);
-    //             $sub->update([
-    //                 'session_id' =>  $session->id
-    //             ]);
+            $payload = [
+                "mode"  =>  'payment',
+                'line_items' =>  [
+                    [
+                        'quantity' => $request->quantity,
+                        'price_data' => [
+                            'currency' => $currency,
+                            'product' => $goal->product_id,
+                            'unit_amount_decimal' => Helpers::priceFormat($goal->currency, round(($price + $tax), 2, PHP_ROUND_HALF_UP), $currency) * 100
+                        ]
+                    ]
+                ],
+                'payment_intent_data' => [
+                    'transfer_data' => [
+                        'destination' => $goal->user->account_id, // Creator's connected account ID
+                    ],
+                    'application_fee_amount' => $total_tax * 100,
+                    'on_behalf_of'  => $goal->user->account_id,
+                ],
+                'customer_email' =>  $request->email,
+                'success_url'       =>  route('wish.subscribe.handle', ['uuid' => $pay->uuid, 'status' => "success"]),
+                'cancel_url'       =>  route('wish.subscribe.handle', ['uuid' => $pay->uuid, 'status' => "cancel"]),
+            ];
 
-    //             return Inertia::location($session->url);
-    //         } catch (Exception $e) {
-    //             return back()->with('error', $e->getMessage());
-    //         }
-    //         // return response()->json([
-    //         //     'success'   => true,
-    //         //     'session'   => $session
-    //         // ]);
+            try {
+                $session = StripeControl::createCheckoutSession($payload);
+                $pay->update([
+                    'session_id' =>  $session->id
+                ]);
+
+                return Inertia::location($session->url);
+            } catch (Exception $e) {
+                return back()->with('error', $e->getMessage());
+            }
+        }
+
+        // return Inertia::render('cart/SubCheckout', [
+        //     'wish'  => $wish,
+        //     'reccure'   => $reccure
+        // ]);
+    }
 
 
-    //     }
+    /**
+     * Handle Checkout Session
+     *
+     * @param string $uuid Subscription UUID
+     * @param string $status Status of Subscription
+     * @return mixed
+     */
+    public function handleTipJarPayment($uuid, $status)
+    {
+        $tip_pay = TipGoalsPayment::whereUuid($uuid)->first();
+        if (!$tip_pay) {
+            return to_route('home')->with("error", 'Insufficient data!');
+        }
+        try {
+            $session = StripeControl::getCheckoutSession($tip_pay->session_id);
+            $tip_pay->status = $session->payment_status;
+            if ($session->payment_status == 'paid') {
+                
+                TipJarPurchased::dispatch($tip_pay);
+                return to_route('user.show', ['username' => $tip_pay->tipGoal->user->username])->with('success', "You have paid tip to the tip jar successfully!");
+            }
 
-    //     return Inertia::render('cart/SubCheckout', [
-    //         'wish'  => $wish,
-    //         'reccure'   => $reccure
-    //     ]);
-    // }
+            $tip_pay->save();
+            return to_route('user.show', ['username' => $tip_pay->tipGoal->user->username])->with('warning', "Payment is in {$session->payment_status} status.");
+        } catch (Exception $e) {
+            return to_route('user.show', ['username' => $tip_pay->tipGoal->user->username])->with('error', $e->getMessage());
+        }
+        // return response()->json([
+        //     'success'   =>  true,
+        //     'session'   =>  $session,
+        //     'status'    =>  $status
+        // ]);
+    }
 }
