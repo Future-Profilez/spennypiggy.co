@@ -26,7 +26,7 @@ class LeaderBoardController extends Controller
                     $currentWeekEndDate = Carbon::now()->endOfWeek();
                     $currentDate = Carbon::today();
 
-                    $querydata = User::whereHas('paymentitems', function ($q) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
+                    $querydata = User::whereNot('country', 'GB')->whereHas('paymentitems', function ($q) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
                         $q->selectRaw('owner_id, SUM(amount) as total_amount')
                             ->groupBy('owner_id')
                             ->orderByRaw('total_amount DESC');

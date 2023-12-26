@@ -147,7 +147,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function userItems($username, $category_id = null)
     {
-        $user = User::firstWhere('username', $username);
+        $user = User::firstWhere('username', $username)->whereNot('country', 'GB');
 
         if ($user) {
             $items = $user->wishItems()
@@ -185,7 +185,7 @@ class AuthenticatedSessionController extends Controller
     public function user_category($username)
     {
         try {
-            $user = User::where('username', $username)->first();
+            $user = User::where('username', $username)->whereNot('country', 'GB')->first();
             $categories = [];
             if (!empty($user)) {
                 $categories = $user->user_categories()->get();
@@ -203,7 +203,7 @@ class AuthenticatedSessionController extends Controller
     public function sociallinks($username)
     {
         try {
-            $user = User::where('username', $username)->first();
+            $user = User::where('username', $username)->whereNot('country', 'GB')->first();
             $slinks = [];
             $sociallinks = [];
             if (!empty($user)) {
@@ -274,7 +274,7 @@ class AuthenticatedSessionController extends Controller
         try {
             if (preg_match("/^[a-z0-9_]+$/", $username)) {
                 // Username contains only lowercase letters, numbers, and underscores
-                $user = User::where('username', $username)->first();
+                $user = User::where('username', $username)->whereNot('country', 'GB')->first();
                 if (!empty($user)) {
                     return response()->json(['status' => false, 'msg' => 'Username is not available']);
                 } else {
