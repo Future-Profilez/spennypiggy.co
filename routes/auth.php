@@ -78,6 +78,8 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/say-thankyou/{payment_id}', [WishitemController::class, 'sayThanks'])->name('say-thankyou');
 
+    Route::post('move-wish', [WishitemController::class, 'moveWishes'])->name('move-wish');
+
     Route::middleware('mustHaveToVerify')->group(function () {
 
         Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
@@ -88,7 +90,7 @@ Route::middleware('auth')->group(function () {
 
         Route::post('save_wish_item', [WishitemController::class, 'addWishItem'])->name('save_wish_item');
 
-        
+
         Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
 
         Route::prefix("stripe")->name("stripe.")->group(function () {
@@ -130,7 +132,6 @@ Route::middleware('auth')->group(function () {
         });
 
         Route::post('add-goal', [WishitemController::class, 'addTipGoal'])->name('add-goal');
-        Route::post('move-wish', [WishitemController::class, 'moveWishes'])->name('move-wish');
     });
 });
 

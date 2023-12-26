@@ -62,7 +62,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function getUserProfile($username)
     {
-        $user = User::where('username', $username)->first();
+        $user = User::where('username', $username)->whereNot('country', 'GB')->first();
         if (!$user) {
             return Inertia::render('NotFound');
         }
@@ -95,7 +95,7 @@ class AuthenticatedSessionController extends Controller
 
     public function user_info($username, $category = false)
     {
-        $user = User::where('username', $username)->first();
+        $user = User::where('username', $username)->whereNot('country', 'GB')->first();
         $items = [];
         if ($category && $user) {
             $query = WishCategory::orderBy('created_at', 'DESC');
@@ -161,6 +161,15 @@ class AuthenticatedSessionController extends Controller
                 ->orderBy('sort', 'ASC')
                 ->latest()
                 ->get();
+
+            // $count = 1;
+            // $items->map(function ($item) use ($count) {
+            //     $item->key = $count;
+            //     $count++;
+
+            //     return $item;
+            // });
+
             return response()->json([
                 'success'   => true,
                 'items'     =>  $items

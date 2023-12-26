@@ -28,8 +28,6 @@ export default function Wishtracker(props) {
         return <span>{truncatedString}</span>;
     };
 
-    console.log("props", props);
-
     const { formatMultiPrice } = PriceFormat();
     const [stab, setStab] = useState(1)
     const handleTabs = (e) => {

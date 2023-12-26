@@ -183,11 +183,14 @@ class TestController extends Controller
         // ])->post('https://api.uploadcare.com/addons/aws_rekognition_detect_moderation_labels/execute/', [
         //     'target' => $uuid,
         // ]);
+
+
         $response = Http::withHeaders([
             'Accept' => 'application/vnd.uploadcare-v0.7+json',
             'Authorization' => 'Uploadcare.Simple ' . env('UPLOADCARE_PUBLIC_KEY') . ':' . env('UPLOADCARE_SECRET_KEY'),
         ])->get("https://api.uploadcare.com/files/$uuid/?include=appdata");
 
-        return $response->json();
-    }   
+        $data = $response->json();
+        return $data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'];
+    }
 }

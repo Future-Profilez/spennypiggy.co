@@ -199,7 +199,11 @@ class WishitemController extends Controller
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         }
 
-        $user = User::find(Auth::id());
+        if (Helpers::checkUnsafeContent($request->thumbnail)){
+            return redirect()->back()->with("error", "NSFW Detected in the media content. Try alternative.");
+        }
+
+            $user = User::find(Auth::id());
         $price = Helpers::priceFormat($request->cookie('currency', 'GBP'), $request->price, $user->default_currency);
 
         // $price = round($request->price, 2, PHP_ROUND_HALF_UP);

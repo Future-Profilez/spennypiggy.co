@@ -55,8 +55,10 @@ class Helpers
     }
 
 
-    public function checkUnsafeContent($uuid)
+    public static function checkUnsafeContent($uuid)
     {
+
+        $rest_words = ['adult', '18+', 'pornographic', 'XXX', 'NSFW', 'blood', 'brutality', 'adult', 'adult', 'adult', 'adult', 'adult', 'adult', 'adult', 'adult',];
         Http::withHeaders([
             'Content-Type' => 'application/json',
             'Accept' => 'application/vnd.uploadcare-v0.7+json',
@@ -71,6 +73,21 @@ class Helpers
             'Authorization' => 'Uploadcare.Simple ' . env('UPLOADCARE_PUBLIC_KEY') . ':' . env('UPLOADCARE_SECRET_KEY'),
         ])->get("https://api.uploadcare.com/files/$uuid/?include=appdata");
 
-        return $response;
+        $data = $response->json();
+        $tags = $data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'];
+
+        $rest = false;
+
+        foreach ($tags as $key => $tag) {
+            $name = explode(" ", $tag['Name']);
+
+            $common = array_intersect($rest_words, $name);
+
+            if (count($common) > 0) {
+                $rest = true;
+            }
+        }
+
+        return $rest;
     }
 }
