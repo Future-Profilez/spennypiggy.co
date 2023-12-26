@@ -199,9 +199,9 @@ class WishitemController extends Controller
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         }
 
-        if (Helpers::checkUnsafeContent($request->thumbnail)) {
-            return redirect()->back()->with("error", "NSFW Detected in the media content. Try alternative.");
-        }
+        // if (Helpers::checkUnsafeContent($request->thumbnail)) {
+        //     return redirect()->back()->with("error", "NSFW Detected in the media content. Try alternative.");
+        // }
 
         $user = User::find(Auth::id());
         $price = Helpers::priceFormat($request->cookie('currency', 'GBP'), $request->price, $user->default_currency);

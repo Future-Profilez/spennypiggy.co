@@ -95,7 +95,6 @@ class AuthenticatedSessionController extends Controller
 
     public function user_info($username, $category = false)
     {
-        User:
         $user = User::where('username', $username)->whereNot('country', 'GB')->first();
         $items = [];
         if ($category && $user) {

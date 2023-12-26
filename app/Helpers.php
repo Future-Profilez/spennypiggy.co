@@ -58,7 +58,7 @@ class Helpers
     public static function checkUnsafeContent($uuid)
     {
 
-        $rest_words = ['adult', '18+', 'pornographic', 'XXX', 'NSFW', 'blood', 'brutality', 'adult', 'adult', 'adult', 'adult', 'adult', 'adult', 'adult', 'adult',];
+        $rest_words = ['adult', '18+', 'pornographic', 'XXX', 'NSFW', 'blood', 'brutality', 'explicit', 'mature', 'weapons', 'aggression', 'combat', 'adult', 'adult', 'adult',];
         Http::withHeaders([
             'Content-Type' => 'application/json',
             'Accept' => 'application/vnd.uploadcare-v0.7+json',
