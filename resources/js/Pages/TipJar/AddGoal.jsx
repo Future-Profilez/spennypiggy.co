@@ -10,24 +10,26 @@ export default function AddGoal({auth, owner}) {
    
    const { formatMultiPrice } = PriceFormat();
    const { successAlert, errorAlert, errorsHandling } = useAlerts();
+
    const [close, setClose] = useState();
    const { data, setData, post, processing, errors, reset } = useForm({
-      amount:  '',
-      message: ''
-   });
+      name: '',
+      target: '',
+      default_price: '',
+      description: ''
+   }); 
 
-   const sendSurprize = (e) => {
+   const addgoal = (e) => {
       e.preventDefault();
-      post(route(`send-surprize`, {
-         "owner_id": owner && owner.id, 
-         "message":data.message}), {
+      post(route(`add-goal`, data ), {
             preserveScroll: true,
             onSuccess: (resp) => {
                reset();
                if (resp.props.flash?.success) {
+                  successAlert(resp.props.flash?.success);
                }
                if (resp.props.flash?.error) {
-                     errorAlert(resp.props.flash?.error);
+                  errorAlert(resp.props.flash?.error);
                }
             },
             onError: (_err) => {
@@ -40,18 +42,17 @@ export default function AddGoal({auth, owner}) {
         <Popup
             modalclassName="pinkmodal sendSurprize-modal shadow-pink"
             space="4" size="md"
-            action={close} classes={`btn-pink lg px-4 my-2 w-100`}
+            action={close} classes={`btn-pink mt-3 lg px-4 my-2 w-100`}
             text={`Add Goal`} >
             <h2 className="text-uppercase font-GillSans pb-4 font-large">
                 Add Goal
             </h2>
 
-
             <div className="form-field mb-4">
                <label className="d-block text-start mb-2">Goal Title</label>
                <input
                   className="form-input w-100 rounded"
-                  onChange={(e) => setData('title', e.target.value)}
+                  onChange={(e) => setData('name', e.target.value)}
                   type="text" placeholder="Enter title.. "
                />
             </div>
@@ -60,34 +61,33 @@ export default function AddGoal({auth, owner}) {
             <div className="form-field mb-4">
                <label className="d-block text-start mb-2">Target Amount</label>
                <input className="form-input w-100 rounded"
-                  onChange={(e) => setData('amount', e.target.value)}
+                  onChange={(e) => setData('target', e.target.value)}
                   type="number" placeholder="Enter amount.. "
                />
             </div>
 
             <div className="form-field mb-4">
-               <label className="d-block text-start mb-2">Minumum Amount to pay</label>
+               <label className="d-block text-start mb-2">Minimum amount to pay</label>
                <input className="form-input w-100 rounded"
-                  onChange={(e) => setData('amount', e.target.value)}
+                  onChange={(e) => setData('default_price', e.target.value)}
                   type="number" placeholder="Enter amount.. "
                />
             </div>
             
             <div className="form-field mb-4">
-                  <label className="d-block text-start mb-2">Description</label>
-                  <textarea placeholder="Message..."
-                     className="form-input w-100 rounded"
-                     onChange={(e) => setData('message',e.target.value)}
-                     type="text"
-                  />
+                  <label className="d-block text-start mb-2">Goal Description</label>
+                  <textarea placeholder="Description..."
+                  className="form-input w-100 rounded"
+                  onChange={(e) => setData('description',e.target.value)}
+                  type="text" />
             </div>
 
-            <LoaderButton onClick={sendSurprize}
+            <LoaderButton onClick={addgoal}
                disabled={processing}
                type='submit'
                   className="flex w-100 btn-pink lg mx-auto"
                   spinnerClassName="fill-red-600" >
-                  {processing ? "Processing" : auth && auth.name ? "Add to cart" : "Send Gift"}
+                  {processing ? "Processing" : "Add Goal"}
             </LoaderButton>
 
         </Popup>

@@ -6,7 +6,7 @@ export default function Avatar({src, name, username,  subhead, url, link}) {
       <style>{`
          .avatar{ border:1px solid #fff; width:60px;height:60px;max-width:60px;max-height:60px;border-radius:13px;overflow:hidden;}
          .avatar img{width:100%;height:100%;object-fit:cover;}
-         .useravatar{display:flex;align-items:center;}
+         .useravatar{ width:fit-content; display:flex;align-items:center;}
          .avatar-content{margin-left:13px; }
          .avatar-content p{margin-bottom:0; font-size:16px;}
          .avatar-content h2{margin-bottom:2px;font-size:18px;}

@@ -19,7 +19,7 @@ import { LazyLoadImage } from 'react-lazy-load-image-component';
 import useWidthCount from '@/Components/useWidthCount';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import{ SortableContext,rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
-import AddGoal from './TipJar/AddGoal';
+import AddGoal from './TipJar/AddGoal'; 
 
 export default function Dashboard(props) {
 
@@ -172,7 +172,7 @@ export default function Dashboard(props) {
                                                     </div>
                                                 )}
 
-                                                {/* <AddGoal /> */}
+                                                <AddGoal />
                                                 <div className="addsocial flex">
                                                     <ul>
                                                         <li>
@@ -248,7 +248,8 @@ export default function Dashboard(props) {
                                         {IsloggedIn || user?.stripe_details_submitted == 1 ? (
                                                 <>
                                                     {its && its.length ? <>
-                                                        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                                        <DndContext 
+                                                              collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                                                             <SortableContext strategy={rectSortingStrategy} items={its}>
                                                                 {!loading && its.map((c, i) => {
                                                                     return <Wishlistbox 

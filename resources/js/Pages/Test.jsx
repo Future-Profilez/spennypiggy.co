@@ -1,11 +1,13 @@
  
   import { DndContext, closestCenter } from '@dnd-kit/core';
   import { SortableContext, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
-  import { useState } from 'react';
+  import { useEffect, useState } from 'react';
   import { useSortable } from '@dnd-kit/sortable';
   import { CSS } from '@dnd-kit/utilities';
+  import axios from 'axios';
   
   export default function Test() {
+
     const [languageImage, setLanguageImage] = useState([
       {
         id:1,
