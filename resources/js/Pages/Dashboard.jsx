@@ -145,7 +145,6 @@ export default function Dashboard(props) {
                                         links={socialLinks}
                                         user={user}
                                     />
-                                    {/* <AddGoal /> */}
                                     <div className="userProfileDate pt-0">
                                         {IsloggedIn ? (
                                             <>
@@ -173,7 +172,7 @@ export default function Dashboard(props) {
                                                     </div>
                                                 )}
 
-                                                <AddGoal />
+                                                {/* <AddGoal /> */}
                                                 <div className="addsocial flex">
                                                     <ul>
                                                         <li>
