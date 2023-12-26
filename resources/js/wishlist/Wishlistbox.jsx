@@ -20,8 +20,7 @@ export default function Wishlistbox(props) {
   const { currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped } = props;
 
   const { listeners, attributes, setNodeRef, transform, isDragging } = useSortable({ 
-    id: itm && itm.id,
-    restrictToContainerEdges: true,
+    id: itm && itm.id
   });
   const style = { 
     transform: CSS.Translate.toString(transform),

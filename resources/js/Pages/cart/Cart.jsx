@@ -14,8 +14,6 @@ export default function Cart(props) {
     const { auth, user, carts } = props;
     const [ cartsItems, setCartItems ] = useState(carts);
 
-
-    console.log("carts",cartsItems)
     const [loading, setLoading]= useState(false);
     const fetchCartItem = (e) => { 
         setLoading(true);

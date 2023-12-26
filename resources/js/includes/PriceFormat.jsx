@@ -17,8 +17,8 @@ export default function PriceFormat(){
 
         const up_global_currency = global_currency && global_currency.toUpperCase();
         const conversion_rate = rates[upCorrency];
-        const gbpamount  = amount/conversion_rate
-        const final = gbpamount*rates[up_global_currency]
+        const gbpamount  = amount/conversion_rate;
+        const final = gbpamount*rates[up_global_currency || 'GBP']
         return new Intl.NumberFormat('en-GB', {
             style: 'currency',
             currency: global_currency || 'GBP',

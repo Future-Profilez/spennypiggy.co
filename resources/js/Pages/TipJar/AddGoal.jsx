@@ -38,14 +38,13 @@ export default function AddGoal({auth, owner}) {
 
     return (
         <Popup
-            modalclassName="pinkmodal sendSurprize-modal"
+            modalclassName="pinkmodal sendSurprize-modal shadow-pink"
             space="4" size="md"
             action={close} classes={`btn-pink lg px-4 my-2 w-100`}
             text={`Add Goal`} >
             <h2 className="text-uppercase font-GillSans pb-4 font-large">
                 Add Goal
             </h2>
-
 
 
             <div className="form-field mb-4">
@@ -60,6 +59,14 @@ export default function AddGoal({auth, owner}) {
 
             <div className="form-field mb-4">
                <label className="d-block text-start mb-2">Target Amount</label>
+               <input className="form-input w-100 rounded"
+                  onChange={(e) => setData('amount', e.target.value)}
+                  type="number" placeholder="Enter amount.. "
+               />
+            </div>
+
+            <div className="form-field mb-4">
+               <label className="d-block text-start mb-2">Minumum Amount to pay</label>
                <input className="form-input w-100 rounded"
                   onChange={(e) => setData('amount', e.target.value)}
                   type="number" placeholder="Enter amount.. "
