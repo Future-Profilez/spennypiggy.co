@@ -95,7 +95,7 @@ Route::middleware('auth')->group(function () {
 
         Route::prefix("stripe")->name("stripe.")->group(function () {
             Route::get("authorize", [StripeController::class, "index"])->name("index");
-            Route::match(["get", "post"], "/connect-{step}/{country?}", [StripeController::class, "initConnect"])->name("connect");
+            Route::match(["get", "post"], "/connect-{step}/{country?}/{currency?}", [StripeController::class, "initConnect"])->name("connect");
             Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
             Route::post("/login", [StripeController::class, "loginToStripe"])->name("login");
         });

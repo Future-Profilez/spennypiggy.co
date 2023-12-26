@@ -395,7 +395,7 @@ class WishitemController extends Controller
         $itemId = $query->whereHas('wish', function ($q) use ($user_id) {
             $q->where('user_id', $user_id);
         })->pluck('wish_item_id');
-        $user = User::where('id', $user_id)->first();
+        $user = User::where('id', $user_id)->whereNot('country', 'GB')->first();
         $items = Wishitem::whereIn('id', $itemId)->latest()->get();
         // $items = WishItem::whereUserId($user->id)->latest()->get();
         $categories = UserCategory::whereUserId($user->id)->latest()->get();
@@ -736,7 +736,7 @@ class WishitemController extends Controller
             return redirect()->back()->with("error", "Max limit for message is 100 words");
         }
 
-        $owner = User::where('id', $request->owner_id)->first();
+        $owner = User::where('id', $request->owner_id)->whereNot('country', 'GB')->first();
 
         $price = Helpers::priceFormat(request()->cookie('currency'), $request->amount, $owner->default_currency);
         // $price = round($request->amount, 2, PHP_ROUND_HALF_UP);

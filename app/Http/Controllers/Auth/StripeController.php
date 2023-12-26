@@ -45,7 +45,7 @@ class StripeController extends Controller
      */
     public function index()
     {
-        $user = User::whereNot('country', 'GB')->find(Auth::id());
+        $user = User::find(Auth::id());
         if (!empty($user->account_id)) {
 
             try {
@@ -72,10 +72,10 @@ class StripeController extends Controller
      * @param string $step Connection Current Step
      * @return mixed
      */
-    public function initConnect(Request $request, $step = "init", $country = null)
+    public function initConnect(Request $request, $step = "init", $country = null, $currency = null)
     {
 
-        $user = User::whereNot('country', 'GB')->find(Auth::id());
+        $user = User::find(Auth::id());
         if (empty($user->account_id)) {
             // if (!$request->isMethod("POST")) {
             //     return redirect()->back()->with("error", "Invalid request!");
@@ -96,15 +96,6 @@ class StripeController extends Controller
                         'mcc'   => '7278' //marketplaces - older - 5262
                     ],
                     'default_currency' => 'GBP',
-                    'individual' => [
-                        'address' => [
-                            'city' => 'Birmingham',
-                            'country' => 'GB',
-                            'line1' => '55 Colmore Row',
-                            'postal_code' => 'B3 2AA'
-                        ],
-                        'phone' => "2045873148"
-                    ]
                 ];
                 $account = StripeControl::createAccount($payload);
                 $user->account_id = $account->id;
@@ -194,7 +185,7 @@ class StripeController extends Controller
                 }
             }
 
-            $user = User::findOrFail(Auth::id());
+            $user = User::whereNot('country', 'GB')->findOrFail(Auth::id());
             $getdata = UserCart::where('user_id', Auth::id())
                 ->where('owner_id', $owner_id)
                 ->where('status', 1)

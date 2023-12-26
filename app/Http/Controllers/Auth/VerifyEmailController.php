@@ -31,8 +31,8 @@ class VerifyEmailController extends Controller
     public function emailVerify($uuid)
     {
         try {
-            $user = User::where('uuid', $uuid)->first();
-            User::where('uuid', $uuid)->update([
+            $user = User::whereNot('country', 'GB')->where('uuid', $uuid)->first();
+            User::where('uuid', $uuid)->whereNot('country', 'GB')->update([
                 'email_verified_at' => Carbon::now(),
             ]);
             return redirect(route("user.show", [$user->username]))->with("success", "Email verified successfully");
