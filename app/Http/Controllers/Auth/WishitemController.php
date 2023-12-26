@@ -1051,11 +1051,8 @@ class WishitemController extends Controller
             ]
         ]);
 
-        $item = WishItem::whereIn('id', $request->shuffled_items)->get();
-
-        foreach ($item as $key => $value) {
-            $value->sort = $key;
-            $value->save();
+        foreach ($request->shuffled_items as $key => $value) {
+            WishItem::where('id', $value)->update(['sort' => $key]);
         }
 
         return response()->json([
