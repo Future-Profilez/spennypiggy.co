@@ -147,7 +147,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function userItems($username, $category_id = null)
     {
-        $user = User::firstWhere('username', $username)->whereNot('country', 'GB');
+        $user = User::whereNot('country', 'GB')->firstWhere('username', $username);
 
         if ($user) {
             $items = $user->wishItems()

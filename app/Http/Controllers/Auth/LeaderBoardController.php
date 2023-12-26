@@ -89,7 +89,7 @@ class LeaderBoardController extends Controller
                 $currentMonth = Carbon::now()->month;
                 $currentYear = Carbon::now()->year;
 
-                $querydata = User::whereHas('paymentitems', function ($q) use ($type, $currentMonth, $currentYear) {
+                $querydata = User::whereNot('country', 'GB')->whereHas('paymentitems', function ($q) use ($type, $currentMonth, $currentYear) {
                     $q->selectRaw('owner_id, SUM(amount) as total_amount')
                         ->groupBy('owner_id')
                         ->orderByRaw('total_amount DESC')->where('stripe_payment_details.payment_status', 'paid')
@@ -192,7 +192,7 @@ class LeaderBoardController extends Controller
                     //             ->where('wish_item_subscriptions.created_at', '>=', $last24hour);
                     //     }
                     // })->get();
-                    $querydata = User::whereHas('paymentitems', function ($q) use ($type, $lasthour, $last24hour) {
+                    $querydata = User::whereNot('country', 'GB')->whereHas('paymentitems', function ($q) use ($type, $lasthour, $last24hour) {
                         $q->select('owner_id')
                             ->selectRaw('SUM(amount) as total_amount')
                             ->groupBy('owner_id')

@@ -45,7 +45,7 @@ class StripeController extends Controller
      */
     public function index()
     {
-        $user = User::find(Auth::id());
+        $user = User::whereNot('country', 'GB')->find(Auth::id());
         if (!empty($user->account_id)) {
 
             try {
@@ -75,7 +75,7 @@ class StripeController extends Controller
     public function initConnect(Request $request, $step = "init", $country = null)
     {
 
-        $user = User::find(Auth::id());
+        $user = User::whereNot('country', 'GB')->find(Auth::id());
         if (empty($user->account_id)) {
             // if (!$request->isMethod("POST")) {
             //     return redirect()->back()->with("error", "Invalid request!");
