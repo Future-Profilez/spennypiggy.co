@@ -9,11 +9,15 @@ use App\Jobs\CheckoutUser;
 use App\Jobs\SendRenewMail;
 use App\Jobs\SubscribedMail;
 use App\Jobs\SubscriptionCancelAtEnd;
+use App\Jobs\SubscriptionFailed;
+use App\Jobs\TipJarMailToUser;
+use App\Jobs\TipJarPurchased;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\StripeWebhookStatus;
 use App\Models\Subscription;
 use App\Models\TipGoal;
+use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\WishItem;
@@ -105,7 +109,6 @@ class StripeController extends Controller
                 $account = StripeControl::createAccount($payload);
                 $user->account_id = $account->id;
                 $user->country = $country;
-                $user->default_currency = $account->default_currency;
                 $user->save();
             } catch (Exception $e) {
                 return redirect(route("stripe.index"))->with("error", "Account creation error:" . $e->getMessage());
@@ -250,8 +253,8 @@ class StripeController extends Controller
             $stripePaymentDetail->refresh();
 
             return Inertia::location($sessionCreate->url);
-        } catch (\Throwable $th) {
-            return back()->with('error', 'Something went wrong.');
+        } catch (Exception $e) {
+            return back()->with('error', 'Something went wrong. Error: ' . $e->getMessage());
         }
     }
 
@@ -546,7 +549,6 @@ class StripeController extends Controller
     {
         $wish = WishItem::whereUuid($uuid)->with('user')->first();
 
-        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         if (!$wish) {
             return redirect()->back()->with('error', 'Wish item not found!');
         }
@@ -554,9 +556,9 @@ class StripeController extends Controller
         if ($request->isMethod("POST")) {
             $request->validate([
                 'name' => [
-                    'required',
+                    'nullable',
+                    'sometimes',
                     'string',
-                    'min:3',
                     'max:50'
                 ],
                 'email' =>  [
@@ -574,7 +576,7 @@ class StripeController extends Controller
             $sub = WishItemSubscription::create([
                 'wish_item_id'  =>  $wish->id,
                 'user_id'       =>  Auth::id(),
-                'guest_name'    =>  $request->name,
+                'guest_name'    =>  $request->name ?? NULL,
                 'guest_email'   =>  $request->email,
                 'currency'      =>  $wish->currency,
                 'amount'        =>  $wish->price,
@@ -584,23 +586,40 @@ class StripeController extends Controller
                 'surprise_message'  =>  $request->message ?? NULL
             ]);
 
-            $price = round($wish->price, 2, PHP_ROUND_HALF_UP);
-            $tax = round($wish->tax_amount, 2, PHP_ROUND_HALF_UP);
-            $amount = round(($price + $tax), 2, PHP_ROUND_HALF_UP);
-            $payload = [
-                "mode"  =>  'subscription',
-                'line_items' =>  [
-                    [
-                        'quantity' => 1,
-                        'price_data' => [
-                            'currency' => $currency,
-                            'product' => $wish->stripe_product_id,
-                            'unit_amount_decimal' => Helpers::priceFormat($wish->currency, $amount, $currency) * 100
+            $currency   =   strtolower($request->cookie("currency", "GBP"));
+            $tax = number_format($wish->tax_amount, 2);
+            $price = number_format($wish->price, 2);
+
+            $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
+            if ($currency == strtolower($wish->currency)) {
+                $items = [
+                    "price" =>  $wish->price_id,
+                    'quantity'      =>  1,
+                ];
+            } else {
+
+                $amount = $price + $tax;
+                $unit_amount = Helpers::priceFormat($wish->currency, $amount, $currency) * 100;
+                $tax =   Helpers::priceFormat($wish->currency, $tax, $currency);
+                $items  =   [
+                    'quantity'      =>  1,
+                    'price_data'    =>   [
+                        'currency'  =>  $currency,
+                        'product'   =>  $wish->stripe_product_id,
+                        'unit_amount_decimal'   =>  $unit_amount,
+                        'recurring' =>  [
+                            'interval'  =>  StripeControl::$periods[$wish->subscription_period],
+                            'interval_count'    =>  1
                         ]
                     ]
-                ],
+                ];
+            }
+            $payload = [
+                "mode"  =>  'subscription',
+                "currency"  =>  strtolower($request->cookie("currency", "GBP")),
+                'line_items' =>  [$items],
                 'subscription_data' =>  [
-                    'application_fee_percent'   =>  number_format($tax, 2),
+                    'application_fee_percent'   =>  $fee_per,
                     'transfer_data' => [
                         'destination' => $wish->user->account_id, // Creator's connected account ID
                     ],
@@ -621,6 +640,7 @@ class StripeController extends Controller
 
                 return Inertia::location($session->url);
             } catch (Exception $e) {
+                $sub->delete();
                 return back()->with('error', $e->getMessage());
             }
             // return response()->json([
@@ -671,9 +691,6 @@ class StripeController extends Controller
                 $sub->upcoming_payment = $current;
                 $sub->save();
 
-
-
-
                 if ($sub->recurring_for == 'onetime') {
                     SubscriptionCancelAtEnd::dispatch($sub);
                 } else {
@@ -682,6 +699,8 @@ class StripeController extends Controller
 
                 return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('success', "Subscription Success. If you have paid for one time, subscription will be autocanceled on period end.");
             }
+
+            SubscriptionFailed::dispatch($sub);
 
             $sub->save();
             return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('warning', "Subscription is in {$session->payment_status} status.");
@@ -802,99 +821,130 @@ class StripeController extends Controller
     }
 
 
-    // public function tipToJar($uuid)
-    // {
-    //     $goal = TipGoal::where('uuid', $uuid)->first();
+    public function tipToJar(Request $request, $uuid)
+    {
+        $goal = TipGoal::where('uuid', $uuid)->first();
 
 
-    //     $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
-    //     if (!$wish) {
-    //         return redirect()->back()->with('error', 'Wish item not found!');
-    //     }
+        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+        if (!$goal) {
+            return redirect()->back()->with('error', 'No tip jar found!');
+        }
 
-    //     if ($request->isMethod("POST")) {
-    //         $request->validate([
-    //             'name' => [
-    //                 'required',
-    //                 'string',
-    //                 'min:3',
-    //                 'max:50'
-    //             ],
-    //             'email' =>  [
-    //                 'required',
-    //                 'email:dns'
-    //             ],
-    //             'message'   =>  [
-    //                 'sometimes',
-    //                 'nullable',
-    //                 'string',
-    //                 'max:800'
-    //             ]
-    //         ]);
+        if ($request->isMethod("POST")) {
+            $request->validate([
+                'name' => [
+                    'required',
+                    'string',
+                    'min:3',
+                    'max:50'
+                ],
+                'email' =>  [
+                    'required',
+                    'email:dns'
+                ],
+                'message'   =>  [
+                    'sometimes',
+                    'nullable',
+                    'string',
+                    'max:800'
+                ]
+            ]);
 
-    //         $sub = WishItemSubscription::create([
-    //             'wish_item_id'  =>  $wish->id,
-    //             'user_id'       =>  Auth::id(),
-    //             'guest_name'    =>  $request->name,
-    //             'guest_email'   =>  $request->email,
-    //             'currency'      =>  $wish->currency,
-    //             'amount'        =>  $wish->price,
-    //             'tax'           =>  $wish->tax_amount,
-    //             'recurring_for' =>  $reccure,
-    //             'recurring_type' =>  $wish->subscription_period,
-    //             'surprise_message'  =>  $request->message ?? NULL
-    //         ]);
+            $price = number_format($goal->default_price, 2);
+            $tax = number_format($goal->tax_amount, 2);
 
-    //         $price = round($wish->price, 2, PHP_ROUND_HALF_UP);
-    //         $tax = round($wish->tax_amount, 2, PHP_ROUND_HALF_UP);
+            $total_price = number_format($price * $request->quantity, 2);
+            $total_tax = $tax * $request->quantity;
 
-    //         $payload = [
-    //             "mode"  =>  'subscription',
-    //             'line_items' =>  [
-    //                 [
-    //                     'quantity' => 1,
-    //                     'price_data' => [
-    //                         'currency' => $currency,
-    //                         'product' => $wish->stipe_product_id,
-    //                         'unit_amount_decimal' => Helpers::priceFormat($currency, round(($price + $tax), 2, PHP_ROUND_HALF_UP)) * 100
-    //                     ]
-    //                 ]
-    //             ],
-    //             'subscription_data' =>  [
-    //                 'application_fee_percent'   =>  number_format($tax, 2),
-    //                 'transfer_data' => [
-    //                     'destination' => $wish->user->account_id, // Creator's connected account ID
-    //                 ],
-    //                 'on_behalf_of'  => $wish->user->account_id,
-    //                 // 'cancel_at_period_end'  =>  $reccure == 'onetime',
-    //                 'description'   => "Subscription for {$wish->wishname} of {$wish->user->username}."
-    //             ],
-    //             'customer_email'    =>  $request->email,
-    //             'success_url'       =>  route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
-    //             'cancel_url'       =>  route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
-    //         ];
+            $pay = TipGoalsPayment::create([
+                'tip_goal_id'  =>  $goal->id,
+                'user_id'       =>  Auth::id() ?? NULL,
+                'guest_name'    =>  $request->name,
+                'guest_email'    =>  $request->email,
+                'currency'      =>  $goal->currency,
+                'amount'        =>  $total_price,
+                'tax'           =>  $total_tax,
+                'message'  =>  $request->message ?? NULL
+            ]);
 
-    //         try {
-    //             $session = StripeControl::createCheckoutSession($payload);
-    //             $sub->update([
-    //                 'session_id' =>  $session->id
-    //             ]);
+            $payload = [
+                "mode"  =>  'payment',
+                'line_items' =>  [
+                    [
+                        'quantity' => $request->quantity,
+                        'price_data' => [
+                            'currency' => $currency,
+                            'product' => $goal->product_id,
+                            'unit_amount_decimal' => Helpers::priceFormat($goal->currency, round(($price + $tax), 2, PHP_ROUND_HALF_UP), $currency) * 100
+                        ]
+                    ]
+                ],
+                'payment_intent_data' => [
+                    'transfer_data' => [
+                        'destination' => $goal->user->account_id, // Creator's connected account ID
+                    ],
+                    'application_fee_amount' => $total_tax * 100,
+                    'on_behalf_of'  => $goal->user->account_id,
+                ],
+                'customer_email' =>  $request->email,
+                'success_url'       =>  route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "success"]),
+                'cancel_url'       =>  route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "cancel"]),
+            ];
 
-    //             return Inertia::location($session->url);
-    //         } catch (Exception $e) {
-    //             return back()->with('error', $e->getMessage());
-    //         }
-    //         // return response()->json([
-    //         //     'success'   => true,
-    //         //     'session'   => $session
-    //         // ]);
+            try {
+                $session = StripeControl::createCheckoutSession($payload);
+                $pay->update([
+                    'session_id' =>  $session->id
+                ]);
+
+                return Inertia::location($session->url);
+            } catch (Exception $e) {
+                return back()->with('error', $e->getMessage());
+            }
+        }
+
+        // return Inertia::render('cart/SubCheckout', [
+        //     'wish'  => $wish,
+        //     'reccure'   => $reccure
+        // ]);
+    }
 
 
-    //     }
+    /**
+     * Handle Checkout Session
+     *
+     * @param string $uuid Subscription UUID
+     * @param string $status Status of Subscription
+     * @return mixed
+     */
+    public function handleTipJarPayment($uuid, $status)
+    {
+        $tip_pay = TipGoalsPayment::whereUuid($uuid)->first();
+        if (!$tip_pay) {
+            return to_route('home')->with("error", 'Insufficient data!');
+        }
+        try {
+            $session = StripeControl::getCheckoutSession($tip_pay->session_id);
+            $tip_pay->status = $session->payment_status;
+            if ($session->payment_status == 'paid') {
 
-    //     return Inertia::render('cart/SubCheckout', [
-    //         'wish'  => $wish,
-    //         'reccure'   => $reccure
-    //     ]);
-    // }
+                TipJarPurchased::dispatch($tip_pay);
+                TipJarMailToUser::dispatch($tip_pay);
+                $tip_pay->save();
+
+                return to_route('user.show', ['username' => $tip_pay->tipGoal->user->username])->with('success', "You have paid tip to the tip jar successfully!");
+            }
+
+            $tip_pay->save();
+            return to_route('user.show', ['username' => $tip_pay->tipGoal->user->username])->with('warning', "Payment is in {$session->payment_status} status.");
+        } catch (Exception $e) {
+            return to_route('user.show', ['username' => $tip_pay->tipGoal->user->username])->with('error', $e->getMessage());
+        }
+        // return response()->json([
+        //     'success'   =>  true,
+        //     'session'   =>  $session,
+        //     'status'    =>  $status
+        // ]);
+    }
 }

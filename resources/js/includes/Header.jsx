@@ -31,6 +31,7 @@ export default function Header() {
         });
     }
 
+
     useEffect(() => {
         fetchCounter();
     }, [cart]);
@@ -57,7 +58,9 @@ export default function Header() {
 
                     <div className='cartLogin'>
                         {auth && auth.user && auth.user.stripe_details_submitted == '1' ? '' :
+                            router.page && router.page && router.page.component == 'Dashboard' ? 
                             <ChangeCurrency defaultvalue={global_currency} changer={true} />
+                            : ''
                         }
                         <Link href={route('cart')} as="button" className='cartLink d-flex me-3 position-relative'>
                             <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36" fill="none">
@@ -141,7 +144,7 @@ export default function Header() {
                         <li><Link onClick={toggleClass} href={route("how-it-works")} >How it works</Link></li>
                         <li><a onClick={toggleClass} target='_blank' href="https://intercom.help/spenny-piggy" >FAQ's</a></li>
                         <li><a onClick={toggleClass} href="https://blog.spennypiggy.co" >Blog</a></li>
-                        <li><a onClick={(toggleClass)} className='livechat' >Need help ?</a></li>
+                        <li><div  onClick={(toggleClass)} className='livechat link' >Need help ?</div></li>
 
                         {auth && auth?.user?.username ?
                             <li className='d-block d-lg-none' ><Link onClick={toggleClass} method="get" href={route('logout')} >Logout</Link></li>

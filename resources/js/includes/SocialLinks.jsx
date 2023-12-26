@@ -116,9 +116,7 @@ export default function SocialLinks({ links }) {
         <div>
             <ul className='socialmedia flex-wrap flex justify-center'>
                 {links && links.length ? links.map((l, i) => {
-                    return <>
-                        {l?.url ?
-                            <li className='px-2 mt-2 mb-2' >
+                    return  <li key={`social-link-${i}`} className={`${l?.url ? '' : 'd-none '} px-2 mt-2 mb-2`} >
                                  { l.social == "fansly" ? 
                                         <a target="_blank" title={l.social} href={l.url} > <img src={fansly}  alt="img" className='img-fluid' /> </a>
                                  : l.social == "manyvids" 
@@ -127,9 +125,7 @@ export default function SocialLinks({ links }) {
                                   :
                                  <a target="_blank" title={l.social} href={l.url} dangerouslySetInnerHTML={{ __html: icons(l.social) }} ></a>
                                  }
-                            </li>
-                        : ''}
-                    </>
+                        </li>
                 }) : ''}
             </ul>
         </div>
