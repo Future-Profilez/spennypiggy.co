@@ -199,11 +199,11 @@ class WishitemController extends Controller
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         }
 
-        if (Helpers::checkUnsafeContent($request->thumbnail)){
+        if (Helpers::checkUnsafeContent($request->thumbnail)) {
             return redirect()->back()->with("error", "NSFW Detected in the media content. Try alternative.");
         }
 
-            $user = User::find(Auth::id());
+        $user = User::find(Auth::id());
         $price = Helpers::priceFormat($request->cookie('currency', 'GBP'), $request->price, $user->default_currency);
 
         // $price = round($request->price, 2, PHP_ROUND_HALF_UP);
@@ -1051,9 +1051,12 @@ class WishitemController extends Controller
             ]
         ]);
 
-        WishItem::whereIn('id', $request->shuffled_items)->get()->each(function ($item, $index) {
-            $item->update(['sort' => $index + 1]);
-        });
+        $item = WishItem::whereIn('id', $request->shuffled_items)->get();
+
+        foreach ($item as $key => $value) {
+            $value->sort = $key;
+            $value->save();
+        }
 
         return response()->json([
             'status' => true,
