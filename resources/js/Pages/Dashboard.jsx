@@ -172,7 +172,7 @@ export default function Dashboard(props) {
                                                     </div>
                                                 )}
 
-                                                <AddGoal />
+                                                {/* <AddGoal /> */}
                                                 <div className="addsocial flex">
                                                     <ul>
                                                         <li>
@@ -249,7 +249,8 @@ export default function Dashboard(props) {
                                                 <>
                                                     {its && its.length ? <>
                                                         <DndContext 
-                                                              collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                                        collisionDetection={closestCenter}
+                                                         onDragEnd={handleDragEnd}>
                                                             <SortableContext strategy={rectSortingStrategy} items={its}>
                                                                 {!loading && its.map((c, i) => {
                                                                     return <Wishlistbox 

@@ -24,9 +24,13 @@ export default function AddGoal({auth, owner}) {
       post(route(`add-goal`, data ), {
             preserveScroll: true,
             onSuccess: (resp) => {
-               reset();
+               // reset();
                if (resp.props.flash?.success) {
                   successAlert(resp.props.flash?.success);
+                  setClose(false);
+                  setTimeout(()=>{
+                     setClose();
+                  },100);
                }
                if (resp.props.flash?.error) {
                   errorAlert(resp.props.flash?.error);
