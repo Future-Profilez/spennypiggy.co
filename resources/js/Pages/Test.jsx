@@ -1,79 +1,114 @@
-import { DndContext, closestCenter } from '@dnd-kit/core';
-import{SortableContext,rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
-import { useState } from 'react';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-
-export default function Test(){
-  const [languageImage, setLanguageImage] = useState([
-    {
-      id:1,
-    },
-    {
-      id:2,
-    },
-    {
-      id:3,
-    },
-    {
-      id:4,
-    },
-    {
-      id:5
-    },
-    {
-      id:6
-    },
-    {
-      id:7
-    },
-    {
-      id:8
-    },
-    {
-      id:9
-    },
-    {
-      id:10
-    },
-  ]);
-
-
-  const handleDragEnd = (event) => {
-    const { active, over } = event;
-    const activeIndex = languageImage.findIndex((item) => item.id === active.id);
-    const overIndex = over ? languageImage.findIndex((item) => item.id === over.id) : -1;
-
-    if (activeIndex !== overIndex) {
-      const updatedLanguageImage = arrayMove(languageImage, activeIndex, overIndex, { key: 'id' });
-      setLanguageImage(updatedLanguageImage);
-    }
-  };
-
-
-  const Item = ({image}) =>{
-    const { listeners, attributes, setNodeRef, transform } = useSortable({ id: image.id });
-    const style = {
-      transform: CSS.Translate.toString(transform)
-    };
-    return <div style={style} ref={setNodeRef} {...listeners} {...attributes}  className='items-flex-item' >{image.id}</div>
-  }
-
-
-  return <>
-    <style>{`
-      .items-flex-item{background:#ccc;max-width:25%;margin:20px;padding:20px;width:100%;}
-      .items-flex{display:flex;flex-wrap:wrap;}
-    `}</style>
+ 
+  import { DndContext, closestCenter } from '@dnd-kit/core';
+  import { SortableContext, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+  import { useState } from 'react';
+  import { useSortable } from '@dnd-kit/sortable';
+  import { CSS } from '@dnd-kit/utilities';
   
-    <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <SortableContext strategy={rectSortingStrategy} items={languageImage}>
-        <div className='items-flex'>
-          {languageImage.map((m, i) => (
-            <Item image={m} />
-          ))}
+  export default function Test() {
+    const [languageImage, setLanguageImage] = useState([
+      {
+        id:1,
+      },
+      {
+        id:2,
+      },
+      {
+        id:3,
+      },
+      {
+        id:4,
+      },
+      {
+        id:5,
+      },
+      {
+        id:6
+      },
+      {
+        id:7
+      },
+      {
+        id:8
+      },
+      {
+        id:9
+      },
+      {
+        id:10
+      },
+    ]);
+  
+    const [overIndex, setOverIndex] = useState(null);
+  
+    const handleDragEnd = (event) => {
+      const { active, over } = event;
+      const activeIndex = languageImage.findIndex((item) => item.id === active.id);
+      const newOverIndex = over ? languageImage.findIndex((item) => item.id === over.id) : null;
+  
+      if (activeIndex !== newOverIndex) {
+        const updatedLanguageImage = arrayMove(languageImage, activeIndex, newOverIndex, { key: 'id' });
+        setLanguageImage(updatedLanguageImage);
+      }
+  
+      setOverIndex(null);
+    };
+  
+    const Item = ({ image }) => {
+      const { listeners, attributes, setNodeRef, transform, isDragging } = useSortable({
+        id: image.id,
+        restrictToContainerEdges: true,
+      });
+  
+      const style = {
+        transform: CSS.Translate.toString(transform),
+        // border: overIndex !== null ? '2px dashed #ffffff' : 'none',
+      };
+  
+      return (
+        <div
+          style={style}
+          ref={setNodeRef}
+          {...listeners}
+          {...attributes}
+          className={`items-flex-item col-md-4 ${isDragging ? 'dragging' : ''}`}
+        >
+          {image.id}
         </div>
-      </SortableContext>
-    </DndContext>
-  </>
-};
+      );
+    };
+  
+    return (
+      <>
+        <style>{`
+          .items-flex-item {
+            background: #ccc;
+            margin: 20px;
+            padding: 20px;
+          }
+          .items-flex {
+            display: flex;
+            flex-wrap: wrap;
+          }
+        
+          .items-flex-item.dragging {
+            border: 2px dashed #39f;
+          }
+          .items-flex> div:not(.dragging) { 
+            transition:0.5s;
+          }
+        `}</style>
+  
+        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext strategy={rectSortingStrategy} items={languageImage}>
+            <div className='items-flex row'>
+              {languageImage.map((m, i) => (
+                <Item key={m.id} image={m} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </>
+    );
+  }
+  
