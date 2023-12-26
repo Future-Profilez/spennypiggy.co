@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::table('tip_goals', function (Blueprint $table) {
             $table->string('product_id')->nullable()->change();
+            $table->string('price_id')->nullable()->change();
         });
     }
 
