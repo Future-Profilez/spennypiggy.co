@@ -603,6 +603,7 @@ button.editpop{display:none !important;}
 .plantitle{font-size:22px;}
 .wishbanner span{width:100% !important;display:block !important;height:100% !important;}
 .movesvg{cursor: grab;border-radius:7px;width:30px;height:30px;padding:6px;background:#ffffffbd;position:absolute;top:10px;left:10px;z-index:1;}
-/* .wish-item-box:not(.dragging)  {
-  transition: 0.5s;
-} */
+/* .wish-item-box:not(.dragging)  { */
+.wish-item-box {
+  /* transition: 0.5s ease-out; */
+}
