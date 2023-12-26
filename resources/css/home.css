@@ -580,7 +580,7 @@ div#msgText p{display:flex;align-items:flex-start;}
 .mytable tr:not(:last-child) td{border-bottom:1px solid #232323;}
 .rightbar h2{font-size:20px;font-weight:600;font-family:var(--heading-font) !important;}
 .angle-icon svg{width:50px;}
-.wish-item img{object-fit:cover;border-radius:10px !important;width:50px;height:50px;background:#fff;border:1px solid #000;}
+.wish-item img{object-fit:cover;border-radius:10px !important;width:50px;min-width:50px;height:50px;background:#fff;border:1px solid #000;}
 .wishcontent h2{font-size:18px;}
 .wishcontent h3{font-size:16px;font-weight:700;color:#000 !important;margin:3px 0;}
 .heading{font-size:22px;margin-bottom:10px;}

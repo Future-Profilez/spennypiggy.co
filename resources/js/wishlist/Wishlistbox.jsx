@@ -20,7 +20,12 @@ export default function Wishlistbox(props) {
   const { currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped } = props;
 
   const { listeners, attributes, setNodeRef, transform, isDragging } = useSortable({ 
-    id: itm && itm.id
+    id: itm && itm.id,
+    restrictToContainerEdges: true,
+    activationConstraint: {
+      distance: 10, // Adjust the distance as needed
+      tolerance: 5,
+    },
   });
   const style = { 
     transform: CSS.Translate.toString(transform),

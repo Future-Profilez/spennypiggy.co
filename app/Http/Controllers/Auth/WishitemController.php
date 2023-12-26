@@ -994,6 +994,9 @@ class WishitemController extends Controller
                 "default_price" => [
                     "nullable"
                 ],
+                // "description" => [
+                //     "nullable"
+                // ],
             ]
         );
 
