@@ -1023,26 +1023,19 @@ class WishitemController extends Controller
             ],
             "url"   => env('APP_URL') . '/' . $user->username . "?goal=$goal->uuid/"
         ];
-
-
         try {
             $product = StripeControl::createProduct($productPayload);
             $goal->product_id = $product->id;
             $goal->price_id = $product->default_price;
             $goal->save();
-
-            // if (isset($request->post_twitter) && $request->post_twitter == 1) {
-            //     TwitterController::testToken($wish);
-            // }
+ 
         } catch (Exception $e) {
             $goal->delete();
             return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
         }
+      
+        return back()->with('success', 'Tip Goal added successfully!');
 
-        return response()->json([
-            'status' => true,
-            'msg' => "Tip Goal added successfully!"
-        ]);
     }
 
 

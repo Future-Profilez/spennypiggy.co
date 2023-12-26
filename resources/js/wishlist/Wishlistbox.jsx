@@ -19,16 +19,17 @@ export default function Wishlistbox(props) {
   const { format, formatMultiPrice } = PriceFormat();
   const { currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped } = props;
 
-  const { listeners, attributes, setNodeRef, transform, isDragging } = useSortable({ 
+  const { listeners, attributes, setNodeRef, transform, isDragging, transition } = useSortable({ 
     id: itm && itm.id,
-    restrictToContainerEdges: true,
+    restrictToContainerEdges: false,
     activationConstraint: {
-      distance: 10, // Adjust the distance as needed
+      distance: 10,  
       tolerance: 5,
     },
   });
+
   const style = { 
-    transform: CSS.Translate.toString(transform),
+    transform: CSS.Translate.toString(transform)
   };
   const stylenone = { 
     transform: '',
