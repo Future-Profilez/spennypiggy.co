@@ -19,6 +19,7 @@ import { LazyLoadImage } from 'react-lazy-load-image-component';
 import useWidthCount from '@/Components/useWidthCount';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import{ SortableContext,rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import AddGoal from './TipJar/AddGoal';
 
 export default function Dashboard(props) {
 
@@ -64,8 +65,6 @@ export default function Dashboard(props) {
             setLoading(false);
         });
     };
-    console.log("its",its)
-
 
     const showCategory = (e) => {
         const v = e.target.value;
@@ -146,7 +145,6 @@ export default function Dashboard(props) {
                                         links={socialLinks}
                                         user={user}
                                     />
-                                    {/* <AddGoal /> */}
                                     <div className="userProfileDate pt-0">
                                         {IsloggedIn ? (
                                             <>
@@ -173,6 +171,8 @@ export default function Dashboard(props) {
                                                         </Link>
                                                     </div>
                                                 )}
+
+                                                {/* <AddGoal /> */}
                                                 <div className="addsocial flex">
                                                     <ul>
                                                         <li>
