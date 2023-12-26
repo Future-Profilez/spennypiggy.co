@@ -62,7 +62,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function getUserProfile($username)
     {
-        $user = User::where('username', $username)->first();
+        $user = User::where('username', $username)->whereNot('country', 'GB')->first();
         if (!$user) {
             return Inertia::render('NotFound');
         }
@@ -73,19 +73,19 @@ class AuthenticatedSessionController extends Controller
         }
         $userfield = $user->name;
         $userName = str_replace(' ', '%20', $userfield);
-        $image = "https://ucarecdn.com/2ab6bf9f-c6d1-4905-acaf-499b041da7ea/-/preview/900x900/-/text_align/center/center/-/font/14/000000/-/text/100px30p/100p,100p/spennypiggy.co~s".$user->username."/-/text_align/center/center/-/font/19/e6ea82/-/text/100px78p/100p,100p/".$userName."/";
-        
+        $image = "https://ucarecdn.com/2ab6bf9f-c6d1-4905-acaf-499b041da7ea/-/preview/900x900/-/text_align/center/center/-/font/14/000000/-/text/100px30p/100p,100p/spennypiggy.co~s" . $user->username . "/-/text_align/center/center/-/font/19/e6ea82/-/text/100px78p/100p,100p/" . $userName . "/";
+
         SeoMeta::addTag('title', "{$user->name} - Spenny Piggy - Financial Gifts, Donations & Memberships");
-        SeoMeta::addTag('meta',[ 'property' => 'twitter:title','content' => 'Financial Gifts,Donations & Memberships' ]);
-        SeoMeta::addTag('meta',[ 'property' => 'twitter:card','content' => 'summary_large_image' ]);
-        SeoMeta::addTag('meta',[ 'property' => 'twitter:description','content' => 'Send tributes,adopt bills & more. Safe for Spicy Creators who receive 100% payouts!' ]);
-        SeoMeta::addTag('meta',[ 'property' => 'twitter:image','content' => $image ]);
-        SeoMeta::addTag('meta',[ 'property' => 'twitter:site','content' => '@spennypiggy' ]);
-        SeoMeta::addTag('meta',[ 'property' => 'twitter:creator','content' => '@spennypiggy' ]);
-        SeoMeta::addTag('meta',[ 'property' => 'twitter:image:alt','content' => 'Financial Gifts,Donations & Memberships' ]);
-        SeoMeta::addTag('meta',[ 'property' => 'twitter:image:src','content' => $image ]);
-        SeoMeta::addTag('meta',[ 'property' => 'og:image','content' => $image ]);
-         
+        SeoMeta::addTag('meta', ['property' => 'twitter:title', 'content' => 'Financial Gifts,Donations & Memberships']);
+        SeoMeta::addTag('meta', ['property' => 'twitter:card', 'content' => 'summary_large_image']);
+        SeoMeta::addTag('meta', ['property' => 'twitter:description', 'content' => 'Send tributes,adopt bills & more. Safe for Spicy Creators who receive 100% payouts!']);
+        SeoMeta::addTag('meta', ['property' => 'twitter:image', 'content' => $image]);
+        SeoMeta::addTag('meta', ['property' => 'twitter:site', 'content' => '@spennypiggy']);
+        SeoMeta::addTag('meta', ['property' => 'twitter:creator', 'content' => '@spennypiggy']);
+        SeoMeta::addTag('meta', ['property' => 'twitter:image:alt', 'content' => 'Financial Gifts,Donations & Memberships']);
+        SeoMeta::addTag('meta', ['property' => 'twitter:image:src', 'content' => $image]);
+        SeoMeta::addTag('meta', ['property' => 'og:image', 'content' => $image]);
+
         return Inertia::render('Dashboard', [
             "username" => $username,
             "user" => $user,
@@ -95,7 +95,7 @@ class AuthenticatedSessionController extends Controller
 
     public function user_info($username, $category = false)
     {
-        $user = User::where('username', $username)->first();
+        $user = User::where('username', $username)->whereNot('country', 'GB')->first();
         $items = [];
         if ($category && $user) {
             $query = WishCategory::orderBy('created_at', 'DESC');
@@ -157,9 +157,19 @@ class AuthenticatedSessionController extends Controller
                         $query->where('user_category_id', $category_id);
                     });
                 })
-                ->orderBy('is_pin', 'DESC')
+                // ->orderBy('is_pin', 'DESC')
+                ->orderBy('sort', 'ASC')
                 ->latest()
                 ->get();
+
+            // $count = 1;
+            // $items->map(function ($item) use ($count) {
+            //     $item->key = $count;
+            //     $count++;
+
+            //     return $item;
+            // });
+
             return response()->json([
                 'success'   => true,
                 'items'     =>  $items

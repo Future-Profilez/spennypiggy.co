@@ -9,6 +9,8 @@ use App\Jobs\CheckoutUser;
 use App\Jobs\SendRenewMail;
 use App\Jobs\SubscribedMail;
 use App\Jobs\SubscriptionCancelAtEnd;
+use App\Jobs\SubscriptionFailed;
+use App\Jobs\TipJarMailToUser;
 use App\Jobs\TipJarPurchased;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
@@ -689,9 +691,6 @@ class StripeController extends Controller
                 $sub->upcoming_payment = $current;
                 $sub->save();
 
-
-
-
                 if ($sub->recurring_for == 'onetime') {
                     SubscriptionCancelAtEnd::dispatch($sub);
                 } else {
@@ -700,6 +699,8 @@ class StripeController extends Controller
 
                 return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('success', "Subscription Success. If you have paid for one time, subscription will be autocanceled on period end.");
             }
+
+            SubscriptionFailed::dispatch($sub);
 
             $sub->save();
             return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('warning', "Subscription is in {$session->payment_status} status.");
@@ -887,8 +888,8 @@ class StripeController extends Controller
                     'on_behalf_of'  => $goal->user->account_id,
                 ],
                 'customer_email' =>  $request->email,
-                'success_url'       =>  route('wish.subscribe.handle', ['uuid' => $pay->uuid, 'status' => "success"]),
-                'cancel_url'       =>  route('wish.subscribe.handle', ['uuid' => $pay->uuid, 'status' => "cancel"]),
+                'success_url'       =>  route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "success"]),
+                'cancel_url'       =>  route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "cancel"]),
             ];
 
             try {
@@ -927,8 +928,11 @@ class StripeController extends Controller
             $session = StripeControl::getCheckoutSession($tip_pay->session_id);
             $tip_pay->status = $session->payment_status;
             if ($session->payment_status == 'paid') {
-                
+
                 TipJarPurchased::dispatch($tip_pay);
+                TipJarMailToUser::dispatch($tip_pay);
+                $tip_pay->save();
+
                 return to_route('user.show', ['username' => $tip_pay->tipGoal->user->username])->with('success', "You have paid tip to the tip jar successfully!");
             }
 

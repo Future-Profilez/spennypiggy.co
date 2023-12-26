@@ -35,6 +35,8 @@ use Illuminate\Support\Facades\Http;
 //     die;
 // });
 
+
+
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
@@ -50,6 +52,7 @@ Route::middleware('guest')->group(function () {
         ->name('password.email');
 
     Route::get('forgot-password/{uuid}', [PasswordResetLinkController::class, 'forgotPasswordPage']);
+
 
     Route::post('change-password/{uuid}', [PasswordResetLinkController::class, 'changePassword'])->name('changePassword');
 
@@ -75,6 +78,8 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/say-thankyou/{payment_id}', [WishitemController::class, 'sayThanks'])->name('say-thankyou');
 
+    Route::post('move-wish', [WishitemController::class, 'moveWishes'])->name('move-wish');
+
     Route::middleware('mustHaveToVerify')->group(function () {
 
         Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
@@ -84,6 +89,7 @@ Route::middleware('auth')->group(function () {
         Route::post('save_social_links', [SocialLinksController::class, 'saveSocialLinks'])->name('save_social_links');
 
         Route::post('save_wish_item', [WishitemController::class, 'addWishItem'])->name('save_wish_item');
+
 
         Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
 
@@ -187,6 +193,11 @@ Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWish
 Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
 
 Route::get('/leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('/leaderboard');
+
+Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
+    Route::post('pay/{uuid}/', [StripeController::class, 'tipToJar'])->name("pay");
+    Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
+});
 
 /*check username exist*/
 // Route::get('/data-check', function () {

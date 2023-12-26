@@ -6,6 +6,8 @@ use App\Mail\Checkout;
 use App\Mail\CheckoutToUser;
 use App\Mail\ForgotPassEmail;
 use App\Mail\RenewMail;
+use App\Mail\SendTipJarMailToUser;
+use App\Mail\SubscriptionFailedMail;
 use App\Mail\SubscriptionMail;
 use App\Mail\SubsMail;
 use App\Mail\ThankyouUser;
@@ -168,6 +170,24 @@ class EmailService
     {
         try {
             Mail::to($data->tipGoal->user->email)->send(new TipJarMail($data));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+    public static function sendTipJarToUser($data)
+    {
+        try {
+            Mail::to($data->guest_email)->send(new SendTipJarMailToUser($data));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+    public static function subscriptionFailed($sub)
+    {
+        try {
+            Mail::to($sub->guest_email)->send(new SubscriptionFailedMail($sub));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }

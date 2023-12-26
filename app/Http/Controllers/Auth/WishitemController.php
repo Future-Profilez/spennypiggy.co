@@ -199,6 +199,10 @@ class WishitemController extends Controller
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         }
 
+        if (Helpers::checkUnsafeContent($request->thumbnail)) {
+            return redirect()->back()->with("error", "NSFW Detected in the media content. Try alternative.");
+        }
+
         $user = User::find(Auth::id());
         $price = Helpers::priceFormat($request->cookie('currency', 'GBP'), $request->price, $user->default_currency);
 
@@ -833,6 +837,7 @@ class WishitemController extends Controller
             $q->where('user_id', $user->id);
         })->with(['user', 'wish_item'])->orderBy('updated_at', 'DESC')->get();
         $user_subs = WishItemSubscription::where('user_id', Auth::id())->with(['wish_item', 'wish_item.user'])->get();
+
         $trackData = $tracks->map(function ($q) {
 
             if (Auth::id() == $q->payment->owner_id) {
@@ -944,7 +949,7 @@ class WishitemController extends Controller
 
     public function cancelSubscription($subscription_id)
     {
-        $item = Subscription::where('id', $subscription_id)->first();
+        $item = WishItemSubscription::where('id', $subscription_id)->first();
         $item->status = 0;
         $item->save();
         return Inertia::render('tracker/Wishtracker');
@@ -1034,6 +1039,25 @@ class WishitemController extends Controller
         return response()->json([
             'status' => true,
             'msg' => "Tip Goal added successfully!"
+        ]);
+    }
+
+
+    public function moveWishes(Request $request)
+    {
+        $request->validate([
+            'shuffled_items' => [
+                'required',
+            ]
+        ]);
+
+        foreach ($request->shuffled_items as $key => $value) {
+            WishItem::where('id', $value)->update(['sort' => $key]);
+        }
+
+        return response()->json([
+            'status' => true,
+            'msg' => "Shuffled Successfully!"
         ]);
     }
 }

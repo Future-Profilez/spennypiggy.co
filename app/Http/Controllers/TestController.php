@@ -14,6 +14,7 @@ use App\TwitterAuth1;
 use App\TwitterAuthService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
@@ -26,13 +27,15 @@ class TestController extends Controller
      *
      * @return mixed
      */
-    public function stripeSearch(){
+    public function stripeSearch()
+    {
         $query = "email:'pradeep@fpdemo.com'";
         $search = StripeControl::searchCustomer($query);
         return response()->json($search);
     }
 
-    public function testEmail(){
+    public function testEmail()
+    {
         $user = User::find(1);
         $resp = Mail::to($user)->send(new Welcome([
             "name" => $user->name,
@@ -56,7 +59,7 @@ class TestController extends Controller
         /** For iniserting records */
         $resp = Storage::disk('public')->get('currencies.json');
         $currs = json_decode($resp, true);
-        foreach($currs as $iso => $c) {
+        foreach ($currs as $iso => $c) {
             Currency::firstOrCreate([
                 'ISO'           => $iso,
                 'name'          => $c['name'],
@@ -166,5 +169,28 @@ class TestController extends Controller
         return response()->json([
             'items' =>  $items
         ]);
+    }
+
+
+    public function testAdultContent()
+    {
+        $uuid = '58f3ab57-88e8-4df6-9dbc-5554a88e384a';
+
+        // $response = Http::withHeaders([
+        //     'Content-Type' => 'application/json',
+        //     'Accept' => 'application/vnd.uploadcare-v0.7+json',
+        //     'Authorization' => 'Uploadcare.Simple ' . env('UPLOADCARE_PUBLIC_KEY') . ':' . env('UPLOADCARE_SECRET_KEY'),
+        // ])->post('https://api.uploadcare.com/addons/aws_rekognition_detect_moderation_labels/execute/', [
+        //     'target' => $uuid,
+        // ]);
+
+
+        $response = Http::withHeaders([
+            'Accept' => 'application/vnd.uploadcare-v0.7+json',
+            'Authorization' => 'Uploadcare.Simple ' . env('UPLOADCARE_PUBLIC_KEY') . ':' . env('UPLOADCARE_SECRET_KEY'),
+        ])->get("https://api.uploadcare.com/files/$uuid/?include=appdata");
+
+        $data = $response->json();
+        return $data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'];
     }
 }

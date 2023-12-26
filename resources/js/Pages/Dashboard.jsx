@@ -19,6 +19,7 @@ import { LazyLoadImage } from 'react-lazy-load-image-component';
 import useWidthCount from '@/Components/useWidthCount';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import{ SortableContext,rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import AddGoal from './TipJar/AddGoal';
 
 export default function Dashboard(props) {
 
@@ -46,7 +47,6 @@ export default function Dashboard(props) {
         });
     }
 
-
     const [its, setIts] = useState();
     const fetchingcats = (e) => {
         setLoading(true);
@@ -64,8 +64,7 @@ export default function Dashboard(props) {
             console.error("error", error);
             setLoading(false);
         });
-};
-
+    };
 
     const showCategory = (e) => {
         const v = e.target.value;
@@ -78,9 +77,7 @@ export default function Dashboard(props) {
         fetchingLinks();
     }, []);
 
-
     const w = useWidthCount();
-
     const currencyaction = (e) => { 
         if(e == 'open'){
             setOpenCurrency(true)
@@ -88,58 +85,41 @@ export default function Dashboard(props) {
             setOpenCurrency(false)
         }
     }
+
     const [openCurrency, setOpenCurrency] = useState(null);
     useEffect(()=>{
         if(global_currency == null){
             setOpenCurrency(true)
         }
     });
+ 
 
-
-    const Items = () => { 
-        return <>
-        {!loading && its.map((c, i) => {
-            return <div key={`wish-item-${i}`} className="col-xl-4 col-lg-6 col-6">
-                <Wishlistbox
-                currency={global_currency}
-                fetchingcats={fetchingcats}
-                categories={categories}
-                IsloggedIn={IsloggedIn}
-                auth={auth.user}
-                itemid={itemid}
-                setuped={auth && auth.user && auth.user.stripe_details_submitted == 1 ? true : false}
-                itm={c}
-                key={`wish-${c.uuid}`} />
-            </div>
-        })}
-        </>
+    const updateMovement = async (updated) => { 
+        const array = [];
+        updated.forEach(name => {
+            array.push(name.id)
+        });
+        axios.post(`move-wish`, { 
+        shuffled_items: array })
+        .then((resp) => {
+        }).catch((_err) => {
+            console.error("error", _err);
+        });
     }
 
     const handleDragEnd = (event) => {
+        if(!IsloggedIn){
+            return false
+        }
         const { active, over } = event;
         const activeIndex = its.findIndex((item) => item.id === active.id);
-        const overIndex = over ? its.findIndex((item) => item.id === over.id) : -1;
-        if (activeIndex !== overIndex) {
-          const updated = arrayMove(its, activeIndex, overIndex, { key: 'id' });
+        const newOverIndex = over ? its.findIndex((item) => item.id === over.id) : null;
+        if (activeIndex !== newOverIndex) {
+          const updated = arrayMove(its, activeIndex, newOverIndex, { key: 'id' });
           setIts(updated);
+          updateMovement(updated)
         }
     };
-
-
-    // const WishItems = () => { 
-    //     return <>
-    //         {IsloggedIn  ? 
-    //             <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-    //                 <SortableContext strategy={rectSortingStrategy} items={its}>
-    //                         <Items />
-    //                 </SortableContext>
-    //             </DndContext>
-    //             : 
-    //             <Items />
-    //         }
-    //     </>
-    // }
-
 
 
     return <>
@@ -150,10 +130,10 @@ export default function Dashboard(props) {
                     <VersionUpdate />
                     {w > 991 ? <div className='wishbanner '>
                         <LazyLoadImage
-                            alt={"image"} useIntersectionObserver={true} effect="blur"
-                            height={390}
-                            className='w-full border-black border-2 shadow-mint rounded-2xl' src={user?.cover_url || wishlistbannerimg}
-                            width={1185} />
+                        alt={"image"} useIntersectionObserver={true} effect="blur"
+                        height={390}
+                        className='w-full border-black border-2 shadow-mint rounded-2xl' src={user?.cover_url || wishlistbannerimg}
+                        width={1185} />
                     </div> : ''}
                     <div className="wishManage">
                         <div className="row">
@@ -165,7 +145,6 @@ export default function Dashboard(props) {
                                         links={socialLinks}
                                         user={user}
                                     />
-                                    {/* <AddGoal /> */}
                                     <div className="userProfileDate pt-0">
                                         {IsloggedIn ? (
                                             <>
@@ -192,6 +171,8 @@ export default function Dashboard(props) {
                                                         </Link>
                                                     </div>
                                                 )}
+
+                                                {/* <AddGoal /> */}
                                                 <div className="addsocial flex">
                                                     <ul>
                                                         <li>
@@ -199,14 +180,8 @@ export default function Dashboard(props) {
                                                         </li>
                                                         <li>
                                                             <ShareProfile
-                                                                username={
-                                                                    user &&
-                                                                    user.name
-                                                                }
-                                                                classes={
-                                                                    "d-flex ms-auto"
-                                                                }
-                                                            >
+                                                                username={user && user.name}
+                                                                classes={"d-flex ms-auto"} >
                                                                 <svg
                                                                     width="24"
                                                                     height="25"
@@ -269,12 +244,27 @@ export default function Dashboard(props) {
                                     {loading ? <LoadingScreen /> : ""}
 
                                     
-                                    <div className="row items-lists">
+                                    <div className="row  items-lists">
                                         {IsloggedIn || user?.stripe_details_submitted == 1 ? (
                                                 <>
                                                     {its && its.length ? <>
-                                                        {/* <WishItems /> */}
-                                                        <Items />
+                                                        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                                            <SortableContext strategy={rectSortingStrategy} items={its}>
+                                                                {!loading && its.map((c, i) => {
+                                                                    return <Wishlistbox 
+                                                                            key={`wish-item-${i}`}
+                                                                            currency={global_currency}
+                                                                            fetchingcats={fetchingcats}
+                                                                            categories={categories}
+                                                                            IsloggedIn={IsloggedIn}
+                                                                            auth={auth.user}
+                                                                            itemid={itemid}
+                                                                            setuped={auth && auth.user && auth.user.stripe_details_submitted == 1 ? true : false}
+                                                                            itm={c}
+                                                                        />
+                                                                })}
+                                                            </SortableContext>
+                                                        </DndContext>
                                                     </>
                                                     : 
                                                         <>
