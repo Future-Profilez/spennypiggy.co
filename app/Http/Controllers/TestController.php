@@ -189,5 +189,5 @@ class TestController extends Controller
         ])->get("https://api.uploadcare.com/files/$uuid/?include=appdata");
 
         return $response->json();
-    }
+    }   
 }

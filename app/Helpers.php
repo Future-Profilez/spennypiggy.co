@@ -3,6 +3,7 @@
 namespace App;
 
 use App\Models\Currency;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Image;
 
@@ -51,5 +52,25 @@ class Helpers
         $prof_cur_price = $prof->conversion_rate * $gbp_price;
 
         return round($prof_cur_price, 2, PHP_ROUND_HALF_UP);
+    }
+
+
+    public function checkUnsafeContent($uuid)
+    {
+        Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/vnd.uploadcare-v0.7+json',
+            'Authorization' => 'Uploadcare.Simple ' . env('UPLOADCARE_PUBLIC_KEY') . ':' . env('UPLOADCARE_SECRET_KEY'),
+        ])->post('https://api.uploadcare.com/addons/aws_rekognition_detect_moderation_labels/execute/', [
+            'target' => $uuid,
+        ]);
+
+
+        $response = Http::withHeaders([
+            'Accept' => 'application/vnd.uploadcare-v0.7+json',
+            'Authorization' => 'Uploadcare.Simple ' . env('UPLOADCARE_PUBLIC_KEY') . ':' . env('UPLOADCARE_SECRET_KEY'),
+        ])->get("https://api.uploadcare.com/files/$uuid/?include=appdata");
+
+        return $response;
     }
 }
