@@ -38,7 +38,7 @@ export default function Header() {
 
 
     return <>
-        <div className='blackbg headermain py-14'>
+        <div className='blackbg headermain py-8'>
             <div className='containerbox'>
                 <div className='header flex w-full items-center content-center justify-between pinkbg border-mint shadow-mint'>
                     {auth?.user?.username ?
