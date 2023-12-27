@@ -62,7 +62,9 @@ class AuthenticatedSessionController extends Controller
      */
     public function getUserProfile($username)
     {
-        $user = User::where('username', $username)->whereNot('country', 'GB')->first();
+        $user = User::where('username', $username)->where(function ($q) {
+            $q->whereNot('country', 'GB')->orWhereNull('country');
+        })->first();
         if (!$user) {
             return Inertia::render('NotFound');
         }
@@ -95,7 +97,9 @@ class AuthenticatedSessionController extends Controller
 
     public function user_info($username, $category = false)
     {
-        $user = User::where('username', $username)->whereNot('country', 'GB')->first();
+        $user = User::where('username', $username)->where(function ($q) {
+            $q->whereNot('country', 'GB')->orWhereNull('country');
+        })->first();
         $items = [];
         if ($category && $user) {
             $query = WishCategory::orderBy('created_at', 'DESC');
@@ -147,7 +151,9 @@ class AuthenticatedSessionController extends Controller
      */
     public function userItems($username, $category_id = null)
     {
-        $user = User::whereNot('country', 'GB')->firstWhere('username', $username);
+        $user = User::where(function ($q) {
+            $q->whereNot('country', 'GB')->orWhereNull('country');
+        })->firstWhere('username', $username);
 
         if ($user) {
             $items = $user->wishItems()
@@ -185,7 +191,9 @@ class AuthenticatedSessionController extends Controller
     public function user_category($username)
     {
         try {
-            $user = User::where('username', $username)->whereNot('country', 'GB')->first();
+            $user = User::where('username', $username)->where(function ($q) {
+                $q->whereNot('country', 'GB')->orWhereNull('country');
+            })->first();
             $categories = [];
             if (!empty($user)) {
                 $categories = $user->user_categories()->get();
@@ -203,7 +211,9 @@ class AuthenticatedSessionController extends Controller
     public function sociallinks($username)
     {
         try {
-            $user = User::where('username', $username)->whereNot('country', 'GB')->first();
+            $user = User::where('username', $username)->where(function ($q) {
+                $q->whereNot('country', 'GB')->orWhereNull('country');
+            })->first();
             $slinks = [];
             $sociallinks = [];
             if (!empty($user)) {
@@ -274,7 +284,9 @@ class AuthenticatedSessionController extends Controller
         try {
             if (preg_match("/^[a-z0-9_]+$/", $username)) {
                 // Username contains only lowercase letters, numbers, and underscores
-                $user = User::where('username', $username)->whereNot('country', 'GB')->first();
+                $user = User::where('username', $username)->where(function ($q) {
+                    $q->whereNot('country', 'GB')->orWhereNull('country');
+                })->first();
                 if (!empty($user)) {
                     return response()->json(['status' => false, 'msg' => 'Username is not available']);
                 } else {
