@@ -76,8 +76,9 @@ export default function Dashboard(props) {
 
     const [goal, setGoal] = useState();
     const fetch_goal = () => {
-        axios.get(`tip-jar/list/${user && user.username}`).then((resp) => {
-            console.log("resp",resp)
+        axios.get(`tip-jar/list/${user && user.uuid}`).then((resp) => {
+            console.log("resp",resp);
+            setGoal(resp.data.goal)
         }).catch((_err) => {
             console.error("error", _err);
         });
@@ -195,8 +196,7 @@ export default function Dashboard(props) {
                                                             </Link>
                                                         </div>
                                                     )}
-
-                                                    <AddGoal />
+                                                    <AddGoal goal={goal} />
                                                     <div className="addsocial flex">
                                                         <ul>
                                                             <li>
@@ -228,7 +228,8 @@ export default function Dashboard(props) {
                                             )}
                                         </div>
                                     </div>
-                                    <MyGoal />
+                                     <MyGoal goal={goal} />  
+                                    {/* {goal ? <MyGoal /> : ''} */}
                                 </div>
                             </div>
                             <div className="col-lg-8 ps-3 ps-lg-4">

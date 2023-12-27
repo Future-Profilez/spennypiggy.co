@@ -5,15 +5,13 @@ import { useForm } from "@inertiajs/react";
 const Popup = React.lazy(() => import('@/Components/Popup'));
 import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
+import ProgressBar from 'react-bootstrap/ProgressBar';
 
-export default function AddGoal({auth, owner}) {
+export default function AddGoal({goal}) {
    
    const { formatMultiPrice } = PriceFormat();
    const { successAlert, errorAlert, errorsHandling } = useAlerts();
-
    const [close, setClose] = useState();
-
-  
    const { data, setData, post, processing, errors, reset } = useForm({
       name: '',
       target: '',
@@ -27,8 +25,7 @@ export default function AddGoal({auth, owner}) {
      const { value } = event.target;
      setDuration(+value);
      setData('duration', +value);
-  };
-
+   };
 
    const addgoal = (e) => {
       e.preventDefault();
@@ -59,71 +56,87 @@ export default function AddGoal({auth, owner}) {
             space="4" size="md"
             action={close} classes={`btn-pink mt-3 lg px-4 my-2 w-100`}
             text={`Add Goal`} >
-            <h2 className="text-uppercase font-GillSans pb-4 font-large">
-                Add Goal
-            </h2>
-
-            <div className="form-field mb-4">
-               <label className="d-block text-start mb-2">Goal Title</label>
-               <input
-                  className="form-input w-100 rounded"
-                  onChange={(e) => setData('name', e.target.value)}
-                  type="text" placeholder="Enter title.. "
-               />
-            </div>
-
-
-            <div className="form-field mb-4">
-               <label className="d-block text-start mb-2">Target Amount</label>
-               <input className="form-input w-100 rounded"
-                  onChange={(e) => setData('target', e.target.value)}
-                  type="number" placeholder="Enter amount.. "
-               />
-            </div>
-
-            <div className="form-field mb-4">
-               <label className="d-block text-start mb-2">Minimum amount to pay</label>
-               <input className="form-input w-100 rounded"
-                  onChange={(e) => setData('default_price', e.target.value)}
-                  type="number" placeholder="Enter minimum amount to pay.. "
-               />
-            </div>
             
-            <div className="form-field mb-4">
-                  <label className="d-block text-start mb-2">Goal Description</label>
-                  <textarea placeholder="Description..."
-                  className="form-input w-100 rounded"
-                  onChange={(e) => setData('description',e.target.value)}
-                  type="text" />
-            </div>
+            {goal ? <div className="addgoal" >
+               <h2 className="text-uppercase font-GillSans pb-4 font-large">
+                  Add Goal
+               </h2>
+               <div className="form-field mb-4">
+                  <label className="d-block text-start mb-2">Goal Title</label>
+                  <input
+                     className="form-input w-100 rounded"
+                     onChange={(e) => setData('name', e.target.value)}
+                     type="text" placeholder="Enter title.. "
+                  />
+               </div>
+               <div className="form-field mb-4">
+                  <label className="d-block text-start mb-2">Target Amount</label>
+                  <input className="form-input w-100 rounded"
+                     onChange={(e) => setData('target', e.target.value)}
+                     type="number" placeholder="Enter amount.. "
+                  />
+               </div>
+               <div className="form-field mb-4">
+                  <label className="d-block text-start mb-2">Minimum amount to pay</label>
+                  <input className="form-input w-100 rounded"
+                     onChange={(e) => setData('default_price', e.target.value)}
+                     type="number" placeholder="Enter minimum amount to pay.. "
+                  />
+               </div>
+               <div className="form-field mb-4">
+                     <label className="d-block text-start mb-2">Goal Description</label>
+                     <textarea placeholder="Description..."
+                     className="form-input w-100 rounded"
+                     onChange={(e) => setData('description',e.target.value)}
+                     type="text" />
+               </div>
+               <p className="font-bold mb-2 " >Goal Duration</p>
+               <div className="time-periods mb-4 ">
+                  <div className="repeatpurchase mb-2 text-start">
+                     <label className="cursor-pointer text-capitalize" htmlFor={'time-0'}>
+                        <input className="cursor-pointer" checked={duration == 0} type="radio" id={"time-0"} value={0} name="category" onChange={addDuration} />
+                        Open until achieved
+                     </label>
+                  </div>
+                  <div className="repeatpurchase mb-2 text-start">
+                     <label className="cursor-pointer text-capitalize" htmlFor={'time-1'}>
+                        <input className="cursor-pointer" checked={duration == 1} type="radio" id={"time-1"} value={1} name="category" onChange={addDuration} />
+                        For 30 days
+                     </label>
+                  </div>
+                  <div className="repeatpurchase mb-2 text-start">
+                     <label className="cursor-pointer text-capitalize" htmlFor={'time-2'}>
+                        <input className="cursor-pointer" checked={duration == 2} type="radio" id={"time-2"} value={2} name="category" onChange={addDuration} />
+                        Until mark as compeleted
+                     </label>
+                  </div>
+               </div>
+               <LoaderButton onClick={addgoal} disabled={processing}
+                  type='submit' className="flex w-100 btn-pink lg mx-auto"
+                  spinnerClassName="fill-red-600" >
+                  {processing ? "Processing" : "Add Goal"}
+               </LoaderButton>
+            </div> : ''}
 
-            <p className="font-bold mb-2 " >Goal Duration</p>
-            <div className="time-periods mb-4 ">
-               <div className="repeatpurchase mb-2 text-start">
-                  <label className="cursor-pointer text-capitalize" htmlFor={'time-0'}>
-                     <input className="cursor-pointer" checked={duration == 0} type="radio" id={"time-0"} value={0} name="category" onChange={addDuration} />
-                     Open until achieved
-                  </label>
-               </div>
-               <div className="repeatpurchase mb-2 text-start">
-                  <label className="cursor-pointer text-capitalize" htmlFor={'time-1'}>
-                     <input className="cursor-pointer" checked={duration == 1} type="radio" id={"time-1"} value={1} name="category" onChange={addDuration} />
-                     For 30 days
-                  </label>
-               </div>
-               <div className="repeatpurchase mb-2 text-start">
-                  <label className="cursor-pointer text-capitalize" htmlFor={'time-2'}>
-                     <input className="cursor-pointer" checked={duration == 2} type="radio" id={"time-2"} value={2} name="category" onChange={addDuration} />
-                     Until mark as compeleted
-                  </label>
-               </div>
-            </div>
+            {!goal ? <div className="updategoal py-4" >
+                <h2 className="text-uppercase font-GillSans pb-4 font-large"> Goal </h2>
+                <div className="activegoal text-center" >
+                  <h2 className='text-large font-semibold mb-2'>But me a coffee</h2>
+                  <p className='mb-3 '>Hello everyone please help me to grow.It can not happen without your support.</p>
+                  
+                  <p className='mb-3 text-voilet '>30 Days left to goal ends.</p>
+                  <ProgressBar now={50} max={100} />
+                  <p className='text-muted text-small' >110% of $60 goal.</p>
 
-            <LoaderButton onClick={addgoal} disabled={processing}
-               type='submit' className="flex w-100 btn-pink lg mx-auto"
-               spinnerClassName="fill-red-600" >
-               {processing ? "Processing" : "Add Goal"}
-            </LoaderButton>
+                  <LoaderButton 
+                  // onClick={addgoal} 
+                  disabled={processing}
+                     type='submit' className="flex w-100 btn-pink sm mx-auto mt-3 "
+                     spinnerClassName="fill-red-600" >
+                     {processing ? "Processing" : "Send Tip "}
+                  </LoaderButton>
+                </div>
+            </div> : ''}
 
         </Popup>
     );
