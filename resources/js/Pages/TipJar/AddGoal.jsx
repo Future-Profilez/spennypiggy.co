@@ -7,7 +7,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
 import ProgressBar from 'react-bootstrap/ProgressBar';
 
-export default function AddGoal({activegoal}) {
+export default function AddGoal({activegoal, fetch_goal}) {
    
    useEffect(()=>{
       setGoal(activegoal);
@@ -43,7 +43,7 @@ export default function AddGoal({activegoal}) {
                   setTimeout(()=>{
                      setClose();
                   },100);
-                  fetch_goal();
+                  fetch_goal && fetch_goal();
                }
                if (resp.props.flash?.error) {
                   errorAlert(resp.props.flash?.error);
@@ -76,7 +76,7 @@ export default function AddGoal({activegoal}) {
                   <h2 className='text-large font-semibold mb-2'>{goal.name}</h2>
                   <p className='mb-3 '>{goal.description || ''}</p>
                   
-                  <p className='mb-3 text-voilet '>30 Days left to goal ends.</p>
+                  {goal.days ? <p className='mb-3 text-voilet '>{goal.days > 1 ? `${goal.days} Days` : `${goal.days} Day`} left to goal ends.</p> : ''}
                   <ProgressBar now={goal.fullfilled} max={goal.target} />
                   <p className='text-muted mt-2' >{getPercentage(goal.target, goal.fullfilled)}% of {formatMultiPrice(goal.target, goal.currency)} goal.</p>
 
