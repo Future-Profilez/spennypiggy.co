@@ -37,13 +37,13 @@ export default function AddGoal({activegoal}) {
       post(route(`add-goal`, data ), {
             preserveScroll: true,
             onSuccess: (resp) => {
-               // reset();
                if (resp.props.flash?.success) {
                   successAlert(resp.props.flash?.success);
                   setClose(false);
                   setTimeout(()=>{
                      setClose();
                   },100);
+                  fetch_goal();
                }
                if (resp.props.flash?.error) {
                   errorAlert(resp.props.flash?.error);
@@ -74,7 +74,7 @@ export default function AddGoal({activegoal}) {
                <div className="updategoal py-2" >
                 <div className="activegoal text-center" >
                   <h2 className='text-large font-semibold mb-2'>{goal.name}</h2>
-                  <p className='mb-3 '>{goal.description || 'Hello everyone please help me to grow.It can not happen without your support.'}</p>
+                  <p className='mb-3 '>{goal.description || ''}</p>
                   
                   <p className='mb-3 text-voilet '>30 Days left to goal ends.</p>
                   <ProgressBar now={goal.fullfilled} max={goal.target} />
@@ -91,64 +91,64 @@ export default function AddGoal({activegoal}) {
                </div> 
                : 
                <div className="addgoal" >
-               <h2 className="text-uppercase font-GillSans pb-4 font-large">
-                  Add Goal
-               </h2>
-               <div className="form-field mb-4">
-                  <label className="d-block text-start mb-2">Goal Title</label>
-                  <input
-                     className="form-input w-100 rounded"
-                     onChange={(e) => setData('name', e.target.value)}
-                     type="text" placeholder="Enter title.. "
-                  />
-               </div>
-               <div className="form-field mb-4">
-                  <label className="d-block text-start mb-2">Target Amount</label>
-                  <input className="form-input w-100 rounded"
-                     onChange={(e) => setData('target', e.target.value)}
-                     type="number" placeholder="Enter amount.. "
-                  />
-               </div>
-               <div className="form-field mb-4">
-                  <label className="d-block text-start mb-2">Minimum amount to pay</label>
-                  <input className="form-input w-100 rounded"
-                     onChange={(e) => setData('default_price', e.target.value)}
-                     type="number" placeholder="Enter minimum amount to pay.. "
-                  />
-               </div>
-               <div className="form-field mb-4">
-                     <label className="d-block text-start mb-2">Goal Description</label>
-                     <textarea placeholder="Description..."
-                     className="form-input w-100 rounded"
-                     onChange={(e) => setData('description',e.target.value)}
-                     type="text" />
-               </div>
-               <p className="font-bold mb-2 " >Goal Duration</p>
-               <div className="time-periods mb-4 ">
-                  <div className="repeatpurchase mb-2 text-start">
-                     <label className="cursor-pointer text-capitalize" htmlFor={'time-0'}>
-                        <input className="cursor-pointer" checked={duration == 0} type="radio" id={"time-0"} value={0} name="category" onChange={addDuration} />
-                        Open until achieved
-                     </label>
+                  <h2 className="text-uppercase font-GillSans pb-4 font-large">
+                     Add Goal
+                  </h2>
+                  <div className="form-field mb-4">
+                     <label className="d-block text-start mb-2">Goal Title</label>
+                     <input
+                        className="form-input w-100 rounded"
+                        onChange={(e) => setData('name', e.target.value)}
+                        type="text" placeholder="Enter title.. "
+                     />
                   </div>
-                  <div className="repeatpurchase mb-2 text-start">
-                     <label className="cursor-pointer text-capitalize" htmlFor={'time-1'}>
-                        <input className="cursor-pointer" checked={duration == 1} type="radio" id={"time-1"} value={1} name="category" onChange={addDuration} />
-                        For 30 days
-                     </label>
+                  <div className="form-field mb-4">
+                     <label className="d-block text-start mb-2">Target Amount</label>
+                     <input className="form-input w-100 rounded"
+                        onChange={(e) => setData('target', e.target.value)}
+                        type="number" placeholder="Enter amount.. "
+                     />
                   </div>
-                  <div className="repeatpurchase mb-2 text-start">
-                     <label className="cursor-pointer text-capitalize" htmlFor={'time-2'}>
-                        <input className="cursor-pointer" checked={duration == 2} type="radio" id={"time-2"} value={2} name="category" onChange={addDuration} />
-                        Until mark as compeleted
-                     </label>
+                  <div className="form-field mb-4">
+                     <label className="d-block text-start mb-2">Minimum amount to pay</label>
+                     <input className="form-input w-100 rounded"
+                        onChange={(e) => setData('default_price', e.target.value)}
+                        type="number" placeholder="Enter minimum amount to pay.. "
+                     />
                   </div>
-               </div>
-               <LoaderButton onClick={addgoal} disabled={processing}
-                  type='submit' className="flex w-100 btn-pink lg mx-auto"
-                  spinnerClassName="fill-red-600" >
-                  {processing ? "Processing" : "Add Goal"}
-               </LoaderButton>
+                  <div className="form-field mb-4">
+                        <label className="d-block text-start mb-2">Goal Description</label>
+                        <textarea placeholder="Description..."
+                        className="form-input w-100 rounded"
+                        onChange={(e) => setData('description',e.target.value)}
+                        type="text" />
+                  </div>
+                  <p className="font-bold mb-2 " >Goal Duration</p>
+                  <div className="time-periods mb-4 ">
+                     <div className="repeatpurchase mb-2 text-start">
+                        <label className="cursor-pointer text-capitalize" htmlFor={'time-0'}>
+                           <input className="cursor-pointer" checked={duration == 0} type="radio" id={"time-0"} value={0} name="category" onChange={addDuration} />
+                           Open until achieved
+                        </label>
+                     </div>
+                     <div className="repeatpurchase mb-2 text-start">
+                        <label className="cursor-pointer text-capitalize" htmlFor={'time-1'}>
+                           <input className="cursor-pointer" checked={duration == 1} type="radio" id={"time-1"} value={1} name="category" onChange={addDuration} />
+                           For 30 days
+                        </label>
+                     </div>
+                     <div className="repeatpurchase mb-2 text-start">
+                        <label className="cursor-pointer text-capitalize" htmlFor={'time-2'}>
+                           <input className="cursor-pointer" checked={duration == 2} type="radio" id={"time-2"} value={2} name="category" onChange={addDuration} />
+                           Until mark as compeleted
+                        </label>
+                     </div>
+                  </div>
+                  <LoaderButton onClick={addgoal} disabled={processing}
+                     type='submit' className="flex w-100 btn-pink lg mx-auto"
+                     spinnerClassName="fill-red-600" >
+                     {processing ? "Processing" : "Add Goal"}
+                  </LoaderButton>
                </div> 
             }
         </Popup>

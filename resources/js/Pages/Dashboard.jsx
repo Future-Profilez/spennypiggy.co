@@ -192,7 +192,7 @@ export default function Dashboard(props) {
                                                             </Link>
                                                         </div>
                                                     )}
-                                                    <AddGoal activegoal={goal} />
+                                                    <AddGoal fetch_goal={fetch_goal} activegoal={goal} />
                                                     <div className="addsocial flex">
                                                         <ul>
                                                             <li>
