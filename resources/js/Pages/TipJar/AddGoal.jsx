@@ -58,7 +58,7 @@ export default function AddGoal({activegoal, fetch_goal}) {
 
    const getPercentage = (actual, paid) => {
       const r = (paid/actual)*100;
-      return r.toFixed(1);
+      return r.toFixed(2);
    }
 
    const markcomplete = (e) => { 
