@@ -149,9 +149,6 @@ export default function Dashboard(props) {
         if(flash?.error){
             errorAlert(flash.error);
         }
-        // if(flash?.success){
-        //     successAlert(flash.success);
-        // }
         if(flash?.warning){
             warningAlert(flash.warning);
         }
