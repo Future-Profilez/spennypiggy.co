@@ -144,21 +144,21 @@ export default function Dashboard(props) {
         }
     };
 
-    // const {flash} = usePage().props;
-    // useEffect(() => {
-    //     if(flash?.error){
-    //         errorAlert(flash.error);
-    //     }
-    //     if(flash?.success){
-    //         successAlert(flash.success);
-    //     }
-    //     if(flash?.warning){
-    //         warningAlert(flash.warning);
-    //     }
-    //     if(flash?.info){
-    //         infoAlert(flash.info); 
-    //     }
-    // },[flash]);
+    const {flash} = usePage().props;
+    useEffect(() => {
+        if(flash?.error){
+            errorAlert(flash.error);
+        }
+        if(flash?.success){
+            successAlert(flash.success);
+        }
+        if(flash?.warning){
+            warningAlert(flash.warning);
+        }
+        if(flash?.info){
+            infoAlert(flash.info); 
+        }
+    },[flash]);
 
 
     return <>
