@@ -852,24 +852,31 @@ class StripeController extends Controller
                 ]
             ]);
 
-            if ($request->amount < $goal->default_price) {
+            $amount = intval($request->amount);
+
+            if ($amount < $goal->default_price) {
                 return redirect()->back()->with('error', "Please enter amount greater than $goal->default_price.");
             }
 
             $remaining_amount = $goal->target - $goal->fullfilled;
-            if ($goal->status == 0 && ($remaining_amount < $request->amount)) {
+            if ($goal->status == 0 && ($remaining_amount < $amount)) {
                 return redirect()->back()->with('error', "This tip jar only needs $remaining_amount to complete the goal.");
             }
 
-            $real_tax = number_format(($request->amount * env('TAX_PERCENTAGE') / 100), 2);
-            $price = Helpers::priceFormat($currency, $request->amount, $goal->user->default_currency);
+            $real_tax = number_format(($amount * env('TAX_PERCENTAGE') / 100), 2);
+            $price = Helpers::priceFormat($currency, $amount, $goal->user->default_currency);
             $tax = number_format(($price * env('TAX_PERCENTAGE') / 100), 2);
 
-            $stripe_client = StripeControl::createProduct([
-                'name' => $goal->name,
-                'images' => ["https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"],
-                "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100],
-            ]);
+            try {
+
+                $stripe_client = StripeControl::createProduct([
+                    'name' => $goal->name,
+                    'images' => ["https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"],
+                    "default_price_data" => ["currency" => strtolower($goal->currency), "unit_amount_decimal" => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100],
+                ]);
+            } catch (Exception $e) {
+                return redirect()->back()->with('error', $e->getMessage());
+            }
 
             $pay = TipGoalsPayment::create([
                 'tip_goal_id'  =>  $goal->id,
