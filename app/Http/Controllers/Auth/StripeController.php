@@ -185,7 +185,9 @@ class StripeController extends Controller
                 }
             }
 
-            $user = User::whereNot('country', 'GB')->findOrFail(Auth::id());
+            $user = User::where(function ($q) {
+                $q->whereNot('country', 'GB')->orWhereNull('country');
+            })->findOrFail(Auth::id());
             $getdata = UserCart::where('user_id', Auth::id())
                 ->where('owner_id', $owner_id)
                 ->where('status', 1)

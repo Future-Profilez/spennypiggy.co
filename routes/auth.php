@@ -197,6 +197,7 @@ Route::get('/leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWis
 Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
     Route::post('pay/{uuid}/', [StripeController::class, 'tipToJar'])->name("pay");
     Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
+    Route::get('/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');
 });
 
 /*check username exist*/
