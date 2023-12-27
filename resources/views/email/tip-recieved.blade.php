@@ -22,19 +22,19 @@
                             src="https://whoyouinto.com/emails/user/giftimg.png" alt="img"></td>
                 </tr>
                 <tr>
-                
-                        <td
-                            style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                            Lucky you! <br></br>
-                            {{ $tip->guest_name }} just granted a tip on your tip jar({{ $tip->tipGoal->target }}) of {{$tip->amount}} on Spenny Piggy🎁🥳 .
-                            <!-- {{ $anon == false ? $data->cart->user->name : $anonname }} granted you a surprise gift of
-                            £{{ $data->amount }}🤩. -->
-                        </td>
+
+                    <td
+                        style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
+                        Lucky you! <br></br>
+                        {{ $tip->guest_name }} just granted a tip on your tip jar({{ $tip->tipGoal->target }}) of
+                        {{ $tip->amount }} on Spenny Piggy🎁🥳 .
+                    </td>
                 </tr>
                 <tr>
                     <td
                         style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                        Go to <a href="spennypiggy.co">Spenny Piggy</a> where you can see your granted tip, send a message to
+                        Go to <a href="spennypiggy.co">Spenny Piggy</a> where you can see your granted tip, send a message
+                        to
                         your gifter and share your gift on social media </td>
                 </tr>
                 @if (!empty($tip->message))
