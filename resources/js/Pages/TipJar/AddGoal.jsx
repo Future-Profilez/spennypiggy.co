@@ -1,10 +1,10 @@
 import { useAlerts } from "@/Components/Alerts";
 import React from "react";
 import  LoaderButton from "@/Components/LoaderButton";
+import { useForm } from "@inertiajs/react";
 const Popup = React.lazy(() => import('@/Components/Popup'));
 import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
-import { useForm } from "@inertiajs/react";
 
 export default function AddGoal({auth, owner}) {
    
@@ -86,12 +86,14 @@ export default function AddGoal({auth, owner}) {
                   type="text" />
             </div>
 
-            <LoaderButton onClick={addgoal}
-               disabled={processing}
-               type='submit'
-                  className="flex w-100 btn-pink lg mx-auto"
-                  spinnerClassName="fill-red-600" >
-                  {processing ? "Processing" : "Add Goal"}
+            Open until achieved,  
+            For 30 days, 
+            Until mark as compeled
+
+            <LoaderButton onClick={addgoal} disabled={processing}
+               type='submit' className="flex w-100 btn-pink lg mx-auto"
+               spinnerClassName="fill-red-600" >
+               {processing ? "Processing" : "Add Goal"}
             </LoaderButton>
 
         </Popup>

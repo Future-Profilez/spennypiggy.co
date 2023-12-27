@@ -46,7 +46,7 @@ body{position:relative;font-family:var(--para-font);}
 .btn-pink lg,.btn-pink{border-radius:15px;border:1px solid var(--black);background:var(--pink);color:var(--white);font-family:var(--heading-font);font-style:normal;font-weight:400;line-height:19px;text-transform:uppercase;display:flex;text-align:center;align-items:center;align-content:center;justify-content:center;box-shadow:6px 6px 0 0 rgba(0,0,0,0.9);transition:all ease .3s;}
 .btn-pink.lg{border-radius:12px;font-size:18px;padding:16px 10px;}
 .btn-pink.md{border-radius:10px;font-size:16px;padding:14px 10px;}
-.btn-pink.sm{border-radius:8px;font-size:14px;padding:12px 10px;}
+.btn-pink.sm{border-radius:12px;font-size:14px;padding:12px 10px !important;}
 .btn-pink lg:hover,.btn-pink lg:focus{box-shadow:none;transition:all ease .3s;}
 .rotate-btn a,.rotate-btn button:hover,.rotate-btn a,.rotate-btn button:focus{transform:rotate(5deg);box-shadow:8px 8px 0 0 rgba(0,0,0,0.9);}
 .btn-pink-md{border-radius:15px;border:1px solid var(--black);background:var(--pink);color:var(--white);font-family:var(--heading-font);font-size:18px;font-style:normal;font-weight:400;line-height:19px;text-transform:uppercase;width:286px;height:60px;display:flex;text-align:center;align-items:center;align-content:center;justify-content:center;box-shadow:6px 6px 0 0 rgba(0,0,0,0.9);transition:all ease .3s;}
