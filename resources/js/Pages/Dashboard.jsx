@@ -17,9 +17,18 @@ import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import useWidthCount from '@/Components/useWidthCount';
-import { DndContext, closestCenter } from '@dnd-kit/core';
-import{ SortableContext,rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable,rectSortingStrategy } from "@dnd-kit/sortable";
 import AddGoal from './TipJar/AddGoal'; 
+import {
+    closestCenter,
+    DndContext,
+    KeyboardSensor,
+    MouseSensor,
+    TouchSensor,
+    useSensor,
+    useSensors,
+  } from "@dnd-kit/core";
+
 
 export default function Dashboard(props) {
 
@@ -106,6 +115,16 @@ export default function Dashboard(props) {
             console.error("error", _err);
         });
     }
+
+
+    const sensors = useSensors(
+        useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 50, tolerance: 10 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    );
+    
+    // const [activeId, setActiveId] =  useState();
+    // const handleDragStart = React.useCallback(({ active }) => setActiveId(active.id), []);
 
     const handleDragEnd = (event) => {
         if(!IsloggedIn){
@@ -249,8 +268,10 @@ export default function Dashboard(props) {
                                                 <>
                                                     {its && its.length ? <>
                                                         <DndContext 
+                                                        sensors={sensors}
                                                         collisionDetection={closestCenter}
-                                                         onDragEnd={handleDragEnd}>
+                                                        onDragEnd={handleDragEnd}
+                                                        >
                                                             <SortableContext strategy={rectSortingStrategy} items={its}>
                                                                 {!loading && its.map((c, i) => {
                                                                     return <Wishlistbox 
