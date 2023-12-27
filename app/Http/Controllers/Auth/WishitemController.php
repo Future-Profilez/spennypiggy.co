@@ -1006,7 +1006,7 @@ class WishitemController extends Controller
                 "default_price" => [
                     "nullable"
                 ],
-                "mode" => [
+                "duration" => [
                     'required',
                     'numeric'
                 ],
@@ -1021,8 +1021,8 @@ class WishitemController extends Controller
             'target' => $request->target,
             'default_price' => $request->default_price,
             'description' => $request->description ?? null,
-            'status' => $request->mode,
-            'days' => ($request->mode == 1) ? 30 : null,
+            'status' => $request->duration,
+            'days' => ($request->duration == 1) ? 30 : null,
         ]);
 
         $goal->refresh();
