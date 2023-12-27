@@ -852,6 +852,10 @@ class StripeController extends Controller
                 ]
             ]);
 
+            if ($request->amount < $goal->default_price) {
+                return redirect()->back()->with('error', "Please enter amount greater than $goal->default_price.");
+            }
+
             $remaining_amount = $goal->target - $goal->fullfilled;
             if ($goal->status == 0 && ($remaining_amount < $request->amount)) {
                 return redirect()->back()->with('error', "This tip jar only needs $remaining_amount to complete the goal.");
