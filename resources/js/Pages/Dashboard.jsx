@@ -127,10 +127,6 @@ export default function Dashboard(props) {
         useSensor(TouchSensor, { activationConstraint: { delay: 50, tolerance: 10 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
     );
-    
-    // const [activeId, setActiveId] =  useState();
-    // const handleDragStart = React.useCallback(({ active }) => setActiveId(active.id), []);
-
     const handleDragEnd = (event) => {
         if(!IsloggedIn){
             return false
