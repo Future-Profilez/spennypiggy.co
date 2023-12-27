@@ -1128,4 +1128,22 @@ class WishitemController extends Controller
             ]);
         }
     }
+
+
+
+    /**
+     * All tip jar goals of a creator
+     *
+     * @return mixed
+     */
+    public function allGoalsCreators()
+    {
+
+        $goals = TipGoal::where('user_id', Auth::id())->get();
+
+        return response()->json([
+            'status' => true,
+            'goals' => $goals
+        ]);
+    }
 }
