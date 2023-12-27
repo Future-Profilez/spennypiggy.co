@@ -228,8 +228,7 @@ export default function Dashboard(props) {
                                             )}
                                         </div>
                                     </div>
-                                     <MyGoal goal={goal} />  
-                                    {/* {goal ? <MyGoal /> : ''} */}
+                                    {goal ? <MyGoal goal={goal} /> : ''}
                                 </div>
                             </div>
                             <div className="col-lg-8 ps-3 ps-lg-4">
