@@ -67,7 +67,6 @@ export default function AddGoal({activegoal, fetch_goal}) {
          preserveScroll:true,
          onSuccess: (resp) => {
             if (resp.props.flash?.success) {
-               successAlert(resp.props.flash?.success || "Goal marked as completed.");
                setGoal(null);
             }
             if (resp.props.flash?.error) {
@@ -86,7 +85,7 @@ export default function AddGoal({activegoal, fetch_goal}) {
             modalclassName="pinkmodal sendSurprize-modal shadow-pink"
             space="4" size="md"
             action={close} classes={`btn-pink mt-3 lg px-4 my-2 w-100`}
-            text={`Add Goal`} >
+            text={goal ? `My Goal` : `Add Goal`} >
             {goal ? 
                <div className="updategoal py-2" >
                 <div className="activegoal text-center" >

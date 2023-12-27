@@ -74,7 +74,7 @@ export default function MyGoal({goal}) {
           focus:ring-indigo-500 focus:ring-offset-2 transition 
           ease-in-out duration-150 false flex btn-pink lg w-100 
             font-CeraGR  mx-auto" 
-          href={`tip-jar/pay/${goal.uuid}`} method="post" data={data} >{processing ? "Processing" : 'Send Tip'} </Link>
+          href={`tip-jar/pay/${goal.uuid}`} method="post" data={data} > {processing ? "Processing" : 'Send Tip'}</Link>
       </Popup>
     </>
   }

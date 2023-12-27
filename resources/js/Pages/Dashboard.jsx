@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, usePage, useAlerts } from "@inertiajs/react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
 const Wishlist = React.lazy(() => import('./Auth/Wishlist'));
 const Wishlistbox = React.lazy(() => import('@/wishlist/Wishlistbox'));
@@ -24,6 +24,8 @@ import MyGoal from './TipJar/MyGoal';
 
 
 export default function Dashboard(props) {
+
+    const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
 
     const { auth, user, username, global_currency, itemid } = props;
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
@@ -141,21 +143,21 @@ export default function Dashboard(props) {
         }
     };
 
-    // const {flash}   = usePage().props;
-    // useEffect(() => {
-    //     if(flash?.error){
-    //         errorAlert(flash.error);
-    //     }
-    //     if(flash?.success){
-    //         successAlert(flash.success);
-    //     }
-    //     if(flash?.warning){
-    //         warningAlert(flash.warning);
-    //     }
-    //     if(flash?.info){
-    //         infoAlert(flash.info);
-    //     }
-    // },[flash]);
+    const {flash}   = usePage().props;
+    useEffect(() => {
+        if(flash?.error){
+            errorAlert(flash.error);
+        }
+        if(flash?.success){
+            successAlert(flash.success);
+        }
+        if(flash?.warning){
+            warningAlert(flash.warning);
+        }
+        if(flash?.info){
+            infoAlert(flash.info); 
+        }
+    },[flash]);
 
 
     return <>
