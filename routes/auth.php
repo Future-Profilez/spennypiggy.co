@@ -132,8 +132,8 @@ Route::middleware('auth')->group(function () {
         });
 
         Route::post('add-goal', [WishitemController::class, 'addTipGoal'])->name('add-goal');
-
         Route::get('mark-complete-goal/{uuid}', [WishitemController::class, 'markJarComplete'])->name('mark-goal');
+        Route::get('all-goals', [WishitemController::class, 'allGoalsCreators'])->name('all-goals');
     });
 });
 
