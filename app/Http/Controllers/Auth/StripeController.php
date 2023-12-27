@@ -840,7 +840,7 @@ class StripeController extends Controller
                     'required',
                     'email:dns'
                 ],
-                'price' => [
+                'amount' => [
                     'required',
                     'numeric'
                 ],
@@ -853,12 +853,12 @@ class StripeController extends Controller
             ]);
 
             $remaining_amount = $goal->target - $goal->fullfilled;
-            if ($goal->status == 0 && ($remaining_amount < $request->price)) {
+            if ($goal->status == 0 && ($remaining_amount < $request->amount)) {
                 return redirect()->back()->with('error', "This tip jar only needs $remaining_amount to complete the goal.");
             }
 
 
-            $price = Helpers::priceFormat($currency, $request->price, $goal->user->default_currency);
+            $price = Helpers::priceFormat($currency, $request->amount, $goal->user->default_currency);
             $tax = number_format(($price * env('TAX_PERCENTAGE') / 100), 2);
 
             $stripe_client = StripeControl::createProduct([
