@@ -224,7 +224,7 @@ export default function Dashboard(props) {
                                             )}
                                         </div>
                                     </div>
-                                    {goal ? <MyGoal goal={goal} /> : ''}
+                                    {goal && goal.completed == 0 ? <MyGoal goal={goal} /> : ''}
                                 </div>
                             </div>
                             <div className="col-lg-8 ps-3 ps-lg-4">

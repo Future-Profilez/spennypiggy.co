@@ -304,7 +304,11 @@ div#msgText p b{font-weight:700 !important;padding:0 4px;color:#000;}
 .finish .btn-pink-lg{width:100%;}
 .menuList ul li a,.menuList ul li .link{font-size:4vh;}
 }
-@media(max-width:1199px){.containerbox{max-width:970px;}
+@media(max-width:1199px){
+  .addsocial ul li a, .addsocial ul li button {
+    font-size: 17px !important;
+}
+.containerbox{max-width:970px;}
 }
 @media(max-width:1139px){.containerbox{max-width:960px;}
 .menuList{padding:25px 100px 25px 50px;}

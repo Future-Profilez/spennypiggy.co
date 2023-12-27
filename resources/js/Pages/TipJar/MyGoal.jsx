@@ -96,7 +96,7 @@ export default function MyGoal({goal}) {
       <h2 className='text-large font-semibold mb-2'>{goal?.name || ''}</h2>
       <p className='mb-3 '>{ goal?.description || ''}</p>
       
-      <p className='mb-3 text-voilet '>30 Days left to goal ends.</p>
+      {goal.days ? <p className='mb-3 text-voilet '>{goal.days > 1 ? `${goal.days} Days` : `${goal.days} Day`} left to goal ends.</p> : ''}
       <ProgressBar now={goal?.fullfilled} max={goal?.target} />
       <p className='text-muted text-small' >{getPercentage(goal?.target, goal?.fullfilled)}% of {formatMultiPrice(goal?.target, goal?.currency)} goal.</p>
       <SendTip />
