@@ -23,7 +23,7 @@ export default function MyGoal() {
       disabled={processing}
           type='submit' className="flex w-100 btn-pink sm mx-auto mt-3 "
           spinnerClassName="fill-red-600" >
-          {processing ? "Processing" : "Add Goal"}
+          {processing ? "Processing" : "Send Tip "}
       </LoaderButton>
 
 

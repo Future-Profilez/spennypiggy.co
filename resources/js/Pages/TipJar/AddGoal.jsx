@@ -12,12 +12,23 @@ export default function AddGoal({auth, owner}) {
    const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
    const [close, setClose] = useState();
+
+  
    const { data, setData, post, processing, errors, reset } = useForm({
       name: '',
       target: '',
       default_price: '',
-      description: ''
+      description: '',
+      duration: 0
    }); 
+
+   const [duration, setDuration] = useState(0)
+   const addDuration = (event) => {
+     const { value } = event.target;
+     setDuration(+value);
+     setData('duration', +value);
+  };
+
 
    const addgoal = (e) => {
       e.preventDefault();
@@ -74,7 +85,7 @@ export default function AddGoal({auth, owner}) {
                <label className="d-block text-start mb-2">Minimum amount to pay</label>
                <input className="form-input w-100 rounded"
                   onChange={(e) => setData('default_price', e.target.value)}
-                  type="number" placeholder="Enter amount.. "
+                  type="number" placeholder="Enter minimum amount to pay.. "
                />
             </div>
             
@@ -86,9 +97,27 @@ export default function AddGoal({auth, owner}) {
                   type="text" />
             </div>
 
-            Open until achieved,  
-            For 30 days, 
-            Until mark as compeled
+            <p className="font-bold mb-2 " >Goal Duration</p>
+            <div className="time-periods mb-4 ">
+               <div className="repeatpurchase mb-2 text-start">
+                  <label className="cursor-pointer text-capitalize" htmlFor={'time-0'}>
+                     <input className="cursor-pointer" checked={duration == 0} type="radio" id={"time-0"} value={0} name="category" onChange={addDuration} />
+                     Open until achieved
+                  </label>
+               </div>
+               <div className="repeatpurchase mb-2 text-start">
+                  <label className="cursor-pointer text-capitalize" htmlFor={'time-1'}>
+                     <input className="cursor-pointer" checked={duration == 1} type="radio" id={"time-1"} value={1} name="category" onChange={addDuration} />
+                     For 30 days
+                  </label>
+               </div>
+               <div className="repeatpurchase mb-2 text-start">
+                  <label className="cursor-pointer text-capitalize" htmlFor={'time-2'}>
+                     <input className="cursor-pointer" checked={duration == 2} type="radio" id={"time-2"} value={2} name="category" onChange={addDuration} />
+                     Until mark as compeleted
+                  </label>
+               </div>
+            </div>
 
             <LoaderButton onClick={addgoal} disabled={processing}
                type='submit' className="flex w-100 btn-pink lg mx-auto"
