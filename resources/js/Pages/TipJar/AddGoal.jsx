@@ -1,5 +1,5 @@
 import { useAlerts } from "@/Components/Alerts";
-import React from "react";
+import React, { useEffect } from "react";
 import  LoaderButton from "@/Components/LoaderButton";
 import { useForm } from "@inertiajs/react";
 const Popup = React.lazy(() => import('@/Components/Popup'));
@@ -7,11 +7,17 @@ import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
 import ProgressBar from 'react-bootstrap/ProgressBar';
 
-export default function AddGoal({goal}) {
+export default function AddGoal({activegoal}) {
    
+   useEffect(()=>{
+      setGoal(activegoal);
+   },[activegoal]);
+
+   const [goal, setGoal] = useState();
+   const [close, setClose] = useState();
+   const [duration, setDuration] = useState(0);
    const { formatMultiPrice } = PriceFormat();
    const { successAlert, errorAlert, errorsHandling } = useAlerts();
-   const [close, setClose] = useState();
    const { data, setData, post, processing, errors, reset } = useForm({
       name: '',
       target: '',
@@ -20,7 +26,6 @@ export default function AddGoal({goal}) {
       duration: 0
    }); 
 
-   const [duration, setDuration] = useState(0)
    const addDuration = (event) => {
      const { value } = event.target;
      setDuration(+value);
@@ -50,14 +55,42 @@ export default function AddGoal({goal}) {
       });
    };
 
+   const getPercentage = (actual, paid) => {
+      const r = (paid/actual)*100;
+      return r.toFixed(1);
+   }
+
+   const markcomplete = () => { 
+      setGoal(null);
+   }
+
     return (
         <Popup
             modalclassName="pinkmodal sendSurprize-modal shadow-pink"
             space="4" size="md"
             action={close} classes={`btn-pink mt-3 lg px-4 my-2 w-100`}
             text={`Add Goal`} >
-            
-            {goal ? <div className="addgoal" >
+            {goal ? 
+               <div className="updategoal py-2" >
+                <div className="activegoal text-center" >
+                  <h2 className='text-large font-semibold mb-2'>{goal.name}</h2>
+                  <p className='mb-3 '>{goal.description || 'Hello everyone please help me to grow.It can not happen without your support.'}</p>
+                  
+                  <p className='mb-3 text-voilet '>30 Days left to goal ends.</p>
+                  <ProgressBar now={goal.fullfilled} max={goal.target} />
+                  <p className='text-muted mt-2' >{getPercentage(goal.target, goal.fullfilled)}% of {formatMultiPrice(goal.target, goal.currency)} goal.</p>
+
+                  <LoaderButton 
+                  onClick={markcomplete} 
+                  disabled={processing}
+                     type='submit' className="flex w-100 btn-pink sm mx-auto mt-3 "
+                     spinnerClassName="fill-red-600" >
+                     {processing ? "Processing" : "Mark as completed"}
+                  </LoaderButton>
+                </div>
+               </div> 
+               : 
+               <div className="addgoal" >
                <h2 className="text-uppercase font-GillSans pb-4 font-large">
                   Add Goal
                </h2>
@@ -116,28 +149,8 @@ export default function AddGoal({goal}) {
                   spinnerClassName="fill-red-600" >
                   {processing ? "Processing" : "Add Goal"}
                </LoaderButton>
-            </div> : ''}
-
-            {!goal ? <div className="updategoal py-4" >
-                <h2 className="text-uppercase font-GillSans pb-4 font-large"> Goal </h2>
-                <div className="activegoal text-center" >
-                  <h2 className='text-large font-semibold mb-2'>But me a coffee</h2>
-                  <p className='mb-3 '>Hello everyone please help me to grow.It can not happen without your support.</p>
-                  
-                  <p className='mb-3 text-voilet '>30 Days left to goal ends.</p>
-                  <ProgressBar now={50} max={100} />
-                  <p className='text-muted text-small' >110% of $60 goal.</p>
-
-                  <LoaderButton 
-                  // onClick={addgoal} 
-                  disabled={processing}
-                     type='submit' className="flex w-100 btn-pink sm mx-auto mt-3 "
-                     spinnerClassName="fill-red-600" >
-                     {processing ? "Processing" : "Send Tip "}
-                  </LoaderButton>
-                </div>
-            </div> : ''}
-
+               </div> 
+            }
         </Popup>
     );
 }

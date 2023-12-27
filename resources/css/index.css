@@ -1,6 +1,9 @@
 /*@font-face{font-family:'GillSans';src:url('../assets/fonts/newfont.woff') format('woff'),url('../assets/fonts/newfont.woff2') format('woff2');}
 @font-face{font-family:'CeraGRMedium';src:url('../assets/fonts/CeraGRMedium.woff') format('woff'),url('../assets/fonts/CeraGRMedium.woff2') format('woff2');}
 */
+.modal-backdrop.show {
+  opacity: 0.85 !important;
+}
 a{text-decoration:none;}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
 input[type=number]{-moz-appearance:textfield;}
