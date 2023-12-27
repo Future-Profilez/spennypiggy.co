@@ -47,9 +47,7 @@ export default function Wishlistbox(props) {
     return r.toFixed(1);
   }
 
-  return <div style={IsloggedIn ? style : stylenone} 
-    
-    className={`wish-item-box col-xl-4 col-lg-6 col-6 ${isDragging ? 'dragging' : ''}`}> 
+  return <div style={IsloggedIn ? style : stylenone}  className={`wish-item-box col-xl-4 col-lg-6 col-6 ${isDragging ? 'dragging' : ''}`}> 
       <div  className='wishlistcntbox mb-3 mb-sm-4 whbg relative  shadow-voilet '>
         {IsloggedIn ?
         <>
