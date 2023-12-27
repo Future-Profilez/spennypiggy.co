@@ -1112,21 +1112,14 @@ class WishitemController extends Controller
 
         $goal = TipGoal::where('uuid', $uuid)->where('completed', 0)->first();
 
-        if ($goal->status == 2) {
-            $goal->completed = 1;
-            $goal->completed_at = Carbon::now();
-            $goal->save();
+        $goal->completed = 1;
+        $goal->completed_at = Carbon::now();
+        $goal->save();
 
-            return response()->json([
-                'status' => true,
-                'goal' => $goal
-            ]);
-        } else {
-            return response()->json([
-                'status' => false,
-                'msg' => "You can only mark as complete the jar which is in manual mode."
-            ]);
-        }
+        return response()->json([
+            'status' => true,
+            'msg' => "The goal is marked as completed."
+        ]);
     }
 
 
