@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import  LoaderButton from "@/Components/LoaderButton";
-import { useForm } from "@inertiajs/react";
+import { useForm, Link } from "@inertiajs/react";
 import PriceFormat from '@/includes/PriceFormat';
 import Popup from '@/Components/Popup';
 
@@ -17,16 +17,16 @@ export default function MyGoal({goal}) {
 
   const SendTip = () => { 
 
-    const [close,setClose] = useState();
+    const [close, setClose ] = useState();
     const { data, setData, post, processing, errors, reset } = useForm({
       amount: goal.default_price || '',
       email: '',
       name: '',
-      tipnote: '',
+      message: '',
     }); 
 
     const givetip = () => { 
-      console.log("data",data)
+      // console.log("data",data)
     }
 
     return <>
@@ -63,18 +63,28 @@ export default function MyGoal({goal}) {
               <label className="d-block text-start mb-2">Tip Note (optional)</label>
               <textarea
                 className="form-input w-100 rounded"
-                onChange={(e) => setData('tipnote', e.target.value)}
+                onChange={(e) => setData('message', e.target.value)}
                 placeholder="Write a short note."
               />
             </div>
 
-            <LoaderButton 
+            {/* <LoaderButton 
             onClick={givetip} 
             disabled={processing}
             type='submit' className="flex w-100 btn-pink sm mx-auto mt-3 "
             spinnerClassName="fill-red-600" >
             {processing ? "Processing" : "Send Tip "}
-            </LoaderButton>
+            </LoaderButton> */}
+
+          <Link className="inline-flex items-center px-4 border 
+            border-transparent rounded-md font-semibold text-xs text-white 
+            uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 
+            active:bg-gray-900 focus:outline-none focus:ring-2 
+            focus:ring-indigo-500 focus:ring-offset-2 transition 
+            ease-in-out duration-150 false flex btn-pink lg w-100 
+            mb-3 font-CeraGR  mx-auto" 
+            href={`tip-jar/pay/${goal.uuid}`} method="post" data={data} >Pay </Link>
+
         </Popup>
 
       

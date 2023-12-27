@@ -113,10 +113,18 @@ export default function AddCart(props) {
 
                 {item.subscription == 1 ?
                 <div className=" pb-2">
-                    <Link className="inline-flex items-center px-4 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 false flex btn-pink lg w-100 mb-3 font-CeraGR  mx-auto" href={route('wish.subscribe.checkout',{uuid: item.uuid, reccure: 'onetime'})}>
+                    <Link className="inline-flex items-center px-4 border 
+                    border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 false flex btn-pink lg w-100 mb-3 font-CeraGR  mx-auto" href={route('wish.subscribe.checkout',{uuid: item.uuid, reccure: 'onetime'})}>
                         OneTime Purchase
                     </Link>
-                    <Link className="inline-flex items-center px-4 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 false flex btn-pink lg w-100 mb-3 font-CeraGR  mx-auto" href={route('wish.subscribe.checkout',{uuid: item.uuid})}>
+                    <Link className="inline-flex items-center px-4 border 
+                    border-transparent rounded-md font-semibold text-xs text-white 
+                    uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 
+                    active:bg-gray-900 focus:outline-none focus:ring-2 
+                    focus:ring-indigo-500 focus:ring-offset-2 transition 
+                    ease-in-out duration-150 false flex btn-pink lg w-100 
+                    mb-3 font-CeraGR  mx-auto" 
+                    href={route('wish.subscribe.checkout',{uuid: item.uuid})}>
                         Pay Every {item.subscription_period == 'daily' ? " Day" : ''}
                         {item.subscription_period == 'weekly' ? " Week" : ''}
                         {item.subscription_period == 'monthly' ? " Month" : ''}
