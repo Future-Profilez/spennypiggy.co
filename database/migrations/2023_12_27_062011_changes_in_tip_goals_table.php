@@ -17,6 +17,11 @@ return new class extends Migration
             $table->timestamp('completed_at')->nullable()->after('completed');
             $table->tinyInteger('status')->default(0)->after('currency')->comment("0 => Until Acheived, 1 => Days set, 2 => Manually");
             $table->smallInteger('days')->nullable()->after('status');
+            $table->text('description')->nullable()->after('name');
+        });
+
+        Schema::table('tip_goals_payments', function (Blueprint $table) {
+            $table->string('product_id')->nullable()->after('session_id');
         });
     }
 

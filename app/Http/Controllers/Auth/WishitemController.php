@@ -408,6 +408,8 @@ class WishitemController extends Controller
 
     public function addToCart($uuid, $device_id, $sub, $amount = null)
     {
+        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+
         $amount = round($amount, 2, PHP_ROUND_HALF_UP);
         $wishitem = WishItem::where('uuid', $uuid)->first();
         if (Auth::check()) {
@@ -449,7 +451,7 @@ class WishitemController extends Controller
             $cart->is_subscribed = ($sub == 'onetime' || $sub == false) ? 0 : 1;
             if ($wishitem->subscription == 2) {
 
-                $price = Helpers::priceFormat(request()->cookie('currency'), $amount, $cart->owner->default_currency);
+                $price = Helpers::priceFormat($currency, $amount, $cart->owner->default_currency);
                 $fullfillamount = $price;
                 $tax =  round(($price * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
                 $createpriceid = $price + $tax;
@@ -477,7 +479,7 @@ class WishitemController extends Controller
             ]);
         } else {
             if ($wishitem->subscription == 2) {
-                $price = Helpers::priceFormat(request()->cookie('currency'), $amount, $wishitem->user->default_currency);
+                $price = Helpers::priceFormat($currency, $amount, $wishitem->user->default_currency);
                 $fullfillamount = $price;
                 $tax = round(($price * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
                 $createpriceid = $price + $tax;
@@ -983,6 +985,12 @@ class WishitemController extends Controller
     }
 
 
+    /**
+     * Add a new tip jar goal
+     *
+     * @param Request $request
+     * @return mixed
+     */
     public function addTipGoal(Request $request)
     {
         $request->validate(
@@ -998,49 +1006,60 @@ class WishitemController extends Controller
                 "default_price" => [
                     "nullable"
                 ],
-                // "description" => [
-                //     "nullable"
-                // ],
+                "mode" => [
+                    'required',
+                    'numeric'
+                ],
             ]
         );
 
         $user = User::where('id', Auth::id())->first();
 
-        $taxamount = $request->default_price * env('TAX_PERCENTAGE', 20) / 100;
-        $createpriceid = ceil($request->default_price) + ceil($taxamount);
-
         $goal = TipGoal::create([
-            'uuid' => Uuid::uuid4(),
             'user_id' => $user->id,
             'name' => $request->name,
             'target' => $request->target,
             'default_price' => $request->default_price,
-            'tax_amount' => $taxamount
+            'description' => $request->description ?? null,
+            'status' => $request->mode,
+            'days' => ($request->mode == 1) ? 30 : null,
         ]);
 
-        $productPayload = [
-            "name"  =>  $goal->name,
-            "images" => ["https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"],
-            "default_price_data"    =>  [
-                "currency"  =>  $user->default_currency,
-                "unit_amount_decimal"   => $createpriceid * 100,
-            ],
-            "url"   => env('APP_URL') . '/' . $user->username . "?goal=$goal->uuid/"
-        ];
-        try {
-            $product = StripeControl::createProduct($productPayload);
-            $goal->product_id = $product->id;
-            $goal->price_id = $product->default_price;
+        $goal->refresh();
+
+        if ($goal->status == 1) {
+            $goal->completed_at = Carbon::now()->addDays($goal->days);
             $goal->save();
-        } catch (Exception $e) {
-            $goal->delete();
-            return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
         }
+
+        // $productPayload = [
+        //     "name"  =>  $goal->name,
+        //     "images" => ["https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"],
+        //     "default_price_data"    =>  [
+        //         "currency"  =>  $user->default_currency,
+        //         "unit_amount_decimal"   => $createpriceid * 100,
+        //     ],
+        //     "url"   => env('APP_URL') . '/' . $user->username . "?goal=$goal->uuid/"
+        // ];
+        // try {
+        //     $product = StripeControl::createProduct($productPayload);
+        //     $goal->product_id = $product->id;
+        //     $goal->price_id = $product->default_price;
+        //     $goal->save();
+        // } catch (Exception $e) {
+        //     $goal->delete();
+        //     return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
+        // }
 
         return back()->with('success', 'Tip Goal added successfully!');
     }
 
-
+    /**
+     * Change wishes listing order
+     *
+     * @param Request $request
+     * @return mixed
+     */
     public function moveWishes(Request $request)
     {
         $request->validate([
@@ -1068,6 +1087,9 @@ class WishitemController extends Controller
      */
     public function listGoal($uuid)
     {
+
+        TipGoal::where('status', 1)->where('completed', 0)->where('completed_at', '<', Carbon::now())->update(['completed' => 1]);
+
         $goal = TipGoal::whereHas('user', function ($q) use ($uuid) {
             $q->where('uuid', $uuid);
         })->where('completed', 0)->first();
@@ -1076,5 +1098,34 @@ class WishitemController extends Controller
             'status' => true,
             'goal' => $goal
         ]);
+    }
+
+
+    /**
+     * Mark as completed the tip jar goal
+     *
+     * @param $uuid uuid of tip jar
+     * @return mixed
+     */
+    public function markJarComplete($uuid)
+    {
+
+        $goal = TipGoal::where('uuid', $uuid)->where('completed', 0)->first();
+
+        if ($goal->status == 2) {
+            $goal->completed = 1;
+            $goal->completed_at = Carbon::now();
+            $goal->save();
+
+            return response()->json([
+                'status' => true,
+                'goal' => $goal
+            ]);
+        } else {
+            return response()->json([
+                'status' => false,
+                'msg' => "You can only mark as complete the jar which is in manual mode."
+            ]);
+        }
     }
 }
