@@ -209,7 +209,7 @@ Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
 //     return $ret;
 // });
 
-Route::get('/test', function () {
+Route::get('/test/test', function () {
     return Inertia::render('Test');
 })->name("test");
 

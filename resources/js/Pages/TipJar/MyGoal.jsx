@@ -94,7 +94,7 @@ export default function MyGoal({goal}) {
   return (
     <div className='box rounded-lg mt-4 shadow-voilet border p-4'>
       <h2 className='text-large font-semibold mb-2'>{goal?.name || ''}</h2>
-      <p className='mb-3 '>{ goal?.description || 'Hello everyone please help me to grow.It can not happen without your support.'}</p>
+      <p className='mb-3 '>{ goal?.description || ''}</p>
       
       <p className='mb-3 text-voilet '>30 Days left to goal ends.</p>
       <ProgressBar now={goal?.fullfilled} max={goal?.target} />
