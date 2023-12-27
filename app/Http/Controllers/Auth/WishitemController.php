@@ -993,6 +993,7 @@ class WishitemController extends Controller
      */
     public function addTipGoal(Request $request)
     {
+        $currency = !empty($request->cookie('currency')) ? $request->cookie('currency') : "gbp";
         $request->validate(
             [
                 "name" => [
@@ -1015,14 +1016,18 @@ class WishitemController extends Controller
 
         $user = User::where('id', Auth::id())->first();
 
+        $target = Helpers::priceFormat($currency, $request->target, $user->default_currency);
+        $price = Helpers::priceFormat($currency, $request->default_price, $user->default_currency);
+
         $goal = TipGoal::create([
             'user_id' => $user->id,
             'name' => $request->name,
-            'target' => $request->target,
-            'default_price' => $request->default_price,
+            'target' => $target,
+            'default_price' => ceil($price),
             'description' => $request->description ?? null,
             'status' => $request->duration,
             'days' => ($request->duration == 1) ? 30 : null,
+            'currency' => $user->default_currency,
         ]);
 
         $goal->refresh();
