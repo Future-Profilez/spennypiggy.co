@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Head, Link, usePage, useAlerts } from "@inertiajs/react";
+import { useAlerts } from "@/Components/Alerts";
+import { Head, Link, usePage } from "@inertiajs/react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
 const Wishlist = React.lazy(() => import('./Auth/Wishlist'));
 const Wishlistbox = React.lazy(() => import('@/wishlist/Wishlistbox'));
