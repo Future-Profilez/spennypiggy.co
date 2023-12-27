@@ -1,7 +1,7 @@
 import { useAlerts } from "@/Components/Alerts";
 import React, { useEffect } from "react";
 import  LoaderButton from "@/Components/LoaderButton";
-import { useForm } from "@inertiajs/react";
+import { useForm, usePage } from "@inertiajs/react";
 const Popup = React.lazy(() => import('@/Components/Popup'));
 import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
@@ -9,6 +9,7 @@ import ProgressBar from 'react-bootstrap/ProgressBar';
 
 export default function AddGoal({activegoal, fetch_goal}) {
    
+   const { global_currency } = usePage().props;
    useEffect(()=>{
       setGoal(activegoal);
    },[activegoal]);
@@ -60,9 +61,25 @@ export default function AddGoal({activegoal, fetch_goal}) {
       return r.toFixed(1);
    }
 
-   const markcomplete = () => { 
-      setGoal(null);
-   }
+   const markcomplete = (e) => { 
+      e.preventDefault();
+      post(route(`mark-goal`, {uuid:goal.uuid}), {
+         preserveScroll:true,
+         onSuccess: (resp) => {
+            if (resp.props.flash?.success) {
+               successAlert(resp.props.flash?.success || "Goal marked as completed.");
+               setGoal(null);
+            }
+            if (resp.props.flash?.error) {
+               errorAlert(resp.props.flash?.error || "Something went wrong.")
+            }
+         },
+         onError: (_err) => {
+            console.error("error", _err);
+            setLoading(false);
+         }
+      });
+   } 
 
     return (
         <Popup
@@ -73,13 +90,11 @@ export default function AddGoal({activegoal, fetch_goal}) {
             {goal ? 
                <div className="updategoal py-2" >
                 <div className="activegoal text-center" >
-                  <h2 className='text-large font-semibold mb-2'>{goal.name}</h2>
-                  <p className='mb-3 '>{goal.description || ''}</p>
-                  
-                  {goal.days ? <p className='mb-3 text-voilet '>{goal.days > 1 ? `${goal.days} Days` : `${goal.days} Day`} left to goal ends.</p> : ''}
-                  <ProgressBar now={goal.fullfilled} max={goal.target} />
-                  <p className='text-muted mt-2' >{getPercentage(goal.target, goal.fullfilled)}% of {formatMultiPrice(goal.target, goal.currency)} goal.</p>
-
+                  <h2 className='text-large font-semibold mb-2'>{goal?.name}</h2>
+                  <p className='mb-3 '>{goal?.description || ''}</p>
+                  {goal?.days ? <p className='mb-3 text-voilet '>{goal?.days > 1 ? `${goal?.days} Days` : `${goal?.days} Day`} left to goal ends.</p> : ''}
+                  <ProgressBar now={goal?.fullfilled} max={goal?.target} />
+                  <p className='text-muted mt-2' >{getPercentage(goal?.target, goal?.fullfilled)}% of {formatMultiPrice(goal?.target, goal?.currency)} goal.</p>
                   <LoaderButton 
                   onClick={markcomplete} 
                   disabled={processing}
@@ -104,17 +119,22 @@ export default function AddGoal({activegoal, fetch_goal}) {
                   </div>
                   <div className="form-field mb-4">
                      <label className="d-block text-start mb-2">Target Amount</label>
-                     <input className="form-input w-100 rounded"
-                        onChange={(e) => setData('target', e.target.value)}
-                        type="number" placeholder="Enter amount.. "
-                     />
+                     <div className="position-relative  currency-wrapper" >
+                        <span className="currency-tag">{global_currency || 'GBP'}</span>
+                        <input className="form-input w-100 rounded"
+                           onChange={(e) => setData('target', e.target.value)}
+                           type="number" placeholder="Enter amount.. " />
+                     </div>
                   </div>
                   <div className="form-field mb-4">
                      <label className="d-block text-start mb-2">Minimum amount to pay</label>
-                     <input className="form-input w-100 rounded"
-                        onChange={(e) => setData('default_price', e.target.value)}
-                        type="number" placeholder="Enter minimum amount to pay.. "
-                     />
+                     <div className="position-relative currency-wrapper " >
+                        <span className="currency-tag">{global_currency || 'GBP'}</span>
+                        <input className="form-input w-100 rounded"
+                           onChange={(e) => setData('default_price', e.target.value)}
+                           type="number" placeholder="Enter minimum amount to pay.. "
+                        />
+                     </div>
                   </div>
                   <div className="form-field mb-4">
                         <label className="d-block text-start mb-2">Goal Description</label>

@@ -611,3 +611,12 @@ button.editpop{display:none !important;}
 .wish-item-box {
   /* transition: 0.5s ease-out; */
 }
+.currency-wrapper input {
+  padding-left: 50px !important;
+}
+span.currency-tag {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+}
