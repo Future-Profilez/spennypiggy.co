@@ -824,7 +824,7 @@ class StripeController extends Controller
             return redirect()->back()->with('error', 'No tip jar found!');
         }
 
-        if (($goal->completed_at <= Carbon::now()) || ($goal->completed == 1)) {
+        if ((!empty($goal->completed_at) && $goal->completed_at <= Carbon::now()) || ($goal->completed == 1)) {
             return redirect()->back()->with('error', 'Goal is completed already.');
         }
 
