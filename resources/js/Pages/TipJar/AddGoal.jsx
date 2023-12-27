@@ -19,7 +19,7 @@ export default function AddGoal({activegoal, fetch_goal}) {
    const [duration, setDuration] = useState(0);
    const { formatMultiPrice } = PriceFormat();
    const { successAlert, errorAlert, errorsHandling } = useAlerts();
-   const { data, setData, post, processing, errors, reset } = useForm({
+   const { data, setData, post,get, processing, errors, reset } = useForm({
       name: '',
       target: '',
       default_price: '',
@@ -63,7 +63,7 @@ export default function AddGoal({activegoal, fetch_goal}) {
 
    const markcomplete = (e) => { 
       e.preventDefault();
-      post(route(`mark-goal`, {uuid:goal.uuid}), {
+      get(route(`mark-goal`, {uuid:goal.uuid}), {
          preserveScroll:true,
          onSuccess: (resp) => {
             if (resp.props.flash?.success) {
