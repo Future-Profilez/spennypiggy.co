@@ -19,15 +19,7 @@ import { LazyLoadImage } from 'react-lazy-load-image-component';
 import useWidthCount from '@/Components/useWidthCount';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable,rectSortingStrategy } from "@dnd-kit/sortable";
 import AddGoal from './TipJar/AddGoal'; 
-import {
-    closestCenter,
-    DndContext,
-    KeyboardSensor,
-    MouseSensor,
-    TouchSensor,
-    useSensor,
-    useSensors,
-  } from "@dnd-kit/core";
+import{closestCenter,DndContext,KeyboardSensor,MouseSensor,TouchSensor,useSensor,useSensors } from "@dnd-kit/core";
 import MyGoal from './TipJar/MyGoal';
 
 
@@ -81,10 +73,21 @@ export default function Dashboard(props) {
         fetchingcats(v);
     };
 
+
+    const [goal, setGoal] = useState();
+    const fetch_goal = () => {
+        axios.get(`tip-jar/list/${user && user.username}`).then((resp) => {
+            console.log("resp",resp)
+        }).catch((_err) => {
+            console.error("error", _err);
+        });
+    }
+
     useEffect(() => {
         fetchingcats();
         fetch_categories();
         fetchingLinks();
+        fetch_goal();
     }, []);
 
     const w = useWidthCount();
