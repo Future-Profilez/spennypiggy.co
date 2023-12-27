@@ -22,6 +22,7 @@ return new class extends Migration
 
         Schema::table('tip_goals_payments', function (Blueprint $table) {
             $table->string('product_id')->nullable()->after('session_id');
+            $table->string('status')->default('initiated')->change();
         });
     }
 

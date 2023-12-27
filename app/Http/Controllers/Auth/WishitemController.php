@@ -1116,10 +1116,7 @@ class WishitemController extends Controller
         $goal->completed_at = Carbon::now();
         $goal->save();
 
-        return response()->json([
-            'status' => true,
-            'msg' => "The goal is marked as completed."
-        ]);
+        return back()->with('success', 'Goal marked as completed.');
     }
 
 
