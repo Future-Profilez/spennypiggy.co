@@ -36,6 +36,6 @@ class TipGoal extends Model
 
     public function user()
     {
-        return $this->belongsTo(TipGoal::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 }
