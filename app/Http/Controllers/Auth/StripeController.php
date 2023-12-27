@@ -857,7 +857,7 @@ class StripeController extends Controller
                 return redirect()->back()->with('error', "This tip jar only needs $remaining_amount to complete the goal.");
             }
 
-
+            $real_tax = number_format(($request->amount * env('TAX_PERCENTAGE') / 100), 2);
             $price = Helpers::priceFormat($currency, $request->amount, $goal->user->default_currency);
             $tax = number_format(($price * env('TAX_PERCENTAGE') / 100), 2);
 
@@ -895,7 +895,7 @@ class StripeController extends Controller
                     'transfer_data' => [
                         'destination' => $goal->user->account_id, // Creator's connected account ID
                     ],
-                    'application_fee_amount' => $tax * 100,
+                    'application_fee_amount' => $real_tax * 100,
                     'on_behalf_of'  => $goal->user->account_id,
                 ],
                 'customer_email' =>  $request->email,
