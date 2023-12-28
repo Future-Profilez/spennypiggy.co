@@ -96,7 +96,7 @@ body{position:relative;font-family:var(--para-font);}
 .shadow-purple{box-shadow:7px 7px 0 0 var(--purple);}
 .modal-content{max-width:calc(100% - 30px);margin:auto;}
 
-.trackbar > div {
+.trackbar > div:not(.tip) {
   display: block !important;
 }
 
