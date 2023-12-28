@@ -108,14 +108,6 @@ export default function Countries({send}) {
         "phone": "33",
         "currency": "EUR"
     },
-    
-    {
-        "code": "GB",
-        "label": "United Kingdom",
-        "phone": "44",
-        "currency": "GBP"
-    },
-    
     {
         "code": "GH",
         "label": "Ghana",
