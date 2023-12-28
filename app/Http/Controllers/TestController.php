@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\CurrencyExchange;
+use App\IpTracker;
 use App\Jobs\FetchSelfTwitterData;
 use App\Mail\Welcome;
 use App\Models\Currency;
@@ -192,5 +193,19 @@ class TestController extends Controller
 
         $data = $response->json();
         return $data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'];
+    }
+
+    /**
+     * Test Ip Address
+     *
+     * @return mixed
+     */
+    public function testIp(){
+
+        IpTracker::getIpInfo();
+        return response()->json([
+            'success'   =>  true,
+            'ip_indo'   =>  IpTracker::$ipInfo
+        ]);
     }
 }
