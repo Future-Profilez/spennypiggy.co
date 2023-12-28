@@ -29,12 +29,16 @@ export default function Tiplisting({auth}) {
       const [open, setOpen] = useState(false);
       const openState = () => { setOpen(!open) }
       return <>
-         <div onClick={openState} className='box shadow-pink rounded-lg  p-3' >
+         <div onClick={openState} className='box shadow-pink rounded-lg p-3 mb-4 mt-4' >
             <div  aria-controls="example-collapse-text "  
             aria-expanded={open} className="cursor-pointer trackbar " >
                   <div className='d-flex tip align-items-center justify-content-between' >
                      <div>
-                     <h2 className='text-large mb-0' >{g && g.tip_goal?.name}</h2>
+                     <h2 className='text-large mb-1' >{g && g.tip_goal?.name}</h2>
+                     { g && !g.sender 
+                        ? <p className=' mb-0' >From : {g?.guest_name}</p> 
+                        : <p className=' mb-0' >To : {g?.owner?.username}</p> 
+                     }
                      </div>
                      <div>
                      <div className="angle-icon w-auto d-flex justify-content-end align-items-center">
@@ -55,27 +59,11 @@ export default function Tiplisting({auth}) {
                   <div id="example-collapse-text" className=''>
                      <div className='mt-3'>
                      <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
-                        <p className='text-muted  ' >Tip Via</p>
-                        <p className='mb-0' >{g?.guest_name}</p> 
-                     </div>
-
-                     <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
-                        <p className='text-muted  ' >Tip Owner</p>
+                        <p className='text-muted  ' >Goal Owner</p>
                         <p className='mb-0' >
                            <Link className='text-primary' href={`/${g.owner?.username}`} >{g.owner?.name}</Link> 
                         </p> 
                      </div>
-
-                     <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
-                        <p className='text-muted ' >Total paid</p>
-                        <p className='mb-0' >{formatMultiPrice(g && g.fullfilled, g.currency)}</p> 
-                     </div>
-
-                     <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
-                        <p className='text-muted ' >Goal End</p>
-                        <p className='mb-0' >{g?.status == 0 ? "Open Until Acheived" : g?.status == 1 ? `${g?.days} days` : "Until marked as completed" }</p> 
-                     </div>
-
                      <p className='text-muted mb-1 mt-3 border-top pt-3 text-small' >Tip Note</p>
                      <p className='mb-2' >{g && g.message}</p> 
                      </div>

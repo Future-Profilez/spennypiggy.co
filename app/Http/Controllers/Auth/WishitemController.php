@@ -1157,9 +1157,14 @@ class WishitemController extends Controller
             $q->where('user_id',$user->id);
         })->with('tipGoal')->orWhere('user_id',$user->id)->get();
 
+        $tips = $user_tips->map(function($q){
+            $q->owner = $q->tipGoal->user;
+            return $q;
+        });
+
         return response()->json([
             'status' => true,
-            'tips' => $user_tips
+            'tips' => $tips
         ]);
     }
 }

@@ -69,7 +69,7 @@ export default function TipTracker({auth}) {
                      </div>
                      <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
                         <p className='text-muted ' >Goal End</p>
-                        <p className='mb-0' >{g?.status == 0 ? "Open Until Acheived" : g?.status == 1 ? `${g?.days} days` : "Until marked as completed" }</p> 
+                        <p className='mb-0' >{g?.status == 0 ? "Open Until Acheived" : g?.status == 1 ? `30 Days Period` : "Until marked as completed" }</p> 
                      </div>
                      {g && g.complete_at ? <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
                         <p className='text-muted ' >Completed On</p>
