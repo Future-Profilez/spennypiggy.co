@@ -845,10 +845,6 @@ class WishitemController extends Controller
         })->with(['user', 'wish_item'])->orderBy('updated_at', 'DESC')->get();
         $user_subs = WishItemSubscription::where('user_id', Auth::id())->with(['wish_item', 'wish_item.user'])->get();
 
-        $user_tips = TipGoalsPayment::whereHas('tipGoal',function($q) use($user){
-            $q->where('user_id',$user->id);
-        })->with('tipGoal')->orWhere('user_id',$user->id)->get();
-
         $trackData = $tracks->map(function ($q) {
 
             if (Auth::id() == $q->payment->owner_id) {
@@ -865,7 +861,6 @@ class WishitemController extends Controller
             "tracks" => $trackData,  
             "creator_subs" => $creator_subs,
             "user_subs" => $user_subs,
-            'tips' => $user_tips
         ]);
     }
 
@@ -1145,6 +1140,26 @@ class WishitemController extends Controller
         return response()->json([
             'status' => true,
             'goals' => $goals
+        ]);
+    }
+
+
+
+     /**
+     * User tips send or get
+     *
+     * @return mixed
+     */
+    public function userTips(){
+        $user = Auth::user();
+
+        $user_tips = TipGoalsPayment::whereHas('tipGoal',function($q) use($user){
+            $q->where('user_id',$user->id);
+        })->with('tipGoal')->orWhere('user_id',$user->id)->get();
+
+        return response()->json([
+            'status' => true,
+            'tips' => $user_tips
         ]);
     }
 }

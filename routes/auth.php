@@ -110,6 +110,8 @@ Route::middleware('auth')->group(function () {
 
         Route::get('wish-tracker', [WishitemController::class, 'wishtrackerItems'])->name('wish-tracker');
 
+        Route::get('user-tips', [WishitemController::class, 'userTips'])->name('user-tips');
+
         Route::get('subscriptions', [WishitemController::class, 'creatorSubscriptions'])->name('subscriptions');
 
         Route::get('subscribed', [WishitemController::class, 'userSubscribed'])->name('subscribed');
