@@ -4,13 +4,13 @@ import Collapse from "react-bootstrap/Collapse";
 import PriceFormat from '@/includes/PriceFormat';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 
-export default function TipTracker({auth}) {
+export default function Tiplisting({auth}) {
 
    const { formatMultiPrice } = PriceFormat();
-   const [goals, setGoals] = useState();
+   const [tips, setTips] = useState();
    const fetchgoals = () => {
-      axios.get(`all-goals`).then(resp => {
-         setGoals(resp.data.goals);
+      axios.get(`user-tips`).then(resp => {
+         setGoals(resp.data.tips);
       }).catch(_err => {
          console.error("error", _err);
       });
@@ -25,7 +25,7 @@ export default function TipTracker({auth}) {
       return r.toFixed(2);
    }
    
-   const GoalItem = ({g}) => {
+   const TipItem = ({g}) => {
       const [open, setOpen] = useState(false);
       const openState = () => { setOpen(!open) }
       return <>
@@ -52,7 +52,7 @@ export default function TipTracker({auth}) {
             </div>
             <Collapse in={open} >
                   <div id="example-collapse-text" className=''>
-                     <div className='mt-3 pt-3 border-top'>
+                     {/* <div className='mt-3 pt-3 border-top'>
                      <ProgressBar now={g?.fullfilled} max={g?.target} />
                      <p className='text-muted text-small mt-1 mb-4' >{getPercentage(g?.target, g?.fullfilled)}% of {formatMultiPrice(g?.target, g?.currency)} goal.</p>
                      <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
@@ -77,7 +77,7 @@ export default function TipTracker({auth}) {
                      </div> : ''}
                      <p className='text-muted mb-1 mt-3 border-top pt-3 text-small' >Description</p>
                      <p className='mb-2' >{g && g.description}</p> 
-                     </div>
+                     </div> */}
                   </div>
             </Collapse>
          </div>
@@ -85,8 +85,8 @@ export default function TipTracker({auth}) {
    }
    return (
       <div className='tips mt-4'>
-         {goals && goals.map((g, i)=>{
-            return <GoalItem g={g} />
+         {tips && tips.map((g, i)=>{
+            return <TipItem g={g} />
          })}
       </div>
   )
