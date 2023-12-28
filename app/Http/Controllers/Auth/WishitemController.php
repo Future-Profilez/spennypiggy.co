@@ -862,7 +862,7 @@ class WishitemController extends Controller
         });
 
         return Inertia::render('tracker/Wishtracker', [
-            "tracks" => $trackData,
+            "tracks" => $trackData,  
             "creator_subs" => $creator_subs,
             "user_subs" => $user_subs,
             'tips' => $user_tips

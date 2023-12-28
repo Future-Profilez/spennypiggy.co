@@ -57,6 +57,10 @@ class TipGoal extends Model
     }
 
     public function getCompleteAtAttribute(){
-        return Carbon::createFromFormat('Y-m-d H:i:s', $this->completed_at)->isoFormat('DD MMM YYYY');
+        if(!empty($this->completed_at)){
+            return Carbon::createFromFormat('Y-m-d H:i:s', $this->completed_at)->isoFormat('DD MMM YYYY');
+        }
+
+        return false;
     }
 }
