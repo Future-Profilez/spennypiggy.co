@@ -13,6 +13,7 @@ use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\Subscription;
 use App\Models\TipGoal;
+use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserCategory;
@@ -844,6 +845,10 @@ class WishitemController extends Controller
         })->with(['user', 'wish_item'])->orderBy('updated_at', 'DESC')->get();
         $user_subs = WishItemSubscription::where('user_id', Auth::id())->with(['wish_item', 'wish_item.user'])->get();
 
+        $user_tips = TipGoalsPayment::whereHas('tipGoal',function($q) use($user){
+            $q->where('user_id',$user->id);
+        })->with('tipGoal')->orWhere('user_id',$user->id)->get();
+
         $trackData = $tracks->map(function ($q) {
 
             if (Auth::id() == $q->payment->owner_id) {
@@ -859,7 +864,8 @@ class WishitemController extends Controller
         return Inertia::render('tracker/Wishtracker', [
             "tracks" => $trackData,
             "creator_subs" => $creator_subs,
-            "user_subs" => $user_subs
+            "user_subs" => $user_subs,
+            'tips' => $user_tips
         ]);
     }
 

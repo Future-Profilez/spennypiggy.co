@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 use Ramsey\Uuid\Uuid;
 
 class TipGoalsPayment extends Model
@@ -26,13 +27,16 @@ class TipGoalsPayment extends Model
 
     protected $hidden = [
         'id',
-        'uuid',
         'user_id',
         'tip_goal_id',
         'session_id',
         'currency',
         'created_at',
         'updated_at',
+    ];
+
+    protected $appends = [
+        'sender'
     ];
 
     public static function boot()
@@ -51,5 +55,15 @@ class TipGoalsPayment extends Model
     public function tipGoal()
     {
         return $this->belongsTo(TipGoal::class, 'tip_goal_id');
+    }
+
+
+    public function getSenderAttribute()
+    {
+        $sender = false;
+        if (Auth::check()) {
+            $sender = $this->tipGoal->user_id == Auth::id() ? true : false;
+        }
+        return $sender;
     }
 }
