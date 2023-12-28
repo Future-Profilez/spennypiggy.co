@@ -8,16 +8,16 @@ export default function Tiplisting({auth}) {
 
    const { formatMultiPrice } = PriceFormat();
    const [tips, setTips] = useState();
-   const fetchgoals = () => {
+   const fetchTips = () => {
       axios.get(`user-tips`).then(resp => {
-         setGoals(resp.data.tips);
+         setTips(resp.data.tips);
       }).catch(_err => {
          console.error("error", _err);
       });
    }
 
    useEffect(()=>{
-      fetchgoals();
+      fetchTips();
    },[]);
 
    const getPercentage = (actual, paid) => {
@@ -41,12 +41,13 @@ export default function Tiplisting({auth}) {
                      </div>
                   </div>
                <div className='goal-stats  d-flex align-items-center justify-content-between' >
-                     <h2 className='' >Goal Target : {formatMultiPrice(g && g.target, g.currency)}</h2>
-                  {g && g.completed == 1 ?  
-                     <span className='badge bg-success mt-2 ' >Completed</span> 
-                  : 
-                     <p className='text-success mt-2 text-mint font-bold' >{ getPercentage(g.target, g.fullfilled)}% fullfilled</p>
-                  }
+                     <h2 className='' >Goal Target : {formatMultiPrice(g && g.target, g.currency, g.currency)}</h2>
+                  
+                     {g && g.sender ?
+                        <div className="identity text-danger text-nowrap" >-{formatMultiPrice(g.amount * (+g.quantity || 1), g.currency)}</div>
+                        :
+                        <div className="identity text-success text-nowrap" >+{formatMultiPrice(g.amount * (+g.quantity || 1), g.currency)}</div>
+                     }
                   
                </div>
             </div>
@@ -83,6 +84,7 @@ export default function Tiplisting({auth}) {
          </div>
       </>
    }
+
    return (
       <div className='tips mt-4'>
          {tips && tips.map((g, i)=>{
