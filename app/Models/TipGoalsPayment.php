@@ -30,7 +30,6 @@ class TipGoalsPayment extends Model
         'user_id',
         'tip_goal_id',
         'session_id',
-        'currency',
         'created_at',
         'updated_at',
     ];
@@ -62,7 +61,7 @@ class TipGoalsPayment extends Model
     {
         $sender = false;
         if (Auth::check()) {
-            $sender = $this->tipGoal->user_id == Auth::id() ? true : false;
+            $sender = $this->tipGoal->user_id == Auth::id() ? false : true;
         }
         return $sender;
     }
