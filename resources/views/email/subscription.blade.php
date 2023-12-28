@@ -36,7 +36,7 @@
                 <tr>
                     <td style="padding:0 0 10px 0; text-align: center;">
                         <a href="{{ env('APP_URL') . '/wish-tracker' }}"
-                            style="border-radius:30px;padding:13px 10px 13px 10px; width: 210px; border:none;background-color: #F94F97; font-family: Arial; font-weight: bold; font-size: 10px; text-align: center; color:#ffffff; cursor: pointer;">See
+                        style="border-radius:30px;padding: 13px 25px 13px 25px;border:none;background-color:#f94f97;font-family:Arial;font-weight:bold;font-size: 15px;text-align:center;color:#ffffff;text-decoration: none;" >See
                             your transactions.</a>
                     </td>
                 </tr>

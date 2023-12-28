@@ -78,6 +78,8 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/say-thankyou/{payment_id}', [WishitemController::class, 'sayThanks'])->name('say-thankyou');
 
+    Route::post('move-wish', [WishitemController::class, 'moveWishes'])->name('move-wish');
+
     Route::middleware('mustHaveToVerify')->group(function () {
 
         Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
@@ -88,12 +90,12 @@ Route::middleware('auth')->group(function () {
 
         Route::post('save_wish_item', [WishitemController::class, 'addWishItem'])->name('save_wish_item');
 
-        
+
         Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
 
         Route::prefix("stripe")->name("stripe.")->group(function () {
             Route::get("authorize", [StripeController::class, "index"])->name("index");
-            Route::match(["get", "post"], "/connect-{step}/{country?}", [StripeController::class, "initConnect"])->name("connect");
+            Route::match(["get", "post"], "/connect-{step}/{country?}/{currency?}", [StripeController::class, "initConnect"])->name("connect");
             Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
             Route::post("/login", [StripeController::class, "loginToStripe"])->name("login");
         });
@@ -130,6 +132,8 @@ Route::middleware('auth')->group(function () {
         });
 
         Route::post('add-goal', [WishitemController::class, 'addTipGoal'])->name('add-goal');
+        Route::get('mark-complete-goal/{uuid}', [WishitemController::class, 'markJarComplete'])->name('mark-goal');
+        Route::get('all-goals', [WishitemController::class, 'allGoalsCreators'])->name('all-goals');
     });
 });
 
@@ -192,12 +196,23 @@ Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts
 
 Route::get('/leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('/leaderboard');
 
+Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
+    Route::post('pay/{uuid}/', [StripeController::class, 'tipToJar'])->name("pay");
+    Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
+    Route::get('/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');
+});
+
 /*check username exist*/
 // Route::get('/data-check', function () {
 //     $ret = StripeControl::getSubscription("sub_1OND8tG7xsNScLmXLFzAhobA");
 
 //     return $ret;
 // });
+
+Route::get('/test/test', function () {
+    return Inertia::render('Test');
+})->name("test");
+
 Route::get('twitter-token/', [TwitterController::class, 'twitterAuthUrl']);
 Route::get('twitter/login', [TwitterController::class, 'twitterLogin']);
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');

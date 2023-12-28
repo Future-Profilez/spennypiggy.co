@@ -30,7 +30,8 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse {
+    public function update(ProfileUpdateRequest $request): RedirectResponse
+    {
         $request->user()->fill($request->validated());
 
         if ($request->user()->isDirty('email')) {
@@ -50,7 +51,9 @@ class ProfileController extends Controller
     public function updateProfile(Request $request)
     {
 
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where(function ($q) {
+            $q->whereNot('country', 'GB')->orWhereNull('country');
+        })->first();
 
         $checkdata = Helpers::checkBlockData($request);
         if ($checkdata == 1) {

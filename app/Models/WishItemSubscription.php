@@ -34,6 +34,7 @@ class WishItemSubscription extends Model
         'session_id',
         'wish_item_id',
         'user_id',
+        'upcoming_payment',
         'created_at',
         'updated_at',
         'deleted_at'
@@ -77,6 +78,10 @@ class WishItemSubscription extends Model
 
     public function getPaymentUpcomingAttribute()
     {
-        return Carbon::createFromFormat('Y-m-d H:i:s', $this->upcoming_payment)->isoFormat('DD MMM YYYY');
+        if (!empty($this->upcoming_payment)) {
+            return Carbon::createFromFormat('Y-m-d H:i:s', $this->upcoming_payment)->isoFormat('DD MMM YYYY');
+        }
+
+        return false;
     }
 }

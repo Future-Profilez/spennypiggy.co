@@ -33,6 +33,7 @@ export default function ToCart({
             toast.error(`Please enter a amount to gift this item.`);
             return false;
         }
+
         // if (crowd && amount > pending) {
         //     toast.error(`Amount can not be more than remaining amount.`);
         //     return false;

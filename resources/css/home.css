@@ -1,9 +1,6 @@
-.alert {
-  border-radius: 12px;
-}
-body {
-  background: #000;
-}
+.alert{border-radius:12px;}
+body{background:#000;}
+
 .wishlistimg span{display:block !important;width:100% !important;height:100% !important;}
 .box{padding:15px;border-radius:20px;background:#fff;}
 .containerbox{max-width:1215px;margin:auto;padding:0 15px;}
@@ -23,7 +20,7 @@ body {
 .funboximg span.lazy-load-image-background,.spennylogo .lazy-load-image-background,.welcomeRt span.lazy-load-image-background{width:auto !important;height:auto !important;}
 .wishlistbtn a:not(.wishlistbutton){transform:rotate(-11deg);}
 .wishlistbtn{margin-top:60px;}
-.welcomeTitle{ -webkit-text-stroke:1px #e6ea81;text-transform:capitalize !important;text-shadow:2px 2px 0 #e6ea81;}
+.welcomeTitle{-webkit-text-stroke:1px #e6ea81;text-transform:capitalize !important;text-shadow:2px 2px 0 #e6ea81;}
 .btn-pink.shadow-mint{box-shadow:6px 6px 0 0 var(--mint);border:2px solid var(--mint);}
 .btn-pink.shadow-mint:hover{box-shadow:10px 10px 0 0 var(--mint);}
 /* mega Menu */
@@ -31,7 +28,7 @@ body {
 .menuImg{width:50%;border-right:1px solid var(--yellow);padding:120px 40px 40px 40px;display:inline-flex;align-items:flex-start;align-content:flex-start;justify-content:center;}
 .menuList{width:50%;display:flex;align-items:center;align-content:center;justify-content:flex-start;padding:25px 100px 25px 70px;}
 .menuList ul li{margin:0 0 10px;}
-.menuList ul li a, .menuList ul li .link{color:var(--light-Yellow,var(--yellow));font-family:var(--heading-font);font-size:6vh;font-style:normal;text-transform:uppercase;}
+.menuList ul li a,.menuList ul li .link{color:var(--light-Yellow,var(--yellow));font-family:var(--heading-font);font-size:6vh;font-style:normal;text-transform:uppercase;}
 .Open .MegaMenu{display:flex;opacity:1;}
 /* end */
 .rotate-btn a,.rotate-btn button{transform:rotate(-7deg);}
@@ -97,7 +94,7 @@ body {
 .loginform form ul li input:focus,.loginform form ul li input:focus-within{outline:none;box-shadow:8px 8px 0px 0px var(--black);transition:all ease .3s;}
 .wishManage{width:100%;padding:0 0 0 25px;}
 .wishbanner img{height:398px;object-fit:cover;}
-.userProfile{margin-top:-200px;}
+.userProfile{margin-top:-270px;}
 .userManageRt{width:773px;padding:0 0 0 35px;}
 select#country{text-transform:capitalize;border-radius:10px;border:1px solid var(--mint)!important;background:var(--black);padding:11px 10px 12px;color:var(--mint);font-family:var(--font-CeraGRBold);font-size:20px;font-style:normal;font-weight:400;letter-spacing:-1.8px;min-width:121px;}
 select#country:hover,select#country:focus{outline:none;box-shadow:none;}
@@ -114,11 +111,11 @@ select#country:hover,select#country:focus{outline:none;box-shadow:none;}
 .wishlistdetial h3{color:var(--gray2);font-size:20px;font-style:normal;line-height:120%;letter-spacing:-0.7px;margin-bottom:7px;}
 .sharelinks{text-align:center;border-top:1px solid var(--voilet);padding:8px;}
 .sharelinks a{color:var(--pink);text-shadow:1px 1px 0px var(--black);font-style:normal;line-height:19px;text-transform:uppercase;text-align:center;}
-.userphoto img{width:188px;height:188px;object-fit:cover;border-radius:200px;border:2px solid var(--voilet);}
-.userphoto{position:absolute;bottom:-80px;}
+.userphoto img{width:130px;height:130px;object-fit:cover;border-radius:50%;border:2px solid var(--voilet);}
+.userphoto{ margin-top:-100px;}
 .accountphotosm{display:none;}
 .userprofilesec h2{color:var(--black);font-size:24px;font-style:normal;font-weight:400;line-height:normal;text-transform:uppercase;text-align:center;margin:0 0 5px;}
-.userphotobox{height:220px;margin-bottom:110px;border:2px solid var(--voilet);border-top:none;border-radius:22px 22px 30px 30px;}
+.userphotobox{height:180px;margin-bottom:110px;border:2px solid var(--voilet);border-top:none;border-radius:22px 22px 30px 30px;}
 .userId{color:var(--voilet);font-size:22px;font-style:normal;font-weight:400;line-height:120%;letter-spacing:-0.77px;text-align:center;margin-bottom:15px;}
 .userProfileDate{padding:10px 30px 25px;}
 button.editProfile{border-radius:10px;border:1px solid var(--voilet);background:var(--white);box-shadow:5px 5px 0px 0px var(--voilet);display:flex;width:100%;padding:14px 10px;text-align:center;align-items:center;align-content:center;justify-content:center;color:var(--voilet);font-size:22px;font-style:normal;font-weight:400;line-height:120%;letter-spacing:-1.98px;cursor:pointer;}
@@ -264,14 +261,14 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 .wishlistdetial h5{font-family:var(--font-CeraGR) !important;font-weight:bolder !important;}
 .content-pr-modal{min-width:500px !important;height:100vh;max-height:80vh;border-radius:16px;overflow:auto;}
 .content-pr-modal iframe{width:100%;height:100%;background:transparent;padding:10px;}
-ul.socialmedia a svg{width:30px;height:30px;}
-ul.socialmedia a img{width:35px;height:35px;}
+ul.socialmedia a svg{width:25px;height:25px;}
+ul.socialmedia a img{width:29px;height:29px;}
 .progress{background:#ECCEDB;height:9px;}
 .progress-bar{background:var(--pink);}
 .wishlistimg img{height:190px;border-radius:0 0 20px 20px;}
 .updateavatar.modal .modal-content{margin:30px;}
 .updateavatar.modal{background:rgb(0 0 0 / 52%);}
-.userProfile{position:sticky;top:20px;}
+.stick{position:sticky;top:20px;}
 .wishlistcntbox button.editpop{position:absolute;top:0;left:0;width:100%;height:calc(100% - 40px);border-radius:20px;opacity:0;z-index:1;}
 .pageheight{min-height:100vh;display:flex;align-items:center;justify-content:center;}
 .headingsm{font-size:20px;line-height:29px;}
@@ -289,26 +286,29 @@ ul.socialmedia a img{width:35px;height:35px;}
 .tersms-accept{font-size:16px !important;}
 div#msgText p b{font-weight:700 !important;padding:0 4px;color:#000;}
 .pinned-badge svg{width:17p x;height:17px;fill:#fff;}
-.pinned-badge{ z-index: 1; display:flex;text-transform:uppercase;justify-content:flex-start;position:absolute;top:10px;left:10px;align-items:center;background:#f64c96 !important;color:#fff !important;}
+.pinned-badge{z-index:1;display:flex;text-transform:uppercase;justify-content:flex-start;position:absolute;top:10px;left:10px;align-items:center;background:#f64c96 !important;color:#fff !important;}
 #pricebasic{padding:4px 10px;border:0 !important;margin-right:10px;}
 #pricebasic:after{display:none !important;}
 .userphotobox > span,.userphotobox > span > img{width:100% !important;height:100% !important;display:block !important;object-fit:cover;}
 .userphoto span{height:auto !important;width:auto !important;display:block !important;}
-.wishbanner{ min-height: 300px;}
-
+.wishbanner{min-height:300px;}
 /* Responsive */
 @media(max-width:1500px){.loveboxes{padding:0 20px;}
 .loveboxes img{max-width:160px;}
 .loveboxes h3{font-size:38px !important;line-height:inherit !important;}
-/* .menuList ul li a, .menuList ul li .link{font-size:50px;line-height:52px;}
+/* .menuList ul li a,.menuList ul li .link{font-size:50px;line-height:52px;}
 */
-.menuList ul li a, .menuList ul li .link{font-size:6vh;}
+.menuList ul li a,.menuList ul li .link{font-size:6vh;}
 }
 @media(max-width:1240px){.containerbox{max-width:1140px;}
 .finish .btn-pink-lg{width:100%;}
-.menuList ul li a, .menuList ul li .link{font-size:4vh;}
+.menuList ul li a,.menuList ul li .link{font-size:4vh;}
 }
-@media(max-width:1199px){.containerbox{max-width:970px;}
+@media(max-width:1199px){
+  .addsocial ul li a, .addsocial ul li button {
+    font-size: 17px !important;
+}
+.containerbox{max-width:970px;}
 }
 @media(max-width:1139px){.containerbox{max-width:960px;}
 .menuList{padding:25px 100px 25px 50px;}
@@ -326,10 +326,8 @@ div#msgText p b{font-weight:700 !important;padding:0 4px;color:#000;}
 */
 .loginPage h2.headingLg{font-size:50px;line-height:60px;}
 }
-@media(max-width:991px){
-.wishManage{padding:0;}
+@media(max-width:991px){.wishManage{padding:0;}
 .userPr{width:-moz-fit-content !important;width:fit-content !important;margin:auto;margin-top:-78px;}
-
 .userphoto{margin:auto !important;padding-bottom:12px;margin-top:-30px;}
 .containerbox{max-width:740px;}
 .MegaMenu{flex-wrap:wrap;align-items:flex-start;align-content:flex-start;}
@@ -339,7 +337,6 @@ div#msgText p b{font-weight:700 !important;padding:0 4px;color:#000;}
 .wishbanner img{height:280px;}
 .userphotobox{height:100px;border-radius:20px;margin-bottom:50px;}
 .userphoto img{width:100px;height:100px;}
-.userphoto{bottom:-40px;}
 .userprofilesec h2{font-size:19px;}
 .userId{font-size:18px;}
 button.editProfile{padding:10px 10px;font-size:18px;}
@@ -357,9 +354,9 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .headtitle{font-size:20px;}
 .spennylogo img{max-width:150px;}
 .welcomeHeading{font-size:50px;line-height:55px;}
-.welcomeTitle{ font-size:24px;line-height:35px;}
+.welcomeTitle{font-size:24px;line-height:35px;}
 .wishlistbtn .w-2\/5{width:15rem}
-.itsfree{padding-inline-start:4rem; }
+.itsfree{padding-inline-start:4rem;}
 .headingMd{font-size:45px;line-height:50px;}
 .headingSm{font-size:40px;line-height:43px;}
 .funboxs{height:340px;}
@@ -367,7 +364,7 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .happycreator{padding:60px 15px;}
 .footlinks h2{margin:0 0 10px;font-size:20px;}
 .wishlistPage{padding-top:10px;}
-.userphotobox{height:300px;}
+.userphotobox{height:250px;}
 .userProfile{margin-top:0px;}
 .footlinks ul li{border-right:0 !important;}
 }
@@ -383,8 +380,8 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .closemega svg{width:43px;top:10px;}
 .headtitle{display:none;}
 .menuList ul li{margin-bottom:10px;}
-.menuList ul li a, .menuList ul li .link{font-size:3vh;}
-.wishbanner{display:none; }
+.menuList ul li a,.menuList ul li .link{font-size:3vh;}
+.wishbanner{display:none;}
 .accountphotosm{display:block;width:100%;}
 .socialmedia{margin-top:5px!important;}
 /* .userprofilesec h2{text-align:left;padding:0 0 0 20px;}
@@ -395,7 +392,8 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .userProfileDate{position:relative;}
 .userProfile{margin:0 auto;width:100%;}
 .userManageRt{padding:0;width:100%;}
-/* .wishlistModal{min-width:300px;} */
+/* .wishlistModal{min-width:300px;}
+*/
 .wishinfo{padding:10px 15px 20px;}
 .joinus{padding:50px 15px 50px;}
 .editProfilePhoto{padding:0 15px;}
@@ -416,7 +414,7 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .wishlistbtnFixed a{border:1px solid var(--mint) !important;background:var(--black);box-shadow:none!important;transform:inherit!important;border-radius:19px !important;width:100%!important;margin:auto;padding:27px 20px!important;font-size:22px!important;}
 .creatorslider .swiper-slide.swiper-slide-next .happyclientSec{transform:inherit;}
 .wishlistbtnFixed{margin:0px !important;width:auto;padding:15px !important;bottom:0 !important;}
-.itsfree{padding-inline-start:0; text-align: center !important;}
+.itsfree{padding-inline-start:0;text-align:center !important;}
 .addsocial ul li{width:auto;padding:0 20px;}
 .addsocial ul li a{font-size:20px;line-height:20px;}
 .addsocial ul li a svg{width:24px;height:24px;}
@@ -586,7 +584,7 @@ div#msgText p{display:flex;align-items:flex-start;}
 .mytable tr:not(:last-child) td{border-bottom:1px solid #232323;}
 .rightbar h2{font-size:20px;font-weight:600;font-family:var(--heading-font) !important;}
 .angle-icon svg{width:50px;}
-.wish-item img{object-fit:cover;border-radius:10px !important;width:50px;height:50px;background:#fff;border:1px solid #000;}
+.wish-item img{object-fit:cover;border-radius:10px !important;width:50px;min-width:50px;height:50px;background:#fff;border:1px solid #000;}
 .wishcontent h2{font-size:18px;}
 .wishcontent h3{font-size:16px;font-weight:700;color:#000 !important;margin:3px 0;}
 .heading{font-size:22px;margin-bottom:10px;}
@@ -607,9 +605,18 @@ button.editpop{display:none !important;}
 .subsctabs button{background:#404040;color:#fff;border-radius:30px !important;padding:6px 20px;}
 .subsctabs button.active,.subsctabs button:hover{color:#fff;background:#f45595;}
 .plantitle{font-size:22px;}
-
-.wishbanner span {
-  width: 100% !important;
-  display: block !important;
-  height: 100% !important;
+.wishbanner span{width:100% !important;display:block !important;height:100% !important;}
+.movesvg{cursor: grab;border-radius:7px;width:30px;height:30px;padding:6px;background:#ffffffbd;position:absolute;top:10px;left:10px;z-index:1;}
+/* .wish-item-box:not(.dragging)  { */
+.wish-item-box {
+  /* transition: 0.5s ease-out; */
+}
+.currency-wrapper input {
+  padding-left: 50px !important;
+}
+span.currency-tag {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
 }

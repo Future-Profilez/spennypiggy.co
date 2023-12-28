@@ -199,6 +199,10 @@ class WishitemController extends Controller
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         }
 
+        // if (Helpers::checkUnsafeContent($request->thumbnail)) {
+        //     return redirect()->back()->with("error", "NSFW Detected in the media content. Try alternative.");
+        // }
+
         $user = User::find(Auth::id());
         $price = Helpers::priceFormat($request->cookie('currency', 'GBP'), $request->price, $user->default_currency);
 
@@ -391,7 +395,9 @@ class WishitemController extends Controller
         $itemId = $query->whereHas('wish', function ($q) use ($user_id) {
             $q->where('user_id', $user_id);
         })->pluck('wish_item_id');
-        $user = User::where('id', $user_id)->first();
+        $user = User::where('id', $user_id)->where(function ($q) {
+            $q->whereNot('country', 'GB')->orWhereNull('country');
+        })->first();
         $items = Wishitem::whereIn('id', $itemId)->latest()->get();
         // $items = WishItem::whereUserId($user->id)->latest()->get();
         $categories = UserCategory::whereUserId($user->id)->latest()->get();
@@ -402,6 +408,8 @@ class WishitemController extends Controller
 
     public function addToCart($uuid, $device_id, $sub, $amount = null)
     {
+        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+
         $amount = round($amount, 2, PHP_ROUND_HALF_UP);
         $wishitem = WishItem::where('uuid', $uuid)->first();
         if (Auth::check()) {
@@ -443,7 +451,7 @@ class WishitemController extends Controller
             $cart->is_subscribed = ($sub == 'onetime' || $sub == false) ? 0 : 1;
             if ($wishitem->subscription == 2) {
 
-                $price = Helpers::priceFormat(request()->cookie('currency'), $amount, $cart->owner->default_currency);
+                $price = Helpers::priceFormat($currency, $amount, $cart->owner->default_currency);
                 $fullfillamount = $price;
                 $tax =  round(($price * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
                 $createpriceid = $price + $tax;
@@ -471,7 +479,7 @@ class WishitemController extends Controller
             ]);
         } else {
             if ($wishitem->subscription == 2) {
-                $price = Helpers::priceFormat(request()->cookie('currency'), $amount, $wishitem->user->default_currency);
+                $price = Helpers::priceFormat($currency, $amount, $wishitem->user->default_currency);
                 $fullfillamount = $price;
                 $tax = round(($price * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
                 $createpriceid = $price + $tax;
@@ -732,7 +740,9 @@ class WishitemController extends Controller
             return redirect()->back()->with("error", "Max limit for message is 100 words");
         }
 
-        $owner = User::where('id', $request->owner_id)->first();
+        $owner = User::where('id', $request->owner_id)->where(function ($q) {
+            $q->whereNot('country', 'GB')->orWhereNull('country');
+        })->first();
 
         $price = Helpers::priceFormat(request()->cookie('currency'), $request->amount, $owner->default_currency);
         // $price = round($request->amount, 2, PHP_ROUND_HALF_UP);
@@ -975,8 +985,15 @@ class WishitemController extends Controller
     }
 
 
+    /**
+     * Add a new tip jar goal
+     *
+     * @param Request $request
+     * @return mixed
+     */
     public function addTipGoal(Request $request)
     {
+        $currency = !empty($request->cookie('currency')) ? $request->cookie('currency') : "gbp";
         $request->validate(
             [
                 "name" => [
@@ -990,55 +1007,64 @@ class WishitemController extends Controller
                 "default_price" => [
                     "nullable"
                 ],
+                "duration" => [
+                    'required',
+                    'numeric'
+                ],
             ]
         );
 
         $user = User::where('id', Auth::id())->first();
 
-        $taxamount = $request->default_price * env('TAX_PERCENTAGE', 20) / 100;
-        $createpriceid = ceil($request->default_price) + ceil($taxamount);
+        $target = Helpers::priceFormat($currency, $request->target, $user->default_currency);
+        $price = Helpers::priceFormat($currency, $request->default_price, $user->default_currency);
 
         $goal = TipGoal::create([
-            'uuid' => Uuid::uuid4(),
             'user_id' => $user->id,
             'name' => $request->name,
-            'target' => $request->target,
-            'default_price' => $request->default_price,
-            'tax_amount' => $taxamount
+            'target' => $target,
+            'default_price' => ceil($price),
+            'description' => $request->description ?? null,
+            'status' => $request->duration,
+            'days' => ($request->duration == 1) ? 30 : null,
+            'currency' => $user->default_currency,
         ]);
 
-        $productPayload = [
-            "name"  =>  $goal->name,
-            "images" => ["https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"],
-            "default_price_data"    =>  [
-                "currency"  =>  $user->default_currency,
-                "unit_amount_decimal"   => $createpriceid * 100,
-            ],
-            "url"   => env('APP_URL') . '/' . $user->username . "?goal=$goal->uuid/"
-        ];
+        $goal->refresh();
 
-
-        try {
-            $product = StripeControl::createProduct($productPayload);
-            $goal->product_id = $product->id;
-            $goal->price_id = $product->default_price;
+        if ($goal->status == 1) {
+            $goal->completed_at = Carbon::now()->addDays($goal->days);
             $goal->save();
-
-            // if (isset($request->post_twitter) && $request->post_twitter == 1) {
-            //     TwitterController::testToken($wish);
-            // }
-        } catch (Exception $e) {
-            $goal->delete();
-            return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
         }
 
-        return response()->json([
-            'status' => true,
-            'msg' => "Tip Goal added successfully!"
-        ]);
+        // $productPayload = [
+        //     "name"  =>  $goal->name,
+        //     "images" => ["https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"],
+        //     "default_price_data"    =>  [
+        //         "currency"  =>  $user->default_currency,
+        //         "unit_amount_decimal"   => $createpriceid * 100,
+        //     ],
+        //     "url"   => env('APP_URL') . '/' . $user->username . "?goal=$goal->uuid/"
+        // ];
+        // try {
+        //     $product = StripeControl::createProduct($productPayload);
+        //     $goal->product_id = $product->id;
+        //     $goal->price_id = $product->default_price;
+        //     $goal->save();
+        // } catch (Exception $e) {
+        //     $goal->delete();
+        //     return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
+        // }
+
+        return back()->with('success', 'Tip Goal added successfully!');
     }
 
-
+    /**
+     * Change wishes listing order
+     *
+     * @param Request $request
+     * @return mixed
+     */
     public function moveWishes(Request $request)
     {
         $request->validate([
@@ -1047,13 +1073,72 @@ class WishitemController extends Controller
             ]
         ]);
 
-        WishItem::whereIn('id', $request->shuffled_items)->get()->each(function ($item, $index) {
-            $item->update(['sort' => $index + 1]);
-        });
+        foreach ($request->shuffled_items as $key => $value) {
+            WishItem::where('id', $value)->update(['sort' => $key]);
+        }
 
         return response()->json([
             'status' => true,
             'msg' => "Shuffled Successfully!"
+        ]);
+    }
+
+
+    /**
+     * List a tip jar goal
+     *
+     * @param $uuid uuid of user
+     * @return mixed
+     */
+    public function listGoal($uuid)
+    {
+
+        TipGoal::where('status', 1)->where('completed', 0)->where('completed_at', '<', Carbon::now())->update(['completed' => 1]);
+
+        $goal = TipGoal::whereHas('user', function ($q) use ($uuid) {
+            $q->where('uuid', $uuid);
+        })->where('completed', 0)->first();
+
+        return response()->json([
+            'status' => true,
+            'goal' => $goal
+        ]);
+    }
+
+
+    /**
+     * Mark as completed the tip jar goal
+     *
+     * @param $uuid uuid of tip jar
+     * @return mixed
+     */
+    public function markJarComplete($uuid)
+    {
+
+        $goal = TipGoal::where('uuid', $uuid)->where('completed', 0)->first();
+
+        $goal->completed = 1;
+        $goal->completed_at = Carbon::now();
+        $goal->save();
+
+        return back()->with('success', 'Goal marked as completed.');
+    }
+
+
+
+    /**
+     * All tip jar goals of a creator
+     *
+     * @return mixed
+     */
+    public function allGoalsCreators()
+    {
+
+        $goals = TipGoal::where('user_id', Auth::id())->get();
+
+        return response()->json([
+            'status' => true,
+            'goals' => $goals
         ]);
     }
 }
