@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import { useForm, Link, usePage } from "@inertiajs/react";
 import PriceFormat from '@/includes/PriceFormat';
 import Popup from '@/Components/Popup';
 
-export default function MyGoal({goal}) {
+export default function MyGoal({goal, IsloggedIn}) {
 
   const { global_currency } = usePage().props;
   const { formatMultiPrice } = PriceFormat();
@@ -16,13 +16,14 @@ export default function MyGoal({goal}) {
   }
 
   const SendTip = () => { 
-
+    const checkRef = useRef();
     const [close, setClose ] = useState();
     const { data, setData, post, processing, errors, reset } = useForm({
       amount: goal.default_price || '',
       email: '',
       name: '',
       message: '',
+      termaccept :''
     }); 
 
     return <>
@@ -57,7 +58,7 @@ export default function MyGoal({goal}) {
               className="form-input w-100 rounded"
               onChange={(e) => setData('email', e.target.value)}
               type="email" placeholder="Enter email.. " />
-            <p className='text-small text-muted ' >Your email address is kept private and will not be shown to anyone.</p>
+            <p className='text-small text-muted mt-1 ' >Your email address is kept private and will not be shown to anyone.</p>
           </div>
 
           <div className="form-field mb-3">
@@ -69,14 +70,28 @@ export default function MyGoal({goal}) {
             />
           </div>
 
-        <Link className="inline-flex items-center px-4 border 
-          border-transparent rounded-md font-semibold text-xs text-white 
-          uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 
-          active:bg-gray-900 focus:outline-none focus:ring-2 
-          focus:ring-indigo-500 focus:ring-offset-2 transition 
-          ease-in-out duration-150 false flex btn-pink lg w-100 
-            font-CeraGR  mx-auto" 
-          href={`tip-jar/pay/${goal.uuid}`} method="post" data={data} > {processing ? "Processing" : 'Send Tip'}</Link>
+          <div className='termselect mt-3 mb-3'>
+              <label htmlFor="termaccept">
+                <p>
+                  <input className='cursor-pointer' type="checkbox" ref={checkRef}  id="termaccept"  name="termaccept"  value="termaccept" required onChange={(e) => setData("termaccept", e.target.value)}></input>
+                    By sending this tip, you agree that this tip is only being made as a gift and not for any service in return.
+                </p>
+              </label>
+          </div>
+
+          <Link className={`inline-flex items-center px-4 border 
+            border-transparent rounded-md font-semibold text-xs text-white 
+            uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 
+            active:bg-gray-900 focus:outline-none focus:ring-2 
+            focus:ring-indigo-500 focus:ring-offset-2 transition 
+            ease-in-out duration-150 false flex btn-pink lg w-100  
+            font-CeraGR mx-auto ${checkRef.current && checkRef.current.checked ? '' :'disabled'}`} 
+            href={`tip-jar/pay/${goal.uuid}`} method="post" data={data} > 
+            {processing ? "Processing" : 'Send Tip'}
+          </Link>
+          <div className='securestripe text-center mt-3' >
+            🔒 Secured via <b>Stripe</b>
+          </div>
       </Popup>
     </>
   }
@@ -87,8 +102,8 @@ export default function MyGoal({goal}) {
       <p className='mb-3 '>{ goal?.description || ''}</p>
       {goal.days ? <p className='mb-3 text-voilet '>{goal.days > 1 ? `${goal.days} Days` : `${goal.days} Day`} left to goal ends.</p> : ''}
       <ProgressBar now={goal?.fullfilled} max={goal?.target} />
-      <p className='text-muted text-small' >{getPercentage(goal?.target, goal?.fullfilled)}% of {formatMultiPrice(goal?.target, goal?.currency)} goal.</p>
-      <SendTip />
+      <p className='text-muted text-small mt-1' >{getPercentage(goal?.target, goal?.fullfilled)}% of {formatMultiPrice(goal?.target, goal?.currency)} goal.</p>
+      {!IsloggedIn ? <SendTip /> :''}
     </div>
   )
 }

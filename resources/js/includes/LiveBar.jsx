@@ -2,12 +2,8 @@ import React from 'react';
 import styled, { keyframes } from 'styled-components';
 
 const slideAnimation = keyframes`
-  0% {
-    transform: translateX(0%);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
+  0% {transform: translateX(0%)}
+  100% {transform: translateX(-50%)}
 `;
 
 const LiveBarWrapper = styled.div`

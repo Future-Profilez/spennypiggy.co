@@ -240,7 +240,7 @@ export default function Dashboard(props) {
                                             )}
                                         </div>
                                     </div>
-                                    {goal && goal.completed == 0 ? <MyGoal goal={goal} /> : ''}
+                                    {goal && goal.completed == 0 ? <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ''}
                                 </div>
                             </div>
                             <div className="col-lg-8 ps-3 ps-lg-4">
