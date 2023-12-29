@@ -53,7 +53,7 @@ class CheckoutController extends Controller
             $taxNew = 0;
             foreach ($getdata as $dd) {
 
-                $amount = number_format(($dd->amount + $dd->tax), 2);
+                $amount = $dd->amount + $dd->tax;
 
                 $lineItems[] = [
                     // 'price' => $dd->stripe_product_id ?? '',
