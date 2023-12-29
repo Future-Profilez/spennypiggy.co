@@ -29,14 +29,14 @@ export default function LinkTwitter(props) {
 
   const unlinkTwitter = (e) => {
     e.preventDefault();
-    get(route('x.init')),{
+    get(route('unlink-twitter')),{
       preserveScroll: true,
       onSuccess: (resp) => {
-        successAlert("Twitter integration unliked successfully.");
+        // successAlert("Twitter integration unliked successfully.");
       },
       onError: (_err) => {
-          console.error(_err);
-          errorAlert("Failed to change display currency.")
+        console.error(_err);
+        // errorAlert("Failed to change display currency.")
       }
     };
   };
@@ -46,12 +46,12 @@ export default function LinkTwitter(props) {
     get(route('auto-tweet-setting')),{
       preserveScroll: true,
       onSuccess: (resp) => {
-        successAlert("Auto tweet for gifts enabled.");
+        // successAlert("Auto tweet for gifts enabled.");
         setIs_linked(!is_linked);
       },
       onError: (_err) => {
           console.error(_err);
-          errorAlert("Failed to change display currency.")
+          // errorAlert("Failed to change display currency.")
       }
     };
   };
@@ -85,7 +85,7 @@ export default function LinkTwitter(props) {
         </Form>
       </div>
 
-      <button onClick={unlinkTwitter} className='btn-pink sm px-5 m-auto d-table mt-4 mb-3' >Unlink</button>
+      <button onClick={unlinkTwitter} className='btn-pink sm px-5 m-auto d-table mt-4 mb-3' >Unlink Twitter</button>
 
     </div> : 
     <div className='step1' >
