@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('promo_codes', function (Blueprint $table) {
             $table->id();
+            $table->uuid();
             $table->string('name')->nullable();
             $table->string('code')->nullable();
             $table->bigInteger('limit')->nullable();
