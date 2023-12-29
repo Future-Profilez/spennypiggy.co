@@ -113,6 +113,8 @@ Route::middleware('auth')->group(function () {
 
         Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
 
+        Route::get('unlink-twitter', [AuthenticatedSessionController::class, 'unlinkTwitter'])->name('unlink-twitter');
+
         Route::get('wish-tracker', [WishitemController::class, 'wishtrackerItems'])->name('wish-tracker');
 
         Route::get('user-tips', [WishitemController::class, 'userTips'])->name('user-tips');
