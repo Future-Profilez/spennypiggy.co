@@ -1190,6 +1190,11 @@ class WishitemController extends Controller
 
         $user->save();
 
-        return back()->with('success','Auto tweet is '. $user->auto_tweet == 1 ? 'Enabled.' : 'Disabled.');
+        if($user->auto_tweet == 1){
+            return back()->with('success',"Auto tweet for gift is Enabled.");
+        }
+        else{
+            return back()->with('success',"Auto tweet for gift is Disabled.");
+        }
     }
 }
