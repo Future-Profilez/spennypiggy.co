@@ -18,6 +18,7 @@ return new class extends Migration
             $table->bigInteger('limit')->nullable();
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }
