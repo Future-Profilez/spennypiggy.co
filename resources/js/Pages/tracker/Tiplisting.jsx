@@ -78,9 +78,7 @@ export default function Tiplisting({auth}) {
          {tips && tips.map((g, i)=>{
             return <TipItem g={g} />
          })}
-
          {tips && tips.length < 1 || !tips ? <Nocontent text="nothing to see" /> : ''}
-
       </div>
   )
 }
