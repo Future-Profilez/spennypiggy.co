@@ -12,6 +12,7 @@ use App\Jobs\SubscriptionCancelAtEnd;
 use App\Jobs\SubscriptionFailed;
 use App\Jobs\TipJarMailToUser;
 use App\Jobs\TipJarPurchased;
+use App\Models\Currency;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\StripeWebhookStatus;
@@ -72,7 +73,7 @@ class StripeController extends Controller
      * @param string $step Connection Current Step
      * @return mixed
      */
-    public function initConnect(Request $request, $step = "init", $country = null)
+    public function initConnect(Request $request, $step = "init", $country = null, $currency = null)
     {
 
         $user = User::find(Auth::id());
@@ -96,15 +97,6 @@ class StripeController extends Controller
                         'mcc'   => '7278' //marketplaces - older - 5262
                     ],
                     'default_currency' => 'GBP',
-                    'individual' => [
-                        'address' => [
-                            'city' => 'Birmingham',
-                            'country' => 'GB',
-                            'line1' => '55 Colmore Row',
-                            'postal_code' => 'B3 2AA'
-                        ],
-                        'phone' => "2045873148"
-                    ]
                 ];
                 $account = StripeControl::createAccount($payload);
                 $user->account_id = $account->id;
@@ -194,7 +186,9 @@ class StripeController extends Controller
                 }
             }
 
-            $user = User::findOrFail(Auth::id());
+            $user = User::where(function ($q) {
+                $q->whereNot('country', 'GB')->orWhereNull('country');
+            })->findOrFail(Auth::id());
             $getdata = UserCart::where('user_id', Auth::id())
                 ->where('owner_id', $owner_id)
                 ->where('status', 1)
@@ -825,10 +819,13 @@ class StripeController extends Controller
     {
         $goal = TipGoal::where('uuid', $uuid)->first();
 
-
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         if (!$goal) {
             return redirect()->back()->with('error', 'No tip jar found!');
+        }
+
+        if ((!empty($goal->completed_at) && $goal->completed_at <= Carbon::now()) || ($goal->completed == 1)) {
+            return redirect()->back()->with('error', 'Goal is completed already.');
         }
 
         if ($request->isMethod("POST")) {
@@ -843,7 +840,11 @@ class StripeController extends Controller
                     'required',
                     'email:dns'
                 ],
-                'message'   =>  [
+                'amount' => [
+                    'required',
+                    'numeric'
+                ],
+                'message' =>  [
                     'sometimes',
                     'nullable',
                     'string',
@@ -851,11 +852,31 @@ class StripeController extends Controller
                 ]
             ]);
 
-            $price = number_format($goal->default_price, 2);
-            $tax = number_format($goal->tax_amount, 2);
+            $amount = intval($request->amount);
 
-            $total_price = number_format($price * $request->quantity, 2);
-            $total_tax = $tax * $request->quantity;
+            if ($amount < $goal->default_price) {
+                return redirect()->back()->with('error', "Please enter amount greater than $goal->default_price.");
+            }
+
+            $remaining_amount = $goal->target - $goal->fullfilled;
+            if ($goal->status == 0 && ($remaining_amount < $amount)) {
+                return redirect()->back()->with('error', "This tip jar only needs $remaining_amount to complete the goal.");
+            }
+
+            $real_tax = number_format(($amount * env('TAX_PERCENTAGE') / 100), 2);
+            $price = Helpers::priceFormat($currency, $amount, $goal->user->default_currency);
+            $tax = number_format(($price * env('TAX_PERCENTAGE') / 100), 2);
+
+            try {
+
+                $stripe_client = StripeControl::createProduct([
+                    'name' => $goal->name,
+                    'images' => ["https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"],
+                    "default_price_data" => ["currency" => strtolower($goal->currency), "unit_amount_decimal" => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100],
+                ]);
+            } catch (Exception $e) {
+                return redirect()->back()->with('error', $e->getMessage());
+            }
 
             $pay = TipGoalsPayment::create([
                 'tip_goal_id'  =>  $goal->id,
@@ -863,19 +884,20 @@ class StripeController extends Controller
                 'guest_name'    =>  $request->name,
                 'guest_email'    =>  $request->email,
                 'currency'      =>  $goal->currency,
-                'amount'        =>  $total_price,
-                'tax'           =>  $total_tax,
-                'message'  =>  $request->message ?? NULL
+                'amount'        =>  $price,
+                'tax'           =>  $tax,
+                'message'  =>  $request->message ?? NULL,
+                'product_id' => $stripe_client->id
             ]);
 
             $payload = [
                 "mode"  =>  'payment',
                 'line_items' =>  [
                     [
-                        'quantity' => $request->quantity,
+                        'quantity' => 1,
                         'price_data' => [
                             'currency' => $currency,
-                            'product' => $goal->product_id,
+                            'product' => $stripe_client->id,
                             'unit_amount_decimal' => Helpers::priceFormat($goal->currency, round(($price + $tax), 2, PHP_ROUND_HALF_UP), $currency) * 100
                         ]
                     ]
@@ -884,7 +906,7 @@ class StripeController extends Controller
                     'transfer_data' => [
                         'destination' => $goal->user->account_id, // Creator's connected account ID
                     ],
-                    'application_fee_amount' => $total_tax * 100,
+                    'application_fee_amount' => $real_tax * 100,
                     'on_behalf_of'  => $goal->user->account_id,
                 ],
                 'customer_email' =>  $request->email,
@@ -932,6 +954,14 @@ class StripeController extends Controller
                 TipJarPurchased::dispatch($tip_pay);
                 TipJarMailToUser::dispatch($tip_pay);
                 $tip_pay->save();
+
+                $tip_pay->tipGoal->fullfilled += $tip_pay->amount;
+                if (($tip_pay->tipGoal->status == 0) && ($tip_pay->tipGoal->target <= $tip_pay->tipGoal->fullfilled)) {
+                    $tip_pay->tipGoal->completed = 1;
+                    $tip_pay->tipGoal->completed_at = Carbon::now();
+                }
+                $tip_pay->tipGoal->save();
+
 
                 return to_route('user.show', ['username' => $tip_pay->tipGoal->user->username])->with('success', "You have paid tip to the tip jar successfully!");
             }

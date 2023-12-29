@@ -2,13 +2,11 @@ import { usePage } from '@inertiajs/react';
 import { Toaster } from 'react-hot-toast';
 import { useAlerts } from '@/Components/Alerts';
 import React, { useEffect } from 'react';
-import VersionUpdate from '@/Components/VersionUpdate';
+import Header from '@/includes/Header';
 const Footer = React.lazy(() => import('@/includes/Footer'));
-const Header = React.lazy(() => import('@/includes/Header'));
 
-export default function Guest(props) {
+export default function Guest({children, auth}) {
 
-    const {children, auth, cart_count } = props;
     const {successAlert, errorAlert} = useAlerts();
     const {flash} = usePage().props;
 

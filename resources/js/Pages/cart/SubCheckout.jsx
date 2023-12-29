@@ -41,7 +41,6 @@ export default function SubCheckout(props) {
         if(flash?.info){
             infoAlert(flash.info);
         }
-        // console.log('falsh', flash);
     },[flash]);
 
     return (

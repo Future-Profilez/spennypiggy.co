@@ -29,9 +29,7 @@
     <meta name="msapplication-TileImage" content="{{ URL::asset('/siteicon.png') }}">
     <meta name="theme-color" content="#05EFB8" />
     <meta name="description" content="Send tributes, adopt bills & more. Safe for Spicy Creators who receive 100% payouts!" />
-    <meta name="keywords"
-        content="Financial Gifts, Donations & Memberships, Send tributes, adopt bills & more. Safe for Spicy Creators who receive 100% payouts!, Create Wishlist, Share Wishlist, Add Wishlist, Recieve Gifts, Send Gifts, Fans Funding. The Best Alternative to Amazon Wishlist" />
-    
+    <meta name="keywords" content="Financial Gifts, Donations & Memberships, Send tributes, adopt bills & more. Safe for Spicy Creators who receive 100% payouts!, Create Wishlist, Share Wishlist, Add Wishlist, Recieve Gifts, Send Gifts, Fans Funding. The Best Alternative to Amazon Wishlist" />
     <meta property="og:title" content="Financial Gifts, Donations & Memberships" />
     <meta property="og:type" content="video.movie" />
     <meta property="og:url" content="spennypiggy.co" />
@@ -40,15 +38,8 @@
     <meta property="og:description" content="Send tributes, adopt bills & more. Safe for Spicy Creators who receive 100% payouts!" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <script type="text/javascript" src="//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js"></script>
-   
     <script>
-        const css1 = [
-            "font-size: 15px",
-            "display:block",
-            "color:#37e1ad",
-            "width: 100%",
-            "padding:30px 30px",
-        ];
+        const css1 = [ "font-size:15px","display:block","color:#37e1ad","width:100%","padding:30px 30px",];
         console.log("%cWelcome to Spenny Piggy.", css1.join(";"));
     </script>
    

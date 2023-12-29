@@ -14,11 +14,11 @@ import Nocontent from "@/includes/Nocontent";
 import userphoto from "../../../assets/img/userphoto.png";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import { useAlerts } from "@/Components/Alerts";
+import TipTracker from "./TipTracker";
 const defaultsec = 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/';
 
 export default function Wishtracker(props) {
     const { auth, user, tracks, user_subs, creator_subs } = props;
-    console.log("props", props)
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const TruncatedString = ({ inputString, maxLength }) => {
         if (inputString?.length <= maxLength) {
@@ -108,37 +108,37 @@ export default function Wishtracker(props) {
                     <Collapse in={open} >
                         <div id="example-collapse-text">
                             <div className="track-summary mt-4">
-                                <div className="table">
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                <td>Item</td>
-                                                <td>Name</td>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>
-                                                    <div className="wish-item" >
-                                                        <img src={n.wish && n.wish.perma_link || defaultsec} alt="image" className="img-fluid" />
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <p>{n.wish && n.wish.wishname || 'Surprise Gift'}</p>
-                                                    <p className="text-muted text-small">{n && n.surprise_message}</p>
-                                                    <p className="text-muted text-small">{n.quantity || 1} x {formatMultiPrice(n.amount)}</p>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <p>Date {n.created_at}</p>
-                                {n && n.cart_message ? <div>
-                                    <p className="mt-2" >Sender Note : </p>
-                                    <p className="text-muted">{n && n.cart_message}</p>
-                                </div> : ''}
 
-                                {msgSent ? <div className="msgSent my-2" >
+                                <div className="wishitem-des box border rounded-lg" >
+                                    <div className="d-flex justify-content-between align-items-center" >
+                                        <div className="wish-item" >
+                                            <img src={n.wish && n.wish.perma_link || defaultsec} alt="image" className="img-fluid" />
+                                        </div>
+                                        <div className="item-dd ps-3" >
+                                            <p className="mb-0 pe-2" >{n.wish && n.wish.wishname || 'Surprise Gift'}</p>
+                                            <p className="text-muted text-small">OTY : {n.quantity || 1} x {formatMultiPrice(n.amount)}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    {n && n.cart_message ? 
+                                    <div className="border-top pt-3 mt-3 d-flex justify-content-between align-items-center" >
+                                        <p className="mb-0 pe-2" >Sender Note :</p>
+                                        <p className="text-muted text-small">{n && n.cart_message}</p>
+                                    </div> : ''}
+
+
+                                    {n && n.surprise_message ? <div className="border-top pt-3 mt-3  d-flex justify-content-between align-items-center" >
+                                        <p className="mb-0 pe-2" >Message</p>
+                                        <p className="text-muted text-small">{n && n.surprise_message}</p>
+                                    </div> : ''}
+
+                                    <div className="border-top pt-3 mt-3  d-flex justify-content-between align-items-center" >
+                                        <p className="mb-0 pe-2" >Paid in </p>
+                                        <p className="text-muted text-small">{n && n.payment && n.payment.currency}</p>
+                                    </div>
+                                </div>
+
+                                {msgSent ? <div className="msgSent my-2 p-1" >
                                     <p className="mt-2" >Thank you note : </p>
                                     <p className="text-muted">{msgSent}</p>
                                     {message_media ? <div className="message-media my-2" >
@@ -170,12 +170,10 @@ export default function Wishtracker(props) {
         );
     };
 
-    console.log("tracks", tracks)
-
     const CancelSub = ({ id, status }) => {
 
         const [loading, setLoading] = useState(false);
-        const [manageStatus, setmanageStatus] = useState(status == 1 ? false : true);
+        const [manageStatus, setmanageStatus] = useState(status);
 
         const cancel = (id) => {
             setLoading(true);
@@ -191,9 +189,9 @@ export default function Wishtracker(props) {
                 });
         }
         return <>
-            <button disabled={status !== "initiated"} onClick={() => cancel(id)}
-                className={`${status !== "initiated" ? "disabled" : ''} btn-pink sm w-100 px-2 mt-3`} >
-                {loading ? "Wait.." : manageStatus ? "Cancelled" : "Cancel Subscription"}
+            <button disabled={status !== "paid"} onClick={() => cancel(id)}
+                className={`${status !== "paid" ? "disabled" : ''} btn-pink sm w-100 px-2 mt-3`} >
+                {loading ? "Wait.." : manageStatus !== 'paid' ? "Cancelled" : "Cancel Subscription"}
             </button>
         </>
     }
@@ -222,7 +220,7 @@ export default function Wishtracker(props) {
 
                             <div className="subsctabs d-block d-sm-flex mb-4" >
                                 <button onClick={() => handleTabs(1)} className={`${stab == 1 ? "active" : ''} me-3 btn w-100 mt-2`} >Active Subscription </button>
-                                <button onClick={() => handleTabs(0)} className={`${stab == 0 ? "active" : ''} me-3 btn w-100 mt-2`} >My Subscribed</button>
+                                <button onClick={() => handleTabs(0)} className={`${stab == 0 ? "active" : ''} me-3 btn w-100 mt-2`} >My Purchased Subscriptions</button>
                             </div>
 
                             {stab == 0 ? <>
@@ -236,7 +234,11 @@ export default function Wishtracker(props) {
 
                                                     <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                         <p className="text-muted">Item Owner</p>
-                                                        <p className="text-dark text-capitalize" ><Link href={`/${s && s.username || s && s.guest_name}`} className="text-voilet" >{s && s.guest_name || 'Anonymous'}</Link></p>
+                                                        <p className="text-dark text-capitalize" >
+                                                            <Link href={`/${s && s.wish_item && s.wish_item.user.username || ''}`} 
+                                                            className="text-voilet" >
+                                                                {s && s.wish_item && s.wish_item.user.name || 'Anonymous'}
+                                                            </Link></p>
                                                     </li>
                                                     <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                         <p className="text-muted">Subscription Period</p>
@@ -248,11 +250,17 @@ export default function Wishtracker(props) {
                                                     </li>
                                                     <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                         <p className="text-muted">Start Date</p>
-                                                        <p className="text-dark text-capitalize" >{s && s.created_at}</p>
+                                                        <p className="text-dark text-capitalize" >{s && s.start_date}</p>
+                                                    </li>
+                                                    <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                        <p className="text-muted">Upcoming Payment</p>
+                                                        <p className="text-dark text-capitalize" >{s && s.payment_upcoming}</p>
                                                     </li>
                                                     <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                         <p className="text-muted">Status</p>
-                                                        <p className="text-dark text-capitalize" >{s && s.status == "paid" ? <span className="badge bg-success" >Active</span> : <span className="badge bg-danger" >Expired</span>}</p>
+                                                        <p className="text-dark text-capitalize" >{s && s.status == "paid" ?
+                                                         <span className="badge bg-success" >Active</span> : 
+                                                         <span className="badge bg-warning" >{s && s.status}</span>}</p>
                                                     </li>
                                                 </ul>
 
@@ -272,9 +280,10 @@ export default function Wishtracker(props) {
                                         {creator_subs && creator_subs.map((s, i) => {
                                             return <div key={`subscription-${i}`} className="col-sm-6 mb-4" >
                                                 <div className="subsbox box p-3" >
-                                                    <Avatar name={<TruncatedString inputString={s && s.user && s.user.name || 'Anonymous'} maxLength={10} />}
+                                                    <Avatar 
+                                                        name={<TruncatedString inputString={s && s.user && s.user.name || 'Anonymous'} maxLength={10} />}
                                                         username={`${s && s.user && s.user.username || 'Anonymous'}`}
-                                                        src={`${s && s.user && s.user.avatar || userphoto}`}
+                                                        src={`${s && s.user && s.user.avatar_url || userphoto}`}
                                                     />
                                                     <ul className="ps-0 mt-3" >
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
@@ -290,12 +299,21 @@ export default function Wishtracker(props) {
                                                             <p className="text-dark text-capitalize" >{formatMultiPrice(s && s.wish_item && s.wish_item.price)}</p>
                                                         </li>
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                                            <p className="text-muted">Upcoming Payment</p>
+                                                            <p className="text-dark text-capitalize" >{s && s.payment_upcoming}</p>
+                                                        </li>
+                                                        <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                             <p className="text-muted">Start Date</p>
-                                                            <p className="text-dark text-capitalize" >{s && s.created_at}</p>
+                                                            <p className="text-dark text-capitalize" >{s && s.start_date}</p>
                                                         </li>
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                             <p className="text-muted">Status</p>
-                                                            <p className="text-dark text-capitalize" >{s && s.status ? <span className="badge bg-success" >Active</span> : <span className="badge bg-danger" >Expired</span>}</p>
+                                                            <p className="text-dark text-capitalize" >
+                                                                {s && s.status == 'paid' ? 
+                                                                <span className="badge bg-success" >Active</span> : 
+                                                                <span className="badge bg-warning" >{s && s.status}</span>
+                                                                }
+                                                            </p>
                                                         </li>
                                                     </ul>
 
@@ -308,6 +326,9 @@ export default function Wishtracker(props) {
                                 </>
                             }
 
+                        </Tab>
+                        <Tab eventKey="3" title="My Goals">
+                            <TipTracker auth={auth} />
                         </Tab>
                     </Tabs>
                 </div>

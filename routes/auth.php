@@ -95,7 +95,7 @@ Route::middleware('auth')->group(function () {
 
         Route::prefix("stripe")->name("stripe.")->group(function () {
             Route::get("authorize", [StripeController::class, "index"])->name("index");
-            Route::match(["get", "post"], "/connect-{step}/{country?}", [StripeController::class, "initConnect"])->name("connect");
+            Route::match(["get", "post"], "/connect-{step}/{country?}/{currency?}", [StripeController::class, "initConnect"])->name("connect");
             Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
             Route::post("/login", [StripeController::class, "loginToStripe"])->name("login");
         });
@@ -109,6 +109,8 @@ Route::middleware('auth')->group(function () {
         })->name("account");
 
         Route::get('wish-tracker', [WishitemController::class, 'wishtrackerItems'])->name('wish-tracker');
+
+        Route::get('user-tips', [WishitemController::class, 'userTips'])->name('user-tips');
 
         Route::get('subscriptions', [WishitemController::class, 'creatorSubscriptions'])->name('subscriptions');
 
@@ -132,6 +134,8 @@ Route::middleware('auth')->group(function () {
         });
 
         Route::post('add-goal', [WishitemController::class, 'addTipGoal'])->name('add-goal');
+        Route::get('mark-complete-goal/{uuid}', [WishitemController::class, 'markJarComplete'])->name('mark-goal');
+        Route::get('all-goals', [WishitemController::class, 'allGoalsCreators'])->name('all-goals');
     });
 });
 
@@ -197,6 +201,7 @@ Route::get('/leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWis
 Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
     Route::post('pay/{uuid}/', [StripeController::class, 'tipToJar'])->name("pay");
     Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
+    Route::get('/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');
 });
 
 /*check username exist*/
@@ -206,7 +211,7 @@ Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
 //     return $ret;
 // });
 
-Route::get('/test', function () {
+Route::get('/test/test', function () {
     return Inertia::render('Test');
 })->name("test");
 

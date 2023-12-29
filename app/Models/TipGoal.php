@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Ramsey\Uuid\Uuid;
 
 class TipGoal extends Model
 {
@@ -17,6 +19,11 @@ class TipGoal extends Model
         "target",
         "default_price",
         'fullfilled',
+        'description',
+        'status',
+        'days',
+        'completed',
+        'completed_at',
         'tax_amount',
         'currency',
         'price_id',
@@ -28,14 +35,32 @@ class TipGoal extends Model
         'id',
         'user_id',
         'price_id',
+        'completed_at',
         'product_id',
         'created_at',
         'updated_at',
     ];
 
+    protected $appends = [
+        'complete_at'
+    ];
+
+    public static function boot()
+    {
+        parent::boot();
+        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
+    }
 
     public function user()
     {
-        return $this->belongsTo(TipGoal::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function getCompleteAtAttribute(){
+        if(!empty($this->completed_at)){
+            return Carbon::createFromFormat('Y-m-d H:i:s', $this->completed_at)->isoFormat('DD MMM YYYY');
+        }
+
+        return false;
     }
 }

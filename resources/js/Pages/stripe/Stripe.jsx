@@ -15,18 +15,21 @@ export default function Stripe(props) {
         termaccept: ''
     });
 
-    const [country, setCountry] = useState('GB');
+    const [countryCurrency, setCountryCurrency] = useState();
+    const [country, setCountry] = useState();
     const getCountry = (e) => {
-        setCountry(e);
+        const name = JSON.parse(e);
+        setCountry(name && name.code || '');
+        setCountryCurrency(name && name.currency || '');
     }
 
     const checkTerms = () => {
-        // if (!country) {
-        //     errorAlert("Please choose your country.");
-        //     return false;
-        // }
+        if (country == '' || undefined) {
+            errorAlert("Please choose your country.");
+            return false;
+        }
         if(checkRef.current.checked){
-            window.location.href = route("stripe.connect", {step:"init", country:country});
+            window.location.href = route("stripe.connect", { step:"init", country:country, currency:countryCurrency });
             return true;
         }
         errorAlert("Please check accept terms & conditions checkbox");
@@ -68,14 +71,18 @@ export default function Stripe(props) {
                             </li>
                         </ul>
 
-                        <p className=' alert alert-success text-center font-bold my-4' >Currently, we're accepting creators exclusively from the UK. Stay tuned for updates on international opportunities.</p>
+                        {/* <p className=' alert alert-success text-center font-bold my-4' >Currently, we're accepting creators exclusively from the UK. Stay tuned for updates on international opportunities.</p> */}
 
-                        {/* <strong className='d-block w-100 pt-3 mb-1'>Choose Country</strong>
-                        <Countries send={getCountry} /> */}
+                        <strong className='d-block w-100 pt-3 mb-1'>Choose Country</strong>
+                        <Countries send={getCountry} />
 
                         <div className='termselect mt-4'>
                             <label htmlFor="termaccept">
-                                <p><input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept"
+                                <p><input type="checkbox" 
+                                ref={checkRef} 
+                                id="termaccept" 
+                                name="termaccept" 
+                                value="termaccept"
                                     required onChange={(e) => setData("termaccept", e.target.value)}></input>
                                     I confirm that I will only use Spenny Piggy to receive gifts, tips, donations. I will not sell servicers or goods on my wishlist and confirm that nothing on the prohibited list above will be listed.
                                 </p></label>
