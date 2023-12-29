@@ -85,7 +85,7 @@ export default function LinkTwitter(props) {
         </Form>
       </div>
 
-      <button onClick={unlinkTwitter} className='btn-pink sm px-5 m-auto d-table mt-4 mb-3' >Unlink Twitter</button>
+      <button onClick={unlinkTwitter} className='btn-pink bg-danger sm px-5 m-auto d-table mt-4 mb-3' >Unlink Twitter</button>
 
     </div> : 
     <div className='step1' >

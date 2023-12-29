@@ -242,7 +242,11 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 /* Rounded sliderSws */
 .sliderSw.round{border-radius:34px;}
 .sliderSw.round:before{border-radius:50%;}
-.itsfree{color:var(--mint);font-size:20px;line-height:120%;}
+.itsfree{color:var(--mint);font-size:24px;line-height:120%;}
+.gifts-links {
+  font-size: 25px !important;
+  max-width: 500px;
+}
 .creatorslider .swiper-pagination{top:inherit!important;bottom:0!important;}
 .creatorslider .swiper{padding-bottom:30px;}
 .creatorslider .swiper-pagination-bullet{width:16px;height:16px;background:var(--voilet);}
@@ -372,7 +376,11 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .userProfile{margin-top:0px;}
 .footlinks ul li{border-right:0 !important;}
 }
-@media(max-width:767px){.wishlistdetial h4{font-size:16px;}
+@media(max-width:767px){
+  .gifts-links {
+    margin: auto;
+}
+.wishlistdetial h4{font-size:16px;}
 .cartProRtbox{display:inline-flex;width:100%;justify-content:space-between;margin-top:10px;}
 .shadow-yellow{text-shadow:1px 3px 0 var(--yellow);}
 .shadow-voilet{box-shadow:5px 5px 0 0 var(--voilet);}
@@ -407,7 +415,7 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .editForm ul li textarea{height:90px;}
 .heroSec{padding:20px 5px 50px 5px;}
 .welcome{flex-wrap:wrap;justify-content:center;flex-direction:column-reverse;margin-top:0;}
-.welcomeRt{width:100%;text-align:center;margin-bottom:40px;}
+.welcomeRt{width:100%;text-align:center;margin-bottom:0px;}
 .welcomeRt img{margin:auto;}
 .welcomeLeft{width:100%;text-align:center;}
 .welcomeHeading{margin-bottom:25px!important;}
