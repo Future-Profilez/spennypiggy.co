@@ -55,18 +55,22 @@ export default function TipTracker({auth}) {
                      <div className='mt-3 pt-3 border-top'>
                      <ProgressBar now={g?.fullfilled} max={g?.target} />
                      <p className='text-muted text-small mt-1 mb-4' >{getPercentage(g?.target, g?.fullfilled)}% of {formatMultiPrice(g?.target, g?.currency)} goal.</p>
+                     
                      <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
                         <p className='text-muted  ' >Goal target amount</p>
                         <p className='mb-0' >{formatMultiPrice(g && g.target, g.currency)}</p> 
                      </div>
+
                      <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
                         <p className='text-muted  ' >Minimum price to pay</p>
                         <p className='mb-0' >{formatMultiPrice(g && g.default_price, g.currency)}</p> 
                      </div>
+
                      <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
                         <p className='text-muted ' >Total paid</p>
                         <p className='mb-0' >{formatMultiPrice(g && g.fullfilled, g.currency)}</p> 
                      </div>
+
                      <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
                         <p className='text-muted ' >Goal End</p>
                         <p className='mb-0' >{g?.status == 0 ? "Open Until Acheived" : g?.status == 1 ? `30 Days Period` : "Until marked as completed" }</p> 

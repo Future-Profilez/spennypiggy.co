@@ -10,7 +10,6 @@ export default function MyGoal({goal, IsloggedIn}) {
   const { formatMultiPrice } = PriceFormat();
 
   const getPercentage = (actual, paid) => {
-    console.log("actual, paid", actual, paid)
     const r = (paid/actual)*100;
     return r.toFixed(2);
   }
