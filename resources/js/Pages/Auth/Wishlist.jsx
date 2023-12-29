@@ -142,22 +142,12 @@ export default function Wishlist(props) {
 
     const createWishList = async (e) => {
         e.preventDefault();
-<<<<<<< HEAD
-
-        if (currency === null) {
-            errorAlert("Please choose a default currency.");
-            return false;
-        }
-
-        if (!setuped) {
-=======
         if(currency == null || undefined){
             errorAlert("Please choose a default currency.")
             return false;
         }
         if(!setuped){
             errorAlert("You need to connect your stripe account first.")
->>>>>>> 67ad27320e2e01aecebb8cfb5c357b3af4129140
             return false;
         }
         if (data && !data.category) {
