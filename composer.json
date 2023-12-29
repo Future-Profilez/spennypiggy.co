@@ -12,6 +12,7 @@
         "doctrine/dbal": "^3.7",
         "guzzlehttp/guzzle": "^7.8",
         "inertiajs/inertia-laravel": "^0.6.3",
+        "ipinfo/ipinfo": "^3.1",
         "laravel/framework": "^10.10",
         "laravel/sanctum": "^3.2",
         "laravel/tinker": "^2.8",

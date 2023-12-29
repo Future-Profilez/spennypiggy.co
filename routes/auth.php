@@ -19,6 +19,7 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WishtenderController;
+use App\Http\Middleware\IpTracker;
 use App\Http\Middleware\VerifyCsrfToken;
 use App\Models\User;
 use App\Models\WishItem;
@@ -39,7 +40,7 @@ use Illuminate\Support\Facades\Http;
 
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('register');
+        ->name('register')->middleware(IpTracker::class);
 
     Route::post('register', [RegisteredUserController::class, 'store']);
 
