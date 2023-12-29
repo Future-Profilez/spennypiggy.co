@@ -14,6 +14,7 @@ export default function Accountsetting(props) {
 
     const {auth, user, global_currency} = props;
     const [passClose, setSassClose] = useState(null);
+    console.log("is_linked",props)
 
     const passwordUpdated = () => { 
         setSassClose(false);

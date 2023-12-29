@@ -109,6 +109,8 @@ Route::middleware('auth')->group(function () {
             return Inertia::render('accountsetting/Accountsetting');
         })->name("account");
 
+        Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('enable-auto-tweet');
+
         Route::get('wish-tracker', [WishitemController::class, 'wishtrackerItems'])->name('wish-tracker');
 
         Route::get('user-tips', [WishitemController::class, 'userTips'])->name('user-tips');
