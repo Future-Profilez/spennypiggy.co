@@ -112,7 +112,7 @@ Route::middleware('auth')->group(function () {
             ]);
         })->name("account");
 
-        Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('enable-auto-tweet');
+        Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
 
         Route::get('wish-tracker', [WishitemController::class, 'wishtrackerItems'])->name('wish-tracker');
 

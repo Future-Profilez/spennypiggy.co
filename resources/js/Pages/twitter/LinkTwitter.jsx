@@ -9,10 +9,10 @@ import { useState } from 'react';
 
 export default function LinkTwitter(props) {
 
-  const { username } = props;
+  const { username, auto_tweet } = props;
   const { data, setData, get, processing, errors, reset } = useForm();
   const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
-  const [is_linked, setIs_linked] = useState();
+  const [is_linked, setIs_linked] = useState(auto_tweet);
 
   const loginTwitter = (e) => {
       e.preventDefault();

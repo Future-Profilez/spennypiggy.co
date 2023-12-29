@@ -12,7 +12,7 @@ import LinkTwitter from '../twitter/LinkTwitter';
 
 export default function Accountsetting(props) {
 
-    const {auth, user, global_currency} = props;
+    const {auth, user, global_currency, auto_tweet} = props;
     const [passClose, setSassClose] = useState(null);
     console.log("is_linked",props)
 
@@ -68,7 +68,7 @@ export default function Accountsetting(props) {
                                     { auth && auth.user && auth.user.twitter_username ? `@${auth.user.twitter_username}` : ''}
                                     </div>
                                 </> } >
-                                    <LinkTwitter  username={auth && auth.user && auth.user.twitter_username || false}  />
+                                    <LinkTwitter auto_tweet={auto_tweet}  username={auth && auth.user && auth.user.twitter_username || false}  />
                                 </Popup>
                             </li>
 
