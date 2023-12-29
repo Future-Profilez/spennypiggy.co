@@ -3,6 +3,7 @@ import axios from 'axios';
 import Collapse from "react-bootstrap/Collapse";
 import PriceFormat from '@/includes/PriceFormat';
 import ProgressBar from 'react-bootstrap/ProgressBar';
+import Nocontent from '@/includes/Nocontent';
 
 export default function TipTracker({auth}) {
 
@@ -42,11 +43,11 @@ export default function TipTracker({auth}) {
                   </div>
                <div className='goal-stats  d-flex align-items-center justify-content-between' >
                      <h2 className='' >Goal Target : {formatMultiPrice(g && g.target, g.currency)}</h2>
-                  {g && g.completed == 1 ?  
-                     <span className='badge bg-success mt-2 ' >Completed</span> 
-                  : 
-                     <p className='text-success mt-2 text-mint font-bold' >{ getPercentage(g.target, g.fullfilled)}% fullfilled</p>
-                  }
+                     {g && g.completed == 1 ?  
+                        <span className='badge bg-success mt-2 ' >Completed</span> 
+                     : 
+                        <p className='text-success mt-2 text-mint font-bold' >{ getPercentage(g.target, g.fullfilled)}% fullfilled</p>
+                     }
                   
                </div>
             </div>
@@ -92,6 +93,7 @@ export default function TipTracker({auth}) {
          {goals && goals.map((g, i)=>{
             return <GoalItem g={g} />
          })}
+          {goals && goals.length < 1 || !goals ? <Nocontent text="nothing to see" /> : ''}
       </div>
   )
 }

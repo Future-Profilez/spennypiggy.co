@@ -3,6 +3,7 @@ import axios from 'axios';
 import Collapse from "react-bootstrap/Collapse";
 import PriceFormat from '@/includes/PriceFormat';
 import {  Link } from "@inertiajs/react";
+import Nocontent from '@/includes/Nocontent';
 
 export default function Tiplisting({auth}) {
 
@@ -53,7 +54,6 @@ export default function Tiplisting({auth}) {
                      </div>
                      </div>
                   </div>
-
             </div>
             <Collapse in={open} >
                   <div id="example-collapse-text" className=''>
@@ -78,6 +78,9 @@ export default function Tiplisting({auth}) {
          {tips && tips.map((g, i)=>{
             return <TipItem g={g} />
          })}
+
+         {tips && tips.length < 1 || !tips ? <Nocontent text="nothing to see" /> : ''}
+
       </div>
   )
 }
