@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Helpers;
 use App\Http\Controllers\Controller;
+use App\Jobs\MakeAutoTweets;
 use App\Jobs\SaveWishlist;
 use App\Jobs\SendUserGiftMail;
 use App\Jobs\ThankyouMailToUser;
@@ -14,6 +15,7 @@ use App\Models\StripePaymentItems;
 use App\Models\Subscription;
 use App\Models\TipGoal;
 use App\Models\TipGoalsPayment;
+use App\Models\TwitterToken;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserCategory;
@@ -22,6 +24,7 @@ use App\Models\WishItem;
 use App\Models\WishItemSubscription;
 use App\Rules\ValidSubscriptionPeriod;
 use App\StripeControl;
+use App\TwitterAuthService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\RedirectResponse;
@@ -262,8 +265,8 @@ class WishitemController extends Controller
                 $wish->price_id = $product->default_price;
                 $wish->save();
 
-                if (isset($request->post_twitter) && $request->post_twitter == 1) {
-                    TwitterController::testToken($wish);
+                if ($wish->user->auto_tweet == 1) {
+                    MakeAutoTweets::dispatch($wish->user);
                 }
             } catch (Exception $e) {
                 $wish->delete();
@@ -1165,6 +1168,31 @@ class WishitemController extends Controller
         return response()->json([
             'status' => true,
             'tips' => $tips
+        ]);
+    }
+
+
+    /**
+     * Enable disable the auto tweet
+     *
+     * @return mixed
+     */
+    public function enableAutoTweet()
+    {
+
+        $user = User::where('id',Auth::id())->first();
+
+        if($user->auto_tweet == 1){
+            $user->auto_tweet = 0;
+        }else{
+            $user->auto_tweet = 1;
+        }
+
+        $user->save();
+
+        return response()->json([
+            'status' => true,
+            'msg' => 'Auto tweet is '. $user->auto_tweet == 1 ? 'Enabled.' : 'Disabled.',
         ]);
     }
 }
