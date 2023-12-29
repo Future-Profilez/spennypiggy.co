@@ -1190,9 +1190,6 @@ class WishitemController extends Controller
 
         $user->save();
 
-        return response()->json([
-            'status' => true,
-            'msg' => 'Auto tweet is '. $user->auto_tweet == 1 ? 'Enabled.' : 'Disabled.',
-        ]);
+        return back()->with('success','Auto tweet is '. $user->auto_tweet == 1 ? 'Enabled.' : 'Disabled.');
     }
 }
