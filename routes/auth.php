@@ -19,6 +19,7 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WishtenderController;
+use App\Http\Middleware\IpTracker;
 use App\Http\Middleware\VerifyCsrfToken;
 use App\Models\User;
 use App\Models\WishItem;
@@ -39,7 +40,7 @@ use Illuminate\Support\Facades\Http;
 
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('register');
+        ->name('register')->middleware(IpTracker::class);
 
     Route::post('register', [RegisteredUserController::class, 'store']);
 
@@ -105,8 +106,15 @@ Route::middleware('auth')->group(function () {
         Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
 
         Route::get('account', function () {
-            return Inertia::render('accountsetting/Accountsetting');
+            $auto_tweet = Auth::user()->auto_tweet == 1 ? true : false;
+            return Inertia::render('accountsetting/Accountsetting',[
+                'auto_tweet' => $auto_tweet
+            ]);
         })->name("account");
+
+        Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
+
+        Route::get('unlink-twitter', [AuthenticatedSessionController::class, 'unlinkTwitter'])->name('unlink-twitter');
 
         Route::get('wish-tracker', [WishitemController::class, 'wishtrackerItems'])->name('wish-tracker');
 

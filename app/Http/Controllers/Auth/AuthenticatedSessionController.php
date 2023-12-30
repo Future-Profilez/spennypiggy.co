@@ -300,4 +300,22 @@ class AuthenticatedSessionController extends Controller
             //throw $th;
         }
     }
+
+    public function unlinkTwitter(){
+        $user = User::where('id',Auth::id())->first();
+
+        if(!empty($user->twitter_token)){
+        //     $req = TwitterAuthService::revokeToken($user->twitter_token);
+        //     return response()->json($req);
+            // if($req->successful()){
+                $user->twitter_token->delete();
+
+                return back()->with('success','Twitter unlinked successfully.');
+            // }
+
+            // return back()->with('error','Something Went Wrong.');
+        }
+
+        return back()->with('error','No linked twitter account found.');
+    }
 }
