@@ -40,6 +40,11 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
         $request->session()->regenerate();
         $user = Auth::user();
+        // if($request->getHttpHost() == "uk.spennypiggy.co" && $user->country != "GB") {
+        //     return Inertia::location("https://spennypiggy.com/{$user->username}");
+        // } else if(!in_array($request->getHttpHost(), ['::1', 'localhost:8000', '127.0.0.1:8000']) AND $request->getHttpHost() == 'spennypiggy.co' AND $user->country == 'GB') {
+        //     return Inertia::location("https://uk.spennypiggy.com/{$user->username}");
+        // }
         return redirect(route("user.show", [$user->username]))->with("success", "Logged in successfully.");
     }
 
