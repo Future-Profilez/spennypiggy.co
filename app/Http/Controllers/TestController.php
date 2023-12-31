@@ -175,7 +175,7 @@ class TestController extends Controller
 
     public function testAdultContent()
     {
-        $uuid = '58f3ab57-88e8-4df6-9dbc-5554a88e384a';
+        $uuid = '20dc8837-38ec-4ae1-a3b2-343c924a9cc1';
 
         // $response = Http::withHeaders([
         //     'Content-Type' => 'application/json',

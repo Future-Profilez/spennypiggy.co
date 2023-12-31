@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Head, Link } from "@inertiajs/react";
+import { useAlerts } from "@/Components/Alerts";
+import { Head, Link, usePage } from "@inertiajs/react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
 const Wishlist = React.lazy(() => import('./Auth/Wishlist'));
 const Wishlistbox = React.lazy(() => import('@/wishlist/Wishlistbox'));
@@ -24,6 +25,8 @@ import MyGoal from './TipJar/MyGoal';
 
 
 export default function Dashboard(props) {
+
+    const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
 
     const { auth, user, username, global_currency, itemid } = props;
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
@@ -141,6 +144,19 @@ export default function Dashboard(props) {
         }
     };
 
+    const {flash} = usePage().props;
+    useMemo(() => {
+        if(flash?.error){
+            errorAlert(flash.error);
+        }
+        if(flash?.warning){
+            warningAlert(flash.warning);
+        }
+        if(flash?.info){
+            infoAlert(flash.info); 
+        }
+    },[flash]);
+
 
     return <>
         <Guest auth={auth.user} user={user}>
@@ -224,7 +240,7 @@ export default function Dashboard(props) {
                                             )}
                                         </div>
                                     </div>
-                                    {goal && goal.completed == 0 ? <MyGoal goal={goal} /> : ''}
+                                    {goal && goal.completed == 0 ? <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ''}
                                 </div>
                             </div>
                             <div className="col-lg-8 ps-3 ps-lg-4">

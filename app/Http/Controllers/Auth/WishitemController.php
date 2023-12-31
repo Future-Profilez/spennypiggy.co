@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Helpers;
 use App\Http\Controllers\Controller;
+use App\Jobs\AutoTweetWishAdd;
+use App\Jobs\MakeAutoTweets;
 use App\Jobs\SaveWishlist;
 use App\Jobs\SendUserGiftMail;
 use App\Jobs\ThankyouMailToUser;
@@ -13,6 +15,8 @@ use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\Subscription;
 use App\Models\TipGoal;
+use App\Models\TipGoalsPayment;
+use App\Models\TwitterToken;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserCategory;
@@ -21,6 +25,7 @@ use App\Models\WishItem;
 use App\Models\WishItemSubscription;
 use App\Rules\ValidSubscriptionPeriod;
 use App\StripeControl;
+use App\TwitterAuthService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\RedirectResponse;
@@ -261,9 +266,10 @@ class WishitemController extends Controller
                 $wish->price_id = $product->default_price;
                 $wish->save();
 
-                // if (isset($request->post_twitter) && $request->post_twitter == 1) {
-                //     TwitterController::testToken($wish);
-                // }
+                if ($wish->user->auto_tweet == 1) {
+                    // MakeAutoTweets::dispatch($wish->user);
+                    AutoTweetWishAdd::dispatch($wish);
+                }
             } catch (Exception $e) {
                 $wish->delete();
                 return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
@@ -859,7 +865,7 @@ class WishitemController extends Controller
         return Inertia::render('tracker/Wishtracker', [
             "tracks" => $trackData,
             "creator_subs" => $creator_subs,
-            "user_subs" => $user_subs
+            "user_subs" => $user_subs,
         ]);
     }
 
@@ -993,6 +999,7 @@ class WishitemController extends Controller
      */
     public function addTipGoal(Request $request)
     {
+        $currency = !empty($request->cookie('currency')) ? $request->cookie('currency') : "gbp";
         $request->validate(
             [
                 "name" => [
@@ -1015,14 +1022,18 @@ class WishitemController extends Controller
 
         $user = User::where('id', Auth::id())->first();
 
+        $target = Helpers::priceFormat($currency, $request->target, $user->default_currency);
+        $price = Helpers::priceFormat($currency, $request->default_price, $user->default_currency);
+
         $goal = TipGoal::create([
             'user_id' => $user->id,
             'name' => $request->name,
-            'target' => $request->target,
-            'default_price' => $request->default_price,
+            'target' => $target,
+            'default_price' => ceil($price),
             'description' => $request->description ?? null,
             'status' => $request->duration,
             'days' => ($request->duration == 1) ? 30 : null,
+            'currency' => $user->default_currency,
         ]);
 
         $goal->refresh();
@@ -1135,5 +1146,57 @@ class WishitemController extends Controller
             'status' => true,
             'goals' => $goals
         ]);
+    }
+
+
+
+     /**
+     * User tips send or get
+     *
+     * @return mixed
+     */
+    public function userTips(){
+        $user = Auth::user();
+
+        $user_tips = TipGoalsPayment::whereHas('tipGoal',function($q) use($user){
+            $q->where('user_id',$user->id);
+        })->with('tipGoal')->orWhere('user_id',$user->id)->get();
+
+        $tips = $user_tips->map(function($q){
+            $q->owner = $q->tipGoal->user;
+            return $q;
+        });
+
+        return response()->json([
+            'status' => true,
+            'tips' => $tips
+        ]);
+    }
+
+
+    /**
+     * Enable disable the auto tweet
+     *
+     * @return mixed
+     */
+    public function enableAutoTweet()
+    {
+
+        $user = User::where('id',Auth::id())->first();
+
+        if($user->auto_tweet == 1){
+            $user->auto_tweet = 0;
+        }else{
+            $user->auto_tweet = 1;
+        }
+
+        $user->save();
+
+        if($user->auto_tweet == 1){
+            return back()->with('success',"Auto tweet for gift is Enabled.");
+        }
+        else{
+            return back()->with('success',"Auto tweet for gift is Disabled.");
+        }
     }
 }
