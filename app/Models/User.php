@@ -31,7 +31,8 @@ class User extends Authenticatable
         'username',
         'password',
         'uuid',
-        'deleted_at'
+        'deleted_at',
+        'suspended_account',
     ];
 
     public static function boot()
