@@ -43,11 +43,11 @@ class LoginRequest extends FormRequest
         $this->ensureIsNotRateLimited();
 
         $userData = $this->only('email', 'password');
-        if ($this->getHttpHost() == "uk.spennypiggy.co") {
-            $userData['country']    =   "GB";
-        } else if (!in_array($this->getHttpHost(), ['::1', 'localhost:8000', '127.0.0.1:8000'])) {
-            $userData[] = fn (Builder $query) => $query->where('country', '!=', 'GB');
-        }
+        // if ($this->getHttpHost() == "uk.spennypiggy.co") {
+        //     $userData['country']    =   "GB";
+        // } else if (!in_array($this->getHttpHost(), ['::1', 'localhost:8000', '127.0.0.1:8000'])) {
+        //     $userData[] = fn (Builder $query) => $query->where('country', '!=', 'GB');
+        // }
         if (!Auth::attempt($userData, $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 

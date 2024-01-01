@@ -213,7 +213,18 @@ class WishitemController extends Controller
         $price = Helpers::priceFormat($request->cookie('currency', 'GBP'), $request->price, $user->default_currency);
 
         // $price = round($request->price, 2, PHP_ROUND_HALF_UP);
-        $taxamount = round(($price * env('TAX_PERCENTAGE', 20) / 100), 2, PHP_ROUND_HALF_UP);
+
+        if($request->susbcription == 0){
+            $tax_percent = config('app.single_tax');
+        }
+        elseif($request->subscription == 1){
+            $tax_percent = config('app.subs_tax');
+        }
+        elseif($request->subscription == 2){
+            $tax_percent = config('app.crowd_tax');
+        }
+
+        $taxamount = round(($price * $tax_percent / 100), 2, PHP_ROUND_HALF_UP);
         $createpriceid = $price + $taxamount;
 
         $wish = WishItem::create([
@@ -295,7 +306,16 @@ class WishitemController extends Controller
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
             } else {
                 if (!empty($request->price)) {
-                    $taxamount = $request->price * env('TAX_PERCENTAGE', 20) / 100;
+                    if($request->susbcription == 0){
+                        $tax_percent = config('app.single_tax');
+                    }
+                    elseif($request->subscription == 1){
+                        $tax_percent = config('app.subs_tax');
+                    }
+                    elseif($request->subscription == 2){
+                        $tax_percent = config('app.crowd_tax');
+                    }
+                    $taxamount = $request->price * $tax_percent / 100;
                     $price = $request->price;
                     $createpriceid = $taxamount + $price;
                 } else {
@@ -464,7 +484,7 @@ class WishitemController extends Controller
 
                 $price = Helpers::priceFormat($currency, $amount, $cart->owner->default_currency);
                 $fullfillamount = $price;
-                $tax =  round(($price * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
+                $tax =  round(($price *config('app.crowd_tax',10) / 100), 2, PHP_ROUND_HALF_UP);
                 $createpriceid = $price + $tax;
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripe_client = $stripe->products->create([
@@ -492,7 +512,7 @@ class WishitemController extends Controller
             if ($wishitem->subscription == 2) {
                 $price = Helpers::priceFormat($currency, $amount, $wishitem->user->default_currency);
                 $fullfillamount = $price;
-                $tax = round(($price * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
+                $tax = round(($price *config('app.crowd_tax',10) / 100), 2, PHP_ROUND_HALF_UP);
                 $createpriceid = $price + $tax;
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripe_client = $stripe->products->create([
@@ -757,7 +777,7 @@ class WishitemController extends Controller
 
         $price = Helpers::priceFormat(request()->cookie('currency'), $request->amount, $owner->default_currency);
         // $price = round($request->amount, 2, PHP_ROUND_HALF_UP);
-        $tax = round(($price * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
+        $tax = round(($price * config('app.suprise_tax',10) / 100), 2, PHP_ROUND_HALF_UP);
 
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
         $stripe_client = $stripe->products->create([

@@ -65,6 +65,8 @@ Route::middleware('guest')->group(function () {
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
+
+    Route::get('verify-token/{token}', [AuthenticatedSessionController::class, 'authRedirects']);
 });
 
 

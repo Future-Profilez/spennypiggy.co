@@ -863,9 +863,9 @@ class StripeController extends Controller
                 return redirect()->back()->with('error', "This tip jar only needs $remaining_amount to complete the goal.");
             }
 
-            $real_tax = round(($amount * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
+            $real_tax = round(($amount * config('app.jar_tax',10) / 100), 2, PHP_ROUND_HALF_UP);
             $price = Helpers::priceFormat($currency, $amount, $goal->user->default_currency);
-            $tax = round(($price * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
+            $tax = round(($price * config('app.jar_tax',10) / 100), 2, PHP_ROUND_HALF_UP);
 
             try {
 

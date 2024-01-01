@@ -31,7 +31,7 @@ class CheckAdultContent implements ShouldQueue
      */
     public function handle(): void
     {
-        $rest_words = ['adult', '18+', 'pornographic', 'xxx', 'nsfw', 'blood', 'brutality', 'explicit', 'mature', 'weapons', 'aggression', 'combat', 'sex', 'porn', 'fucking',];
+        $rest_words = ['Adult', '18+', 'Pornographic', 'xxx', 'nsfw','NSFW','XXX', 'Blood', 'Brutality', 'Explicit', 'Mature', 'Weapons', 'Aggression', 'Combat', 'Sexual', 'Porn', 'Fucking','Graphic'];
         Http::withHeaders([
             'Content-Type' => 'application/json',
             'Accept' => 'application/vnd.uploadcare-v0.7+json',
@@ -54,7 +54,7 @@ class CheckAdultContent implements ShouldQueue
         foreach ($tags as $key => $tag) {
             $name = explode(" ", $tag['Name']);
 
-            $common = array_intersect($rest_words, strtolower($name));
+            $common = array_intersect($rest_words, $name);
 
             if (count($common) > 0) {
                 EmailService::sendRestrictionMail($this->wish);

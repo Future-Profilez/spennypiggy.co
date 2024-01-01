@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\AuthRedirect;
 use App\Models\SocialLinks;
 use App\Models\User;
 use App\Models\UserCategory;
@@ -11,6 +12,7 @@ use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\Providers\RouteServiceProvider;
 use App\SeoMeta;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -35,17 +37,45 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request)
     {
         $request->authenticate();
         $request->session()->regenerate();
         $user = Auth::user();
-        // if($request->getHttpHost() == "uk.spennypiggy.co" && $user->country != "GB") {
-        //     return Inertia::location("https://spennypiggy.com/{$user->username}");
-        // } else if(!in_array($request->getHttpHost(), ['::1', 'localhost:8000', '127.0.0.1:8000']) AND $request->getHttpHost() == 'spennypiggy.co' AND $user->country == 'GB') {
-        //     return Inertia::location("https://uk.spennypiggy.com/{$user->username}");
-        // }
-        return redirect(route("user.show", [$user->username]))->with("success", "Logged in successfully.");
+
+        // $auth = AuthRedirect::create([
+        //     "user_id"   =>  $user->id,
+        //     'country'   =>  $user->country,
+        //     'origin'    =>  'localhost',
+        //     'target'    =>  'localhost',
+        // ]);
+        // Auth::logout();
+        // return Inertia::location("http://localhost:8000/verify-token/{$auth->uuid}");
+        // if()
+        if ($request->getHttpHost() == "uk.spennypiggy.co" and $user->country != "GB") {
+            // return Inertia::location("https://spennypiggy.com/{$user->username}");
+            $auth = AuthRedirect::create([
+                "user_id"   =>  $user->id,
+                'country'   =>  $user->country,
+                'origin'    =>  $request->getHttpHost(),
+                'target'    =>  'spennypiggy.co',
+            ]);
+
+            Auth::logout();
+            return Inertia::location("https://spennypiggy.co/verify-token/{$auth->uuid}");
+        } else if (!in_array($request->getHttpHost(), ['::1', 'localhost:8000', '127.0.0.1:8000']) and $request->getHttpHost() == 'spennypiggy.co' and $user->country == 'GB') {
+            // return Inertia::location("https://uk.spennypiggy.com/{$user->username}");
+            $auth = AuthRedirect::create([
+                "user_id"   =>  $user->id,
+                'country'   =>  $user->country,
+                'origin'    =>  $request->getHttpHost(),
+                'target'    =>  'uk.spennypiggy.co',
+            ]);
+
+            Auth::logout();
+            return Inertia::location("https://uk.spennypiggy.co/verify-token/{$auth->uuid}");
+        }
+        return redirect(route("user.show", ['username' => $user->username]))->with("success", "Logged in successfully.");
     }
 
     /**
@@ -322,5 +352,53 @@ class AuthenticatedSessionController extends Controller
         }
 
         return back()->with('error','No linked twitter account found.');
+    }
+
+
+     /**
+     * Handle Redirect from cross domain
+     *
+     */
+    public function authRedirects(Request $request, $token)
+    {
+        $ref = $request->header('Referer', 'http://localhost:8000/');
+        if (!$ref) {
+            // RateLimiter::hit($request->throttleKey())
+            return to_route('home')->with('error', 'Invalid redirection or parameters!');
+        }
+
+        $ref = parse_url($ref);
+        $origin = $ref['host'];
+        $token = AuthRedirect::whereUuid($token)
+            ->whereNull('used_at')
+            ->where('target', $request->getHttpHost())
+            ->where('origin', $origin)
+            ->first();
+
+        if (!$token) {
+            abort(404, "Not Found!");
+        }
+
+        if (!$token->created_at->isAfter(Carbon::now()->subMinutes(2))) {
+            return to_route('home')->with('error', 'Link Expired!');
+        }
+        // return response()->json([
+        //     'sucess'    => true,
+        //     'ref'    => $ref,
+        //     'token'     => $token
+        // ]);
+
+        $user = User::firstWhere('id', $token->id);
+        if (!$user) {
+            return to_route('home')->with('error', 'Link is invalid!');
+        }
+
+        Auth::login($user, true);
+        $request->session()->regenerate();
+        $token->update([
+            'used_at'   =>  Carbon::now()
+        ]);
+        $token->delete();
+        return to_route('user.show', ['username' => $user->username])->with('success', 'Welcome back. Login successfull.');
     }
 }

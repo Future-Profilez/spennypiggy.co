@@ -11,7 +11,7 @@
                 <tr>
                     <td
                         style="font-family: Arial; font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
-                        New <span style="color: #8C52FF">Tip granted</span> on <br> Spenny Piggy 🎁 </td>
+                        Tip Jar <span style="color: #8C52FF">Top Up!</span>💸💰 </td>
                 </tr>
                 <tr>
                     <td style="line-height:20px;height:20px;"></td>
@@ -25,17 +25,13 @@
 
                     <td
                         style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                        You just granted a tip on {{ $tip->tipGoal->user->name }}'s tip jar({{ $tip->tipGoal->target }}) of
-                        {{ $tip->amount }} on Spenny
-                        Piggy🎁🥳 .
+                        Thank’s for topping up {{ $tip->tipGoal->user->name }}'s Tip Jar with {{ $tip->amount }}! You’ve just made their day a little brighter 😍🎁
                     </td>
                 </tr>
                 <tr>
                     <td
                         style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                        Go to <a href="spennypiggy.co">Spenny Piggy</a> where you can see your granted tip, send a message
-                        to
-                        your gifter and share your gift on social media </td>
+                        Go to <a href="spennypiggy.co">Spenny Piggy</a> and discover more creators wishes to fulfil! Check out their profile Intros, memberships and more! </td>
                 </tr>
                 @if (!empty($tip->message))
                     <tr>
@@ -48,8 +44,7 @@
                 <tr>
                     <td style="padding:0 0 10px 0; text-align: center;">
                         <a href={{ env('APP_URL') . '/wish-tracker' }}
-                            style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">See
-                            your granted wish</a>
+                            style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Send another tip</a>
                     </td>
                 </tr>
             </table>
