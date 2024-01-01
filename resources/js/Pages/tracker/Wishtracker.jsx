@@ -15,6 +15,7 @@ import userphoto from "../../../assets/img/userphoto.png";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import { useAlerts } from "@/Components/Alerts";
 import TipTracker from "./TipTracker";
+import Tiplisting from "./Tiplisting";
 const defaultsec = 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/';
 
 export default function Wishtracker(props) {
@@ -201,7 +202,7 @@ export default function Wishtracker(props) {
         <Authenticated auth={auth.user} user={user}>
             <Head title={"Wish Tracker"} />
             <div className=" wishtracker blackbg min-h-screen pb-5">
-                <div className="containerbox blackbg cartPage">
+                <div className="containerbox blackbg wishtracker-box px-4">
                     <Tabs
                         defaultActiveKey="1"
                         id="tracker-tab"
@@ -219,8 +220,8 @@ export default function Wishtracker(props) {
                         <Tab eventKey="2" title="Subscriptions">
 
                             <div className="subsctabs d-block d-sm-flex mb-4" >
-                                <button onClick={() => handleTabs(1)} className={`${stab == 1 ? "active" : ''} me-3 btn w-100 mt-2`} >Active Subscription </button>
-                                <button onClick={() => handleTabs(0)} className={`${stab == 0 ? "active" : ''} me-3 btn w-100 mt-2`} >My Purchased Subscriptions</button>
+                                <button onClick={() => handleTabs(1)} className={`${stab == 1 ? "active" : ''} me-3 btn mt-2`} >Active </button>
+                                <button onClick={() => handleTabs(0)} className={`${stab == 0 ? "active" : ''} me-3 btn mt-2`} >My Purchased</button>
                             </div>
 
                             {stab == 0 ? <>
@@ -322,13 +323,17 @@ export default function Wishtracker(props) {
                                         })}
                                     </div>
                                     {creator_subs && creator_subs.length < 1 ?
-                                        <Nocontent classes="mt-5" text={"Nothing to see."} /> : ''}
+                                        <Nocontent classes="mt-5" text={"Nothing to see."} /> 
+                                    : ''}
                                 </>
                             }
 
                         </Tab>
                         <Tab eventKey="3" title="My Goals">
                             <TipTracker auth={auth} />
+                        </Tab>
+                        <Tab eventKey="4" title="Tips">
+                            <Tiplisting />
                         </Tab>
                     </Tabs>
                 </div>

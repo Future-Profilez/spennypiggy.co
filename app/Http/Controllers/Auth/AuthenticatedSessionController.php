@@ -40,6 +40,11 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
         $request->session()->regenerate();
         $user = Auth::user();
+        // if($request->getHttpHost() == "uk.spennypiggy.co" && $user->country != "GB") {
+        //     return Inertia::location("https://spennypiggy.com/{$user->username}");
+        // } else if(!in_array($request->getHttpHost(), ['::1', 'localhost:8000', '127.0.0.1:8000']) AND $request->getHttpHost() == 'spennypiggy.co' AND $user->country == 'GB') {
+        //     return Inertia::location("https://uk.spennypiggy.com/{$user->username}");
+        // }
         return redirect(route("user.show", [$user->username]))->with("success", "Logged in successfully.");
     }
 
@@ -75,7 +80,7 @@ class AuthenticatedSessionController extends Controller
         }
         $userfield = $user->name;
         $userName = str_replace(' ', '%20', $userfield);
-        $image = "https://ucarecdn.com/2ab6bf9f-c6d1-4905-acaf-499b041da7ea/-/preview/900x900/-/text_align/center/center/-/font/14/000000/-/text/100px30p/100p,100p/spennypiggy.co~s" . $user->username . "/-/text_align/center/center/-/font/19/e6ea82/-/text/100px78p/100p,100p/" . $userName . "/";
+        $image = "https://ucarecdn.com/8dfae4ba-cd77-406f-8b70-7cf360b4c18c/-/preview/900x900/-/text_align/center/center/-/font/14/000000/-/text/100px30p/100p,100p/spennypiggy.co~s" . $user->username . "/-/text_align/center/center/-/font/19/e6ea82/-/text/100px78p/100p,100p/" . $userName . "/";
 
         SeoMeta::addTag('title', "{$user->name} - Spenny Piggy - Financial Gifts, Donations & Memberships");
         SeoMeta::addTag('meta', ['property' => 'twitter:title', 'content' => 'Financial Gifts,Donations & Memberships']);

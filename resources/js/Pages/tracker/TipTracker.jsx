@@ -3,37 +3,32 @@ import axios from 'axios';
 import Collapse from "react-bootstrap/Collapse";
 import PriceFormat from '@/includes/PriceFormat';
 import ProgressBar from 'react-bootstrap/ProgressBar';
+import Nocontent from '@/includes/Nocontent';
 
 export default function TipTracker({auth}) {
 
    const { formatMultiPrice } = PriceFormat();
-
    const [goals, setGoals] = useState();
    const fetchgoals = () => {
       axios.get(`all-goals`).then(resp => {
-            console.log("resp",resp);
-            setGoals(resp.data.goals);
+         setGoals(resp.data.goals);
       }).catch(_err => {
-            console.error("error", _err);
+         console.error("error", _err);
       });
    }
+
    useEffect(()=>{
       fetchgoals();
    },[]);
 
-
    const getPercentage = (actual, paid) => {
-      console.log("actual, paid", actual, paid)
       const r = (paid/actual)*100;
       return r.toFixed(2);
-    }
-
+   }
    
    const GoalItem = ({g}) => {
       const [open, setOpen] = useState(false);
       const openState = () => { setOpen(!open) }
-
-      
       return <>
          <div onClick={openState} className='box shadow-pink rounded-lg  p-3' >
             <div  aria-controls="example-collapse-text "  
@@ -48,48 +43,45 @@ export default function TipTracker({auth}) {
                   </div>
                <div className='goal-stats  d-flex align-items-center justify-content-between' >
                      <h2 className='' >Goal Target : {formatMultiPrice(g && g.target, g.currency)}</h2>
-                  {g && g.completed == 0 ?  
-                     <span className='badge bg-success mt-2 ' >Completed</span> 
-                  : 
-                     <p className='text-success mt-2 text-mint font-bold' >{ getPercentage(g.target, g.fullfilled)}% fullfilled</p>
-                  }
+                     {g && g.completed == 1 ?  
+                        <span className='badge bg-success mt-2 ' >Completed</span> 
+                     : 
+                        <p className='text-success mt-2 text-mint font-bold' >{ getPercentage(g.target, g.fullfilled)}% fullfilled</p>
+                     }
                   
                </div>
             </div>
             <Collapse in={open} >
                   <div id="example-collapse-text" className=''>
                      <div className='mt-3 pt-3 border-top'>
-
                      <ProgressBar now={g?.fullfilled} max={g?.target} />
                      <p className='text-muted text-small mt-1 mb-4' >{getPercentage(g?.target, g?.fullfilled)}% of {formatMultiPrice(g?.target, g?.currency)} goal.</p>
-
-       
+                     
                      <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
                         <p className='text-muted  ' >Goal target amount</p>
                         <p className='mb-0' >{formatMultiPrice(g && g.target, g.currency)}</p> 
                      </div>
+
                      <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
                         <p className='text-muted  ' >Minimum price to pay</p>
                         <p className='mb-0' >{formatMultiPrice(g && g.default_price, g.currency)}</p> 
                      </div>
+
                      <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
                         <p className='text-muted ' >Total paid</p>
                         <p className='mb-0' >{formatMultiPrice(g && g.fullfilled, g.currency)}</p> 
                      </div>
+
                      <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
                         <p className='text-muted ' >Goal End</p>
-                        <p className='mb-0' >{g?.status == 0 ? "Open Until Acheived" : g?.status == 1 ? `${g?.days} days` : "Until marked as completed" }</p> 
+                        <p className='mb-0' >{g?.status == 0 ? "Open Until Acheived" : g?.status == 1 ? `30 Days Period` : "Until marked as completed" }</p> 
                      </div>
-
                      {g && g.complete_at ? <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
                         <p className='text-muted ' >Completed On</p>
                         <p className='mb-0' >{g && g.complete_at}</p> 
                      </div> : ''}
-
-
                      <p className='text-muted mb-1 mt-3 border-top pt-3 text-small' >Description</p>
                      <p className='mb-2' >{g && g.description}</p> 
-
                      </div>
                   </div>
             </Collapse>
@@ -97,10 +89,11 @@ export default function TipTracker({auth}) {
       </>
    }
    return (
-      <>
+      <div className='tips mt-4'>
          {goals && goals.map((g, i)=>{
             return <GoalItem g={g} />
          })}
-      </>
+          {goals && goals.length < 1 || !goals ? <Nocontent text="nothing to see" /> : ''}
+      </div>
   )
 }

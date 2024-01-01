@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\CheckAdultContent;
+use App\Jobs\AutoTweetWishAdd;
 use App\Jobs\MakeAutoTweets;
 use App\Jobs\SaveWishlist;
 use App\Jobs\SendUserGiftMail;
@@ -271,7 +272,8 @@ class WishitemController extends Controller
                 $wish->save();
 
                 if ($wish->user->auto_tweet == 1) {
-                    MakeAutoTweets::dispatch($wish->user);
+                    // MakeAutoTweets::dispatch($wish->user);
+                    AutoTweetWishAdd::dispatch($wish);
                 }
             } catch (Exception $e) {
                 $wish->delete();
@@ -866,7 +868,7 @@ class WishitemController extends Controller
         });
 
         return Inertia::render('tracker/Wishtracker', [
-            "tracks" => $trackData,  
+            "tracks" => $trackData,
             "creator_subs" => $creator_subs,
             "user_subs" => $user_subs,
         ]);
