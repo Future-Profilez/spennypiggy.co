@@ -7,7 +7,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
 import ProgressBar from 'react-bootstrap/ProgressBar';
 
-export default function AddGoal({activegoal, fetch_goal}) {
+export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
    
    const { global_currency } = usePage().props;
    useEffect(()=>{
@@ -35,6 +35,10 @@ export default function AddGoal({activegoal, fetch_goal}) {
 
    const addgoal = (e) => {
       e.preventDefault();
+      if(stripe_enabled !== 1){
+         errorAlert("You can not add goal without adding your stripe account.");
+         return false;
+      }
       post(route(`add-goal`, data ), {
             preserveScroll: true,
             onSuccess: (resp) => {

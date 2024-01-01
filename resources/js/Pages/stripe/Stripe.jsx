@@ -90,7 +90,7 @@ export default function Stripe(props) {
 
                     </div>
                     <div className="text-center flex justify-center mb-4 ">
-                        <button className='btn-pink lg w-1/2' onClick={() => { return checkTerms(); }}>Go to Stripe</button>
+                        <button disabled className='btn-pink disabled lg w-1/2' onClick={() => { return checkTerms(); }}>Go to Stripe</button>
                     </div>
                     {/* </form> */}
                 </div>

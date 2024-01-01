@@ -38,7 +38,6 @@ export default function Social({links, updatedLinks}) {
             setData('other', links?.other || '');
         },1000);
     }, [links]);
-
     const createSocial = (e) => {
         e.preventDefault();
         post(route('save_social_links'), {
@@ -64,9 +63,8 @@ export default function Social({links, updatedLinks}) {
             }
         });
     };
-
     return <>
-        <Popup action={close} space='4' modalclassName="pinkmodal" size="md"
+        <Popup action={close} space='4' modalclass="pinkmodal full" size="md"
             classes='' text="Add Socials" >
             <div className='editprofileModalInner  '> 
                 <div className="swishinfo">

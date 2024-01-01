@@ -26,12 +26,14 @@ export default function SendSurprise({auth, owner}) {
          setClose();
       });
    }
-
    const dispatch = useDispatch();
    const cart = useSelector(state => state.data.cart.cart);
-
    const sendSurprize = (e) => {
       e.preventDefault();
+      if(data.amount < 5){
+         errorAlert(`Please tip atleast ${formatMultiPrice(5)}.`);
+         return false;
+      }
       if(!data.amount){
          errorAlert("Choose a valid amount.");
          return false;
@@ -62,7 +64,6 @@ export default function SendSurprise({auth, owner}) {
             }
       });
    };
-
     return (
         <Popup
             modalclassName="pinkmodal sendSurprize-modal"
@@ -81,8 +82,7 @@ export default function SendSurprise({auth, owner}) {
                      placeholder="Enter amount.. "
                   />
                   <p className="mt-1">
-                     The amount is set to {formatMultiPrice(data.amount)} in the wisher's
-                     currency
+                     The Minimum amount is set to {formatMultiPrice(5)} in the wisher’s currency.
                   </p>
             </div>
             <div className="form-field mb-4">
