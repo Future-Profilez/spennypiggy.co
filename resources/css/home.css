@@ -312,8 +312,13 @@ div#msgText p b{font-weight:700 !important;padding:0 4px;color:#000;}
   margin: auto;
   margin-bottom: 20px;
 }
-.loveboxes h3{font-size:30px !important;line-height:35px !important;}
-
+.loveboxes h3{  font-size:30px !important;line-height:35px !important;}
+.infobox{border:1px solid var(--voilet);}
+.infobox {
+  height: 230px;
+}
+.infobox h3.headingSm{font-size:38px;}
+.infobox p { margin-top:10px; }
 
 /* Responsive */
 @media(max-width:1500px){.loveboxes{padding:0 20px;}
@@ -575,13 +580,20 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .welcomeTitle{text-transform:uppercase !important;}
 }
 @media(max-width:575px){
+  .infobox {
+    height: auto;
+  }
+
+  .infobox h3.headingSm {
+    font-size: 27px !important;
+}
 .full.modal .modal-dialog{margin:0 !important;}
 .full.modal .modal-content{margin:0;max-width:100%;border:0 !important;border-radius:0 !important;box-shadow:none !important;}
 .wishtracker .nav.nav-tabs li button{font-size:15px !important;}
 .menu-toggle svg{width:45px;height:45px;}
 .wishlistdetial{min-height:125px;}
 .funboxs{position:sticky;top:20px;}
-.loveboxes h3.headingSm{margin-bottom:0;}
+.loveboxes h3.headingSm{margin-bottom:6px;}
 .editprofileModalInner,.innermodel{width:100% !important;}
 .welcomeTitle{margin:auto;}
 button.cartLink svg{width:34px;height:34px;}
@@ -623,11 +635,11 @@ select#country{width:100%;margin-bottom:10px;}
 .wishlistcntbox{max-width:100%;width:100%;}
 .welcomeTitle{font-size:27px;line-height:34px;}
 
-.loveboxes{padding:0 0px !important;}
+.loveboxes{padding:0 5px !important;}
 .loveboxes h3 {
-  font-size: 16px !important;
-  line-height: 19px !important;
-  text-shadow: 1px 2px 0px var(--black);
+  /* font-size: 16px !important; */
+  /* line-height: 19px !important; */
+  /* text-shadow: 1px 2px 0px var(--black); */
 }
 .featureicon{width:90px;height:90px;}
 }
@@ -647,9 +659,11 @@ select#country{width:100%;margin-bottom:10px;}
 .row.items-lists > div{padding:0 8px !important;}
 .wishlistcntbox.shadow-voilet{box-shadow:4px 4px 0 0 var(--voilet);}
 }
+
+
 @media(max-width:400px){
   .MegaMenu{top:116px;}
-  .loveboxes h3{font-size:15px !important;line-height:18px !important;}
+  /* .loveboxes h3{font-size:15px !important;line-height:18px !important;} */
   .headingMd{font-size:44px !important;line-height:45px !important;}
   .spennylogo img{max-width:120px;}
   .welcomeHeading{font-size:44px;}
@@ -659,8 +673,19 @@ select#country{width:100%;margin-bottom:10px;}
   .closemega{top:18px;}
 }
 
-
+@media(max-width:380px){
+  .loveboxes {
+    width: 100%;
+  }
+  .loveboxes h3 {
+  font-size: 27px !important;
+  line-height: 38px !important;
+  }
+}
 /* msg text */
+.max-width.login {
+  max-width:200px;
+}
 div#msgText h3{font-size:15px;color:#fff;margin-bottom:7px;}
 div#msgText p{margin-bottom:9px;font-weight:300 !important;font-size:14px;}
 #msgText .valid svg{color:var(--mint);}
