@@ -35,6 +35,7 @@ export default function Register() {
         email: '',
         password: '',
         password_confirmation: '',
+        promo: '',
     });
 
     const termsaccept = () => {
@@ -126,6 +127,15 @@ export default function Register() {
             length.classList.remove('valid');
         }
     }
+
+    const Promo = () => {
+        return <div className='promocode mb-4' >
+            <label className='mb-2'>Referral Code (optional)</label>
+            <input onChange={(e) => setData('promo', e.target.value)} placeholder="Enter Referral Code..." className='form-control ' />
+        </div>
+    }
+    
+   
 
     return (
         <GuestLayout>
@@ -226,9 +236,12 @@ export default function Register() {
                                     </li>
                                 </ul>
 
+                                {/* <Promo /> */}
+
                                 <div className='termselect'>
                                     <label htmlFor="termaccept">
-                                        <p className='tersms-accept' ><input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept"
+                                        <p className='tersms-accept' >
+                                            <input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept"
                                             required onChange={(e) => setData("termaccept", e.target.value)}></input>
                                             By signing up you agree to our <Link className='text-voilet font-bold' target='_blank' href={route('terms-and-conditions')} >Terms & Conditions</Link>  and <a className='text-voilet font-bold' target='_blank' href={'https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6'} >Privacy Policy,</a>  and confirm that you are at least 18. years old.
                                         </p>

@@ -41,6 +41,7 @@ export default function MyGoal({goal, IsloggedIn}) {
                       onChange={(e) => setData('amount', e.target.value)} 
                       type="number" placeholder="Enter amount.. " />
                   </div>
+                  <p className='text-small text-muted mt-2' >Minimum amount is set to {formatMultiPrice(goal?.default_price, goal?.currency)}</p>
               </div>
             </div>
             <div className='col-md-6' >

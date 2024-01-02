@@ -68,7 +68,9 @@ export default function Accountsetting(props) {
                                     { auth && auth.user && auth.user.twitter_username ? `@${auth.user.twitter_username}` : ''}
                                     </div>
                                 </> } >
-                                    <LinkTwitter auto_tweet={auto_tweet}  username={auth && auth.user && auth.user.twitter_username || false}  />
+                                    <LinkTwitter auto_tweet={auto_tweet}  
+                                    auth={auth}
+                                    username={auth && auth.user && auth.user.twitter_username || false}  />
                                 </Popup>
                             </li>
 

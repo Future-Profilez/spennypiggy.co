@@ -6,10 +6,13 @@ import twitter from '../../../assets/img/twitterpost.png';
 import Form from 'react-bootstrap/Form';
 import { useAlerts } from '@/Components/Alerts';
 import { useState } from 'react';
+import Avatar from '@/includes/Avatar';
+import userphoto from "../../../assets/img/userphoto.png";
 
 export default function LinkTwitter(props) {
 
-  const { username, auto_tweet } = props;
+
+  const { username, auto_tweet, auth } = props;
   const { data, setData, get, processing, errors, reset } = useForm();
   const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
   const [is_linked, setIs_linked] = useState(auto_tweet);
@@ -56,6 +59,33 @@ export default function LinkTwitter(props) {
     };
   };
 
+  const Name = auth && auth.user && auth.user.name.replace(' ', '%20');
+
+  const TwitterCard = () => {
+    return <div className='t-card box p-3 rounded-lg shadow-md'>
+            <Avatar 
+              name={auth && auth.user && auth.user.name}
+              subhead={auth && auth.user && auth.user.username}
+              username={auth && auth.user && auth.user.username}
+              src={auth && auth.user && auth.user.avatar || userphoto}
+            />
+            <div className='twitter-content mt-2 ps-5 ms-4 ' >
+              <p>
+              Someone just made a wishlist dream come true, funding a gift worth $50.00! Feel like joining in the fun?
+              </p>
+              <p className='mt-2' > 
+              Check out my wishlist and send me a little surprise 🎁 via <a className='text-primary ms-2 d-inline-block' 
+                href={`${window.location.host}/${auth && auth.user && auth.user.username}`} > 
+                {`${window.location.host}/${auth && auth.user && auth.user.username}`} 
+                </a> using @SpennyPiggy! 🐷
+              </p>
+              <img className='mt-3' 
+              src={`https://ucarecdn.com/8dfae4ba-cd77-406f-8b70-7cf360b4c18c/-/preview/900x900/-/text_align/center/center/-/font/14/000000/-/text/100px30p/100p,100p/spennypiggy.co~s${auth && auth.user && auth.user.username}/-/text_align/center/center/-/font/19/e6ea82/-/text/100px78p/100p,100p/${Name}/`} 
+              alt='twitter' />
+            </div>
+    </div>
+  }
+
   return (
     <>
     <h2 className="text-uppercase font-GillSans pb-4 font-large text-center px-5"> Twitter Integration </h2>
@@ -68,7 +98,7 @@ export default function LinkTwitter(props) {
       </div>
       <div className={`step-t ${username ? 'active' : ''}`}>
         <div className='step-no' >2</div>
-        <p>Link Settings</p>
+        <p>Settings</p>
       </div>
     </div>
 
@@ -90,9 +120,13 @@ export default function LinkTwitter(props) {
     </div> : 
     <div className='step1' >
       <p className='text-large text-center px-5 mb-4' >Set up Twitter to auto tweet when you receive a gift.</p>
-      <div className='twitter-img' >
+      {/* <div className='twitter-img' >
         <img src={twitter} alt='twitter' className='w-100 rounded-lg mt-3' />
-      </div>
+      </div> */}
+
+      <TwitterCard />
+
+
       <LoaderButton onClick={loginTwitter}
           disabled={processing}
           type='submit'

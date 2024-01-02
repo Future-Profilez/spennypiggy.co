@@ -27,7 +27,6 @@ import MyGoal from './TipJar/MyGoal';
 export default function Dashboard(props) {
 
     const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
-
     const { auth, user, username, global_currency, itemid } = props;
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
     const [loading, setLoading] = useState(false);
@@ -76,7 +75,6 @@ export default function Dashboard(props) {
         fetchingcats(v);
     };
 
-
     const [goal, setGoal] = useState();
     const fetch_goal = () => {
         axios.get(`tip-jar/list/${user && user.uuid}`).then((resp) => {
@@ -110,7 +108,6 @@ export default function Dashboard(props) {
         }
     });
 
-
     const updateMovement = async (updated) => {
         const array = [];
         updated.forEach(name => {
@@ -129,6 +126,7 @@ export default function Dashboard(props) {
         useSensor(TouchSensor, { activationConstraint: { delay: 50, tolerance: 10 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
     );
+
     const handleDragEnd = (event) => {
         if(!IsloggedIn){
             return false
@@ -155,7 +153,6 @@ export default function Dashboard(props) {
             infoAlert(flash.info);
         }
     },[flash]);
-
 
     return <>
         <Guest auth={auth.user} user={user}>

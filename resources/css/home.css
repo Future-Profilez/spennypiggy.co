@@ -295,14 +295,29 @@ div#msgText p b{font-weight:700 !important;padding:0 4px;color:#000;}
 .userphotobox > span,.userphotobox > span > img{width:100% !important;height:100% !important;display:block !important;object-fit:cover;}
 .userphoto span{height:auto !important;width:auto !important;display:block !important;}
 .wishbanner{min-height:300px;}
+.wishtracker-box{max-width:950px;}
+.promocode input{border-radius:12px;padding:16px 20px;}
+.promocode-btn{color:#fff;border-radius:10px;background:var(--pink);padding:10px 20px;}
 
-.wishtracker-box {
-  max-width: 950px;
+.featureicon {
+  width: 150px;
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--mint);
+  border: 1px solid #000;
+  border-radius: 50%;
+  box-shadow: 12px 9px 0 0 rgba(0,0,0,0.9);
+  margin: auto;
+  margin-bottom: 20px;
 }
+.loveboxes h3{font-size:30px !important;line-height:35px !important;}
+
+
 /* Responsive */
 @media(max-width:1500px){.loveboxes{padding:0 20px;}
 .loveboxes img{max-width:160px;}
-.loveboxes h3{font-size:38px !important;line-height:inherit !important;}
 /* .menuList ul li a,.menuList ul li .link{font-size:50px;line-height:52px;}
 */
 .menuList ul li a,.menuList ul li .link{font-size:6vh;}
@@ -383,6 +398,21 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .userphotobox{height:250px;}
 .userProfile{margin-top:0px;}
 .footlinks ul li{border-right:0 !important;}
+
+
+.featureicon {
+  width: 120px;
+  height: 120px;
+}
+
+.featureicon img, .featureicon span {
+  width: 40px !important;
+  height: 40px !important;
+}
+.loveboxes {
+  width: 50%;
+}
+
 }
 
 
@@ -398,6 +428,13 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 
 
 @media(max-width:767px){
+
+  .loveboxes h3 {
+    font-size: 20px !important;
+    line-height: 22px !important;
+}
+
+
   .gifts-links {
     margin: auto;
 }
@@ -502,8 +539,6 @@ select#country{width:150px;padding:10px 10px;font-size:18px;}
 .creatorslider .swiper-slide.swiper-slide-active .clientname,.creatorslider .swiper-slide.swiper-slide-active .postdate,.creatorslider .swiper-slide.swiper-slide-active .happyclientSec p{color:var(--white);}
 .funcnt p{font-size:14px;}
 .funboxs.pinkbg{flex-direction:column-reverse;}
-.loveboxes{width:100%;margin:0 0 40px;max-width:300px;}
-.loveboxes img{margin:0 auto 15px;}
 .footer .containerbox{flex-wrap:wrap;justify-content:center;}
 .footer{padding:20px 0 85px;}
 .footlogo{text-align:center;margin:0 0 10px;}
@@ -587,8 +622,19 @@ button.cartLink svg{width:34px;height:34px;}
 select#country{width:100%;margin-bottom:10px;}
 .wishlistcntbox{max-width:100%;width:100%;}
 .welcomeTitle{font-size:27px;line-height:34px;}
+
+.loveboxes{padding:0 0px !important;}
+.loveboxes h3 {
+  font-size: 16px !important;
+  line-height: 19px !important;
+  text-shadow: 1px 2px 0px var(--black);
 }
-@media(max-width:430px){.subscribletag{padding:5px 13px !important;font-size:10px !important;}
+.featureicon{width:90px;height:90px;}
+}
+@media(max-width:430px){
+  
+
+.subscribletag{padding:5px 13px !important;font-size:10px !important;}
 .wishlistimg img{height:140px !important;}
 .crowd .text-small{font-size:13px !important;}
 .wishlistdetial h5{font-size:15px;}
@@ -602,18 +648,18 @@ select#country{width:100%;margin-bottom:10px;}
 .wishlistcntbox.shadow-voilet{box-shadow:4px 4px 0 0 var(--voilet);}
 }
 @media(max-width:400px){
-  
-  .MegaMenu {
-    top: 116px;
+  .MegaMenu{top:116px;}
+  .loveboxes h3{font-size:15px !important;line-height:18px !important;}
+  .headingMd{font-size:44px !important;line-height:45px !important;}
+  .spennylogo img{max-width:120px;}
+  .welcomeHeading{font-size:44px;}
+  .noResult h2.headingLg{font-size:25px;line-height:30px;}
+  .menuImg img{max-width:119px;}
+  .closemega svg{width:48px;}
+  .closemega{top:18px;}
 }
-.headingMd{font-size:44px !important;line-height:45px !important;}
-.spennylogo img{max-width:120px;}
-.welcomeHeading{font-size:44px;}
-.noResult h2.headingLg{font-size:25px;line-height:30px;}
-.menuImg img{max-width:119px;}
-.closemega svg{width:48px;}
-.closemega{top:18px;}
-}
+
+
 /* msg text */
 div#msgText h3{font-size:15px;color:#fff;margin-bottom:7px;}
 div#msgText p{margin-bottom:9px;font-weight:300 !important;font-size:14px;}
@@ -638,8 +684,9 @@ div#msgText p{display:flex;align-items:flex-start;}
 .swiper-button-prev:after{margin-left:0 !important;margin-right:3px !important;}
 .tooltipbtn{width:13px;height:14px;background:#000;color:#fff;font-size:11px;border-radius:50%;margin-left:6px;display:inline-block;}
 .text-small{font-size:14px;}
-@keyframes menu{0%{opacity:0;transition:0.6s;}
-100%{opacity:1;transition:0.6s;}
+@keyframes menu {
+  0%{ opacity:0;transition:0.6s; }
+  100%{ opacity:1;transition:0.6s; }
 }
 .tooltipbtn p{position:absolute;background:#000;padding:10px;border-radius:11px;font-size:14px;max-width:290px;left:-58px;z-index:2;top:20px;width:130px;display:none;}
 .tooltipbtn{position:relative;}
@@ -647,22 +694,9 @@ div#msgText p{display:flex;align-items:flex-start;}
 .titleprice:hover .tooltipbtn p{display:block !important;}
 .welcomeRt{animation:menu 0.5s linear;transition:0.6s;}
 .wishtracker .nav.nav-tabs li button{margin-right:15px;}
-.wishtracker .nav.nav-tabs li button {
-  background: transparent;
-  color: #ffffff;
-  border: 0 !important;
-  padding: 15px 10px !important;
-  font-size: 17px;
-  border-bottom: 2px solid transparent !important;
-}
+.wishtracker .nav.nav-tabs li button{background:transparent;color:#ffffff;border:0 !important;padding:15px 10px !important;font-size:17px;border-bottom:2px solid transparent !important;}
 .wishtracker .nav.nav-tabs li button.active{color:#f94f97;border-color:#f94f97 !important;}
-.wishtracker .nav.nav-tabs {
-  border: 0;
-  border-radius: 14px;
-  padding: 1px 26px;
-  background: #242424;
-  margin: 10px 0 10px 0 !important;
-}
+.wishtracker .nav.nav-tabs{border:0;border-radius:14px;padding:1px 26px;background:#242424;margin:10px 0 10px 0 !important;}
 .disabled{opacity:0.6;}
 .mytable td{color:#fff;}
 .mytable table{width:100%;}
@@ -698,12 +732,5 @@ button.editpop{display:none !important;}
 .wish-item-box {
   /* transition: 0.5s ease-out; */
 }
-.currency-wrapper input {
-  padding-left: 50px !important;
-}
-span.currency-tag {
-  position: absolute;
-  top: 50%;
-  left: 10px;
-  transform: translateY(-50%);
-}
+.currency-wrapper input{padding-left:50px !important;}
+span.currency-tag{position:absolute;top:50%;left:10px;transform:translateY(-50%);}

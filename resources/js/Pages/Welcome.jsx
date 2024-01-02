@@ -18,9 +18,9 @@ export default function Home({ auth, laravelVersion, user }) {
             <div>
                 <div className="homepromotion"></div>
                 <Hero auth={auth} />
+                <WhyLove />
                 <ComingNext />
                 <FunPart />
-                <WhyLove />
                 <HappyCreators />
                 <JoinUs />
             </div>
