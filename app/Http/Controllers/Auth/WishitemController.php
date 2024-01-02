@@ -765,17 +765,22 @@ class WishitemController extends Controller
             "amount" => ["required"],
         ]);
 
+        $currency = strtolower($request->cookie("currency", "GBP"));
+
+        $owner = User::where('id', $request->owner_id)->first();
+        $price = Helpers::priceFormat($currency, $request->amount, $owner->default_currency);
+        $user_amount = Helpers::priceFormat($owner->default_currency,5,$currency);
+        if($price < 5){
+            return redirect()->back()->with("error", "Enter minimum $user_amount amount.");
+        }
+
         $wordLimit = 100;
         $message = $request->message;
         if (str_word_count($message) > $wordLimit) {
             return redirect()->back()->with("error", "Max limit for message is 100 words");
         }
 
-        $owner = User::where('id', $request->owner_id)->where(function ($q) {
-            $q->whereNot('country', 'GB')->orWhereNull('country');
-        })->first();
 
-        $price = Helpers::priceFormat(request()->cookie('currency'), $request->amount, $owner->default_currency);
         // $price = round($request->amount, 2, PHP_ROUND_HALF_UP);
         $tax = round(($price * config('app.suprise_tax',10) / 100), 2, PHP_ROUND_HALF_UP);
 
@@ -783,7 +788,7 @@ class WishitemController extends Controller
         $stripe_client = $stripe->products->create([
             'name' => 'Surprise Gift',
             'images' => ['https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/'],
-            "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100],
+            "default_price_data" => ["currency" => $owner->default_currency, "unit_amount_decimal" => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100],
         ]);
 
         if (!Auth::check()) {
