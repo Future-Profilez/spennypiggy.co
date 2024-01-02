@@ -7,11 +7,13 @@ use App\Http\Controllers\Controller;
 use App\Jobs\CheckoutMailToUser;
 use App\Jobs\CheckoutUser;
 use App\Jobs\SendRenewMail;
+use App\Jobs\SubscribeAutoTweet;
 use App\Jobs\SubscribedMail;
 use App\Jobs\SubscriptionCancelAtEnd;
 use App\Jobs\SubscriptionFailed;
 use App\Jobs\TipJarMailToUser;
 use App\Jobs\TipJarPurchased;
+use App\Jobs\TipJarTweet;
 use App\Models\Currency;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
@@ -691,6 +693,11 @@ class StripeController extends Controller
                     SubscribedMail::dispatch($sub);
                 }
 
+                if ($sub->wish_item->user->auto_tweet == 1) {
+                    // MakeAutoTweets::dispatch($user);
+                    SubscribeAutoTweet::dispatch($sub);
+                }
+
                 return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('success', "Subscription Success. If you have paid for one time, subscription will be autocanceled on period end.");
             }
 
@@ -962,6 +969,9 @@ class StripeController extends Controller
                 }
                 $tip_pay->tipGoal->save();
 
+                if($tip_pay->tipGoal->user->auto_tweet == 1){
+                    TipJarTweet::dispatch($tip_pay);
+                }
 
                 return to_route('user.show', ['username' => $tip_pay->tipGoal->user->username])->with('success', "You have paid tip to the tip jar successfully!");
             }
