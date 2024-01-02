@@ -90,4 +90,26 @@ class Helpers
 
         return $rest;
     }
+
+
+    public static function getCurrency($currency){
+
+        $curr = strtolower($currency);
+
+        $arr = [
+            'gbp' => '£',
+            'usd' => '$',
+            'aud' => 'AU$',
+            'eur' => '€',
+            'jpy' => '¥',
+            'hkd' => 'HK$',
+            'cad' => 'CA$',
+            'chf' => 'Fr.',
+            'sek' => 'kr',
+            'nzd' => 'NZ$'
+        ];
+
+        return $arr[$curr];
+        
+    }
 }
