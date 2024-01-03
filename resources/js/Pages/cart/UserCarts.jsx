@@ -11,8 +11,9 @@ export default function UserCarts(props) {
     const deviceid = DeviceID();
     const { auth, removeFromCart } = props;
     const { format, formatMultiPrice } = PriceFormat();
-
     const datas = props.data;
+    console.log("datas",datas);
+
     const [isChecked, setIsChecked] = useState(false);
     const [message, setMessage] = useState(null);
     const [name, setName] = useState(auth && auth.name || '');
@@ -69,26 +70,27 @@ export default function UserCarts(props) {
     function updateTotals(p) {
         const value = items && items.reduce((total, item) => +total + +item.price * (+item.quantity || 1), 0) + p;
         setsubtotal(value);
-        setFee(0.2 * value);
-    }
+        const fees = items && items.reduce((total, item) => +total + +item.tax * (+item.quantity || 1), 0) + p;
+        setFee(fees);
+    } 
 
-    const quantityUpdate = (type, amount) => {
+    const quantityUpdate = (type, amount, tax) => {
         if (type == 'add') {
             const updated = subtotal + amount;
-            setsubtotal(updated)
-            setFee(0.2 * updated);
+            setsubtotal(updated);
+            const totalfee = fee + tax
+            setFee(totalfee);
         } else {
             const updated = subtotal - amount;
             setsubtotal(updated)
-            setFee(0.2 * updated);
+            const totalfee = fee - tax
+            setFee(totalfee);
         }
     }
 
     useEffect(() => {
         updateTotals(0);
     }, [items]);
-
-   
 
     return (
         <div className={`${cartCleared ? "d-none" : ''} px-2`}>

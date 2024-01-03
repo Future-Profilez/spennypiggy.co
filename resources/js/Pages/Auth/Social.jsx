@@ -23,7 +23,6 @@ export default function Social({links, updatedLinks}) {
         other: links?.other ? links.other : '',
     });
 
-    console.log("links",links)
     useEffect(() => {
         setTimeout(()=>{
             setData('twitter', links?.twitter || '');

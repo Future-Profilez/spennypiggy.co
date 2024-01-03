@@ -82,7 +82,7 @@ export default function SendSurprise({auth, owner}) {
                      placeholder="Enter amount.. "
                   />
                   {/* <p className="mt-1">
-                     The Minimum amount is set to {formatMultiPrice(5)} in the wisher’s currency.
+                     The Minimum amount is set to {formatMultiPrice(owner && owner.min_surprise_amount, auth && auth.user && auth.user.global_currency)} in the wisher’s currency.
                   </p> */}
             </div>
             <div className="form-field mb-4">

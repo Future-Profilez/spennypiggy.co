@@ -62,12 +62,12 @@ export default function LinkTwitter(props) {
   const Name = auth && auth.user && auth.user.name.replace(' ', '%20');
 
   const TwitterCard = () => {
-    return <div className='t-card box p-3 rounded-lg shadow-md'>
+    return <div className='t-card bg-light box p-3 rounded-lg shadow-md'>
             <Avatar 
               name={auth && auth.user && auth.user.name}
-              subhead={auth && auth.user && auth.user.username}
+              subhead={`@${auth && auth.user && auth.user.username}`}
               username={auth && auth.user && auth.user.username}
-              src={auth && auth.user && auth.user.avatar || userphoto}
+              src={auth && auth.user && auth.user.avatar_url || userphoto}
             />
             <div className='twitter-content mt-2 ps-5 ms-4 ' >
               <p>

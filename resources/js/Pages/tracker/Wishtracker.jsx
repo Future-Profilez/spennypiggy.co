@@ -20,6 +20,8 @@ const defaultsec = 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/';
 
 export default function Wishtracker(props) {
     const { auth, user, tracks, user_subs, creator_subs } = props;
+
+    console.log("tracker props", props)
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const TruncatedString = ({ inputString, maxLength }) => {
         if (inputString?.length <= maxLength) {

@@ -38,7 +38,7 @@ export default function Userprofile({auth, user, links, IsloggedIn, w, currency 
                     </ShareProfile>
                 </div>
 
-                <SocialLinks links={links} />
+                <SocialLinks links={links} /> 
                 {!IsloggedIn ? <SendSurprise auth={auth} owner={user} /> : ''}
 
                 <p className={`text-muted text-center mt-3 ${user && !user.bio ? "d-none":""}`}>
