@@ -244,7 +244,7 @@ class WishitemController extends Controller
         $wish->refresh();
 
         if(!empty($request->thumbnail)){
-            CheckAdultContent::dispatch($wish); 
+            CheckAdultContent::dispatch($wish);
         }
 
         if (!empty($request->category)) {
@@ -619,6 +619,7 @@ class WishitemController extends Controller
                     // }
 
                     $price = $v['amount'] ? $v['amount'] : $v['wish']['price'];
+                    $tax = $v['tax'] ? $v['tax'] : $v['wish']['tax_amount'];
                     $priceid = $v['priceid'] ? $v['priceid'] : $v['wish']['price_id'];
 
                     if (!empty($v['wish'])) {
@@ -629,6 +630,7 @@ class WishitemController extends Controller
                             'wishname' => $v['wish']['wishname'],
                             'stripe_product_id' => $v['wish']['stripe_product_id'],
                             'price' => $price,
+                            'tax' => $tax,
                             'price_id' => $priceid,
                             'item_url' => $v['wish']['item_url'],
                             'subscription' => $v['wish']['subscription'],
@@ -642,6 +644,7 @@ class WishitemController extends Controller
                     } else {
                         $cart[$key]['items'][$k] = [
                             'price' => $price,
+                            'tax' => $tax,
                             'wishname' => 'Surprise Gift',
                             'uuid' => $v['uuiddata'],
                             'price_id' => $priceid,
@@ -657,7 +660,7 @@ class WishitemController extends Controller
                     //     $total += $v['wish']['price'];
                     // }
                     $total += !empty($v['priceid']) ? $v['amount'] : $v['wish']['price'];
-                    $fee += !empty($v['priceid']) ? $v['tax'] : $v['wish']['tax_amount'];
+                    $fee += !empty($v['priceid']) ? $v['tax'] * $v['quantity'] : ($v['wish']['tax_amount'] * $v['quantity'] ?? 0);
                 }
                 $cart[$key]['total'] = $total;
                 $cart[$key]['fee'] = $fee;
@@ -712,6 +715,7 @@ class WishitemController extends Controller
             $fee = 0;
             foreach ($value as $k => $v) {
                 $price = $v['amount'] ? $v['amount'] : ($v['wish']['price'] ?? null);
+                $tax = $v['tax'] ? $v['tax'] : $v['wish']['tax_amount'];
                 $priceid = $v['priceid'] ? $v['priceid'] : ($v['wish']['price_id'] ?? null);
 
                 if (!empty($v['wish'])) {
@@ -722,6 +726,7 @@ class WishitemController extends Controller
                         'wishname' => $v['wish']['wishname'] ?? null,
                         'stripe_product_id' => $v['wish']['stripe_product_id'] ?? null,
                         'price' => $price,
+                        'tax' => $tax,
                         'price_id' => $priceid,
                         'item_url' => $v['wish']['item_url'] ?? null,
                         'subscription' => $v['wish']['subscription'] ?? null,
@@ -734,6 +739,7 @@ class WishitemController extends Controller
                 } else {
                     $cart[$key]['items'][$k] = [
                         'price' => $price,
+                        'tax' => $tax,
                         'wishname' => 'Surprise Gift',
                         'uuid' => $v['uuiddata'] ?? null,
                         'price_id' => $priceid,
@@ -745,7 +751,7 @@ class WishitemController extends Controller
                 }
 
                 $total += !empty($v['priceid']) ? $v['amount'] : ($v['wish']['price'] ?? 0);
-                $fee += !empty($v['priceid']) ? $v['tax'] : ($v['wish']['tax_amount'] ?? 0);
+                $fee += !empty($v['priceid']) ? $v['tax'] * $v['quantity'] : ($v['wish']['tax_amount'] * $v['quantity'] ?? 0);
             }
             $cart[$key]['total'] = $total;
             $cart[$key]['fee'] = $fee;
@@ -769,17 +775,18 @@ class WishitemController extends Controller
 
         $owner = User::where('id', $request->owner_id)->first();
         $price = Helpers::priceFormat($currency, $request->amount, $owner->default_currency);
-        $user_amount = Helpers::priceFormat($owner->default_currency,5,$currency);
-        if($price < 5){
+        $user_amount = Helpers::priceFormat($owner->default_currency,$owner->min_surprise_amount,$currency);
+        if($price < $owner->min_surprise_amount){
             return redirect()->back()->with("error", "Enter minimum $user_amount amount.");
         }
 
         $wordLimit = 100;
+
+
         $message = $request->message;
         if (str_word_count($message) > $wordLimit) {
             return redirect()->back()->with("error", "Max limit for message is 100 words");
         }
-
 
         // $price = round($request->amount, 2, PHP_ROUND_HALF_UP);
         $tax = round(($price * config('app.suprise_tax',10) / 100), 2, PHP_ROUND_HALF_UP);
