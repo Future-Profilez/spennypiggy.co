@@ -1,13 +1,14 @@
 import React from "react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import { useState } from "react";
-import UserCarts from "../cart/UserCarts";
-import Nocontent from "@/includes/Nocontent";
 import { Head } from "@inertiajs/react";
 import DeviceID from "@/includes/DeviceID";
 import { useEffect } from "react";
 import Axios from "axios";
-import LoadingScreen from "@/includes/LoadingScreen";
+const UserCarts = React.lazy(() => import('../cart/UserCarts'));
+const LoadingScreen = React.lazy(() => import('@/includes/LoadingScreen'));
+const Nocontent = React.lazy(() => import('@/includes/Nocontent'));
+
 export default function Cart(props) {
 
     const deviceid = DeviceID();

@@ -236,6 +236,8 @@ export default function Register() {
                                     </li>
                                 </ul>
 
+                                
+
                                 {/* <Promo /> */}
 
                                 <div className='termselect'>

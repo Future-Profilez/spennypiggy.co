@@ -25,6 +25,15 @@ export default function VerifyEmail({ status }) {
         });
     };
 
+
+    useEffect(() => {
+        let timer = setInterval(() => {
+          window.location.reload(false)
+        }, 10000);
+        return () => clearInterval(timer);
+      }, []);
+
+
     return <div className="blackbg pageheight p-4">
         <style>{`
             .mailicon svg {max-width:200px;}
@@ -92,10 +101,13 @@ export default function VerifyEmail({ status }) {
                 <form onSubmit={submit}>
                     <div className="mt-4 flex items-center justify-content-center">
                         <PrimaryButton className="btn-pink md   py-3 px-2" disabled={loading}>
-                            {loading ? "Sending..." : send ? " Email Sent" : "Send Verification Link"}
+                            {loading ? "Sending..." :  "Send Verification Link"}
                         </PrimaryButton>
                     </div>
                 </form>
+
+                {send ? <p className="text-mint text-center mt-4 font-light"  >Verification link sent successfully.</p> : ''}
+              
             </div>
         </div>
     </div>

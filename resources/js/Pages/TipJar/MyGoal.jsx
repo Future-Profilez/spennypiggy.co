@@ -30,8 +30,9 @@ export default function MyGoal({goal, IsloggedIn}) {
           space="4" size="md" action={close} classes={`btn-pink mt-3 lg px-4 my-2 w-100`}
           text={`Send me a tip `} >
           <h2 className='text-large font-semibold mb-4'>Give me a tip</h2>
-
+          
           <div className='row' >
+
             <div className='col-md-6' >
               <div className="form-field mb-4">
                   <label className="d-block text-start mb-2 text-small">Amount<sup className='text-danger' >*</sup></label>
@@ -44,10 +45,11 @@ export default function MyGoal({goal, IsloggedIn}) {
                   <p className='text-small text-muted mt-2' >Minimum amount is set to {formatMultiPrice(goal?.default_price, goal?.currency)}</p>
               </div>
             </div>
+
             <div className='col-md-6' >
               <div className="form-field mb-4">
                 <label className="d-block text-start mb-2 text-small">Nickname<sup className='text-danger' >*</sup></label>
-                <input
+                <input required
                   className="form-input w-100 rounded"
                   defaultValue={auth && auth.user?.name}
                   onChange={(e) => setData('name', e.target.value)}
@@ -55,10 +57,12 @@ export default function MyGoal({goal, IsloggedIn}) {
                 />
               </div>
             </div>
+
           </div>
+
           <div className="form-field mb-4">
             <label className="d-block text-start mb-2 text-small">Email<sup className='text-danger' >*</sup></label>
-            <input  disabled={auth && auth.user?.email ? true : false}
+            <input required  disabled={auth && auth.user?.email ? true : false}
               className="form-input w-100 rounded"
               defaultValue={auth && auth.user?.email}
               onChange={(e) => setData('email', e.target.value)}

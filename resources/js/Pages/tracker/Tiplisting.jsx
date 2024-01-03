@@ -8,7 +8,7 @@ import Nocontent from '@/includes/Nocontent';
 export default function Tiplisting({auth}) {
 
    const { formatMultiPrice } = PriceFormat();
-   const [tips, setTips] = useState([]);
+   const [tips, setTips] = useState();
 
    const fetchTips = () => {
       axios.get(`user-tips`).then(resp => {
@@ -32,10 +32,10 @@ export default function Tiplisting({auth}) {
                   <div className='d-flex tip align-items-center justify-content-between' >
                      <div>
                      <h2 className='text-large mb-1' >{g && g.tip_goal?.name}</h2>
-                     { g && !g.sender 
-                        ? <p className=' mb-0' >From : {g?.guest_name}</p> 
-                        : <p className=' mb-0' >To : {g?.owner?.username}</p> 
-                     }
+                        { g && !g.sender 
+                           ? <p className=' mb-0' >From : {g?.guest_name}</p> 
+                           : <p className=' mb-0' >To : {g?.owner?.username}</p> 
+                        }
                      </div>
                      <div>
                      <div className="angle-icon w-auto d-flex justify-content-end align-items-center">
@@ -51,6 +51,7 @@ export default function Tiplisting({auth}) {
                      </div>
                   </div>
             </div>
+
             <Collapse in={open} >
                   <div id="example-collapse-text" className=''>
                      <div className='mt-3'>
@@ -71,10 +72,12 @@ export default function Tiplisting({auth}) {
 
    return (
       <div className='tips mt-4'>
-         {tips && tips.map((g, i)=>{
+         
+         {tips && tips.length ? tips.map((g, i)=>{
             return <TipItem g={g} />
-         })}
-         {tips && tips?.length < 1 ? <Nocontent text="nothing to see" /> : ''}
+         })
+         : <Nocontent text="nothing to see" />
+         }
       </div>
   )
 }
