@@ -81,9 +81,7 @@ export default function SendSurprise({auth, owner}) {
                      type="number"
                      placeholder="Enter amount.. "
                   />
-                  {/* <p className="mt-1">
-                     The Minimum amount is set to {formatMultiPrice(owner && owner.min_surprise_amount, auth && auth.user && auth.user.global_currency)} in the wisher’s currency.
-                  </p> */}
+                  <p className="mt-1">The Minimum amount is set to {formatMultiPrice(owner && owner.min_surprise_amount, global_currency)} in the wisher’s currency.</p>
             </div>
             <div className="form-field mb-4">
                   <label className="d-block text-start mb-2">Suggested use (Required)</label>
@@ -96,11 +94,11 @@ export default function SendSurprise({auth, owner}) {
             </div>
 
             <LoaderButton onClick={sendSurprize}
-               disabled={processing}
-               type='submit'
-                  className="flex w-100 btn-pink lg mx-auto"
-                  spinnerClassName="fill-red-600" >
-                  {processing ? "Processing" : auth && auth.name ? "Add to cart" : "Send Gift"}
+               disabled={processing} 
+               type='submit' 
+               className="flex w-100 btn-pink lg mx-auto" 
+               spinnerClassName="fill-red-600" >
+               {processing ? "Processing" : auth && auth.name ? "Add to cart" : "Send Gift"}
             </LoaderButton>
 
         </Popup>
