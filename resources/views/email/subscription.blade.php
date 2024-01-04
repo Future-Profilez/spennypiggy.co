@@ -11,49 +11,23 @@
                 <tr>
                     <td
                         style="font-family: Arial; font-weight: bold; font-size: 18px; color:#000; line-height: 26px; padding: 0 0 25px 0; text-align: center;">
-                        {{ $data->user->name }} subscribed you for your wish <span
-                            style="color: #8C52FF">{{ $data->wish_item->wishname }}</span> on <br> Spenny Piggy 🎁
+                        {{ $data->user->name }} subscribed to your wish <span
+                            style="color: #8C52FF">{{ $data->wish_item->wishname }}</span> on a {{ $data->wish_item->subscription_period }} basis.
                     </td>
                 </tr>
-
-                {{-- <tr>
-            <td style=" padding: 0 0 25px 0; text-align: center;"><img src="giftimg.png" alt="img"></td>
-         </tr> --}}
-
-
-                {{-- <tr>
-            <td style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold; font-size: 13px; color: 141414; text-align: left; line-height: 18px; text-align: center;">Someone granted you a <span style="color:#F94F97 ">Wish</span> 🤩</td>
-         </tr> --}}
 
                 <tr>
                     <td
                         style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 10px; color: #4D4D4D; text-align: center; line-height: 18px;">
-                        Go to <a href="https://spennypiggy.co/">Spenny Piggy</a> where you can see your payments for
-                        wish
-                        subscriptions.</td>
+                        Go to <a href="https://spennypiggy.co/">Spenny Piggy</a> to check out all your current subscribers.</td>
                 </tr>
 
                 <tr>
                     <td style="padding:0 0 10px 0; text-align: center;">
                         <a href="{{ env('APP_URL') . '/wish-tracker' }}"
-                        style="border-radius:30px;padding: 13px 25px 13px 25px;border:none;background-color:#f94f97;font-family:Arial;font-weight:bold;font-size: 15px;text-align:center;color:#ffffff;text-decoration: none;" >See
-                            your transactions.</a>
+                        style="border-radius:30px;padding: 13px 25px 13px 25px;border:none;background-color:#f94f97;font-family:Arial;font-weight:bold;font-size: 15px;text-align:center;color:#ffffff;text-decoration: none;" >My Account.</a>
                     </td>
                 </tr>
-                {{-- <br><br>
-
-                <tr>
-                    <td
-                        style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                        To cancel the subscription click on the link below.</td>
-                </tr>
-                <tr>
-                    <td
-                        style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                        <b>Cancel :~ <a href={{ env('APP_URL') . '/cancel-subs/' . $data->uuid }}>
-                                Click Here</a></b>
-                    </td>
-                </tr> --}}
 
             </table>
         </td>

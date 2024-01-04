@@ -7,11 +7,13 @@ use App\Http\Controllers\Controller;
 use App\Jobs\CheckoutMailToUser;
 use App\Jobs\CheckoutUser;
 use App\Jobs\SendRenewMail;
+use App\Jobs\SubscribeAutoTweet;
 use App\Jobs\SubscribedMail;
 use App\Jobs\SubscriptionCancelAtEnd;
 use App\Jobs\SubscriptionFailed;
 use App\Jobs\TipJarMailToUser;
 use App\Jobs\TipJarPurchased;
+use App\Jobs\TipJarTweet;
 use App\Models\Currency;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
@@ -691,6 +693,11 @@ class StripeController extends Controller
                     SubscribedMail::dispatch($sub);
                 }
 
+                if ($sub->wish_item->user->auto_tweet == 1) {
+                    // MakeAutoTweets::dispatch($user);
+                    SubscribeAutoTweet::dispatch($sub);
+                }
+
                 return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('success', "Subscription Success. If you have paid for one time, subscription will be autocanceled on period end.");
             }
 
@@ -852,7 +859,7 @@ class StripeController extends Controller
                 ]
             ]);
 
-            $amount = intval($request->amount);
+            $amount = $request->amount;
 
             if ($amount < $goal->default_price) {
                 return redirect()->back()->with('error', "Please enter amount greater than $goal->default_price.");
@@ -863,9 +870,8 @@ class StripeController extends Controller
                 return redirect()->back()->with('error', "This tip jar only needs $remaining_amount to complete the goal.");
             }
 
-            $real_tax = number_format(($amount * env('TAX_PERCENTAGE') / 100), 2);
-            $price = Helpers::priceFormat($currency, $amount, $goal->user->default_currency);
-            $tax = number_format(($price * env('TAX_PERCENTAGE') / 100), 2);
+            $price = round($amount, 2, PHP_ROUND_HALF_UP);
+            $tax = round(($price * config('app.jar_tax',10) / 100), 2, PHP_ROUND_HALF_UP);
 
             try {
 
@@ -898,7 +904,7 @@ class StripeController extends Controller
                         'price_data' => [
                             'currency' => $currency,
                             'product' => $stripe_client->id,
-                            'unit_amount_decimal' => Helpers::priceFormat($goal->currency, round(($price + $tax), 2, PHP_ROUND_HALF_UP), $currency) * 100
+                            'unit_amount_decimal' => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100
                         ]
                     ]
                 ],
@@ -906,7 +912,7 @@ class StripeController extends Controller
                     'transfer_data' => [
                         'destination' => $goal->user->account_id, // Creator's connected account ID
                     ],
-                    'application_fee_amount' => $real_tax * 100,
+                    'application_fee_amount' => $tax * 100,
                     'on_behalf_of'  => $goal->user->account_id,
                 ],
                 'customer_email' =>  $request->email,
@@ -962,6 +968,9 @@ class StripeController extends Controller
                 }
                 $tip_pay->tipGoal->save();
 
+                if($tip_pay->tipGoal->user->auto_tweet == 1){
+                    TipJarTweet::dispatch($tip_pay);
+                }
 
                 return to_route('user.show', ['username' => $tip_pay->tipGoal->user->username])->with('success', "You have paid tip to the tip jar successfully!");
             }

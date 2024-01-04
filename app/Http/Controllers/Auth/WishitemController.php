@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Auth;
 
 use App\Helpers;
 use App\Http\Controllers\Controller;
+use App\Jobs\CheckAdultContent;
+use App\Jobs\AutoTweetWishAdd;
+use App\Jobs\MakeAutoTweets;
 use App\Jobs\SaveWishlist;
 use App\Jobs\SendUserGiftMail;
 use App\Jobs\ThankyouMailToUser;
@@ -14,6 +17,7 @@ use App\Models\StripePaymentItems;
 use App\Models\Subscription;
 use App\Models\TipGoal;
 use App\Models\TipGoalsPayment;
+use App\Models\TwitterToken;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserCategory;
@@ -22,6 +26,7 @@ use App\Models\WishItem;
 use App\Models\WishItemSubscription;
 use App\Rules\ValidSubscriptionPeriod;
 use App\StripeControl;
+use App\TwitterAuthService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\RedirectResponse;
@@ -208,7 +213,18 @@ class WishitemController extends Controller
         $price = Helpers::priceFormat($request->cookie('currency', 'GBP'), $request->price, $user->default_currency);
 
         // $price = round($request->price, 2, PHP_ROUND_HALF_UP);
-        $taxamount = round(($price * env('TAX_PERCENTAGE', 20) / 100), 2, PHP_ROUND_HALF_UP);
+
+        if($request->susbcription == 0){
+            $tax_percent = config('app.single_tax');
+        }
+        elseif($request->subscription == 1){
+            $tax_percent = config('app.subs_tax');
+        }
+        elseif($request->subscription == 2){
+            $tax_percent = config('app.crowd_tax');
+        }
+
+        $taxamount = round(($price * $tax_percent / 100), 2, PHP_ROUND_HALF_UP);
         $createpriceid = $price + $taxamount;
 
         $wish = WishItem::create([
@@ -226,6 +242,10 @@ class WishitemController extends Controller
         ]);
 
         $wish->refresh();
+
+        if(!empty($request->thumbnail)){
+            CheckAdultContent::dispatch($wish);
+        }
 
         if (!empty($request->category)) {
             foreach ($request->category as $key => $value) {
@@ -262,8 +282,9 @@ class WishitemController extends Controller
                 $wish->price_id = $product->default_price;
                 $wish->save();
 
-                if (isset($request->post_twitter) && $request->post_twitter == 1) {
-                    TwitterController::testToken($wish);
+                if ($wish->user->auto_tweet == 1) {
+                    // MakeAutoTweets::dispatch($wish->user);
+                    AutoTweetWishAdd::dispatch($wish);
                 }
             } catch (Exception $e) {
                 $wish->delete();
@@ -285,7 +306,16 @@ class WishitemController extends Controller
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
             } else {
                 if (!empty($request->price)) {
-                    $taxamount = $request->price * env('TAX_PERCENTAGE', 20) / 100;
+                    if($request->susbcription == 0){
+                        $tax_percent = config('app.single_tax');
+                    }
+                    elseif($request->subscription == 1){
+                        $tax_percent = config('app.subs_tax');
+                    }
+                    elseif($request->subscription == 2){
+                        $tax_percent = config('app.crowd_tax');
+                    }
+                    $taxamount = $request->price * $tax_percent / 100;
                     $price = $request->price;
                     $createpriceid = $taxamount + $price;
                 } else {
@@ -454,7 +484,7 @@ class WishitemController extends Controller
 
                 $price = Helpers::priceFormat($currency, $amount, $cart->owner->default_currency);
                 $fullfillamount = $price;
-                $tax =  round(($price * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
+                $tax =  round(($price *config('app.crowd_tax',10) / 100), 2, PHP_ROUND_HALF_UP);
                 $createpriceid = $price + $tax;
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripe_client = $stripe->products->create([
@@ -482,7 +512,7 @@ class WishitemController extends Controller
             if ($wishitem->subscription == 2) {
                 $price = Helpers::priceFormat($currency, $amount, $wishitem->user->default_currency);
                 $fullfillamount = $price;
-                $tax = round(($price * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
+                $tax = round(($price *config('app.crowd_tax',10) / 100), 2, PHP_ROUND_HALF_UP);
                 $createpriceid = $price + $tax;
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripe_client = $stripe->products->create([
@@ -589,6 +619,7 @@ class WishitemController extends Controller
                     // }
 
                     $price = $v['amount'] ? $v['amount'] : $v['wish']['price'];
+                    $tax = $v['tax'] ? $v['tax'] : $v['wish']['tax_amount'];
                     $priceid = $v['priceid'] ? $v['priceid'] : $v['wish']['price_id'];
 
                     if (!empty($v['wish'])) {
@@ -599,6 +630,7 @@ class WishitemController extends Controller
                             'wishname' => $v['wish']['wishname'],
                             'stripe_product_id' => $v['wish']['stripe_product_id'],
                             'price' => $price,
+                            'tax' => $tax,
                             'price_id' => $priceid,
                             'item_url' => $v['wish']['item_url'],
                             'subscription' => $v['wish']['subscription'],
@@ -612,6 +644,7 @@ class WishitemController extends Controller
                     } else {
                         $cart[$key]['items'][$k] = [
                             'price' => $price,
+                            'tax' => $tax,
                             'wishname' => 'Surprise Gift',
                             'uuid' => $v['uuiddata'],
                             'price_id' => $priceid,
@@ -627,7 +660,7 @@ class WishitemController extends Controller
                     //     $total += $v['wish']['price'];
                     // }
                     $total += !empty($v['priceid']) ? $v['amount'] : $v['wish']['price'];
-                    $fee += !empty($v['priceid']) ? $v['tax'] : $v['wish']['tax_amount'];
+                    $fee += !empty($v['priceid']) ? $v['tax'] * $v['quantity'] : ($v['wish']['tax_amount'] * $v['quantity'] ?? 0);
                 }
                 $cart[$key]['total'] = $total;
                 $cart[$key]['fee'] = $fee;
@@ -682,6 +715,7 @@ class WishitemController extends Controller
             $fee = 0;
             foreach ($value as $k => $v) {
                 $price = $v['amount'] ? $v['amount'] : ($v['wish']['price'] ?? null);
+                $tax = $v['tax'] ? $v['tax'] : $v['wish']['tax_amount'];
                 $priceid = $v['priceid'] ? $v['priceid'] : ($v['wish']['price_id'] ?? null);
 
                 if (!empty($v['wish'])) {
@@ -692,6 +726,7 @@ class WishitemController extends Controller
                         'wishname' => $v['wish']['wishname'] ?? null,
                         'stripe_product_id' => $v['wish']['stripe_product_id'] ?? null,
                         'price' => $price,
+                        'tax' => $tax,
                         'price_id' => $priceid,
                         'item_url' => $v['wish']['item_url'] ?? null,
                         'subscription' => $v['wish']['subscription'] ?? null,
@@ -704,6 +739,7 @@ class WishitemController extends Controller
                 } else {
                     $cart[$key]['items'][$k] = [
                         'price' => $price,
+                        'tax' => $tax,
                         'wishname' => 'Surprise Gift',
                         'uuid' => $v['uuiddata'] ?? null,
                         'price_id' => $priceid,
@@ -715,7 +751,7 @@ class WishitemController extends Controller
                 }
 
                 $total += !empty($v['priceid']) ? $v['amount'] : ($v['wish']['price'] ?? 0);
-                $fee += !empty($v['priceid']) ? $v['tax'] : ($v['wish']['tax_amount'] ?? 0);
+                $fee += !empty($v['priceid']) ? $v['tax'] * $v['quantity'] : ($v['wish']['tax_amount'] * $v['quantity'] ?? 0);
             }
             $cart[$key]['total'] = $total;
             $cart[$key]['fee'] = $fee;
@@ -735,25 +771,31 @@ class WishitemController extends Controller
             "amount" => ["required"],
         ]);
 
+        $currency = strtolower($request->cookie("currency", "GBP"));
+
+        $owner = User::where('id', $request->owner_id)->first();
+        $price = Helpers::priceFormat($currency, $request->amount, $owner->default_currency);
+        $user_amount = Helpers::priceFormat($owner->default_currency,$owner->min_surprise_amount,$currency);
+        if($price < $owner->min_surprise_amount){
+            return redirect()->back()->with("error", "Enter minimum $user_amount amount.");
+        }
+
         $wordLimit = 100;
+
+
         $message = $request->message;
         if (str_word_count($message) > $wordLimit) {
             return redirect()->back()->with("error", "Max limit for message is 100 words");
         }
 
-        $owner = User::where('id', $request->owner_id)->where(function ($q) {
-            $q->whereNot('country', 'GB')->orWhereNull('country');
-        })->first();
-
-        $price = Helpers::priceFormat(request()->cookie('currency'), $request->amount, $owner->default_currency);
         // $price = round($request->amount, 2, PHP_ROUND_HALF_UP);
-        $tax = round(($price * env('TAX_PERCENTAGE') / 100), 2, PHP_ROUND_HALF_UP);
+        $tax = round(($price * config('app.suprise_tax',10) / 100), 2, PHP_ROUND_HALF_UP);
 
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
         $stripe_client = $stripe->products->create([
             'name' => 'Surprise Gift',
             'images' => ['https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/'],
-            "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100],
+            "default_price_data" => ["currency" => $owner->default_currency, "unit_amount_decimal" => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100],
         ]);
 
         if (!Auth::check()) {
@@ -858,7 +900,7 @@ class WishitemController extends Controller
         });
 
         return Inertia::render('tracker/Wishtracker', [
-            "tracks" => $trackData,  
+            "tracks" => $trackData,
             "creator_subs" => $creator_subs,
             "user_subs" => $user_subs,
         ]);
@@ -1166,5 +1208,32 @@ class WishitemController extends Controller
             'status' => true,
             'tips' => $tips
         ]);
+    }
+
+
+    /**
+     * Enable disable the auto tweet
+     *
+     * @return mixed
+     */
+    public function enableAutoTweet()
+    {
+
+        $user = User::where('id',Auth::id())->first();
+
+        if($user->auto_tweet == 1){
+            $user->auto_tweet = 0;
+        }else{
+            $user->auto_tweet = 1;
+        }
+
+        $user->save();
+
+        if($user->auto_tweet == 1){
+            return back()->with('success',"Auto tweet for gift is Enabled.");
+        }
+        else{
+            return back()->with('success',"Auto tweet for gift is Disabled.");
+        }
     }
 }

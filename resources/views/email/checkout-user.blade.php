@@ -10,23 +10,20 @@
                 <tr>
                     <td
                         style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                        <span style="color:#F94F97 ">
-                            Thank you! <br></br> 
-                            You’ve just granted a surprise gift on Spenny Piggy for £{{ $data->amount_subtotal }} 🎁🥳
+                        <span style="color:#F94F97 "> 
+                            Thank you for granting {{ $data->owner->name }}'s wish of {{ $data->amount_subtotal }} on Spenny Piggy 🐷🎁
                         </span>
                     </td>
                 </tr>
                 <tr>
                     <td
                         style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                        Go to <a href="spennypiggy.co">Spenny Piggy</a> where you can see your granted wish, send a message to
-                        your gifter and share your gift on social media </td>
+                        Go to <a href="spennypiggy.co">Spenny Piggy</a>  and discover more creators wishes to fulfil! Check out their profile Intros, memberships and more! </td>
                     </tr>
                 <tr>
                     <td style="padding:0 0 10px 0; text-align: center;">
                         <a href={{ env('APP_URL') . '/wish-tracker' }}
-                            style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">See
-                            your granted wish</a>
+                            style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Send more surprises</a>
                     </td>
                 </tr>
             </table>

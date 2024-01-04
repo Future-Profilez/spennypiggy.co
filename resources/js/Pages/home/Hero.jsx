@@ -10,24 +10,20 @@ export default function Hero({auth}) {
    <div className="containerbox">
        <div className="welcome">
            <div className="welcomeLeft">
-               <h2 className="welcomeHeading shadow-yellow font-GillSans text-uppercase mb-1">
+               <h2 className="d-none d-md-block  welcomeHeading shadow-yellow font-GillSans text-uppercase mb-1">
                   Oink! Oink! <br /> B*tch{" "}
                </h2>
                <h3 className="welcomeTitle shadow-yellow text-uppercase font-GillSans mb-2">
                    Get Your Lifestyle funded! 🎁
                </h3>
-               <div className="itsfree mb-4 pb-2 ps-0 text-start">
-               Its’s Free 🎉
+              
+               <div className="mt-2 pt-2 wishlistbtn wishlistbtnFixed ">
+                  {auth?.user?.username ?  <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink wishlistbutton lg w-2/5 shadow-mint border-mint log" > My Wishlist </Link>
+                    : <Link href="/register" className="btn-pink wishlistbutton lg w-2/5 shadow-mint border-mint" > Create Wishlist </Link> }
                </div>
-               <div className="proudlines welcomeTitle mt-4 shadow-yellow text-uppercase font-GillSans mt-2 ps-0 ">
-                Proudly 🏳️‍🌈 Owned and Operated
-               </div>
-               <div className="mt-4 pt-2 wishlistbtn wishlistbtnFixed ">
-                  {auth?.user?.username ? 
-                    <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink wishlistbutton lg w-2/5 shadow-mint border-mint log" > My Wishlist </Link>
-                    :  
-                    <Link href="/register" className="btn-pink wishlistbutton lg w-2/5 shadow-mint border-mint" > Create Wishlist </Link>
-                  }
+               <div className="itsfree ps-0 mt-0 mt-md-3 pt-4 text-start"> Its’s Free 🎉 </div>
+               <div className="mt-3 gifts-links text-white ps-0 ">
+                With Financial Gifts, Donations, Memberships & More! 🤑
                </div>
 
                <div className='d-flex d-md-none justify-content-center' >  
@@ -36,14 +32,24 @@ export default function Hero({auth}) {
 
            </div>
            <div className="welcomeRt">
-               <img
-               alt={"image"} 
+
+                <h2 className="d-block d-md-none welcomeHeading shadow-yellow font-GillSans text-uppercase mb-1">
+                  Oink! Oink! <br /> B*tch{" "}
+               </h2>
+
+               <img alt={"image"} 
                height={377.63}
                src={addwishlistimg} 
                width={474} />
-            <div className='d-none d-md-flex justify-content-center' >  
-                <TrustBox />
-            </div>
+
+
+              <div className="proudlines mt-3 mt-md-0 mb-0 welcomeTitle sm text-center mt-1 shadow-yellow text-uppercase font-GillSans ps-0 ">
+                Proudly 🏳️‍🌈 Owned
+              </div>
+
+              <div className='d-none d-md-flex justify-content-center' >  
+                  <TrustBox />
+              </div>
            </div>
        </div>
    </div>

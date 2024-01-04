@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Auth;
 use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\CheckoutMailToUser;
+use App\Jobs\CheckoutTweet;
 use App\Jobs\CheckoutUser;
+use App\Jobs\CrowdfundTweet;
+use App\Jobs\SurpriseTweet;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\Subscription;
@@ -53,7 +56,7 @@ class CheckoutController extends Controller
             $taxNew = 0;
             foreach ($getdata as $dd) {
 
-                $amount = number_format(($dd->amount + $dd->tax), 2);
+                $amount = $dd->amount + $dd->tax;
 
                 $lineItems[] = [
                     // 'price' => $dd->stripe_product_id ?? '',
@@ -186,6 +189,18 @@ class CheckoutController extends Controller
                 $dd->status = 0;
                 $dd->quantity = 0;
                 $dd->save();
+
+                if($dd->owner->auto_tweet == 1){
+                    if(empty($dd->wish_item_id)){
+                        SurpriseTweet::dispatch($payment_data);
+                    }
+                    elseif($dd->wish->subscription == 2){
+                        CrowdfundTweet::dispatch($payment_data);
+                    }
+                    else{
+                        CheckoutTweet::dispatch($payment_data);
+                    }
+                }
             }
             if (Auth::check()) {
                 CheckoutMailToUser::dispatch($stripeid);

@@ -69,6 +69,7 @@ Route::prefix("test")->name("test.")->group(function () {
     Route::get("meta", [TestController::class, 'testMeta']);
     Route::get("x-1", [TestController::class, 'testX']);
     Route::get("items/{c?}", [TestController::class, 'testItems']);
+    Route::get('/ip', [TestController::class, 'testIp']);
 });
 
 require __DIR__ . '/auth.php';

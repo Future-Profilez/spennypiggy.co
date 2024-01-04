@@ -6,11 +6,10 @@ import Popup from '@/Components/Popup';
 
 export default function MyGoal({goal, IsloggedIn}) {
 
-  const { global_currency } = usePage().props;
+  const { global_currency, auth } = usePage().props;
   const { formatMultiPrice } = PriceFormat();
 
   const getPercentage = (actual, paid) => {
-    console.log("actual, paid", actual, paid)
     const r = (paid/actual)*100;
     return r.toFixed(2);
   }
@@ -33,29 +32,35 @@ export default function MyGoal({goal, IsloggedIn}) {
           text={`Send me a tip `} >
           <h2 className='text-large font-semibold mb-4'>Give me a tip</h2>
 
-          <div className="form-field mb-4">
-              <label className="d-block text-start mb-2 text-small">Amount<sup className='text-danger' >*</sup></label>
-              <div className="position-relative currency-wrapper " >
-                  <span className="currency-tag">{global_currency || 'GBP'}</span>
-                  <input defaultValue={goal.default_price} className="form-input w-100 rounded" 
-                  onChange={(e) => setData('amount', e.target.value)} 
-                  type="number" placeholder="Enter amount.. " />
+          <div className='row' >
+            <div className='col-md-6' >
+              <div className="form-field mb-4">
+                  <label className="d-block text-start mb-2 text-small">Amount<sup className='text-danger' >*</sup></label>
+                  <div className="position-relative currency-wrapper " >
+                      <span className="currency-tag">{global_currency || 'GBP'}</span>
+                      <input defaultValue={goal.default_price} className="form-input w-100 rounded" 
+                      onChange={(e) => setData('amount', e.target.value)} 
+                      type="number" placeholder="Enter amount.. " />
+                  </div>
               </div>
+            </div>
+            <div className='col-md-6' >
+              <div className="form-field mb-4">
+                <label className="d-block text-start mb-2 text-small">Nickname<sup className='text-danger' >*</sup></label>
+                <input
+                  className="form-input w-100 rounded"
+                  defaultValue={auth && auth.user?.name}
+                  onChange={(e) => setData('name', e.target.value)}
+                  type="text" placeholder="Enter nickname.. "
+                />
+              </div>
+            </div>
           </div>
-
-          <div className="form-field mb-4">
-            <label className="d-block text-start mb-2 text-small">Nickname<sup className='text-danger' >*</sup></label>
-            <input
-              className="form-input w-100 rounded"
-              onChange={(e) => setData('name', e.target.value)}
-              type="text" placeholder="Enter nickname.. "
-            />
-          </div>
-
           <div className="form-field mb-4">
             <label className="d-block text-start mb-2 text-small">Email<sup className='text-danger' >*</sup></label>
-            <input
+            <input  disabled={auth && auth.user?.email ? true : false}
               className="form-input w-100 rounded"
+              defaultValue={auth && auth.user?.email}
               onChange={(e) => setData('email', e.target.value)}
               type="email" placeholder="Enter email.. " />
             <p className='text-small text-muted mt-1 ' >Your email address is kept private and will not be shown to anyone.</p>

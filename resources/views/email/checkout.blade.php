@@ -11,7 +11,7 @@
                 <tr>
                     <td
                         style="font-family: Arial; font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
-                        New <span style="color: #8C52FF">Granted Wish</span> on <br> Spenny Piggy 🎁 </td>
+                        New <span style="color: #8C52FF">Wish Granted</span> on <br> Spenny Piggy 🎁 </td>
                 </tr>
                 <tr>
                     <td style="line-height:20px;height:20px;"></td>
@@ -26,7 +26,7 @@
                         <td
                             style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
                             Lucky you! <br></br>
-                            {{ $anon == false ? $data->cart->user->name : $anonname }} just granted a surprise gift on Spenny Piggy for £{{ $data->amount }} 🎁🥳 .
+                            {{ $anon == false ? $data->cart->user->name : $anonname }} just granted you a surprise gift on Spenny Piggy for £{{ $data->amount }} 🎁🥳 .
                             <!-- {{ $anon == false ? $data->cart->user->name : $anonname }} granted you a surprise gift of
                             £{{ $data->amount }}🤩. -->
                         </td>
@@ -37,7 +37,7 @@
                                 style="color:#F94F97 ">{{ $data->wish->wishname ?? '' }}</span> of £{{ $data->amount }}🤩.
                          -->
                             Lucky you! <br></br>
-                            {{ $anon == false ? $data->cart->user->name : $anonname }} just granted wish of {{ $data->wish->wishname ?? 'surprise gift' }} on Spenny Piggy for £{{ $data->amount }} 🎁🥳 .
+                            {{ $anon == false ? $data->cart->user->name : $anonname }} just granted your wish {{ $data->wish->wishname ?? 'surprise gift' }} on Spenny Piggy for £{{ $data->amount }} 🎁🥳 .
 
                             </td>
                     @endif

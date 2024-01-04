@@ -13,7 +13,7 @@ const TrustBox = () => {
             data-locale="en-GB"
             data-template-id="56278e9abfbbba0bdcd568bc"
             data-businessunit-id="6577b210459a86f997ab6735"
-            data-style-height="52px"
+            data-style-height="40px"
             data-style-width="250px"
             data-theme="dark"
             data-scroll-to-list='true'

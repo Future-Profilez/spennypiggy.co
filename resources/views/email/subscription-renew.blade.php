@@ -11,7 +11,7 @@
                 <tr>
                     <td
                         style="font-family: Arial; font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
-                        <span style="color: #8C52FF">Subscription </span>Renew on <br> Spenny Piggy 🎁
+                        <span style="color: #8C52FF">Subscription </span>Renewal on <br> Spenny Piggy 🎁
                     </td>
                 </tr>
                 <tr>
@@ -26,14 +26,13 @@
                     <td
                         style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
                         Hello {{ $data['name'] }}! <br><br>
-                        Your subscription is just renewed on
-                        Spenny Piggy.
+                        Please note your subscription has renewed successfully on Spenny Piggy. 🎁
                     </td>
                 </tr>
                 <tr>
                     <td
                         style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                        You can see your new invoice on the following link.</td>
+                        You can see your latest invoice via the following link. You can also manage your subscription’s via this link 🔗</td>
                 </tr>
                 <tr>
                     <td
@@ -46,17 +45,10 @@
                 <tr>
                     <td
                         style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                        To cancel the subscription click on the link <a
+                        To cancel the subscription <a
                             href={{ env('APP_URL') . '/cancel-subs/' . $data['uuid'] }}>
                             Click Here</a>.</td>
                 </tr>
-                {{-- <tr>
-                    <td
-                        style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                        <b>Cancel :~ <a href={{ env('APP_URL') . '/cancel-subs/' . $data['uuid'] }}>
-                                Click Here</a></b>
-                    </td>
-                </tr> --}}
             </table>
         </td>
     </tr>

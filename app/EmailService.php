@@ -6,6 +6,7 @@ use App\Mail\Checkout;
 use App\Mail\CheckoutToUser;
 use App\Mail\ForgotPassEmail;
 use App\Mail\RenewMail;
+use App\Mail\SendRestrictionMail;
 use App\Mail\SendTipJarMailToUser;
 use App\Mail\SubscriptionFailedMail;
 use App\Mail\SubscriptionMail;
@@ -188,6 +189,15 @@ class EmailService
     {
         try {
             Mail::to($sub->guest_email)->send(new SubscriptionFailedMail($sub));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+    public static function sendRestrictionMail($wish)
+    {
+        try {
+            Mail::to($wish->user->email)->send(new SendRestrictionMail($wish));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }

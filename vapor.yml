@@ -1,36 +1,36 @@
 id: 54327
 name: SpennyPiggy
 environments:
-  production:
-    memory: 3008
-    queue-memory: 2048
-    cli-memory: 2048
-    warm: 10
-    gateway-version: 2
-    timeout: 30
-    cache: spennypiggy-cache
-    runtime: "php-8.2:al2"
-    domain: spennypiggy.co
-    database: spennypiggy-db
-    database-proxy: true
-    build:
-      - "composer install --no-dev"
-      - "php artisan event:cache"
-      - "php artisan optimize:clear"
-      - "npm ci && npm run build && rm -rf node_modules"
-    deploy:
-      - "php artisan migrate --force"
-  development:
-    memory: 2048
-    queue-memory: 1024
-    cli-memory: 512
-    runtime: "php-8.2:al2"
-    domain: dev.spennypiggy.co
-    database: spennypiggy-db-dev
-    build:
-      - "composer install --no-dev"
-      - "php artisan event:cache"
-      - "php artisan optimize:clear"
-      - "npm ci && npm run build && rm -rf node_modules"
-    deploy:
-      - "php artisan migrate --force"
+    development:
+        memory: 2048
+        queue-memory: 1024
+        cli-memory: 512
+        runtime: 'php-8.2:al2'
+        domain: dev.spennypiggy.co
+        database: spennypiggy-db-dev
+        build:
+            - 'composer install --no-dev'
+            - 'php artisan event:cache'
+            - 'php artisan optimize:clear'
+            - 'npm ci && npm run build && rm -rf node_modules'
+        deploy:
+            - 'php artisan migrate --force'
+    production:
+        memory: 3008
+        queue-memory: 2048
+        cli-memory: 2048
+        warm: 10
+        gateway-version: 2
+        timeout: 30
+        cache: spennypiggy-cache
+        runtime: 'php-8.2:al2'
+        domain: spennypiggy.co
+        database: spennypiggy-db
+        database-proxy: true
+        build:
+            - 'composer install --no-dev'
+            - 'php artisan event:cache'
+            - 'php artisan optimize:clear'
+            - 'npm ci && npm run build && rm -rf node_modules'
+        deploy:
+            - 'php artisan migrate --force'

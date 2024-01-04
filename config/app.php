@@ -185,4 +185,10 @@ return [
         // 'Example' => App\Facades\Example::class,
     ])->toArray(),
 
+    'surprise_tax' => 10,
+    'single_tax' => 20,
+    'subs_tax' => 20,
+    'crowd_tax' => 10,
+    'member_tax' => 15,
+    'jar_tax' => 8,
 ];
