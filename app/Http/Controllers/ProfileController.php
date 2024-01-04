@@ -70,10 +70,7 @@ class ProfileController extends Controller
             $user->name = $request->name;
             $user->username = $request->username;
             $user->bio = $request->bio;
-            if(!empty($request->min_surprise_amount)){
-                $price = Helpers::priceFormat($currency, $request->min_surprise_amount, $user->default_currency);
-                $user->min_surprise_amount = $price;
-            }
+            $user->min_surprise_amount = $request->min_surprise_amount ?? 0;
             $user->avatar = $request->avatar;
             $user->cover = $request->cover;
 
