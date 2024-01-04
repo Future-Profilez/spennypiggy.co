@@ -7,12 +7,13 @@ import { useForm } from '@inertiajs/react';
 import { useAlerts } from '@/Components/Alerts';
 import UpdateAvatar from './UpdateAvatar';
 import LoaderButton from '@/Components/LoaderButton';
+import PriceFormat from '@/includes/PriceFormat';
 
-export default function EditProfile({ user }) {
+export default function EditProfile({ user, global_currency }) {
 
+    const { formatMultiPrice } = PriceFormat();
     const [close, setClose] = useState()
     const { successAlert, errorAlert } = useAlerts();
-
     const [profileDP, setProfileDP] = useState();
     const [coverImage, setCoverImage] = useState();
 
@@ -36,7 +37,6 @@ export default function EditProfile({ user }) {
         cover: user?.cover || '',
         min_surprise_amount: user?.surprise_gift_amount || '',
     });
-
 
     const updateProfile = (e) => {
         e.preventDefault();
@@ -63,6 +63,8 @@ export default function EditProfile({ user }) {
             }
         });
     };
+
+    const defaultCurrency = user.default_currency.toUppercase;
 
     return (
         <Popup modalclass='pinkmodal editprofile full' size='md' action={close} 
@@ -98,7 +100,9 @@ export default function EditProfile({ user }) {
                             <input defaultValue={user?.username || ''} onChange={(e) => setData("username", e.target.value)}
                                 type="text" name="username" className="form-input px-2 py-2 border w-full rounded-md" placeholder='Spennypiggy.co/warner99' onKeyUp={(e) => {setUsername(e.target.value)}}/>
                         </li>
+
                         <li><strong className='d-block text-start mb-4' >Profile URL : {window.location.href}</strong></li>
+                        
                         <li className="mb-3">
                             <label className="mb-1">Bio</label>
                             <textarea defaultValue={user?.bio || ''}
@@ -106,30 +110,29 @@ export default function EditProfile({ user }) {
                                 name="bio" className="form-input px-2 py-2 border w-full rounded-md"
                                 placeholder='Bio' />
                         </li>
-                    </ul>
-
-                    {/* <p className="mt-1">
-                        The Minimum amount is set to {formatMultiPrice(user?.min_surprise_amount, auth && auth.user && auth.user.global_currency)} in the wisher’s currency.
-                    </p> */}
-                    {/* <ul>
+                   
                         <li className="mb-3">
                             <label className="mb-1">Minimum surprise gift amount</label>
-                           
-
-                            <input type="text" name="name" defaultValue={user?.min_surprise_amount || ''}
+                            <div className='currency-wrapper position-relative' >
+                                <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
+                                <input type="text" name="name" defaultValue={user?.min_surprise_amount || ''}
                                 onChange={(e) => setData('min_surprise_amount', e.target.value)}
                                 className="form-input px-2 py-2 border w-full rounded-md" />
+                            </div>
+                            {/* global_currency */}
+                            <p className="mt-1">
+                                The Minimum amount is set 
+                                to {formatMultiPrice(user?.min_surprise_amount || 0,  defaultCurrency )}. 
+                            </p>
                         </li>
-                    </ul> */}
 
+                    </ul>
 
                     <div className=" text-center mb-7">
-                        <LoaderButton type='submit' disabled={processing} 
-                        className='btn-pink lg m-auto' spinnerClassName='fill-red-600'>
+                        <LoaderButton type='submit' disabled={processing} className='btn-pink lg m-auto' spinnerClassName='fill-red-600'>
                             {processing ? "Updating" : "Update Profile"}
                         </LoaderButton>
                     </div>
-                    {/* <UpdatePasswordForm className="max-w-xl" /> */}
                 </form>
             </div>
         </Popup>

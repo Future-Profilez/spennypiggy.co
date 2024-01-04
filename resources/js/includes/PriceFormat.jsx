@@ -14,8 +14,8 @@ export default function PriceFormat(){
 
         const { rates, global_currency } = usePage().props;
         const upCorrency = currency && currency.toUpperCase() || global_currency && global_currency.toUpperCase();
-
         const up_global_currency = global_currency && global_currency.toUpperCase();
+console.log("currency,global_currency ",amount, currency,global_currency)
         const conversion_rate = rates[upCorrency];
         const gbpamount  = amount/conversion_rate;
         const final = gbpamount*rates[up_global_currency || 'GBP']

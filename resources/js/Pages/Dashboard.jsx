@@ -16,21 +16,20 @@ const ChangeCurrency = React.lazy(() => import('@/Components/ChangeCurrency'));
 const Popup = React.lazy(() => import('@/Components/Popup'));
 const MyGoal = React.lazy(() => import('./TipJar/MyGoal'));
 const AddGoal = React.lazy(() => import('./TipJar/AddGoal'));
-
 import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import useWidthCount from '@/Components/useWidthCount';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable,rectSortingStrategy } from "@dnd-kit/sortable";
-import{closestCenter,DndContext,KeyboardSensor,MouseSensor,TouchSensor,useSensor,useSensors } from "@dnd-kit/core";
-
+import{ closestCenter, DndContext, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 
 export default function Dashboard(props) {
 
     const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
     const { auth, user, username, global_currency, itemid, min_surprise_amount } = props;
 
-    console.log("props",props)
+    console.log("dashboard props", props);
+
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
     const [loading, setLoading] = useState(false);
     const [socialLinks, setSocialLinks] = useState([]);
@@ -184,7 +183,7 @@ export default function Dashboard(props) {
                                         <div className="userProfileDate pt-0">
                                             {IsloggedIn ? (
                                                 <>
-                                                    <EditProfile  user={auth.user} />
+                                                    <EditProfile  user={auth.user} global_currency={global_currency} />
                                                     {auth.user && auth.user.stripe_details_submitted == 1 ? (
                                                         <PaymentDashboard
                                                             classes="btn-pink lg w-100 mt-4"

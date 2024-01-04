@@ -79,7 +79,8 @@ body{background:#000;}
 .footlinks ul li a{color:var(--text-black);font-family:var(--font-CeraGR);font-size:16px;font-style:normal;font-weight:400;line-height:20px;}
 .footlinks ul li a:hover,.footlinks ul li a:focus{color:var(--black);text-decoration:underline;}
 .copyright{padding:10px 0;border-top:1px solid var(--gray);color:var(--black);font-family:var(--font-CeraGR);font-size:16px;font-style:normal;font-weight:400;line-height:250%;text-align:center;}
-.loginform{width:90%;max-width:576px;}
+.loginform {width:90%;max-width:576px;}
+/* .loginform.register{width:90%;max-width:900px;} */
 .loginheadbox{padding:30px 40px;border-radius:25px 25px 0 0;}
 .loginform{border-radius:30px 30px;}
 .loginheadbox .mintbg{width:30px;height:30px;display:inline-block;border-radius:60px;border:1px solid var(--black);vertical-align:middle;margin:0 10px 0 0;}
@@ -87,10 +88,14 @@ body{background:#000;}
 .loginform form{padding:40px 50px;}
 .loginform form ul li{margin:0 0 40px;}
 .loginform form ul li label{display:block;width:100%;color:#333;font-family:var(--parabold-font);font-size:18px;font-style:normal;font-weight:400;line-height:120%;letter-spacing:-1.26px;text-transform:uppercase;margin:0 0 10px;}
-.loginform form ul li input{border-radius:12px;border:1px solid var(--black);background:var(--white);box-shadow:4px 4px 0px 0px var(--black);display:block;width:100%;padding:20px 20px;transition:all ease .3s}
+.loginform form ul li select,
+.loginform form ul li input
+{border-radius:12px;border:1px solid var(--black);background:var(--white);box-shadow:4px 4px 0px 0px var(--black);display:block;width:100%;padding:20px 20px;transition:all ease .3s}
 .loginPage p{font-size:22px;}
-.loginform form ul li input:hover,.loginform form ul li input:focus{outline:none;}
-.loginform form ul li input:focus,.loginform form ul li input:focus-within{outline:none;box-shadow:8px 8px 0px 0px var(--black);transition:all ease .3s;}
+.loginform form ul li input:hover,
+.loginform form ul li input:focus{outline:none;}
+.loginform form ul li input:focus,
+.loginform form ul li input:focus-within{outline:none;box-shadow:8px 8px 0px 0px var(--black);transition:all ease .3s;}
 .wishManage{width:100%;padding:0 0 0 25px;}
 .wishbanner img{height:398px;object-fit:cover;}
 .userProfile{margin-top:-270px;}
@@ -296,9 +301,11 @@ div#msgText p b{font-weight:700 !important;padding:0 4px;color:#000;}
 .userphoto span{height:auto !important;width:auto !important;display:block !important;}
 .wishbanner{min-height:300px;}
 .wishtracker-box{max-width:950px;}
-.promocode input{border-radius:12px;padding:16px 20px;}
-.promocode-btn{color:#fff;border-radius:10px;background:var(--pink);padding:10px 20px;}
-
+.promocode input{border-radius:12px;padding:10px 20px;}
+.promocode-btn{color:#fff;border-radius:10px; padding:10px 20px;}
+.promoapplied{ 
+  font-size: 16px !important;
+}
 .featureicon {
   width: 150px;
   height: 150px;

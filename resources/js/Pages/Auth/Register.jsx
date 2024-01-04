@@ -29,11 +29,12 @@ export default function Register() {
     const length = (typeof window !== 'undefined') && document.getElementById('length');
     const [mypass, setmypass] = useState();
 
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, get, processing, errors, reset } = useForm({
         name: '',
         username: '',
         email: '',
         password: '',
+        gender: '',
         password_confirmation: '',
         promo: '',
     });
@@ -85,6 +86,30 @@ export default function Register() {
         });
     };
 
+
+    const promoinput = useRef();
+    const [codevalid, setCodeValid] = useState(false);
+    const checkPromo = (e) => {
+        const p = promoinput.current && promoinput.current.value;
+        axios.get(`/check-coupon-code/${p}`).then(resp => {
+            if (resp.data.status) {
+                setCodeValid(true);
+                setData("promo", p);
+            } else {
+                setCodeValid(false);
+                errorAlert(resp.data.msg);
+            }
+        }).catch(_err => {
+            console.error("error", _err);
+            setCodeValid(false);
+        });
+    };
+    const removecode = () => { 
+        setCodeValid(false);
+        promoinput.current.value = '';
+        setData("promo", '');
+    }
+
     const handlePassHints = (e) => {
         setmypass(e.target.value);
         if (inputField.value.match(lowerLetter)) {
@@ -127,27 +152,18 @@ export default function Register() {
             length.classList.remove('valid');
         }
     }
-
-    const Promo = () => {
-        return <div className='promocode mb-4' >
-            <label className='mb-2'>Referral Code (optional)</label>
-            <input onChange={(e) => setData('promo', e.target.value)} placeholder="Enter Referral Code..." className='form-control ' />
-        </div>
-    }
     
-   
-
     return (
         <GuestLayout>
             <Head title="Register" />
 
-            <div className='loginPage blackbg py-14'>
+            <div className='loginPage  blackbg py-14'>
                 <div className='containerbox '>
 
                     <h2 className='headingLg pb-0 pb-md-4 text-center  px-2'>Create Account</h2>
                     <p className='text-center text-white mb-5 font-CeraGRBold'>Already registered? <Link className={'text-pink'} href={route('login')}  > Log In</Link></p>
 
-                    <div className='loginform mt-4 mt-md-5 mx-auto border-black whbg shadow-mint'>
+                    <div className='loginform register mt-4 mt-md-5 mx-auto border-black whbg shadow-mint'>
                         <div className='loginheadbox pinkbg'>
                             <span className='mintbg'></span>
                             <span className='bluebg'></span>
@@ -180,6 +196,16 @@ export default function Register() {
                                         />
                                         {data.username && usernameValid == 1 ? <p className='text-success text-small username-text'>Username is available.</p> : ''}
                                         {data.username && usernameValid == 0 ? <p className='text-danger text-small username-text' >{validMsg}</p> : ''}
+                                    </li>
+                                    <li>
+                                        <label>Gender</label>
+                                        <select onChange={(e) => setData('gender', e.target.value)} >
+                                            <option disabled >Choose Gender</option>
+                                            <option value={'he'} >He</option>
+                                            <option value={'she'} >She</option>
+                                            <option value={'they'} >They</option>
+                                        </select>
+                                        <InputError>{errors?.gender || ''}</InputError>
                                     </li>
                                     <li>
                                         <label>Email</label>
@@ -236,9 +262,22 @@ export default function Register() {
                                     </li>
                                 </ul>
 
-                                
-
-                                {/* <Promo /> */}
+                                <div className='promocode mb-4' >
+                                    <div className='d-flex align-items-center justify-content-between' >
+                                        <label className='mb-2'>Referral (optional) {codevalid ? <span className='text-success text-small' >Code Applied.</span> : ''}</label>
+                                    </div>
+                                    <div className='d-flex align-items-center' >
+                                        <input ref={promoinput}
+                                        placeholder="Enter Referral Code..." className='form-control ' />
+                                        {codevalid ? <div  onClick={removecode}  
+                                        className={`cursor-pointer ${codevalid ? "mintbg text-dark" : "pinkbg"} promocode-btn ms-2 text-center`}
+                                         >Remove</div>
+                                            : 
+                                        <div  onClick={checkPromo}  
+                                        className={`cursor-pointer ${codevalid ? "mintbg text-dark" : "pinkbg"} promocode-btn ms-2 text-center`}
+                                         >{ codevalid ? "Applied" : "Apply" }</div>}
+                                    </div> 
+                                </div>
 
                                 <div className='termselect'>
                                     <label htmlFor="termaccept">
