@@ -104,6 +104,7 @@ class CheckoutController extends Controller
                 'owner_id' => $getdata[0]->owner->id,
                 'name' => request()->query('from') ?? '',
                 'message' => $message ?? '',
+                'anonymous' => request()->query('anonymous') ?? 0,
                 'session_created' => $sessionCreate->created,
                 'session_expires_at' => $sessionCreate->expires_at,
                 'created_at' => now(),

@@ -579,7 +579,8 @@ class StripeController extends Controller
                 'tax'           =>  $wish->tax_amount,
                 'recurring_for' =>  $reccure,
                 'recurring_type' =>  $wish->subscription_period,
-                'surprise_message'  =>  $request->message ?? NULL
+                'surprise_message'  =>  $request->message ?? NULL,
+                'anonymous' => $request->query('anonymous') ?? 0
             ]);
 
             $currency   =   strtolower($request->cookie("currency", "GBP"));
@@ -894,6 +895,7 @@ class StripeController extends Controller
                 'amount'        =>  $price,
                 'tax'           =>  $tax,
                 'message'  =>  $request->message ?? NULL,
+                'anonymous' => $request->query('anonymous') ?? 0,
                 'product_id' => $stripe_client->id
             ]);
 
