@@ -56,6 +56,10 @@ class ProfileController extends Controller
         })->first();
         $currency = strtolower($request->cookie("currency", "GBP"));
 
+        if($request->min_surprise_amount < 5){
+            return redirect()->back()->with("error", "Please set the minimum amount greater than 5.");
+        }
+
         $checkdata = Helpers::checkBlockData($request);
         if ($checkdata == 1) {
             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive,
