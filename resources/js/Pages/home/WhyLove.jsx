@@ -17,7 +17,6 @@ import image12 from "../../../assets/features/12.png";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 
 export default function WhyLove() {
-
    const features = [
       {
          icon:image1,
