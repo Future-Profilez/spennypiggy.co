@@ -28,6 +28,8 @@ class SubscribedMail implements ShouldQueue
      */
     public function handle(): void
     {
-        EmailService::sendSubscribedMail($this->sub);
+        if((isset($this->sub->wish_item->user) && $this->sub->wish_item->user->notification_send == 1) || (empty($this->sub->wish_item->user))){
+            EmailService::sendSubscribedMail($this->sub);
+        }
     }
 }

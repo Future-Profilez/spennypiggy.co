@@ -789,7 +789,8 @@ class StripeController extends Controller
                     'email' => $event->data->object->customer_email,
                     'name' => $event->data->object->customer_name,
                     'invoice_pdf' => $event->data->object->invoice_pdf,
-                    'uuid' => $subs->uuid
+                    'uuid' => $subs->uuid,
+                    'notification' => $subs->user->notification_send ?? 0
                 ];
 
                 $subs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');

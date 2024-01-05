@@ -36,7 +36,8 @@ class CheckoutMailToUser implements ShouldQueue
      */
     public function handle()
     {
-
-        EmailService::checkOutToUser($this->payment);
+        if((isset($this->payment->user) && $this->payment->user->notification_send == 1) || (empty($this->payment->user))){
+            EmailService::checkOutToUser($this->payment);
+        }
     }
 }
