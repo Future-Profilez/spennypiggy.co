@@ -4,12 +4,14 @@ import  LoaderButton from "@/Components/LoaderButton";
 const Popup = React.lazy(() => import('@/Components/Popup'));
 import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
-import { useForm } from "@inertiajs/react";
+import { useForm, usePage } from "@inertiajs/react";
 import DeviceID from "@/includes/DeviceID";
 import { useDispatch, useSelector } from "react-redux";
 import { add_to_cart } from "../Pages/redux/UserSlice";
 
 export default function SendSurprise({auth, owner}) {
+   
+   const { global_currency } = usePage().props;
    
    const deviceID  = DeviceID();
    const { formatMultiPrice } = PriceFormat();
