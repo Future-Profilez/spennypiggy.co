@@ -71,7 +71,6 @@ export default function Stripe(props) {
                             </li>
                         </ul>
 
-                        <p className=' alert alert-success text-center font-bold my-4' >Thanks for registering! You will soon be able to link your stripe account within the next 5 weeks. As soon as you can we will drop you an e-mail 🤑</p>
 
                         <strong className='d-block w-100 pt-3 mb-1'>Choose Country</strong>
                         <Countries send={getCountry} />
@@ -92,6 +91,9 @@ export default function Stripe(props) {
                     <div className="text-center flex justify-center mb-4 ">
                         <button disabled className='btn-pink disabled lg w-1/2' onClick={() => { return checkTerms(); }}>Go to Stripe</button>
                     </div>
+
+                    <p className='alert alert-success text-center font-bold my-4' >Thanks for registering! You will soon be able to link your stripe account within the next 5 weeks. As soon as you can we will drop you an e-mail 🤑</p>
+
                     {/* </form> */}
                 </div>
             </div>
