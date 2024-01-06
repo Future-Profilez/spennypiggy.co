@@ -853,6 +853,9 @@ class StripeController extends Controller
                     'required',
                     'numeric'
                 ],
+                'anonymous' => [
+                    'required'
+                ],
                 'message' =>  [
                     'sometimes',
                     'nullable',
@@ -895,7 +898,7 @@ class StripeController extends Controller
                 'amount'        =>  $price,
                 'tax'           =>  $tax,
                 'message'  =>  $request->message ?? NULL,
-                'anonymous' => $request->query('anonymous') ?? 0,
+                'anonymous' => $request->anonymous ?? 0,
                 'product_id' => $stripe_client->id
             ]);
 
