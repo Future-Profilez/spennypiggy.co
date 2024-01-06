@@ -239,6 +239,6 @@ Route::get('/items/{username}/{category_id?}', [AuthenticatedSessionController::
 Route::get('/user_category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.info');
 
 Route::prefix("wish")->name("wish.")->group(function () {
-    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name("subscribe.checkout");
+    Route::match(['get', 'post'], 'checkout/{uuid}/{anonymous}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name("subscribe.checkout");
     Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleSubscription'])->name('subscribe.handle');
 });
