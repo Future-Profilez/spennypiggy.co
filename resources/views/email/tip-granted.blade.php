@@ -1,7 +1,7 @@
 @extends('email.default-2')
 @section('content')
     <tr>
-        <td align="center" style="padding:10px 10px 20px 10px;"><a href="https://spennypiggy.co"><img alt="image"
+        <td align="center" style="padding:10px 10px 20px 10px;"><a href="https://uk.spennypiggy.co/https://spennypiggy.cohttps://spennypiggy.co"><img alt="image"
                     width="119" src="https://whoyouinto.com/emails/user/logo.png" style="border:none"></a></td>
     </tr>
     <tr>

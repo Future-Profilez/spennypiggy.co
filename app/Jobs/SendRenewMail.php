@@ -28,6 +28,8 @@ class SendRenewMail implements ShouldQueue
      */
     public function handle(): void
     {
-        EmailService::sendRenewMail($this->array);
+        if($this->array['notification'] == 1){
+            EmailService::sendRenewMail($this->array);
+        }
     }
 }

@@ -37,7 +37,8 @@ class TipJarMailToUser implements ShouldQueue
      */
     public function handle()
     {
-
-        EmailService::sendTipJarToUser($this->pay);
+        if((isset($this->pay->user) && $this->pay->user->notification_send == 1) || (empty($this->pay->user))){
+            EmailService::sendTipJarToUser($this->pay);
+        }
     }
 }

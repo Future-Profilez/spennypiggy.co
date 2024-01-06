@@ -1,7 +1,7 @@
 @extends('email.default-2')
 @section('content')
     <tr>
-        <td align="center" style="padding:10px 10px 20px 10px;"><a href="https://spennypiggy.co"><img alt="image"
+        <td align="center" style="padding:10px 10px 20px 10px;"><a href="https://uk.spennypiggy.co/"><img alt="image"
                     width="119" src="https://whoyouinto.com/emails/user/logo.png" style="border:none"></a></td>
     </tr>
     <tr>
@@ -26,7 +26,13 @@
                         <td
                             style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
                             Lucky you! <br></br>
-                            {{ $anon == false ? $data->cart->user->name : $anonname }} just granted you a surprise gift on Spenny Piggy for £{{ $data->amount }} 🎁🥳 .
+                            @if ($data->payment->anonymous == 0){
+                                {{ $anon == false ? $data->cart->user->name : $anonname }} just granted you a surprise gift on Spenny Piggy for £{{ $data->amount }} 🎁🥳 .
+                            }
+                            @else{
+                                Anonymous user just granted you a surprise gift on Spenny Piggy for £{{ $data->amount }} 🎁🥳 .
+                            }
+                            @endif
                             <!-- {{ $anon == false ? $data->cart->user->name : $anonname }} granted you a surprise gift of
                             £{{ $data->amount }}🤩. -->
                         </td>
@@ -37,7 +43,13 @@
                                 style="color:#F94F97 ">{{ $data->wish->wishname ?? '' }}</span> of £{{ $data->amount }}🤩.
                          -->
                             Lucky you! <br></br>
-                            {{ $anon == false ? $data->cart->user->name : $anonname }} just granted your wish {{ $data->wish->wishname ?? 'surprise gift' }} on Spenny Piggy for £{{ $data->amount }} 🎁🥳 .
+                            @if ($data->payment->anonymous == 0){
+                                {{ $anon == false ? $data->cart->user->name : $anonname }} just granted your wish {{ $data->wish->wishname ?? 'surprise gift' }} on Spenny Piggy for £{{ $data->amount }} 🎁🥳 .
+                            }
+                            @else{
+                                Anonymous user just granted your wish {{ $data->wish->wishname ?? 'surprise gift' }} on Spenny Piggy for £{{ $data->amount }} 🎁🥳 .
+                            }
+                            @endif
 
                             </td>
                     @endif
@@ -45,7 +57,7 @@
                 <tr>
                     <td
                         style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                        Go to <a href="spennypiggy.co">Spenny Piggy</a> where you can see your granted wish, send a message to
+                        Go to <a href="https://uk.spennypiggy.co">Spenny Piggy</a> where you can see your granted wish, send a message to
                         your gifter and share your gift on social media </td>
                 </tr>
                 @if (!empty($messages))

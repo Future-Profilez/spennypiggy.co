@@ -105,6 +105,8 @@ Route::middleware('auth')->group(function () {
 
         Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
 
+        Route::get('notification-switch', [ProfileController::class, 'notificationSwitch'])->name('switch-notification');
+
         Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
 
         Route::get('account', function () {

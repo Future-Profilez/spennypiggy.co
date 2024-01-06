@@ -56,6 +56,10 @@ class ProfileController extends Controller
         })->first();
         $currency = strtolower($request->cookie("currency", "GBP"));
 
+        if($request->min_surprise_amount < 5){
+            return redirect()->back()->with("error", "Please set the minimum amount greater than 5.");
+        }
+
         $checkdata = Helpers::checkBlockData($request);
         if ($checkdata == 1) {
             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive,
@@ -100,5 +104,29 @@ class ProfileController extends Controller
         $request->session()->regenerateToken();
 
         return Redirect::to('/');
+    }
+
+
+    /**
+     * On or off the notification mails.
+     */
+    public function notificationSwitch()
+    {
+        $user = User::where('id',Auth::id())->first();
+        if($user->notification_send == 0){
+            $user->notification_send == 1;
+            $status = 'Enabled';
+        }
+        else{
+            $user->notification_send == 0;
+            $status = 'Disabled';
+        }
+
+        $user->save();
+
+        return response()->json([
+            'status' => true,
+            'msg' => "Notifications for email are $status."
+        ]);
     }
 }
