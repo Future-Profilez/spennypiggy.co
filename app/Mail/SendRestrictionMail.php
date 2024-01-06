@@ -30,7 +30,7 @@ class SendRestrictionMail extends Mailable
     public function build()
     {
         try {
-            $subject = 'Wishitem removed on spenny piggy.';
+            $subject = '⚠️ Wishlist Item Removed! ⚠️';
             return $this->view('email.wish-remove')
                 ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
                 ->subject($subject);
