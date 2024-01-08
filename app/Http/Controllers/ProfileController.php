@@ -9,6 +9,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -80,6 +81,8 @@ class ProfileController extends Controller
 
             $user->save();
             $user->refresh();
+
+            CheckProfilePhotosAdult::dispatch($user);
             return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
         }
     }
@@ -127,6 +130,48 @@ class ProfileController extends Controller
         return response()->json([
             'status' => true,
             'msg' => "Notifications for email are $status."
+        ]);
+    }
+
+
+    public function checkAdultContent($uuid){
+        $rest_words = ['Adult', '18+', 'Pornographic', 'xxx', 'nsfw','NSFW','XXX', 'Blood', 'Brutality', 'Explicit', 'Mature', 'Weapons', 'Aggression', 'Combat', 'Sexual', 'Porn', 'Fucking','Graphic'];
+
+
+        //For avatar adult check.
+        Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/vnd.uploadcare-v0.7+json',
+            'Authorization' => 'Uploadcare.Simple ' . env('UPLOADCARE_PUBLIC_KEY') . ':' . env('UPLOADCARE_SECRET_KEY'),
+        ])->post('https://api.uploadcare.com/addons/aws_rekognition_detect_moderation_labels/execute/', [
+            'target' => $uuid,
+        ]);
+
+
+        $response = Http::withHeaders([
+            'Accept' => 'application/vnd.uploadcare-v0.7+json',
+            'Authorization' => 'Uploadcare.Simple ' . env('UPLOADCARE_PUBLIC_KEY') . ':' . env('UPLOADCARE_SECRET_KEY'),
+        ])->get("https://api.uploadcare.com/files/". $uuid ."/?include=appdata");
+
+        $data = $response->json();
+        $tags = $data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'];
+
+        foreach ($tags as $key => $tag) {
+            $name = explode(" ", $tag['Name']);
+
+            $common = array_intersect($rest_words, $name);
+
+            if (count($common) > 0) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => 'Your content contains the nudity. Please try alernative.'
+                ]);
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'msg' => 'Success.'
         ]);
     }
 }
