@@ -19,7 +19,6 @@ use Inertia\Response;
 use Ramsey\Uuid\Uuid;
 use App\Jobs\WelcomeUser;
 use App\Models\PromoCode;
-use App\Models\Referal;
 use Carbon\Carbon;
 
 class RegisteredUserController extends Controller
@@ -70,9 +69,17 @@ class RegisteredUserController extends Controller
                 'name' => $request->name,
                 'email' => strtolower($request->email),
                 'username' => $request->username,
+                'gender' => $request->gender ?? null,
                 'password' => Hash::make($request->password),
             ]);
-            event(new Registered($user));
+            $user->refresh();
+
+            if(!empty($request->promo)){
+                $promocode = PromoCode::whereCode($request->promo)->first();
+                $user->promo_code_id = $promocode->id;
+                $user->save();
+            }
+
             Auth::login($user);
 
             $promocode = PromoCode::whereCode($request->promocode)->first();

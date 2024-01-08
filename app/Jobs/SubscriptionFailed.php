@@ -29,6 +29,8 @@ class SubscriptionFailed implements ShouldQueue
      */
     public function handle(): void
     {
-        EmailService::subscriptionFailed($this->sub);
+        if((isset($this->sub->user) && $this->sub->user->notification_send == 1) || empty($this->sub->user)){
+            EmailService::subscriptionFailed($this->sub);
+        }
     }
 }

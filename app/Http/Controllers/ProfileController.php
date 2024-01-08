@@ -54,6 +54,11 @@ class ProfileController extends Controller
         $user = User::where('id', Auth::id())->where(function ($q) {
             $q->whereNot('country', 'GB')->orWhereNull('country');
         })->first();
+        $currency = strtolower($request->cookie("currency", "GBP"));
+
+        if($request->min_surprise_amount < 5){
+            return redirect()->back()->with("error", "Please set the minimum amount greater than 5.");
+        }
 
         $checkdata = Helpers::checkBlockData($request);
         if ($checkdata == 1) {
@@ -69,6 +74,7 @@ class ProfileController extends Controller
             $user->name = $request->name;
             $user->username = $request->username;
             $user->bio = $request->bio;
+            $user->min_surprise_amount = $request->min_surprise_amount ?? 0;
             $user->avatar = $request->avatar;
             $user->cover = $request->cover;
 
@@ -98,5 +104,29 @@ class ProfileController extends Controller
         $request->session()->regenerateToken();
 
         return Redirect::to('/');
+    }
+
+
+    /**
+     * On or off the notification mails.
+     */
+    public function notificationSwitch()
+    {
+        $user = User::where('id',Auth::id())->first();
+        if($user->notification_send == 0){
+            $user->notification_send == 1;
+            $status = 'Enabled';
+        }
+        else{
+            $user->notification_send == 0;
+            $status = 'Disabled';
+        }
+
+        $user->save();
+
+        return response()->json([
+            'status' => true,
+            'msg' => "Notifications for email are $status."
+        ]);
     }
 }

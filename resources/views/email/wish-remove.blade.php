@@ -1,7 +1,7 @@
 @extends('email.default-2')
 @section('content')
     <tr>
-        <td align="center" style="padding:10px 10px 20px 10px;"><a href="https://spennypiggy.co"><img alt="image"
+        <td align="center" style="padding:10px 10px 20px 10px;"><a href="https://uk.spennypiggy.co/"><img alt="image"
                     width="119" src="https://whoyouinto.com/emails/user/logo.png" style="border:none"></a></td>
     </tr>
     <tr>
@@ -11,7 +11,7 @@
                 <tr>
                     <td
                         style="font-family: Arial; font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
-                        Your wishitem is <span style="color: #8C52FF">removed</span> on <br> Spenny Piggy 🎁 </td>
+                        🚨 Your Wishlist Item on Spenny Piggy was Removed 🚨 </td>
                 </tr>
                 <tr>
                     <td style="line-height:20px;height:20px;"></td>
@@ -25,7 +25,7 @@
 
                     <td
                         style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                       You have used unwanted adult media content on spenny piggy platform. Please try alternative.
+                        The item posted was flagged by our AI for unwanted adult content. Please note that multiple removals will result in account suspension and possible termination. We are working hard to ensure that Spenny Piggy can operate for years to come and as our payment processor does not allow adult content, we have a due diligence to remove it. If you believe this was an error please reach out to support.
                     </td>
                 </tr>
             </table>

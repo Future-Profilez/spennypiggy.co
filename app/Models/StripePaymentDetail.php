@@ -27,6 +27,7 @@ class StripePaymentDetail extends Model
         'owner_id',
         'name',
         'message',
+        'anonymous',
         'tax',
         'payment_status',
         'session_created',

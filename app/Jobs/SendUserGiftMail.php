@@ -45,16 +45,17 @@ class SendUserGiftMail implements ShouldQueue
      */
     public function handle()
     {
-
-        $emailData = [
-            'to' => $this->user->email,
-            'name' => $this->user->name,
-            // 'ownername' => 
-            'username' => $this->user->username,
-            'phone' => $this->user->phone,
-            'email' => $this->user->email,
-            'uuid' => $this->user->uuid,
-        ];
-        EmailService::verifyUserEmail($emailData);
+        if($this->user->notification_send == 1){
+            $emailData = [
+                'to' => $this->user->email,
+                'name' => $this->user->name,
+                // 'ownername' =>
+                'username' => $this->user->username,
+                'phone' => $this->user->phone,
+                'email' => $this->user->email,
+                'uuid' => $this->user->uuid,
+            ];
+            EmailService::verifyUserEmail($emailData);
+        }
     }
 }

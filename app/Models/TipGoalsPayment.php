@@ -22,6 +22,7 @@ class TipGoalsPayment extends Model
         'amount',
         'tax',
         'message',
+        'anonymous',
         'status',
     ];
 
