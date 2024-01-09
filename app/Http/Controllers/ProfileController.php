@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\User;
+use App\Models\UserIntro;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -171,6 +172,69 @@ class ProfileController extends Controller
         return response()->json([
             'status' => true,
             'msg' => 'Success.'
+        ]);
+    }
+
+
+    /**
+     * Save the intro video
+     *
+     * @return mixed
+     */
+    public function saveIntroVideo(Request $request){
+        $request->vailidate([
+            'media' => [
+                'required',
+            ]
+        ]);
+
+        $media = $request->media;
+
+        $intro = UserIntro::create([
+            'uuid' => $media['uuid'],
+            'user_id' => Auth::id(),
+            'height' => $media['contentInfo']['videoInfo']['video']['height'],
+            'width' => $media['contentInfo']['videoInfo']['video']['width'],
+        ]);
+        $intro->refresh();
+
+        $intro->poster_url;
+
+        return response()->json([
+            'status' => true,
+            'msg' => 'Your intro video has been saved.'
+        ]);
+    }
+
+
+
+    /**
+     * List the intro video
+     *
+     * @return JsonResponse
+     */
+    public function getIntroVideo(){
+        $intro = UserIntro::firstWhere(Auth::id());
+
+        return response()->json([
+            'status' => true,
+            'intro' => $intro
+        ]);
+    }
+
+
+    /**
+     * List the intro video by uuid
+     *
+     * @param $uuid uuid of the intro video
+     * @return JsonResponse
+     */
+    public function getIntroById($uuid){
+        $intro = UserIntro::whereUuid($uuid)->first();
+
+        return response()->json([
+            'status' => true,
+            'intro' => $intro
         ]);
     }
 }

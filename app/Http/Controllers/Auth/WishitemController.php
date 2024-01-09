@@ -26,6 +26,7 @@ use App\Models\TwitterToken;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserCategory;
+use App\Models\UserIntro;
 use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
@@ -403,6 +404,64 @@ class WishitemController extends Controller
         ]);
 
         return back()->with('success', 'Category Saved.');
+    }
+
+
+    public function discover_all_wishes($order,$type,$price) {
+
+        $query = WishItem::where('deleted_at', null)
+        ->with(['user'])
+        ->whereHas('user',function($q){
+            $q->where(function($s){
+                $s->whereNot('country', 'GB')->orWhereNull('country');
+            });
+        });
+
+        if($order == 'new'){
+            $query->latest();
+        }
+
+        if($type == 'subscription'){
+            $query->where('subscription',1);
+        }
+        elseif($type == 'crowdfund'){
+            $query->where('subscription',2);
+        }
+        elseif($type == 'single'){
+            $query->where('subscription',0);
+        }
+
+        $wishes = $query->get();
+        return response()->json([
+            'success'   => true,
+            'wishes' => $wishes,
+        ]);
+    }
+
+
+    public function discover_all_creators($order,$gender) {
+
+        $query = UserIntro::where('deleted_at', null)
+                ->with(['user'])
+                ->whereHas('user',function($q) use($gender){
+                    $q->where(function($s){
+                        $s->whereNot('country', 'GB')->orWhereNull('country');
+                    });
+
+                    if($gender != 'all'){
+                        $q->where('gender',$gender);
+                    }
+                });
+
+        if($order == 'new'){
+            $query->latest();
+        }
+
+        $intros = $query->get();
+        return response()->json([
+            'success'   => true,
+            'intro' => $intros,
+        ]);
     }
 
 

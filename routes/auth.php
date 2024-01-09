@@ -151,6 +151,13 @@ Route::middleware('auth')->group(function () {
         Route::post('add-goal', [WishitemController::class, 'addTipGoal'])->name('add-goal');
         Route::get('mark-complete-goal/{uuid}', [WishitemController::class, 'markJarComplete'])->name('mark-goal');
         Route::get('all-goals', [WishitemController::class, 'allGoalsCreators'])->name('all-goals');
+
+        // Intro video
+        Route::prefix("intro")->name("intro.")->group(function () {
+            Route::post('save', [ProfileController::class, 'saveIntroVideo'])->name('save');
+            Route::get('list', [ProfileController::class, 'getIntroVideo'])->name('list');
+            Route::get('/{uuid}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
+        });
     });
 });
 // discover zone
@@ -158,7 +165,7 @@ Route::middleware('auth')->group(function () {
 Route::get('discover',function (){
     return Inertia::render('discover/Discover');
 })->name("discover");
-Route::get('discover/wishes', [WishitemController::class, 'discover_all_wishes'])->name('discover_wish');
+Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class, 'discover_all_wishes'])->name('discover_wish');
 // Route::get('discover/creators_videos', [WishitemController::class, 'discover_creators_videos'])->name('discover_videos');
 
 Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
