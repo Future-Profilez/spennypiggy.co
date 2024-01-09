@@ -6,10 +6,15 @@ use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\CheckAdultContent;
 use App\Jobs\AutoTweetWishAdd;
+use App\Jobs\CheckoutTweet;
+use App\Jobs\CrowdfundTweet;
 use App\Jobs\MakeAutoTweets;
 use App\Jobs\SaveWishlist;
 use App\Jobs\SendUserGiftMail;
+use App\Jobs\SubscribeAutoTweet;
+use App\Jobs\SurpriseTweet;
 use App\Jobs\ThankyouMailToUser;
+use App\Jobs\TipJarTweet;
 use App\Jobs\WelcomeUser;
 use App\Mail\CheckError;
 use App\Models\StripePaymentDetail;
@@ -1231,5 +1236,41 @@ class WishitemController extends Controller
         else{
             return back()->with('success',"Auto tweet for gift is Disabled.");
         }
+    }
+
+
+    /**
+     * Share the purchasing on twitter
+     *
+     * @return mixed
+     */
+    public function shareOnTwitter($uuid,$type)
+    {
+        $user = Auth::user();
+        if($user->auto_tweet == 0){
+            return back()->with('error',"Please first enable your auto tweet from settings.");
+        }
+
+        if($type == 'wish-add'){
+            $pay = StripePaymentItems::whereUuid($uuid)->first();
+            if(empty($pay->wish_item_id)){
+                SurpriseTweet::dispatch($pay);
+            }
+            elseif($pay->wish->subscription == 2){
+                CrowdfundTweet::dispatch($pay);
+            }
+            else{
+                CheckoutTweet::dispatch($pay);
+            }
+        }
+        elseif($type = 'subscription'){
+            $pay = WishItemSubscription::whereUuid($uuid)->first();
+            SubscribeAutoTweet::dispatch($pay);
+        }
+        elseif($type = 'tip-jar'){
+            $pay = TipGoalsPayment::whereUuid($uuid)->first();
+            TipJarTweet::dispatch($pay);
+        }
+        return back()->with('success',"Wish payment shared on twitter.");
     }
 }
