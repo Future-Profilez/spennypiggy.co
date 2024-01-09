@@ -72,10 +72,6 @@ class UserIntro extends Model
                 $this->poster = $uuid['result']['result'][0]['thumbnails_group_uuid'];
                 $this->poster_token = $uuid['result']['result'][0]['token'];
 
-
-                if (empty($this->preview)) {
-                    $this->preview = $uuid['result']['result'][0]['uuid'];
-                }
                 $this->save();
                 // $authUrlConfig = new AuthUrlConfig('ucarecdn.com', new AkamaiToken(env('UPLOADCARE_SECRET_KEY'), 300));
                 // $config = Configuration::create(env('UPLOADCARE_PUBLIC_KEY'), env('UPLOADCARE_SECRET_KEY'))->setAuthUrlConfig($authUrlConfig);
