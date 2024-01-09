@@ -1307,7 +1307,10 @@ class WishitemController extends Controller
     {
         $user = Auth::user();
         if($user->auto_tweet == 0){
-            return back()->with('error',"Please first enable your auto tweet from settings.");
+            return response()->json([
+                'status' => false,
+                'msg' => "Please first enable the auto tweets."
+            ]);
         }
 
         if($type == 'wish-add'){
@@ -1330,6 +1333,9 @@ class WishitemController extends Controller
             $pay = TipGoalsPayment::whereUuid($uuid)->first();
             TipJarTweet::dispatch($pay);
         }
-        return back()->with('success',"Wish payment shared on twitter.");
+        return response()->json([
+            'status' => true,
+            'msg' => "Wish payment shared on twitter."
+        ]);
     }
 }
