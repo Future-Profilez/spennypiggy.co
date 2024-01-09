@@ -82,7 +82,6 @@ class ProfileController extends Controller
             $user->save();
             $user->refresh();
 
-            CheckProfilePhotosAdult::dispatch($user);
             return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
         }
     }

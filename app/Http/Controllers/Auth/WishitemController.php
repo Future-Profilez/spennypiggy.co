@@ -243,10 +243,6 @@ class WishitemController extends Controller
 
         $wish->refresh();
 
-        if(!empty($request->thumbnail)){
-            CheckAdultContent::dispatch($wish);
-        }
-
         if (!empty($request->category)) {
             foreach ($request->category as $key => $value) {
                 $wish_cat = new WishCategory();
