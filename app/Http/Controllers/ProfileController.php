@@ -193,8 +193,8 @@ class ProfileController extends Controller
         $intro = UserIntro::create([
             'uuid' => $media['uuid'],
             'user_id' => Auth::id(),
-            'height' => $media['contentInfo']['videoInfo']['video']['height'],
-            'width' => $media['contentInfo']['videoInfo']['video']['width'],
+            'height' => $media['videoInfo']['video']['height'],
+            'width' => $media['videoInfo']['video']['width'],
         ]);
         $intro->refresh();
 
