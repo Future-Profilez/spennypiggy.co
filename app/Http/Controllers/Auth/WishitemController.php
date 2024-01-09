@@ -1322,11 +1322,11 @@ class WishitemController extends Controller
                 CheckoutTweet::dispatch($pay);
             }
         }
-        elseif($type = 'subscription'){
+        elseif($type == 'subscription'){
             $pay = WishItemSubscription::whereUuid($uuid)->first();
             SubscribeAutoTweet::dispatch($pay);
         }
-        elseif($type = 'tip-jar'){
+        elseif($type == 'tip-jar'){
             $pay = TipGoalsPayment::whereUuid($uuid)->first();
             TipJarTweet::dispatch($pay);
         }
