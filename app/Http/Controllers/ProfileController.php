@@ -182,7 +182,7 @@ class ProfileController extends Controller
      * @return mixed
      */
     public function saveIntroVideo(Request $request){
-        $request->vailidate([
+        $request->validate([
             'media' => [
                 'required',
             ]
