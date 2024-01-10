@@ -421,6 +421,22 @@ class WishitemController extends Controller
             $query->latest();
         }
 
+        if($price == '5to10'){
+            $query->whereBetween('price',[4.99,9.99]);
+        }
+        elseif($price == '10to30'){
+            $query->whereBetween('price',[9.99,29.99]);
+        }
+        elseif($price == '30to50'){
+            $query->whereBetween('price',[29.99,49.99]);
+        }
+        elseif($price == '50to100'){
+            $query->whereBetween('price',[49.99,99.99]);
+        }
+        elseif($price == '100plus'){
+            $query->where('price','>',99.99);
+        }
+
         if($type == 'subscription'){
             $query->where('subscription',1);
         }
