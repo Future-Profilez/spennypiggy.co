@@ -237,4 +237,20 @@ class ProfileController extends Controller
             'intro' => $intro
         ]);
     }
+
+
+    /**
+     * Delete the intro video
+     *
+     * @return JsonResponse
+     */
+    public function removeIntro(){
+        $intro = UserIntro::whereUserId(Auth::id())->first();
+        $intro->delete();
+
+        return response()->json([
+            'status' => true,
+            'msg' => 'The intro video has been removed.'
+        ]);
+    }
 }

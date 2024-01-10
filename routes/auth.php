@@ -156,6 +156,7 @@ Route::middleware('auth')->group(function () {
         Route::prefix("intro")->name("intro.")->group(function () {
             Route::post('save', [ProfileController::class, 'saveIntroVideo'])->name('save');
             Route::get('list', [ProfileController::class, 'getIntroVideo'])->name('list');
+            Route::get('remove', [ProfileController::class, 'removeIntro'])->name('remove');
             Route::get('/{uuid}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
         });
     });
