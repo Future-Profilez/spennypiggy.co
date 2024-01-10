@@ -161,8 +161,12 @@ Route::middleware('auth')->group(function () {
         });
     });
 });
-// discover zone
 
+// Intro video
+Route::get('my-intro/{id}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
+
+
+// discover zone
 Route::get('discover',function (){
     return Inertia::render('discover/Discover');
 })->name("discover");
