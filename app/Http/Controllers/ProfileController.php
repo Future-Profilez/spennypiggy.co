@@ -250,7 +250,7 @@ class ProfileController extends Controller
                 'login' => true,
             ]);
         } else {
-            $intro = UserIntro::where('user_id', $id)->first();
+            $intro = UserIntro::where('user_id', $id)->whereApproved(1)->first();
             return response()->json([
                 'status' => true,
                 'intro' => $intro
