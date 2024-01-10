@@ -241,13 +241,21 @@ class ProfileController extends Controller
      * @param $uuid uuid of the intro video
      * @return JsonResponse
      */
-    public function getIntroById($uuid){
-        $intro = UserIntro::whereUuid($uuid)->first();
-
-        return response()->json([
-            'status' => true,
-            'intro' => $intro
-        ]);
+    public function getIntroById($id){
+        if(Auth::id() == $id){
+            $intro = UserIntro::where('user_id', $id)->first();
+            return response()->json([
+                'status' => true,
+                'intro' => $intro,
+                'login' => true,
+            ]);
+        } else {
+            $intro = UserIntro::where('user_id', $id)->first();
+            return response()->json([
+                'status' => true,
+                'intro' => $intro
+            ]);
+        }
     }
 
 
