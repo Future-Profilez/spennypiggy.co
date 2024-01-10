@@ -190,12 +190,24 @@ class ProfileController extends Controller
 
         $media = $request->media;
 
-        $intro = UserIntro::create([
-            'uuid' => $media['uuid'],
-            'user_id' => Auth::id(),
-            'height' => $media['videoInfo']['video']['height'],
-            'width' => $media['videoInfo']['video']['width'],
-        ]);
+        $intro = UserIntro::where('user_id',Auth::id())->first();
+
+        if(empty($intro)){
+            $intro = UserIntro::create([
+                'uuid' => $media['uuid'],
+                'user_id' => Auth::id(),
+                'height' => $media['videoInfo']['video']['height'],
+                'width' => $media['videoInfo']['video']['width'],
+            ]);
+        }
+        else
+        {
+            $intro->uuid = $media['uuid'];
+            $intro->height = $media['videoInfo']['video']['height'];
+            $intro->width = $media['videoInfo']['video']['width'];
+            $intro->save();
+        }
+
         $intro->refresh();
 
         $intro->poster_url;
