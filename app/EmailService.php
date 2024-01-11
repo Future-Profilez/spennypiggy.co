@@ -6,6 +6,8 @@ use App\Mail\Checkout;
 use App\Mail\CheckoutToUser;
 use App\Mail\ForgotPassEmail;
 use App\Mail\RenewMail;
+use App\Mail\SendAvatarRestrictionMail;
+use App\Mail\SendCoverRestrictionMail;
 use App\Mail\SendRestrictionMail;
 use App\Mail\SendTipJarMailToUser;
 use App\Mail\SubscriptionFailedMail;
@@ -198,6 +200,24 @@ class EmailService
     {
         try {
             Mail::to($wish->user->email)->send(new SendRestrictionMail($wish));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+    public static function sendAvatarRestrictionMail($email)
+    {
+        try {
+            Mail::to($email)->send(new SendAvatarRestrictionMail());
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+    public static function sendCoverRestrictionMail($email)
+    {
+        try {
+            Mail::to($email)->send(new SendCoverRestrictionMail());
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
