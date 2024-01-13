@@ -447,10 +447,15 @@ class WishitemController extends Controller
             $query->where('subscription',0);
         }
 
-        $wishes = $query->get();
+        $wishes = $query->paginate(30);
+
         return response()->json([
             'success'   => true,
             'wishes' => $wishes,
+            "last_page" => $wishes->lastPage() ?? null,
+            "current_page" => $wishes->currentPage() ?? null,
+            "total" => $wishes->total() ?? null,
+            "per_page" => $wishes->perPage() ?? null,
         ]);
     }
 
@@ -473,10 +478,14 @@ class WishitemController extends Controller
             $query->latest();
         }
 
-        $intros = $query->get();
+        $intros = $query->paginate(30);
         return response()->json([
             'success'   => true,
             'intro' => $intros,
+            "last_page" => $intros->lastPage() ?? null,
+            "current_page" => $intros->currentPage() ?? null,
+            "total" => $intros->total() ?? null,
+            "per_page" => $intros->perPage() ?? null,
         ]);
     }
 
