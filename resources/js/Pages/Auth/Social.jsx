@@ -75,8 +75,7 @@ export default function Social({links, updatedLinks}) {
                                 <input id="whoyouinto"
                                     name="whoyouinto" 
                                     defaultValue={links?.whoyouinto || ''}
-                                    type="text" placeholder={'URL'}
-                                    // value={links?.whoyouinto || data?.whoyouinto}
+                                    type="text" placeholder={'Enter username'}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('whoyouinto', e.target.value)}
                                 />
@@ -85,7 +84,7 @@ export default function Social({links, updatedLinks}) {
                                 <label className="mb-2 text-start d-block">Twitter</label>
                                 <input id="twitter"
                                     name="twitter"  
-                                    type="text" placeholder="URL"
+                                    type="text" placeholder="Enter username"
                                     defaultValue={links?.twitter||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('twitter', e.target.value)}
@@ -94,7 +93,7 @@ export default function Social({links, updatedLinks}) {
                             <li className="mb-4 col-md-6">
                                 <label className="mb-2 text-start d-block">Instagram </label>
                                 <input id="instagram"
-                                    type="text" placeholder="URL"
+                                    type="text" placeholder="Enter username"
                                     name="instagram"
                                     defaultValue={links?.instagram||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
@@ -105,17 +104,17 @@ export default function Social({links, updatedLinks}) {
                                 <label className="mb-2 text-start d-block">Reddit</label>
                                 <input id="reddit"
                                     name="reddit"
-                                    type="text" placeholder="URL"
+                                    type="text" placeholder="Enter reddit profile url"
                                     defaultValue={links?.reddit||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('reddit', e.target.value)}
                                 />
                             </li>
                             <li className="mb-4 col-md-6">
-                                <label className="mb-2 text-start d-block">Discord</label>
+                                <label className="mb-2 text-start d-block">Discord URL</label>
                                 <input id="discord"
                                     name="discord"
-                                    type="text" placeholder="URL"
+                                    type="text" placeholder="eg. https://discordapp.com/users/3748jgf34hjsd8734"
                                     defaultValue={links?.discord||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('discord', e.target.value)}
@@ -126,7 +125,7 @@ export default function Social({links, updatedLinks}) {
                                 <label className="mb-2 text-start d-block">OnlyFans</label>
                                 <input id="onlyfans"
                                     name="onlyfans"
-                                    type="text" placeholder="URL"
+                                    type="text" placeholder="Enter username"
                                     defaultValue={links?.onlyfans||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('onlyfans', e.target.value)}
@@ -136,7 +135,7 @@ export default function Social({links, updatedLinks}) {
                                 <label className="mb-2 text-start d-block">LoyalFans</label>
                                 <input id="loyalfans"
                                     name="loyalfans"
-                                    type="text" placeholder="URL"
+                                    type="text" placeholder="Enter username"
                                     defaultValue={links?.loyalfans||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('loyalfans', e.target.value)}
@@ -146,7 +145,7 @@ export default function Social({links, updatedLinks}) {
                                 <label className="mb-2 text-start d-block">Fansly</label>
                                 <input id="fansly"
                                     name="fansly"
-                                    type="text" placeholder="URL"
+                                    type="text" placeholder="Enter username"
                                     defaultValue={links?.fansly||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('fansly', e.target.value)}
@@ -156,7 +155,7 @@ export default function Social({links, updatedLinks}) {
                                 <label className="mb-2 text-start d-block">ManyVids</label>
                                 <input id="manyvids"
                                     name="manyvids"
-                                    type="text" placeholder="URL"
+                                    type="text" placeholder="Enter full profile url"
                                     defaultValue={links?.manyvids||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('manyvids', e.target.value)}
@@ -166,7 +165,7 @@ export default function Social({links, updatedLinks}) {
                                 <label className="mb-2 text-start d-block">Other</label>
                                 <input id="other"
                                     name="other"
-                                    type="text" placeholder="URL"
+                                    type="text" placeholder="Enter URL"
                                     defaultValue={links?.other||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('other', e.target.value)}

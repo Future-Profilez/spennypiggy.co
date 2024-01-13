@@ -12,17 +12,31 @@ export default function SubCheckout(props) {
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
     const [email, setEmail] = useState(auth && auth.user && auth.user.email || '');
     const { successAlert, errorAlert, warningAlert, infoAlert } = useAlerts();
-
     const {data, setData, post, processing, errors} = useForm({
         name: name,
         email: email,
         message: '',
-        agree: false
-    });
+        agree: false,
+        anonymous: 0,
+    }); 
+
+    const [keepAnonmyous, setKeepAnonmyous] = useState(false);
+    function checkanonymous(e){ 
+        setKeepAnonmyous(e.target.checked);
+        if(e.target.checked){
+            setData("anonymous", 1)
+        } else {
+            setData("anonymous", 0)
+        }
+    }
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        post(route(`wish.subscribe.checkout`,{uuid:wish.uuid, reccure:reccure}), {
+        post(route(`wish.subscribe.checkout`,{
+            uuid:wish.uuid, 
+            reccure:reccure
+        }),
+        {
             preserveScroll:true
         });
     }
@@ -149,6 +163,20 @@ export default function SubCheckout(props) {
                                         </div>
                                     </li>
                                     <li className="cheklistbox">
+
+                                    <label
+                                        htmlFor="anonymous"
+                                        className="text-start" >
+                                        <input
+                                            onChange={checkanonymous}
+                                            type="checkbox"
+                                            id="anonymous"
+                                            name="anonymous"
+                                            className="me-2"
+                                            value="anonymous" ></input>
+                                        Keep anonymous
+                                    </label>
+                                    <p className="text-muted text-small mb-3" >Your personal email and name will be private.</p>
                                         <label
                                             htmlFor="agreeterm"
                                             className="text-start" >
@@ -163,44 +191,13 @@ export default function SubCheckout(props) {
                                         </label>
                                         <div className="tearmlist ps-3">
                                             <ul className="ps-0">
-                                                <li>
-                                                    I am making a non-refundable
-                                                    cash gift donation.
-                                                </li>
-                                                <li>
-                                                    I expect no product or service
-                                                    in return from the gift
-                                                    recipient.
-                                                </li>
-                                                <li>
-                                                    This payment is a donation
-                                                    intended for the gift recipient.
-                                                </li>
-                                                <li>
-                                                    I have taken the necessary steps
-                                                    to confirm the wishlist owner is
-                                                    authentic and I understand that
-                                                    Spenny Piggy will not be held
-                                                    responsible for any issues
-                                                    arising from a catfishing
-                                                    situation.
-                                                </li>
-                                                <li>
-                                                    I understand that by violating
-                                                    these terms I may be subject to
-                                                    legal action or can fall a
-                                                    victim of scams.
-                                                </li>
-                                                <li>
-                                                    I understand that by checking
-                                                    the box above and then clicking
-                                                    "CHECKOUT", I will have created
-                                                    a legally binding e-signature to
-                                                    this agreement.
-                                                </li>
-                                                <li>
-                                                    By providing an e-mail, you confirm that you are happy to receive marketing updates. You can opt out at anytime.
-                                                </li>
+                                                <li> I am making a non-refundable cash gift donation. </li>
+                                                <li> I expect no product or service in return from the gift recipient. </li>
+                                                <li> This payment is a donation intended for the gift recipient. </li>
+                                                <li> I have taken the necessary steps to confirm the wishlist owner is authentic and I understand that Spenny Piggy will not be held responsible for any issues arising from a catfishing situation. </li>
+                                                <li> I understand that by violating these terms I may be subject to legal action or can fall a victim of scams. </li>
+                                                <li> I understand that by checking the box above and then clicking "CHECKOUT",I will have created a legally binding e-signature to this agreement. </li>
+                                                <li> By providing an e-mail,you confirm that you are happy to receive marketing updates. You can opt out at anytime. </li>
                                             </ul>
                                         </div>
                                     </li>
@@ -210,7 +207,7 @@ export default function SubCheckout(props) {
                                         className={`${!data.agree || processing ? "disabled" : ""} btn-pink md px-4 mt-3 text-center`}
                                         disabled={!data.agree || processing}>
                                         {processing ? 'Processing...' : 'Subscribe'}
-                                    </button>
+                                    </button> 
                                 </div>
                             </form>
                         </div>

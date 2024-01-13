@@ -12,8 +12,7 @@ export default function UserCarts(props) {
     const { auth, removeFromCart } = props;
     const { format, formatMultiPrice } = PriceFormat();
     const datas = props.data;
-    console.log("datas",datas);
-
+    const [keepAnonmyous, setKeepAnonmyous] = useState(false);
     const [isChecked, setIsChecked] = useState(false);
     const [message, setMessage] = useState(null);
     const [name, setName] = useState(auth && auth.name || '');
@@ -22,9 +21,9 @@ export default function UserCarts(props) {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (auth && auth.id) {
-            window.location.href = `/create-checkout-session/${datas?.user?.id || ''}?message=${message}&from=${name}&email=${email}`;
+            window.location.href = `/create-checkout-session/${datas?.user?.id || ''}?message=${message}&from=${name}&email=${email}&anonymous=${keepAnonmyous ? 1 : 0}`;
         } else {
-            window.location.href = `/create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}`;
+            window.location.href = `/create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}&anonymous=${keepAnonmyous ? 1 : 0}`;
         }
     };
 
@@ -166,7 +165,7 @@ export default function UserCarts(props) {
                                         <div className="col-md-12 mb-4">
                                             <label className="d-block text-start">Email </label>
                                             <p className="text-small text-muted mb-1">Your e-mail remains private. It is used for the creator to reply to your gift with a message via Spenny Piggy</p>
-                                            <input className={`${auth && auth.email ? 'disabled' : ''} form-input w-100 rounded`}
+                                            <input required className={`${auth && auth.email ? 'disabled' : ''} form-input w-100 rounded`}
                                                 value={auth && auth.email}
                                                 disabled={auth && auth.email ? true : false}
                                                 onChange={(e) => setEmail(e.target.value)}
@@ -176,6 +175,20 @@ export default function UserCarts(props) {
                                     </li>
                                 </li>
                                 <li className="cheklistbox">
+                                    <label
+                                        htmlFor="anonymous"
+                                        className="text-start" >
+                                        <input
+                                            onChange={(e) => setKeepAnonmyous(e.target.checked)}
+                                            type="checkbox"
+                                            id="anonymous"
+                                            name="anonymous"
+                                            className="me-2" 
+                                            value="anonymous" ></input>
+                                        Keep anonymous 
+                                    </label>
+                                    <p className="text-muted text-small mb-3" >Your personal email and name will be private.</p>
+
                                     <label
                                         htmlFor="agreeterm"
                                         className="text-start" >

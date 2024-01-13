@@ -22,14 +22,13 @@ import { LazyLoadImage } from 'react-lazy-load-image-component';
 import useWidthCount from '@/Components/useWidthCount';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable,rectSortingStrategy } from "@dnd-kit/sortable";
 import{ closestCenter, DndContext, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import AddIntro from './intros/AddIntro';
+import ProfileVideo from './intros/ProfileVideo';
 
 export default function Dashboard(props) {
 
     const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
     const { auth, user, username, global_currency, itemid, min_surprise_amount } = props;
-
-    console.log("dashboard props", props);
-
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
     const [loading, setLoading] = useState(false);
     const [socialLinks, setSocialLinks] = useState([]);
@@ -80,7 +79,6 @@ export default function Dashboard(props) {
     const [goal, setGoal] = useState();
     const fetch_goal = () => {
         axios.get(`tip-jar/list/${user && user.uuid}`).then((resp) => {
-            console.log("resp",resp);
             setGoal(resp.data.goal)
         }).catch((_err) => {
             console.error("error", _err);
@@ -156,6 +154,7 @@ export default function Dashboard(props) {
         }
     },[flash]);
 
+
     return <>
         <Guest auth={auth.user} user={user}>
             <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
@@ -210,7 +209,7 @@ export default function Dashboard(props) {
                                                     stripe_enabled={auth.user && auth.user.stripe_details_submitted} 
                                                     fetch_goal={fetch_goal} activegoal={goal} />
                                                     <div className="addsocial flex">
-                                                        <ul>
+                                                        <ul> 
                                                             <li>
                                                                 <Social updatedLinks={fetchingLinks} links={sLinks} />
                                                             </li>
@@ -240,7 +239,10 @@ export default function Dashboard(props) {
                                             )}
                                         </div>
                                     </div>
+
                                     {goal && goal.completed == 0 ? <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ''}
+
+                                    <AddIntro uuid={user?.id || null} IsloggedIn={IsloggedIn} />
                                 </div>
                             </div>
                             <div className="col-lg-8 ps-3 ps-lg-4">
@@ -295,6 +297,7 @@ export default function Dashboard(props) {
                                                                 {!loading && its.map((c, i) => {
                                                                     return <Wishlistbox
                                                                             key={`wish-item-${i}`}
+                                                                            classes="col-xl-4 col-lg-6 col-6"
                                                                             currency={global_currency}
                                                                             fetchingcats={fetchingcats}
                                                                             categories={categories}
@@ -310,7 +313,7 @@ export default function Dashboard(props) {
                                                     </>
                                                     :
                                                         <>
-                                                            {!loading &&  <div className="col-md-12"> <Nocontent text="Nothing to see." /> </div> || ''}
+                                                            {!loading &&  <div className="col-md-12"><Nocontent text="Nothing to see." /></div> || ''}
                                                         </>
                                                     }
                                                 </>

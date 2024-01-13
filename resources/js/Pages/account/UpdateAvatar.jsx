@@ -2,6 +2,7 @@ import Popup from "@/Components/Popup";
 import GlobalUploader from "@/uploadcare/Uploader";
 import { useState } from "react";
 import st from '../../../css/uploader.module.css'
+import AdultScan from "@/includes/AdultScan";
 
 export default function UpdateAvatar({getImageUID, text, close, type }) {
 
@@ -30,7 +31,14 @@ export default function UpdateAvatar({getImageUID, text, close, type }) {
                     <div className="py-4" >
                         <GlobalUploader clear={clear} sendFile={getFileUID} options={st.profileimage} />
                     </div>
-                    <button onClick={updateImage} className="btn-pink sm w-100" >Confirm</button>
+
+                    <AdultScan type={file && file.contentInfo && file.contentInfo.mime && file.contentInfo.mime.type} 
+                    fileuid={file && file.uuid}
+                    onScan={updateImage} content={<>
+                        <button className="btn-pink sm w-100" >Confirm</button>
+                    </>} 
+                    />
+                    
                 </div>
             </div>
         </Popup>

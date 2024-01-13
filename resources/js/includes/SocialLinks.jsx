@@ -112,18 +112,51 @@ export default function SocialLinks({ links }) {
         }
     }
 
+    const gefullurl = (e) => {
+        if (e == "whoyouinto") {
+            return `https://whoyouinto.com/`
+        }
+        if (e == "instagram") {
+            return `https://instagram.com/`
+        }
+        if (e == "twitter") {
+            return `https://twitter.com/`
+        }
+        if (e == "discord") {
+            return ``
+        }
+        if (e == "onlyfans") {
+            return `https://onlyfans.com/users/`
+        }
+        if (e == "fansly") {
+            return `https://fansly.com/`
+        }
+        if (e == "loyalfans") {
+            return `https://www.loyalfans.com/`
+        }
+        if (e == "manyvids") {
+            return ''
+        }
+        if (e == "reddit") {
+            return ''
+        }
+        if (e == "other") {
+            return ''
+        }
+    }
+
     return (
         <div>
             <ul className='socialmedia flex-wrap flex justify-center'>
                 {links && links.length ? links.map((l, i) => {
                     return  <li key={`social-link-${i}`} className={`${l?.url ? '' : 'd-none '} px-2 mt-2 mb-2`} >
                                  { l.social == "fansly" ? 
-                                        <a target="_blank" title={l.social} href={l.url} > <img src={fansly}  alt="img" className='img-fluid' /> </a>
+                                        <a target="_blank" title={l.social} href={`${gefullurl(l.social)}${l.url}`} > <img src={fansly}  alt="img" className='img-fluid' /> </a>
                                  : l.social == "manyvids" 
                                     ? 
-                                    <a target="_blank" title={l.social} href={l.url} > <img src={manyvids}  alt="img" className='img-fluid' /> </a> 
+                                    <a target="_blank" title={l.social}href={`${gefullurl(l.social)}${l.url}`} > <img src={manyvids}  alt="img" className='img-fluid' /> </a> 
                                   :
-                                 <a target="_blank" title={l.social} href={l.url} dangerouslySetInnerHTML={{ __html: icons(l.social) }} ></a>
+                                 <a target="_blank" title={l.social} href={`${gefullurl(l.social)}${l.url}`} dangerouslySetInnerHTML={{ __html: icons(l.social) }} ></a>
                                  }
                         </li>
                 }) : ''}

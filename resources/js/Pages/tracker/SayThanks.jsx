@@ -6,6 +6,7 @@ import React from 'react'
 import { useState } from 'react'
 import st from "../../../css/uploader.module.css";
 import { useEffect } from 'react';
+import AdultScan from '@/includes/AdultScan';
 
 export default function SayThanks(props) {
    const { name, payment_id, getMessageStatus, clearAction } = props;
@@ -14,7 +15,6 @@ export default function SayThanks(props) {
    useEffect(()=>{
       setClear(clearAction);
    }, [clearAction]);
-
    const [msgMedia, setMsgMedia] = useState();
    const getFileUID = async (data) => {
       setMsgMedia(data);
@@ -55,26 +55,31 @@ export default function SayThanks(props) {
 
    return (
       <>   
-         <div className="form-field mb-4 border-top pt-4 mt-4">
-            <h2 className='heading'  >Send a thankyou note to {name} :</h2>
-            <textarea rows={5} placeholder="Say Something..."
-               className="form-input w-100 rounded"
-               onChange={(e) => setMessage(e.target.value)} type="text"
-            />
-            <p className='mb-2 mt-3' >Choose Video or Picture</p>
-            <GlobalUploader
-               clear={clear}
-               sendFile={getFileUID}
-               options={st.thankyoumessage}
-            />
-
-         </div>
-         <LoaderButton onClick={saythankyou}
-            disabled={loading}
-            className="flex px-4  mb-3 btn-pink sm mx-auto"
-            spinnerClassName="fill-red-600" >
+      <div className="form-field mb-4 border-top pt-4 mt-4">
+         <h2 className='heading'  >Send a thankyou note : </h2>
+         <textarea rows={5} placeholder="Say Something..."
+            className="form-input w-100 rounded"
+            onChange={(e) => setMessage(e.target.value)} type="text"
+         />
+         <p className='mb-2 mt-3' >Choose Video or Picture</p>
+         <GlobalUploader 
+            clear={clear}
+            sendFile={getFileUID}
+            options={st.thankyoumessage}
+         />
+      </div>
+       
+       <AdultScan type={msgMedia && msgMedia.contentInfo && msgMedia.contentInfo.mime && msgMedia.contentInfo.mime.type} 
+         fileuid={msgMedia && msgMedia.uuid}
+         onScan={saythankyou} content={<>
+            <LoaderButton 
+               disabled={loading}
+               className="flex px-4  mb-3 btn-pink sm mx-auto"
+               spinnerClassName="fill-red-600" >
                {loading ? "Sending..." : "Say Thanks"}
-         </LoaderButton>
+            </LoaderButton>
+         </>} 
+         />
       </>
    )
 }

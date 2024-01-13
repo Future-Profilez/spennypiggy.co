@@ -17,7 +17,7 @@ import { CSS } from '@dnd-kit/utilities';
 export default function Wishlistbox(props) {
    
   const { format, formatMultiPrice } = PriceFormat();
-  const { currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped } = props;
+  const { currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped, classes, showall, key } = props;
 
   const { attributes, listeners, isDragging, index, over, setNodeRef, transform, transition } = useSortable({ id: itm && itm.id });
   const style = { 
@@ -47,7 +47,7 @@ export default function Wishlistbox(props) {
     return r.toFixed(1);
   }
 
-  return <div style={IsloggedIn ? style : stylenone}  className={`wish-item-box col-xl-4 col-lg-6 col-6 ${isDragging ? 'dragging' : ''}`}> 
+  return <div key={key} style={IsloggedIn ? style : stylenone}  className={`wish-item-box ${classes} ${isDragging ? 'dragging' : ''}`}> 
       <div  className='wishlistcntbox mb-3 mb-sm-4 whbg relative  shadow-voilet '>
         {IsloggedIn ?
         <>
@@ -57,7 +57,7 @@ export default function Wishlistbox(props) {
             <Wishlist currency={currency} setuped={setuped} openPop={open} item={itm} editpop={true} fetchingcats={fetchingcats} categories={categories} />
         </>
           :
-          <AddCart currency={currency} IsloggedIn={IsloggedIn} auth={auth} item={itm} uuid={itm.uuid} action={open} />
+          <AddCart showall={showall} currency={currency} IsloggedIn={IsloggedIn} auth={auth} item={itm} uuid={itm.uuid} action={open} />
         } 
         {/* { IsloggedIn ? <DropdownButton
           className='wishedit' id="dropdown-basic-button"

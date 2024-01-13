@@ -11,7 +11,7 @@ import { useAlerts } from "@/Components/Alerts";
 import { Link } from "@inertiajs/react";
 export default function AddCart(props) {
 
-    const { auth, action, uuid, item, currency } = props;
+    const { auth, action, uuid, item, currency, showall } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [sub, setSub] = useState('daily');
 
@@ -72,11 +72,11 @@ export default function AddCart(props) {
                 <div className="cartbanner">
                     <img src={item.perma_link ? item.perma_link : uploadedimg} alt="img" />
                 </div>
+
                 <div className="cartTitle text-center">{item.wishname}</div>
                 <div className="cartPrice font-CeraGRBold text-voilet mt-1 mb-3 text-center">
                     {formatMultiPrice(item.price, item?.currency || 'GBP')}
                 </div>
-
                 {item.subscription == "2" ? (
                     <>
                         <p className="mb-0">Amount </p>
@@ -110,11 +110,11 @@ export default function AddCart(props) {
                 ) : (
                     ""
                 )}
-
                 {item.subscription == 1 ?
                 <div className=" pb-2">
                     <Link className="inline-flex items-center px-4 border 
-                    border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 false flex btn-pink lg w-100 mb-3 font-CeraGR  mx-auto" href={route('wish.subscribe.checkout',{uuid: item.uuid, reccure: 'onetime'})}>
+                    border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 false flex btn-pink lg w-100 mb-3 font-CeraGR  mx-auto"
+                     href={route('wish.subscribe.checkout',{uuid: item.uuid, reccure: 'onetime'})}>
                         OneTime Purchase
                     </Link>
                     <Link className="inline-flex items-center px-4 border 
@@ -124,7 +124,7 @@ export default function AddCart(props) {
                     focus:ring-indigo-500 focus:ring-offset-2 transition 
                     ease-in-out duration-150 false flex btn-pink lg w-100 
                     mb-3 font-CeraGR  mx-auto" 
-                    href={route('wish.subscribe.checkout',{uuid: item.uuid})}>
+                    href={route('wish.subscribe.checkout',{uuid: item.uuid, })}>
                         Pay Every {item.subscription_period == 'daily' ? " Day" : ''}
                         {item.subscription_period == 'weekly' ? " Week" : ''}
                         {item.subscription_period == 'monthly' ? " Month" : ''}
@@ -156,9 +156,8 @@ export default function AddCart(props) {
                         uuid={uuid}
                     />
                 </div>
-
             }
-
+            {showall ? <Link  href={`/${item.user && item.user.username}`} className="m-auto d-table text-primary" >See All {item.user && item.user.name}'s Wishes</Link> : ''}
             </div>
         </Popup>
     );

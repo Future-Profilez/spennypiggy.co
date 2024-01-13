@@ -35,7 +35,7 @@ export default function EditProfile({ user, global_currency }) {
         bio: user?.bio || '',
         avatar: user?.avatar || '',
         cover: user?.cover || '',
-        min_surprise_amount: user?.surprise_gift_amount || '',
+        min_surprise_amount: user?.min_surprise_amount || '',
     });
 
     const updateProfile = (e) => {
