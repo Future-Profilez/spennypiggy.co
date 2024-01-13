@@ -7,7 +7,6 @@ import axios from "axios";
 import { useEffect } from "react";
 
 export default function UserCarts(props) {
-
     const deviceid = DeviceID();
     const { auth, removeFromCart } = props;
     const { format, formatMultiPrice } = PriceFormat();
