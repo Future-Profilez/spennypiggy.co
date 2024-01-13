@@ -25,7 +25,6 @@ export default function UserCarts(props) {
             window.location.href = `/create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}&anonymous=${keepAnonmyous ? 1 : 0}`;
         }
     };
-
     const [loading, setLoading] = useState(false);
     const [cartCleared, setCartCleared] = useState(false);
     const clearcart = (ownerid, index) => {
