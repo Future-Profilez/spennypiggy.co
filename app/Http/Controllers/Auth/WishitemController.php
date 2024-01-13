@@ -6,10 +6,15 @@ use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\CheckAdultContent;
 use App\Jobs\AutoTweetWishAdd;
+use App\Jobs\CheckoutTweet;
+use App\Jobs\CrowdfundTweet;
 use App\Jobs\MakeAutoTweets;
 use App\Jobs\SaveWishlist;
 use App\Jobs\SendUserGiftMail;
+use App\Jobs\SubscribeAutoTweet;
+use App\Jobs\SurpriseTweet;
 use App\Jobs\ThankyouMailToUser;
+use App\Jobs\TipJarTweet;
 use App\Jobs\WelcomeUser;
 use App\Mail\CheckError;
 use App\Models\StripePaymentDetail;
@@ -21,6 +26,7 @@ use App\Models\TwitterToken;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserCategory;
+use App\Models\UserIntro;
 use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
@@ -243,10 +249,6 @@ class WishitemController extends Controller
 
         $wish->refresh();
 
-        if(!empty($request->thumbnail)){
-            CheckAdultContent::dispatch($wish);
-        }
-
         if (!empty($request->category)) {
             foreach ($request->category as $key => $value) {
                 $wish_cat = new WishCategory();
@@ -402,6 +404,89 @@ class WishitemController extends Controller
         ]);
 
         return back()->with('success', 'Category Saved.');
+    }
+
+
+    public function discover_all_wishes($order,$type,$price) {
+
+        $query = WishItem::where('deleted_at', null)
+        ->with(['user'])
+        ->whereHas('user',function($q){
+            $q->where(function($s){
+                $s->whereNot('country', 'GB')->orWhereNull('country');
+            });
+        });
+
+        if($order == 'new'){
+            $query->latest();
+        }
+
+        if($price == '5to10'){
+            $query->whereBetween('price',[4.99,9.99]);
+        }
+        elseif($price == '10to30'){
+            $query->whereBetween('price',[9.99,29.99]);
+        }
+        elseif($price == '30to50'){
+            $query->whereBetween('price',[29.99,49.99]);
+        }
+        elseif($price == '50to100'){
+            $query->whereBetween('price',[49.99,99.99]);
+        }
+        elseif($price == '100plus'){
+            $query->where('price','>',99.99);
+        }
+
+        if($type == 'subscription'){
+            $query->where('subscription',1);
+        }
+        elseif($type == 'crowdfund'){
+            $query->where('subscription',2);
+        }
+        elseif($type == 'single'){
+            $query->where('subscription',0);
+        }
+
+        $wishes = $query->paginate(30);
+
+        return response()->json([
+            'success'   => true,
+            'wishes' => $wishes,
+            "last_page" => $wishes->lastPage() ?? null,
+            "current_page" => $wishes->currentPage() ?? null,
+            "total" => $wishes->total() ?? null,
+            "per_page" => $wishes->perPage() ?? null,
+        ]);
+    }
+
+
+    public function discover_all_creators($order,$gender) {
+
+        $query = UserIntro::where('deleted_at', null)
+                ->with(['user'])
+                ->whereHas('user',function($q) use($gender){
+                    $q->where(function($s){
+                        $s->whereNot('country', 'GB')->orWhereNull('country');
+                    });
+
+                    if($gender != 'all'){
+                        $q->where('gender',$gender);
+                    }
+                });
+
+        if($order == 'new'){
+            $query->latest();
+        }
+
+        $intros = $query->paginate(30);
+        return response()->json([
+            'success'   => true,
+            'intro' => $intros,
+            "last_page" => $intros->lastPage() ?? null,
+            "current_page" => $intros->currentPage() ?? null,
+            "total" => $intros->total() ?? null,
+            "per_page" => $intros->perPage() ?? null,
+        ]);
     }
 
 
@@ -1235,5 +1320,47 @@ class WishitemController extends Controller
         else{
             return back()->with('success',"Auto tweet for gift is Disabled.");
         }
+    }
+
+
+    /**
+     * Share the purchasing on twitter
+     *
+     * @return mixed
+     */
+    public function shareOnTwitter($uuid,$type)
+    {
+        $user = Auth::user();
+        if($user->auto_tweet == 0){
+            return response()->json([
+                'status' => false,
+                'msg' => "Please first enable the auto tweets."
+            ]);
+        }
+
+        if($type == 'wish-add'){
+            $pay = StripePaymentItems::whereUuid($uuid)->first();
+            if(empty($pay->wish_item_id)){
+                SurpriseTweet::dispatch($pay);
+            }
+            elseif($pay->wish->subscription == 2){
+                CrowdfundTweet::dispatch($pay);
+            }
+            else{
+                CheckoutTweet::dispatch($pay);
+            }
+        }
+        elseif($type == 'subscription'){
+            $pay = WishItemSubscription::whereUuid($uuid)->first();
+            SubscribeAutoTweet::dispatch($pay);
+        }
+        elseif($type == 'tip-jar'){
+            $pay = TipGoalsPayment::whereUuid($uuid)->first();
+            TipJarTweet::dispatch($pay);
+        }
+        return response()->json([
+            'status' => true,
+            'msg' => "Wish payment shared on twitter."
+        ]);
     }
 }

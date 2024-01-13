@@ -102,23 +102,23 @@
                     </tr>
                     <tr>
                         <td align="center" style="text-align: center;padding: 0 0 15px 0;">
-                            <table align="center" cellspacing="0" cellpadding="0" border="0">
+                        <table align="center" cellspacing="0" cellpadding="0" border="0">
                                 <tr>
-                                    <td valign="middle" style="padding-right: 10px"><a
+                                    <!-- <td valign="middle" style="padding-right: 10px"><a
                                             href="https://m.facebook.com/whoyouinto" target="_blank"><img
-                                                src="https://whoyouinto.com/emails/user/facebookicon.png"></a></td>
+                                                src="https://whoyouinto.com/emails/user/facebookicon.png"></a></td> -->
                                     <td valign="middle" style="padding-right: 10px"><a
-                                            href="https://twitter.com/whoyouinto" target="_blank"><img
+                                            href="https://x.com/spennypiggy?s=21&t=C7pgKTNG0gHS2ka9yuTonA" target="_blank"><img
                                                 src="https://whoyouinto.com/emails/user/twittericon.png"></a></td>
                                     <td valign="middle" style="padding-right: 10px"><a
-                                            href="https://instagram.com/whoyouinto?igshid=OGQ5ZDc2ODk2ZA=="
+                                            href="https://www.instagram.com/spennypiggy?igsh=MW55cjFqYjh6eWFrZQ=="
                                             target="_blank"><img
                                                 src="https://whoyouinto.com/emails/user/instagramicon.png"></a></td>
                                     <td valign="middle" style="padding-right: 10px"><a
-                                            href="https://www.youtube.com/channel/UC5IHsRra_Pe9mc1DSzkNxMQ?app=desktop"
+                                            href="https://m.youtube.com/channel/UCC1GASMLYEjW46dHuKZZMZQ"
                                             target="_blank"><img
                                                 src="https://whoyouinto.com/emails/user/youtubeicon.png"></a></td>
-                                    <td valign="middle"><a href="https://www.tiktok.com/@whoyouinto"
+                                    <td valign="middle"><a href="https://www.tiktok.com/@spennypiggy?_t=8iySXCcoeGG&_r=1"
                                             target="_blank"><img
                                                 src="https://whoyouinto.com/emails/user/tiktokicon.png"></a></td>
                                 </tr>
