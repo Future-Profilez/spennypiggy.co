@@ -1000,6 +1000,7 @@ class WishitemController extends Controller
         $payment->is_read_user = 0;
         $payment->message_media = $media['uuid'] ?? null;
         $payment->media_type = $media['contentInfo']['mime']['type'] ?? null;
+        $payment->thank_you_at = Carbon::now();
         $payment->save();
         ThankyouMailToUser::dispatch($payment);
         return response()->json([
