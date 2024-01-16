@@ -95,9 +95,9 @@ export default function EditProfile({ user }) {
                         <li className="mb-2">
                             <label className="mb-1">Username</label>
                             <input defaultValue={user?.username || ''} onChange={(e) => setData("username", e.target.value)}
-                                type="text" name="username" className="form-input px-2 py-2 border w-full rounded-md" placeholder='Spennypiggy.com/warner99' onKeyUp={(e) => {setUsername(e.target.value)}}/>
+                                type="text" name="username" className="form-input px-2 py-2 border w-full rounded-md" placeholder='Spennypiggy.co/warner99' onKeyUp={(e) => {setUsername(e.target.value)}}/>
                         </li>
-                        <li><strong className='d-block text-start mb-4' >Profile URL : https://www.spennypiggy.co/{username}</strong></li>
+                        <li><strong className='d-block text-start mb-4' >Profile URL : {window.location.href}</strong></li>
                         <li className="mb-3">
                             <label className="mb-1">Bio</label>
                             <textarea defaultValue={user?.bio || ''}

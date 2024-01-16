@@ -8,7 +8,7 @@ import Nocontent from '@/includes/Nocontent';
 export default function TipTracker({auth}) {
 
    const { formatMultiPrice } = PriceFormat();
-   const [goals, setGoals] = useState();
+   const [goals, setGoals] = useState([]);
    const fetchgoals = () => {
       axios.get(`all-goals`).then(resp => {
          setGoals(resp.data.goals);
@@ -93,7 +93,7 @@ export default function TipTracker({auth}) {
          {goals && goals.map((g, i)=>{
             return <GoalItem g={g} />
          })}
-          {goals && goals.length < 1 || !goals ? <Nocontent text="nothing to see" /> : ''}
+          {goals && goals.length < 1 ?<Nocontent text="nothing to see" /> : ''}
       </div>
   )
 }

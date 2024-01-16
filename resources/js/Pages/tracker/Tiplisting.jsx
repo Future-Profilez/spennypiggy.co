@@ -8,7 +8,8 @@ import Nocontent from '@/includes/Nocontent';
 export default function Tiplisting({auth}) {
 
    const { formatMultiPrice } = PriceFormat();
-   const [tips, setTips] = useState();
+   const [tips, setTips] = useState([]);
+
    const fetchTips = () => {
       axios.get(`user-tips`).then(resp => {
          setTips(resp.data.tips);
@@ -21,11 +22,6 @@ export default function Tiplisting({auth}) {
       fetchTips();
    },[]);
 
-   const getPercentage = (actual, paid) => {
-      const r = (paid/actual)*100;
-      return r.toFixed(2);
-   }
-   
    const TipItem = ({g}) => {
       const [open, setOpen] = useState(false);
       const openState = () => { setOpen(!open) }
@@ -78,7 +74,7 @@ export default function Tiplisting({auth}) {
          {tips && tips.map((g, i)=>{
             return <TipItem g={g} />
          })}
-         {tips && tips.length < 1 || !tips ? <Nocontent text="nothing to see" /> : ''}
+         {tips && tips?.length < 1 ? <Nocontent text="nothing to see" /> : ''}
       </div>
   )
 }

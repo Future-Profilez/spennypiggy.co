@@ -19,10 +19,9 @@ export default function MyGoal({goal, IsloggedIn}) {
     const [close, setClose ] = useState();
     const { data, setData, post, processing, errors, reset } = useForm({
       amount: goal.default_price || '',
-      email: '',
-      name: '',
+      email: auth && auth.user?.email || '',
+      name: auth && auth.user?.name || '',
       message: '',
-      termaccept :''
     }); 
 
     return <>

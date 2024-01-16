@@ -19,7 +19,7 @@ import Guest from "@/Layouts/GuestLayout";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import useWidthCount from '@/Components/useWidthCount';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable,rectSortingStrategy } from "@dnd-kit/sortable";
-import AddGoal from './TipJar/AddGoal'; 
+import AddGoal from './TipJar/AddGoal';
 import{closestCenter,DndContext,KeyboardSensor,MouseSensor,TouchSensor,useSensor,useSensors } from "@dnd-kit/core";
 import MyGoal from './TipJar/MyGoal';
 
@@ -95,10 +95,10 @@ export default function Dashboard(props) {
     }, []);
 
     const w = useWidthCount();
-    const currencyaction = (e) => { 
+    const currencyaction = (e) => {
         if(e == 'open'){
             setOpenCurrency(true)
-        }else { 
+        }else {
             setOpenCurrency(false)
         }
     }
@@ -109,21 +109,20 @@ export default function Dashboard(props) {
             setOpenCurrency(true)
         }
     });
- 
 
-    const updateMovement = async (updated) => { 
+
+    const updateMovement = async (updated) => {
         const array = [];
         updated.forEach(name => {
             array.push(name.id)
         });
-        axios.post(`move-wish`, { 
+        axios.post(`move-wish`, {
         shuffled_items: array })
         .then((resp) => {
         }).catch((_err) => {
             console.error("error", _err);
         });
     }
-
 
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
@@ -153,14 +152,14 @@ export default function Dashboard(props) {
             warningAlert(flash.warning);
         }
         if(flash?.info){
-            infoAlert(flash.info); 
+            infoAlert(flash.info);
         }
     },[flash]);
 
 
     return <>
         <Guest auth={auth.user} user={user}>
-            <Head title={user && user.name} />
+            <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
             <div className='wishlistPage blackbg pt-6 pb-14 '>
                 <div className='containerbox'>
                     <VersionUpdate />
@@ -208,7 +207,9 @@ export default function Dashboard(props) {
                                                             </Link>
                                                         </div>
                                                     )}
-                                                    <AddGoal fetch_goal={fetch_goal} activegoal={goal} />
+                                                    <AddGoal 
+                                                    stripe_enabled={auth.user && auth.user.stripe_details_submitted} 
+                                                    fetch_goal={fetch_goal} activegoal={goal} />
                                                     <div className="addsocial flex">
                                                         <ul>
                                                             <li>
@@ -267,13 +268,13 @@ export default function Dashboard(props) {
                                             </select>
                                         </div>
                                         {IsloggedIn ? (
-                                            <Wishlist 
+                                            <Wishlist
                                                 updateCategory={fetch_categories}
                                                 currency={global_currency}
                                                 setuped={auth.user && auth.user.stripe_details_submitted == 1 ? true : false}
                                                 fetchingcats={fetchingcats}
                                                 categories={categories}
-                                            /> 
+                                            />
                                         ) : (
                                             ""
                                         )}
@@ -281,19 +282,19 @@ export default function Dashboard(props) {
 
                                     {loading ? <LoadingScreen /> : ""}
 
-                                    
+
                                     <div className="row  items-lists">
                                         {IsloggedIn || user?.stripe_details_submitted == 1 ? (
                                                 <>
                                                     {its && its.length ? <>
-                                                        <DndContext 
+                                                        <DndContext
                                                         sensors={sensors}
                                                         collisionDetection={closestCenter}
                                                         onDragEnd={handleDragEnd}
                                                         >
                                                             <SortableContext strategy={rectSortingStrategy} items={its}>
                                                                 {!loading && its.map((c, i) => {
-                                                                    return <Wishlistbox 
+                                                                    return <Wishlistbox
                                                                             key={`wish-item-${i}`}
                                                                             currency={global_currency}
                                                                             fetchingcats={fetchingcats}
@@ -308,7 +309,7 @@ export default function Dashboard(props) {
                                                             </SortableContext>
                                                         </DndContext>
                                                     </>
-                                                    : 
+                                                    :
                                                         <>
                                                             {!loading &&  <div className="col-md-12"> <Nocontent text="Nothing to see." /> </div> || ''}
                                                         </>
@@ -335,11 +336,11 @@ export default function Dashboard(props) {
                     </div>
                 </div>
             </div>
-     
+
             {IsloggedIn ? <Popup action={openCurrency}  space='4' modalclassName="pinkmodal" >
                 <ChangeCurrency currencyaction={currencyaction} defaultvalue={global_currency} />
             </Popup> : ''}
-            
+
         </Guest>
     </>
 }
