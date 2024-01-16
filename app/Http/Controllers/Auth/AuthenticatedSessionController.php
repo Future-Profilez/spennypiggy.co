@@ -388,7 +388,7 @@ class AuthenticatedSessionController extends Controller
         //     'token'     => $token
         // ]);
 
-        $user = User::firstWhere('id', $token->id);
+        $user = User::firstWhere('id', $token->user_id);
         if (!$user) {
             return to_route('home')->with('error', 'Link is invalid!');
         }
