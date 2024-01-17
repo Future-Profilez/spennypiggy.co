@@ -73,7 +73,7 @@ class LeaderBoardController extends Controller
                      },
                 ])
                 ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips'))
-                ->get()->skip(3);
+                ->get();
 
                 $data = [];
                 $rank = 1;
