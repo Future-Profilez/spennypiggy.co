@@ -73,7 +73,7 @@ class LeaderBoardController extends Controller
                      },
                 ])
                 ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips'))
-                ->get();
+                ->paginate(50);
 
                 $data = [];
                 $rank = 1;
@@ -99,6 +99,10 @@ class LeaderBoardController extends Controller
                     "success" => true,
                     'data' => $data,
                     "message" => 'Wishtender wishes get successfully',
+                    "last_page" => $users->lastPage() ?? null,
+                    "current_page" => $users->currentPage() ?? null,
+                    "total" => $users->total() ?? null,
+                    "per_page" => $users->perPage() ?? null,
                 ]);
         } catch (\Exception $e) {
             return response()->json([
