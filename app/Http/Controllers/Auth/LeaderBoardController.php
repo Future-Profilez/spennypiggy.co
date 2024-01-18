@@ -268,7 +268,8 @@ class LeaderBoardController extends Controller
                         'username' => $value->wish->user->username,
                         'avatar_url' => $value->wish->user->avatar_url,
                         'cover_url' => $value->wish->user->cover_url,
-                        'amount' => $value->amount
+                        'amount' => $value->amount,
+                        'currency' => $value->payment->currency
                     ];
                 }
 
@@ -278,7 +279,8 @@ class LeaderBoardController extends Controller
                         'username' => $value->wish_item->user->username,
                         'avatar_url' => $value->wish_item->user->avatar_url,
                         'cover_url' => $value->wish_item->user->cover_url,
-                        'amount' => $value->amount
+                        'amount' => $value->amount,
+                        'currency' => $value->currency
                     ];
                 }
 
@@ -288,7 +290,8 @@ class LeaderBoardController extends Controller
                         'username' => $value->tipGoal->user->username,
                         'avatar_url' => $value->tipGoal->user->avatar_url,
                         'cover_url' => $value->tipGoal->user->cover_url,
-                        'amount' => $value->amount
+                        'amount' => $value->amount,
+                        'currency' => $value->currency
                     ];
                 }
 
