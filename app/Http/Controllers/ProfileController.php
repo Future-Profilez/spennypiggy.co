@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers;
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Jobs\SendIntroMailAdmin;
 use App\Models\User;
 use App\Models\UserIntro;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -221,6 +222,8 @@ class ProfileController extends Controller
         $intro->refresh();
 
         $intro->poster_url;
+
+        SendIntroMailAdmin::dispatch($intro);
 
         return response()->json([
             'status' => true,

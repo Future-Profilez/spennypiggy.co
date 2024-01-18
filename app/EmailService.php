@@ -6,6 +6,7 @@ use App\Mail\Checkout;
 use App\Mail\CheckoutToUser;
 use App\Mail\ForgotPassEmail;
 use App\Mail\RenewMail;
+use App\Mail\SendAdminIntroMail;
 use App\Mail\SendAvatarRestrictionMail;
 use App\Mail\SendCoverRestrictionMail;
 use App\Mail\SendRestrictionMail;
@@ -218,6 +219,16 @@ class EmailService
     {
         try {
             Mail::to($email)->send(new SendCoverRestrictionMail());
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+
+    public static function sendIntroApprovingMailAdmin($intro)
+    {
+        try {
+            Mail::to("jack@spennypiggy.co")->send(new SendAdminIntroMail($intro));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
