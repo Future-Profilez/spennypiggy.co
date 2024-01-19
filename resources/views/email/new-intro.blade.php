@@ -11,14 +11,15 @@
                     <td
                         style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
                         <span style="color:#F94F97 ">
-                            {{ $pay->payment->owner->name ?? "Creator" }} is sending an thank you message to {$pay->payment->user->name ?? "User"}. Please take action on it.
+                            {{ $intro->user->name ?? "User" }} uploads an intro video. Please take action on it.
                         </span>
                     </td>
                 </tr>
+                <br><br>
                 <tr>
                     <td style="padding:0 0 10px 0; text-align: center;">
-                        <a href="https://admin.spennypiggy.co/thank-you-messages/"
-                            style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">See Thankyou Message</a>
+                        <a href="https://admin.spennypiggy.co/intro-videos/"
+                            style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">See Video</a>
                     </td>
                 </tr>
             </table>
