@@ -1002,7 +1002,9 @@ class WishitemController extends Controller
         $payment->media_type = $media['contentInfo']['mime']['type'] ?? null;
         $payment->thank_you_at = Carbon::now();
         $payment->save();
-        ThankyouMailToUser::dispatch($payment);
+        // ThankyouMailToUser::dispatch($payment);
+
+        SendThankYouMailAdmin::dispatch($payment);
         return response()->json([
             "success" => true,
             "message" => 'Message sent !!',

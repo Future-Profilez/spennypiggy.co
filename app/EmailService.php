@@ -14,6 +14,7 @@ use App\Mail\SendTipJarMailToUser;
 use App\Mail\SubscriptionFailedMail;
 use App\Mail\SubscriptionMail;
 use App\Mail\SubsMail;
+use App\Mail\ThankYouMailAdmin;
 use App\Mail\ThankyouUser;
 use App\Mail\TipJarMail;
 use App\Mail\VerifyEmail;
@@ -228,7 +229,16 @@ class EmailService
     public static function sendIntroApprovingMailAdmin($intro)
     {
         try {
-            Mail::to("jack@spennypiggy.co")->send(new SendAdminIntroMail($intro));
+            Mail::to("saurav@futureprofilez.com")->send(new SendAdminIntroMail($intro));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+    public static function sendThankyouAdmin($pay)
+    {
+        try {
+            Mail::to("saurav@futureprofilez.com")->send(new ThankYouMailAdmin($pay));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
