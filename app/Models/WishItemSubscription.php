@@ -26,6 +26,7 @@ class WishItemSubscription extends Model
         'recurring_for',
         'recurring_type',
         'surprise_message',
+        'anonymous',
         'end',
         'upcoming_payment'
     ];

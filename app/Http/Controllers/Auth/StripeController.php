@@ -541,7 +541,7 @@ class StripeController extends Controller
      * @param string $reccure Subscription Reccurning - onetime or Continue
      * @return mixed
      */
-    public function wishItemSubscribe(Request $request, $uuid, $reccure = 'continue')
+    public function wishItemSubscribe(Request $request, $uuid,$anonymous, $reccure = 'continue')
     {
         $wish = WishItem::whereUuid($uuid)->with('user')->first();
 
@@ -579,7 +579,8 @@ class StripeController extends Controller
                 'tax'           =>  $wish->tax_amount,
                 'recurring_for' =>  $reccure,
                 'recurring_type' =>  $wish->subscription_period,
-                'surprise_message'  =>  $request->message ?? NULL
+                'surprise_message'  =>  $request->message ?? NULL,
+                'anonymous' => $anonymous ?? 0
             ]);
 
             $currency   =   strtolower($request->cookie("currency", "GBP"));
@@ -789,7 +790,8 @@ class StripeController extends Controller
                     'email' => $event->data->object->customer_email,
                     'name' => $event->data->object->customer_name,
                     'invoice_pdf' => $event->data->object->invoice_pdf,
-                    'uuid' => $subs->uuid
+                    'uuid' => $subs->uuid,
+                    'notification' => $subs->user->notification_send ?? 0
                 ];
 
                 $subs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
@@ -851,6 +853,9 @@ class StripeController extends Controller
                     'required',
                     'numeric'
                 ],
+                'anonymous' => [
+                    'required'
+                ],
                 'message' =>  [
                     'sometimes',
                     'nullable',
@@ -893,6 +898,7 @@ class StripeController extends Controller
                 'amount'        =>  $price,
                 'tax'           =>  $tax,
                 'message'  =>  $request->message ?? NULL,
+                'anonymous' => $request->anonymous ?? 0,
                 'product_id' => $stripe_client->id
             ]);
 

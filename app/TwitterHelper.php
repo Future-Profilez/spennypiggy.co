@@ -54,7 +54,7 @@ class TwitterHelper {
             "Guess what? I've got a new [period] subscriber treating my [wish] wishlist like a treasure trove—worth a cool [amount]![e_1] \nDive into my wishlist and be the next star in this gifting show!🎁\n [user_link] via @SpennyPiggy! 🐷"
         ],
         "purchase"  =>  [
-            "[name] just made a wishlist dream come true, funding a gift worth [amount]! Feel like joining in the fun? \nCheck out my wishlist and send me a little surprise 🎁 via\n [user_link] using @SpennyPiggy! 🐷",
+            '"[name]" just made my wishlist dream come true, funding a gift worth [amount]! Feel like joining in the fun? \nCheck out my wishlist and send me a little surprise 🎁 via\n [user_link] using @SpennyPiggy! 🐷',
             "Cheers to [name] for making my day! They just sponsored a gift from my wishlist valued at [amount]. \nWant to add to the excitement? Explore my wishlist and send me something special 🎁 through \n [user_link] via @SpennyPiggy! 🐷",
             "Big shoutout to [name]! They've generously funded a wishlist item worth [amount]. \nExcited to spread more joy? Visit my wishlist and send a surprise 🎁 my way using\n [user_link] via @SpennyPiggy! 🐷"
         ]

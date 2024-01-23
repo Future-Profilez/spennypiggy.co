@@ -10,34 +10,26 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-class CheckoutMailToUser implements ShouldQueue
+class MembershipMail implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $payment;
-
-
+    public $mem;
     /**
      * Create a new job instance.
-     *
-     * @param \App\Models\User $user
-     * @param bool $social = false
-     * @return void
      */
-    public function __construct($payment)
+    public function __construct($mem)
     {
-        $this->payment = $payment;
+        $this->mem = $mem;
     }
 
     /**
      * Execute the job.
-     *
-     * @return void
      */
-    public function handle()
+    public function handle(): void
     {
-        if((isset($this->payment->user) && $this->payment->user->notification_send == 1) || (empty($this->payment->user))){
-            EmailService::checkOutToUser($this->payment);
+        if((isset($this->mem->membership->user) && $this->mem->membership->user->notification_send == 1) || (empty($this->mem->membership->user))){
+            EmailService::sendMembershipMail($this->mem);
         }
     }
 }

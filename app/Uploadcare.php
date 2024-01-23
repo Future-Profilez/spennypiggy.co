@@ -67,7 +67,7 @@ class Uploadcare
                 'Authorization' => "Uploadcare.Simple " . env("UPLOADCARE_PUBLIC_KEY") . ":" . env('UPLOADCARE_SECRET_KEY')
             ])
             ->post(env("UPLOADCARE_HOST") . "convert/video/", [
-                "paths" => ["$uuid/video/-/cut/0:0:01.001/0:$time.0/"],
+                "paths" => ["$uuid/video/-/cut/0:0:05.001/0:$time.0/"],
                 "store" => 1
             ]);
 

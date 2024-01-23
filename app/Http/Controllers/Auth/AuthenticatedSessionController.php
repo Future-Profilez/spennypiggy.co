@@ -243,6 +243,31 @@ class AuthenticatedSessionController extends Controller
         }
     }
 
+
+    public function user_memberships($username)
+    {
+        $user = User::where(function ($q) {
+            $q->whereNot('country', 'GB')->orWhereNull('country');
+        })->firstWhere('username', $username);
+
+        if ($user) {
+            $membership = $user->memberships()
+                ->latest()
+                ->get();
+
+
+            return response()->json([
+                'success'   => true,
+                'memberships' => $membership
+            ]);
+        }
+        return response()->json([
+            'success'   => false,
+            'items'     => [],
+            'message'   =>  'User not found'
+        ]);
+    }
+
     public function sociallinks($username)
     {
         try {
@@ -388,7 +413,7 @@ class AuthenticatedSessionController extends Controller
         //     'token'     => $token
         // ]);
 
-        $user = User::firstWhere('id', $token->id);
+        $user = User::firstWhere('id', $token->user_id);
         if (!$user) {
             return to_route('home')->with('error', 'Link is invalid!');
         }

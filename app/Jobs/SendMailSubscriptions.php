@@ -33,8 +33,9 @@ class SendMailSubscriptions implements ShouldQueue
 
         foreach ($subs as $key => $value) {
 
-
-            EmailService::sendSubscriptionMail($value);
+            if($value->user->notification_send == 1){
+                EmailService::sendSubscriptionMail($value);
+            }
         }
     }
 }

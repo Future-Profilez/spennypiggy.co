@@ -10,17 +10,18 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-class SubscribedMail implements ShouldQueue
+class SendIntroMailAdmin implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $sub;
+    public $intro;
+
     /**
      * Create a new job instance.
      */
-    public function __construct($sub)
+    public function __construct($intro)
     {
-        $this->sub = $sub;
+        $this->intro = $intro;
     }
 
     /**
@@ -28,8 +29,6 @@ class SubscribedMail implements ShouldQueue
      */
     public function handle(): void
     {
-        if((isset($this->sub->wish_item->user) && $this->sub->wish_item->user->notification_send == 1) || (empty($this->sub->wish_item->user))){
-            EmailService::sendSubscribedMail($this->sub);
-        }
+        EmailService::sendIntroApprovingMailAdmin($this->intro);
     }
 }

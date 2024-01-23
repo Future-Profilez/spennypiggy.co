@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\LeaderBoardController;
+use App\Http\Controllers\Auth\MembershipController;
 use App\Http\Controllers\Auth\MyController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
@@ -19,8 +20,8 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WishtenderController;
-use App\Http\Middleware\IpTracker;
 use App\Http\Middleware\VerifyCsrfToken;
+use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Models\WishItem;
 use Illuminate\Support\Facades\Auth;
@@ -40,7 +41,7 @@ use Illuminate\Support\Facades\Http;
 
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('register')->middleware(IpTracker::class);
+        ->name('register');
 
     Route::post('register', [RegisteredUserController::class, 'store']);
 
@@ -105,6 +106,8 @@ Route::middleware('auth')->group(function () {
 
         Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
 
+        Route::get('notification-switch', [ProfileController::class, 'notificationSwitch'])->name('switch-notification');
+
         Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
 
         Route::get('account', function () {
@@ -113,6 +116,8 @@ Route::middleware('auth')->group(function () {
                 'auto_tweet' => $auto_tweet
             ]);
         })->name("account");
+
+        Route::get('check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content');
 
         Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
 
@@ -140,21 +145,42 @@ Route::middleware('auth')->group(function () {
         Route::prefix("twitter")->name("x.")->group(function () {
             Route::get('init', [TwitterController::class, 'authInit'])->name('init');
             Route::get('authorize', [TwitterController::class, 'handleAuth'])->name('handle');
+            Route::get('share/{uuid}/{type}', [WishitemController::class, 'shareOnTwitter'])->name('share');
             // Route::get('authorize', [TwitterController::class, 'handleOauth1'])->name('handle');
         });
 
         Route::post('add-goal', [WishitemController::class, 'addTipGoal'])->name('add-goal');
         Route::get('mark-complete-goal/{uuid}', [WishitemController::class, 'markJarComplete'])->name('mark-goal');
         Route::get('all-goals', [WishitemController::class, 'allGoalsCreators'])->name('all-goals');
+
+        // Intro video
+        Route::prefix("intro")->name("intro.")->group(function () {
+            Route::post('save', [ProfileController::class, 'saveIntroVideo'])->name('save');
+            Route::get('list', [ProfileController::class, 'getIntroVideo'])->name('list');
+            Route::get('remove', [ProfileController::class, 'removeIntro'])->name('remove');
+            // Route::get('/{uuid}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
+        });
+
+        Route::prefix("membership")->name("membership.")->group(function () {
+            Route::post('save', [MembershipController::class, 'membershipLevelSave'])->name('save');
+            Route::get('remove/{uuid}', [MembershipController::class, 'removeLevel'])->name('remove');
+        });
     });
 });
 
+// Intro video
+Route::get('my-intro/{id}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
+
+Route::get('discover',function (){
+    return Inertia::render('discover/Discover');
+})->name("discover");
+Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class, 'discover_all_wishes'])->name('discover_wish');
+Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');
+// Route::get('discover/creators_videos', [WishitemController::class, 'discover_creators_videos'])->name('discover_videos');
+
 Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
-
 Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity');
-
 Route::get('cancel-subs/{uuid}', [StripeController::class, 'cancelSubs'])->name('cancel-subs');
-
 Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
     ->name('password.request');
 
@@ -203,10 +229,10 @@ Route::get('/files/{filename}', function (string $filename) {
 Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status')->withoutMiddleware(VerifyCsrfToken::class);
 
 /* wishtender */
-Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('wishtender-wishes');
-Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
+Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('leaderboard');
+Route::get('first-three-leaderboard/{type?}', [LeaderBoardController::class, 'firstThreeWisher'])->name('first-three-wishes');
 
-Route::get('/leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('/leaderboard');
+Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
 
 Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
     Route::post('pay/{uuid}/', [StripeController::class, 'tipToJar'])->name("pay");
@@ -220,9 +246,23 @@ Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
 
 //     return $ret;
 // });
-
 Route::get('/test/test', function () {
     return Inertia::render('Test');
+})->name("test");
+
+Route::get('/problem-solving', function () {
+    $nums = [3,4,2,5];
+    $a = [];
+            foreach($nums as $key => $value){
+                $multiple = 1;
+                foreach($nums as $k => $v){
+                    if($k != $key){
+                        $multiple *= $v;
+                    }
+                }
+                array_push($a,$multiple);
+            }
+            return $a;
 })->name("test");
 
 Route::get('twitter-token/', [TwitterController::class, 'twitterAuthUrl']);
@@ -230,6 +270,9 @@ Route::get('twitter/login', [TwitterController::class, 'twitterLogin']);
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
 
 Route::get('sociallinks/{username}', [AuthenticatedSessionController::class, 'sociallinks'])->name('user.sociallinks');
+
+Route::get('memberships/{username}', [AuthenticatedSessionController::class, 'user_memberships'])->name('user.memberships');
+
 
 Route::get('/{username}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
 Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');
@@ -240,3 +283,11 @@ Route::prefix("wish")->name("wish.")->group(function () {
     Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name("subscribe.checkout");
     Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleSubscription'])->name('subscribe.handle');
 });
+
+Route::prefix("membership")->name("membership.")->group(function () {
+    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->name("checkout");
+    Route::get('/handle/{uuid}/{status}', [MembershipController::class, 'handlePayment'])->name('handle');
+});
+
+
+

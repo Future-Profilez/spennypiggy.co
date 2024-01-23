@@ -9,17 +9,17 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class SendRestrictionMail extends Mailable
+class SendAdminIntroMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $wish;
+    public $intro;
     /**
      * Create a new message instance.
      */
-    public function __construct($wish)
+    public function __construct($intro)
     {
-        $this->wish = $wish;
+        $this->intro = $intro;
     }
 
       /**
@@ -30,8 +30,8 @@ class SendRestrictionMail extends Mailable
     public function build()
     {
         try {
-            $subject = '⚠️ Wishlist Item Removed! ⚠️';
-            return $this->view('email.wish-remove')
+            $subject = 'New intro video to approve.';
+            return $this->view('email.new-intro')
                 ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
                 ->subject($subject);
         } catch (\Exception $e) {

@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\StripePaymentDetail;
+use App\Models\StripePaymentItems;
+use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Models\WishItemSubscription;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class LeaderBoardController extends Controller
@@ -17,102 +20,64 @@ class LeaderBoardController extends Controller
     public function wishtenderWishers($type = null)
     {
         try {
-            if (!empty($type) || $type != null) {
-                if ($type == 'monthly' || $type == 'weekly' || $type == 'daily') {
-
-                    $currentMonth = Carbon::now()->month;
-                    $currentYear = Carbon::now()->year;
-                    $currentWeekStartDate = Carbon::now()->startOfWeek();
-                    $currentWeekEndDate = Carbon::now()->endOfWeek();
-                    $currentDate = Carbon::today();
-
-                    $querydata = User::where(function ($q) {
-                        $q->whereNot('country', 'GB')->orWhereNull('country');
-                    })->whereHas('paymentitems', function ($q) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
-                        $q->selectRaw('owner_id, SUM(amount) as total_amount')
-                            ->groupBy('owner_id')
-                            ->orderByRaw('total_amount DESC');
-                        if ($type == 'monthly') {
-                            $q->where('stripe_payment_details.payment_status', 'paid')
-                                ->whereMonth('stripe_payment_items.created_at', $currentMonth)
-                                ->whereYear('stripe_payment_items.created_at', $currentYear);
-                        } elseif ($type == 'weekly') {
-                            $q->where('stripe_payment_details.payment_status', 'paid')
-                                ->whereBetween('stripe_payment_items.created_at', [$currentWeekStartDate, $currentWeekEndDate]);
-                        } else {
-                            $q->where('stripe_payment_details.payment_status', 'paid')
-                                ->whereDate('stripe_payment_items.created_at', $currentDate);
-                        }
-                    })->orWhereHas(
-                        'subscriptions',
-                        function ($q) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
-                            $q->selectRaw('wish_item_subscriptions.user_id, SUM(amount) as total_amount')
-                                ->groupBy('wish_item_subscriptions.user_id')
-                                ->orderByRaw('total_amount DESC');
-                            if ($type == 'monthly') {
-                                $q->where('wish_item_subscriptions.status', 'paid')
-                                    ->whereMonth('wish_item_subscriptions.created_at', $currentMonth)
-                                    ->whereYear('wish_item_subscriptions.created_at', $currentYear);
-                            } elseif ($type == 'weekly') {
-                                $q->where('wish_item_subscriptions.status', 'paid')
-                                    ->whereBetween('wish_item_subscriptions.created_at', [$currentWeekStartDate, $currentWeekEndDate]);
-                            } else {
-                                $q->where('wish_item_subscriptions.status', 'paid')
-                                    ->whereDate('wish_item_subscriptions.created_at', $currentDate);
-                            }
-                        }
-                    )->get();
-
-                    $data = [];
-                    $rank = 1;
-                    foreach ($querydata as $query) {
-                        $data[] = [
-                            'rank' => $rank,
-                            'name' => $query->name ?? '',
-                            'username' => $query->username ?? '',
-                            'avatar' => $query->avatar_url,
-                            'coverimg' =>  $query->cover_url,
-                            'top' => $rank / 100,
-                        ];
-                        $rank++;
-                    }
-                    return response()->json([
-                        "success" => true,
-                        'data' => $data,
-                        "message" => 'Wishtender wishes get successfully',
-                    ]);
-                } else {
-                    return response()->json([
-                        "success" => false,
-                        "message" => 'Please enter valid type',
-                    ]);
-                }
-            } else {
                 $currentMonth = Carbon::now()->month;
                 $currentYear = Carbon::now()->year;
+                $currentWeekStartDate = Carbon::now()->startOfWeek();
+                $currentWeekEndDate = Carbon::now()->endOfWeek();
+                $currentDate = Carbon::today();
 
-                $querydata = User::where(function ($q) {
+                $users = User::where(function ($q) {
                     $q->whereNot('country', 'GB')->orWhereNull('country');
-                })->whereHas('paymentitems', function ($q) use ($type, $currentMonth, $currentYear) {
-                    $q->selectRaw('owner_id, SUM(amount) as total_amount')
-                        ->groupBy('owner_id')
-                        ->orderByRaw('total_amount DESC')->where('stripe_payment_details.payment_status', 'paid')
-                        ->whereMonth('stripe_payment_items.created_at', $currentMonth)
-                        ->whereYear('stripe_payment_items.created_at', $currentYear);
-                })->orWhereHas(
-                    'subscriptions',
-                    function ($q) use ($type, $currentMonth, $currentYear) {
-                        $q->selectRaw('wish_item_subscriptions.user_id, SUM(amount) as total_amount')
-                            ->groupBy('wish_item_subscriptions.user_id')
-                            ->orderByRaw('total_amount DESC')->where('wish_item_subscriptions.status', 'paid')
-                            ->whereMonth('wish_item_subscriptions.created_at', $currentMonth)
-                            ->whereYear('wish_item_subscriptions.created_at', $currentYear);
-                    }
-                )->get();
+                })->with(['paymentitems', 'subscriptions', 'tip_goal_payment'])
+                ->withCount([
+                    'paymentitems as total_payments' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
+                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"));
+                        if($type == 'monthly'){
+                            $query->whereYear('stripe_payment_items.created_at', '=', $currentYear)
+                            ->whereMonth('stripe_payment_items.created_at',$currentMonth);
+                        }
+                        elseif($type == 'weekly'){
+                            $query->whereBetween('stripe_payment_items.created_at', [$currentWeekStartDate,$currentWeekEndDate]);
+                        }
+                        elseif($type == 'daily'){
+                            $query->where('stripe_payment_items.created_at', $currentDate);
+                        }
+                    },
+                    'subscriptions as total_subscriptions' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
+                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"));
+
+                            if($type == 'monthly'){
+                                $query->whereYear('wish_item_subscriptions.created_at', '=', $currentYear)
+                                ->whereMonth('wish_item_subscriptions.created_at',$currentMonth);
+                            }
+                            elseif($type == 'weekly'){
+                                $query->whereBetween('wish_item_subscriptions.created_at', [$currentWeekStartDate,$currentWeekEndDate]);
+                            }
+                            elseif($type == 'daily'){
+                                $query->where('wish_item_subscriptions.created_at', $currentDate);
+                            }
+                        },
+                    'tip_goal_payment as total_tips' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
+                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"));
+
+                        if($type == 'monthly'){
+                            $query->whereYear('tip_goals_payments.created_at', '=', $currentYear)
+                            ->whereMonth('tip_goals_payments.created_at',$currentMonth);
+                        }
+                        elseif($type == 'weekly'){
+                            $query->whereBetween('tip_goals_payments.created_at', [$currentWeekStartDate,$currentWeekEndDate]);
+                        }
+                        elseif($type == 'daily'){
+                            $query->where('tip_goals_payments.created_at', $currentDate);
+                        }
+                     },
+                ])
+                ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips'))
+                ->paginate(50);
 
                 $data = [];
                 $rank = 1;
-                foreach ($querydata as $query) {
+                foreach ($users as $query) {
                     $data[] = [
                         'rank' => $rank,
                         'name' => $query->name ?? '',
@@ -123,10 +88,22 @@ class LeaderBoardController extends Controller
                     ];
                     $rank++;
                 }
-                return Inertia::render('leaderboard/Board', [
-                    "data" => $data,
+
+                if(empty($type)){
+                    return Inertia::render('leaderboard/Board', [
+                        "data" => $data,
+                    ]);
+                }
+
+                return response()->json([
+                    "success" => true,
+                    'data' => $data,
+                    "message" => 'Wishtender wishes get successfully',
+                    "last_page" => $users->lastPage() ?? null,
+                    "current_page" => $users->currentPage() ?? null,
+                    "total" => $users->total() ?? null,
+                    "per_page" => $users->perPage() ?? null,
                 ]);
-            }
         } catch (\Exception $e) {
             return response()->json([
                 "success" => false,
@@ -137,137 +114,206 @@ class LeaderBoardController extends Controller
     }
 
 
-    public function largestGifts($type = null)
+    public function firstThreeWisher($type = null)
     {
         try {
-            if (!empty($type) || $type != null) {
-                if ($type == 'lasthour' || $type == 'last24hour') {
-                    $lasthour = Carbon::now()->subHour(1);
-                    $last24hour = Carbon::now()->subHour(24);
+                $currentMonth = Carbon::now()->month;
+                $currentYear = Carbon::now()->year;
+                $currentWeekStartDate = Carbon::now()->startOfWeek();
+                $currentWeekEndDate = Carbon::now()->endOfWeek();
+                $currentDate = Carbon::today();
 
-                    // $querydata = User::whereHas('paymentitems', function ($q) use ($type, $lasthour, $last24hour) {
-                    //     $q->selectRaw('owner_id, SUM(amount) as total_amount')
-                    //         ->groupBy('owner_id')
-                    //         ->orderByRaw('total_amount DESC');
-                    //     if ($type == 'lasthour') {
-                    //         $q->where('stripe_payment_details.payment_status', 'paid')
-                    //             ->where('stripe_payment_items.created_at', '>=', $lasthour);
-                    //     } else {
-                    //         $q->where('stripe_payment_details.payment_status', 'paid')
-                    //             ->where('stripe_payment_items.created_at', '>=', $last24hour);
-                    //     }
-                    // })->orWhereHas(
-                    //     'subscriptions',
-                    //     function ($q) use ($type, $lasthour, $last24hour) {
-                    //         $q->selectRaw('wish_item_subscriptions.user_id, SUM(amount) as total_amount')
-                    //             ->groupBy('wish_item_subscriptions.user_id')
-                    //             ->orderByRaw('total_amount DESC');
-                    //         if ($type == 'lasthour') {
-                    //             $q->where('wish_item_subscriptions.status', 'paid')
-                    //                 ->where('wish_item_subscriptions.created_at', '>=', $lasthour);
-                    //         } else {
-                    //             $q->where('wish_item_subscriptions.status', 'paid')
-                    //                 ->where('wish_item_subscriptions.created_at', '>=', $last24hour);
-                    //         }
-                    //     }
-                    // )->get();
-                    // $querydata = User::whereHas('paymentitems', function ($q) use ($type, $lasthour, $last24hour) {
-                    //     $q->select('owner_id')
-                    //         ->selectRaw('SUM(amount) as total_amount')
-                    //         ->groupBy('owner_id')
-                    //         ->orderByRaw('total_amount DESC');
-                    //     if ($type == 'lasthour') {
-                    //         $q->where('stripe_payment_details.payment_status', 'paid')
-                    //             ->where('stripe_payment_items.created_at', '>=', $lasthour);
-                    //     } else {
-                    //         $q->where('stripe_payment_details.payment_status', 'paid')
-                    //             ->where('stripe_payment_items.created_at', '>=', $last24hour);
-                    //     }
-                    // })->orWhereHas('subscriptions', function ($q) use ($type, $lasthour, $last24hour) {
-                    //     $q->select('wish_item_subscriptions.user_id')
-                    //         ->selectRaw('SUM(amount) as total_amount')
-                    //         ->groupBy('wish_item_subscriptions.user_id')
-                    //         ->orderByRaw('total_amount DESC');
-                    //     if ($type == 'lasthour') {
-                    //         $q->where('wish_item_subscriptions.status', 'paid')
-                    //             ->where('wish_item_subscriptions.created_at', '>=', $lasthour);
-                    //     } else {
-                    //         $q->where('wish_item_subscriptions.status', 'paid')
-                    //             ->where('wish_item_subscriptions.created_at', '>=', $last24hour);
-                    //     }
-                    // })->get();
-                    $querydata = User::where(function ($q) {
-                        $q->whereNot('country', 'GB')->orWhereNull('country');
-                    })->whereHas('paymentitems', function ($q) use ($type, $lasthour, $last24hour) {
-                        $q->select('owner_id')
-                            ->selectRaw('SUM(amount) as total_amount')
-                            ->groupBy('owner_id')
-                            ->orderByRaw('total_amount DESC');
-                        if ($type == 'lasthour') {
-                            $q->where('stripe_payment_details.payment_status', 'paid')
-                                ->where('stripe_payment_items.created_at', '>=', $lasthour);
-                        } else {
-                            $q->where('stripe_payment_details.payment_status', 'paid')
-                                ->where('stripe_payment_items.created_at', '>=', $last24hour);
+                $users = User::where(function ($q) {
+                    $q->whereNot('country', 'GB')->orWhereNull('country');
+                })->with(['paymentitems', 'subscriptions', 'tip_goal_payment'])
+                ->withCount([
+                    'paymentitems as total_payments' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
+                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"));
+                        if($type == 'monthly'){
+                            $query->whereYear('stripe_payment_items.created_at', '=', $currentYear)
+                            ->whereMonth('stripe_payment_items.created_at',$currentMonth);
                         }
-                    })->orWhereHas('subscriptions', function ($q) use ($type, $lasthour, $last24hour) {
-                        $q->select('wish_item_subscriptions.user_id')
-                            ->selectRaw('SUM(amount) as total_amount')
-                            ->groupBy('wish_item_subscriptions.user_id')
-                            ->orderByRaw('total_amount DESC');
-                        if ($type == 'lasthour') {
-                            $q->where('wish_item_subscriptions.status', 'paid')
-                                ->where('wish_item_subscriptions.created_at', '>=', $lasthour);
-                        } else {
-                            $q->where('wish_item_subscriptions.status', 'paid')
-                                ->where('wish_item_subscriptions.created_at', '>=', $last24hour);
+                        elseif($type == 'weekly'){
+                            $query->whereBetween('stripe_payment_items.created_at', [$currentWeekStartDate,$currentWeekEndDate]);
                         }
-                    })->with('paymentitems', 'subscriptions')->get();
+                        elseif($type == 'daily'){
+                            $query->where('stripe_payment_items.created_at', $currentDate);
+                        }
+                    },
+                    'subscriptions as total_subscriptions' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
+                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"));
 
-                    // echo "<pre>";
-                    // print_r($querydata);
-                    // die;
+                            if($type == 'monthly'){
+                                $query->whereYear('wish_item_subscriptions.created_at', '=', $currentYear)
+                                ->whereMonth('wish_item_subscriptions.created_at',$currentMonth);
+                            }
+                            elseif($type == 'weekly'){
+                                $query->whereBetween('wish_item_subscriptions.created_at', [$currentWeekStartDate,$currentWeekEndDate]);
+                            }
+                            elseif($type == 'daily'){
+                                $query->where('wish_item_subscriptions.created_at', $currentDate);
+                            }
+                        },
+                    'tip_goal_payment as total_tips' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
+                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"));
 
+                        if($type == 'monthly'){
+                            $query->whereYear('tip_goals_payments.created_at', '=', $currentYear)
+                            ->whereMonth('tip_goals_payments.created_at',$currentMonth);
+                        }
+                        elseif($type == 'weekly'){
+                            $query->whereBetween('tip_goals_payments.created_at', [$currentWeekStartDate,$currentWeekEndDate]);
+                        }
+                        elseif($type == 'daily'){
+                            $query->where('tip_goals_payments.created_at', $currentDate);
+                        }
+                     },
+                ])
+                ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips'))
+                ->take(3)
+                ->get();
 
-                    // echo "<pre>";
-                    // print_r($querydata);
-                    // die;
+                $data = [];
+                $rank = 1;
+                foreach ($users as $query) {
+                    $data[] = [
+                        'rank' => $rank,
+                        'name' => $query->name ?? '',
+                        'username' => $query->username ?? '',
+                        'avatar' => $query->avatar_url,
+                        'coverimg' =>  $query->cover_url,
+                        'top' => $rank / 100,
+                    ];
+                    $rank++;
+                }
 
-
-                    // $data = [];
-                    // $rank = 1;
-                    // foreach ($querydata as $query) {
-                    //     $data[] = [
-                    //         'rank' => $rank,
-                    //         'name' => $query->name ?? '',
-                    //         'username' => $query->username ?? '',
-                    //         'avatar' => $query->avatar_url,
-                    //         'coverimg' =>  $query->cover_url,
-                    //         'top' => $rank / 100,
-                    //     ];
-                    //     $rank++;
-                    // }
-                    // return response()->json([
-                    //     "success" => true,
-                    //     'data' => $data,
-                    //     "message" => 'Wishtender wishes get successfully',
-                    // ]);
-                } else {
-                    return response()->json([
-                        "success" => false,
-                        "message" => 'Please enter valid type',
+                if(empty($type)){
+                    return Inertia::render('leaderboard/Board', [
+                        "data" => $data,
                     ]);
                 }
-            } else {
 
-                // return Inertia::render('leaderboard/Board', [
-                //     "data" => $data,
-                // ]);
-            }
+                return response()->json([
+                    "success" => true,
+                    'data' => $data,
+                    "message" => 'Wishtender wishes get successfully',
+                ]);
         } catch (\Exception $e) {
             return response()->json([
                 "success" => false,
                 "message" => 'Something went wrong',
+                "error" => $e
+            ]);
+        }
+    }
+
+    public function largestGifts($type = null)
+    {
+        try {
+            if ($type == 'lasthour' || $type == 'last24hour') {
+
+                if($type == 'lasthour'){
+                    $lasthour = Carbon::now()->subHour(1);
+                    $wishes = StripePaymentItems::whereHas('wish',function($q){
+                        $q->whereHas('user',function($query){
+                            $query->where(function ($s) {
+                                $s->whereNot('country', 'GB')->orWhereNull('country');
+                            });
+                        });
+                    })->orderBy('amount','DESC')->where('created_at','>',$lasthour)->get();
+                    $subscriptions = WishItemSubscription::whereHas('wish_item',function($q){
+                        $q->whereHas('user',function($query){
+                            $query->where(function ($s) {
+                                $s->whereNot('country', 'GB')->orWhereNull('country');
+                            });
+                        });
+                    })->orderBy('amount','DESC')->where('created_at','>',$lasthour)->get();
+                    $tips = TipGoalsPayment::whereHas('tipGoal',function($q){
+                        $q->whereHas('user',function($query){
+                            $query->where(function ($s) {
+                                $s->whereNot('country', 'GB')->orWhereNull('country');
+                            });
+                        });
+                    })->orderBy('amount','DESC')->where('created_at','>',$lasthour)->get();
+                }else{
+                    $last24hour = Carbon::now()->subHour(24);
+                    $wishes = StripePaymentItems::whereHas('wish',function($q){
+                        $q->whereHas('user',function($query){
+                            $query->where(function ($s) {
+                                $s->whereNot('country', 'GB')->orWhereNull('country');
+                            });
+                        });
+                    })->orderBy('amount','DESC')->where('created_at','>',$last24hour)->get();
+                    $subscriptions = WishItemSubscription::whereHas('wish_item',function($q){
+                        $q->whereHas('user',function($query){
+                            $query->where(function ($s) {
+                                $s->whereNot('country', 'GB')->orWhereNull('country');
+                            });
+                        });
+                    })->orderBy('amount','DESC')->where('created_at','>',$last24hour)->get();
+                    $tips = TipGoalsPayment::whereHas('tipGoal',function($q){
+                        $q->whereHas('user',function($query){
+                            $query->where(function ($s) {
+                                $s->whereNot('country', 'GB')->orWhereNull('country');
+                            });
+                        });
+                    })->orderBy('amount','DESC')->where('created_at','>',$last24hour)->get();
+                }
+
+                $array = [];
+
+                foreach ($wishes as $key => $value) {
+                    $array[] = [
+                        'name' => $value->wish->user->name,
+                        'username' => $value->wish->user->username,
+                        'avatar_url' => $value->wish->user->avatar_url,
+                        'cover_url' => $value->wish->user->cover_url,
+                        'amount' => $value->amount,
+                        'currency' => $value->payment->currency
+                    ];
+                }
+
+                foreach ($subscriptions as $key => $value) {
+                    $array[] = [
+                        'name' => $value->wish_item->user->name,
+                        'username' => $value->wish_item->user->username,
+                        'avatar_url' => $value->wish_item->user->avatar_url,
+                        'cover_url' => $value->wish_item->user->cover_url,
+                        'amount' => $value->amount,
+                        'currency' => $value->currency
+                    ];
+                }
+
+                foreach ($tips as $key => $value) {
+                    $array[] = [
+                        'name' => $value->tipGoal->user->name,
+                        'username' => $value->tipGoal->user->username,
+                        'avatar_url' => $value->tipGoal->user->avatar_url,
+                        'cover_url' => $value->tipGoal->user->cover_url,
+                        'amount' => $value->amount,
+                        'currency' => $value->currency
+                    ];
+                }
+
+                usort($array, function ($a, $b) {
+                    return $b['amount'] - $a['amount'];
+                });
+
+                return response()->json([
+                    "status" => true,
+                    'data' => $array,
+                ]);
+
+            } else {
+                return response()->json([
+                    "status" => false,
+                    "msg" => 'Please enter valid type',
+                ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                "status" => false,
+                "msg" => 'Something went wrong',
                 "error" => $e
             ]);
         }

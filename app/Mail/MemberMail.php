@@ -9,20 +9,22 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class SendRestrictionMail extends Mailable
+class MemberMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $wish;
+    public $data;
     /**
      * Create a new message instance.
+     *
+     * @return void
      */
-    public function __construct($wish)
+    public function __construct($data)
     {
-        $this->wish = $wish;
+        $this->data = $data;
     }
 
-      /**
+    /**
      * Build the message.
      *
      * @return $this
@@ -30,10 +32,10 @@ class SendRestrictionMail extends Mailable
     public function build()
     {
         try {
-            $subject = '⚠️ Wishlist Item Removed! ⚠️';
-            return $this->view('email.wish-remove')
-                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
-                ->subject($subject);
+            $subject = 'WooHoo! You got a new membership.';
+            return $this->view('email.membership')
+            ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+            ->subject($subject);
         } catch (\Exception $e) {
         }
     }
