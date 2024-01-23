@@ -10,6 +10,7 @@ use App\Jobs\CheckoutTweet;
 use App\Jobs\CrowdfundTweet;
 use App\Jobs\MakeAutoTweets;
 use App\Jobs\SaveWishlist;
+use App\Jobs\SendThankYouMailAdmin;
 use App\Jobs\SendUserGiftMail;
 use App\Jobs\SubscribeAutoTweet;
 use App\Jobs\SurpriseTweet;

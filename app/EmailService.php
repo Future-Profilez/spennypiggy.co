@@ -5,6 +5,7 @@ namespace App;
 use App\Mail\Checkout;
 use App\Mail\CheckoutToUser;
 use App\Mail\ForgotPassEmail;
+use App\Mail\MemberMail;
 use App\Mail\RenewMail;
 use App\Mail\SendAdminIntroMail;
 use App\Mail\SendAvatarRestrictionMail;
@@ -171,6 +172,17 @@ class EmailService
         }
     }
 
+
+    public static function sendMembershipMail($data)
+    {
+        try {
+
+            Mail::to($data->membership->user->email)->send(new MemberMail($data));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
     public static function sendTipJarSubscribedMail($data)
     {
         try {
@@ -207,6 +219,7 @@ class EmailService
         }
     }
 
+
     public static function sendAvatarRestrictionMail($email)
     {
         try {
@@ -224,7 +237,6 @@ class EmailService
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }
-
 
     public static function sendIntroApprovingMailAdmin($intro)
     {
