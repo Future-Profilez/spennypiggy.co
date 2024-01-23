@@ -101,7 +101,6 @@ export default function Footer(props) {
             }
         }, 7000);
     }
-
     async function confgureGtag() {
         window.dataLayer = window.dataLayer || [];
         function gtag() {
