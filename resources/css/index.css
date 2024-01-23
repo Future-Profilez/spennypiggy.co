@@ -6,7 +6,7 @@
 }
 a{text-decoration:none;}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
-input[type=number]{-moz-appearance:textfield;}
+input[type=number]{-moz-appearance:textfield; appearance:textfield;}
 .cate-items div{background:#fb2e94 !important;padding:8px 25px !important;border-radius:11px;color:#fff;line-height:30px;}
 .cate-items input{margin-right:10px;border-radius:10px;}
 .disabled{pointer-events:none;opacity:0.8;}
