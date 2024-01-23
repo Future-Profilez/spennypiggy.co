@@ -4,10 +4,6 @@ import { useCallback, useEffect, useRef } from "react";
 LR.registerBlocks(LR);
 import { PACKAGE_VERSION } from "@uploadcare/blocks/env";
 
-<<<<<<< HEAD
-export default function GlobalUploader({ options, sendFile, clear, view, isUploading }) {
-    
-=======
 export default function GlobalUploader({ options, sendFile, clear, view, isUploading, type }) {
     
     // LR.FileUploaderRegular.shadowStyles = /* CSS */ `
@@ -17,7 +13,6 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
     // `;
     // LR.registerBlocks(LR);
 
->>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
     const [files, setFiles] = useState([]);
     const [checkIsUploading, setCheckIsUploading] = useState(false);
     const dataOutputRef = useRef();
@@ -45,10 +40,6 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
         return () => { el && el.removeEventListener("lr-data-output", handleUploaderEvent); };
     }, [handleUploaderEvent]);
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
     useEffect(()=>{ 
         window.addEventListener('LR_UPLOAD_START', (e) => {
           if (e.detail.ctx) {
@@ -69,10 +60,7 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
 
       }, []); 
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
     return <>
 
         {view && 
@@ -99,18 +87,6 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
         </div>
       }
 
-<<<<<<< HEAD
-        <lr-file-uploader-minimal  
-            class={options}  
-            css-src="https://cdn.jsdelivr.net/npm/@uploadcare/blocks@0.25.0/web/lr-file-uploader-minimal.min.css">
-            <lr-data-output
-                use-event ref={dataOutputRef}
-                hidden use-template
-                class={options}  
-                onEvent={handleUploaderEvent}>
-            </lr-data-output>
-        </lr-file-uploader-minimal>
-=======
         {type =='minimal' ?  
             <lr-file-uploader-minimal  
             class={options}  
@@ -149,7 +125,6 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
             </lr-data-output>
           </lr-file-uploader-regular> 
         : ''}
->>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
         
     </>
 }
