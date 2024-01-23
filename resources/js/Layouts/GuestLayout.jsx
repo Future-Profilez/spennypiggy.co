@@ -8,9 +8,14 @@ const Footer = React.lazy(() => import('@/includes/Footer'));
 export default function Guest({children, auth}) {
 
     const {successAlert, errorAlert} = useAlerts();
-    const {flash} = usePage().props;
+    const {flash, errors} = usePage().props;
 
     useEffect(() => {
+        if(errors){
+            Object.entries(errors).forEach(([key, value]) => {
+                errorAlert(value);
+            });
+        }
         if(flash?.error){
             errorAlert(flash.error);
         }
@@ -25,7 +30,6 @@ export default function Guest({children, auth}) {
         }
     },[]);
 
-
     return <>
         <Header auth={auth ||''} />
         {children}
@@ -33,3 +37,5 @@ export default function Guest({children, auth}) {
         <Toaster  />
     </>
 }
+
+

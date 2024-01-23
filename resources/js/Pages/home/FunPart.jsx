@@ -6,9 +6,9 @@ import { LazyLoadImage } from 'react-lazy-load-image-component';
 
 export default function FunPart() {
   return (
-   <div className="funpart whbg">
+   <div className="funpart pinkbg">
    <div className="containerbox">
-       <h2 className="headingMd text-shadow-black">
+       <h2 className="headingMd text-mint text-shadow-black">
            let’s dive into <br /> the fun part{" "}
        </h2>
        <div className="funboxs mintbg shadow-black border-black mb-10">
@@ -33,12 +33,12 @@ export default function FunPart() {
            </div>
        </div>
 
-       <div className="funboxs pinkbg shadow-black border-black mb-10">
+       <div className="funboxs whbg shadow-black border-black mb-10">
            <div className="funcnt">
                <h3 className="headingSm text-shadow-black mb-3 text-purple">
                    Receive gifts <br /> from your fans
                </h3>
-               <p className="text-CeraGR text-wh">
+               <p className="text-CeraGR ">
                    Cash Gift, Secret Gift, Surprise Gift,
                    Crowdfunding Gifts! There are many ways your
                    fans can support you on Spenny Piggy

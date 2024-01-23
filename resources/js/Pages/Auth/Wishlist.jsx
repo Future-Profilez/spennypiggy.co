@@ -1,6 +1,6 @@
 import React , { useEffect, useRef, useState } from "react";
 import LoaderButton from "@/Components/LoaderButton";
-import {  useForm } from "@inertiajs/react";
+import {  useForm, usePage, router } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
 import  GlobalUploader from '@/uploadcare/Uploader';
 import st from "../../../css/uploader.module.css";
@@ -9,22 +9,23 @@ import Tabs from "react-bootstrap/Tabs";
 import Accordion from "react-bootstrap/Accordion";
 import uploadedimg from "../../../assets/img/uploadedimg.png";
 import Popup from '@/Components/Popup';
-import { router } from "@inertiajs/react";
 import {  Pagination, Navigation  } from 'swiper/modules';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
+import PriceFormat from "@/includes/PriceFormat";
 
 export default function Wishlist(props) {
 
+    const { global_currency, auth } = usePage().props;
     const { categories, fetchingcats, updateCategory,  currency, item, editpop, openPop, setuped } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
     const [defaultKey, setDefaultKey] = useState(item && item.subscription !== null ? +(item.subscription) : null);
     const [clear, setClear] = useState();
     const [close, setClose] = useState();
-
+    const { formatMultiPrice } = PriceFormat();
     useEffect(()=>{
         setClose(openPop);
     },[openPop]);
@@ -190,12 +191,14 @@ export default function Wishlist(props) {
         }
     };
 
+    const defaultCurrency = auth && auth.user && auth.user.default_currency.toUppercase || 'GBP';
+
     return (
             <Popup modalclass='pinkmodal full' size='md' action={close}
-                classes={`${editpop ? "editpop"  : 'btn-pink lg px-4'}`}
-                text={`${editpop ? ""  : '+ Add wish'}`} >
+                classes={`${editpop ? "editpop"  : 'dropdown-item text-start p-0'}`}
+                text={`${editpop ? ""  : ' Add wish'}`} >
                 <div className="editprofileModal  wishlistModal ">
-                    <div className="editprofileModalInner  ">
+                    <div className="editprofileModalInner">
                         <h2 className="font-GillSans pt-4 px-3">Add A Wish </h2>
                         <Tabs
                             defaultActiveKey="1"
@@ -203,7 +206,6 @@ export default function Wishlist(props) {
                             className="mb-3" >
                             <Tab eventKey="1" title="Custom">
                                 <div className="wishinfo">
-                                   
                                     <form onSubmit={createWishList}>
                                         <ul className="ps-0" >
                                             <li className="mb-4">
@@ -224,22 +226,23 @@ export default function Wishlist(props) {
                                             </li>
                                             <li className="mb-4">
                                                 <label className="mb-2 text-start d-block">Price </label>
-                                                <input
-                                                    id="price"
-                                                    type="number"
-                                                    name="price"
-                                                    placeholder="Eg. 50"
-                                                    value={data.price || item && item.price }
-                                                    step={`0.01`}
-                                                    className="form-input px-2 py-2 border w-full rounded-md"
-                                                    autoComplete="price"
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            "price",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                />
+                                                <div className="currency-wrapper position-relative"  >
+                                                    <span className="currency-tag">{defaultCurrency}</span>
+                                                    <input
+                                                        id="price"
+                                                        type="number"
+                                                        name="price"
+                                                        placeholder="Eg. 50"
+                                                        value={data.price || item && item.price } step={`0.01`}
+                                                        className="form-input px-2 py-2 border w-full rounded-md"
+                                                        autoComplete="price"
+                                                        onChange={(e) => setData( "price", e.target.value )}
+                                                    />
+                                                </div>
+                                                <p className="mt-1"> 
+                                                    The wish item amount is set
+                                                    to {formatMultiPrice(data.price, defaultCurrency)}. 
+                                                </p>
                                             </li>
                                             <li className="mb-4">
                                                 <label className="mb-2 text-start d-block">
@@ -282,7 +285,7 @@ export default function Wishlist(props) {
                                                  }
 
                                                 <h4 className="mt-2 mb-2 w-100 text-center"  >OR</h4>
-                                                <GlobalUploader
+                                                <GlobalUploader type='minimal'
                                                     clear={clear}
                                                     sendFile={getFileUID}
                                                     options={st.wishitemUploader}
@@ -347,21 +350,14 @@ export default function Wishlist(props) {
                                                             <div className="repeatpurchase text-start">
                                                                 <label htmlFor="daily">
                                                                     <input
-                                                                        checked={
-                                                                            period ==
-                                                                            "daily"
-                                                                        }
+                                                                        checked={period == "daily"}
                                                                         type="radio"
                                                                         id="daily"
-                                                                        value={
-                                                                            "daily"
-                                                                        }
+                                                                        value={"daily"}
                                                                         name="subscription_period"
-                                                                        onChange={
-                                                                            spValue
-                                                                        }
-                                                                    />{" "}
-                                                                    Daily
+                                                                        onChange={spValue}
+                                                                    /> 
+                                                                        Daily
                                                                 </label>
                                                             </div>
                                                             <div className="repeatpurchase mt-2 text-start">
@@ -452,15 +448,8 @@ export default function Wishlist(props) {
                                         </LoaderButton>
                                      :
                                         <>
-                                            <strong>
-                                                Categorize this wish *
-                                            </strong>
-                                            <p>
-                                                Organize your wishes to help
-                                                gifters find what they're
-                                                looking for while on your
-                                                wishlist.
-                                            </p>
+                                            <strong> Categorize this wish * </strong>
+                                            <p> Organize your wishes to help gifters find what they're looking for while on your wishlist. </p>
 
                                             <div className="catslists">
                                                 {categories && categories.length ? 
@@ -487,18 +476,13 @@ export default function Wishlist(props) {
                                             </div>
 
                                             <div className="cate-items mb-3 mt-4 d-flex ">
-                                                <input
-                                                    id="cats"
-                                                    type="text"
-                                                    ref={inputRef}
-                                                    className="form-input px-2 py-2 border w-full rounded-md"
-                                                />
-                                                <div
-                                                    className="p-2 border cursor-pointer"
+                                                <input id="cats" type="text" ref={inputRef} className="form-input px-2 py-2 border w-full rounded-md" />
+                                                <div className="p-2 border cursor-pointer"
                                                     onClick={AddCategory}>
                                                     {adding ? "Adding..":"Add"}
                                                 </div>
                                             </div>
+
                                             <LoaderButton
                                                 disabled={processing}
                                                 type="submit"
@@ -506,10 +490,19 @@ export default function Wishlist(props) {
                                                 spinnerClassName="fill-red-600" >
                                                 {processing ? "Processing" : "Add Wish"}
                                             </LoaderButton>
+
+                                            {/* <AdultScan 
+                                                fileuid={msgMedia && msgMedia.uuid}
+                                                onScan={saythankyou} content={<>
+                                                <LoaderButton 
+                                                    disabled={loading}
+                                                    className="flex px-4  mb-3 btn-pink sm mx-auto"
+                                                    spinnerClassName="fill-red-600" >
+                                                    {loading ? "Sending..." : "Say Thanks"}
+                                                </LoaderButton>
+                                            </>} /> */}
                                             </> }
-
                                         </div>
-
                                     </form>
                                 </div>
                             </Tab>

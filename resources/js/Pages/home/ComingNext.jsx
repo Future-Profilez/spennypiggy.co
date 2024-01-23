@@ -9,11 +9,11 @@ export default function ComingNext() {
          <div className="row align-items-center " >
             <div className='col-lg-6 ' >
                <div className='nextimage-wrap mb-4 mb-lg-0' >
-                     <LazyLoadImage
-                     alt={"image"} useIntersectionObserver={true} effect="blur"
-                     height={"auto"}
-                     src={next}
-                     width={"auto"} />
+                  <LazyLoadImage
+                  alt={"image"} useIntersectionObserver={true} effect="blur"
+                  height={"auto"}
+                  src={next}
+                  width={"auto"} />
                </div>
             </div>
             <div className='col-lg-6' >

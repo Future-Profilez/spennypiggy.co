@@ -1,5 +1,7 @@
 import React from 'react'
 import { Link } from "@inertiajs/react";
+import { LazyLoadImage } from 'react-lazy-load-image-component';
+
 export default function Avatar({src, name, username,  subhead, url, link}) {
    
   return <>
@@ -16,7 +18,10 @@ export default function Avatar({src, name, username,  subhead, url, link}) {
          <div className="avatar-wrap" >
             <Link href={url ? url : `/${link ? link : username}`} className="useravatar" >
                <div className="avatar" >
-                     <img src={src}alt="image-avatar" className="img-fluid" />
+                     <LazyLoadImage
+                     src={src} alt="image-avatar" className="img-fluid" useIntersectionObserver={true} effect="blur"
+                     height={100}
+                     width={100} />
                </div>
                <div className="avatar-content" >
                      <h2>{name}</h2>

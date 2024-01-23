@@ -4,13 +4,14 @@ import  LoaderButton from "@/Components/LoaderButton";
 const Popup = React.lazy(() => import('@/Components/Popup'));
 import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
-import { useForm } from "@inertiajs/react";
+import { useForm, usePage } from "@inertiajs/react";
 import DeviceID from "@/includes/DeviceID";
 import { useDispatch, useSelector } from "react-redux";
 import { add_to_cart } from "../Pages/redux/UserSlice";
 
 export default function SendSurprise({auth, owner}) {
    
+   const { global_currency } = usePage().props;
    const deviceID  = DeviceID();
    const { formatMultiPrice } = PriceFormat();
    const { successAlert, errorAlert, errorsHandling } = useAlerts();
@@ -20,14 +21,10 @@ export default function SendSurprise({auth, owner}) {
       message: ''
    });
  
-   function ItemAdded () {
-      setClose(false);
-      setTimeout(()=>{
-         setClose();
-      });
-   }
+    
    const dispatch = useDispatch();
    const cart = useSelector(state => state.data.cart.cart);
+
    const sendSurprize = (e) => {
       e.preventDefault();
       if(data.amount < 5){
@@ -49,12 +46,15 @@ export default function SendSurprise({auth, owner}) {
          "message":data.message}), {
             preserveScroll: true,
             onSuccess: (resp) => {
-               ItemAdded();
                reset();
                if (resp.props.flash?.success) {
                   successAlert(resp.props.flash?.success || "Added");
                   dispatch(add_to_cart(cart+1));
-            }
+               }
+               setClose(false);
+               setTimeout(()=>{
+                  setClose();
+               },1000);
             if (resp.props.flash?.error) {
                   errorAlert(resp.props.flash?.error);
             }
@@ -68,7 +68,7 @@ export default function SendSurprise({auth, owner}) {
         <Popup
             modalclassName="pinkmodal sendSurprize-modal"
             space="4" size="md"
-            action={close} classes={`btn-pink lg px-4 my-2 w-100`}
+            action={close} classes={`btn-pink lg px-4  `}
             text={`Send Surprise`} >
             <h2 className="text-uppercase font-GillSans pb-4 font-large">
                 Send a Surprise Gift
@@ -81,9 +81,7 @@ export default function SendSurprise({auth, owner}) {
                      type="number"
                      placeholder="Enter amount.. "
                   />
-                  <p className="mt-1">
-                     The Minimum amount is set to {formatMultiPrice(5)} in the wisher’s currency.
-                  </p>
+                  <p className="mt-1">The Minimum amount is set to {formatMultiPrice(owner && owner.min_surprise_amount, global_currency)} in the wisher’s currency.</p>
             </div>
             <div className="form-field mb-4">
                   <label className="d-block text-start mb-2">Suggested use (Required)</label>
@@ -96,13 +94,12 @@ export default function SendSurprise({auth, owner}) {
             </div>
 
             <LoaderButton onClick={sendSurprize}
-               disabled={processing}
-               type='submit'
-                  className="flex w-100 btn-pink lg mx-auto"
-                  spinnerClassName="fill-red-600" >
-                  {processing ? "Processing" : auth && auth.name ? "Add to cart" : "Send Gift"}
+               disabled={processing} 
+               type='submit' 
+               className="flex w-100 btn-pink lg mx-auto" 
+               spinnerClassName="fill-red-600" >
+               {processing ? "Processing" : auth && auth.name ? "Add to cart" : "Send Gift"}
             </LoaderButton>
-
         </Popup>
     );
 }
