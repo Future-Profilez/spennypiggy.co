@@ -277,7 +277,7 @@ Route::get('memberships/{username}', [AuthenticatedSessionController::class, 'us
 Route::get('/{username}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
 Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');
 Route::get('/items/{username}/{category_id?}', [AuthenticatedSessionController::class, 'userItems'])->name('user.items');
-Route::get('/user_category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.info');
+Route::get('/user_category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.category');
 
 Route::prefix("wish")->name("wish.")->group(function () {
     Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name("subscribe.checkout");
