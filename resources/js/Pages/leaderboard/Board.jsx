@@ -5,6 +5,7 @@ import Avatar from "@/includes/Avatar";
 import axios from "axios";
 import React, { useState, useMemo } from "react";
 import LargestGifts from "./LargestGifts";
+import { crown } from "@/includes/Icons";
 
 export default function Board(props) {
     const { auth, data } = props;
@@ -45,7 +46,7 @@ export default function Board(props) {
         return (
             <div className="rank py-3 border-bottom d-flex align-items-center justify-content-between">
                 <div className="d-flex align-items-center justify-content-between">
-                    <div className="sno me-4 ps-2">
+                    <div className="sno me-2 me-md-4 ps-2">
                         <p>#{r && r.rank}</p>
                     </div>
                     <div className="wisher">
@@ -59,7 +60,7 @@ export default function Board(props) {
                     </div>
                 </div>
                 <div className="rank-stats">
-                    <p className="toppercentage pe-4">0.01%</p>
+                    <p className="toppercentage pe-4">{r && r.top}</p>
                 </div>
             </div>
         );
@@ -71,8 +72,11 @@ export default function Board(props) {
                 {p && p.username ? (
                     <Link href={p && p.username} className={`position-${position} position text-center rounded-lg shadow-pink bg-white`} >
                         <div className="profile p-3 pb-0">
-                            <div className="profile-image">
-                                <img src={(p && p.avatar) || userphoto} className="img-fluid" alt="image" />
+                            <div className="position-relative">
+                                    {position == 1 ? <div className="crown-wings" dangerouslySetInnerHTML={{ __html: crown }} /> : ''}
+                                <div className="profile-image ">
+                                    <img src={(p && p.avatar) || userphoto} className="img-fluid" alt="image" />
+                                </div>
                             </div>
                             <div className="profile-content">
                                 <h2 className="font-bold text-large pt-2">{(p && p.name) || "Anonymous"}</h2>
@@ -86,8 +90,11 @@ export default function Board(props) {
                 ) : (
                     <div className={`position-${position} position text-center rounded-lg shadow-pink bg-white`} >
                         <div className="profile p-3 pb-0">
-                            <div className="profile-image">
-                                <img src={(p && p.avatar) || userphoto} className="img-fluid" alt="image" />
+                            <div className=" position-relative">
+                                    {position == 1 ? <div  className="crown-wings" dangerouslySetInnerHTML={{ __html: crown }} /> : ''}
+                                    <div className="profile-image ">
+                                        <img src={(p && p.avatar) || userphoto} className="img-fluid" alt="image" />
+                                    </div>
                             </div>
                             <div className="profile-content">
                                 <h2 className="font-bold text-large pt-2">
@@ -121,35 +128,16 @@ export default function Board(props) {
                                     </h2>
                                     <div className="changePeriod">
                                         <button
-                                            className={
-                                                period == "monthly"
-                                                    ? "active"
-                                                    : ""
-                                            }
-                                            onClick={() =>
-                                                switchTime("monthly")
-                                            }
-                                        >
+                                            className={period == "monthly" ? "active":""}
+                                            onClick={() => switchTime("monthly")} >
                                             Montly
                                         </button>
-                                        <button
-                                            className={
-                                                period == "weekly"
-                                                    ? "active"
-                                                    : ""
-                                            }
-                                            onClick={() => switchTime("weekly")}
-                                        >
+                                        <button className={period == "weekly" ? "active":""} onClick={() => switchTime("weekly")}>
                                             Weekly
                                         </button>
                                         <button
-                                            className={
-                                                period == "daily"
-                                                    ? "active"
-                                                    : ""
-                                            }
-                                            onClick={() => switchTime("daily")}
-                                        >
+                                            className={period == "daily"? "active": ""}
+                                            onClick={() => switchTime("daily")}>
                                             Daily
                                         </button>
                                     </div>

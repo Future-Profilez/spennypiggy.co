@@ -1,12 +1,16 @@
 import React from "react";
 import footlogo from "../../assets/img/footlogo.png";
-import { Link } from "@inertiajs/react";
+import { Link, router, usePage } from "@inertiajs/react";
 import { Helmet } from "react-helmet";
 import { useEffect } from "react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
+import { useState } from "react";
+import axios from "axios";
 const ContentPrefrences = React.lazy(() => import("./ContentPrefrences"));
 
 export default function Footer(props) {
+    
+    const {ziggy}  = usePage().props;
     const { auth } = props;
     async function configIntercom() {
         setTimeout(() => {
@@ -106,6 +110,7 @@ export default function Footer(props) {
         gtag("js", new Date());
         gtag("config", "G-9F1M3QZZB3");
     }
+
     useEffect(() => {
         configIntercom();
     }, [auth && auth?.name]);
@@ -113,6 +118,33 @@ export default function Footer(props) {
         confgureGtag();
     }, []);
 
+    const fetchLocationData = async () => {
+        try {
+            await axios.get(`https://ipapi.co/json/`).then((resp)=>{
+                console.log("resp.data.country_code", resp.data.country_code);
+                console.log("router", router);
+                console.log("ziggy", ziggy);
+                if(ziggy && ziggy.url === 'http://spennypiggy.co'){
+                    if(resp.data && resp.data.country_code == 'GB'){
+                        window.location = `https://uk.spennypiggy.co${router && router.page && router.page.url || '/'}`;
+                    }
+                }
+                if(ziggy && ziggy.url === 'https://uk.spennypiggy.co'){
+                    if(resp.data && resp.data.country_code !== 'GB'){
+                        window.location = `https://spennypiggy.co${router && router.page && router.page.url || '/'}`;
+                    }
+                }
+            }).catch((err)=>{
+                console.log("api err", err)
+            });
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
+    };
+
+    useEffect(()=>{
+        fetchLocationData();
+    }, []);
 
     return (
         <>
@@ -181,3 +213,6 @@ export default function Footer(props) {
         </>
     );
 }
+
+
+  

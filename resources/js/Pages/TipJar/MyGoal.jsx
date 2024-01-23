@@ -3,6 +3,7 @@ import ProgressBar from 'react-bootstrap/ProgressBar';
 import { useForm, Link, usePage } from "@inertiajs/react";
 import PriceFormat from '@/includes/PriceFormat';
 import Popup from '@/Components/Popup';
+import { useEffect } from 'react';
 
 export default function MyGoal({goal, IsloggedIn}) {
 
@@ -13,15 +14,19 @@ export default function MyGoal({goal, IsloggedIn}) {
     const r = (paid/actual)*100;
     return r.toFixed(2);
   }
-
+  const [keepAnonmyous, setKeepAnonmyous] = useState(false);
   const SendTip = () => { 
+    const anoymous = useRef();
     const checkRef = useRef();
     const [close, setClose ] = useState();
+
+
     const { data, setData, post, processing, errors, reset } = useForm({
       amount: goal.default_price || '',
       email: auth && auth.user?.email || '',
       name: auth && auth.user?.name || '',
       message: '',
+      anonymous: '',
     }); 
 
     return <>
@@ -75,17 +80,33 @@ export default function MyGoal({goal, IsloggedIn}) {
             <textarea
               className="form-input w-100 rounded"
               onChange={(e) => setData('message', e.target.value)}
-              placeholder="Write a short note."
-            />
+              placeholder="Write a short note." />
           </div>
 
           <div className='termselect mt-3 mb-3'>
               <label htmlFor="termaccept">
                 <p>
-                  <input className='cursor-pointer' type="checkbox" ref={checkRef}  id="termaccept"  name="termaccept"  value="termaccept" required onChange={(e) => setData("termaccept", e.target.value)}></input>
+                  <input className='cursor-pointer' 
+                  type="checkbox" ref={checkRef}  
+                  id="termaccept"  name="termaccept"  
+                  value="termaccept" required 
+                  onChange={(e) => setData("termaccept", e.target.value)}></input>
                     By sending this tip, you agree that this tip is only being made as a gift and not for any service in return.
                 </p>
               </label>
+          </div>
+
+          <div className='termselect mt-3 mb-3'>
+              <label htmlFor="keepanonymous">
+                <p> 
+                  <input className='cursor-pointer' type="checkbox" 
+                  id="keepanonymous" name="keepanonymous"  
+                  value="keepanonymous"
+                  onChange={(e) => setData("anonymous", e.target.checked ? 1 : 0 )}
+                  ></input> Keep anonymous 
+                </p> 
+              </label>
+              <p className="text-muted text-small mt-1 mb-3" >Your personal email and name will be private.</p>
           </div>
 
           <Link className={`inline-flex items-center px-4 border 
@@ -95,8 +116,9 @@ export default function MyGoal({goal, IsloggedIn}) {
             focus:ring-indigo-500 focus:ring-offset-2 transition 
             ease-in-out duration-150 false flex btn-pink lg w-100  
             font-CeraGR mx-auto ${checkRef.current && checkRef.current.checked ? '' :'disabled'}`} 
-            href={`tip-jar/pay/${goal.uuid}`} method="post" data={data} > 
-            {processing ? "Processing" : 'Send Tip'}
+            href={`tip-jar/pay/${goal.uuid}`} 
+            method="post" data={data} > 
+            {processing ? "Processing" : 'Send Tip'} 
           </Link>
           <div className='securestripe text-center mt-3' >
             🔒 Secured via <b>Stripe</b>
@@ -106,7 +128,7 @@ export default function MyGoal({goal, IsloggedIn}) {
   }
 
   return (
-    <div className='box rounded-lg mt-4 shadow-voilet border p-4'>
+    <div className='box rounded-lg   shadow-voilet border p-4'>
       <h2 className='text-large font-semibold mb-2'>{goal?.name || ''}</h2>
       <p className='mb-3 '>{ goal?.description || ''}</p>
       {goal.days ? <p className='mb-3 text-voilet '>{goal.days > 1 ? `${goal.days} Days` : `${goal.days} Day`} left to goal ends.</p> : ''}

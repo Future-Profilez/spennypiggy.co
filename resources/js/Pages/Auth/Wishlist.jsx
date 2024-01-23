@@ -25,11 +25,7 @@ export default function Wishlist(props) {
     const [defaultKey, setDefaultKey] = useState(item && item.subscription !== null ? +(item.subscription) : null);
     const [clear, setClear] = useState();
     const [close, setClose] = useState();
-
-
     const { formatMultiPrice } = PriceFormat();
-
-
     useEffect(()=>{
         setClose(openPop);
     },[openPop]);
@@ -199,10 +195,10 @@ export default function Wishlist(props) {
 
     return (
             <Popup modalclass='pinkmodal full' size='md' action={close}
-                classes={`${editpop ? "editpop"  : 'btn-pink lg px-4'}`}
-                text={`${editpop ? ""  : '+ Add wish'}`} >
+                classes={`${editpop ? "editpop"  : 'dropdown-item text-start p-0'}`}
+                text={`${editpop ? ""  : ' Add wish'}`} >
                 <div className="editprofileModal  wishlistModal ">
-                    <div className="editprofileModalInner  ">
+                    <div className="editprofileModalInner">
                         <h2 className="font-GillSans pt-4 px-3">Add A Wish </h2>
                         <Tabs
                             defaultActiveKey="1"
@@ -289,7 +285,7 @@ export default function Wishlist(props) {
                                                  }
 
                                                 <h4 className="mt-2 mb-2 w-100 text-center"  >OR</h4>
-                                                <GlobalUploader
+                                                <GlobalUploader type='minimal'
                                                     clear={clear}
                                                     sendFile={getFileUID}
                                                     options={st.wishitemUploader}
@@ -354,21 +350,14 @@ export default function Wishlist(props) {
                                                             <div className="repeatpurchase text-start">
                                                                 <label htmlFor="daily">
                                                                     <input
-                                                                        checked={
-                                                                            period ==
-                                                                            "daily"
-                                                                        }
+                                                                        checked={period == "daily"}
                                                                         type="radio"
                                                                         id="daily"
-                                                                        value={
-                                                                            "daily"
-                                                                        }
+                                                                        value={"daily"}
                                                                         name="subscription_period"
-                                                                        onChange={
-                                                                            spValue
-                                                                        }
-                                                                    />{" "}
-                                                                    Daily
+                                                                        onChange={spValue}
+                                                                    /> 
+                                                                        Daily
                                                                 </label>
                                                             </div>
                                                             <div className="repeatpurchase mt-2 text-start">
@@ -459,15 +448,8 @@ export default function Wishlist(props) {
                                         </LoaderButton>
                                      :
                                         <>
-                                            <strong>
-                                                Categorize this wish *
-                                            </strong>
-                                            <p>
-                                                Organize your wishes to help
-                                                gifters find what they're
-                                                looking for while on your
-                                                wishlist.
-                                            </p>
+                                            <strong> Categorize this wish * </strong>
+                                            <p> Organize your wishes to help gifters find what they're looking for while on your wishlist. </p>
 
                                             <div className="catslists">
                                                 {categories && categories.length ? 
@@ -494,18 +476,13 @@ export default function Wishlist(props) {
                                             </div>
 
                                             <div className="cate-items mb-3 mt-4 d-flex ">
-                                                <input
-                                                    id="cats"
-                                                    type="text"
-                                                    ref={inputRef}
-                                                    className="form-input px-2 py-2 border w-full rounded-md"
-                                                />
-                                                <div
-                                                    className="p-2 border cursor-pointer"
+                                                <input id="cats" type="text" ref={inputRef} className="form-input px-2 py-2 border w-full rounded-md" />
+                                                <div className="p-2 border cursor-pointer"
                                                     onClick={AddCategory}>
                                                     {adding ? "Adding..":"Add"}
                                                 </div>
                                             </div>
+
                                             <LoaderButton
                                                 disabled={processing}
                                                 type="submit"
@@ -513,10 +490,19 @@ export default function Wishlist(props) {
                                                 spinnerClassName="fill-red-600" >
                                                 {processing ? "Processing" : "Add Wish"}
                                             </LoaderButton>
+
+                                            {/* <AdultScan 
+                                                fileuid={msgMedia && msgMedia.uuid}
+                                                onScan={saythankyou} content={<>
+                                                <LoaderButton 
+                                                    disabled={loading}
+                                                    className="flex px-4  mb-3 btn-pink sm mx-auto"
+                                                    spinnerClassName="fill-red-600" >
+                                                    {loading ? "Sending..." : "Say Thanks"}
+                                                </LoaderButton>
+                                            </>} /> */}
                                             </> }
-
                                         </div>
-
                                     </form>
                                 </div>
                             </Tab>

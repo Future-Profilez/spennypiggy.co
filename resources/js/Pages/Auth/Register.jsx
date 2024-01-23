@@ -7,15 +7,15 @@ import LoaderButton from '@/Components/LoaderButton';
 import toast from 'react-hot-toast';
 import { useRef } from 'react';
 import axios from 'axios';
-export default function Register() {
+import HCaptcha from '@hcaptcha/react-hcaptcha';
+export default function Register(props) {
     const CheckCircleIcon = () => {
         return <><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path opacity="0.1" d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" fill="#000000"></path> <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#000000" stroke-width="2"></path> <path d="M9 12L10.6828 13.6828V13.6828C10.858 13.858 11.142 13.858 11.3172 13.6828V13.6828L15 10" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg></>
     }
 
+    const captchaRef = useRef(null);
     const checkRef = useRef();
-
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
-
     const lowerLetter = /[a-z]/g;
     const capitalLetter = /[A-Z]/g;
     const numberLetter = /[0-9]/g;
@@ -61,8 +61,26 @@ export default function Register() {
         });
     }
 
+    const [verified, setVerified] = useState(false);
+    const onVerify = (token) => {
+        if(token){
+            setVerified(true);
+        } else {
+            setVerified(false);
+        }
+    };
+
+    const resetCaptcha = () => { 
+        captchaRef.current && captchaRef.current.resetCaptcha();
+        setVerified(false);
+    }
+
     const submit = (e) => {
         e.preventDefault();
+        if (!verified) {
+            errorAlert("Please verify you are not a robot.")
+            return false;
+        }
         if (!checkRef.current.checked) {
             termsaccept();
             return false;
@@ -78,10 +96,10 @@ export default function Register() {
                 }
             },
             onError: (err) => {
-                // reset("password");
                 Object.keys(err).map((key) => {
                     errorAlert(err[key]);
                 });
+                resetCaptcha();
             }
         });
     };
@@ -104,6 +122,7 @@ export default function Register() {
             setCodeValid(false);
         });
     };
+
     const removecode = () => { 
         setCodeValid(false);
         promoinput.current.value = '';
@@ -156,7 +175,6 @@ export default function Register() {
     return (
         <GuestLayout>
             <Head title="Register" />
-
             <div className='loginPage  blackbg py-14'>
                 <div className='containerbox '>
 
@@ -288,11 +306,23 @@ export default function Register() {
                                         </p>
                                     </label>
                                 </div>
+
+                                <div className='m-auto hcaptcha-wrap d-table mb-3 mt-0 mt-md-3' >
+                                    <HCaptcha  ref={captchaRef}
+                                    sitekey={props.hcaptchakey || ''}
+                                    data-theme="light" 
+                                    data-size="compact" 
+                                    onVerify={onVerify}
+                                    />
+                                </div>
+
                                 <div className='wishlistbtn  rotate-btn text-center flex justify-center mt-4'>
                                     <LoaderButton disabled={processing} className='btn-pink lg lg2 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Create Account"}</LoaderButton>
                                 </div>
                             </div>
                         </form>
+
+                       
                     </div>
                 </div>
             </div>

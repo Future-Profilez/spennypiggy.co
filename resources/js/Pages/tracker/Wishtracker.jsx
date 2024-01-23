@@ -16,12 +16,13 @@ import { LazyLoadImage } from 'react-lazy-load-image-component';
 import { useAlerts } from "@/Components/Alerts";
 import TipTracker from "./TipTracker";
 import Tiplisting from "./Tiplisting";
+import TweetNow from "./TweetNow";
 const defaultsec = 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/';
 
 export default function Wishtracker(props) {
-    const { auth, user, tracks, user_subs, creator_subs } = props;
 
-    console.log("tracker props", props)
+    console.log("props tracker", props);
+    const { auth, user, tracks, user_subs, creator_subs } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const TruncatedString = ({ inputString, maxLength }) => {
         if (inputString?.length <= maxLength) {
@@ -44,6 +45,11 @@ export default function Wishtracker(props) {
         const [message_media, setmessage_media] = useState(n && n.message_media);
         const [msgSent, setMsgSent] = useState(n && n.thankyou_message);
         const [media_type, setmedia_type] = useState(n && n.media_type);
+        const [approved, setApproved] = useState( n && n.thank_you_approved);
+        function approvemsg (e){ 
+            setApproved(e);
+        }
+
         const [message_url, setmessage_url] = useState(n && n.message_url);
         const getMessageStatus = (m, f) => {
             if (f) {
@@ -86,18 +92,28 @@ export default function Wishtracker(props) {
 
                         <div className="d-flex align-items-center justify-content-between">
                             <div className="text-dark">
-                                <Avatar name={`From : ${n && n.user && n.user.name || 'Anonymous'}`}
-                                    link={n.user && n.user.username || null}
-                                    subhead={n.wish && n.wish.wishname || 'Surprise Gift'}
-                                    username={n.user && n.user.username || 'Surprise Gift'}
-                                    src={(n && n.user && n.user.avatar_url) || userphoto}
-                                />
+                                
+                                {n.payment.anonymous == 1 && n && n.sender == false ? 
+                                    <Avatar name={`From : Anonymous`}
+                                        subhead={n.wish && n.wish.wishname || 'Surprise Gift'}
+                                        src={userphoto || ''}
+                                    /> 
+                                : 
+                                    <Avatar 
+                                        name={`From : ${n && n.user && n.user.name || 'Anonymous'}`}
+                                        link={n.user && n.user.username || null}
+                                        subhead={n.wish && n.wish.wishname || 'Surprise Gift'}
+                                        username={n.user && n.user.username || ''}
+                                        src={(n && n.user && n.user.avatar_url ) || userphoto}
+                                    /> 
+                                }
+                                
                             </div>
                             <div className="text-muted rightbar d-flex align-items-center ">
                                 {n && n.sender ?
-                                    <div className="identity text-danger text-nowrap" >-{formatMultiPrice(n.amount * (+n.quantity || 1))}</div>
+                                    <div className="identity text-danger text-nowrap" >-{formatMultiPrice((n.amount * (+n.quantity || 1)), n.payment.currency )}</div>
                                     :
-                                    <div className="identity text-success text-nowrap" >+{formatMultiPrice(n.amount * (+n.quantity || 1))}</div>
+                                    <div className="identity text-success text-nowrap" >+{formatMultiPrice((n.amount * (+n.quantity || 1)), n.payment.currency )}</div>
                                 }
                                 <div className="angle-icon">
                                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" > <g id="SVGRepo_bgCarrier" stroke-width="0"></g> <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round" ></g> <g id="SVGRepo_iconCarrier">{" "}
@@ -119,7 +135,7 @@ export default function Wishtracker(props) {
                                         </div>
                                         <div className="item-dd ps-3" >
                                             <p className="mb-0 pe-2" >{n.wish && n.wish.wishname || 'Surprise Gift'}</p>
-                                            <p className="text-muted text-small">OTY : {n.quantity || 1} x {formatMultiPrice(n.amount)}</p>
+                                            <p className="text-muted text-small">OTY : {n.quantity || 1} x {formatMultiPrice(n.amount, n?.payment?.currency || 'gbp')}</p>
                                         </div>
                                     </div>
                                     
@@ -141,8 +157,17 @@ export default function Wishtracker(props) {
                                     </div>
                                 </div>
 
+                                {n && n.sender == false ? <TweetNow 
+                                type="purchase" id={n && n.uuid} /> : ''}
+
+                               
+
                                 {msgSent ? <div className="msgSent my-2 p-1" >
                                     <p className="mt-2" >Thank you note : </p>
+                                    {approved == 0 ? <div className='mt-3 alert alert-warning  rounded p-2' >
+                                        Thankyou message is waiting for approval. Currently only you can see this message.
+                                    </div> : ''}
+
                                     <p className="text-muted">{msgSent}</p>
                                     {message_media ? <div className="message-media my-2" >
                                         {media_type == 'image' ?
@@ -159,7 +184,7 @@ export default function Wishtracker(props) {
                                 </div> : ''}
 
                                 {n && n.sender == false && !msgSent ?
-                                    <SayThanks clearAction={open}
+                                    <SayThanks approvemsg={approvemsg} clearAction={open}
                                         getMessageStatus={getMessageStatus}
                                         name={n && n.user && n.user.name}
                                         payment_id={n.id} />
@@ -199,7 +224,6 @@ export default function Wishtracker(props) {
         </>
     }
 
-
     return (
         <Authenticated auth={auth.user} user={user}>
             <Head title={"Wish Tracker"} />
@@ -211,10 +235,9 @@ export default function Wishtracker(props) {
                         className="mb-4 " >
                         <Tab eventKey="1" title="Wish Tracker">
                             <div className="tracks mt-4 pt-4">
-                                {tracks &&
-                                    tracks.map((n, i) => {
-                                        return <Wish n={n} key={`track-${i}`} />;
-                                    })}
+                                {tracks && tracks.map((n, i) => {
+                                    return <Wish n={n} key={`track-${i}`} />;
+                                })}
                                 {tracks && tracks.length < 1 ?
                                     <Nocontent text="nothing to see" /> : ''}
                             </div>
@@ -232,9 +255,7 @@ export default function Wishtracker(props) {
                                         return <div key={`subscription-${i}`} className="col-sm-6 mb-4" >
                                             <div className="subsbox box p-4" >
                                                 <h2 className="plantitle" >{s && s.wish_item && s.wish_item.wishname}</h2>
-
                                                 <ul className="ps-0 mt-3" >
-
                                                     <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                         <p className="text-muted">Item Owner</p>
                                                         <p className="text-dark text-capitalize" >
@@ -249,7 +270,7 @@ export default function Wishtracker(props) {
                                                     </li>
                                                     <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                         <p className="text-muted">Price</p>
-                                                        <p className="text-dark text-capitalize" >{formatMultiPrice(s && s.amount)}</p>
+                                                        <p className="text-dark text-capitalize" >{formatMultiPrice(s && s.amount, s.currency)}</p>
                                                     </li>
                                                     <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                         <p className="text-muted">Start Date</p>
@@ -266,16 +287,14 @@ export default function Wishtracker(props) {
                                                          <span className="badge bg-warning" >{s && s.status}</span>}</p>
                                                     </li>
                                                 </ul>
-
                                                 <CancelSub status={s && s.status} id={s && s.id} />
-
                                             </div>
                                         </div>
                                     })}
                                 </div>
                                 {user_subs && user_subs.length < 1 ?
                                     <Nocontent classes="mt-5" text={"Nothing to see."} /> :
-                                    ''}
+                                ''}
                             </>
                                 :
                                 <>
@@ -283,11 +302,18 @@ export default function Wishtracker(props) {
                                         {creator_subs && creator_subs.map((s, i) => {
                                             return <div key={`subscription-${i}`} className="col-sm-6 mb-4" >
                                                 <div className="subsbox box p-3" >
-                                                    <Avatar 
+                                                    {s.anonymous == 1 ? 
+                                                        <Avatar 
+                                                        name={<TruncatedString inputString={'Anonymous'} maxLength={10} />}
+                                                        src={`${userphoto}`}
+                                                        />
+                                                    : 
+                                                        <Avatar 
                                                         name={<TruncatedString inputString={s && s.user && s.user.name || 'Anonymous'} maxLength={10} />}
                                                         username={`${s && s.user && s.user.username || 'Anonymous'}`}
                                                         src={`${s && s.user && s.user.avatar_url || userphoto}`}
-                                                    />
+                                                    />}
+                                                            
                                                     <ul className="ps-0 mt-3" >
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                             <p className="text-muted">Subscription Item</p>
@@ -299,7 +325,7 @@ export default function Wishtracker(props) {
                                                         </li>
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                             <p className="text-muted">Price</p>
-                                                            <p className="text-dark text-capitalize" >{formatMultiPrice(s && s.wish_item && s.wish_item.price)}</p>
+                                                            <p className="text-dark text-capitalize" >{formatMultiPrice(s && s.wish_item && s.wish_item.price, s.currency)}</p>
                                                         </li>
                                                         <li className="mt-2 d-flex justify-content-between border-top py-2">
                                                             <p className="text-muted">Upcoming Payment</p>
@@ -319,6 +345,9 @@ export default function Wishtracker(props) {
                                                             </p>
                                                         </li>
                                                     </ul>
+                                                    
+                                                     <TweetNow 
+                                                    type="subscription" id={s && s.uuid} />  
 
                                                 </div>
                                             </div>
