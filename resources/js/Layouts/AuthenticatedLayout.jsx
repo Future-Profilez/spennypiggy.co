@@ -10,10 +10,14 @@ export default function Authenticated(props) {
 
     const { auth, user, children, cart_count } = props;
     const { successAlert, errorAlert } = useAlerts();
-    const { flash } = usePage().props;
+    const { flash, errors } = usePage().props;
 
     useEffect(() => {
-        console.log("flash", flash);
+        if(errors){
+            Object.entries(errors).forEach(([key, value]) => {
+                errorAlert(value);
+            });
+        }
         if (flash?.error) {
             errorAlert(flash.error);
         }
@@ -27,7 +31,6 @@ export default function Authenticated(props) {
             successAlert(flash.info);
         }
     },[]);
-
 
     return <>
     <Header auth={auth} user={user}  />
@@ -56,3 +59,5 @@ export default function Authenticated(props) {
     <Footer auth={auth} />
     </>
 }
+
+ 

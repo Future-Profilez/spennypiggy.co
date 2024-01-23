@@ -16,7 +16,17 @@ export default function Header() {
     const { global_currency, auth } = usePage().props;
     const deviceid = DeviceID();
     const [isActive, setActive] = useState(false);
+<<<<<<< HEAD
     const toggleClass = () => setActive(!isActive);
+=======
+    const [shows, setShows] = useState(false);
+    const toggleClass = () => {
+        setActive(!isActive);
+        setTimeout(()=>{
+            setShows(!isActive);
+        },300)
+    };
+>>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
     const cart = useSelector((state) => state.data.cart.cart);
     const [count, setCount] = useState();
     const dispatch = useDispatch();
@@ -247,6 +257,7 @@ export default function Header() {
                 </div>
             </div>
 
+<<<<<<< HEAD
             <div className={`modelmenu ${isActive ? "Open" : null}`}>
                 <div className="MegaMenu">
                     <div
@@ -445,6 +456,224 @@ export default function Header() {
                             ) : (
                                 ""
                             )}
+=======
+            <div className={`MegaMenu ${isActive ? "Open" : null}`}>
+                <div
+                    className="closemega cursor-pointer"
+                    onClick={toggleClass}
+                >
+                    <svg
+                        width="58"
+                        height="58"
+                        viewBox="0 0 58 58"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <g filter="url(#filter0_d_746_858)">
+                            <rect
+                                width="55"
+                                height="55"
+                                rx="11"
+                                fill="#F94F97"
+                            />
+                            <rect
+                                x="0.55"
+                                y="0.55"
+                                width="53.9"
+                                height="53.9"
+                                rx="10.45"
+                                stroke="#E6EA7B"
+                                strokeWidth="1.1"
+                            />
+                        </g>
+                        <path
+                            d="M17.8125 34.9375L36.5 20.9375M27 27.9375H27.1562M17.8125 20.9375L36 34.9375"
+                            stroke="#E6EA7B"
+                            strokeWidth="2.625"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
+                        <defs>
+                            <filter
+                                id="filter0_d_746_858"
+                                x="0"
+                                y="0"
+                                width="58"
+                                height="58"
+                                filterUnits="userSpaceOnUse"
+                                colorInterpolationFilters="sRGB"
+                            >
+                                <feFlood
+                                    floodOpacity="0"
+                                    result="BackgroundImageFix"
+                                />
+                                <feColorMatrix
+                                    in="SourceAlpha"
+                                    type="matrix"
+                                    values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+                                    result="hardAlpha"
+                                />
+                                <feOffset dx="3" dy="3" />
+                                <feComposite
+                                    in2="hardAlpha"
+                                    operator="out"
+                                />
+                                <feColorMatrix
+                                    type="matrix"
+                                    values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0"
+                                />
+                                <feBlend
+                                    mode="normal"
+                                    in2="BackgroundImageFix"
+                                    result="effect1_dropShadow_746_858"
+                                />
+                                <feBlend
+                                    mode="normal"
+                                    in="SourceGraphic"
+                                    in2="effect1_dropShadow_746_858"
+                                    result="shape"
+                                />
+                            </filter>
+                        </defs>
+                    </svg>
+                </div>
+                {/* <div className="menuImg">
+                    <img src={spennypiggy} alt="img" />
+                </div> */}
+                <div className={`${shows ? 'shows' : ''} menuList`}>
+                    <ul className="menuslists" >
+                        {auth?.user?.username || false ? (
+                            <>
+                                <li>
+                                    <Link
+                                        onClick={toggleClass}
+                                        href={"/account"}
+                                    >
+                                        My Account
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        onClick={toggleClass}
+                                        href={`/${
+                                            (auth &&
+                                                auth?.user?.username) ||
+                                            ""
+                                        }`}
+                                    >
+                                        My Wishlist
+                                    </Link>
+                                </li>
+                                <li>
+                                    <a target="_blank" 
+                                    onClick={toggleClass} 
+                                    href="https://billing.stripe.com/p/login/28o3cgbav9kzbYccMM" >
+                                    Subscription Billing
+                                    </a>
+                                </li> 
+                                <li>
+                                    <Link
+                                        onClick={toggleClass}
+                                        href={`/wish-tracker`}
+                                    >
+                                        Wish Tracker
+                                    </Link>
+                                </li>
+                            </>
+                        ) : (
+                            <>
+                                <li>
+                                    <a target="_blank" 
+                                    onClick={toggleClass} 
+                                    href="https://billing.stripe.com/p/login/28o3cgbav9kzbYccMM" >
+                                    Subscription Billing
+                                    </a>
+                                </li> 
+
+                                <li>
+                                    <Link
+                                        onClick={toggleClass}
+                                        href={route("register")}
+                                    >
+                                        Sign Up
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        onClick={toggleClass}
+                                        href={route("login")}
+                                    >
+                                        Login
+                                    </Link>
+                                </li>
+                            </>
+                        )}
+                        <li><Link onClick={toggleClass} href={route("leaderboard")} >Leaderboard</Link></li>
+                        <li>
+                            <Link
+                                onClick={toggleClass}
+                                href={route("how-it-works")}
+                            >
+                                How it works
+                            </Link>
+                        </li>
+                        <li>
+                            <a
+                                onClick={toggleClass}
+                                target="_blank"
+                                href="https://intercom.help/spenny-piggy"
+                            >
+                                FAQ's
+                            </a>
+                        </li>
+                        <li>
+                            <a
+                                onClick={toggleClass}
+                                href="https://blog.spennypiggy.co"
+                            >
+                                Blog
+                            </a>
+                        </li>
+                        <li>
+                            <div
+                                onClick={toggleClass}
+                                className="livechat link" >
+                                Need help ?
+                            </div>
+                        </li>
+
+                        {auth && auth?.user?.username ? (
+                            <li className="d-block">
+                                <Link
+                                    onClick={toggleClass}
+                                    method="get"
+                                    href={route("logout")} >
+                                    Logout
+                                </Link>
+                            </li>
+                        ) : (
+                            ""
+                        )}
+                    </ul>
+
+                    <div className="bottom-links" >
+                        <ul>
+                                <li>
+                                    <a target="_blank" href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>
+                                </li>
+                                <li>
+                                    <a target="_blank" href="https://app.termly.io/document/cookie-policy/45944c26-6e99-4065-833a-8fa224fb8e20"> Cookie Policy </a>
+                                </li>
+                                <li>
+                                    <a target="_blank" href="https://app.termly.io/document/acceptable-use/458f5fac-0c41-406f-a02f-b50adff1ec9c" > Acceptable Use Policy </a>
+                                </li>
+                                <li>
+                                    <Link href={route("terms-and-conditions")}> Terms </Link>
+                                </li>
+                                <li>
+                                    <Link href={route("promotion-terms")}> Promotion Terms </Link>
+                                </li>
+>>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
                         </ul>
                     </div>
                 </div>

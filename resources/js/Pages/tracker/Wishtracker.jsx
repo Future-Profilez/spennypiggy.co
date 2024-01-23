@@ -20,6 +20,11 @@ import TweetNow from "./TweetNow";
 const defaultsec = 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/';
 
 export default function Wishtracker(props) {
+<<<<<<< HEAD
+=======
+
+    console.log("props tracker", props);
+>>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
     const { auth, user, tracks, user_subs, creator_subs } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const TruncatedString = ({ inputString, maxLength }) => {
@@ -43,6 +48,11 @@ export default function Wishtracker(props) {
         const [message_media, setmessage_media] = useState(n && n.message_media);
         const [msgSent, setMsgSent] = useState(n && n.thankyou_message);
         const [media_type, setmedia_type] = useState(n && n.media_type);
+        const [approved, setApproved] = useState( n && n.thank_you_approved);
+        function approvemsg (e){ 
+            setApproved(e);
+        }
+
         const [message_url, setmessage_url] = useState(n && n.message_url);
         const getMessageStatus = (m, f) => {
             if (f) {
@@ -86,6 +96,7 @@ export default function Wishtracker(props) {
                         <div className="d-flex align-items-center justify-content-between">
                             <div className="text-dark">
                                 
+<<<<<<< HEAD
                                 {n.payment.anonymous == 1 && n && n.sender == false ? <Avatar name={`From : Anonymous`}
                                     subhead={n.wish && n.wish.wishname || 'Surprise Gift'}
                                     src={userphoto}
@@ -96,6 +107,22 @@ export default function Wishtracker(props) {
                                     username={n.user && n.user.username || '/'}
                                     src={(n && n.user && n.user.avatar_url) || userphoto}
                                 /> }
+=======
+                                {n.payment.anonymous == 1 && n && n.sender == false ? 
+                                    <Avatar name={`From : Anonymous`}
+                                        subhead={n.wish && n.wish.wishname || 'Surprise Gift'}
+                                        src={userphoto || ''}
+                                    /> 
+                                : 
+                                    <Avatar 
+                                        name={`From : ${n && n.user && n.user.name || 'Anonymous'}`}
+                                        link={n.user && n.user.username || null}
+                                        subhead={n.wish && n.wish.wishname || 'Surprise Gift'}
+                                        username={n.user && n.user.username || ''}
+                                        src={(n && n.user && n.user.avatar_url ) || userphoto}
+                                    /> 
+                                }
+>>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
                                 
                             </div>
                             <div className="text-muted rightbar d-flex align-items-center ">
@@ -149,8 +176,17 @@ export default function Wishtracker(props) {
                                 {n && n.sender == false ? <TweetNow 
                                 type="purchase" id={n && n.uuid} /> : ''}
 
+<<<<<<< HEAD
+=======
+                               
+
+>>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
                                 {msgSent ? <div className="msgSent my-2 p-1" >
                                     <p className="mt-2" >Thank you note : </p>
+                                    {approved == 0 ? <div className='mt-3 alert alert-warning  rounded p-2' >
+                                        Thankyou message is waiting for approval. Currently only you can see this message.
+                                    </div> : ''}
+
                                     <p className="text-muted">{msgSent}</p>
                                     {message_media ? <div className="message-media my-2" >
                                         {media_type == 'image' ?
@@ -167,7 +203,7 @@ export default function Wishtracker(props) {
                                 </div> : ''}
 
                                 {n && n.sender == false && !msgSent ?
-                                    <SayThanks clearAction={open}
+                                    <SayThanks approvemsg={approvemsg} clearAction={open}
                                         getMessageStatus={getMessageStatus}
                                         name={n && n.user && n.user.name}
                                         payment_id={n.id} />
@@ -218,10 +254,16 @@ export default function Wishtracker(props) {
                         className="mb-4 " >
                         <Tab eventKey="1" title="Wish Tracker">
                             <div className="tracks mt-4 pt-4">
+<<<<<<< HEAD
                                 {tracks && 
                                     tracks.map((n, i) => {
                                         return <Wish n={n} key={`track-${i}`} />;
                                     })}
+=======
+                                {tracks && tracks.map((n, i) => {
+                                    return <Wish n={n} key={`track-${i}`} />;
+                                })}
+>>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
                                 {tracks && tracks.length < 1 ?
                                     <Nocontent text="nothing to see" /> : ''}
                             </div>

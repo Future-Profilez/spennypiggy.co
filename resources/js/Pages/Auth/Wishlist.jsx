@@ -25,11 +25,7 @@ export default function Wishlist(props) {
     const [defaultKey, setDefaultKey] = useState(item && item.subscription !== null ? +(item.subscription) : null);
     const [clear, setClear] = useState();
     const [close, setClose] = useState();
-
-
     const { formatMultiPrice } = PriceFormat();
-
-
     useEffect(()=>{
         setClose(openPop);
     },[openPop]);
@@ -199,10 +195,10 @@ export default function Wishlist(props) {
 
     return (
             <Popup modalclass='pinkmodal full' size='md' action={close}
-                classes={`${editpop ? "editpop"  : 'btn-pink lg px-4'}`}
-                text={`${editpop ? ""  : '+ Add wish'}`} >
+                classes={`${editpop ? "editpop"  : 'dropdown-item text-start p-0'}`}
+                text={`${editpop ? ""  : ' Add wish'}`} >
                 <div className="editprofileModal  wishlistModal ">
-                    <div className="editprofileModalInner  ">
+                    <div className="editprofileModalInner">
                         <h2 className="font-GillSans pt-4 px-3">Add A Wish </h2>
                         <Tabs
                             defaultActiveKey="1"
@@ -289,7 +285,7 @@ export default function Wishlist(props) {
                                                  }
 
                                                 <h4 className="mt-2 mb-2 w-100 text-center"  >OR</h4>
-                                                <GlobalUploader
+                                                <GlobalUploader type='minimal'
                                                     clear={clear}
                                                     sendFile={getFileUID}
                                                     options={st.wishitemUploader}

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers;
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Jobs\SendIntroMailAdmin;
 use App\Models\User;
 use App\Models\UserIntro;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -73,12 +74,22 @@ class ProfileController extends Controller
                 'bio' => ['sometimes', 'max:255'],
                 'tags' => ['sometimes', 'max:255'],
             ]);
+            $avatar = $request->avatar;
+            $cover = $request->cover;
+
             $user->name = $request->name;
             $user->username = $request->username;
             $user->bio = $request->bio;
             $user->min_surprise_amount = $request->min_surprise_amount ?? 0;
-            $user->avatar = $request->avatar;
-            $user->cover = $request->cover;
+
+            if(!empty($avatar)){
+                $user->avatar = $avatar['uuid'] ?? null;
+                $user->avatar_cdn_modifier = $avatar['cdnUrlModifiers'] ?? null;
+            }
+            if(!empty($cover)){
+                $user->cover = $cover['uuid'] ?? null;
+                $user->cover_cdn_modifier = $cover['cdnUrlModifiers'] ?? null;
+            }
 
             $user->save();
             $user->refresh();
@@ -211,6 +222,8 @@ class ProfileController extends Controller
         $intro->refresh();
 
         $intro->poster_url;
+
+        SendIntroMailAdmin::dispatch($intro);
 
         return response()->json([
             'status' => true,

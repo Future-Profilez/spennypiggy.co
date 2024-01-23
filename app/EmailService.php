@@ -5,7 +5,9 @@ namespace App;
 use App\Mail\Checkout;
 use App\Mail\CheckoutToUser;
 use App\Mail\ForgotPassEmail;
+use App\Mail\MemberMail;
 use App\Mail\RenewMail;
+use App\Mail\SendAdminIntroMail;
 use App\Mail\SendAvatarRestrictionMail;
 use App\Mail\SendCoverRestrictionMail;
 use App\Mail\SendRestrictionMail;
@@ -13,6 +15,7 @@ use App\Mail\SendTipJarMailToUser;
 use App\Mail\SubscriptionFailedMail;
 use App\Mail\SubscriptionMail;
 use App\Mail\SubsMail;
+use App\Mail\ThankYouMailAdmin;
 use App\Mail\ThankyouUser;
 use App\Mail\TipJarMail;
 use App\Mail\VerifyEmail;
@@ -169,6 +172,17 @@ class EmailService
         }
     }
 
+
+    public static function sendMembershipMail($data)
+    {
+        try {
+
+            Mail::to($data->membership->user->email)->send(new MemberMail($data));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
     public static function sendTipJarSubscribedMail($data)
     {
         try {
@@ -205,6 +219,7 @@ class EmailService
         }
     }
 
+
     public static function sendAvatarRestrictionMail($email)
     {
         try {
@@ -218,6 +233,24 @@ class EmailService
     {
         try {
             Mail::to($email)->send(new SendCoverRestrictionMail());
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+    public static function sendIntroApprovingMailAdmin($intro)
+    {
+        try {
+            Mail::to("saurav@futureprofilez.com")->send(new SendAdminIntroMail($intro));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+    public static function sendThankyouAdmin($pay)
+    {
+        try {
+            Mail::to("saurav@futureprofilez.com")->send(new ThankYouMailAdmin($pay));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }

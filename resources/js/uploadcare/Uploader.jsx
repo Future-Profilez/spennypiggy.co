@@ -2,23 +2,37 @@ import * as LR from "@uploadcare/blocks";
 import { useState } from "react";
 import { useCallback, useEffect, useRef } from "react";
 LR.registerBlocks(LR);
+import { PACKAGE_VERSION } from "@uploadcare/blocks/env";
 
+<<<<<<< HEAD
 export default function GlobalUploader({ options, sendFile, clear, view, isUploading }) {
     
+=======
+export default function GlobalUploader({ options, sendFile, clear, view, isUploading, type }) {
+    
+    // LR.FileUploaderRegular.shadowStyles = /* CSS */ `
+    //   :host lr-simple-btn button {
+    //     background-color: #f00;
+    //   }
+    // `;
+    // LR.registerBlocks(LR);
+
+>>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
     const [files, setFiles] = useState([]);
     const [checkIsUploading, setCheckIsUploading] = useState(false);
     const dataOutputRef = useRef();
     const handleUploaderEvent = useCallback((e) => {
         const { data } = e.detail;
+        console.log('data', data);
         sendFile(data[0]);
         setFiles(data);
     },[]);
     
     const handleResetUploader = () => {
-        if (dataOutputRef.current) {
-            dataOutputRef.current.uploadCollection.clearAll();
-            dataOutputRef.current.$['*modalActive'] = false;
-        }
+      if (dataOutputRef.current) {
+          dataOutputRef.current.uploadCollection.clearAll();
+          dataOutputRef.current.$['*modalActive'] = false;
+      }
     }; 
 
     useEffect(() => {
@@ -31,7 +45,10 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
         return () => { el && el.removeEventListener("lr-data-output", handleUploaderEvent); };
     }, [handleUploaderEvent]);
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
     useEffect(()=>{ 
         window.addEventListener('LR_UPLOAD_START', (e) => {
           if (e.detail.ctx) {
@@ -52,6 +69,10 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
 
       }, []); 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
     return <>
 
         {view && 
@@ -78,6 +99,7 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
         </div>
       }
 
+<<<<<<< HEAD
         <lr-file-uploader-minimal  
             class={options}  
             css-src="https://cdn.jsdelivr.net/npm/@uploadcare/blocks@0.25.0/web/lr-file-uploader-minimal.min.css">
@@ -88,6 +110,46 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
                 onEvent={handleUploaderEvent}>
             </lr-data-output>
         </lr-file-uploader-minimal>
+=======
+        {type =='minimal' ?  
+            <lr-file-uploader-minimal  
+            class={options}  
+            css-src={`https://cdn.jsdelivr.net/npm/@uploadcare/blocks@${PACKAGE_VERSION}/web/lr-file-uploader-minimal.min.css`}>
+              <lr-data-output
+                  use-event ref={dataOutputRef}
+                  hidden use-template
+                  class={options}  
+                  onEvent={handleUploaderEvent}>
+              </lr-data-output>
+            </lr-file-uploader-minimal>  
+        : ''}
+
+        {type =='inline' ? 
+          <lr-file-uploader-inline  
+          class={options}  
+          css-src={`https://cdn.jsdelivr.net/npm/@uploadcare/blocks@${PACKAGE_VERSION}/web/lr-file-uploader-inline.min.css`}>
+            <lr-data-output
+              use-event ref={dataOutputRef}
+              hidden use-template
+              class={options}  
+              onEvent={handleUploaderEvent}>
+            </lr-data-output>
+          </lr-file-uploader-inline>  
+        : ''}
+
+        {type =='regular' ? 
+          <lr-file-uploader-regular  cropPreset="1:1"
+          class={options}  
+          css-src={`https://cdn.jsdelivr.net/npm/@uploadcare/blocks@${PACKAGE_VERSION}/web/lr-file-uploader-regular.min.css`}>
+            <lr-data-output
+              use-event ref={dataOutputRef}
+              hidden use-template
+              class={options}  
+              onEvent={handleUploaderEvent}>
+            </lr-data-output>
+          </lr-file-uploader-regular> 
+        : ''}
+>>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
         
     </>
 }

@@ -68,7 +68,7 @@ export default function SendSurprise({auth, owner}) {
         <Popup
             modalclassName="pinkmodal sendSurprize-modal"
             space="4" size="md"
-            action={close} classes={`btn-pink lg px-4 my-2 w-100`}
+            action={close} classes={`btn-pink lg px-4  `}
             text={`Send Surprise`} >
             <h2 className="text-uppercase font-GillSans pb-4 font-large">
                 Send a Surprise Gift

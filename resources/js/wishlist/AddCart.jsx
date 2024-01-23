@@ -7,28 +7,15 @@ import ProgressBar from "react-bootstrap/ProgressBar";
 import { useState } from "react";
 import { useEffect } from "react";
 import PriceFormat from "@/includes/PriceFormat";
-import { useAlerts } from "@/Components/Alerts";
 import { Link } from "@inertiajs/react";
 export default function AddCart(props) {
 
     const { auth, action, uuid, item, currency, showall } = props;
+<<<<<<< HEAD
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
+=======
+>>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
     const [sub, setSub] = useState('daily');
-
-    async function getSubscription(e) {
-        if(!auth){
-            return false;
-        }
-        setSub(e.target.value);
-    }
-
-    async function handleAuthsub(){
-        if(!auth){
-            errorAlert("You must log in first to subscribe an item.")
-            return false;
-        }
-    }
-
 
     const { format , formatMultiPrice} = PriceFormat();
     const [cartamount, setcartamount] = useState(null);

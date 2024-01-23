@@ -9,15 +9,16 @@ import { useEffect } from 'react';
 import AdultScan from '@/includes/AdultScan';
 
 export default function SayThanks(props) {
-   const { name, payment_id, getMessageStatus, clearAction } = props;
+   const { name, payment_id, getMessageStatus, clearAction, approvemsg } = props;
 
    const [clear, setClear] = useState();
    useEffect(()=>{
       setClear(clearAction);
    }, [clearAction]);
    const [msgMedia, setMsgMedia] = useState();
-   const getFileUID = async (data) => {
+   const getFileUID = (data) => {
       setMsgMedia(data);
+      console.log("data", data)
    };
 
    const [close,setClose] = useState();
@@ -33,7 +34,7 @@ export default function SayThanks(props) {
          setloading(true);
          axios.post(`say-thankyou/${payment_id}`, {
             "messages":message,
-            "message_media":msgMedia ? msgMedia : null
+            "message_media": msgMedia ? msgMedia : null
          }).then(resp => {
            if(resp.data.success){
                successAlert(resp.data.message);
@@ -43,6 +44,7 @@ export default function SayThanks(props) {
                },1000);
                getMessageStatus(message, msgMedia);
                setClear(new Date());
+               approvemsg && approvemsg(0);
            } else {
                errorAlert(resp.data.message);
            }
@@ -62,7 +64,11 @@ export default function SayThanks(props) {
             onChange={(e) => setMessage(e.target.value)} type="text"
          />
          <p className='mb-2 mt-3' >Choose Video or Picture</p>
+<<<<<<< HEAD
          <GlobalUploader 
+=======
+         <GlobalUploader  type='minimal'
+>>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
             clear={clear}
             sendFile={getFileUID}
             options={st.thankyoumessage}

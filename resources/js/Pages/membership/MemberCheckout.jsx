@@ -1,15 +1,12 @@
 import { useEffect, useState } from "react";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
-import PriceFormat from "@/includes/PriceFormat";
-import cartproductimg from '../../../assets/img/cartproductimg.png';
-import { useAlerts } from "@/Components/Alerts";
 import { Toaster } from "react-hot-toast";
-
+import Membership from "./Membership";
+import { useAlerts } from "@/Components/Alerts";
+ 
 export default function SubCheckout(props) {
 
-    const {auth, wish, reccure} = props;
-    console.log("props sub", props);
-    const { formatMultiPrice } = PriceFormat();
+    const { auth, membership} = props;
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
     const [email, setEmail] = useState(auth && auth.user && auth.user.email || '');
     const { successAlert, errorAlert, warningAlert, infoAlert } = useAlerts();
@@ -25,18 +22,17 @@ export default function SubCheckout(props) {
     function checkanonymous(e){ 
         setKeepAnonmyous(e.target.checked);
         if(e.target.checked){
-            setData("anonymous", 1)
+            setData("anonymous", 1);
         } else {
-            setData("anonymous", 0)
+            setData("anonymous", 0);
         }
     }
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        post(route(`wish.subscribe.checkout`,{
-            uuid:wish.uuid, 
-            reccure:reccure
-        }),
+        post(route(`membership.checkout`,{
+            uuid:membership.uuid
+          }),
         {
             preserveScroll:true
         });
@@ -60,67 +56,25 @@ export default function SubCheckout(props) {
 
     return (
         <>
-            <Head title={`Subscribe -${wish?.wishname}`}/>
+            <Head title={`Join - ${membership?.level} membership`}/>
             <div className={`px-0 px-lg-2`}>
                 <div className="my-4 cartsub cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
                     <div className="cartMain">
                         <h2 className="pb-1 wishtitle">
-                            Wish Basket for {wish?.user?.name || " "} 
+                            Membership Basket for {membership?.user?.name || " "} 
                             <Link className="text-voilet" target="_blank"
-                                href={`/${wish?.user?.username || ""}`} >
-                                @{wish?.user?.username || ""}
+                                href={`/${membership?.user?.username || ""}`} >
+                                @{membership?.user?.username || ""}
                             </Link>
                         </h2>
                         <p className="pb-4">
-                            You are about to subscribe to
-                            <strong> {wish?.user?.name || ""} </strong> to fund their
-                            wishes.
+                            You are about to join {membership.level} membership.
                         </p>
-                        <div className="CartItemBox">
-                            <div className={`border cartlist flex flex-wrap justify-between items-center content-between items-center border-purple shadow-purple rounded-xl mb-3 mb-md-4 mb-ml-5 p-3 p-md-4`}>
-                                <div className='prodcartbox items-center'>
-                                    <div className='productimg'>
-                                        <img src={wish.perma_link || cartproductimg} alt='img' />
-                                    </div>
-                                    <div>
-                                        <div className='cartProdTitle ps-3'>{wish.wishname}</div>
-                                        {/* {data.message ? <div className='surprise-message ps-3'>Surprise Message : {data.message}</div> : ''} */}
-                                        <div className="badge bg-info text-dark me-4 ms-3 ">
-                                        Pay {reccure == 'onetime' ? `Onetime` : wish.subscription_period}
-                                    </div>
-                                    </div>
-                                </div>
-                                <div className='cartProRtbox mt-3 items-center'>
 
-                                    <div className='cartPric pe-4'>
-                                        {formatMultiPrice(wish.price, wish && wish.currency)}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="cartTotal px-0 py-3">
-                            <div className="cartSubTotal text-right mt-1">
-                                <span>Platform Fee :</span>{" "}
-                                <strong className="text-end">
-                                    {formatMultiPrice(wish.tax_amount || "", wish && wish.currency)}
-                                </strong>
-                            </div>
-                            <div className="cartSubTotal text-right mt-1">
-                                <span>Subtotal :</span>{" "}
-                                <strong className="text-end">
-                                    {formatMultiPrice(wish.price || "", wish && wish.currency)}
-                                </strong>
-                            </div>
-                            <div className="cartSubTotal text-right mt-1">
-                                <strong className="text-dark">Total :</strong>{" "}
-                                <strong className="text-end">
-                                    {formatMultiPrice(wish.tax_amount + wish.price || "", wish && wish.currency)}
-                                </strong>
-                            </div>
-                        </div>
-
-                        <div className="addMessage">
+                        <Membership hidebtn={true} item={membership} />
+                       
+                       
+                        <div className="addMessage mt-5">
                             <form onSubmit={handleSubmit}>
                                 <ul className="row">
                                     <li>
@@ -168,13 +122,7 @@ export default function SubCheckout(props) {
                                     <label
                                         htmlFor="anonymous"
                                         className="text-start" >
-                                        <input
-                                            onChange={checkanonymous}
-                                            type="checkbox"
-                                            id="anonymous"
-                                            name="anonymous"
-                                            className="me-2"
-                                            value="anonymous" ></input>
+                                        <input onChange={checkanonymous} type="checkbox" id="anonymous" name="anonymous" className="me-2" value="anonymous" ></input>
                                         Keep anonymous
                                     </label>
                                     <p className="text-muted text-small mb-3" >Your personal email and name will be private.</p>
@@ -195,7 +143,7 @@ export default function SubCheckout(props) {
                                                 <li> I am making a non-refundable cash gift donation. </li>
                                                 <li> I expect no product or service in return from the gift recipient. </li>
                                                 <li> This payment is a donation intended for the gift recipient. </li>
-                                                <li> I have taken the necessary steps to confirm the wishlist owner is authentic and I understand that Spenny Piggy will not be held responsible for any issues arising from a catfishing situation. </li>
+                                                <li> I have taken the necessary steps to confirm the membershiplist owner is authentic and I understand that Spenny Piggy will not be held responsible for any issues arising from a catfishing situation. </li>
                                                 <li> I understand that by violating these terms I may be subject to legal action or can fall a victim of scams. </li>
                                                 <li> I understand that by checking the box above and then clicking "CHECKOUT",I will have created a legally binding e-signature to this agreement. </li>
                                                 <li> By providing an e-mail,you confirm that you are happy to receive marketing updates. You can opt out at anytime. </li>
@@ -207,7 +155,7 @@ export default function SubCheckout(props) {
                                     <button type="submit"
                                         className={`${!data.agree || processing ? "disabled" : ""} btn-pink md px-4 mt-3 text-center`}
                                         disabled={!data.agree || processing}>
-                                        {processing ? 'Processing...' : 'Subscribe'}
+                                        {processing ? 'Processing...' : 'Join Now'}
                                     </button> 
                                 </div>
                             </form>
