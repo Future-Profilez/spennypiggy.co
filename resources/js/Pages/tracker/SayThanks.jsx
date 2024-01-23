@@ -15,6 +15,7 @@ export default function SayThanks(props) {
    useEffect(()=>{
       setClear(clearAction);
    }, [clearAction]);
+
    const [msgMedia, setMsgMedia] = useState();
    const getFileUID = (data) => {
       setMsgMedia(data);
@@ -64,11 +65,7 @@ export default function SayThanks(props) {
             onChange={(e) => setMessage(e.target.value)} type="text"
          />
          <p className='mb-2 mt-3' >Choose Video or Picture</p>
-<<<<<<< HEAD
-         <GlobalUploader 
-=======
          <GlobalUploader  type='minimal'
->>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
             clear={clear}
             sendFile={getFileUID}
             options={st.thankyoumessage}
