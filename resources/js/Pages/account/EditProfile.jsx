@@ -33,13 +33,8 @@ export default function EditProfile({ user, global_currency }) {
         name: user?.name || '',
         username: user?.username || '',
         bio: user?.bio || '',
-<<<<<<< HEAD
-        avatar: user?.avatar || '',
-        cover: user?.cover || '',
-=======
         avatar: '',
         cover: '',
->>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
         min_surprise_amount: user?.min_surprise_amount || '',
     });
 
