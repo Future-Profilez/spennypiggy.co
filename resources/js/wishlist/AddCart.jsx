@@ -11,10 +11,6 @@ import { Link } from "@inertiajs/react";
 export default function AddCart(props) {
 
     const { auth, action, uuid, item, currency, showall } = props;
-<<<<<<< HEAD
-    const { successAlert, errorAlert, errorsHandling } = useAlerts();
-=======
->>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
     const [sub, setSub] = useState('daily');
 
     const { format , formatMultiPrice} = PriceFormat();
@@ -59,7 +55,6 @@ export default function AddCart(props) {
                 <div className="cartbanner">
                     <img src={item.perma_link ? item.perma_link : uploadedimg} alt="img" />
                 </div>
-
                 <div className="cartTitle text-center">{item.wishname}</div>
                 <div className="cartPrice font-CeraGRBold text-voilet mt-1 mb-3 text-center">
                     {formatMultiPrice(item.price, item?.currency || 'GBP')}

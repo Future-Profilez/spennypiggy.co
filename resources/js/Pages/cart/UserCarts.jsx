@@ -7,6 +7,7 @@ import axios from "axios";
 import { useEffect } from "react";
 
 export default function UserCarts(props) {
+
     const deviceid = DeviceID();
     const { auth, removeFromCart } = props;
     const { format, formatMultiPrice } = PriceFormat();
@@ -25,6 +26,7 @@ export default function UserCarts(props) {
             window.location.href = `/create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}&anonymous=${keepAnonmyous ? 1 : 0}`;
         }
     };
+
     const [loading, setLoading] = useState(false);
     const [cartCleared, setCartCleared] = useState(false);
     const clearcart = (ownerid, index) => {

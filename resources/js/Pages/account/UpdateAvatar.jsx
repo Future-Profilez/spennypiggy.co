@@ -3,11 +3,8 @@ import GlobalUploader from "@/uploadcare/Uploader";
 import { useState } from "react";
 import st from '../../../css/uploader.module.css'
 import AdultScan from "@/includes/AdultScan";
-<<<<<<< HEAD
-=======
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 import { useEffect } from "react";
->>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
 
 export default function UpdateAvatar({getImageUID, text, close, type }) {
 
@@ -52,14 +49,6 @@ export default function UpdateAvatar({getImageUID, text, close, type }) {
                         <UploadcareEditor uuid={file && file.uuid || ''} updateFile={updateFile}  />
                     </div>
 
-<<<<<<< HEAD
-                    <AdultScan type={file && file.contentInfo && file.contentInfo.mime && file.contentInfo.mime.type} 
-                    fileuid={file && file.uuid}
-                    onScan={updateImage} content={<>
-                        <button className="btn-pink sm w-100" >Confirm</button>
-                    </>} 
-                    />
-=======
                     <div className={`${!isEditable ? '' : 'd-none'} edited`} >
                         <div className="py-4" >
                             <GlobalUploader type='minimal' clear={clear} sendFile={getFileUID} options={st.profileimage} />
@@ -70,7 +59,6 @@ export default function UpdateAvatar({getImageUID, text, close, type }) {
                         onScan={updateImage} content={<> <button className="btn-pink sm w-100" >Confirm</button> </>} 
                         />
                     </div>
->>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
                     
                 </div>
             </div>

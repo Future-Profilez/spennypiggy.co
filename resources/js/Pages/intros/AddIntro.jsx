@@ -8,10 +8,7 @@ import axios from 'axios';
 import LoaderButton from '@/Components/LoaderButton';
 import { useEffect } from 'react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
-<<<<<<< HEAD
-=======
 import { useMemo } from 'react';
->>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
 
 export default function AddIntro({IsloggedIn, uuid}){
 
@@ -23,16 +20,6 @@ export default function AddIntro({IsloggedIn, uuid}){
   const [msgMedia, setMsgMedia] = useState(null);
   const getFileUID = async (data) => {
     setMsgMedia(data);
-<<<<<<< HEAD
-    // setOpen(true);
-  };
-
-  const [introVideo, setIntroVideo] = useState(null);
-  const [videoLoading, setVideoLoading] = useState(false);
-  const getVideo = () => { 
-    setVideoLoading(true);
-    axios.get(`my-intro/${uuid}`).then(resp => {
-=======
   }; 
 
   const [introVideo, setIntroVideo] = useState(null);
@@ -41,7 +28,6 @@ export default function AddIntro({IsloggedIn, uuid}){
   async function getVideo (signal) { 
     setVideoLoading(true);
     axios.get(`my-intro/${uuid}`, {signal}).then(resp => {
->>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
       if(resp.data.status) { 
         setIntroVideo(resp.data.intro);
       }
@@ -53,16 +39,11 @@ export default function AddIntro({IsloggedIn, uuid}){
   }
 
   useEffect(()=>{
-<<<<<<< HEAD
-    getVideo();
-  },[]);
-=======
     const controller = new AbortController();
     const {signal} = controller;
     getVideo(signal)
     return () => controller.abort();
   },[]); 
->>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
 
   const addVideo = () => { 
     if(msgMedia == null || undefined){
@@ -109,13 +90,8 @@ export default function AddIntro({IsloggedIn, uuid}){
   const ProfileIntro = () => {
     return <>
       <Popup
-<<<<<<< HEAD
-      modalclassName="pinkmodal shadow-pink" space="0" size="md" action={close} classes={`w-100`}
-      text={<>
-=======
         modalclassName="pinkmodal shadow-pink" space="0" size="md" action={close} classes={`w-100`}
         text={<>
->>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
         <div className='isintro cursor-pointer shadow-voilet'>
           <LazyLoadImage
           alt={"image"} useIntersectionObserver={true} effect="blur"
@@ -133,16 +109,8 @@ export default function AddIntro({IsloggedIn, uuid}){
             <video playsInline='false' autoPlay src={introVideo && introVideo?.perma_link || ''} controls controlsList='nodownload' />
           </div>
       </Popup>
-<<<<<<< HEAD
-
-       
     </>
   }
-  
-=======
-    </>
-  }
->>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
 
   return (
     <div className={`mt-4 ${videoLoading ? 'd-none' : '' } `}>
@@ -170,11 +138,7 @@ export default function AddIntro({IsloggedIn, uuid}){
                 <p className='text-muted mb-4' >Add a 15 to 30 sec video to introduce yourself.</p>
                 <div className='my-3' >
                   <GlobalUploader view={true}
-<<<<<<< HEAD
-                    clear={clear}
-=======
                     clear={clear} type='minimal'
->>>>>>> 14d1a0c8aa44b65d12df7827b343c7d91a151795
                     sendFile={getFileUID}
                     options={st.profileVideo}
                   />  

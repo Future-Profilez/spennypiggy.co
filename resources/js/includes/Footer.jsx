@@ -101,6 +101,7 @@ export default function Footer(props) {
             }
         }, 7000);
     }
+
     async function confgureGtag() {
         window.dataLayer = window.dataLayer || [];
         function gtag() {
@@ -116,12 +117,14 @@ export default function Footer(props) {
     useEffect(() => {
         confgureGtag();
     }, []);
+
     const fetchLocationData = async () => {
         try {
             await axios.get(`https://ipapi.co/json/`).then((resp)=>{
                 console.log("resp.data.country_code", resp.data.country_code);
                 console.log("router", router);
                 console.log("ziggy", ziggy);
+
                 if(ziggy && ziggy.url === 'https://spennypiggy.co'){
                     if(resp.data && resp.data.country_code == 'GB'){
                         window.location = `https://uk.spennypiggy.co${router && router.page && router.page.url || '/'}`;
