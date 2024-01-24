@@ -165,6 +165,12 @@ Route::middleware('auth')->group(function () {
             Route::post('save', [MembershipController::class, 'membershipLevelSave'])->name('save');
             Route::get('remove/{uuid}', [MembershipController::class, 'removeLevel'])->name('remove');
         });
+
+        Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');
+        Route::get('gifter-subs/{username}', [ProfileController::class, 'gifterSubs'])->name('gifter-subscriptions');
+        Route::get('gifter-tips/{username}', [ProfileController::class, 'gifterTips'])->name('gifter-tips');
+        Route::get('gifter-memberships/{username}', [ProfileController::class, 'gifterMemberships'])->name('gifter-memberships');
+        Route::get('gifter-thanks-message/{username}', [ProfileController::class, 'gifterThanksMessages'])->name('gifter-thanks-message');
     });
 });
 
