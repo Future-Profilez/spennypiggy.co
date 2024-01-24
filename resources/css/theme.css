@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'CeraGRBold';
+  font-display: swap;
+  src: 
+       url('../assets/fonts/CeraGRBold.woff') format('woff'),
+       url('../assets/fonts/CeraGRBold.woff2') format('woff2');
+}
+
+@font-face {
+  font-display: swap;
+  font-family: 'CeraGRMedium';
+  src:
+       url('../assets/fonts/CeraGRMedium.woff2') format('woff2'),
+       url('../assets/fonts/CeraGRMedium.woff') format('woff');
+}
+@font-face {
+  font-display: swap;
+  font-family: 'gulfs';
+  src:
+       url('../assets/fonts/newfont.woff2') format('woff2'),
+       url('../assets/fonts/newfont.woff') format('woff');
+}
+
+
+body {
+  --white:#ffffff;
+  --black:#000000;
+  --gray:#cccccc;
+  --gray2:#4D4D4D;
+  --mint:#05EFB8;
+  /* --mint: linear-gradient(90deg, var 0%, rgba(9,9,121,1) 35%, rgba(0,212,255,1) 100%); */
+  --pink:#F94F97;
+  --yellow:#E6EA7B;
+  --lightpink:#FFC4E2;
+  --voilet: #8C52FF;
+  --purple: #8C52FF;
+  --body-font:'gulfs';
+  --heading-font: 'gulfs';
+  --para-font: 'CeraGRMedium';
+  --parabold-font: 'CeraGRBold';
+  --text-wh: #ffffff;
+  --text-bl: #000000;
+  --text-gray: #616161;
+  --text-graydark: #333333;
+}
