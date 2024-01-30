@@ -164,6 +164,8 @@ Route::middleware('auth')->group(function () {
         Route::prefix("membership")->name("membership.")->group(function () {
             Route::post('save', [MembershipController::class, 'membershipLevelSave'])->name('save');
             Route::get('remove/{uuid}', [MembershipController::class, 'removeLevel'])->name('remove');
+            Route::get('dashboard', [MembershipController::class, 'membershipDashboard'])->name('dashboard');
+            Route::get('graph', [MembershipController::class, 'membershipGraph'])->name('graph');
         });
 
         Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');
@@ -171,10 +173,16 @@ Route::middleware('auth')->group(function () {
         Route::get('gifter-tips/{username}', [ProfileController::class, 'gifterTips'])->name('gifter-tips');
         Route::get('gifter-memberships/{username}', [ProfileController::class, 'gifterMemberships'])->name('gifter-memberships');
         Route::get('gifter-thanks-message/{username}', [ProfileController::class, 'gifterThanksMessages'])->name('gifter-thanks-message');
+
     });
 });
 
 // Intro video
+Route::get('/redirecting', function () {
+    return Inertia::render('Redirecting');
+})->name("redirecting");
+
+
 Route::get('my-intro/{id}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
 
 Route::get('discover',function (){

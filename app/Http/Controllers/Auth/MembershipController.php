@@ -265,57 +265,60 @@ class MembershipController extends Controller
                 'amount'        =>  $membership->price,
                 'tax'           =>  $membership->tax_amount,
                 'recurring_for' =>  $reccure,
-                'recurring_type' =>  ($membership->level == 'bronze' || $membership->level == 'silver' || $membership->level == 'gold' || $membership->level == 'platinum') ? 'monthly' : 'lifetime',
+                'recurring_type' =>  in_array($membership->level, ['bronze', 'silver', 'gold', 'platinum']) ? 'monthly' : 'lifetime',
                 'surprise_message'  =>  $request->message ?? NULL,
                 'anonymous' => $request->anonymous ?? 0
             ]);
 
             $currency   =   strtolower($request->cookie("currency", "GBP"));
-            $tax = number_format($membership->tax_amount, 2);
-            $price = number_format($membership->price, 2);
+            $tax = round($membership->tax_amount, 2, PHP_ROUND_HALF_UP);
+            $price = round($membership->price, 2, PHP_ROUND_HALF_UP);
 
-            $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
-            if ($currency == strtolower($membership->currency)) {
-                $items = [
-                    "price" =>  $membership->price_id,
-                    'quantity'      =>  1,
-                ];
+            $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
+            $amount = $price + $tax;
+            $unit_amount = Helpers::priceFormat($membership->currency, $amount, $currency) * 100;
+            $tax =   Helpers::priceFormat($membership->currency, $tax, $currency);
+
+            $items  =   [
+                'quantity' =>   1
+            ];
+            if($currency == strtolower($membership->currency)) {
+                $items['price']  =   $membership->price_id;
             } else {
-
-                $amount = $price + $tax;
-                $unit_amount = Helpers::priceFormat($membership->currency, $amount, $currency) * 100;
-                $tax =   Helpers::priceFormat($membership->currency, $tax, $currency);
-
-                if($membership->level == 'bronze' || $membership->level == 'silver' || $membership->level == 'gold' || $membership->level == 'platinum'){
-                    $items  =   [
-                        'quantity'      =>  1,
-                        'price_data'    =>   [
-                            'currency'  =>  $currency,
-                            'product'   =>  $membership->product_id,
-                            'unit_amount_decimal'   =>  $unit_amount,
-                            'recurring' =>  [
-                                'interval'  =>  StripeControl::$periods['monthly'],
-                                'interval_count'    =>  1
-                            ]
-                        ]
-                    ];
-                }else{
-                    $items  =   [
-                        'quantity'      =>  1,
-                        'price_data'    =>   [
-                            'currency'  =>  $currency,
-                            'product'   =>  $membership->product_id,
-                            'unit_amount_decimal'   =>  $unit_amount,
-                        ]
+                $items['price_data']    =   [
+                    'currency'  =>  $currency,
+                    'product'   =>  $membership->product_id,
+                    'unit_amount_decimal'   =>  $unit_amount,
+                ];
+                if($membership->level != 'lifetime') {
+                    $items['price_data']['recurring']   =   [
+                        'interval'  =>  StripeControl::$periods['monthly'],
+                        'interval_count'    =>  1
                     ];
                 }
-
             }
-            $payload = [
-                "mode"  =>  'subscription',
-                "currency"  =>  strtolower($request->cookie("currency", "GBP")),
+
+            $payload    =   [
+                "currency"  =>  $currency,
                 'line_items' =>  [$items],
-                'subscription_data' =>  [
+                'customer_email'    =>  $request->email,
+                'success_url'       =>  route('membership.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
+                'cancel_url'       =>  route('membership.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
+            ];
+
+            if($membership->level == 'lifetime') {
+                $payload['mode']    =   'payment';
+                $payload['payment_intent_data']     =   [
+                    'transfer_data' => [
+                        'destination' => $membership->user->account_id, // Creator's connected account ID
+                    ],
+                    'application_fee_amount' => $tax * 100,
+                    'on_behalf_of'  => $membership->user->account_id,
+                    'description'   => "Membership for {$membership->level} of {$membership->user->username}."
+                ];
+            } else {
+                $payload['mode']    =   'subscription';
+                $payload['subscription_data']     =   [
                     'application_fee_percent'   =>  $fee_per,
                     'transfer_data' => [
                         'destination' => $membership->user->account_id, // Creator's connected account ID
@@ -323,11 +326,47 @@ class MembershipController extends Controller
                     'on_behalf_of'  => $membership->user->account_id,
                     // 'cancel_at_period_end'  =>  $reccure == 'onetime',
                     'description'   => "Membership for {$membership->level} of {$membership->user->username}."
-                ],
-                'customer_email'    =>  $request->email,
-                'success_url'       =>  route('membership.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
-                'cancel_url'       =>  route('membership.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
-            ];
+                ];
+            }
+            // if ($currency == strtolower($membership->currency)) {
+            //     $items = [
+            //         "price"     =>  $membership->price_id,
+            //         'quantity'  =>  1,
+            //     ];
+            // } else {
+
+            //         $items  =   [
+            //             'quantity'      =>  1,
+            //             'price_data'    =>   [
+            //                 'currency'  =>  $currency,
+            //                 'product'   =>  $membership->product_id,
+            //                 'unit_amount_decimal'   =>  $unit_amount,
+            //                 'recurring' =>  [
+            //                     'interval'  =>  StripeControl::$periods['monthly'],
+            //                     'interval_count'    =>  1
+            //                 ]
+            //             ]
+            //         ];
+
+
+            // }
+            // $payload = [
+            //     "mode"  =>  'subscription',
+            //     "currency"  =>  strtolower($request->cookie("currency", "GBP")),
+            //     'line_items' =>  [$items],
+            //     'subscription_data' =>  [
+            //         'application_fee_percent'   =>  $fee_per,
+            //         'transfer_data' => [
+            //             'destination' => $membership->user->account_id, // Creator's connected account ID
+            //         ],
+            //         'on_behalf_of'  => $membership->user->account_id,
+            //         // 'cancel_at_period_end'  =>  $reccure == 'onetime',
+            //         'description'   => "Membership for {$membership->level} of {$membership->user->username}."
+            //     ],
+            //     'customer_email'    =>  $request->email,
+            //     'success_url'       =>  route('membership.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
+            //     'cancel_url'       =>  route('membership.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
+            // ];
 
             try {
                 $session = StripeControl::createCheckoutSession($payload);
@@ -353,6 +392,8 @@ class MembershipController extends Controller
             'reccure'   => $reccure
         ]);
     }
+
+
 
     /**
      * Handle Checkout Session
@@ -382,7 +423,7 @@ class MembershipController extends Controller
                 $mem->upcoming_payment = $current;
                 $mem->save();
 
-                if ($mem->recurring_for == 'onetime') {
+                if ($mem->recurring_for == 'onetime' AND $mem->recurring_type == 'monthly') {
                     SubscriptionCancelAtEnd::dispatch($mem);
                 } else {
                     MembershipMail::dispatch($mem);
@@ -409,6 +450,79 @@ class MembershipController extends Controller
         //     'session'   =>  $session,
         //     'status'    =>  $status
         // ]);
+    }
+
+
+    public function membershipDashboard(){
+        $user = User::where('id',Auth::id())->first();
+
+
+        $count = MembershipPayment::whereHas('membership',function($q) use($user){
+            $q->where('user_id', $user->id);
+        })->where('status','paid')->count();
+
+        $per_month = MembershipPayment::whereHas('membership',function($q) use($user){
+            $q->where('user_id', $user->id);
+        })->whereMonth('created_at',Carbon::now()->month)->where('status','paid')->sum('amount');
+
+        $all_time = MembershipPayment::whereHas('membership',function($q) use($user){
+            $q->where('user_id', $user->id);
+        })->where('status','paid')->sum('amount');
+
+        $arr = [
+            'members' => $count,
+            'per_month' => $per_month,
+            'all_time' => $all_time
+        ];
+
+
+        return response()->json([
+            'status' => true,
+            'data' => $arr
+        ]);
+    }
+
+
+    public function membershipGraph(){
+        $user = User::where('id',Auth::id())->first();
+
+
+        $currentDate = Carbon::now();
+
+
+        $result = [];
+
+
+        for ($i = 0; $i <= 4; $i++) {
+
+            if($i != 0){
+                $date = Carbon::now()->subMonth($i);
+                $format_date = $date->format('F Y');
+            }
+            else{
+                $date = $currentDate;
+                $format_date = $currentDate->format('F Y');
+            }
+
+
+            $data = MembershipPayment::whereHas('membership',function($q) use($user){
+                $q->where('user_id',$user->id);
+            })->whereMonth('created_at', $date->month)
+                            ->whereYear('created_at', $date->year)
+                            ->sum('amount');
+
+            $result[] = [
+                            'sum' => $data,
+                            'date' => $format_date
+                        ];
+        }
+
+
+
+        return response()->json([
+            'status' => true,
+            'data' => $result
+        ]);
     }
 
 }
