@@ -93,6 +93,7 @@ class StripeController extends Controller
                         'card_payments' => ['requested' => true],
                         'transfers' => ['requested' => true],
                     ],
+                    'tos_acceptance' => ['service_agreement' => 'recipient'],
                     'business_type' => 'individual',
                     'business_profile' => [
                         'url'   =>  "https://spennypiggy.co/{$user->username}",
@@ -620,7 +621,7 @@ class StripeController extends Controller
                     'transfer_data' => [
                         'destination' => $wish->user->account_id, // Creator's connected account ID
                     ],
-                    'on_behalf_of'  => $wish->user->account_id,
+                    // 'on_behalf_of'  => $wish->user->account_id,
                     // 'cancel_at_period_end'  =>  $reccure == 'onetime',
                     'description'   => "Subscription for {$wish->wishname} of {$wish->user->username}."
                 ],
@@ -919,7 +920,7 @@ class StripeController extends Controller
                         'destination' => $goal->user->account_id, // Creator's connected account ID
                     ],
                     'application_fee_amount' => $tax * 100,
-                    'on_behalf_of'  => $goal->user->account_id,
+                    // 'on_behalf_of'  => $goal->user->account_id,
                 ],
                 'customer_email' =>  $request->email,
                 'success_url'       =>  route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "success"]),

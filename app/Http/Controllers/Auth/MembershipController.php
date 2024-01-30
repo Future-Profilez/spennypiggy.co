@@ -313,7 +313,7 @@ class MembershipController extends Controller
                         'destination' => $membership->user->account_id, // Creator's connected account ID
                     ],
                     'application_fee_amount' => $tax * 100,
-                    'on_behalf_of'  => $membership->user->account_id,
+                    // 'on_behalf_of'  => $membership->user->account_id,
                     'description'   => "Membership for {$membership->level} of {$membership->user->username}."
                 ];
             } else {
