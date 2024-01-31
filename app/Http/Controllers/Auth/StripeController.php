@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use AmrShawky\LaravelCurrency\Facade\Currency as FacadeCurrency;
 use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\CheckoutMailToUser;
@@ -32,6 +33,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use League\ISO3166\ISO3166;
 use Ramsey\Uuid\Uuid;
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
@@ -77,7 +79,6 @@ class StripeController extends Controller
      */
     public function initConnect(Request $request, $step = "init", $country = null, $currency = null)
     {
-
         $user = User::find(Auth::id());
         if (empty($user->account_id)) {
             // if (!$request->isMethod("POST")) {
@@ -85,20 +86,22 @@ class StripeController extends Controller
             // }
             $country = strtoupper($country);
             try {
+
                 $payload = [
                     "country" => $country,
                     "type" => "express",
                     'email' => $user->email,
                     'capabilities' => [
-                        'card_payments' => ['requested' => true],
+                        // 'card_payments' => ['requested' => true],
                         'transfers' => ['requested' => true],
                     ],
+                    'tos_acceptance' => ['service_agreement' => $country == 'US' ? 'full' : 'recipient'],
                     'business_type' => 'individual',
                     'business_profile' => [
                         'url'   =>  "https://spennypiggy.co/{$user->username}",
                         'mcc'   => '7278' //marketplaces - older - 5262
                     ],
-                    'default_currency' => 'GBP',
+                    'default_currency' => $currency,
                 ];
                 $account = StripeControl::createAccount($payload);
                 $user->account_id = $account->id;
@@ -620,7 +623,7 @@ class StripeController extends Controller
                     'transfer_data' => [
                         'destination' => $wish->user->account_id, // Creator's connected account ID
                     ],
-                    'on_behalf_of'  => $wish->user->account_id,
+                    // 'on_behalf_of'  => $wish->user->account_id,
                     // 'cancel_at_period_end'  =>  $reccure == 'onetime',
                     'description'   => "Subscription for {$wish->wishname} of {$wish->user->username}."
                 ],
@@ -919,7 +922,7 @@ class StripeController extends Controller
                         'destination' => $goal->user->account_id, // Creator's connected account ID
                     ],
                     'application_fee_amount' => $tax * 100,
-                    'on_behalf_of'  => $goal->user->account_id,
+                    // 'on_behalf_of'  => $goal->user->account_id,
                 ],
                 'customer_email' =>  $request->email,
                 'success_url'       =>  route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "success"]),
