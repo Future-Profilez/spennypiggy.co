@@ -93,7 +93,7 @@ export default function AddIntro({IsloggedIn, uuid}){
         modalclassName="pinkmodal shadow-pink" space="0" size="md" action={close} classes={`w-100`}
         text={<>
         <div className='isintro cursor-pointer shadow-voilet'>
-          <LazyLoadImage
+          <img
           alt={"image"} useIntersectionObserver={true} effect="blur"
           height={350} src={ introVideo &&  introVideo.poster_url} className='' width={400} />
           <div className='cursor-pointer playicon' >

@@ -3,9 +3,7 @@ import React, { useEffect } from "react";
 import  LoaderButton from "@/Components/LoaderButton";
 import { useForm, usePage } from "@inertiajs/react";
 const Popup = React.lazy(() => import('@/Components/Popup'));
-import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
-import ProgressBar from 'react-bootstrap/ProgressBar';
 import GlobalUploader from "@/uploadcare/Uploader";
 import st from "../../../css/uploader.module.css";
 import axios from "axios";
@@ -78,12 +76,9 @@ const membershipBenifits = [
 
 export default function AddMembership(props) {
 
-    const {flash} = usePage().props;
-
    const { successAlert, errorAlert, errorsHandling } = useAlerts();
    const [clear, setClear] = useState();
    const [close, setClose] = useState();   
-   const { formatMultiPrice } = PriceFormat();
 
     const { data, setData, post,get, processing, errors, reset } = useForm({
       level: '',
@@ -118,6 +113,8 @@ export default function AddMembership(props) {
           setTimeout(() => {
             setClose();
           }, 100);
+          reset();
+          setClear(new Date());
         } else { 
           if(resp.data.errors){
             Object.entries(resp.data.errors).forEach(([key, value]) => {
@@ -126,7 +123,6 @@ export default function AddMembership(props) {
             } else { 
               errorAlert(resp.data.msg);
           }
-           
         }
         setLoading(false);
       }).catch(err => { 

@@ -1,10 +1,10 @@
-import React, { useState, useMemo, useEffect,Suspense } from "react";
+import React, { useState, useMemo, useEffect, Suspense } from "react";
 import { useAlerts } from "@/Components/Alerts";
 import { Head, Link, usePage } from "@inertiajs/react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
-import MyGoal  from "./TipJar/MyGoal";
+import MyGoal from "./TipJar/MyGoal";
 import SocialLinks from "@/includes/SocialLinks";
-import {addicon} from "@/includes/Icons";
+import { addicon } from "@/includes/Icons";
 const AddGoal = React.lazy(() => import("./TipJar/AddGoal"));
 const Wishlist = React.lazy(() => import("./Auth/Wishlist"));
 const Wishlistbox = React.lazy(() => import("@/wishlist/Wishlistbox"));
@@ -18,12 +18,14 @@ const VersionUpdate = React.lazy(() => import("@/Components/VersionUpdate"));
 const PaymentDashboard = React.lazy(() => import("./stripe/PaymentDashboard"));
 const ChangeCurrency = React.lazy(() => import("@/Components/ChangeCurrency"));
 const Popup = React.lazy(() => import("@/Components/Popup"));
-const MembershipsLists = React.lazy(() => import("./membership/MembershipsLists"));
+const MembershipsLists = React.lazy(() =>
+    import("./membership/MembershipsLists")
+);
 const AddMembership = React.lazy(() => import("./membership/AddMembership"));
 import AddIntro from "./intros/AddIntro";
-import Dropdown from 'react-bootstrap/Dropdown';
-import Tab from 'react-bootstrap/Tab';
-import Tabs from 'react-bootstrap/Tabs';
+import Dropdown from "react-bootstrap/Dropdown";
+import Tab from "react-bootstrap/Tab";
+import Tabs from "react-bootstrap/Tabs";
 import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
 import { LazyLoadImage } from "react-lazy-load-image-component";
@@ -34,8 +36,15 @@ from "@dnd-kit/core";
 
 export default function Dashboard(props) {
     const w = useWidthCount();
-    const{auth,user,username,global_currency,itemid,min_surprise_amount}= props;
-    const [tab, setTab] = useState('about');
+    const {
+        auth,
+        user,
+        username,
+        global_currency,
+        itemid,
+        min_surprise_amount,
+    } = props;
+    const [tab, setTab] = useState("about");
     const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
     const [loading, setLoading] = useState(false);
@@ -45,7 +54,7 @@ export default function Dashboard(props) {
 
     const fetchingLinks = (signal) => {
         axios
-            .get(`sociallinks/${username}`, {signal})
+            .get(`sociallinks/${username}`, { signal })
             .then((resp) => {
                 setSocialLinks(resp.data.sociallinks);
                 setLinks(resp.data.slinks);
@@ -56,18 +65,21 @@ export default function Dashboard(props) {
     };
 
     const fetch_categories = async (signal) => {
-        axios.get(`/user_category/${username}`, {signal})
-        .then((resp) => {
-            setcategories(resp.data.categories);
-        }).catch((_err) => {
-            console.error("error", _err);
-        });
+        axios
+            .get(`/user_category/${username}`, { signal })
+            .then((resp) => {
+                setcategories(resp.data.categories);
+            })
+            .catch((_err) => {
+                console.error("error", _err);
+            });
     };
 
     const [its, setIts] = useState();
     const fetchingcats = (cat, signal) => {
-            setLoading(true);
-            fetch(`/items/${username}${cat ? `/${cat}` : ""}`, {signal}).then((response) => {
+        setLoading(true);
+        fetch(`/items/${username}${cat ? `/${cat}` : ""}`, { signal })
+            .then((response) => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
@@ -94,7 +106,7 @@ export default function Dashboard(props) {
     const [fetchingGoal, setfetchingGoal] = useState(false);
     const [goal, setGoal] = useState();
     const fetch_goal = async (signal) => {
-        if(fetchingGoal){
+        if (fetchingGoal) {
             return true;
         }
         setfetchingGoal(true);
@@ -111,21 +123,19 @@ export default function Dashboard(props) {
 
     useEffect(() => {
         const controller = new AbortController();
-        const {signal} = controller;
+        const { signal } = controller;
         fetch_categories(signal);
-        fetchingcats(false,signal)
+        fetchingcats(false, signal);
         return () => controller.abort();
     }, [tab]);
 
-
     useEffect(() => {
         const controller = new AbortController();
-        const {signal} = controller;
+        const { signal } = controller;
         fetchingLinks(signal);
-        fetch_goal(signal)
+        fetch_goal(signal);
         return () => controller.abort();
     }, []);
-
 
     // Currency update
     const currencyaction = (e) => {
@@ -141,8 +151,6 @@ export default function Dashboard(props) {
             setOpenCurrency(true);
         }
     });
-
-
 
     // Update movement of wish items
     const updateMovement = async (updated) => {
@@ -186,11 +194,10 @@ export default function Dashboard(props) {
         }
     };
 
-
-    // Error flash handling 
+    // Error flash handling
     const { flash, errors } = usePage().props;
     useMemo(() => {
-        if(errors){
+        if (errors) {
             Object.entries(errors).forEach(([key, value]) => {
                 errorAlert(value);
             });
@@ -213,7 +220,9 @@ export default function Dashboard(props) {
     return (
         <>
             <Guest auth={auth.user} user={user}>
-                <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`}/>
+                <Head
+                    title={`${user?.name || auth?.user?.name} - Spenny Piggy`}
+                />
                 <div className="wishlistPage blackbg pt-6 pb-14 ">
                     <div className="containerbox">
                         <VersionUpdate />
@@ -239,44 +248,88 @@ export default function Dashboard(props) {
 
                         <div className="wishManage">
                             <div className="userManageRt mt-4">
-                                 
-                                <div className="inlinetab" >
-                                    <Tabs defaultActiveKey="about"
-                                        transition={true} onSelect={(e)=>setTab(e)}
+                                <div className="inlinetab">
+                                    <Tabs
+                                        defaultActiveKey="about"
+                                        transition={true}
+                                        onSelect={(e) => setTab(e)}
                                         id="noanim-tab-example"
-                                        className="mb-3 " >
+                                        className="mb-3 "
+                                    >
+                                        <Tab eventKey="about" title="About">
+                                            <div className="row  about-sec">
+                                                <div className="order-md-2 col-md-7">
+                                                    <div className="box shadow-voilet rounded-lg mb-4">
+                                                        <p className="font-bold">
+                                                            About me{" "}
+                                                        </p>
+                                                        <p
+                                                            className={`text-muted text-start mt-2 ${
+                                                                user &&
+                                                                !user.bio
+                                                                    ? "d-none"
+                                                                    : ""
+                                                            }`}
+                                                        >
+                                                            {(user &&
+                                                                user.bio) ||
+                                                                ""}
+                                                        </p>
 
-                                    <Tab eventKey="about" title="About">
-                                        <div className="row  about-sec" >
-                                            <div className="order-md-2 col-md-7" >
-                                                <div className="box shadow-voilet rounded-lg mb-4" >
-                                                    <p className="font-bold" >About me </p>
-                                                    <p className={`text-muted text-start mt-2 ${user && !user.bio ? "d-none":""}`}>
-                                                        {(user && user.bio) || ""}
-                                                    </p>
-
-                                                    <SocialLinks links={socialLinks} /> 
-                                                    {IsloggedIn ? (
-                                                        <div className="userProfileDate pt-4">
-                                                            <EditProfile
-                                                                user={auth.user}
-                                                                global_currency={
-                                                                    global_currency
-                                                                }
-                                                            />
-                                                            {auth.user && auth.user .stripe_details_submitted == 1 ? (
-                                                                <PaymentDashboard
-                                                                    classes="btn-pink lg w-100 mt-4"
-                                                                    text="Payment Dashboard"
+                                                        <SocialLinks
+                                                            links={socialLinks}
+                                                        />
+                                                        {IsloggedIn ? (
+                                                            <div className="userProfileDate pt-4">
+                                                                <EditProfile
+                                                                    user={
+                                                                        auth.user
+                                                                    }
+                                                                    global_currency={
+                                                                        global_currency
+                                                                    }
                                                                 />
-                                                            ) : (
-                                                                <div className="finish mt-4 d-block">
-                                                                    <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup. </p>
-                                                                    <Link href={"/stripe"} className="btn-pink lg" >
-                                                                        Finish Setup
-                                                                    </Link>
-                                                                </div>
-                                                            )}
+                                                                {auth.user &&
+                                                                auth.user
+                                                                    .stripe_details_submitted ==
+                                                                    1 ? (
+                                                                    <PaymentDashboard
+                                                                        classes="btn-pink lg w-100 mt-4"
+                                                                        text="Payment Dashboard"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="finish mt-4 d-block">
+                                                                        <p className="mb-4">
+                                                                            {" "}
+                                                                            Finish
+                                                                            setting
+                                                                            up
+                                                                            your
+                                                                            account
+                                                                            to
+                                                                            receive
+                                                                            funds.
+                                                                            You
+                                                                            have
+                                                                            more
+                                                                            steps
+                                                                            to
+                                                                            complete
+                                                                            your
+                                                                            payment
+                                                                            setup.{" "}
+                                                                        </p>
+                                                                        <Link
+                                                                            href={
+                                                                                "/stripe"
+                                                                            }
+                                                                            className="btn-pink lg"
+                                                                        >
+                                                                            Finish
+                                                                            Setup
+                                                                        </Link>
+                                                                    </div>
+                                                                )}
 
                                                             <AddGoal
                                                                 stripe_enabled={auth.user && auth.user.stripe_details_submitted}
@@ -485,17 +538,26 @@ export default function Dashboard(props) {
                                         </div>
                                     </Tab>
 
-                                    <Tab eventKey="membership" title="Membership">
-                                        <Suspense fallback={ "Loading..."}>
-                                            {tab == 'membership' ? <MembershipsLists  
-                                            username={user?.username || auth?.user?.username} /> : ''}
-                                        </Suspense>
-                                        
-                                    </Tab> 
-
+                                        <Tab
+                                            eventKey="membership"
+                                            title="Membership"
+                                        >
+                                            <Suspense fallback={"Loading..."}>
+                                                {tab == "membership" ? (
+                                                    <MembershipsLists
+                                                        username={
+                                                            user?.username ||
+                                                            auth?.user?.username
+                                                        }
+                                                    />
+                                                ) : (
+                                                    ""
+                                                )}
+                                            </Suspense>
+                                        </Tab>
                                     </Tabs>
                                 </div>
-                            </div> 
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -504,7 +566,8 @@ export default function Dashboard(props) {
                     <Popup
                         action={openCurrency}
                         space="4"
-                        modalclassName="pinkmodal" >
+                        modalclassName="pinkmodal"
+                    >
                         <ChangeCurrency
                             currencyaction={currencyaction}
                             defaultvalue={global_currency}
@@ -514,6 +577,5 @@ export default function Dashboard(props) {
                     ""
                 )}
             </Guest>
-        </>
-    );
+        </>);
 }

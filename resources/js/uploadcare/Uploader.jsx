@@ -86,7 +86,6 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
           ))}
         </div>
       }
-
         {type =='minimal' ?  
             <lr-file-uploader-minimal  
             class={options}  
