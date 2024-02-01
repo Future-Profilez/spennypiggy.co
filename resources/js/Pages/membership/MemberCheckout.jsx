@@ -3,9 +3,11 @@ import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import { Toaster } from "react-hot-toast";
 import Membership from "./Membership";
 import { useAlerts } from "@/Components/Alerts";
+import PriceFormat from "@/includes/PriceFormat";
  
 export default function SubCheckout(props) {
 
+    const { formatMultiPrice } = PriceFormat();
     const { auth, membership} = props;
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
     const [email, setEmail] = useState(auth && auth.user && auth.user.email || '');
@@ -31,7 +33,8 @@ export default function SubCheckout(props) {
     const handleSubmit = (e) => {
         e.preventDefault();
         post(route(`membership.checkout`,{
-            uuid:membership.uuid
+            uuid:membership.uuid,
+            reccure : membership?.level == 'lifetime' ? 'onetime' : 'continue'
           }),
         {
             preserveScroll:true
@@ -73,7 +76,26 @@ export default function SubCheckout(props) {
 
                         <Membership hidebtn={true} item={membership} />
                        
-                       
+                        <div className="cartTotal px-0 py-3">
+                            <div className="cartSubTotal text-right mt-1">
+                                <span>Platform Fee :</span>{" "}
+                                <strong className="text-end">
+                                    {formatMultiPrice(membership.tax_amount || "", membership && membership.currency)}
+                                </strong>
+                            </div>
+                            <div className="cartSubTotal text-right mt-1">
+                                <span>Subtotal :</span>{" "}
+                                <strong className="text-end">
+                                    {formatMultiPrice(membership.price || "", membership && membership.currency)}
+                                </strong>
+                            </div>
+                            <div className="cartSubTotal text-right mt-1">
+                                <strong className="text-dark">Total :</strong>{" "}
+                                <strong className="text-end">
+                                    {formatMultiPrice(membership.tax_amount + membership.price || "", membership && membership.currency)}
+                                </strong>
+                            </div>
+                        </div>
                         <div className="addMessage mt-5">
                             <form onSubmit={handleSubmit}>
                                 <ul className="row">
