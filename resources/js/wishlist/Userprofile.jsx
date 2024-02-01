@@ -1,15 +1,15 @@
-import React from "react";
+import React, { useState, useMemo, useEffect,Suspense } from "react";
 import userphoto from "../../assets/img/userphoto.png";
-import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
 const SocialLinks = React.lazy(() => import('@/includes/SocialLinks'));
 const ShareProfile = React.lazy(() => import('./ShareProfile'));
 const SendSurprise = React.lazy(() => import('./SendSurprise'));
 import { LazyLoadImage } from 'react-lazy-load-image-component';
+import EditProfile from "@/Pages/account/EditProfile";
 
-export default function Userprofile({auth, user, links, IsloggedIn, w, currency }) {
+export default function Userprofile({auth, user, links, IsloggedIn, w, global_currency}) {
 
     return (
-        <div className="userprofilesec ">
+        <div className="userprofilesec mb-4 ">
              
             <div className="userPr px-4 py-0 py-md-4  d-flex align-items-center justify-content-between">
                 <div className="update-profile d-flex align-items-center justify-content-start" >
@@ -34,8 +34,17 @@ export default function Userprofile({auth, user, links, IsloggedIn, w, currency 
                         </div>
                     </div>
                 </div>
+                
 
-                { IsloggedIn ? <SendSurprise auth={auth} owner={user} /> : ''}
+                { !IsloggedIn ? 
+                    user && user.stripe_details_submitted == 1 && 
+                    <SendSurprise auth={auth} owner={user} /> 
+                    :  
+                    <EditProfile
+                    user={user}
+                    global_currency={global_currency}
+                    />
+                || ''}
                 
             </div>
         </div>

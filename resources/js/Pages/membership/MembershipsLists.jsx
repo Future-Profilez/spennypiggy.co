@@ -8,7 +8,7 @@ import LoadingScreen from '@/includes/LoadingScreen';
 
 export default function MembershipsLists(props) {
 
-  const {username} = props;
+  const {username, IsloggedIn} = props;
   const [lists, setLists] = useState();
   const [loading, setLoading] = useState(false);
   const fetch_membership = (signal) => {
@@ -36,7 +36,7 @@ export default function MembershipsLists(props) {
       <div className='row' >
         {lists && lists.length && lists.map((m, i)=>{
           return <div key={`membership-${i}`} className='col-md-4 mb-4' >
-            <Membership item={m} />
+            <Membership IsloggedIn={IsloggedIn} item={m} />
           </div>
         }) || ''}
       </div>

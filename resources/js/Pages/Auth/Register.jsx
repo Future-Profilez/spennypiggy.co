@@ -321,8 +321,7 @@ export default function Register(props) {
                                 </div>
                             </div>
                         </form>
-
-                       
+                        
                     </div>
                 </div>
             </div>

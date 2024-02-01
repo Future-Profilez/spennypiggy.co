@@ -370,6 +370,14 @@ export default function Header() {
                                 <li>
                                     <Link
                                         onClick={toggleClass}
+                                        href={`/membership-dashboard`}
+                                    >
+                                      Memebership Dashboard
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        onClick={toggleClass}
                                         href={`/wish-tracker`}
                                     >
                                         Wish Tracker

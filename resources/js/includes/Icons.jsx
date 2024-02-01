@@ -2,6 +2,20 @@ const crown = `<svg class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-hx3e9n"
 
 const addicon = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M15 12L12 12M12 12L9 12M12 12L12 9M12 12L12 15" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round"></path> <path d="M22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C21.5093 4.43821 21.8356 5.80655 21.9449 8" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round"></path> </g></svg>`;
 
-export { crown, addicon };
 
-{/* <div dangerouslySetInnerHTML={{ __html: addicon }} /> */}
+const piggy = `<svg width="470" height="355" viewBox="0 0 470 355" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M420.255 177.437C420.255 269.964 336.708 346.379 231.819 346.379C126.931 346.379 43.3839 269.964 43.3839 177.437C43.3839 84.9104 126.931 8.49526 231.819 8.49526C336.708 8.49526 420.255 84.9104 420.255 177.437Z" stroke="#E6EA7B" stroke-width="16.2444"/>
+<path d="M67.1927 184.062C44.7233 175.627 27.9578 163.763 16.2034 142.127C5.7473 122.88 6.16224 98.5286 19.1864 80.9181C38.3144 55.0541 67.3373 47.4328 97.883 48.3314C101.206 48.4292 102.851 54.2285 100.848 56.8815C84.5791 78.4261 81.3543 132.56 84.4642 169.592C85.273 179.222 76.2401 187.459 67.1927 184.062Z" stroke="#E6EA7B" stroke-width="16.2444" stroke-linecap="round"/>
+<path d="M402.952 184.906C425.422 176.471 442.187 164.606 453.942 142.97C464.398 123.724 463.983 99.3723 450.959 81.7618C431.831 55.8979 402.808 48.2766 372.262 49.1752C368.939 49.2729 367.294 55.0722 369.298 57.7252C385.566 79.2699 388.791 133.404 385.681 170.435C384.872 180.065 393.905 188.302 402.952 184.906Z" stroke="#E6EA7B" stroke-width="16.2444" stroke-linecap="round"/>
+<path d="M309.795 192.06C309.795 204.054 303.09 215.639 290.795 224.534C278.509 233.421 261.131 239.169 241.569 239.169C222.006 239.169 204.628 233.421 192.342 224.534C180.047 215.639 173.342 204.054 173.342 192.06C173.342 180.067 180.047 168.481 192.342 159.587C204.628 150.699 222.006 144.951 241.569 144.951C261.131 144.951 278.509 150.699 290.795 159.587C303.09 168.481 309.795 180.067 309.795 192.06Z" stroke="#E6EA7B" stroke-width="16.2444"/>
+<ellipse cx="218.826" cy="188.81" rx="11.3711" ry="9.74666" fill="#E6EA7B"/>
+<ellipse cx="264.309" cy="188.81" rx="11.3711" ry="9.74666" fill="#E6EA7B"/>
+<path d="M298.427 266.781C298.427 252.427 274.427 240.79 244.82 240.79C215.214 240.79 191.214 252.427 191.214 266.781" stroke="#E6EA7B" stroke-width="16.2444" stroke-linecap="round"/>
+<path d="M126.236 105.967L163.599 153.076" stroke="#E6EA7B" stroke-width="16.2444" stroke-linecap="round"/>
+<path d="M165.243 107.593L129.41 155.875" stroke="#E6EA7B" stroke-width="16.2444" stroke-linecap="round"/>
+<path d="M317.923 105.967L355.286 153.076" stroke="#E6EA7B" stroke-width="16.2444" stroke-linecap="round"/>
+<path d="M356.926 107.59L321.093 155.872" stroke="#E6EA7B" stroke-width="16.2444" stroke-linecap="round"/>
+</svg>`;
+export { crown, addicon, piggy };
+
+{/* <div dangerouslySetInnerHTML={{ __html: piggy }} /> */}

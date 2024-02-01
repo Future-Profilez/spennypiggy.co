@@ -118,32 +118,30 @@ export default function Footer(props) {
         confgureGtag();
     }, []);
 
-    const fetchLocationData = async () => {
-        try {
-            await axios.get(`https://ipapi.co/json/`).then((resp)=>{
-                console.log("resp.data.country_code", resp.data.country_code);
-                console.log("router", router);
-                console.log("ziggy", ziggy);
-
-                if(ziggy && ziggy.url === 'https://spennypiggy.co'){
-                    if(resp.data && resp.data.country_code == 'GB'){
-                        window.location = `https://uk.spennypiggy.co${router && router.page && router.page.url || '/'}`;
-                    }
-                }
-                if(ziggy && ziggy.url === 'https://uk.spennypiggy.co'){
-                    if(resp.data && resp.data.country_code !== 'GB'){
-                        window.location = `https://spennypiggy.co${router && router.page && router.page.url || '/'}`;
-                    }
-                }
-            }).catch((err)=>{
-                console.log("api err", err)
-            });
-        } catch (error) {
-            console.error('Error fetching data:', error);
-        }
-    };
-
+    
     useEffect(()=>{
+        const fetchLocationData = async () => {
+            try {
+                await axios.get(`https://ipapi.co/json/`).then((resp)=>{
+                    if(ziggy && ziggy.url === 'https://spennypiggy.co'){
+                        if(resp.data && resp.data.country_code == 'GB'){
+                            window.location = ('/redirecting');
+                            // window.location = `https://uk.spennypiggy.co${router && router.page && router.page.url || '/'}`;
+                        }
+                    }
+                    if(ziggy && ziggy.url === 'https://uk.spennypiggy.co'){
+                        if(resp.data && resp.data.country_code !== 'GB'){
+                            window.location = ('/redirecting');
+                            // window.location = `https://spennypiggy.co${router && router.page && router.page.url || '/'}`;
+                        }
+                    }
+                }).catch((err)=>{
+                    console.log("api err", err)
+                });
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        };
         fetchLocationData();
     }, []);
 

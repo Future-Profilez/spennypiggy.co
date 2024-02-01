@@ -47,7 +47,7 @@ const rewards_lists = [
   },
 ];
 
-export default function Membership({item, hidebtn}) {
+export default function Membership({item, hidebtn, IsloggedIn}) {
 
   const { formatMultiPrice } = PriceFormat();
 
@@ -87,9 +87,11 @@ export default function Membership({item, hidebtn}) {
 
         <div className='px-3 pt-3' >
           {hidebtn ? '' : 
+          !IsloggedIn ? 
             <Link className='btn-pink sm mb-3 ' method='get'
                 href={route('membership.checkout',{uuid: item.uuid})}>Join Now
             </Link> 
+            : ''
           }
         </div>
 
