@@ -13,10 +13,13 @@ import image11 from "../../../assets/features/11.png";
 import icon1 from "../../../assets/features/icon1.png";
 import icon2 from "../../../assets/features/icon2.png";
 import icon3 from "../../../assets/features/icon3.png";
+
 import image12 from "../../../assets/features/12.png";
+
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 
 export default function WhyLove() {
+
    const features = [
       {
          icon:image1,
