@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\BillsController;
 use App\Http\Controllers\Auth\CheckoutController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -174,6 +175,12 @@ Route::middleware('auth')->group(function () {
         Route::get('gifter-memberships/{username}', [ProfileController::class, 'gifterMemberships'])->name('gifter-memberships');
         Route::get('gifter-thanks-message/{username}', [ProfileController::class, 'gifterThanksMessages'])->name('gifter-thanks-message');
 
+
+        Route::prefix("bill")->name("bill.")->group(function () {
+            Route::post('save', [BillsController::class, 'billSave'])->name('save');
+            Route::get('remove/{uuid}', [BillsController::class, 'removeLevel'])->name('remove');
+        });
+
     });
 });
 
@@ -287,6 +294,8 @@ Route::get('sociallinks/{username}', [AuthenticatedSessionController::class, 'so
 
 Route::get('memberships/{username}', [AuthenticatedSessionController::class, 'user_memberships'])->name('user.memberships');
 
+Route::get('bills/{username}', [AuthenticatedSessionController::class, 'user_bills'])->name('user.bills');
+
 
 Route::get('/{username}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
 Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');
@@ -301,6 +310,11 @@ Route::prefix("wish")->name("wish.")->group(function () {
 Route::prefix("membership")->name("membership.")->group(function () {
     Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->name("checkout");
     Route::get('/handle/{uuid}/{status}', [MembershipController::class, 'handlePayment'])->name('handle');
+});
+
+Route::prefix("bill")->name("bill.")->group(function () {
+    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [BillsController::class, 'buyBill'])->name("checkout");
+    Route::get('/handle/{uuid}/{status}', [BillsController::class, 'handlePayment'])->name('handle');
 });
 
 
