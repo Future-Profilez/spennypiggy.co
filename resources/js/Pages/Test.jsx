@@ -1,116 +1,92 @@
- 
-  import { DndContext, closestCenter } from '@dnd-kit/core';
-  import { SortableContext, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
-  import { useEffect, useState } from 'react';
-  import { useSortable } from '@dnd-kit/sortable';
-  import { CSS } from '@dnd-kit/utilities';
-  import axios from 'axios';
-  
-  export default function Test() {
+import axios from "axios";
+import MembershipsLists from "./membership/MembershipsLists";
+import AddMembership from "./membership/AddMembership";
+export default function Test() {
+    const file = {
+        uuid: "5360fd62-eb19-4ac8-91b8-528c08a2e79b",
+        name: "c3.png",
+        size: 415841,
+        isStored: true,
+        isImage: true,
+        mimeType: "image/png",
+        cdnUrl: "https://ucarecdn.com/5360fd62-eb19-4ac8-91b8-528c08a2e79b/-/crop/352x348/192,0/-/preview/",
+        s3Url: null,
+        originalFilename: "c3.png",
+        imageInfo: {
+            dpi: [72, 72],
+            width: 700,
+            format: "PNG",
+            height: 460,
+            sequence: false,
+            colorMode: "RGBA",
+            orientation: null,
+            geoLocation: null,
+            datetimeOriginal: null,
+        },
+        videoInfo: null,
+        contentInfo: {
+            mime: {
+                mime: "image/png",
+                type: "image",
+                subtype: "png",
+            },
+            image: {
+                dpi: [72, 72],
+                width: 700,
+                format: "PNG",
+                height: 460,
+                sequence: false,
+                colorMode: "RGBA",
+                orientation: null,
+                geoLocation: null,
+                datetimeOriginal: null,
+            },
+        },
+        metadata: {},
+        s3Bucket: null,
+        defaultEffects: null,
+        cdnUrlModifiers: "-/crop/352x348/192,0/",
+    };
+    const post = () => {
+        axios
+            .post(`/membership/save`, {
+                level: "bronze_level",
+                month_price: 50.0,
+                rewards: [
+                    "green_circle_insta",
+                    "insta_broadcast",
+                    "telegram_group",
+                    "monthly_content_bundle",
+                    "weekly_DM_chat",
+                ],
+                thumbnail: file,
+            })
+            .then((resp) => {
+                console.log("resp", resp);
+            })
+            .catch((_err) => {
+                console.error("error", _err);
+            });
+    };
 
-    const [languageImage, setLanguageImage] = useState([
-      {
-        id:1,
-      },
-      {
-        id:2,
-      },
-      {
-        id:3,
-      },
-      {
-        id:4,
-      },
-      {
-        id:5,
-      },
-      {
-        id:6
-      },
-      {
-        id:7
-      },
-      {
-        id:8
-      },
-      {
-        id:9
-      },
-      {
-        id:10
-      },
-    ]);
-  
-    const [overIndex, setOverIndex] = useState(null);
-  
-    const handleDragEnd = (event) => {
-      const { active, over } = event;
-      const activeIndex = languageImage.findIndex((item) => item.id === active.id);
-      const newOverIndex = over ? languageImage.findIndex((item) => item.id === over.id) : null;
-  
-      if (activeIndex !== newOverIndex) {
-        const updatedLanguageImage = arrayMove(languageImage, activeIndex, newOverIndex, { key: 'id' });
-        setLanguageImage(updatedLanguageImage);
-      }
-  
-      setOverIndex(null);
+    const get = () => {
+        axios
+            .get(`/memberships/test`)
+            .then((resp) => {
+                console.log("resp", resp);
+            })
+            .catch((_err) => {
+                console.error("error", _err);
+            });
     };
-  
-    const Item = ({ image }) => {
-      const { listeners, attributes, setNodeRef, transform, isDragging } = useSortable({
-        id: image.id,
-        restrictToContainerEdges: true,
-      });
-  
-      const style = {
-        transform: CSS.Translate.toString(transform),
-        // border: overIndex !== null ? '2px dashed #ffffff' : 'none',
-      };
-  
-      return (
-        <div
-          style={style}
-          ref={setNodeRef}
-          {...listeners}
-          {...attributes}
-          className={`items-flex-item col-md-4 ${isDragging ? 'dragging' : ''}`}
-        >
-          {image.id}
-        </div>
-      );
-    };
-  
+
     return (
-      <>
-        <style>{`
-          .items-flex-item {
-            background: #ccc;
-            margin: 20px;
-            padding: 20px;
-          }
-          .items-flex {
-            display: flex;
-            flex-wrap: wrap;
-          }
-        
-          .items-flex-item.dragging {
-            border: 2px dashed #39f;
-          }
-          .items-flex> div:not(.dragging) { 
-            transition:0.5s;
-          }
-        `}</style>
-  
-        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext strategy={rectSortingStrategy} items={languageImage}>
-            <div className='items-flex row'>
-              {languageImage.map((m, i) => (
-                <Item key={m.id} image={m} />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-      </>
+        <>
+            <button onClick={get}>Test Get Request</button>
+            <button onClick={post}>Test Post Request</button>
+
+            <AddMembership />
+            <MembershipsLists />
+        </>
     );
-  }
-  
+}

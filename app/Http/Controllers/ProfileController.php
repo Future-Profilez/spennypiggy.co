@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers;
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Jobs\SendIntroMailAdmin;
 use App\Models\User;
 use App\Models\UserIntro;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -73,12 +74,22 @@ class ProfileController extends Controller
                 'bio' => ['sometimes', 'max:255'],
                 'tags' => ['sometimes', 'max:255'],
             ]);
+            $avatar = $request->avatar;
+            $cover = $request->cover;
+
             $user->name = $request->name;
             $user->username = $request->username;
             $user->bio = $request->bio;
             $user->min_surprise_amount = $request->min_surprise_amount ?? 0;
-            $user->avatar = $request->avatar;
-            $user->cover = $request->cover;
+
+            if(!empty($avatar)){
+                $user->avatar = $avatar['uuid'] ?? null;
+                $user->avatar_cdn_modifier = $avatar['cdnUrlModifiers'] ?? null;
+            }
+            if(!empty($cover)){
+                $user->cover = $cover['uuid'] ?? null;
+                $user->cover_cdn_modifier = $cover['cdnUrlModifiers'] ?? null;
+            }
 
             $user->save();
             $user->refresh();
@@ -212,6 +223,8 @@ class ProfileController extends Controller
 
         $intro->poster_url;
 
+        SendIntroMailAdmin::dispatch($intro);
+
         return response()->json([
             'status' => true,
             'msg' => 'Your intro video has been saved.'
@@ -271,6 +284,247 @@ class ProfileController extends Controller
         return response()->json([
             'status' => true,
             'msg' => 'The intro video has been removed.'
+        ]);
+    }
+
+
+    public function gifterWishitems($username){
+        $user = User::where('username', $username)->first();
+
+        $wishes = StripePaymentItems::whereHas('payment', function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })->with(['wish'])->orderBy('created_at', 'DESC')->paginate(30);
+
+        $trackData = [];
+        foreach ($wishes as $key => $value) {
+            $trackData[$key] = [
+                'owner' => [
+                    'name' => $value->payment->owner->name,
+                    'avatar' => $value->payment->owner->avatar_url,
+                    'cover' => $value->payment->owner->cover_url,
+                    'username' => $value->payment->owner->username,
+                    'stripe_details_submitted' => $value->payment->owner->stripe_details_submitted
+                ],
+                'amount' => $value->amount,
+                'tax' => $value->tax,
+                'currency' => $value->payment->currency,
+                'is_surprise' => !empty($value->wish) ? false : true,
+                'created_at' => Carbon::parse($value->created_at)->format('Y-m-d H:i:s'),
+                'anonymous' => $value->payment->anonymous
+            ];
+
+
+            if(!empty($value->wish)){
+                $trackData[$key]['wish'] = [
+                    'wishname' => $value->wish->wishname,
+                    'subscription' => $value->wish->subscription,
+                    'subscription_period' => $value->wish->subscription_period,
+                    'perma_link' => $value->wish->perma_link
+                ];
+            }
+        }
+
+
+        // $trackData = $wishes->map(function ($q) {
+
+        //     if (Auth::id() == $q->payment->owner_id) {
+        //         $q->user = $q->payment->user ?? false;
+        //     } elseif (Auth::id() == $q->payment->user_id) {
+        //         $q->user = $q->payment->owner;
+        //     }
+        //     $q->cart_message = $q->payment->message ?? null;
+        //     $q->surprise_message = $q->cart->message ?? null;
+        //     return $q;
+        // });
+
+        return response()->json([
+            'status' => true,
+            'wishes' => $trackData,
+            "last_page" => $wishes->lastPage() ?? null,
+            "current_page" => $wishes->currentPage() ?? null,
+            "total" => $wishes->total() ?? null,
+            "per_page" => $wishes->perPage() ?? null,
+        ]);
+
+    }
+
+
+    public function gifterSubs($username){
+        $user = User::where('username', $username)->first();
+
+        $user_subs = WishItemSubscription::where('user_id', $user->id)->with(['wish_item', 'wish_item.user'])->paginate(30);
+        $trackData = [];
+
+        foreach ($user_subs as $key => $value) {
+            $trackData[$key] = [
+                'owner' => [
+                    'name' => $value->payment->owner->name,
+                    'avatar' => $value->payment->owner->avatar_url,
+                    'cover' => $value->payment->owner->cover_url,
+                    'username' => $value->payment->owner->username,
+                    'stripe_details_submitted' => $value->payment->owner->stripe_details_submitted
+                ],
+                'amount' => $value->amount,
+                'tax' => $value->tax,
+                'currency' => $value->payment->currency,
+                'is_surprise' => !empty($value->wish_item) ? false : true,
+                'created_at' => Carbon::parse($value->created_at)->format('Y-m-d H:i:s'),
+                'anonymous' => $value->anonymous
+            ];
+
+
+            if(!empty($value->wish_item)){
+                $trackData[$key]['wish'] = [
+                    'wishname' => $value->wish_item->wishname,
+                    'subscription' => $value->wish_item->subscription,
+                    'subscription_period' => $value->wish_item->subscription_period,
+                    'perma_link' => $value->wish_item->perma_link
+                ];
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'subs' => $trackData,
+            "last_page" => $user_subs->lastPage() ?? null,
+            "current_page" => $user_subs->currentPage() ?? null,
+            "total" => $user_subs->total() ?? null,
+            "per_page" => $user_subs->perPage() ?? null,
+        ]);
+    }
+
+
+
+    public function gifterTips($username){
+        $user = User::where('username', $username)->first();
+
+        $user_tips = TipGoalsPayment::where('user_id', $user->id)->with('tipGoal')->paginate(30);
+
+        $trackData = [];
+        foreach ($user_tips as $key => $value) {
+            $trackData[$key] = [
+                'owner' => [
+                    'name' => $value->tipGoal->user->name,
+                    'avatar' => $value->tipGoal->user->avatar_url,
+                    'cover' => $value->tipGoal->user->cover_url,
+                    'username' => $value->tipGoal->user->username,
+                    'stripe_details_submitted' => $value->tipGoal->user->stripe_details_submitted
+                ],
+                'amount' => $value->amount,
+                'tax' => $value->tax,
+                'currency' => $value->currency,
+                'created_at' => Carbon::parse($value->created_at)->format('Y-m-d H:i:s'),
+                'anonymous' => $value->anonymous
+            ];
+
+
+            if(!empty($value->tipGoal)){
+                $trackData[$key]['tipGoal'] = [
+                    'name' => $value->tipGoal->name,
+                    'description' => $value->tipGoal->description,
+                    'fullfilled' => $value->tipGoal->fullfilled,
+                ];
+            }
+
+        }
+
+        return response()->json([
+            'status' => true,
+            'tips' => $trackData,
+            "last_page" => $user_tips->lastPage() ?? null,
+            "current_page" => $user_tips->currentPage() ?? null,
+            "total" => $user_tips->total() ?? null,
+            "per_page" => $user_tips->perPage() ?? null,
+        ]);
+    }
+
+
+    public function gifterMemberships($username){
+        $user = User::where('username', $username)->first();
+
+        $user_member = MembershipPayment::where('user_id', $user->id)->with(['membership', 'membership.user'])->paginate(30);
+
+        $trackData = [];
+        foreach ($user_member as $key => $value) {
+            $trackData[$key] = [
+                'owner' => [
+                    'name' => $value->membership->user->name,
+                    'avatar' => $value->membership->user->avatar_url,
+                    'cover' => $value->membership->user->cover_url,
+                    'username' => $value->membership->user->username,
+                    'stripe_details_submitted' => $value->membership->user->stripe_details_submitted
+                ],
+                'amount' => $value->amount,
+                'tax' => $value->tax,
+                'currency' => $value->currency,
+                'created_at' => Carbon::parse($value->created_at)->format('Y-m-d H:i:s'),
+                'anonymous' => $value->anonymous
+            ];
+
+
+            if(!empty($value->membership)){
+                $trackData[$key]['membership'] = [
+                    'level' => $value->membership->level,
+                    'perma_link' => $value->membership->perma_link,
+                    'rewards' => $value->membership->rewards,
+                ];
+            }
+
+        }
+
+        return response()->json([
+            'status' => true,
+            'membership' => $trackData,
+            "last_page" => $user_member->lastPage() ?? null,
+            "current_page" => $user_member->currentPage() ?? null,
+            "total" => $user_member->total() ?? null,
+            "per_page" => $user_member->perPage() ?? null,
+        ]);
+    }
+
+
+    public function gifterThanksMessages($username){
+        $user = User::where('username', $username)->first();
+
+        $wishes = StripePaymentItems::whereHas('payment', function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })->with(['wish'])->orderBy('created_at', 'DESC')->paginate(30);
+
+        $trackData = [];
+        foreach ($wishes as $key => $value) {
+            $trackData[$key] = [
+                'owner' => [
+                    'name' => $value->payment->owner->name,
+                    'avatar' => $value->payment->owner->avatar_url,
+                    'cover' => $value->payment->owner->cover_url,
+                    'username' => $value->payment->owner->username,
+                    'stripe_details_submitted' => $value->payment->owner->stripe_details_submitted
+                ],
+                'message' => $value->thankyou_message,
+                'media_url' => $value->message_url ?? false,
+                'media_type' => $value->media_type,
+                'currency' => $value->payment->currency,
+                'anonymous' => $value->payment->anonymous
+            ];
+
+
+            if(!empty($value->wish)){
+                $trackData[$key]['wish'] = [
+                    'wishname' => $value->wish->wishname,
+                    'subscription' => $value->wish->subscription,
+                    'subscription_period' => $value->wish->subscription_period,
+                    'perma_link' => $value->wish->perma_link
+                ];
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'wishes' => $trackData,
+            "last_page" => $wishes->lastPage() ?? null,
+            "current_page" => $wishes->currentPage() ?? null,
+            "total" => $wishes->total() ?? null,
+            "per_page" => $wishes->perPage() ?? null,
         ]);
     }
 }

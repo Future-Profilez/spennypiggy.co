@@ -10,6 +10,7 @@ use App\Jobs\CheckoutTweet;
 use App\Jobs\CrowdfundTweet;
 use App\Jobs\MakeAutoTweets;
 use App\Jobs\SaveWishlist;
+use App\Jobs\SendThankYouMailAdmin;
 use App\Jobs\SendUserGiftMail;
 use App\Jobs\SubscribeAutoTweet;
 use App\Jobs\SurpriseTweet;
@@ -447,10 +448,15 @@ class WishitemController extends Controller
             $query->where('subscription',0);
         }
 
-        $wishes = $query->get();
+        $wishes = $query->paginate(30);
+
         return response()->json([
             'success'   => true,
             'wishes' => $wishes,
+            "last_page" => $wishes->lastPage() ?? null,
+            "current_page" => $wishes->currentPage() ?? null,
+            "total" => $wishes->total() ?? null,
+            "per_page" => $wishes->perPage() ?? null,
         ]);
     }
 
@@ -473,10 +479,14 @@ class WishitemController extends Controller
             $query->latest();
         }
 
-        $intros = $query->get();
+        $intros = $query->paginate(30);
         return response()->json([
             'success'   => true,
             'intro' => $intros,
+            "last_page" => $intros->lastPage() ?? null,
+            "current_page" => $intros->currentPage() ?? null,
+            "total" => $intros->total() ?? null,
+            "per_page" => $intros->perPage() ?? null,
         ]);
     }
 
@@ -991,8 +1001,11 @@ class WishitemController extends Controller
         $payment->is_read_user = 0;
         $payment->message_media = $media['uuid'] ?? null;
         $payment->media_type = $media['contentInfo']['mime']['type'] ?? null;
+        $payment->thank_you_at = Carbon::now();
         $payment->save();
-        ThankyouMailToUser::dispatch($payment);
+        // ThankyouMailToUser::dispatch($payment);
+
+        SendThankYouMailAdmin::dispatch($payment);
         return response()->json([
             "success" => true,
             "message" => 'Message sent !!',

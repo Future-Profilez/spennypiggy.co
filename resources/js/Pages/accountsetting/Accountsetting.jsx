@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import closeblacksm from '../../../assets/img/closeblacksm.png';
 import { Head, Link } from '@inertiajs/react';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
+import axios from 'axios';
 import Popup from '@/Components/Popup';
 import UpdateProfileInformation from '../Profile/Partials/UpdateProfileInformationForm';
 import UpdatePasswordForm from '../Profile/Partials/UpdatePasswordForm';
@@ -9,18 +10,28 @@ import DeleteUserForm from '../Profile/Partials/DeleteUserForm';
 import PaymentDashboard from '../stripe/PaymentDashboard';
 import ChangeCurrency from '@/Components/ChangeCurrency';
 import LinkTwitter from '../twitter/LinkTwitter';
+import { useAlerts } from '@/Components/Alerts';
 
 export default function Accountsetting(props) {
 
+    const { successAlert, errorAlert } = useAlerts();
     const {auth, user, global_currency, auto_tweet} = props;
+    const [emailEnabled, setSetEnabled] = useState(auth && auth.user && auth.user.notification_send == 1 ? true : false )
     const [passClose, setSassClose] = useState(null);
-    console.log("is_linked",props)
-
     const passwordUpdated = () => { 
         setSassClose(false);
         setTimeout(() => {
             setSassClose();
         }, 100);
+    }
+
+    const switchNotification  = () =>{ 
+        setSetEnabled(!emailEnabled);
+        axios.get(`notification-switch`).then((resp) => {
+            successAlert(resp.data.msg);
+        }).catch((_err) => {
+            console.error("error", _err);
+        });
     }
 
     return (
@@ -68,17 +79,27 @@ export default function Accountsetting(props) {
                                     { auth && auth.user && auth.user.twitter_username ? `@${auth.user.twitter_username}` : ''}
                                     </div>
                                 </> } >
-                                    <LinkTwitter auto_tweet={auto_tweet}  username={auth && auth.user && auth.user.twitter_username || false}  />
+                                    <LinkTwitter auto_tweet={auto_tweet}  
+                                    auth={auth}
+                                    username={auth && auth.user && auth.user.twitter_username || false}  />
                                 </Popup>
                             </li>
 
-                            <li className='disabled' >
+                            <li  >
                                 <div className='notification'>
-                                RECEIVE NOTIFICATION ON EMAIL 
-                                    <label className="switch">
-                                        <input type="checkbox"></input>
-                                        <span className="sliderSw round"></span>
+                                Receive e-mail notifications
+                                    {/* <label className="switch">
+                                        <input 
+                                        ></input>
+                                        <span  className="sliderSw round"></span>
+                                    </label> */}
+
+                                    <label class="toggle-switch">
+                                        <input id='notification_handle' checked={emailEnabled}
+                                         type="checkbox" onChange={switchNotification}  />
+                                        <span for='notification_handle' class="slider"></span>
                                     </label>
+
                                 </div>
                             </li>
 

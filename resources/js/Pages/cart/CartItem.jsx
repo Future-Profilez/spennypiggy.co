@@ -25,7 +25,7 @@ export default function CartItem({data, removeCart, quantityUpdate, currency}) {
         let counts = quantity + 1;
         setQuantity(counts);
         updatequantity(counts);
-        quantityUpdate("add", data && data.price);
+        quantityUpdate("add", data && data.price, data && data.tax);
     }
 
     async function decrementCount(){
@@ -33,7 +33,7 @@ export default function CartItem({data, removeCart, quantityUpdate, currency}) {
         let counts = quantity - 1;
         setQuantity(counts);
         updatequantity(counts);
-        quantityUpdate("minus", data && data.price);
+        quantityUpdate("minus", data && data.price, data && data.tax);
     }
 
     return (

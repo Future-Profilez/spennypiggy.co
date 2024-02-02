@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\LeaderBoardController;
+use App\Http\Controllers\Auth\MembershipController;
 use App\Http\Controllers\Auth\MyController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
@@ -157,20 +158,38 @@ Route::middleware('auth')->group(function () {
             Route::post('save', [ProfileController::class, 'saveIntroVideo'])->name('save');
             Route::get('list', [ProfileController::class, 'getIntroVideo'])->name('list');
             Route::get('remove', [ProfileController::class, 'removeIntro'])->name('remove');
-            Route::get('/{uuid}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
+            // Route::get('/{uuid}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
         });
+
+        Route::prefix("membership")->name("membership.")->group(function () {
+            Route::post('save', [MembershipController::class, 'membershipLevelSave'])->name('save');
+            Route::get('remove/{uuid}', [MembershipController::class, 'removeLevel'])->name('remove');
+            Route::get('dashboard', [MembershipController::class, 'membershipDashboard'])->name('dashboard');
+            Route::get('graph', [MembershipController::class, 'membershipGraph'])->name('graph');
+        });
+
+        Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');
+        Route::get('gifter-subs/{username}', [ProfileController::class, 'gifterSubs'])->name('gifter-subscriptions');
+        Route::get('gifter-tips/{username}', [ProfileController::class, 'gifterTips'])->name('gifter-tips');
+        Route::get('gifter-memberships/{username}', [ProfileController::class, 'gifterMemberships'])->name('gifter-memberships');
+        Route::get('gifter-thanks-message/{username}', [ProfileController::class, 'gifterThanksMessages'])->name('gifter-thanks-message');
+
     });
 });
 
 // Intro video
+Route::get('/redirecting', function () {
+    return Inertia::render('Redirecting');
+})->name("redirecting");
+
+
 Route::get('my-intro/{id}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
 
-
-// discover zone
 Route::get('discover',function (){
     return Inertia::render('discover/Discover');
 })->name("discover");
 Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class, 'discover_all_wishes'])->name('discover_wish');
+Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');
 // Route::get('discover/creators_videos', [WishitemController::class, 'discover_creators_videos'])->name('discover_videos');
 
 Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
@@ -224,10 +243,10 @@ Route::get('/files/{filename}', function (string $filename) {
 Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status')->withoutMiddleware(VerifyCsrfToken::class);
 
 /* wishtender */
-Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('wishtender-wishes');
-Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
+Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('leaderboard');
+Route::get('first-three-leaderboard/{type?}', [LeaderBoardController::class, 'firstThreeWisher'])->name('first-three-wishes');
 
-Route::get('/leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('/leaderboard');
+Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
 
 Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
     Route::post('pay/{uuid}/', [StripeController::class, 'tipToJar'])->name("pay");
@@ -245,18 +264,44 @@ Route::get('/test/test', function () {
     return Inertia::render('Test');
 })->name("test");
 
+Route::get('/problem-solving', function () {
+    $nums = [3,4,2,5];
+    $a = [];
+            foreach($nums as $key => $value){
+                $multiple = 1;
+                foreach($nums as $k => $v){
+                    if($k != $key){
+                        $multiple *= $v;
+                    }
+                }
+                array_push($a,$multiple);
+            }
+            return $a;
+})->name("test");
+
 Route::get('twitter-token/', [TwitterController::class, 'twitterAuthUrl']);
 Route::get('twitter/login', [TwitterController::class, 'twitterLogin']);
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
 
 Route::get('sociallinks/{username}', [AuthenticatedSessionController::class, 'sociallinks'])->name('user.sociallinks');
 
+Route::get('memberships/{username}', [AuthenticatedSessionController::class, 'user_memberships'])->name('user.memberships');
+
+
 Route::get('/{username}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
 Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');
 Route::get('/items/{username}/{category_id?}', [AuthenticatedSessionController::class, 'userItems'])->name('user.items');
-Route::get('/user_category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.info');
+Route::get('/user_category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.category');
 
 Route::prefix("wish")->name("wish.")->group(function () {
     Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name("subscribe.checkout");
     Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleSubscription'])->name('subscribe.handle');
 });
+
+Route::prefix("membership")->name("membership.")->group(function () {
+    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->name("checkout");
+    Route::get('/handle/{uuid}/{status}', [MembershipController::class, 'handlePayment'])->name('handle');
+});
+
+
+

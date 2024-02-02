@@ -2,6 +2,7 @@ import { Link, Head } from "@inertiajs/react";
 import React from 'react';
 import Hero from './home/Hero';
 import Guest from '@/Layouts/GuestLayout';
+import ComingNext from "./home/ComingNext";
 const LiveBar = React.lazy(() => import('@/includes/LiveBar'));
 const FunPart = React.lazy(() => import('./home/FunPart'));
 const WhyLove = React.lazy(() => import('./home/WhyLove'));
@@ -17,8 +18,9 @@ export default function Home({ auth, laravelVersion, user }) {
             <div>
                 <div className="homepromotion"></div>
                 <Hero auth={auth} />
-                <FunPart />
                 <WhyLove />
+                <ComingNext />
+                <FunPart />
                 <HappyCreators />
                 <JoinUs />
             </div>

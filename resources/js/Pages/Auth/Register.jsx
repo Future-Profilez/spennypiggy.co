@@ -7,15 +7,15 @@ import LoaderButton from '@/Components/LoaderButton';
 import toast from 'react-hot-toast';
 import { useRef } from 'react';
 import axios from 'axios';
-export default function Register() {
+import HCaptcha from '@hcaptcha/react-hcaptcha';
+export default function Register(props) {
     const CheckCircleIcon = () => {
         return <><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path opacity="0.1" d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" fill="#000000"></path> <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#000000" stroke-width="2"></path> <path d="M9 12L10.6828 13.6828V13.6828C10.858 13.858 11.142 13.858 11.3172 13.6828V13.6828L15 10" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg></>
     }
 
+    const captchaRef = useRef(null);
     const checkRef = useRef();
-
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
-
     const lowerLetter = /[a-z]/g;
     const capitalLetter = /[A-Z]/g;
     const numberLetter = /[0-9]/g;
@@ -29,12 +29,14 @@ export default function Register() {
     const length = (typeof window !== 'undefined') && document.getElementById('length');
     const [mypass, setmypass] = useState();
 
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, get, processing, errors, reset } = useForm({
         name: '',
         username: '',
         email: '',
         password: '',
+        gender: '',
         password_confirmation: '',
+        promo: '',
     });
 
     const termsaccept = () => {
@@ -59,8 +61,26 @@ export default function Register() {
         });
     }
 
+    const [verified, setVerified] = useState(false);
+    const onVerify = (token) => {
+        if(token){
+            setVerified(true);
+        } else {
+            setVerified(false);
+        }
+    };
+
+    const resetCaptcha = () => { 
+        captchaRef.current && captchaRef.current.resetCaptcha();
+        setVerified(false);
+    }
+
     const submit = (e) => {
         e.preventDefault();
+        if (!verified) {
+            errorAlert("Please verify you are not a robot.")
+            return false;
+        }
         if (!checkRef.current.checked) {
             termsaccept();
             return false;
@@ -76,13 +96,38 @@ export default function Register() {
                 }
             },
             onError: (err) => {
-                // reset("password");
                 Object.keys(err).map((key) => {
                     errorAlert(err[key]);
                 });
+                resetCaptcha();
             }
         });
     };
+
+
+    const promoinput = useRef();
+    const [codevalid, setCodeValid] = useState(false);
+    const checkPromo = (e) => {
+        const p = promoinput.current && promoinput.current.value;
+        axios.get(`/check-coupon-code/${p}`).then(resp => {
+            if (resp.data.status) {
+                setCodeValid(true);
+                setData("promo", p);
+            } else {
+                setCodeValid(false);
+                errorAlert(resp.data.msg);
+            }
+        }).catch(_err => {
+            console.error("error", _err);
+            setCodeValid(false);
+        });
+    };
+
+    const removecode = () => { 
+        setCodeValid(false);
+        promoinput.current.value = '';
+        setData("promo", '');
+    }
 
     const handlePassHints = (e) => {
         setmypass(e.target.value);
@@ -126,18 +171,17 @@ export default function Register() {
             length.classList.remove('valid');
         }
     }
-
+    
     return (
         <GuestLayout>
             <Head title="Register" />
-
-            <div className='loginPage blackbg py-14'>
+            <div className='loginPage  blackbg py-14'>
                 <div className='containerbox '>
 
                     <h2 className='headingLg pb-0 pb-md-4 text-center  px-2'>Create Account</h2>
                     <p className='text-center text-white mb-5 font-CeraGRBold'>Already registered? <Link className={'text-pink'} href={route('login')}  > Log In</Link></p>
 
-                    <div className='loginform mt-4 mt-md-5 mx-auto border-black whbg shadow-mint'>
+                    <div className='loginform register mt-4 mt-md-5 mx-auto border-black whbg shadow-mint'>
                         <div className='loginheadbox pinkbg'>
                             <span className='mintbg'></span>
                             <span className='bluebg'></span>
@@ -170,6 +214,16 @@ export default function Register() {
                                         />
                                         {data.username && usernameValid == 1 ? <p className='text-success text-small username-text'>Username is available.</p> : ''}
                                         {data.username && usernameValid == 0 ? <p className='text-danger text-small username-text' >{validMsg}</p> : ''}
+                                    </li>
+                                    <li>
+                                        <label>Gender</label>
+                                        <select onChange={(e) => setData('gender', e.target.value)} >
+                                            <option disabled >Choose Gender</option>
+                                            <option value={'he'} >He</option>
+                                            <option value={'she'} >She</option>
+                                            <option value={'they'} >They</option>
+                                        </select>
+                                        <InputError>{errors?.gender || ''}</InputError>
                                     </li>
                                     <li>
                                         <label>Email</label>
@@ -226,19 +280,49 @@ export default function Register() {
                                     </li>
                                 </ul>
 
+                                <div className='promocode mb-4' >
+                                    <div className='d-flex align-items-center justify-content-between' >
+                                        <label className='mb-2'>Referral (optional) {codevalid ? <span className='text-success text-small' >Code Applied.</span> : ''}</label>
+                                    </div>
+                                    <div className='d-flex align-items-center' >
+                                        <input ref={promoinput}
+                                        placeholder="Enter Referral Code..." className='form-control ' />
+                                        {codevalid ? <div  onClick={removecode}  
+                                        className={`cursor-pointer ${codevalid ? "mintbg text-dark" : "pinkbg"} promocode-btn ms-2 text-center`}
+                                         >Remove</div>
+                                            : 
+                                        <div  onClick={checkPromo}  
+                                        className={`cursor-pointer ${codevalid ? "mintbg text-dark" : "pinkbg"} promocode-btn ms-2 text-center`}
+                                         >{ codevalid ? "Applied" : "Apply" }</div>}
+                                    </div> 
+                                </div>
+
                                 <div className='termselect'>
                                     <label htmlFor="termaccept">
-                                        <p className='tersms-accept' ><input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept"
+                                        <p className='tersms-accept' >
+                                            <input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept"
                                             required onChange={(e) => setData("termaccept", e.target.value)}></input>
                                             By signing up you agree to our <Link className='text-voilet font-bold' target='_blank' href={route('terms-and-conditions')} >Terms & Conditions</Link>  and <a className='text-voilet font-bold' target='_blank' href={'https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6'} >Privacy Policy,</a>  and confirm that you are at least 18. years old.
                                         </p>
                                     </label>
                                 </div>
+
+                                <div className='m-auto hcaptcha-wrap d-table mb-3 mt-0 mt-md-3' >
+                                    <HCaptcha  ref={captchaRef}
+                                    sitekey={props.hcaptchakey || ''}
+                                    data-theme="light" 
+                                    data-size="compact" 
+                                    onVerify={onVerify}
+                                    />
+                                </div>
+
                                 <div className='wishlistbtn  rotate-btn text-center flex justify-center mt-4'>
                                     <LoaderButton disabled={processing} className='btn-pink lg lg2 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Create Account"}</LoaderButton>
                                 </div>
                             </div>
                         </form>
+
+                       
                     </div>
                 </div>
             </div>

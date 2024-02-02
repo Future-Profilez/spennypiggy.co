@@ -16,15 +16,16 @@ export default function Hero({auth}) {
                <h3 className="welcomeTitle shadow-yellow text-uppercase font-GillSans mb-2">
                    Get Your Lifestyle funded! 🎁
                </h3>
-              
                <div className="mt-2 pt-2 wishlistbtn wishlistbtnFixed ">
                   {auth?.user?.username ?  <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink wishlistbutton lg w-2/5 shadow-mint border-mint log" > My Wishlist </Link>
                     : <Link href="/register" className="btn-pink wishlistbutton lg w-2/5 shadow-mint border-mint" > Create Wishlist </Link> }
                </div>
-               <div className="itsfree ps-0 mt-0 mt-md-3 pt-4 text-start"> Its’s Free 🎉 </div>
-               <div className="mt-3 gifts-links text-white ps-0 ">
+               <div className="mt-4 pt-2 gifts-links text-white ps-0 ">
                 With Financial Gifts, Donations, Memberships & More! 🤑
                </div>
+
+               <div className="itsfree ps-0 mt-0 mt-md-3 pt-1 text-start"> Its’s Free 🎉 </div>
+               
 
                <div className='d-flex d-md-none justify-content-center' >  
                  <TrustBox />

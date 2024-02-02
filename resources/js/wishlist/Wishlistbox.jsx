@@ -17,7 +17,7 @@ import { CSS } from '@dnd-kit/utilities';
 export default function Wishlistbox(props) {
    
   const { format, formatMultiPrice } = PriceFormat();
-  const { currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped } = props;
+  const { currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped, classes, showall, key } = props;
 
   const { attributes, listeners, isDragging, index, over, setNodeRef, transform, transition } = useSortable({ id: itm && itm.id });
   const style = { 
@@ -47,7 +47,7 @@ export default function Wishlistbox(props) {
     return r.toFixed(1);
   }
 
-  return <div style={IsloggedIn ? style : stylenone}  className={`wish-item-box col-xl-4 col-lg-6 col-6 ${isDragging ? 'dragging' : ''}`}> 
+  return <div key={key} style={IsloggedIn ? style : stylenone}  className={`wish-item-box ${classes} ${isDragging ? 'dragging' : ''}`}> 
       <div  className='wishlistcntbox mb-3 mb-sm-4 whbg relative  shadow-voilet '>
         {IsloggedIn ?
         <>
@@ -57,7 +57,7 @@ export default function Wishlistbox(props) {
             <Wishlist currency={currency} setuped={setuped} openPop={open} item={itm} editpop={true} fetchingcats={fetchingcats} categories={categories} />
         </>
           :
-          <AddCart currency={currency} IsloggedIn={IsloggedIn} auth={auth} item={itm} uuid={itm.uuid} action={open} />
+          <AddCart showall={showall} currency={currency} IsloggedIn={IsloggedIn} auth={auth} item={itm} uuid={itm.uuid} action={open} />
         } 
         {/* { IsloggedIn ? <DropdownButton
           className='wishedit' id="dropdown-basic-button"
@@ -74,7 +74,6 @@ export default function Wishlistbox(props) {
         {/* {itm?.is_pin == 1 ? <div className='badge bg-info text-dark font-light pinned-badge' ><svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="#000000"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="M4 2h7v.278c0 .406-.086.778-.258 1.117-.172.339-.42.63-.742.875v2.86c.307.145.583.328.828.546.245.219.456.464.633.735.177.27.31.565.398.882.089.318.136.646.141.985v.5H8V14l-.5 1-.5-1v-3.222H3v-.5c0-.339.047-.664.14-.977.094-.312.227-.607.4-.883A3.404 3.404 0 0 1 5 7.13V4.27a2.561 2.561 0 0 1-.734-.875A2.505 2.505 0 0 1 4 2.278V2zm1.086.778c.042.125.094.232.156.32a1.494 1.494 0 0 0 .461.43L6 3.715v4.102l-.336.117c-.411.146-.76.383-1.047.711C4.331 8.973 4.09 9.573 4 10h7c-.088-.427-.33-1.027-.617-1.355a2.456 2.456 0 0 0-1.047-.71L9 7.816V3.715l.297-.18c.094-.057.177-.122.25-.195a2.28 2.28 0 0 0 .21-.242.968.968 0 0 0 .157-.32H5.086z"></path></g></svg> Pinned</div> : ''} */}
 
         <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
-          {/* <img  /> */}
           <LazyLoadImage
           alt={"image"} useIntersectionObserver={true} effect="blur"
           height={193}
@@ -86,7 +85,7 @@ export default function Wishlistbox(props) {
           <div>
             <h4 className={`fon-bold text-dark ${itm.subscription !== '0' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>
             <h5 className='font-CeraGRBold text-dark titleprice'>{formatMultiPrice(itm.price, itm?.currency || 'GBP')}
-                <button className='tooltipbtn' >?<p>*not including 20% service fee.</p></button>
+                <button className='tooltipbtn' >?<p>*just not including service fee.</p></button>
             </h5>
           </div>
           {itm.subscription == '2' ?
