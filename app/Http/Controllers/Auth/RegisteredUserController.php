@@ -82,6 +82,14 @@ class RegisteredUserController extends Controller
 
             Auth::login($user);
 
+            $promocode = PromoCode::whereCode($request->promocode)->first();
+            if (!empty($promocode)) {
+                Referal::insert([
+                    'user_id' => Auth::id(),
+                    'promocode_id' => $promocode->id,
+                ]);
+            }
+
             //send email
             WelcomeUser::dispatch($user);
 
@@ -124,5 +132,22 @@ class RegisteredUserController extends Controller
         return response()->json([
             "available" => empty($exist)
         ]);
+    }
+
+
+    public function checkCouponCode($code)
+    {
+        $promocode = PromoCode::whereCode($code)->get();
+        if (!empty($promocode)) {
+            return response()->json([
+                'status' => true,
+                'message' => 'promo code available',
+            ]);
+        } else {
+            return response()->json([
+                'status' => false,
+                'message' => 'promo code not available',
+            ]);
+        }
     }
 }

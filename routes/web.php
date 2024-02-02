@@ -30,6 +30,9 @@ Route::get('/', function () {
     ]);
 })->name("home");
 
+//check referal code
+Route::get('check-coupon-code/{code}', [RegisteredUserController::class, 'checkCouponCode'])->name('checkCouponCode');
+
 Route::post("/username-availablity", [RegisteredUserController::class, "checkUsername"])->name("check.username");
 
 // Route::get('/dashboard', function () {
