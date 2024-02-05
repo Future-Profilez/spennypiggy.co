@@ -1,5 +1,4 @@
 
-import default from './../../../tailwind.config';
 export default function Countries({send}) {
   const data = [
     {
@@ -317,7 +316,6 @@ export default function Countries({send}) {
         "currency": "ZAR"
     },
   ];
-
     const default_vals = [{
         "code": "",
         "label": "Choose Country",
