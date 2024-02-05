@@ -1,4 +1,5 @@
 
+import default from './../../../tailwind.config';
 export default function Countries({send}) {
   const data = [
     {
@@ -316,7 +317,15 @@ export default function Countries({send}) {
         "currency": "ZAR"
     },
   ];
-  const updated = data.sort((a, b) => a.label.localeCompare(b.label));
+
+    const default_vals = [{
+        "code": "",
+        "label": "Choose Country",
+        "phone": "",
+        "currency": ""
+    }]
+  const updated_prev = data.sort((a, b) => a.label.localeCompare(b.label));
+  const updated = default_vals.concat(updated_prev);
   return <>
     <div className="custom-country-select" >
       <select onChange={(e)=>send(e.target.value )} >
