@@ -4,7 +4,7 @@ import Authenticated from "@/Layouts/AuthenticatedLayout";
 import axios from "axios";
 import { useEffect } from "react";
 import { useState } from "react";
-import ChartDashboard from "./Chartdashboard";
+// import ChartDashboard from "./Chartdashboard";
 import LoadingScreen from "@/includes/LoadingScreen";
 
 export default function Dashboard(props) {
@@ -31,8 +31,9 @@ export default function Dashboard(props) {
         <Authenticated auth={auth?.user || ""}>
             <Head title={"How it works"} />
             {loading ? (
-                
-                <><LoadingScreen/></>
+                <>
+                    <LoadingScreen />
+                </>
             ) : (
                 <div className="container-fluid">
                     <div className="row">
@@ -161,12 +162,12 @@ export default function Dashboard(props) {
                                     </div>
                                 </div>
                             </div>
-                                <div className="color-white tw-font-cr-bold text-fs-20 flex-vert-center data-memeber">
-                                    <span>Earnings</span>
-                                    <div className="static-chart">
-                                        <ChartDashboard />
-                                    </div>
+                            <div className="color-white tw-font-cr-bold text-fs-20 flex-vert-center data-memeber">
+                                <span>Earnings</span>
+                                <div className="static-chart">
+                                    {/* <ChartDashboard /> */}
                                 </div>
+                            </div>
                         </div>
                         <div className="col-md-2"></div>
                     </div>
