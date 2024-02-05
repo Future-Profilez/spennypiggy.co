@@ -216,9 +216,7 @@ export default function Wishlist(props) {
     };
 
     const defaultCurrency =
-        (auth && auth.user && auth.user.default_currency.toUppercase) || "GBP";
-
-    console.log("auth.user", auth && auth.user);
+        (auth && auth.user && auth.user.default_currency) || "GBP";
 
     return (
         <Popup
