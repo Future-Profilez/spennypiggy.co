@@ -4,7 +4,7 @@ import Authenticated from "@/Layouts/AuthenticatedLayout";
 import axios from "axios";
 import { useEffect } from "react";
 import { useState } from "react";
-import ChartDashboard from "./Chartdashboard";
+// import ChartDashboard from "./Chartdashboard";
 import LoadingScreen from "@/includes/LoadingScreen";
 
 export default function Membership_dashboard(props) {
@@ -31,7 +31,7 @@ export default function Membership_dashboard(props) {
         <Authenticated auth={auth?.user || ""}>
             <Head title={"How it works"} />
             {loading ? (
-                
+
                 <><LoadingScreen/></>
             ) : (
                 <div className="container">
@@ -163,7 +163,7 @@ export default function Membership_dashboard(props) {
                             <div className="color-white tw-font-cr-bold text-fs-20 flex-vert-center data-memeber">
                                 <span>Earnings</span>
                                 <div className="static-chart">
-                                    <ChartDashboard />
+                                    {/* <ChartDashboard /> */}
                                 </div>
                             </div>
                     </div>

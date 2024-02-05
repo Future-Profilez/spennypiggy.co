@@ -160,4 +160,13 @@ class User extends Authenticatable
     public function memberships(){
         return $this->hasMany(Membership::class, 'user_id');
     }
+
+    public function bills(){
+        return $this->hasMany(Bills::class, 'user_id');
+    }
+
+
+    public function getDefaultCurrencyAttribute($value){
+        return strtoupper($value);
+    }
 }
