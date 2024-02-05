@@ -1,8 +1,9 @@
 import { usePage } from '@inertiajs/react';
 import { Toaster } from 'react-hot-toast';
 import { useAlerts } from '@/Components/Alerts';
-import React, { useEffect } from 'react';
+import React from 'react';
 import Header from '@/includes/Header';
+import { useMemo } from 'react';
 const Footer = React.lazy(() => import('@/includes/Footer'));
 
 export default function Guest({children, auth}) {
@@ -10,7 +11,7 @@ export default function Guest({children, auth}) {
     const {successAlert, errorAlert} = useAlerts();
     const {flash, errors} = usePage().props;
 
-    useEffect(() => {
+    useMemo(() => {
         if(errors){
             Object.entries(errors).forEach(([key, value]) => {
                 errorAlert(value);
@@ -28,7 +29,7 @@ export default function Guest({children, auth}) {
         if(flash?.info){
             successAlert(flash.info);
         }
-    },[]);
+    },[flash]);
 
     return <>
         <Header auth={auth ||''} />
