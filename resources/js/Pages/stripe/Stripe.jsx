@@ -24,6 +24,7 @@ export default function Stripe(props) {
     };
 
     const checkTerms = () => {
+        console.log("countrty", country);
         if (country == "" || undefined) {
             errorAlert("Please choose your country.");
             return false;
