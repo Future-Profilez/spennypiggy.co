@@ -81,7 +81,7 @@ export default function AddBills(props) {
         });
      };
 
-    const defaultCurrency = auth && auth.user && auth.user.default_currency.toUppercase || 'GBP';
+    const defaultCurrency = auth && auth.user && auth.user.default_currency || 'GBP';
     return (
         <Popup modalclass='pinkmodal full' size='md' action={close}
         classes={classes ? classes : `  ${editpop ? "editpop"  : 'dropdown-item text-start p-0'}`}
@@ -164,20 +164,20 @@ export default function AddBills(props) {
                         <div className="publish text-start">
                         {isEdit ?
                         <LoaderButton
-                            disabled={processing}
+                            disabled={loading}
                             type="submit"
                             className="flex w-100 btn-pink lg mx-auto"
                             spinnerClassName="fill-red-600" >
-                            {processing ? "Updating.." : "Update Bill"}
+                            {loading ? "Updating.." : "Update Bill"}
                         </LoaderButton>
                         :
                         <>
                             <LoaderButton
-                                disabled={processing}
+                                disabled={loading}
                                 type="submit"
                                 className="flex w-100 btn-pink lg mx-auto"
                                 spinnerClassName="fill-red-600" >
-                                {processing ? "Processing" : "Add Bills"}
+                                {loading ? "Processing" : "Add Bills"}
                             </LoaderButton>
                             </>
                         }

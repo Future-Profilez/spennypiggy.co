@@ -1537,12 +1537,12 @@ div#msgText p b {
     margin: 15px 0;
 }
 /* membership */
-.tiers button {
+.tiers label {
     background: #e4e4e4;
     padding: 8px 25px;
     border-radius: 20px;
 }
-.tiers button.active {
+.tiers label.active {
     background: var(--voilet) !important;
     color: #fff;
 }
@@ -3246,3 +3246,15 @@ lr-cloud-image-editor#my-editor {
 .position-2 .profile-image {
     background: var(--mint) !important;
 }
+
+
+.static-page.termspage ul {
+    padding-bottom: 20px;
+}
+
+.static-page.termspage strong {
+    margin-top: 15px !important;
+    display: inline-block;
+    margin-bottom: 10px !important;
+}
+

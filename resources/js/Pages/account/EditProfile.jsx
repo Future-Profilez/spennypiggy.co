@@ -64,7 +64,7 @@ export default function EditProfile({ user, global_currency }) {
         });
     };
 
-    const defaultCurrency = user.default_currency.toUppercase;
+    const defaultCurrency = user.default_currency;
 
     return (
         <Popup modalclass='pinkmodal editprofile full' size='md' action={close} 

@@ -46,7 +46,7 @@ export default function Billslist({IsloggedIn, billupdate}) {
                     itm={b} />
                 })}
             </div>
-        : <Nocontent text='nothing to see' />
+        : !loading ? <Nocontent text='nothing to see' /> : ''
         }
         
         {loading ? <LoadingScreen /> : ''}
