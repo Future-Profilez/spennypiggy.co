@@ -18,13 +18,18 @@ export default function Stripe(props) {
     const [countryCurrency, setCountryCurrency] = useState();
     const [country, setCountry] = useState();
     const getCountry = (e) => {
+        if (country == null || undefined) {
+            errorAlert("Please choose your country.");
+            return false;
+        }
         const name = JSON.parse(e);
         setCountry((name && name.code) || "");
         setCountryCurrency((name && name.currency) || "");
     };
 
     const checkTerms = () => {
-        if (country == "" || undefined) {
+        console.log("country", country);
+        if (country == null || undefined) {
             errorAlert("Please choose your country.");
             return false;
         }
