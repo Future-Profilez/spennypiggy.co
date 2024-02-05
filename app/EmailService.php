@@ -241,7 +241,7 @@ class EmailService
     public static function sendIntroApprovingMailAdmin($intro)
     {
         try {
-            Mail::to("saurav@futureprofilez.com")->send(new SendAdminIntroMail($intro));
+            Mail::to("jack@spennypiggy.co")->send(new SendAdminIntroMail($intro));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
@@ -250,7 +250,7 @@ class EmailService
     public static function sendThankyouAdmin($pay)
     {
         try {
-            Mail::to("saurav@futureprofilez.com")->send(new ThankYouMailAdmin($pay));
+            Mail::to("jack@spennypiggy.co")->send(new ThankYouMailAdmin($pay));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
