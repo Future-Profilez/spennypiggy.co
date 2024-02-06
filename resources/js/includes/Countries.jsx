@@ -316,22 +316,18 @@ export default function Countries({send}) {
         "currency": "ZAR"
     },
   ];
-    // const default_vals = [{
-    //     "code": null,
-    //     "label": "Choose Country",
-    //     "phone": "",
-    //     "currency": ""
-    // }]
 
-  const updated = data.sort((a, b) => a.label.localeCompare(b.label));
-//   const updated = default_vals.concat(updated_prev);
-  return <>
-    <div className="custom-country-select" >
-      <select onChange={(e)=>send(e.target.value)} >
-        {updated && updated.map((c, i)=>{ 
-          return <option key={`country-${i}`} value={JSON.stringify(c)} >{c.label}</option>
-        })}
-      </select>
-    </div>
-  </>;
+    const updated = data.sort((a, b) => a.label.localeCompare(b.label));
+        //  const updated = default_vals.concat(updated_prev);
+    return <>
+        <div className="custom-country-select" >
+        <select onChange={(e)=>send(e.target.value)} >
+            <option value={''} >Choose Country</option>
+            {updated && updated.map((c, i)=>{ 
+            return <option key={`country-${i}`} 
+            value={JSON.stringify(c)} >{c.label}</option>
+            })}
+        </select>
+        </div>
+    </>;
 }
