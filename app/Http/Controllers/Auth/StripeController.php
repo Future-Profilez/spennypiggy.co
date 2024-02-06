@@ -544,7 +544,7 @@ class StripeController extends Controller
      * @param string $reccure Subscription Reccurning - onetime or Continue
      * @return mixed
      */
-    public function wishItemSubscribe(Request $request, $uuid,$anonymous, $reccure = 'continue')
+    public function wishItemSubscribe(Request $request, $uuid, $reccure = 'continue')
     {
         $wish = WishItem::whereUuid($uuid)->with('user')->first();
 
@@ -583,7 +583,7 @@ class StripeController extends Controller
                 'recurring_for' =>  $reccure,
                 'recurring_type' =>  $wish->subscription_period,
                 'surprise_message'  =>  $request->message ?? NULL,
-                'anonymous' => $anonymous ?? 0
+                'anonymous' => $request->anonymous ?? 0
             ]);
 
             $currency   =   strtolower($request->cookie("currency", "GBP"));

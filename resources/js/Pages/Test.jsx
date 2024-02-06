@@ -67,7 +67,7 @@ export default function Test() {
 
     const get = () => {
         axios
-            .get(`/bills/test`)
+            .get(`/gifter-subs/test?page=1`)
             .then((resp) => {
                 console.log("resp", resp);
             })
