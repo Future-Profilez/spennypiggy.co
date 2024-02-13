@@ -175,6 +175,8 @@ Route::middleware('auth')->group(function () {
         Route::get('gifter-memberships/{username}', [ProfileController::class, 'gifterMemberships'])->name('gifter-memberships');
         Route::get('gifter-thanks-message/{username}', [ProfileController::class, 'gifterThanksMessages'])->name('gifter-thanks-message');
 
+        Route::get('membership-dashboard', [MembershipController::class, 'dashboardShow'])->name('membership-dashboard');
+
 
         Route::prefix("bill")->name("bill.")->group(function () {
             Route::post('save', [BillsController::class, 'billSave'])->name('save');

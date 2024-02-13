@@ -453,6 +453,11 @@ class MembershipController extends Controller
     }
 
 
+    public function dashboardShow(){
+        return Inertia::render('membership/Dashboard');
+    }
+
+
     public function membershipDashboard(){
         $user = User::where('id',Auth::id())->first();
 
