@@ -137,6 +137,10 @@ class User extends Authenticatable
         );
     }
 
+    public function tip_goal_payment()
+    {
+        return $this->hasManyThrough(TipGoalsPayment::class, TipGoal::class, 'user_id', 'tip_goal_id', 'id', 'id');
+    }
 
     public function subscriptions()
     {
