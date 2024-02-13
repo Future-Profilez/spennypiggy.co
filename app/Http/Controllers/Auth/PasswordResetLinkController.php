@@ -77,7 +77,7 @@ class PasswordResetLinkController extends Controller
             'email' => 'required|email',
         ]);
         $email = $request->input('email');
-        $user = User::where('email', $email)->wwhere(function ($q) {
+        $user = User::where('email', $email)->where(function ($q) {
             $q->whereNot('country', 'GB')->orWhereNull('country');
         })->first();
         if (!empty($user)) {
