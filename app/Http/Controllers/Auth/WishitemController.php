@@ -217,7 +217,7 @@ class WishitemController extends Controller
         // }
 
         $user = User::find(Auth::id());
-        $price = Helpers::priceFormat($request->cookie('currency', 'GBP'), $request->price, $user->default_currency);
+        $price = $request->price;
 
         // $price = round($request->price, 2, PHP_ROUND_HALF_UP);
 
@@ -1148,14 +1148,14 @@ class WishitemController extends Controller
 
         $user = User::where('id', Auth::id())->first();
 
-        $target = Helpers::priceFormat($currency, $request->target, $user->default_currency);
-        $price = Helpers::priceFormat($currency, $request->default_price, $user->default_currency);
+        $target = $request->target;
+        $price = $request->default_price;
 
         $goal = TipGoal::create([
             'user_id' => $user->id,
             'name' => $request->name,
             'target' => $target,
-            'default_price' => ceil($price),
+            'default_price' => $price,
             'description' => $request->description ?? null,
             'status' => $request->duration,
             'days' => ($request->duration == 1) ? 30 : null,
