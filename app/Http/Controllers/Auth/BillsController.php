@@ -52,7 +52,7 @@ class BillsController extends Controller
 
             $media = $request->thumbnail;
 
-            $price = Helpers::priceFormat($request->cookie('currency', 'GBP'), $request->price, $user->default_currency);
+            $price = $request->price;
             $taxamount = round(($price * config('app.single_tax') / 100), 2, PHP_ROUND_HALF_UP);
             $createpriceid = $price + $taxamount;
 
@@ -204,7 +204,7 @@ class BillsController extends Controller
                 'transfer_data' => [
                     'destination' => $bill->user->account_id, // Creator's connected account ID
                 ],
-                'on_behalf_of'  => $bill->user->account_id,
+                // 'on_behalf_of'  => $bill->user->account_id,
                 // 'cancel_at_period_end'  =>  $reccure == 'onetime',
                 'description'   => "{$bill->name} of {$bill->user->username}."
             ];
