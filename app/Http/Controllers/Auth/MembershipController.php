@@ -512,8 +512,8 @@ class MembershipController extends Controller
                             ->sum('amount');
 
             $result[] = [
-                            'amount' => $data,
-                            'time' => $format_date
+                            'Amount' => $data,
+                            'Time' => $format_date
                         ];
         }
 
