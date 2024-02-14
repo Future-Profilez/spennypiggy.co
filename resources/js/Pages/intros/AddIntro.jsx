@@ -113,7 +113,7 @@ export default function AddIntro({IsloggedIn, uuid}){
   }
 
   return (
-    <div className={`mt-4 ${videoLoading ? 'd-none' : '' } `}>
+    <div className={`mb-4 ${videoLoading ? 'd-none' : '' } `}>
       {introVideo ? 
         <div className='position-relative'>
           <ProfileIntro /> 
@@ -133,9 +133,10 @@ export default function AddIntro({IsloggedIn, uuid}){
                     </div>
                   </div> 
                 } >  
-              <div className='box' >
+              <div className='wrap' >
                 <h2 className="text-uppercase font-GillSans pb-1 font-large">Add Intro Video</h2>
-                <p className='text-muted mb-4' >Add a 15 to 30 sec video to introduce yourself.</p>
+                <p className='text-muted mb-3' >Add a 15 to 30 sec video to introduce yourself.</p>
+                <p className='text-danger mb-4' >All videos are reviewed against our terms before being accepted or rejected.</p>
                 <div className='my-3' >
                   <GlobalUploader view={true}
                     clear={clear} type='minimal'

@@ -19,7 +19,6 @@ export default function GifterSubscriptions(props) {
     setLoading(true);
     axios.get(`/gifter-subs/${username}?page=${p}`)
     .then((resp) => {
-        console.log("resp", resp);
         // setLoading(false);
         // const newd = resp.data.tips
         // if(load){

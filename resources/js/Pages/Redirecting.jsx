@@ -30,7 +30,7 @@ export default function Redirecting() {
                     }
                 }
             }).catch((err)=>{
-                console.log("api err", err)
+                console.error("api err", err)
             });
         } catch (error) {
             console.error('Error fetching data:', error);

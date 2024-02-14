@@ -1,10 +1,9 @@
 import React from "react";
 import footlogo from "../../assets/img/footlogo.png";
-import { Link, router, usePage } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
 import { Helmet } from "react-helmet";
 import { useEffect } from "react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
-import { useState } from "react";
 import axios from "axios";
 const ContentPrefrences = React.lazy(() => import("./ContentPrefrences"));
 
@@ -126,17 +125,15 @@ export default function Footer(props) {
     //                 if(ziggy && ziggy.url === 'https://spennypiggy.co'){
     //                     if(resp.data && resp.data.country_code == 'GB'){
     //                         window.location = ('/redirecting');
-    //                         // window.location = `https://uk.spennypiggy.co${router && router.page && router.page.url || '/'}`;
     //                     }
     //                 }
     //                 if(ziggy && ziggy.url === 'https://uk.spennypiggy.co'){
     //                     if(resp.data && resp.data.country_code !== 'GB'){
     //                         window.location = ('/redirecting');
-    //                         // window.location = `https://spennypiggy.co${router && router.page && router.page.url || '/'}`;
     //                     }
     //                 }
     //             }).catch((err)=>{
-    //                 console.log("api err", err)
+    //                 console.error("api err", err)
     //             });
     //         } catch (error) {
     //             console.error('Error fetching data:', error);
@@ -195,9 +192,9 @@ export default function Footer(props) {
                                         <Link href={route("promotion-terms")}> Promotion Terms </Link>
                                     </li>
                                     <li>
-                                        <ContentPrefrences classes="m-auto d-table" />{" "}
+                                        {/* <ContentPrefrences classes="m-auto d-table" />{" "} */}
+                                        <a href="#" className="termly-display-preferences" >Consent Preferences</a>
                                     </li>
-
                                 </ul>
                             </div>
                         </div>
@@ -205,7 +202,7 @@ export default function Footer(props) {
                         
                     </div>
                     <div className="copyright">
-                        Copyright &copy; 2023 Spenny Piggy
+                        Copyright &copy; {(new Date().getFullYear())} Spenny Piggy
                     </div>
                 </div>
             </div>

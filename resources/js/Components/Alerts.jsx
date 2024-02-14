@@ -56,7 +56,7 @@ export const useAlerts = () => {
      * @param {Number} duration MiliSeconds
      * @returns {void}
      */
-    const infoAlert = (message, position = "top-right", duration = 10000) => {
+    const infoAlert = (message, position = "top-right", duration = 3000) => {
         toast(message, {
             duration: duration,
             position: position,
@@ -65,7 +65,7 @@ export const useAlerts = () => {
     }
 
 
-    const errorsHandling = (error, position = "top-right", duration = 10000) => {
+    const errorsHandling = (error, position = "top-right", duration = 3000) => {
         {
             Object.keys(error).map((key) => {
                 let e = error[key];

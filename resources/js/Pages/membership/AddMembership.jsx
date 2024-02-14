@@ -134,7 +134,7 @@ export default function AddMembership(props) {
           }
           setLoading(false);
         }).catch(err => { 
-          console.log("err", err);
+          console.error("err", err);
           setLoading(false);
         });
     };

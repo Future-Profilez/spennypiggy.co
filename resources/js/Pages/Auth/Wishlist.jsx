@@ -85,8 +85,10 @@ export default function Wishlist(props) {
         item_url: item && item.item_url ? item.item_url : "",
         thumbnail: item && item.thumbnail ? item.thumbnail : imageLinks[0],
         subscription: item && item.subscription ? item.subscription : "",
-        subscription_period: item && item.subscription_period ? item.subscription_period : "" ,
-        repeat_purchase: item && item.repeat_purchase ? item.repeat_purchase : 1,
+        subscription_period:
+            item && item.subscription_period ? item.subscription_period : "",
+        repeat_purchase:
+            item && item.repeat_purchase ? item.repeat_purchase : 1,
         category: item && item.category ? item.category : 0,
         // post_twitter: item && item.post_twitter ? item.post_twitter : 0,
     });
@@ -213,8 +215,7 @@ export default function Wishlist(props) {
         }
     };
 
-    const defaultCurrency =
-        (auth && auth.user && auth.user.default_currency) || "GBP";
+    const defaultCurrency = (auth && auth.user && auth.user.default_currency) || "GBP";
 
     return (
         <Popup
