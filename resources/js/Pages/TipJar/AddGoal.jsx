@@ -131,9 +131,7 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
                         <input className="form-input w-100 rounded"
                            onChange={(e) => setData('target', e.target.value)}
                            type="number" placeholder="Enter amount.. " />
-
                            <p className="mt-1">The wish item amount is set to {formatMultiPrice(data.price, global_currency)}.</p>
-
                      </div>
                   </div>
                   <div className="form-field mb-4">

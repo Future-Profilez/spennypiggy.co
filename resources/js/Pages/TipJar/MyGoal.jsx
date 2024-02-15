@@ -26,7 +26,7 @@ export default function MyGoal({goal, IsloggedIn}) {
       email: auth && auth.user?.email || '',
       name: auth && auth.user?.name || '',
       message: '',
-      anonymous: '',
+      anonymous: 0,
     }); 
 
     return <>

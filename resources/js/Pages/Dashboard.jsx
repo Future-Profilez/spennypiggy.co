@@ -23,7 +23,7 @@ const MembershipsLists = React.lazy(() =>
 );
 const AddMembership = React.lazy(() => import("./membership/AddMembership"));
 const Gifter = React.lazy(() => import("./gifter/Gifter"));
-const AddBills = React.lazy(() =>import('./bills/AddBills'));
+const AddBills = React.lazy(() => import("./bills/AddBills"));
 import AddIntro from "./intros/AddIntro";
 import Dropdown from "react-bootstrap/Dropdown";
 import Tab from "react-bootstrap/Tab";
@@ -50,11 +50,8 @@ import {
 } from "@dnd-kit/core";
 import Billslist from "./bills/Billslist";
 
-
-
 export default function Dashboard(props) {
-
-    console.log("dashborad props", props)
+    console.log("dashborad props", props);
     const w = useWidthCount();
     const {
         auth,
@@ -225,35 +222,34 @@ export default function Dashboard(props) {
             });
         }
         if (flash?.success) {
-            setTimeout(()=>{
+            setTimeout(() => {
                 successAlert(flash.success);
-            },500);
+            }, 500);
         }
         if (flash?.error) {
-            setTimeout(()=>{
+            setTimeout(() => {
                 errorAlert(flash.error);
-            },500);
+            }, 500);
         }
         if (flash?.warning) {
-            setTimeout(()=>{
+            setTimeout(() => {
                 warningAlert(flash.warning);
-            },500);
+            }, 500);
         }
         if (flash?.info) {
-            setTimeout(()=>{
+            setTimeout(() => {
                 infoAlert(flash.info);
-            },500);
+            }, 500);
         }
     }, []);
 
-
-    const [billupdated, setbillupdated] = useState('');
-    function updatebill (e){ 
-      if(e =='updated'){
-        setTimeout(()=>{
-          setbillupdated(new Date());
-        },100);
-      }
+    const [billupdated, setbillupdated] = useState("");
+    function updatebill(e) {
+        if (e == "updated") {
+            setTimeout(() => {
+                setbillupdated(new Date());
+            }, 100);
+        }
     }
     return (
         <>
@@ -289,67 +285,101 @@ export default function Dashboard(props) {
                                 <div className="userManageRt mt-4">
                                     <div className="inlinetab">
                                         <Tabs
-                                          defaultActiveKey="about"
-                                          transition={true}
-                                          onSelect={(e) => setTab(e)}
-                                          id="noanim-tab-example"
-                                          className="mb-3" >
-                                          <Tab eventKey="about" title="About">
-                                              <div className="row  about-sec">
-                                                  <div className="order-md-122 col-md-5">
-                                                      {goal &&
-                                                      goal.completed == 0 ? (
-                                                          <MyGoal
-                                                              IsloggedIn={IsloggedIn}
-                                                              goal={goal}
-                                                          />
-                                                      ) : (
-                                                          ""
-                                                      )}
-                                                      <AddIntro
-                                                          uuid={
-                                                              user?.id || null
-                                                          }
-                                                          IsloggedIn={
-                                                              IsloggedIn
-                                                          }
-                                                      />
-                                                  </div>
+                                            defaultActiveKey="home"
+                                            transition={true}
+                                            onSelect={(e) => setTab(e)}
+                                            id="noanim-tab-example"
+                                            className="mb-3"
+                                        >
+                                            <Tab eventKey="home" title="Home">
+                                                <div className="row  about-sec">
+                                                    <div className="order-md-122 col-md-5">
+                                                        {goal &&
+                                                        goal.completed == 0 ? (
+                                                            <MyGoal
+                                                                IsloggedIn={
+                                                                    IsloggedIn
+                                                                }
+                                                                goal={goal}
+                                                            />
+                                                        ) : (
+                                                            ""
+                                                        )}
+                                                        <AddIntro
+                                                            uuid={
+                                                                user?.id || null
+                                                            }
+                                                            IsloggedIn={
+                                                                IsloggedIn
+                                                            }
+                                                        />
+                                                    </div>
 
-                                                  <div className="order-md-222 col-md-7">
-                                                      <div className=" box shadow-voilet rounded-lg mb-4">
-                                                          <p className="font-bold">
-                                                              About me 
-                                                          </p>
-                                                          <p className={`text-muted text-start mt-2 ${user && !user.bio ? "d-none":""}`} >
-                                                              {(user && user.bio) || ""}
-                                                          </p>
-                                                          <SocialLinks
-                                                              links={
-                                                                  socialLinks
-                                                              }
-                                                          />
+                                                    <div className="order-md-222 col-md-7">
+                                                        <div className=" box shadow-voilet rounded-lg mb-4">
+                                                            <p className="font-bold">
+                                                                About me
+                                                            </p>
+                                                            <p
+                                                                className={`text-muted text-start mt-2 ${
+                                                                    user &&
+                                                                    !user.bio
+                                                                        ? "d-none"
+                                                                        : ""
+                                                                }`}
+                                                            >
+                                                                {(user &&
+                                                                    user.bio) ||
+                                                                    ""}
+                                                            </p>
+                                                            <SocialLinks
+                                                                links={
+                                                                    socialLinks
+                                                                }
+                                                            />
 
-                                                          {IsloggedIn ? (
-                                                              <div className="userProfileDate pt-0 pt-md-4">
-                                                                  {auth.user &&
-                                                                  auth.user
-                                                                      .stripe_details_submitted ==
-                                                                      1 ? (
-                                                                      <PaymentDashboard
-                                                                          classes="btn-pink lg w-100 mt-4"
-                                                                          text="Payment Dashboard"
-                                                                      />
-                                                                  ) : (
-                                                                      <div className="finish mt-4 d-block">
-                                                                          <p className="mb-4">Finish setting up your account to receive funds. You have more steps to complete your payment setup. </p>
-                                                                          <Link
-                                                                              href={"/stripe"}
-                                                                              className="btn-pink lg">
-                                                                              Finish Setup
-                                                                          </Link>
-                                                                      </div>
-                                                                  )}
+                                                            {IsloggedIn ? (
+                                                                <div className="userProfileDate pt-0 pt-md-4">
+                                                                    {auth.user &&
+                                                                    auth.user
+                                                                        .stripe_details_submitted ==
+                                                                        1 ? (
+                                                                        <PaymentDashboard
+                                                                            classes="btn-pink lg w-100 mt-4"
+                                                                            text="Payment Dashboard"
+                                                                        />
+                                                                    ) : (
+                                                                        <div className="finish mt-4 d-block">
+                                                                            <p className="mb-4">
+                                                                                Finish
+                                                                                setting
+                                                                                up
+                                                                                your
+                                                                                account
+                                                                                to
+                                                                                receive
+                                                                                funds.
+                                                                                You
+                                                                                have
+                                                                                more
+                                                                                steps
+                                                                                to
+                                                                                complete
+                                                                                your
+                                                                                payment
+                                                                                setup.{" "}
+                                                                            </p>
+                                                                            <Link
+                                                                                href={
+                                                                                    "/stripe"
+                                                                                }
+                                                                                className="btn-pink lg"
+                                                                            >
+                                                                                Finish
+                                                                                Setup
+                                                                            </Link>
+                                                                        </div>
+                                                                    )}
 
                                                                   <AddGoal
                                                                       stripe_enabled={
@@ -624,7 +654,8 @@ export default function Dashboard(props) {
                     <Popup
                         action={openCurrency}
                         space="4"
-                        modalclassName="pinkmodal">
+                        modalclassName="pinkmodal"
+                    >
                         <ChangeCurrency
                             currencyaction={currencyaction}
                             defaultvalue={global_currency}

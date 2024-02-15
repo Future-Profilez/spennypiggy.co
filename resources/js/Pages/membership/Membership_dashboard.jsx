@@ -4,8 +4,8 @@ import Authenticated from "@/Layouts/AuthenticatedLayout";
 import axios from "axios";
 import { useEffect } from "react";
 import { useState } from "react";
-// import ChartDashboard from "./Chartdashboard";
 import LoadingScreen from "@/includes/LoadingScreen";
+import ChartDashboard from "./ChartDashboard";
 
 export default function Membership_dashboard(props) {
     const [loading, setLoading] = useState(true);
@@ -171,7 +171,7 @@ export default function Membership_dashboard(props) {
                                 </div>
                             </div>
                         </div>
-                        {/* <ChartDashboard /> */}
+                        <ChartDashboard />
                     </div>
                 </div>
             )}
