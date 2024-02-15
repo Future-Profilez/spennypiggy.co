@@ -861,8 +861,9 @@ class WishitemController extends Controller
 
         $owner = User::where('id', $request->owner_id)->first();
         $price = Helpers::priceFormat($currency, $request->amount, $owner->default_currency);
-        $user_amount = Helpers::priceFormat($owner->default_currency,$owner->min_surprise_amount,$currency);
-        if($price < $owner->min_surprise_amount){
+        $min_amount = $owner->min_surprise_amount < 5 ? 5 : $owner->min_surprise_amount;
+        $user_amount = Helpers::priceFormat($owner->default_currency,$min_amount,$currency);
+        if($price < $min_amount){
             return redirect()->back()->with("error", "Enter minimum $user_amount amount.");
         }
 

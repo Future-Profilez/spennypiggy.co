@@ -75,7 +75,7 @@ class EmailService
         }
     }
 
-    public static function checkOutToUser($data)
+    public static function checkOutToUser($data,$curr)
     {
         try {
             $emailData = [
@@ -87,7 +87,7 @@ class EmailService
                 'uuid' => $data->user->uuid,
             ];
             Mail::to($emailData['to'])
-                ->send(new CheckoutToUser($data));
+                ->send(new CheckoutToUser($data,$curr));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
