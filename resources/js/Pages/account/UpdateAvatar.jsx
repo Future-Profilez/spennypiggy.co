@@ -21,7 +21,6 @@ export default function UpdateAvatar({getImageUID, text, close, type }) {
     }
 
     const updateFile = async (data) => {
-        console.log("updated data", data)
          const tmp = file;
          tmp['cdnUrl'] = data.cdnUrl;
          tmp['cdnUrlModifiers'] = data.cdnUrlModifiers;

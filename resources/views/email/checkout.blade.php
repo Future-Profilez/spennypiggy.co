@@ -27,7 +27,7 @@
                             style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
                             Lucky you! <br></br>
                             @if ($data->payment->anonymous == 0)
-                                {{ $anon == false ? $data->cart->user->name : $anonname }} just granted you a surprise gift on Spenny Piggy for £{{ $data->amount }} 🎁🥳 .
+                                {{ $anon == false ? $data->cart->user->name : $anonname }} just granted you a surprise gift on Spenny Piggy for {{ $data->amount }} 🎁🥳 .
                             @else
                                 Anonymous user just granted you a surprise gift on Spenny Piggy for £{{ $data->amount }} 🎁🥳 .
                             @endif

@@ -8,8 +8,9 @@ import { useState } from "react";
 import ProgressBar from 'react-bootstrap/ProgressBar';
 
 export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
-   const { global_currency } = usePage().props;
    
+   const { global_currency, auth } = usePage().props;
+   const defaultCurrency = (auth && auth.user && auth.user.default_currency) || "GBP";
 
    const [goal, setGoal] = useState();
    const [close, setClose] = useState();
@@ -49,7 +50,7 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
                   successAlert(resp.props.flash?.success);
                   setClose(false);
                   setTimeout(()=>{
-                     setClose();
+                     setClose(); 
                   },100);
                   fetch_goal && fetch_goal();
                }
@@ -126,16 +127,19 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
                   <div className="form-field mb-4">
                      <label className="d-block text-start mb-2">Target Amount</label>
                      <div className="position-relative  currency-wrapper" >
-                        <span className="currency-tag">{global_currency || 'GBP'}</span>
+                        <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
                         <input className="form-input w-100 rounded"
                            onChange={(e) => setData('target', e.target.value)}
                            type="number" placeholder="Enter amount.. " />
+
+                           <p className="mt-1">The wish item amount is set to {formatMultiPrice(data.price, global_currency)}.</p>
+
                      </div>
                   </div>
                   <div className="form-field mb-4">
                      <label className="d-block text-start mb-2">Minimum amount to pay</label>
                      <div className="position-relative currency-wrapper " >
-                        <span className="currency-tag">{global_currency || 'GBP'}</span>
+                        <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
                         <input className="form-input w-100 rounded"
                            onChange={(e) => setData('default_price', e.target.value)}
                            type="number" placeholder="Enter minimum amount to pay.. "

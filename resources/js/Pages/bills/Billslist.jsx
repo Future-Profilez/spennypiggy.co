@@ -28,7 +28,6 @@ export default function Billslist({IsloggedIn, billupdate}) {
     }
 
     useEffect(()=>{ 
-        console.log('bills update')
         const controller = new AbortController();
         const {signal} = controller;
         fetchBills(signal)

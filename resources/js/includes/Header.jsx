@@ -44,14 +44,6 @@ export default function Header() {
     }, [cart]);
 
 
-    // useEffect(()=>{
-    //     const arr = [1,2,3,4,5];
-    //     for(let i = 0; i <= arr.length; i++){
-    //         const skipped = arr[i];
-    //         if(skipped)
-    //     }
-    // },[]);
-
     return (
         <>
             <div className="blackbg headermain py-8">
@@ -92,7 +84,6 @@ export default function Header() {
                                     fill="none"
                                     xmlns="http://www.w3.org/2000/svg"
                                 >
-                                    {" "}
                                     <g clip-path="url(#clip0_1439_828)">
                                         {" "}
                                         <path
@@ -116,20 +107,17 @@ export default function Header() {
                                 </svg>
                             </Link>
 
-                            {auth &&
-                            auth.user &&
-                            auth.user.stripe_details_submitted == "1" ? (
-                                ""
-                            ) : router.page &&
-                              router.page &&
-                              router.page.component == "Dashboard" ? (
+                            {auth && auth.user && auth.user.stripe_details_submitted == "1" ? ( "" ) 
+                            : 
+                            router.page && router.page && router.page.component == "Dashboard" ? (
                                 <ChangeCurrency
                                     defaultvalue={global_currency}
                                     changer={true}
                                 />
                             ) : (
                                 ""
-                            )}
+                            )
+                            }
                             <Link
                                 href={route("cart")}
                                 as="button"
@@ -160,18 +148,10 @@ export default function Header() {
                                 // <Link method="get" href={route('logout')} as="button" className='btn-mint mx-3  d-none d-xl-flex'>Logout</Link>
                                 ""
                             ) : (
-                                <Link
-                                    href={route("login")}
-                                    className="btn-mint mx-3  d-none d-xl-flex"
-                                >
-                                    Login
-                                </Link>
+                                <Link href={route("login")} className="btn-mint mx-3  d-none d-xl-flex"> Login </Link>
                             )}
 
-                            <div
-                                className="menu-toggle cursor-pointer cartLink position-relative"
-                                onClick={toggleClass}
-                            >
+                            <div className="menu-toggle cursor-pointer cartLink position-relative" onClick={toggleClass} >
                                 <svg
                                     width="58"
                                     height="59"
@@ -254,10 +234,8 @@ export default function Header() {
             </div>
 
             <div className={`MegaMenu ${isActive ? "Open" : null}`}>
-                <div
-                    className="closemega cursor-pointer"
-                    onClick={toggleClass}
-                >
+                <div className="closemega cursor-pointer"
+                    onClick={toggleClass} >
                     <svg
                         width="58"
                         height="58"
@@ -333,9 +311,6 @@ export default function Header() {
                         </defs>
                     </svg>
                 </div>
-                {/* <div className="menuImg">
-                    <img src={spennypiggy} alt="img" />
-                </div> */}
                 <div className={`${shows ? 'shows' : ''} menuList`}>
                     <ul className="menuslists" >
                         {auth?.user?.username || false ? (
@@ -367,19 +342,17 @@ export default function Header() {
                                     Subscription Billing
                                     </a>
                                 </li> 
+
+                                { auth && auth.user && auth.user.stripe_details_submitted == "1" ? 
+                                    <li>
+                                        <Link onClick={toggleClass} href={'/membership-dashboard'}> Membership Dashboard  </Link>
+                                    </li>
+                                : ''}
+
                                 <li>
                                     <Link
                                         onClick={toggleClass}
-                                        href={'#'}
-                                    >
-                                      Membership Dashboard (Coming Soon)
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link
-                                        onClick={toggleClass}
-                                        href={`/wish-tracker`}
-                                    >
+                                        href={`/wish-tracker`}>
                                         Wish Tracker
                                     </Link>
                                 </li>

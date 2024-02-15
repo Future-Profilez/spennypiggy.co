@@ -18,7 +18,6 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
     const dataOutputRef = useRef();
     const handleUploaderEvent = useCallback((e) => {
         const { data } = e.detail;
-        console.log('data', data);
         sendFile(data[0]);
         setFiles(data);
     },[]);

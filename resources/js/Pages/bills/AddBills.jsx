@@ -58,9 +58,7 @@ export default function AddBills(props) {
         e.preventDefault();
         setLoading(true);
         axios.post(`/bill/save`, data).then((resp)=>{
-            console.log("resp", resp.data)
           if(resp.data.status) { 
-              console.log("triggred", updatebill)
             if(updatebill){
                 updatebill("updated");
             }
@@ -76,7 +74,7 @@ export default function AddBills(props) {
           }
           setLoading(false);
         }).catch(err => { 
-          console.log("err", err);
+          console.error("err", err);
           setLoading(false);
         });
      };

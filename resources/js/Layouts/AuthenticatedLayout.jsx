@@ -12,25 +12,25 @@ export default function Authenticated(props) {
     const { successAlert, errorAlert } = useAlerts();
     const { flash, errors } = usePage().props;
 
-    useEffect(() => {
-        if(errors){
-            Object.entries(errors).forEach(([key, value]) => {
-                errorAlert(value);
-            });
-        }
-        if (flash?.error) {
-            errorAlert(flash.error);
-        }
-        // if (flash?.success) {
-        //     successAlert(flash.success);
-        // }
-        if (flash?.warning) {
-            warningAlert(flash.warning);
-        }
-        if (flash?.info) {
-            successAlert(flash.info);
-        }
-    },[]);
+    // useEffect(() => {
+    //     if(errors){
+    //         Object.entries(errors).forEach(([key, value]) => {
+    //             errorAlert(value);
+    //         });
+    //     }
+    //     if (flash?.error) {
+    //         errorAlert(flash.error);
+    //     }
+    //     if (flash?.success) {
+    //         successAlert(flash.success);
+    //     }
+    //     if (flash?.warning) {
+    //         warningAlert(flash.warning);
+    //     }
+    //     if (flash?.info) {
+    //         successAlert(flash.info);
+    //     }
+    // },[]);
 
     return <>
     <Header auth={auth} user={user}  />

@@ -1,7 +1,6 @@
 import React from 'react'
 import { useEffect } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
-import InputError from '@/Components/InputError';
 import { Head, Link, useForm } from '@inertiajs/react';
 import LoaderButton from '@/Components/LoaderButton';
 import { useAlerts } from '@/Components/Alerts';

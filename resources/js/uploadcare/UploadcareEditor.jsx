@@ -6,7 +6,6 @@ export default function UploadcareEditor({uuid, updateFile}){
   useEffect(() => {
     LR.registerBlocks(LR);
     const callback = (text) => (event) => {
-      console.log(`${text}`, event.detail);
       updateFile && updateFile(event.detail)
     };
     const instance = document.querySelector('#my-editor');

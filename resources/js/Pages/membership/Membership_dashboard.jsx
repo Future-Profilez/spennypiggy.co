@@ -31,18 +31,22 @@ export default function Membership_dashboard(props) {
         <Authenticated auth={auth?.user || ""}>
             <Head title={"How it works"} />
             {loading ? (
-
-                <><LoadingScreen/></>
+                <>
+                    <LoadingScreen />
+                </>
             ) : (
                 <div className="container">
-                    <div className="cartPage pb-4">
-                            <h2 className="heading text-white mb-4 mt-4" >Membership Dashboard</h2>
-                            <div className="dashboard-memeber">
-                                <div className="dash-stat-block bg-white-l br-r-8 p-relative xs-w-100 ">
-                                    <div className="color-dark tw-font-cr-medium text-fs-30 ln-h-40 membership-animate-number xs-flex xs-flex-both-center">
+                    <div className="membershipdashboard pb-4">
+                        <h2 className="heading text-white mb-4 mt-4">
+                            Membership Dashboard
+                        </h2>
+                        <div className="dashboard-memeber row">
+                            <div className="col-md-4 mb-4">
+                                <div className="box dash-stat-block bg-white-l br-r-8 p-relative xs-w-100 ">
+                                    <div className="text-large font-bold color-dark tw-font-cr-medium text-fs-30 ln-h-40 membership-animate-number xs-flex xs-flex-both-center">
                                         {data.members}
                                     </div>
-                                    <div className="color-grey tw-font-cr-regular text-fs-16 ln-h-25 mg-t-4 d-flex align-items-center gap-2 m-2">
+                                    <div className="justify-center text-center color-grey tw-font-cr-regular text-fs-16 ln-h-25 mg-t-4 d-flex align-items-center gap-2 m-2">
                                         <svg
                                             className="mg-r-4 vert-align-sub"
                                             width="18"
@@ -75,8 +79,11 @@ export default function Membership_dashboard(props) {
                                         Member
                                     </div>
                                 </div>
-                                <div className="dash-stat-block bg-dark-l br-r-8 p-relative xs-w-100">
-                                    <div className="color-dark tw-font-cr-medium text-fs-30 ln-h-40 xs-flex xs-flex-both-center">
+                            </div>
+
+                            <div className="col-md-4 mb-4">
+                                <div className="box dash-stat-block bg-dark-l br-r-8 p-relative xs-w-100">
+                                    <div className="text-large font-bold  color-dark tw-font-cr-medium text-fs-30 ln-h-40 xs-flex xs-flex-both-center">
                                         <span className="tw-font-cr-bold">
                                             £
                                         </span>
@@ -84,7 +91,7 @@ export default function Membership_dashboard(props) {
                                             {data.per_month}
                                         </span>
                                     </div>
-                                    <div className="color-grey tw-font-cr-regular text-fs-16 ln-h-25 mg-t-4 d-flex align-items-center gap-2 m-2">
+                                    <div className="justify-center text-center color-grey tw-font-cr-regular text-fs-16 ln-h-25 mg-t-4 d-flex align-items-center gap-2 m-2">
                                         <svg
                                             className="mg-r-4 vert-align-sub"
                                             width="14"
@@ -127,8 +134,11 @@ export default function Membership_dashboard(props) {
                                         Per month
                                     </div>
                                 </div>
-                                <div className="dash-stat-block bg-dark-l br-r-8 p-relative xs-w-100 ">
-                                    <div className="color-dark tw-font-cr-medium text-fs-30 ln-h-40 xs-flex xs-flex-both-center">
+                            </div>
+
+                            <div className="col-md-4 mb-4">
+                                <div className="box dash-stat-block bg-dark-l br-r-8 p-relative xs-w-100 ">
+                                    <div className="text-large font-bold color-dark tw-font-cr-medium text-fs-30 ln-h-40 xs-flex xs-flex-both-center">
                                         <span className="tw-font-cr-bold">
                                             £
                                         </span>
@@ -136,7 +146,7 @@ export default function Membership_dashboard(props) {
                                             {data.all_time}
                                         </span>
                                     </div>
-                                    <div className="color-grey tw-font-cr-regular text-fs-16 ln-h-25 mg-t-4 d-flex align-items-center gap-2 m-2">
+                                    <div className="justify-center text-center color-grey tw-font-cr-regular text-fs-16 ln-h-25 mg-t-4 d-flex align-items-center gap-2 m-2">
                                         <svg
                                             className="mg-r-4 vert-align-sub"
                                             width="16"
@@ -160,12 +170,8 @@ export default function Membership_dashboard(props) {
                                     </div>
                                 </div>
                             </div>
-                            <div className="color-white tw-font-cr-bold text-fs-20 flex-vert-center data-memeber">
-                                <span>Earnings</span>
-                                <div className="static-chart">
-                                    {/* <ChartDashboard /> */}
-                                </div>
-                            </div>
+                        </div>
+                        {/* <ChartDashboard /> */}
                     </div>
                 </div>
             )}

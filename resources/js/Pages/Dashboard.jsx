@@ -53,6 +53,8 @@ import Billslist from "./bills/Billslist";
 
 
 export default function Dashboard(props) {
+
+    console.log("dashborad props", props)
     const w = useWidthCount();
     const {
         auth,
@@ -215,29 +217,38 @@ export default function Dashboard(props) {
         }
     };
 
-    // Error flash handling
-    // const { flash, errors } = usePage().props;
-    // useMemo(() => {
-    //     if (errors) {
-    //         Object.entries(errors).forEach(([key, value]) => {
-    //             errorAlert(value);
-    //         });
-    //     }
-    //     if (flash?.error) {
-    //         errorAlert('dashboard===='+flash.error);
-    //     }
-    //     if (flash?.warning) {
-    //         warningAlert('dashboard===='+flash.warning);
-    //     }
-    //     if (flash?.info) {
-    //         infoAlert('dashboard===='+flash.info);
-    //     }
-    // }, [flash]);
+    const { flash, errors } = usePage().props;
+    useEffect(() => {
+        if (errors) {
+            Object.entries(errors).forEach(([key, value]) => {
+                errorAlert(value);
+            });
+        }
+        if (flash?.success) {
+            setTimeout(()=>{
+                successAlert(flash.success);
+            },500);
+        }
+        if (flash?.error) {
+            setTimeout(()=>{
+                errorAlert(flash.error);
+            },500);
+        }
+        if (flash?.warning) {
+            setTimeout(()=>{
+                warningAlert(flash.warning);
+            },500);
+        }
+        if (flash?.info) {
+            setTimeout(()=>{
+                infoAlert(flash.info);
+            },500);
+        }
+    }, []);
 
 
     const [billupdated, setbillupdated] = useState('');
     function updatebill (e){ 
-      console.log(e)
       if(e =='updated'){
         setTimeout(()=>{
           setbillupdated(new Date());
@@ -306,7 +317,7 @@ export default function Dashboard(props) {
                                                   </div>
 
                                                   <div className="order-md-222 col-md-7">
-                                                      <div className="box shadow-voilet rounded-lg mb-4">
+                                                      <div className=" box shadow-voilet rounded-lg mb-4">
                                                           <p className="font-bold">
                                                               About me 
                                                           </p>
@@ -444,8 +455,7 @@ export default function Dashboard(props) {
                                                                       }
                                                                   >
                                                                       <Wishlist
-                                                                          updateCategory={
-                                                                              fetch_categories
+                                                                          updateCategory={fetch_categories
                                                                           }
                                                                           currency={
                                                                               global_currency

@@ -19,7 +19,6 @@ export default function SayThanks(props) {
    const [msgMedia, setMsgMedia] = useState();
    const getFileUID = (data) => {
       setMsgMedia(data);
-      console.log("data", data)
    };
 
    const [close,setClose] = useState();
@@ -28,38 +27,40 @@ export default function SayThanks(props) {
    const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
    const saythankyou = () => { 
-         if(!message){
-            errorAlert("Message can not be empty.");
-            return false;
+      if(!message){
+         errorAlert("Message can not be empty.");
+         return false;
+      }
+      setloading(true);
+      axios.post(`say-thankyou/${payment_id}`, {
+         "messages":message,
+         "message_media": msgMedia ? msgMedia : null
+      }).then(resp => {
+         if(resp.data.success){
+            successAlert(resp.data.message);
+            setClose(false);
+            setTimeout(()=>{
+               setClose();
+            },1000);
+            getMessageStatus(message, msgMedia);
+            setClear(new Date());
+            approvemsg && approvemsg(0);
+         } else {
+            errorAlert(resp.data.message);
          }
-         setloading(true);
-         axios.post(`say-thankyou/${payment_id}`, {
-            "messages":message,
-            "message_media": msgMedia ? msgMedia : null
-         }).then(resp => {
-           if(resp.data.success){
-               successAlert(resp.data.message);
-               setClose(false);
-               setTimeout(()=>{
-                  setClose();
-               },1000);
-               getMessageStatus(message, msgMedia);
-               setClear(new Date());
-               approvemsg && approvemsg(0);
-           } else {
-               errorAlert(resp.data.message);
-           }
+         setloading(false);
+      }).catch(_err => {
+            console.error("error", _err);
             setloading(false);
-         }).catch(_err => {
-             console.error("error", _err);
-             setloading(false);
-         });
+      });
    }
 
    return (
       <>   
       <div className="form-field mb-4 border-top pt-4 mt-4">
-         <h2 className='heading'  >Send a thankyou note : </h2>
+         <h2 className='heading'>Send a thankyou note : </h2>
+         <p className='text-danger mb-4' >All videos are reviewed against our terms before being accepted or rejected.</p>
+
          <textarea rows={5} placeholder="Say Something..."
             className="form-input w-100 rounded"
             onChange={(e) => setMessage(e.target.value)} type="text"
