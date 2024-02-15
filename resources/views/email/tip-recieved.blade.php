@@ -25,7 +25,7 @@
 
                     <td
                         style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                        You just received a new tip of {{ $tip->amount }} towards your tip jar goal on Spenny Piggy!🤑🎉
+                        You just received a new tip of {{ $symbol }}{{ $tip->amount }} towards your tip jar goal on Spenny Piggy!🤑🎉
                         <!-- Lucky you! <br></br>
                         {{ $tip->guest_name }} just granted a tip on your tip jar({{ $tip->tipGoal->target }}) of
                         {{ $tip->amount }} on Spenny Piggy🎁🥳 . -->

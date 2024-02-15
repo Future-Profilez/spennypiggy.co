@@ -15,12 +15,14 @@ class TipJarPurchased implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tip_pay;
+    public $symbol;
     /**
      * Create a new job instance.
      */
-    public function __construct($tip_pay)
+    public function __construct($tip_pay,$symbol)
     {
         $this->tip_pay = $tip_pay;
+        $this->symbol = $symbol;
     }
 
     /**
@@ -29,7 +31,7 @@ class TipJarPurchased implements ShouldQueue
     public function handle(): void
     {
         if((isset($this->tip_pay->user) && $this->tip_pay->user->notification_send == 1) || (empty($this->tip_pay->user))){
-            EmailService::sendTipJarSubscribedMail($this->tip_pay);
+            EmailService::sendTipJarSubscribedMail($this->tip_pay,$this->symbol);
         }
     }
 }

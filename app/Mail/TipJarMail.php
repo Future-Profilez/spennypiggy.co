@@ -14,15 +14,16 @@ class TipJarMail extends Mailable
     use Queueable, SerializesModels;
 
     public $tip;
-
+    public $symbol;
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($tip)
+    public function __construct($tip,$symbol)
     {
         $this->tip = $tip;
+        $this->symbol = $symbol;
     }
 
     /**
