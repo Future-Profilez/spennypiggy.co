@@ -14,7 +14,7 @@ class CheckoutToUser extends Mailable
     use Queueable, SerializesModels;
 
     public $data;
-
+    public $curr;
 
 
     /**
@@ -22,9 +22,10 @@ class CheckoutToUser extends Mailable
      *
      * @return void
      */
-    public function __construct($data)
+    public function __construct($data,$curr)
     {
         $this->data = $data;
+        $this->curr = $curr;
     }
 
     /**

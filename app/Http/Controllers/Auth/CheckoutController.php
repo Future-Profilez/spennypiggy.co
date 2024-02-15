@@ -97,7 +97,7 @@ class CheckoutController extends Controller
                 'amount_subtotal' => $subtotal,
                 'amount_total' => $sessionCreate->amount_total / 100,
                 'tax' => $taxNew,
-                'currency' => $sessionCreate->currency,
+                'currency' => $getdata[0]->owner->default_currency,
                 'payment_method_config_detail_id' => optional($sessionCreate->payment_method_configuration_details)->id,
                 'payment_method_type' => optional($sessionCreate->payment_method_types)[0],
                 'user_id' => Auth::id() ?? null,
@@ -122,6 +122,7 @@ class CheckoutController extends Controller
 
     public function successCheckout($id)
     {
+        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         try {
             if (Auth::check()) {
                 $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $id)->where('status', 1)->get();
@@ -207,7 +208,8 @@ class CheckoutController extends Controller
                 }
             }
             if (Auth::check()) {
-                CheckoutMailToUser::dispatch($stripeid);
+                $curr = Currency::where('iso',strtoupper($currency))->first();
+                CheckoutMailToUser::dispatch($stripeid,$curr->symbol);
             }
 
             return redirect(route('user.show', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
