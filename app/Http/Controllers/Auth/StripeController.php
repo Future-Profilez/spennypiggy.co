@@ -920,7 +920,7 @@ class StripeController extends Controller
                         'price_data' => [
                             'currency' => $currency,
                             'product' => $stripe_client->id,
-                            'unit_amount_decimal' => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100
+                            'unit_amount_decimal' => Helpers::priceFormat($goal->currency, ($price + $tax), $currency) * 100
                         ]
                     ]
                 ],
@@ -976,7 +976,7 @@ class StripeController extends Controller
 
                 $ownerCurrency = Currency::where('iso',strtoupper($tip_pay->currency))->first();
                 $userCurrency = Currency::where('iso',strtoupper($currency))->first();
-                $userAmount = Helpers::priceFormat($currency, ($tip_pay->amount+$tip_pay->tax), $tip_pay->currency);
+                $userAmount = Helpers::priceFormat($tip_pay->currency, ($tip_pay->amount+$tip_pay->tax), $currency);
 
                 TipJarPurchased::dispatch($tip_pay,$ownerCurrency->symbol);
                 TipJarMailToUser::dispatch($tip_pay,$userCurrency->symbol,$userAmount);
