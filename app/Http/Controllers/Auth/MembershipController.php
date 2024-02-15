@@ -517,8 +517,6 @@ class MembershipController extends Controller
                         ];
         }
 
-
-
         return response()->json([
             'status' => true,
             'data' => $result
