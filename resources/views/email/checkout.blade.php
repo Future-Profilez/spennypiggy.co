@@ -53,7 +53,7 @@
                 <tr>
                     <td
                         style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                        Go to <a href="https://uk.spennypiggy.co">Spenny Piggy</a> where you can see your granted wish, send a message to
+                        Go to <a href="https://spennypiggy.co">Spenny Piggy</a> where you can see your granted wish, send a message to
                         your gifter and share your gift on social media </td>
                 </tr>
                 @if (!empty($messages))
