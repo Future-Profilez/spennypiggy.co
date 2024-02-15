@@ -9,6 +9,7 @@ use App\Jobs\CheckoutTweet;
 use App\Jobs\CheckoutUser;
 use App\Jobs\CrowdfundTweet;
 use App\Jobs\SurpriseTweet;
+use App\Models\Currency;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\Subscription;
@@ -176,15 +177,18 @@ class CheckoutController extends Controller
                     'quantity' => $dd->quantity
                 ]);
                 $payment_data->refresh();
+
+                $symbol = Currency::where('iso',strtoupper($payment_data->payment->currency))->first();
+
                 $message = $stripeid->message;
                 if (Auth::check()) {
                     if ($dd->wish_item_id == NULL) {
-                        CheckoutUser::dispatch($payment_data, false, $dd, $message);
+                        CheckoutUser::dispatch($payment_data, false, $dd, $message,null,$symbol->symbol);
                     } else {
-                        CheckoutUser::dispatch($payment_data, false, false, $message);
+                        CheckoutUser::dispatch($payment_data, false, false, $message,null,$symbol->symbol);
                     }
                 } else {
-                    CheckoutUser::dispatch($payment_data, true, false, false, $stripeid->name);
+                    CheckoutUser::dispatch($payment_data, true, false, false, $stripeid->name,$symbol->symbol);
                 }
                 $dd->status = 0;
                 $dd->quantity = 0;

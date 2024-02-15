@@ -27,9 +27,9 @@
                             style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
                             Lucky you! <br></br>
                             @if ($data->payment->anonymous == 0)
-                                {{ $anon == false ? $data->cart->user->name : $anonname }} just granted you a surprise gift on Spenny Piggy for {{ $data->amount }} 🎁🥳 .
+                                {{ $anon == false ? $data->cart->user->name : $anonname }} just granted you a surprise gift on Spenny Piggy for {{ $symbol }}{{ $data->amount }} 🎁🥳 .
                             @else
-                                Anonymous user just granted you a surprise gift on Spenny Piggy for £{{ $data->amount }} 🎁🥳 .
+                                Anonymous user just granted you a surprise gift on Spenny Piggy for {{ $symbol }}{{ $data->amount }} 🎁🥳 .
                             @endif
                             <!-- {{ $anon == false ? $data->cart->user->name : $anonname }} granted you a surprise gift of
                             £{{ $data->amount }}🤩. -->
@@ -42,9 +42,9 @@
                          -->
                             Lucky you! <br></br>
                             @if ($data->payment->anonymous == 0)
-                                {{ $anon == false ? $data->cart->user->name : $anonname }} just granted your wish {{ $data->wish->wishname ?? 'surprise gift' }} on Spenny Piggy for £{{ $data->amount }} 🎁🥳 .
+                                {{ $anon == false ? $data->cart->user->name : $anonname }} just granted your wish {{ $data->wish->wishname ?? 'surprise gift' }} on Spenny Piggy for {{ $symbol }}{{ $data->amount }} 🎁🥳 .
                             @else
-                                Anonymous user just granted your wish {{ $data->wish->wishname ?? 'surprise gift' }} on Spenny Piggy for £{{ $data->amount }} 🎁🥳 .
+                                Anonymous user just granted your wish {{ $data->wish->wishname ?? 'surprise gift' }} on Spenny Piggy for {{ $symbol }}{{ $data->amount }} 🎁🥳 .
                             @endif
 
                             </td>
