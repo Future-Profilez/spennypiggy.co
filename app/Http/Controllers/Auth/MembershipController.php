@@ -75,7 +75,7 @@ class MembershipController extends Controller
             $rewards = json_encode($request->rewards);
 
 
-            $price = Helpers::priceFormat($request->cookie('currency', 'GBP'), $request->month_price, $user->default_currency);
+            $price = $request->month_price;
             $taxamount = round(($price * config('app.member_tax') / 100), 2, PHP_ROUND_HALF_UP);
             $createpriceid = $price + $taxamount;
 
@@ -512,12 +512,10 @@ class MembershipController extends Controller
                             ->sum('amount');
 
             $result[] = [
-                            'sum' => $data,
-                            'date' => $format_date
+                            'Amount' => $data,
+                            'Time' => $format_date
                         ];
         }
-
-
 
         return response()->json([
             'status' => true,

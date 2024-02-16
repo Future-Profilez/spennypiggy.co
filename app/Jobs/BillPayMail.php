@@ -10,28 +10,27 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-class TipJarPurchased implements ShouldQueue
+class BillPayMail implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $tip_pay;
-    public $symbol;
+    public $bill_pay;
     /**
      * Create a new job instance.
      */
-    public function __construct($tip_pay,$symbol)
+    public function __construct($bill_pay)
     {
-        $this->tip_pay = $tip_pay;
-        $this->symbol = $symbol;
+        $this->bill_pay = $bill_pay;
     }
+
 
     /**
      * Execute the job.
      */
     public function handle(): void
     {
-        if((isset($this->tip_pay->user) && $this->tip_pay->user->notification_send == 1) || (empty($this->tip_pay->user))){
-            EmailService::sendTipJarSubscribedMail($this->tip_pay,$this->symbol);
+        if((isset($this->bill_pay->bill->user) && $this->bill_pay->bill->user->notification_send == 1) || (empty($this->bill_pay->bill->user))){
+            EmailService::sendBillMail($this->bill_pay);
         }
     }
 }

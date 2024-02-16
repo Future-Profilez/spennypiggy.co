@@ -35,6 +35,7 @@ class WishItem extends Model
         'deleted_at',
         'edited_reason',
         'edited_status',
+        'is_approved',
     ];
 
     protected $appends = [

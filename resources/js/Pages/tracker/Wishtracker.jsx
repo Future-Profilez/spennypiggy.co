@@ -21,7 +21,6 @@ const defaultsec = 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/';
 
 export default function Wishtracker(props) {
 
-    console.log("props tracker", props);
     const { auth, user, tracks, user_subs, creator_subs } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const TruncatedString = ({ inputString, maxLength }) => {
@@ -110,11 +109,15 @@ export default function Wishtracker(props) {
                                 
                             </div>
                             <div className="text-muted rightbar d-flex align-items-center ">
+
+                                
                                 {n && n.sender ?
                                     <div className="identity text-danger text-nowrap" >-{formatMultiPrice((n.amount * (+n.quantity || 1)), n.payment.currency )}</div>
                                     :
                                     <div className="identity text-success text-nowrap" >+{formatMultiPrice((n.amount * (+n.quantity || 1)), n.payment.currency )}</div>
                                 }
+
+
                                 <div className="angle-icon">
                                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" > <g id="SVGRepo_bgCarrier" stroke-width="0"></g> <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round" ></g> <g id="SVGRepo_iconCarrier">{" "}
                                         <path d="M12 14.5C11.9015 14.5005 11.8038 14.4813 11.7128 14.4435C11.6218 14.4057 11.5392 14.3501 11.47 14.28L8 10.78C7.90861 10.6391 7.86719 10.4715 7.88238 10.3042C7.89756 10.1369 7.96848 9.97954 8.08376 9.85735C8.19904 9.73515 8.352 9.65519 8.51814 9.63029C8.68428 9.6054 8.85396 9.63699 9 9.72003L12 12.72L15 9.72003C15.146 9.63699 15.3157 9.6054 15.4819 9.63029C15.648 9.65519 15.801 9.73515 15.9162 9.85735C16.0315 9.97954 16.1024 10.1369 16.1176 10.3042C16.1328 10.4715 16.0914 10.6391 16 10.78L12.5 14.28C12.3675 14.4144 12.1886 14.4931 12 14.5Z" fill="#000000" ></path>{" "}

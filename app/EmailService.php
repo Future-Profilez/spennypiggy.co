@@ -56,7 +56,7 @@ class EmailService
         }
     }
 
-    public static function checkOutUser($data, $anon, $surprise, $message, $anonname)
+    public static function checkOutUser($data, $anon, $surprise, $message, $anonname,$symbol)
     {
         try {
             $emailData = [
@@ -69,13 +69,13 @@ class EmailService
             ];
 
             Mail::to($emailData['to'])
-                ->send(new Checkout($data, $anon, $surprise, $message, $anonname));
+                ->send(new Checkout($data, $anon, $surprise, $message, $anonname,$symbol));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }
 
-    public static function checkOutToUser($data)
+    public static function checkOutToUser($data,$curr)
     {
         try {
             $emailData = [
@@ -87,7 +87,7 @@ class EmailService
                 'uuid' => $data->user->uuid,
             ];
             Mail::to($emailData['to'])
-                ->send(new CheckoutToUser($data));
+                ->send(new CheckoutToUser($data,$curr));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
@@ -183,19 +183,19 @@ class EmailService
         }
     }
 
-    public static function sendTipJarSubscribedMail($data)
+    public static function sendTipJarSubscribedMail($data,$symbol)
     {
         try {
-            Mail::to($data->tipGoal->user->email)->send(new TipJarMail($data));
+            Mail::to($data->tipGoal->user->email)->send(new TipJarMail($data,$symbol));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }
 
-    public static function sendTipJarToUser($data)
+    public static function sendTipJarToUser($data,$symbol,$amount)
     {
         try {
-            Mail::to($data->guest_email)->send(new SendTipJarMailToUser($data));
+            Mail::to($data->guest_email)->send(new SendTipJarMailToUser($data,$symbol,$amount));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
@@ -241,7 +241,7 @@ class EmailService
     public static function sendIntroApprovingMailAdmin($intro)
     {
         try {
-            Mail::to("saurav@futureprofilez.com")->send(new SendAdminIntroMail($intro));
+            Mail::to("jack@spennypiggy.co")->send(new SendAdminIntroMail($intro));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
@@ -250,7 +250,7 @@ class EmailService
     public static function sendThankyouAdmin($pay)
     {
         try {
-            Mail::to("saurav@futureprofilez.com")->send(new ThankYouMailAdmin($pay));
+            Mail::to("jack@spennypiggy.co")->send(new ThankYouMailAdmin($pay));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }

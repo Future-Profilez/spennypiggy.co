@@ -16,6 +16,8 @@ class TipJarMailToUser implements ShouldQueue
 
 
     public $pay;
+    public $symbol;
+    public $amount;
 
 
     /**
@@ -25,9 +27,11 @@ class TipJarMailToUser implements ShouldQueue
      * @param bool $social = false
      * @return void
      */
-    public function __construct($pay)
+    public function __construct($pay,$symbol,$amount)
     {
         $this->pay = $pay;
+        $this->symbol = $symbol;
+        $this->amount = $amount;
     }
 
     /**
@@ -38,7 +42,7 @@ class TipJarMailToUser implements ShouldQueue
     public function handle()
     {
         if((isset($this->pay->user) && $this->pay->user->notification_send == 1) || (empty($this->pay->user))){
-            EmailService::sendTipJarToUser($this->pay);
+            EmailService::sendTipJarToUser($this->pay,$this->symbol,$this->amount);
         }
     }
 }

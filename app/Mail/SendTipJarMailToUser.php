@@ -14,16 +14,24 @@ class SendTipJarMailToUser extends Mailable
     use Queueable, SerializesModels;
 
     public $tip;
+    public $symbol;
+    public $amount;
+
 
     /**
-     * Create a new message instance.
+     * Create a new job instance.
      *
+     * @param \App\Models\User $user
+     * @param bool $social = false
      * @return void
      */
-    public function __construct($tip)
+    public function __construct($tip,$symbol,$amount)
     {
         $this->tip = $tip;
+        $this->symbol = $symbol;
+        $this->amount = $amount;
     }
+
 
     /**
      * Build the message.

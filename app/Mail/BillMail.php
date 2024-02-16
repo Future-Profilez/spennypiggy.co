@@ -9,23 +9,19 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class CheckoutToUser extends Mailable
+class BillMail extends Mailable
 {
     use Queueable, SerializesModels;
 
     public $data;
-    public $curr;
-
-
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($data,$curr)
+    public function __construct($data)
     {
         $this->data = $data;
-        $this->curr = $curr;
     }
 
     /**
@@ -36,10 +32,10 @@ class CheckoutToUser extends Mailable
     public function build()
     {
         try {
-            $subject = 'Gift Granted on Spenny Piggy!';
-            return $this->view('email.checkout-user')
-                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
-                ->subject($subject);
+            $subject = 'WooHoo! You got a new Bill subscription.';
+            return $this->view('email.bills')
+            ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+            ->subject($subject);
         } catch (\Exception $e) {
         }
     }

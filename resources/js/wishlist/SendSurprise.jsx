@@ -12,6 +12,8 @@ import { add_to_cart } from "../Pages/redux/UserSlice";
 export default function SendSurprise({auth, owner}) {
    
    const { global_currency } = usePage().props;
+   const defaultCurrency = (auth && auth.user && auth.user.default_currency) || "GBP";
+
    const deviceID  = DeviceID();
    const { formatMultiPrice } = PriceFormat();
    const { successAlert, errorAlert, errorsHandling } = useAlerts();
@@ -64,15 +66,15 @@ export default function SendSurprise({auth, owner}) {
             }
       });
    };
+
+   
     return (
         <Popup
             modalclassName="pinkmodal sendSurprize-modal"
             space="4" size="md"
-            action={close} classes={`btn-pink lg px-4  `}
-            text={`Send Surprise`} >
-            <h2 className="text-uppercase font-GillSans pb-4 font-large">
-                Send a Surprise Gift
-            </h2>
+            action={close} classes={`btn-pink sm lg px-4  `}
+            text={`Support with 3 gold coins`} >
+            <h2 className="text-uppercase font-GillSans pb-4 font-large">Send a Surprise Gift</h2>
             <div className="form-field mb-4">
                   <label className="d-block text-start mb-2">Amount</label>
                   <input
@@ -81,7 +83,7 @@ export default function SendSurprise({auth, owner}) {
                      type="number"
                      placeholder="Enter amount.. "
                   />
-                  <p className="mt-1">The Minimum amount is set to {formatMultiPrice(owner && owner.min_surprise_amount, global_currency)} in the wisher’s currency.</p>
+                  <p className="mt-1">The Minimum amount is set to {formatMultiPrice(owner && owner.min_surprise_amount, defaultCurrency)} in the wisher’s currency.</p>
             </div>
             <div className="form-field mb-4">
                   <label className="d-block text-start mb-2">Suggested use (Required)</label>
@@ -92,7 +94,6 @@ export default function SendSurprise({auth, owner}) {
                      type="text"
                   />
             </div>
-
             <LoaderButton onClick={sendSurprize}
                disabled={processing} 
                type='submit' 

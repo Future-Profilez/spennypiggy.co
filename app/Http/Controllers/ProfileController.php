@@ -5,8 +5,13 @@ namespace App\Http\Controllers;
 use App\Helpers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Jobs\SendIntroMailAdmin;
+use App\Models\MembershipPayment;
+use App\Models\StripePaymentItems;
+use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Models\UserIntro;
+use App\Models\WishItemSubscription;
+use Carbon\Carbon;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -358,15 +363,15 @@ class ProfileController extends Controller
         foreach ($user_subs as $key => $value) {
             $trackData[$key] = [
                 'owner' => [
-                    'name' => $value->payment->owner->name,
-                    'avatar' => $value->payment->owner->avatar_url,
-                    'cover' => $value->payment->owner->cover_url,
-                    'username' => $value->payment->owner->username,
-                    'stripe_details_submitted' => $value->payment->owner->stripe_details_submitted
+                    'name' => $value->wish_item->user->name,
+                    'avatar' => $value->wish_item->user->avatar_url,
+                    'cover' => $value->wish_item->user->cover_url,
+                    'username' => $value->wish_item->user->username,
+                    'stripe_details_submitted' => $value->wish_item->user->stripe_details_submitted
                 ],
                 'amount' => $value->amount,
                 'tax' => $value->tax,
-                'currency' => $value->payment->currency,
+                'currency' => $value->currency,
                 'is_surprise' => !empty($value->wish_item) ? false : true,
                 'created_at' => Carbon::parse($value->created_at)->format('Y-m-d H:i:s'),
                 'anonymous' => $value->anonymous

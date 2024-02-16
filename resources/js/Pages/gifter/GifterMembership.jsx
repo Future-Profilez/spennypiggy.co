@@ -20,7 +20,6 @@ export default function GifterMembership(props) {
     setLoading(true);
     axios.get(`/gifter-memberships/${username}?page=${p}`)
     .then((resp) => {
-        console.log("resp", resp);
         setLoading(false);
         const newd = resp.data.membership
         if(load){

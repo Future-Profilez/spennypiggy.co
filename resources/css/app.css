@@ -18,6 +18,10 @@ body {
 .funpart {
     width: 100%;
     overflow-x: hidden;
+    
+}
+.content-pr-modal  iframe {
+    width: 100% !important;
 }
 
 /* Comman Css */
@@ -708,13 +712,10 @@ body {
 
 /* dashbaord meber  */
 .dashboard-memeber {
-    padding: 20px 10px 10px 10px;
-    border-radius: 15px 15px 0px 0px;
     display: flex;
     justify-content: space-around;
     color: black;
     text-align: center;
-    background: white;
 }
 
 .data-memeber {

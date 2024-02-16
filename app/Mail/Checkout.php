@@ -17,19 +17,21 @@ class Checkout extends Mailable
     public $surprise;
     public $messages;
     public $anonname;
-
+    public $symbol;
+    
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($data, $anon, $surprise, $messages, $anonname)
+    public function __construct($data, $anon, $surprise, $messages, $anonname,$symbol)
     {
         $this->data = $data;
         $this->anon = $anon;
         $this->surprise = $surprise;
         $this->messages = $messages;
         $this->anonname = $anonname;
+        $this->symbol = $symbol;
     }
 
     /**

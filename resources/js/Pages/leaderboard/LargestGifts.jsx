@@ -46,7 +46,7 @@ export default function LargestGifts() {
               <div className='index-badge' >{index}</div>
             </div> 
           </div>
-          <div className="rank-stats" >
+          <div className="rank-stats ps-2" >
             <p className="toppercentage income " >{formatMultiPrice(s && s.amount, s && s.currency || 'gbp')}</p>
           </div> 
     </div>

@@ -16,15 +16,22 @@ export default function Stripe(props) {
     });
 
     const [countryCurrency, setCountryCurrency] = useState();
-    const [country, setCountry] = useState();
+    const [country, setCountry] = useState('');
     const getCountry = (e) => {
-        const name = JSON.parse(e);
-        setCountry((name && name.code) || "");
-        setCountryCurrency((name && name.currency) || "");
+        console.log("get",e);
+        if(e == ''){
+            setCountry('')
+        } else {
+            const name = JSON.parse(e);
+            setCountry((name && name.code) || "");
+            setCountryCurrency((name && name.currency) || "");
+        }
     };
 
     const checkTerms = () => {
-        if (country == "" || undefined) {
+        console.log("country", country);
+        
+        if (country == '') {
             errorAlert("Please choose your country.");
             return false;
         }
@@ -35,10 +42,11 @@ export default function Stripe(props) {
                 currency: countryCurrency,
             });
             return true;
+        } else {
+            errorAlert("Please check accept terms & conditions checkbox");
+            checkRef.current.focus();
+            return false;
         }
-        errorAlert("Please check accept terms & conditions checkbox");
-        checkRef.current.focus();
-        return false;
     };
 
     return (

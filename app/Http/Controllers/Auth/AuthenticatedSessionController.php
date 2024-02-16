@@ -268,6 +268,31 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
+
+    public function user_bills($username)
+    {
+        $user = User::where(function ($q) {
+            $q->whereNot('country', 'GB')->orWhereNull('country');
+        })->firstWhere('username', $username);
+
+        if ($user) {
+            $bills = $user->bills()
+                ->latest()
+                ->get();
+
+
+            return response()->json([
+                'success'   => true,
+                'bills' => $bills
+            ]);
+        }
+        return response()->json([
+            'success'   => false,
+            'items'     => [],
+            'message'   =>  'User not found'
+        ]);
+    }
+
     public function sociallinks($username)
     {
         try {

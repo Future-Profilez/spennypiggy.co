@@ -80,56 +80,64 @@ export default function AddMembership(props) {
    const [clear, setClear] = useState();
    const [close, setClose] = useState();   
 
-    const { data, setData, post,get, processing, errors, reset } = useForm({
+
+   function selectRewards(e){ 
+    const checkboxes = document.getElementsByName("rewards");
+    let result = [];
+    for (var i = 0; i < checkboxes.length; i++) {
+      if (checkboxes[i].checked) {
+        result.push(checkboxes[i].value);
+      }
+    };
+    setData({ ...data, rewards: result });
+  } 
+
+    const [thumb, setThumb] = useState(null);
+    const [ data, setData] = useState({
       level: '',
       month_price: '',
-      thumbnail: '',
       rewards: '',
     }); 
-   
-    const getFileUID = async (thumb) => {
-      setData("thumbnail", thumb);
-    };
-
-    function selectRewards(e){ 
-        const checkboxes = document.getElementsByName("rewards");
-        let result = [];
-        for (var i = 0; i < checkboxes.length; i++) {
-          if (checkboxes[i].checked) {
-            result.push(checkboxes[i].value);
-          }
-        };
-        setData("rewards", result);
+    let nameattr, valueattr;
+    const handleInput = (e) => {
+        nameattr = e.target.name;
+        valueattr = e.target.value;
+        setData({ ...data, [nameattr]: valueattr });
     }
+     
+    async function getFileUID(thumbs){
+      setThumb(thumbs);
+    };
+    
 
     const [loading, setLoading] = useState(false);
-   const AddMembership = (e) => {
-      e.preventDefault();
-      setLoading(true);
-      axios.post(`/membership/save`, data).then((resp)=>{
-        if(resp.data.status) { 
-          successAlert(resp.data.msg)
-          setClose(false);
-          setTimeout(() => {
-            setClose();
-          }, 100);
-          reset();
-          setClear(new Date());
-        } else { 
-          if(resp.data.errors){
-            Object.entries(resp.data.errors).forEach(([key, value]) => {
-                errorAlert(value);
-              });
-            } else { 
-              errorAlert(resp.data.msg);
+    const AddMembership = (e) => {
+        e.preventDefault();
+        setLoading(true);
+        axios.post(`/membership/save`, {...data, thumbnail: thumb,}).then((resp)=>{
+          if(resp.data.status) { 
+            successAlert(resp.data.msg)
+            setClose(false);
+            setTimeout(() => {
+              setClose();
+            }, 100);
+            reset();
+            setClear(new Date());
+          } else { 
+            if(resp.data.errors){
+              Object.entries(resp.data.errors).forEach(([key, value]) => {
+                  errorAlert(value);
+                });
+              } else { 
+                errorAlert(resp.data.msg);
+            }
           }
-        }
-        setLoading(false);
-      }).catch(err => { 
-        console.log("err", err);
-        setLoading(false);
-      });
-   };
+          setLoading(false);
+        }).catch(err => { 
+          console.error("err", err);
+          setLoading(false);
+        });
+    };
 
    
     return (
@@ -148,10 +156,20 @@ export default function AddMembership(props) {
                           <ul className="ps-0 d-flex flex-wrap tiers" >
                               {memberships && memberships.map((m, i)=>{
                                 return <li key={`membership-${i}`} className="mb-2 me-2" >
-                                  <button  className={data && data.level === m.value ? "active" : ''}  
+                                  {/* <button    
                                     onClick={()=>setData('level', m.value)}  >
                                     {m.title}
-                                  </button>
+                                  </button> */}
+
+                                  <input className="cursor-pointer d-none"  
+                                  type="checkbox" id={m.value} value={m.value} name="level" 
+                                  onChange={handleInput} />
+                                  <label 
+                                  className={`cursor-pointer text-capitalize ${data && data.level == m.value ? "active" : ''}`} 
+                                   htmlFor={m.value}>
+                                      {m.title}
+                                  </label>
+
                                 </li>
                               })}
                           </ul>
@@ -161,9 +179,10 @@ export default function AddMembership(props) {
                           <label className="d-block text-start mb-2">{data && data.level =='lifetime' ? "Lifetime membership price" : 'Monthly Price'}</label>
                           <div className="position-relative  currency-wrapper" >
                             <span className="currency-tag">{'GBP'}</span>
-                            <input className="form-input w-100 rounded"
-                                onChange={(e) => setData('month_price', e.target.value)}
-                                type="number" placeholder={data && data.level =='lifetime' ? "Enter Lifetime membership price" : 'Enter monthly price.. '}  />
+                            <input className="form-input w-100 rounded"  
+                                onChange={handleInput}
+                                type="number"  name="month_price"
+                                placeholder={data && data.level =='lifetime' ? "Enter Lifetime membership price" : 'Enter monthly price.. '}  />
                           </div>
                       </div>
 
@@ -191,11 +210,10 @@ export default function AddMembership(props) {
                         })}
                       </div>
                       
-                      <LoaderButton onClick={AddMembership} disabled={loading}
-                          className="flex w-100 btn-pink lg mx-auto"
-                        spinnerClassName="fill-red-600" >
+                      <button onClick={AddMembership} disabled={loading}
+                          className="flex w-100 btn-pink lg mx-auto"  >
                         {loading ? "Processing" : "Create"}
-                      </LoaderButton>
+                      </button>
 
                     </div> 
              

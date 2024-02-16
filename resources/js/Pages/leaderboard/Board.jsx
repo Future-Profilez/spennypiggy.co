@@ -130,7 +130,7 @@ export default function Board(props) {
                                         <button
                                             className={period == "monthly" ? "active":""}
                                             onClick={() => switchTime("monthly")} >
-                                            Montly
+                                            Monthly
                                         </button>
                                         <button className={period == "weekly" ? "active":""} onClick={() => switchTime("weekly")}>
                                             Weekly

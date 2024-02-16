@@ -544,7 +544,7 @@ class StripeController extends Controller
      * @param string $reccure Subscription Reccurning - onetime or Continue
      * @return mixed
      */
-    public function wishItemSubscribe(Request $request, $uuid,$anonymous, $reccure = 'continue')
+    public function wishItemSubscribe(Request $request, $uuid, $reccure = 'continue')
     {
         $wish = WishItem::whereUuid($uuid)->with('user')->first();
 
@@ -583,7 +583,7 @@ class StripeController extends Controller
                 'recurring_for' =>  $reccure,
                 'recurring_type' =>  $wish->subscription_period,
                 'surprise_message'  =>  $request->message ?? NULL,
-                'anonymous' => $anonymous ?? 0
+                'anonymous' => $request->anonymous ?? 0
             ]);
 
             $currency   =   strtolower($request->cookie("currency", "GBP"));
@@ -878,9 +878,16 @@ class StripeController extends Controller
                 return redirect()->back()->with('error', "This tip jar only needs $remaining_amount to complete the goal.");
             }
 
-            $price = round($amount, 2, PHP_ROUND_HALF_UP);
-            $tax = round(($price * config('app.jar_tax',10) / 100), 2, PHP_ROUND_HALF_UP);
 
+
+            $price = Helpers::priceFormat($currency, $amount, $goal->currency);
+            $min_amount = $goal->default_price < 5 ? 5 : $goal->default_price;
+            $user_amount = Helpers::priceFormat($goal->currency,$min_amount,$currency);
+            if($price < $min_amount){
+                return redirect()->back()->with("error", "Enter minimum $user_amount amount.");
+            }
+
+            $tax = round(($price * config('app.jar_tax',10) / 100), 2, PHP_ROUND_HALF_UP);
             try {
 
                 $stripe_client = StripeControl::createProduct([
@@ -913,7 +920,7 @@ class StripeController extends Controller
                         'price_data' => [
                             'currency' => $currency,
                             'product' => $stripe_client->id,
-                            'unit_amount_decimal' => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100
+                            'unit_amount_decimal' => Helpers::priceFormat($goal->currency, ($price + $tax), $currency) * 100
                         ]
                     ]
                 ],
@@ -957,6 +964,7 @@ class StripeController extends Controller
      */
     public function handleTipJarPayment($uuid, $status)
     {
+        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         $tip_pay = TipGoalsPayment::whereUuid($uuid)->first();
         if (!$tip_pay) {
             return to_route('home')->with("error", 'Insufficient data!');
@@ -966,8 +974,12 @@ class StripeController extends Controller
             $tip_pay->status = $session->payment_status;
             if ($session->payment_status == 'paid') {
 
-                TipJarPurchased::dispatch($tip_pay);
-                TipJarMailToUser::dispatch($tip_pay);
+                $ownerCurrency = Currency::where('iso',strtoupper($tip_pay->currency))->first();
+                $userCurrency = Currency::where('iso',strtoupper($currency))->first();
+                $userAmount = Helpers::priceFormat($tip_pay->currency, ($tip_pay->amount+$tip_pay->tax), $currency);
+
+                TipJarPurchased::dispatch($tip_pay,$ownerCurrency->symbol);
+                TipJarMailToUser::dispatch($tip_pay,$userCurrency->symbol,$userAmount);
                 $tip_pay->save();
 
                 $tip_pay->tipGoal->fullfilled += $tip_pay->amount;

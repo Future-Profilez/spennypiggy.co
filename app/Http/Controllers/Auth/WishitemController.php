@@ -217,7 +217,7 @@ class WishitemController extends Controller
         // }
 
         $user = User::find(Auth::id());
-        $price = Helpers::priceFormat($request->cookie('currency', 'GBP'), $request->price, $user->default_currency);
+        $price = $request->price;
 
         // $price = round($request->price, 2, PHP_ROUND_HALF_UP);
 
@@ -861,8 +861,9 @@ class WishitemController extends Controller
 
         $owner = User::where('id', $request->owner_id)->first();
         $price = Helpers::priceFormat($currency, $request->amount, $owner->default_currency);
-        $user_amount = Helpers::priceFormat($owner->default_currency,$owner->min_surprise_amount,$currency);
-        if($price < $owner->min_surprise_amount){
+        $min_amount = $owner->min_surprise_amount < 5 ? 5 : $owner->min_surprise_amount;
+        $user_amount = Helpers::priceFormat($owner->default_currency,$min_amount,$currency);
+        if($price < $min_amount){
             return redirect()->back()->with("error", "Enter minimum $user_amount amount.");
         }
 
@@ -1148,14 +1149,14 @@ class WishitemController extends Controller
 
         $user = User::where('id', Auth::id())->first();
 
-        $target = Helpers::priceFormat($currency, $request->target, $user->default_currency);
-        $price = Helpers::priceFormat($currency, $request->default_price, $user->default_currency);
+        $target = $request->target;
+        $price = $request->default_price;
 
         $goal = TipGoal::create([
             'user_id' => $user->id,
             'name' => $request->name,
             'target' => $target,
-            'default_price' => ceil($price),
+            'default_price' => $price,
             'description' => $request->description ?? null,
             'status' => $request->duration,
             'days' => ($request->duration == 1) ? 30 : null,

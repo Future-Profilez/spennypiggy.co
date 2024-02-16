@@ -30,6 +30,13 @@ Route::get('/', function () {
     ]);
 })->name("home");
 
+Route::get('/membership-dashboard', function () {
+    return Inertia::render('membership/Membership_dashboard');
+})->name('membershipDashboard');
+
+//check referal code
+Route::get('check-coupon-code/{code}', [RegisteredUserController::class, 'checkCouponCode'])->name('checkCouponCode');
+
 Route::post("/username-availablity", [RegisteredUserController::class, "checkUsername"])->name("check.username");
 
 // Route::get('/dashboard', function () {
