@@ -398,7 +398,7 @@ class WishitemController extends Controller
 
         $categories = UserCategory::where('user_id', Auth::id())->get();
         foreach ($categories as $key => $value) {
-            if ($request->category == $value->category) {
+            if (strtolower($request->category) == strtolower($value->category)) {
                 return back()->with('error', 'Category is already exists.');
             }
         }
