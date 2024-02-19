@@ -736,3 +736,12 @@ body {
 .static-chart {
     padding-bottom: 50px;
 }
+
+.catslists {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.catslists > div {
+    padding-right: 20px;
+}

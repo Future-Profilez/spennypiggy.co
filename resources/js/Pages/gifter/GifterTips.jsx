@@ -62,13 +62,12 @@ export default function GifterTips(props) {
   }
 
   return (
-    <div className={data && data.length < 1 && !loading ? 'd-none' : ''  } >
+    <div className={`mb-4 ${data && data.length < 1 && !loading ? 'd-none' : ''  }`} >
       <div className='box rounded-lg p-4 ' >
         <h3 className='text-large text-dark title mb-2' >Tips </h3>
           {data && data.map((d, i)=>{ 
             return <div key={`wishes-items-${i}`} ><Item  w={d} /></div>
           })}
-
           {loading ? <LoadingScreen hideimage={true} /> : ''}
           {!loading && hasMore ? <button onClick={()=>fetch_items(page+1, true)} className='loadmore-text' >Show More</button> : ''}
       </div> 

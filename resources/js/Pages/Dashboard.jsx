@@ -129,16 +129,15 @@ export default function Dashboard(props) {
             return true;
         }
         setfetchingGoal(true);
-        axios
-            .get(`tip-jar/list/${user && user.uuid}`, { signal })
-            .then((resp) => {
-                setGoal(resp.data.goal);
-                setfetchingGoal(false);
-            })
-            .catch((_err) => {
-                console.error("error", _err);
-                setfetchingGoal(false);
-            });
+        axios.get(`tip-jar/list/${user && user.uuid}`, { signal })
+        .then((resp) => {
+            setGoal(resp.data.goal);
+            setfetchingGoal(false);
+        })
+        .catch((_err) => {
+            console.error("error", _err);
+            setfetchingGoal(false);
+        });
     };
 
     useEffect(() => {

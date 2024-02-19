@@ -2,16 +2,19 @@ import React from 'react'
 import { usePage } from '@inertiajs/react';
 import GifterItems from './GifterItems';
 import GifterTips from './GifterTips';
-import ThankyouMessages from './ThankyouMessages';
 import GifterSubscriptions from './GifterSubscriptions';
 import GifterMembership from './GifterMembership';
 import { Link } from "@inertiajs/react";
+ 
 
 
 
-export default function Gifter({IsloggedIn }){
+export default function Gifter({ IsloggedIn }){
 
   const { auth, user, username, global_currency, itemid, min_surprise_amount  } = usePage().props;
+
+  
+
 
   return (
     <>
@@ -36,9 +39,10 @@ export default function Gifter({IsloggedIn }){
               </Link>
           </div> : ''}
 
-          <GifterItems />
+          <GifterItems IsloggedIn={IsloggedIn} />
+
           {/* <GifterSubscriptions /> */}
-          {IsloggedIn ? <ThankyouMessages /> : ''}
+          {/* {IsloggedIn ? <ThankyouMessages /> : ''} */}
 
         </div> 
 
