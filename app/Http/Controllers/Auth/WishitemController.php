@@ -180,7 +180,7 @@ class WishitemController extends Controller
                     "sometimes",
                     "nullable"
                 ],
-                'reward' => [
+                'reward_file' => [
                     'required'
                 ],
                 "subscription" => [
@@ -244,7 +244,7 @@ class WishitemController extends Controller
             'currency' => $user->default_currency,
             'item_url' => $request->item_url != "" ? $request->item_url : null,
             'thumbnail' => $request->thumbnail ?? null,
-            'reward' => $request->reward ?? null,
+            'reward' => $request->reward_file ?? null,
             'subscription' => $request->subscription,
             'subscription_period' => $request->subscription_period ?? null,
             'repeat_purchase' => $request->repeat_purchase ?? 0,
