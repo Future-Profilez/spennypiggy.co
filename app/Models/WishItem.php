@@ -24,6 +24,7 @@ class WishItem extends Model
         'price_id',
         "item_url",
         "thumbnail",
+        'reward',
         "subscription",
         "subscription_period",
         "repeat_purchase",
@@ -40,7 +41,8 @@ class WishItem extends Model
 
     protected $appends = [
         "perma_link",
-        'is_cart'
+        'is_cart',
+        'reward_url'
     ];
 
     public static function boot()
@@ -88,6 +90,19 @@ class WishItem extends Model
 
         return $url;
     }
+
+    public function getRewardUrlAttribute()
+    {
+        $url = false;
+        if (!empty($this->reward)) {
+            $url = "https://ucarecdn.com/" . $this->reward . "/";
+        } else {
+            $url = "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/";
+        }
+
+        return $url;
+    }
+
     public function categories()
     {
         return $this->hasMany(WishCategory::class, 'wish_item_id');
