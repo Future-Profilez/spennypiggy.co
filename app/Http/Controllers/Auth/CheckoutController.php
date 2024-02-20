@@ -174,6 +174,9 @@ class CheckoutController extends Controller
                     'wish_item_id' => $dd->wish_item_id ?? Null,
                     'user_cart_id' => $dd->id,
                     'amount' => $dd->amount,
+                    'message_media' => $dd->wish->reward ?? null,
+                    'media_type' => !empty($dd->wish->reward) ? 'image' : null,
+                    'thank_you_approved' => !empty($dd->wish->reward) ? 1 : 0,
                     'tax' => $dd->tax,
                     'quantity' => $dd->quantity
                 ]);

@@ -385,6 +385,8 @@ class ProfileController extends Controller
                     'subscription_period' => $value->wish_item->subscription_period,
                     'perma_link' => $value->wish_item->perma_link
                 ];
+
+                $trackData[$key]['media_url'] = $value->message_url;
             }
         }
 
