@@ -165,6 +165,10 @@ class User extends Authenticatable
         return $this->hasMany(Membership::class, 'user_id');
     }
 
+    public function posts(){
+        return $this->hasMany(Post::class, 'user_id');
+    }
+
     public function bills(){
         return $this->hasMany(Bills::class, 'user_id');
     }
