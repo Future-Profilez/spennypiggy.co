@@ -1161,10 +1161,8 @@ class WishitemController extends Controller
             'user_id' => $user->id,
             'name' => $request->name,
             'target' => $target,
-            'default_price' => $price,
+            // 'default_price' => ceil($price),
             'description' => $request->description ?? null,
-            'status' => $request->duration,
-            'days' => ($request->duration == 1) ? 30 : null,
             'currency' => $user->default_currency,
         ]);
 
