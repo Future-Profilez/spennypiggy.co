@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\MyController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\PostsController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\SocialLinksController;
 use App\Http\Controllers\Auth\StripeController;
@@ -169,11 +170,14 @@ Route::middleware('auth')->group(function () {
             Route::get('graph', [MembershipController::class, 'membershipGraph'])->name('graph');
         });
 
-        Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');
-        Route::get('gifter-subs/{username}', [ProfileController::class, 'gifterSubs'])->name('gifter-subscriptions');
-        Route::get('gifter-tips/{username}', [ProfileController::class, 'gifterTips'])->name('gifter-tips');
-        Route::get('gifter-memberships/{username}', [ProfileController::class, 'gifterMemberships'])->name('gifter-memberships');
-        Route::get('gifter-thanks-message/{username}', [ProfileController::class, 'gifterThanksMessages'])->name('gifter-thanks-message');
+        Route::prefix("post")->name("post.")->group(function () {
+            Route::post('save', [PostsController::class, 'savePost'])->name('save');
+            Route::post('edit/{uuid}', [PostsController::class, 'editPost'])->name('edit');
+            Route::get('delete/{uuid}', [PostsController::class, 'deletePost'])->name('delete');
+        });
+
+        Route::get('/earnings/{type?}', [LeaderBoardController::class, 'earnings'])->name('earnings');
+
 
         Route::prefix("bill")->name("bill.")->group(function () {
             Route::post('save', [BillsController::class, 'billSave'])->name('save');
@@ -182,6 +186,12 @@ Route::middleware('auth')->group(function () {
 
     });
 });
+
+Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');
+Route::get('gifter-subs/{username}', [ProfileController::class, 'gifterSubs'])->name('gifter-subscriptions');
+Route::get('gifter-tips/{username}', [ProfileController::class, 'gifterTips'])->name('gifter-tips');
+Route::get('gifter-memberships/{username}', [ProfileController::class, 'gifterMemberships'])->name('gifter-memberships');
+Route::get('gifter-thanks-message/{username}', [ProfileController::class, 'gifterThanksMessages'])->name('gifter-thanks-message');
 
 // Intro video
 Route::get('/redirecting', function () {
@@ -295,6 +305,9 @@ Route::get('memberships/{username}', [AuthenticatedSessionController::class, 'us
 
 Route::get('bills/{username}', [AuthenticatedSessionController::class, 'user_bills'])->name('user.bills');
 
+Route::get('posts/{username}', [AuthenticatedSessionController::class, 'user_posts'])->name('user.posts');
+
+
 
 Route::get('/{username}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
 Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');
@@ -315,6 +328,3 @@ Route::prefix("bill")->name("bill.")->group(function () {
     Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [BillsController::class, 'buyBill'])->name("checkout");
     Route::get('/handle/{uuid}/{status}', [BillsController::class, 'handlePayment'])->name('handle');
 });
-
-
-
