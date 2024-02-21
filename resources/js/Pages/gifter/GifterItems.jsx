@@ -45,15 +45,12 @@ export default function GifterItems(props) {
     fetch_items(page);
   },[]);
 
-
   const MessageMedia = ({w}) => {
     console.log("media_url", w)
     return <>
       <Popup
         modalclassName="pinkmodal shadow-pink" space="0" size="md" action={close} classes={`mt-3 text-pink`}
-        text={<>
-          View Exclusive Reward 
-        </>} > 
+        text={<>View Exclusive Reward </>} > 
           <div className='video-payer-pop' >
             <img src={w && w?.media_url || ''} />
           </div>

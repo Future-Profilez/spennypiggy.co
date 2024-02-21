@@ -13,11 +13,12 @@ export default function Redirecting() {
     const fetchLocationData = async () => {
         try {
             await axios.get(`https://ipapi.co/json/`).then((resp)=>{
+                
                 if(ziggy && ziggy.url === 'https://spennypiggy.co'){
                     if(resp.data && resp.data.country_code == 'GB'){
                         setUrl('https://uk.spennypiggy.co');
                         setTimeout(()=>{
-                          window.location = `https://uk.spennypiggy.co`;
+                          window.location = `https://uk.spennypiggy.co/register`;
                         },3000);
                     }
                 }
@@ -25,7 +26,7 @@ export default function Redirecting() {
                     if(resp.data && resp.data.country_code !== 'GB'){
                         setUrl('https://spennypiggy.co');
                         setTimeout(()=>{
-                          window.location = `https://spennypiggy.co`;
+                          window.location = `https://spennypiggy.co/register`;
                         },3000);
                     }
                 }

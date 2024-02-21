@@ -3,6 +3,7 @@ import { useRef } from "react";
 import { useEffect } from "react";
 import AddBills from "./bills/AddBills";
 import Billslist from "./bills/Billslist";
+import AddPost from "./feed/AddPost";
 export default function Test() {
     const file = {
         uuid: "5360fd62-eb19-4ac8-91b8-528c08a2e79b",
@@ -52,10 +53,12 @@ export default function Test() {
 
     const post = () => {
         axios
-            .post(`/bill/save`, {
-                name: "Bijli bill",
-                price: 50.0,
-                thumbnail: file,
+            .post(`/post/save`, {
+                type: "image",
+                for_module: 'subscription',
+                image: "5360fd62-eb19-4ac8-91b8-528c08a2e79b",
+                title: "My Post",
+                content:"Hello guys, my first post"
             })
             .then((resp) => {
                 console.log("resp", resp);
@@ -67,7 +70,7 @@ export default function Test() {
 
     const get = () => {
         axios
-            .get(`/earnings/month`)
+            .get(`/posts/gaurav_`)
             .then((resp) => {
                 console.log("resp", resp);
             })
@@ -87,36 +90,7 @@ export default function Test() {
         <div className="text-white">
             <button onClick={get}>Test Get Request</button>
             <button onClick={post}>Test Post Request</button>
-
-            <button>
-                {" "}
-                <AddBills />
-            </button>
-
-            <p>
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. Atque
-                rem velit ipsam dolorem aspernatur assumenda fuga magnam est
-                ducimus neque a officia, alias dicta deserunt asperiores
-                explicabo distinctio, aut doloribus.
-            </p>
-            <p>
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. Atque
-                rem velit ipsam dolorem aspernatur assumenda fuga magnam est
-                ducimus neque a officia, alias dicta deserunt asperiores
-                explicabo distinctio, aut doloribus.
-            </p>
-            <button
-                ref={qrcode}
-                className="box p-5 text-dark rounded w-25 mx-5 my-5"
-            >
-                QR CODE
-            </button>
-            <p>
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. Atque
-                rem velit ipsam dolorem aspernatur assumenda fuga magnam est
-                ducimus neque a officia, alias dicta deserunt asperiores
-                explicabo distinctio, aut doloribus.
-            </p>
+            <AddPost />
         </div>
     );
 }
