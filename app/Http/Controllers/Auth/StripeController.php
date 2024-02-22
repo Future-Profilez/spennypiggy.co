@@ -827,18 +827,20 @@ class StripeController extends Controller
     }
 
 
-    public function tipToJar(Request $request, $uuid)
+    public function tipToJar(Request $request, $creator_uid, $uuid = null)
     {
         $goal = TipGoal::where('uuid', $uuid)->first();
 
-        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
-        if (!$goal) {
-            return redirect()->back()->with('error', 'No tip jar found!');
-        }
+        $creator = User::where('uuid',$creator_uid)->first();
 
-        if ((!empty($goal->completed_at) && $goal->completed_at <= Carbon::now()) || ($goal->completed == 1)) {
-            return redirect()->back()->with('error', 'Goal is completed already.');
-        }
+        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+        // if (!$goal) {
+        //     return redirect()->back()->with('error', 'No tip jar found!');
+        // }
+
+        // if ((!empty($goal->completed_at) && $goal->completed_at <= Carbon::now()) || ($goal->completed == 1)) {
+        //     return redirect()->back()->with('error', 'Goal is completed already.');
+        // }
 
         if ($request->isMethod("POST")) {
             $request->validate([
@@ -869,39 +871,39 @@ class StripeController extends Controller
 
             $amount = $request->amount;
 
-            if ($amount < $goal->default_price) {
-                return redirect()->back()->with('error', "Please enter amount greater than $goal->default_price.");
-            }
+            // if ($amount < $goal->default_price) {
+            //     return redirect()->back()->with('error', "Please enter amount greater than $goal->default_price.");
+            // }
 
-            $remaining_amount = $goal->target - $goal->fullfilled;
-            if ($goal->status == 0 && ($remaining_amount < $amount)) {
-                return redirect()->back()->with('error', "This tip jar only needs $remaining_amount to complete the goal.");
-            }
+            // $remaining_amount = $goal->target - $goal->fullfilled;
+            // if ($goal->status == 0 && ($remaining_amount < $amount)) {
+            //     return redirect()->back()->with('error', "This tip jar only needs $remaining_amount to complete the goal.");
+            // }
 
-
-
-            $price = Helpers::priceFormat($currency, $amount, $goal->currency);
-            $min_amount = $goal->default_price < 5 ? 5 : $goal->default_price;
-            $user_amount = Helpers::priceFormat($goal->currency,$min_amount,$currency);
-            if($price < $min_amount){
-                return redirect()->back()->with("error", "Enter minimum $user_amount amount.");
-            }
+            $price = Helpers::priceFormat($currency, $amount, $creator->default_currency);
+            // $min_amount = $goal->default_price < 5 ? 5 : $goal->default_price;
+            // $user_amount = Helpers::priceFormat($goal->currency,$min_amount,$currency);
+            // if($price < $min_amount){
+            //     return redirect()->back()->with("error", "Enter minimum $user_amount amount.");
+            // }
 
             $tax = round(($price * config('app.jar_tax',10) / 100), 2, PHP_ROUND_HALF_UP);
+
             try {
 
                 $stripe_client = StripeControl::createProduct([
-                    'name' => $goal->name,
+                    'name' => $goal->name ?? 'Support-creator',
                     'images' => ["https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"],
-                    "default_price_data" => ["currency" => strtolower($goal->currency), "unit_amount_decimal" => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100],
+                    "default_price_data" => ["currency" => strtolower($creator->default_currency), "unit_amount_decimal" => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100],
                 ]);
             } catch (Exception $e) {
                 return redirect()->back()->with('error', $e->getMessage());
             }
 
             $pay = TipGoalsPayment::create([
-                'tip_goal_id'  =>  $goal->id,
+                'tip_goal_id'  =>  $goal->id ?? null,
                 'user_id'       =>  Auth::id() ?? NULL,
+                'creator_id' => $creator->id,
                 'guest_name'    =>  $request->name,
                 'guest_email'    =>  $request->email,
                 'currency'      =>  $goal->currency,
@@ -920,16 +922,16 @@ class StripeController extends Controller
                         'price_data' => [
                             'currency' => $currency,
                             'product' => $stripe_client->id,
-                            'unit_amount_decimal' => Helpers::priceFormat($goal->currency, ($price + $tax), $currency) * 100
+                            'unit_amount_decimal' => Helpers::priceFormat($creator->default_currency, ($price + $tax), $currency) * 100
                         ]
                     ]
                 ],
                 'payment_intent_data' => [
                     'transfer_data' => [
-                        'destination' => $goal->user->account_id, // Creator's connected account ID
+                        'destination' => $creator->account_id, // Creator's connected account ID
                     ],
                     'application_fee_amount' => $tax * 100,
-                    // 'on_behalf_of'  => $goal->user->account_id,
+                    'on_behalf_of'  => $creator->account_id,
                 ],
                 'customer_email' =>  $request->email,
                 'success_url'       =>  route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "success"]),
@@ -982,15 +984,27 @@ class StripeController extends Controller
                 TipJarMailToUser::dispatch($tip_pay,$userCurrency->symbol,$userAmount);
                 $tip_pay->save();
 
-                $tip_pay->tipGoal->fullfilled += $tip_pay->amount;
-                if (($tip_pay->tipGoal->status == 0) && ($tip_pay->tipGoal->target <= $tip_pay->tipGoal->fullfilled)) {
-                    $tip_pay->tipGoal->completed = 1;
-                    $tip_pay->tipGoal->completed_at = Carbon::now();
-                }
-                $tip_pay->tipGoal->save();
+                if(!empty($tip_pay->tipGoal)){
+                    $remaining_amount = $tip_pay->tipGoal->target - $tip_pay->tipGoal->fullfilled;
 
-                if($tip_pay->tipGoal->user->auto_tweet == 1){
-                    TipJarTweet::dispatch($tip_pay);
+                    if($remaining_amount < $tip_pay->amount){
+                        $amount = $tip_pay->amount - $remaining_amount;
+                        $real_amount = $tip_pay->amount - $amount;
+                        $tip_pay->tipGoal->fullfilled += $real_amount;
+
+                        $tip_pay->tipGoal->completed = 1;
+                        $tip_pay->tipGoal->completed_at = Carbon::now();
+
+                        $tip_pay->tipGoal->save();
+                    }
+                    else{
+                        $tip_pay->tipGoal->fullfilled += $tip_pay->amount;
+                    }
+
+
+                    if($tip_pay->tipGoal->user->auto_tweet == 1){
+                        TipJarTweet::dispatch($tip_pay);
+                    }
                 }
 
                 return to_route('user.show', ['username' => $tip_pay->tipGoal->user->username])->with('success', "You have paid tip to the tip jar successfully!");

@@ -16,6 +16,7 @@ class TipGoalsPayment extends Model
         'session_id',
         'tip_goal_id',
         'user_id',
+        'creator_id',
         'guest_name',
         'guest_email',
         'currency',
@@ -57,6 +58,9 @@ class TipGoalsPayment extends Model
         return $this->belongsTo(TipGoal::class, 'tip_goal_id');
     }
 
+    public function creator(){
+        return $this->belongsTo(User::class, 'creator_id');
+    }
 
     public function getSenderAttribute()
     {
