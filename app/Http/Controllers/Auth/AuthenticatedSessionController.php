@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\AuthRedirect;
+use App\Models\BillPayment;
 use App\Models\MembershipPayment;
 use App\Models\SocialLinks;
 use App\Models\TipGoalsPayment;
@@ -282,36 +283,64 @@ class AuthenticatedSessionController extends Controller
                 ->latest()
                 ->get();
 
-                
+
             $post->map(function ($p) use($user) {
 
                 if($user->id == Auth::id()){
                     $p->is_lock = 0;
-                }   
+                }
                 elseif($p->type == 'image'){
                     if(Auth::check()){
                         $u = User::where('id',Auth::id())->first();
-                        
-                        $tip = TipGoalsPayment::whereHas('tipGoal',function($q) use($user){
-                            $q->where('user_id',$user->id);
-                        })->where(function($q) use($u){
-                            $q->where('user_id',$u->id)->orWhere('guest_email',$u->email);
-                        })->first();
-    
-                        $mem = MembershipPayment::whereHas('membership',function($q) use($user){
-                            $q->where('user_id',$user->id);
-                        })->where(function($q) use($u){
-                            $q->where('user_id',$u->id)->orWhere('guest_email',$u->email);
-                        })->first();
-    
-    
-                        $subs = WishItemSubscription::whereHas('wish_item',function($q) use($user){
-                            $q->where('user_id',$user->id);
-                        })->where(function($q) use($u){
-                            $q->where('user_id',$u->id)->orWhere('guest_email',$u->email);
-                        })->first();
-                        
-                        if((!empty($tip) && $p->for_module == 'support') || (!empty($mem) && $p->for_module == 'membership') || (!empty($subs) && $p->for_module == 'subscription') || ($p->for_module == 'everyone' && (!empty($tip) || !empty($mem) || !empty($subs)))){
+
+                        $tip = [];
+                        if($p->for_module == 'support'){
+                            $tip = TipGoalsPayment::whereHas('tipGoal',function($q) use($user){
+                                $q->where('user_id',$user->id);
+                            })->where(function($q) use($u){
+                                $q->where('user_id',$u->id)->orWhere('guest_email',$u->email);
+                            })->first();
+                        }
+
+                        $mem = [];
+                        $lifetime = [];
+                        if($p->for_module == 'membership'){
+                            $mem = MembershipPayment::where('recurring_type','!=','lifetime')->where(function($que){
+                                $que->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now());
+                            })->whereHas('membership',function($q) use($user){
+                                $q->where('user_id',$user->id);
+                            })->where(function($q) use($u){
+                                $q->where('user_id',$u->id)->orWhere('guest_email',$u->email);
+                            })->first();
+
+                            $lifetime = MembershipPayment::where('recurring_type','lifetime')->whereHas('membership',function($q) use($user){
+                                $q->where('user_id',$user->id);
+                            })->where(function($q) use($u){
+                                $q->where('user_id',$u->id)->orWhere('guest_email',$u->email);
+                            })->first();
+                        }
+
+                        $subs = [];
+                        $bills = [];
+                        if ($p->for_module == 'subscription') {
+                            $subs = WishItemSubscription::where(function($que){
+                                $que->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now());
+                            })->whereHas('wish_item',function($q) use($user){
+                                $q->where('user_id',$user->id);
+                            })->where(function($q) use($u){
+                                $q->where('user_id',$u->id)->orWhere('guest_email',$u->email);
+                            })->first();
+
+                            $bills = BillPayment::where(function($que){
+                                $que->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now());
+                            })->whereHas('bill',function($q) use($user){
+                                $q->where('user_id',$user->id);
+                            })->where(function($q) use($u){
+                                $q->where('user_id',$u->id)->orWhere('guest_email',$u->email);
+                            })->first();
+                        }
+
+                        if((!empty($tip) && $p->for_module == 'support') || ((!empty($mem) || !empty($lifetime)) && $p->for_module == 'membership') || ((!empty($subs) || !empty($bills)) && $p->for_module == 'subscription')){
                             $p->is_lock = 0;
                         }
                         else{
@@ -334,7 +363,7 @@ class AuthenticatedSessionController extends Controller
                 'posts' => $post
             ]);
         }
-        
+
         return response()->json([
             'success'   => false,
             'items'     => [],

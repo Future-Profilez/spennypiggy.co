@@ -14,30 +14,23 @@ class PostsController extends Controller
 {
 
     public function savePost(Request $request){
-       $request->validate([
+        $request->validate([
             "type" => [
                 'required',
                 "string",
             ],
             "title" => [
                 'sometimes',
-                "string",
                 'required_if:type,blog'
             ],
             "content" => [
                 'sometimes',
-                "string",
                 "required_if:type,blog"
             ],
             'for_module' => [
-                'required',
+                'sometimes',
                 'string'
             ],
-            'image' => [
-                'sometimes',
-                'string',
-                'required_if:type,image'
-            ]
         ]);
 
         Post::create([
