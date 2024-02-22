@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
 use Ramsey\Uuid\Uuid;
 
 class Post extends Model
@@ -39,8 +40,31 @@ class Post extends Model
     {
         $url = false;
         if (!empty($this->image)) {
-            $url = "https://ucarecdn.com/" . $this->image . '/';            
+            $url = "https://ucarecdn.com/" . $this->image . '/';
         }
         return $url;
+    }
+
+
+    public function getLikesCountAttribute(){
+        return $this->likes()->where('status',1)->count();
+    }
+
+    public function comments(){
+        return $this->hasMany(PostComment::class,'post_id');
+    }
+
+    public function getLikedAttribute(){
+        $like = null;
+        $like = null;
+        if (Auth::check()) {
+            $like = PostLike::where('post_id',$this->id)->where('user_id',Auth::check())->where('status',1)->first();
+        }
+
+        if(!empty($like)){
+            return true;
+        }
+
+        return false;
     }
 }

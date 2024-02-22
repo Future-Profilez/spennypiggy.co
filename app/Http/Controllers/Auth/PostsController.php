@@ -117,7 +117,7 @@ class PostsController extends Controller
         $post = Post::where('uuid',$uuid)->first();
 
         if(!empty($post)){
-
+            $is_liked = false;
             $like = PostLike::where('user_id',Auth::id())->where('post_id',$post->id)->first();
 
             if(!empty($like)){
@@ -126,13 +126,18 @@ class PostsController extends Controller
                     $like->status = 1;
                     $like->save();
 
+                    $is_liked = true;
+
                 }
                 else{
                     $like->status = 0;
                     $like->save();
 
+                    $is_liked = false;
+
                     return response()->json([
                      'status' => true,
+                     'liked' => $is_liked,
                      'msg' => "Post unliked successfully."
                     ]);
                 }
@@ -144,10 +149,12 @@ class PostsController extends Controller
                     'post_id' => $post->id,
                     'status' => 1
                 ]);
+                $is_liked = true;
             }
 
             return response()->json([
                'status' => true,
+               'liked' => $is_liked,
                'msg' => "Post liked successfully."
             ]);
         }
