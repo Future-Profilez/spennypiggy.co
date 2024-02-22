@@ -23,7 +23,9 @@ class Post extends Model
     ];
 
     protected $appends = [
-        'image_url'
+        'image_url',
+        'likes_count',
+        'liked'
     ];
 
     public static function boot()
