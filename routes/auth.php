@@ -174,6 +174,9 @@ Route::middleware('auth')->group(function () {
             Route::post('save', [PostsController::class, 'savePost'])->name('save');
             Route::post('edit/{uuid}', [PostsController::class, 'editPost'])->name('edit');
             Route::get('delete/{uuid}', [PostsController::class, 'deletePost'])->name('delete');
+            Route::get('like/{uuid}', [PostsController::class, 'postLike'])->name('like');
+            Route::post('comment/{uuid}', [PostsController::class, 'commentOnPost'])->name('comment');
+            Route::post('comment-reply/{comment_uid}', [PostsController::class, 'replyOnComment'])->name('comment-reply');
         });
 
         Route::get('/earnings/{type?}', [LeaderBoardController::class, 'earnings'])->name('earnings');
@@ -265,7 +268,7 @@ Route::get('first-three-leaderboard/{type?}', [LeaderBoardController::class, 'fi
 Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
 
 Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
-    Route::post('pay/{uuid}/', [StripeController::class, 'tipToJar'])->name("pay");
+    Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay");
     Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
     Route::get('/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');
 });
@@ -307,6 +310,9 @@ Route::get('bills/{username}', [AuthenticatedSessionController::class, 'user_bil
 
 Route::get('posts/{username}', [AuthenticatedSessionController::class, 'user_posts'])->name('user.posts');
 
+Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('user.posts.comments');
+
+
 
 
 Route::get('/{username}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
@@ -328,3 +334,6 @@ Route::prefix("bill")->name("bill.")->group(function () {
     Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [BillsController::class, 'buyBill'])->name("checkout");
     Route::get('/handle/{uuid}/{status}', [BillsController::class, 'handlePayment'])->name('handle');
 });
+
+
+

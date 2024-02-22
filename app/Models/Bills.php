@@ -25,6 +25,10 @@ class Bills extends Model
         'status'
     ];
 
+    protected $appends = [
+        'perma_link'
+    ];
+
     public static function boot()
     {
         parent::boot();

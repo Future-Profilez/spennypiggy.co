@@ -827,9 +827,9 @@ class StripeController extends Controller
     }
 
 
-    public function tipToJar(Request $request, $creator_uid, $uuid = null)
+    public function tipToJar(Request $request, $creator_uid)
     {
-        $goal = TipGoal::where('uuid', $uuid)->first();
+        $goal = TipGoal::where('completed', 0)->latest()->first();
 
         $creator = User::where('uuid',$creator_uid)->first();
 
