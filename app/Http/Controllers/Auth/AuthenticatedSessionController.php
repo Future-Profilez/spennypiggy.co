@@ -295,9 +295,8 @@ class AuthenticatedSessionController extends Controller
 
                         $tip = [];
                         if($p->for_module == 'support'){
-                            $tip = TipGoalsPayment::whereHas('tipGoal',function($q) use($user){
-                                $q->where('user_id',$user->id);
-                            })->where(function($q) use($u){
+                            $tip = TipGoalsPayment::where('creator_id',$user->id)
+                            ->where(function($q) use($u){
                                 $q->where('user_id',$u->id)->orWhere('guest_email',$u->email);
                             })->first();
                         }
