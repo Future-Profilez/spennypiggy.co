@@ -18,13 +18,10 @@ const VersionUpdate = React.lazy(() => import("@/Components/VersionUpdate"));
 const PaymentDashboard = React.lazy(() => import("./stripe/PaymentDashboard"));
 const ChangeCurrency = React.lazy(() => import("@/Components/ChangeCurrency"));
 const Popup = React.lazy(() => import("@/Components/Popup"));
-const MembershipsLists = React.lazy(() =>
-    import("./membership/MembershipsLists")
-);
+const MembershipsLists = React.lazy(() =>import("./membership/MembershipsLists"));
 const AddMembership = React.lazy(() => import("./membership/AddMembership"));
 const Gifter = React.lazy(() => import("./gifter/Gifter"));
 const AddBills = React.lazy(() => import("./bills/AddBills"));
-import AddIntro from "./intros/AddIntro";
 import Dropdown from "react-bootstrap/Dropdown";
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
@@ -32,35 +29,16 @@ import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import useWidthCount from "@/Components/useWidthCount";
-import {
-    arrayMove,
-    SortableContext,
-    sortableKeyboardCoordinates,
-    useSortable,
-    rectSortingStrategy,
-} from "@dnd-kit/sortable";
-import {
-    closestCenter,
-    DndContext,
-    KeyboardSensor,
-    MouseSensor,
-    TouchSensor,
-    useSensor,
-    useSensors,
-} from "@dnd-kit/core";
-import Billslist from "./bills/Billslist";
+import{arrayMove,SortableContext,sortableKeyboardCoordinates,useSortable,rectSortingStrategy,}from "@dnd-kit/sortable";
+import{closestCenter,DndContext,KeyboardSensor,MouseSensor,TouchSensor,useSensor,useSensors,}from "@dnd-kit/core";
+const Billslist = React.lazy(() => import("./bills/Billslist"));
+const FeedList = React.lazy(() => import("./feed/FeedList"));
+const AddPost = React.lazy(() => import("./feed/AddPost"));
+const AddIntro = React.lazy(() => import("./intros/AddIntro"));
 
 export default function Dashboard(props) {
-    console.log("dashborad props", props);
     const w = useWidthCount();
-    const {
-        auth,
-        user,
-        username,
-        global_currency,
-        itemid,
-        min_surprise_amount,
-    } = props;
+    const{auth,user,username,global_currency,itemid,min_surprise_amount}= props;
     const [tab, setTab] = useState("about");
     const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
     const [IsloggedIn, setIsLoggedIn] = useState(
@@ -129,15 +107,16 @@ export default function Dashboard(props) {
             return true;
         }
         setfetchingGoal(true);
-        axios.get(`tip-jar/list/${user && user.uuid}`, { signal })
-        .then((resp) => {
-            setGoal(resp.data.goal);
-            setfetchingGoal(false);
-        })
-        .catch((_err) => {
-            console.error("error", _err);
-            setfetchingGoal(false);
-        });
+        axios
+            .get(`tip-jar/list/${user && user.uuid}`, { signal })
+            .then((resp) => {
+                setGoal(resp.data.goal);
+                setfetchingGoal(false);
+            })
+            .catch((_err) => {
+                console.error("error", _err);
+                setfetchingGoal(false);
+            });
     };
 
     useEffect(() => {
@@ -288,148 +267,46 @@ export default function Dashboard(props) {
                                             transition={true}
                                             onSelect={(e) => setTab(e)}
                                             id="noanim-tab-example"
-                                            className="mb-3"
-                                        >
+                                            className="mb-3" >
                                             <Tab eventKey="home" title="Home">
                                                 <div className="row  about-sec">
-                                                    <div className="order-md-122 col-md-5">
-                                                        {goal &&
-                                                        goal.completed == 0 ? (
-                                                            <MyGoal
-                                                                IsloggedIn={
-                                                                    IsloggedIn
-                                                                }
-                                                                goal={goal}
-                                                            />
-                                                        ) : (
-                                                            ""
-                                                        )}
-                                                        <AddIntro
-                                                            uuid={
-                                                                user?.id || null
-                                                            }
-                                                            IsloggedIn={
-                                                                IsloggedIn
-                                                            }
-                                                        />
-                                                    </div>
+                                                    <div className="order-md-122 col-md-6">
+                                                      <div className=" box shadow-voilet rounded-lg mb-4">
+                                                          <p className="font-bold">About me</p>
+                                                          <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
+                                                              {(user &&user.bio) ||""}
+                                                          </p>
 
-                                                    <div className="order-md-222 col-md-7">
-                                                        <div className=" box shadow-voilet rounded-lg mb-4">
-                                                            <p className="font-bold">
-                                                                About me
-                                                            </p>
-                                                            <p
-                                                                className={`text-muted text-start mt-2 ${
-                                                                    user &&
-                                                                    !user.bio
-                                                                        ? "d-none"
-                                                                        : ""
-                                                                }`}
-                                                            >
-                                                                {(user &&
-                                                                    user.bio) ||
-                                                                    ""}
-                                                            </p>
-                                                            <SocialLinks
-                                                                links={
-                                                                    socialLinks
-                                                                }
-                                                            />
-
-                                                            {IsloggedIn ? (
-                                                                <div className="userProfileDate pt-0 pt-md-4">
-                                                                    {auth.user &&
-                                                                    auth.user
-                                                                        .stripe_details_submitted ==
-                                                                        1 ? (
-                                                                        <PaymentDashboard
-                                                                            classes="btn-pink lg w-100 mt-4"
-                                                                            text="Payment Dashboard"
-                                                                        />
-                                                                    ) : (
-                                                                        <div className="finish mt-4 d-block">
-                                                                            <p className="mb-4">
-                                                                                Finish
-                                                                                setting
-                                                                                up
-                                                                                your
-                                                                                account
-                                                                                to
-                                                                                receive
-                                                                                funds.
-                                                                                You
-                                                                                have
-                                                                                more
-                                                                                steps
-                                                                                to
-                                                                                complete
-                                                                                your
-                                                                                payment
-                                                                                setup.{" "}
-                                                                            </p>
-                                                                            <Link
-                                                                                href={
-                                                                                    "/stripe"
-                                                                                }
-                                                                                className="btn-pink lg"
-                                                                            >
-                                                                                Finish
-                                                                                Setup
-                                                                            </Link>
-                                                                        </div>
-                                                                    )}
+                                                            <SocialLinks links={socialLinks} />
+                                                          
+                                                          {IsloggedIn ? (
+                                                              <div className="userProfileDate pt-0 pt-md-4">
+                                                                  {auth.user &&auth.user.stripe_details_submitted ==1 ? (
+                                                                      <PaymentDashboard classes="btn-pink lg w-100 mt-4" text="Payment Dashboard" />
+                                                                  ) : (
+                                                                      <div className="finish mt-4 d-block">
+                                                                          <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                                                          <Link ref={"/stripe"} className="btn-pink lg" > Finish Setup
+                                                                          </Link>
+                                                                      </div>
+                                                                  )}
 
                                                                   <AddGoal
-                                                                      stripe_enabled={
-                                                                          auth.user &&
-                                                                          auth
-                                                                              .user
-                                                                              .stripe_details_submitted
-                                                                      }
-                                                                      fetch_goal={
-                                                                          fetch_goal
-                                                                      }
-                                                                      activegoal={
-                                                                          goal
-                                                                      }
+                                                                      stripe_enabled={auth.user &&auth.user.stripe_details_submitted}
+                                                                      fetch_goal={fetch_goal}
+                                                                      activegoal={goal}
                                                                   />
+
+
                                                                   <div className="addsocial flex">
                                                                       <ul>
                                                                           <li>
-                                                                              <Social
-                                                                                  updatedLinks={
-                                                                                      fetchingLinks
-                                                                                  }
-                                                                                  links={
-                                                                                      sLinks
-                                                                                  }
-                                                                              />
+                                                                              <Social updatedLinks={fetchingLinks}links={sLinks}/>
                                                                           </li>
                                                                           <li>
-                                                                              <ShareProfile
-                                                                                  username={
-                                                                                      user &&
-                                                                                      user.name
-                                                                                  }
-                                                                                  classes={
-                                                                                      "d-flex ms-auto"
-                                                                                  }
-                                                                              >
-                                                                                  <svg
-                                                                                      width="24"
-                                                                                      height="25"
-                                                                                      viewBox="0 0 24 25"
-                                                                                      fill="none"
-                                                                                      xmlns="http://www.w3.org/2000/svg"
-                                                                                  >
-                                                                                      <path
-                                                                                          d="M22.46 6.5C21.69 6.85 20.86 7.08 20 7.19C20.88 6.66 21.56 5.82 21.88 4.81C21.05 5.31 20.13 5.66 19.16 5.86C18.37 5 17.26 4.5 16 4.5C13.65 4.5 11.73 6.42 11.73 8.79C11.73 9.13 11.77 9.46 11.84 9.77C8.28004 9.59 5.11004 7.88 3.00004 5.29C2.63004 5.92 2.42004 6.66 2.42004 7.44C2.42004 8.93 3.17004 10.25 4.33004 11C3.62004 11 2.96004 10.8 2.38004 10.5V10.53C2.38004 12.61 3.86004 14.35 5.82004 14.74C5.19077 14.9122 4.53013 14.9362 3.89004 14.81C4.16165 15.6625 4.69358 16.4084 5.41106 16.9429C6.12854 17.4775 6.99549 17.7737 7.89004 17.79C6.37367 18.9904 4.49404 19.6393 2.56004 19.63C2.22004 19.63 1.88004 19.61 1.54004 19.57C3.44004 20.79 5.70004 21.5 8.12004 21.5C16 21.5 20.33 14.96 20.33 9.29C20.33 9.1 20.33 8.92 20.32 8.73C21.16 8.13 21.88 7.37 22.46 6.5Z"
-                                                                                          fill="#5D25FD"
-                                                                                      />
-                                                                                  </svg>
-                                                                                  Share
-                                                                                  Profile
+                                                                              <ShareProfile username={user && user.name} classes={"d-flex ms-auto"}>
+                                                                                  <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg" > <path d="M22.46 6.5C21.69 6.85 20.86 7.08 20 7.19C20.88 6.66 21.56 5.82 21.88 4.81C21.05 5.31 20.13 5.66 19.16 5.86C18.37 5 17.26 4.5 16 4.5C13.65 4.5 11.73 6.42 11.73 8.79C11.73 9.13 11.77 9.46 11.84 9.77C8.28004 9.59 5.11004 7.88 3.00004 5.29C2.63004 5.92 2.42004 6.66 2.42004 7.44C2.42004 8.93 3.17004 10.25 4.33004 11C3.62004 11 2.96004 10.8 2.38004 10.5V10.53C2.38004 12.61 3.86004 14.35 5.82004 14.74C5.19077 14.9122 4.53013 14.9362 3.89004 14.81C4.16165 15.6625 4.69358 16.4084 5.41106 16.9429C6.12854 17.4775 6.99549 17.7737 7.89004 17.79C6.37367 18.9904 4.49404 19.6393 2.56004 19.63C2.22004 19.63 1.88004 19.61 1.54004 19.57C3.44004 20.79 5.70004 21.5 8.12004 21.5C16 21.5 20.33 14.96 20.33 9.29C20.33 9.1 20.33 8.92 20.32 8.73C21.16 8.13 21.88 7.37 22.46 6.5Z" fill="#5D25FD" /> </svg>
+                                                                                  Share Profile
                                                                               </ShareProfile>
                                                                           </li>
                                                                       </ul>
@@ -439,206 +316,245 @@ export default function Dashboard(props) {
                                                               ""
                                                           )}
                                                       </div>
-                                                  </div>
-                                              </div>
-                                          </Tab>
-                                          <Tab
-                                              eventKey="wishes"
-                                              title="Wishes" >
-                                              <div className="min-height ">
-                                                  <div className="userManageHead flex items-center justify-between mb-8">
-                                                      <div>
-                                                          <select
-                                                              id="country"
-                                                              onChange={
-                                                                  showCategory
-                                                              }
-                                                              name="country"
-                                                              autoComplete="country-name"
-                                                              className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6"
-                                                          >
-                                                              <option value={""}>All</option>
-                                                              {categories &&
-                                                                  categories.length &&
-                                                                  categories.map(
-                                                                      ( c,i ) =>{
-                                                                          return (
-                                                                              <option key={`cats-${i}`}value={c.id}>{c.category}</option>
-                                                                          );
-                                                                      }
-                                                                  )}
-                                                          </select>
-                                                      </div>
-                                                      {IsloggedIn ? (
-                                                          <Dropdown className="add-options ">
-                                                              <Dropdown.Toggle
-                                                                  className="dropdown-add px-3"
-                                                                  variant="success"
-                                                                  id="dropdown-basic"
-                                                                  dangerouslySetInnerHTML={{__html:addicon}}
-                                                              ></Dropdown.Toggle>
-                                                              <Dropdown.Menu>
-                                                                  <Suspense
-                                                                      fallback={
-                                                                          "Add Wishlist"
-                                                                      }
-                                                                  >
-                                                                      <Wishlist
-                                                                          updateCategory={fetch_categories
-                                                                          }
-                                                                          currency={
-                                                                              global_currency
-                                                                          }
-                                                                          setuped={
-                                                                              auth.user &&
-                                                                              auth
-                                                                                  .user
-                                                                                  .stripe_details_submitted ==
-                                                                                  1
-                                                                                  ? true
-                                                                                  : false
-                                                                          }
-                                                                          fetchingcats={
-                                                                              fetchingcats
-                                                                          }
-                                                                          categories={
-                                                                              categories
-                                                                          }
-                                                                      />
-                                                                  </Suspense>
-                                                                  <Suspense fallback={"Add Membership"}>
-                                                                      <AddMembership />
-                                                                  </Suspense>
-                                                                  <Suspense fallback={"Add Membership"}>
-                                                                      <AddBills updatebill={updatebill} />
-                                                                  </Suspense>
-                                                              </Dropdown.Menu>
-                                                          </Dropdown>
-                                                      ) : (
-                                                          ""
-                                                      )}
-                                                  </div>
-                                                  {loading ? (
-                                                      <LoadingScreen />
-                                                  ) : (
-                                                      ""
-                                                  )}
-                                                  <div className="row  items-lists">
-                                                      {IsloggedIn ||
-                                                      user?.stripe_details_submitted ==
-                                                          1 ? (
-                                                          <>
-                                                              {its &&
-                                                              its.length ? (
-                                                                  <DndContext
-                                                                      sensors={
-                                                                          sensors
-                                                                      }
-                                                                      collisionDetection={
-                                                                          closestCenter
-                                                                      }
-                                                                      onDragEnd={
-                                                                          handleDragEnd
-                                                                      }
-                                                                  >
-                                                                      <SortableContext
-                                                                          strategy={
-                                                                              rectSortingStrategy
-                                                                          }
-                                                                          items={
-                                                                              its
-                                                                          }
-                                                                      >
-                                                                          {!loading &&
-                                                                              its.map(
-                                                                                  (
-                                                                                      c,
-                                                                                      i
-                                                                                  ) => {
-                                                                                      return (
-                                                                                          <Wishlistbox
-                                                                                              key={`wish-item-${i}`}
-                                                                                              classes="col-xl-3 col-lg-3 col-md-4 col-6"
-                                                                                              currency={global_currency}
-                                                                                              fetchingcats={fetchingcats}
-                                                                                              categories={categories}
-                                                                                              IsloggedIn={IsloggedIn}
-                                                                                              auth={auth.user}
-                                                                                              itemid={itemid}
-                                                                                              setuped={
-                                                                                                  auth &&
-                                                                                                  auth.user &&
-                                                                                                  auth
-                                                                                                      .user
-                                                                                                      .stripe_details_submitted ==
-                                                                                                      1
-                                                                                                      ? true
-                                                                                                      : false
-                                                                                              }
-                                                                                              itm={
-                                                                                                  c
-                                                                                              }
-                                                                                          />
-                                                                                      );
-                                                                                  }
-                                                                              )}
-                                                                      </SortableContext>
-                                                                  </DndContext>
-                                                              ) : (
-                                                                  <>
-                                                                      {(!loading && (
-                                                                          <div className="col-md-12">
-                                                                              <Nocontent text="Nothing to see." />
-                                                                          </div>
-                                                                      )) ||
-                                                                          ""}
-                                                                  </>
-                                                              )}
-                                                          </>
-                                                      ) : (
-                                                          <div className="col-md-12 p-5 my-5 notactive">
-                                                              <h5 className="loadingtext w-full text-center text-white mb-1">{user.name}'s WishList not activated yet. </h5>
-                                                              <p className="text-center text-white text-large "> Until they activate their wishlist,this user won't be able to receive gifts </p>
-                                                          </div>
-                                                      )}
-                                                  </div>
-                                              </div>
-                                          </Tab>
-                                          <Tab
-                                              eventKey="membership"
-                                              title="Membership"
-                                          >
-                                              <Suspense
-                                                  fallback={"Loading..."}
-                                              >
-                                                  {tab == "membership" ? (
-                                                      <MembershipsLists
-                                                          IsloggedIn={
-                                                              IsloggedIn
-                                                          }
-                                                          username={
-                                                              user?.username ||
-                                                              auth?.user
-                                                                  ?.username
-                                                          }
-                                                      />
-                                                  ) : (
-                                                      ""
-                                                  )}
-                                              </Suspense>
-                                          </Tab>
-                                          <Tab
-                                              eventKey="bills"
-                                              title="Bills"
-                                          >
-                                              <Suspense fallback={"Loading..."} >
-                                                  {tab === "bills" ? (
-                                                       <Billslist billupdate={billupdated} IsloggedIn={IsloggedIn} />
-                                                  ) : (
-                                                      ""
-                                                  )}
-                                              </Suspense>
-                                          </Tab>
+
+                                                      {goal &&goal.completed == 0 ? <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ""}
+
+                                                      <AddIntro uuid={user?.id || null} IsloggedIn={IsloggedIn}/>
+
+                                                    </div>
+                                                    <div className="ps-md-4 order-md-222 col-md-6">
+                                                        <FeedList
+                                                            user={user}
+                                                            IsloggedIn={
+                                                                IsloggedIn
+                                                            }
+                                                        />
+                                                    </div>
+
+                                                </div>
+                                            </Tab>
+                                            <Tab eventKey="wishes" title="Wishes">
+                                                <div className="min-height ">
+                                                    <div className="userManageHead flex items-center justify-between mb-8">
+                                                        <div>
+                                                            <select
+                                                                id="country" onChange={showCategory} name="country"
+                                                                autoComplete="country-name"
+                                                                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6">
+                                                                <option value={""}>All</option>
+                                                                {categories&&categories.length&&categories.map((c,i) => {
+                                                                    return (<option key={`cats-${i}`}value={c.id}>{c.category}</option>);
+                                                                })}
+                                                            </select>
+                                                        </div>
+                                                        {IsloggedIn ? (
+                                                            <Dropdown className="add-options ">
+                                                                <Dropdown.Toggle
+                                                                    className="dropdown-add px-3"
+                                                                    variant="success"
+                                                                    id="dropdown-basic"
+                                                                    dangerouslySetInnerHTML={{__html:addicon}}
+                                                                ></Dropdown.Toggle>
+                                                                <Dropdown.Menu>
+                                                                    <Suspense fallback={"Add Wishlist"}>
+                                                                        <Wishlist
+                                                                            updateCategory={fetch_categories}
+                                                                            currency={global_currency}
+                                                                            setuped={auth.user &&auth.user.stripe_details_submitted ==1? true: false}
+                                                                            fetchingcats={fetchingcats}
+                                                                            categories={categories}
+                                                                        />
+                                                                    </Suspense>
+                                                                    <Suspense fallback={"Add Membership"}>
+                                                                        <AddMembership />
+                                                                    </Suspense>
+                                                                    <Suspense fallback={"Add Membership"}>
+                                                                        <AddBills
+                                                                            updatebill={
+                                                                                updatebill
+                                                                            }
+                                                                        />
+                                                                    </Suspense>
+                                                                    <Suspense fallback={"Add Post"}>
+                                                                        <AddPost />
+                                                                    </Suspense>
+                                                                </Dropdown.Menu>
+                                                            </Dropdown>
+                                                        ) : (
+                                                            ""
+                                                        )}
+                                                    </div>
+                                                    {loading ? (
+                                                        <LoadingScreen />
+                                                    ) : (
+                                                        ""
+                                                    )}
+                                                    <div className="row  items-lists">
+                                                        {IsloggedIn ||
+                                                        user?.stripe_details_submitted ==
+                                                            1 ? (
+                                                            <>
+                                                                {its &&
+                                                                its.length ? (
+                                                                    <DndContext
+                                                                        sensors={
+                                                                            sensors
+                                                                        }
+                                                                        collisionDetection={
+                                                                            closestCenter
+                                                                        }
+                                                                        onDragEnd={
+                                                                            handleDragEnd
+                                                                        }
+                                                                    >
+                                                                        <SortableContext
+                                                                            strategy={
+                                                                                rectSortingStrategy
+                                                                            }
+                                                                            items={
+                                                                                its
+                                                                            }
+                                                                        >
+                                                                            {!loading &&
+                                                                                its.map(
+                                                                                    (
+                                                                                        c,
+                                                                                        i
+                                                                                    ) => {
+                                                                                        return (
+                                                                                            <Wishlistbox
+                                                                                                key={`wish-item-${i}`}
+                                                                                                classes="col-xl-3 col-lg-3 col-md-4 col-6"
+                                                                                                currency={
+                                                                                                    global_currency
+                                                                                                }
+                                                                                                fetchingcats={
+                                                                                                    fetchingcats
+                                                                                                }
+                                                                                                categories={
+                                                                                                    categories
+                                                                                                }
+                                                                                                IsloggedIn={
+                                                                                                    IsloggedIn
+                                                                                                }
+                                                                                                auth={
+                                                                                                    auth.user
+                                                                                                }
+                                                                                                itemid={
+                                                                                                    itemid
+                                                                                                }
+                                                                                                setuped={
+                                                                                                    auth &&
+                                                                                                    auth.user &&
+                                                                                                    auth
+                                                                                                        .user
+                                                                                                        .stripe_details_submitted ==
+                                                                                                        1
+                                                                                                        ? true
+                                                                                                        : false
+                                                                                                }
+                                                                                                itm={
+                                                                                                    c
+                                                                                                }
+                                                                                            />
+                                                                                        );
+                                                                                    }
+                                                                                )}
+                                                                        </SortableContext>
+                                                                    </DndContext>
+                                                                ) : (
+                                                                    <>
+                                                                        {(!loading && (
+                                                                            <div className="col-md-12">
+                                                                                <Nocontent text="Nothing to see." />
+                                                                            </div>
+                                                                        )) ||
+                                                                            ""}
+                                                                    </>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <div className="col-md-12 p-5 my-5 notactive">
+                                                                <h5 className="loadingtext w-full text-center text-white mb-1">
+                                                                    {user.name}
+                                                                    's WishList
+                                                                    not
+                                                                    activated
+                                                                    yet.{" "}
+                                                                </h5>
+                                                                <p className="text-center text-white text-large ">
+                                                                    {" "}
+                                                                    Until they
+                                                                    activate
+                                                                    their
+                                                                    wishlist,this
+                                                                    user won't
+                                                                    be able to
+                                                                    receive
+                                                                    gifts{" "}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </Tab>
+                                            <Tab eventKey="feed" title="Feed">
+                                                <Suspense
+                                                    fallback={"Loading..."}
+                                                >
+                                                    {tab === "feed" ? (
+                                                        <FeedList
+                                                            user={user}
+                                                            IsloggedIn={
+                                                                IsloggedIn
+                                                            }
+                                                        />
+                                                    ) : (
+                                                        ""
+                                                    )}
+                                                </Suspense>
+                                            </Tab>
+                                            <Tab
+                                                eventKey="membership"
+                                                title="Membership"
+                                            >
+                                                <Suspense
+                                                    fallback={"Loading..."}
+                                                >
+                                                    {tab == "membership" ? (
+                                                        <MembershipsLists
+                                                            IsloggedIn={
+                                                                IsloggedIn
+                                                            }
+                                                            username={
+                                                                user?.username ||
+                                                                auth?.user
+                                                                    ?.username
+                                                            }
+                                                        />
+                                                    ) : (
+                                                        ""
+                                                    )}
+                                                </Suspense>
+                                            </Tab>
+                                            <Tab eventKey="bills" title="Bills">
+                                                <Suspense
+                                                    fallback={"Loading..."}
+                                                >
+                                                    {tab === "bills" ? (
+                                                        <Billslist
+                                                            billupdate={
+                                                                billupdated
+                                                            }
+                                                            IsloggedIn={
+                                                                IsloggedIn
+                                                            }
+                                                        />
+                                                    ) : (
+                                                        ""
+                                                    )}
+                                                </Suspense>
+                                            </Tab>
                                         </Tabs>
                                     </div>
                                 </div>

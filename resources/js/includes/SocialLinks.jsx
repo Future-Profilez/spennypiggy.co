@@ -145,11 +145,12 @@ export default function SocialLinks({ links }) {
         }
     }
 
+
     return (
         <div>
             <ul className='socialmedia flex-wrap flex justify-start mt-4'>
                 {links && links.length ? links.map((l, i) => {
-                    return  <li key={`social-link-${i}`} className={`${l?.url ? '' : 'd-none '} px-2 mt-2 mb-2`} >
+                    return <li key={`social-link-${i}`} className={`${l?.url ? '' : 'd-none '} px-2 mt-2 mb-2`} >
                                 { l.social == "fansly" ? 
                                     <a target="_blank" title={l.social} href={`${gefullurl(l.social)}${l.url}`} > <img src={fansly}  alt="img" className='img-fluid' /> {l.social}</a>
                                 : l.social == "manyvids" 

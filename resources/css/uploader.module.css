@@ -1,3 +1,27 @@
+.post {
+    --ctx-name: "post";
+    --cfg-pubkey: "af0e7b54d1432d098e25";
+    --cfg-multiple: 0;
+    --darkmode: 0;
+    --h-accent: 166;
+    --s-accent: 97%;
+    --l-accent: 61%;
+    --cfg-thumb-size: 500;
+    --cfg-confirm-upload: 0;
+    --cfg-accept: "image/*";
+    --cfg-store: 1;
+    --data-preview-step: 1;
+    --cfg-camera-mirror: 0;
+    --cfg-source-list: "local, url, camera, dropbox";
+    --cfg-done-activity: 0;
+    --l10n-done-upload: 0;
+    --l10n-done: "Hide";
+    --cfg-show-empty-list: 0;
+    --cfg-img-only: 1;
+    --cfg-remove-copyright: 1;
+    --cfg-max-concurrent-requests: 4;
+    --cfg-multipart-max-attempts: 3;
+}
 .rewards {
     --ctx-name: "rewards";
     --cfg-pubkey: "af0e7b54d1432d098e25";

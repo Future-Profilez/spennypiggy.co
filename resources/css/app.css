@@ -745,3 +745,24 @@ body {
 .catslists > div {
     padding-right: 20px;
 }
+
+.likebtn svg path  { 
+    stroke: #000;
+}
+.likebtn svg  { 
+    fill: #fff;
+}
+.likebtn svg{width:27px !important;height:27px !important;}
+.liked svg{fill:var(--pink);transition:all 0.5s;}
+.likebtn.liked svg path{stroke:var(--pink);}
+
+@keyframes like {
+0%   { transform: scale(1); }
+90%   { transform: scale(1.4); }
+100% { transform: scale(1.1); }
+}
+.likebtn { transition:all 0.5s;  }
+
+
+.likebtn.liked { animation:like 0.5s 1; }
+.likebtn.unliked { animation:like 0.5s 1; }

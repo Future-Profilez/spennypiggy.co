@@ -5,6 +5,7 @@ const ShareProfile = React.lazy(() => import('./ShareProfile'));
 const SendSurprise = React.lazy(() => import('./SendSurprise'));
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import EditProfile from "@/Pages/account/EditProfile";
+import SendTip from "@/Pages/TipJar/SendTip";
 
 export default function Userprofile({auth, user, links, IsloggedIn, w, global_currency}) {
 
@@ -38,7 +39,8 @@ export default function Userprofile({auth, user, links, IsloggedIn, w, global_cu
 
                 { !IsloggedIn ? 
                     user && user.stripe_details_submitted == 1 && 
-                    <SendSurprise auth={auth} owner={user} /> 
+                    // <SendSurprise auth={auth} owner={user} /> 
+                    <SendTip  />
                     :  
                     <EditProfile
                     user={user}

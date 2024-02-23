@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import AddBills from "./bills/AddBills";
 import Billslist from "./bills/Billslist";
 import AddPost from "./feed/AddPost";
+import Post from "./feed/Post";
+import FeedList from "./feed/FeedList";
 export default function Test() {
     const file = {
         uuid: "5360fd62-eb19-4ac8-91b8-528c08a2e79b",
@@ -53,12 +55,8 @@ export default function Test() {
 
     const post = () => {
         axios
-            .post(`/post/save`, {
-                type: "image",
-                for_module: 'subscription',
-                image: "5360fd62-eb19-4ac8-91b8-528c08a2e79b",
-                title: "My Post",
-                content:"Hello guys, my first post"
+            .post(`/post/comment-reply/d2bed9a7-0580-4930-bfd5-178d4ae00d1d`, {
+                reply: "Nice post bawa",
             })
             .then((resp) => {
                 console.log("resp", resp);
@@ -70,7 +68,7 @@ export default function Test() {
 
     const get = () => {
         axios
-            .get(`/posts/gaurav_`)
+            .get(`/comments/6a3e2f8d-80c0-4130-bdea-c9c8c1236077`)
             .then((resp) => {
                 console.log("resp", resp);
             })
@@ -91,6 +89,7 @@ export default function Test() {
             <button onClick={get}>Test Get Request</button>
             <button onClick={post}>Test Post Request</button>
             <AddPost />
+            <FeedList />
         </div>
     );
 }

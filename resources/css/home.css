@@ -332,17 +332,38 @@ button.loadmore-text{margin:auto;display:table;padding:6px 14px;font-size:17px;c
 .gift-icon.voilet{background:#dccaff !important;}
 .gift-icon.voilet svg path{stroke:var(--voilet) !important;}
 .button.sm{font-size:14px !important;}
-
-
-
-
 .membershipdashboard { 
     max-width: 800px;
     margin: auto;
 }
 
+/* post css */
+.text-post-content:focus {
+    box-shadow: none !important;
+}
+.post-wrap .post-img{width:100%;}
+.post-wrap .post-img{border-radius:10px;cursor:zoom-in;}
+.post-wrap .author-img{
+    height:45px;width:45px;display:inline;border-radius:50%;
+    background-image:url("https://1000logos.net/wp-content/uploads/2017/05/NFL-Logo-1983.png");background-color:white;
+    background-repeat:no-repeat;background-position:center center;background-size:contain;}
+.post-wrap .headerpost{display:flex;align-items:center;margin-bottom:15px;width:100%;}
+.post-wrap .authors{margin-left:15px;}
+.post-wrap svg{transition:fill 0.3s ease;cursor:pointer;margin-right:20px;}
+.post-wrap .heart:hover{fill:red;}
+.post-wrap .interactions{margin-top:15px;}
+.post-wrap .like-count{margin-top:8px;margin-bottom:8px;font-size:14px;}
+.post-wrap .description{text-wrap:pretty;
+    max-width:500px;}
+.post-wrap input{width:100%;background-color:transparent;color:whitesmoke;border:none;outline:none;font-size:16px;}
+.post-wrap #custom-comment{color:lightgrey;text-wrap:wrap;max-width:500px;}
+.max-feed {
+    max-width: 700px;
+}
 
-
+.comment-box:not(:last-child) {
+    border-bottom: 1px solid #ececec !important;
+}
 
 
 /* responsive */
