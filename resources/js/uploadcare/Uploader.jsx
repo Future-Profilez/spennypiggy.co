@@ -5,13 +5,6 @@ LR.registerBlocks(LR);
 import { PACKAGE_VERSION } from "@uploadcare/blocks/env";
 
 export default function GlobalUploader({ options, sendFile, clear, view, isUploading, type }) {
-    
-    // LR.FileUploaderRegular.shadowStyles = /* CSS */ `
-    //   :host lr-simple-btn button {
-    //     background-color: #f00;
-    //   }
-    // `;
-    // LR.registerBlocks(LR);
 
     const [files, setFiles] = useState([]);
     const [checkIsUploading, setCheckIsUploading] = useState(false);

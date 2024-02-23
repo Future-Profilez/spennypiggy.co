@@ -22,6 +22,8 @@ const defaultsec = 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/';
 export default function Wishtracker(props) {
 
     const { auth, user, tracks, user_subs, creator_subs } = props;
+    console.log("props", props);
+
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const TruncatedString = ({ inputString, maxLength }) => {
         if (inputString?.length <= maxLength) {
@@ -130,7 +132,6 @@ export default function Wishtracker(props) {
                     <Collapse in={open} >
                         <div id="example-collapse-text">
                             <div className="track-summary mt-4">
-
                                 <div className="wishitem-des box border rounded-lg" >
                                     <div className="d-flex justify-content-between align-items-center" >
                                         <div className="wish-item" >
@@ -141,19 +142,15 @@ export default function Wishtracker(props) {
                                             <p className="text-muted text-small">OTY : {n.quantity || 1} x {formatMultiPrice(n.amount, n?.payment?.currency || 'gbp')}</p>
                                         </div>
                                     </div>
-                                    
                                     {n && n.cart_message ? 
                                     <div className="border-top pt-3 mt-3 d-flex justify-content-between align-items-center" >
                                         <p className="mb-0 pe-2" >Sender Note :</p>
                                         <p className="text-muted text-small">{n && n.cart_message}</p>
                                     </div> : ''}
-
-
                                     {n && n.surprise_message ? <div className="border-top pt-3 mt-3  d-flex justify-content-between align-items-center" >
                                         <p className="mb-0 pe-2" >Message</p>
                                         <p className="text-muted text-small">{n && n.surprise_message}</p>
                                     </div> : ''}
-
                                     <div className="border-top pt-3 mt-3  d-flex justify-content-between align-items-center" >
                                         <p className="mb-0 pe-2" >Paid in </p>
                                         <p className="text-muted text-small">{n && n.payment && n.payment.currency}</p>
@@ -162,10 +159,17 @@ export default function Wishtracker(props) {
 
                                 {n && n.sender == false ? <TweetNow 
                                 type="purchase" id={n && n.uuid} /> : ''}
+                                <p className="mt-3 mb-2" >Exclusive Rewards </p>
+                                {n && n.message_url ? <div className="message-media my-2" >
+                                    <LazyLoadImage
+                                        src={n.message_url} alt="image"
+                                        height={"100%"}
+                                        useIntersectionObserver={true} effect="blur"
+                                        width={"100%"}
+                                    />
+                                </div> : ''}
 
-                               
-
-                                {msgSent ? <div className="msgSent my-2 p-1" >
+                                {/* {msgSent ? <div className="msgSent my-2 p-1" >
                                     <p className="mt-2" >Thank you note : </p>
                                     {approved == 0 ? <div className='mt-3 alert alert-warning  rounded p-2' >
                                         Thankyou message is waiting for approval. Currently only you can see this message.
@@ -191,7 +195,7 @@ export default function Wishtracker(props) {
                                         getMessageStatus={getMessageStatus}
                                         name={n && n.user && n.user.name}
                                         payment_id={n.id} />
-                                    : ''}
+                                    : ''} */}
 
                             </div>
                         </div>
@@ -223,7 +227,7 @@ export default function Wishtracker(props) {
             <button disabled={status !== "paid"} onClick={() => cancel(id)}
                 className={`${status !== "paid" ? "disabled" : ''} btn-pink sm w-100 px-2 mt-3`} >
                 {loading ? "Wait.." : manageStatus !== 'paid' ? "Cancelled" : "Cancel Subscription"}
-            </button>
+            </button> 
         </>
     }
 

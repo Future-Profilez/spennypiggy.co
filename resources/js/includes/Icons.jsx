@@ -16,6 +16,17 @@ const piggy = `<svg width="470" height="355" viewBox="0 0 470 355" fill="none" x
 <path d="M317.923 105.967L355.286 153.076" stroke="#E6EA7B" stroke-width="16.2444" stroke-linecap="round"/>
 <path d="M356.926 107.59L321.093 155.872" stroke="#E6EA7B" stroke-width="16.2444" stroke-linecap="round"/>
 </svg>`;
-export { crown, addicon, piggy };
+
+const likes = `<svg width="18" height="16" viewBox="0 0 18 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M8.13173 14.157L8.13101 14.1563C5.9816 12.2073 4.23779 10.6229 3.02548 9.13973C1.81867 7.66327 1.19092 6.3483 1.19092 4.94643C1.19092 2.65568 2.97725 0.876465 5.26088 0.876465C6.5555 0.876465 7.80633 1.48173 8.62053 2.43038L8.99995 2.87246L9.37937 2.43038C10.1936 1.48173 11.4444 0.876465 12.739 0.876465C15.0226 0.876465 16.809 2.65568 16.809 4.94643C16.809 6.3483 16.1812 7.66327 14.9744 9.13973C13.7621 10.6229 12.0183 12.2073 9.86889 14.1563L9.86817 14.157L8.99995 14.9474L8.13173 14.157Z" 
+stroke="#000000"/>
+</svg>`
+
+const comment = ` <svg className="comment" aria-label="Comment"  fill="#000000" height="24" role="img" viewBox="0 0 24 24" width="24">
+<title>Comment</title>
+<path d="M20.656 17.008a9.993 9.993 0 1 0-3.59 3.615L22 22Z" fill="none" stroke="#000000" stroke-linejoin="round" stroke-width="2"></path>
+</svg>`
+
+export { crown, addicon, piggy, likes, comment };
 
 {/* <div dangerouslySetInnerHTML={{ __html: piggy }} /> */}

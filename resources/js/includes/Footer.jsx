@@ -4,7 +4,6 @@ import { Link, usePage } from "@inertiajs/react";
 import { Helmet } from "react-helmet";
 import { useEffect } from "react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
-import axios from "axios";
 const ContentPrefrences = React.lazy(() => import("./ContentPrefrences"));
 
 export default function Footer(props) {
@@ -116,31 +115,6 @@ export default function Footer(props) {
     useEffect(() => {
         confgureGtag();
     }, []);
-
-    
-    // useEffect(()=>{
-    //     const fetchLocationData = async () => {
-    //         try {
-    //             await axios.get(`https://ipapi.co/json/`).then((resp)=>{
-    //                 if(ziggy && ziggy.url === 'https://spennypiggy.co'){
-    //                     if(resp.data && resp.data.country_code == 'GB'){
-    //                         window.location = ('/redirecting');
-    //                     }
-    //                 }
-    //                 if(ziggy && ziggy.url === 'https://uk.spennypiggy.co'){
-    //                     if(resp.data && resp.data.country_code !== 'GB'){
-    //                         window.location = ('/redirecting');
-    //                     }
-    //                 }
-    //             }).catch((err)=>{
-    //                 console.error("api err", err)
-    //             });
-    //         } catch (error) {
-    //             console.error('Error fetching data:', error);
-    //         }
-    //     };
-    //     fetchLocationData();
-    // }, []);
 
     return (
         <>

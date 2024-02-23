@@ -109,7 +109,7 @@ export default function EditProfile({ user, global_currency }) {
                                 placeholder='Bio' />
                         </li>
                    
-                        <li className="mb-3">
+                        {/* <li className="mb-3">
                             <label className="mb-1">Minimum surprise gift amount</label>
                             <div className='currency-wrapper position-relative' >
                                 <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
@@ -117,12 +117,11 @@ export default function EditProfile({ user, global_currency }) {
                                 onChange={(e) => setData('min_surprise_amount', e.target.value)}
                                 className="form-input px-2 py-2 border w-full rounded-md" />
                             </div>
-                            {/* global_currency */}
                             <p className="mt-1">
                                 The Minimum amount is set 
                                 to {formatMultiPrice(user?.min_surprise_amount || 0,  defaultCurrency )}. 
                             </p>
-                        </li>
+                        </li> */}
 
                     </ul>
 

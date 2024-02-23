@@ -1,3 +1,6 @@
+import "swiper/css";
+import "swiper/css/pagination";
+import "swiper/css/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import LoaderButton from "@/Components/LoaderButton";
 import { useForm, usePage, router } from "@inertiajs/react";
@@ -11,9 +14,6 @@ import uploadedimg from "../../../assets/img/uploadedimg.png";
 import Popup from "@/Components/Popup";
 import { Pagination, Navigation } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
-import "swiper/css";
-import "swiper/css/pagination";
-import "swiper/css/navigation";
 import PriceFormat from "@/includes/PriceFormat";
 
 export default function Wishlist(props) {
@@ -43,6 +43,7 @@ export default function Wishlist(props) {
     const [repeat, setRepeat] = useState(true);
     const [thumbnail, setThumbnail] = useState("");
     const [adding, setAdding] = useState(false);
+    const [rewardImage, setRewardImage] = useState('');
 
     const AddCategory = async () => {
         const value = inputRef.current.value;
@@ -84,13 +85,13 @@ export default function Wishlist(props) {
         price: item && item.price ? item.price : "",
         item_url: item && item.item_url ? item.item_url : "",
         thumbnail: item && item.thumbnail ? item.thumbnail : imageLinks[0],
+        reward_file: item && item.reward_file ? item.reward_file : "",
         subscription: item && item.subscription ? item.subscription : "",
         subscription_period:
             item && item.subscription_period ? item.subscription_period : "",
         repeat_purchase:
             item && item.repeat_purchase ? item.repeat_purchase : 1,
         category: item && item.category ? item.category : 0,
-        // post_twitter: item && item.post_twitter ? item.post_twitter : 0,
     });
     const [period, setPeriod] = useState(
         data.subscription_period || (item && item.subscription_period)
@@ -118,6 +119,16 @@ export default function Wishlist(props) {
         let ss = data?.uuid;
         setThumbnail(ss);
     };
+
+    const getrewardFile = async (data) => {
+        let ss = data?.uuid;
+        setRewardImage(ss);
+    };
+    useEffect(() => {
+        setData("reward_file", rewardImage);
+    }, [rewardImage]);
+
+
     const rpValue = (e) => {
         setRepeat(e.target.checked);
         setData("repeat_purchase", e.target.checked ? 1 : 0);
@@ -134,12 +145,6 @@ export default function Wishlist(props) {
     useEffect(() => {
         setData("thumbnail", thumbnail);
     }, [thumbnail]);
-
-    const [atweet, setAutotweet] = useState(false);
-    const autoTweet = (e) => {
-        setAutotweet(e.target.checked);
-        setData("post_twitter", e.target.checked ? 1 : 0);
-    };
 
     const createWishList = async (e) => {
         e.preventDefault();
@@ -160,14 +165,10 @@ export default function Wishlist(props) {
                 preserveScroll: true,
                 onSuccess: (resp) => {
                     if (resp.props.flash?.success) {
-                        successAlert(
-                            resp.props.flash?.success || "Updated successfully."
-                        );
+                        successAlert(resp.props.flash?.success || "Updated successfully.");
                     }
                     if (resp.props.flash?.error) {
-                        errorAlert(
-                            resp.props.flash?.error || "Something went wrong."
-                        );
+                        errorAlert(resp.props.flash?.error || "Something went wrong.");
                     }
                     reset();
                     setClose(false);
@@ -189,20 +190,15 @@ export default function Wishlist(props) {
                 onSuccess: (resp) => {
                     reset();
                     if (resp.props.flash?.success) {
-                        successAlert(
-                            resp.props.flash?.success ||
-                                "Wish added successfully."
-                        );
+                        successAlert(resp.props.flash?.success ||"Wish added successfully.");
                     }
                     if (resp.props.flash?.error) {
-                        errorAlert(
-                            resp.props.flash?.error || "Something went wrong."
-                        );
+                        errorAlert(resp.props.flash?.error || "Something went wrong.");
                     }
                     setClose(false);
                     setClear(new Date());
                     setTimeout(() => {
-                        setClose();
+                        setClose(); 
                     }, 100);
                     fetchingcats();
                 },
@@ -318,6 +314,7 @@ export default function Wishlist(props) {
                                                 }
                                             />
                                         </li>
+                                            
                                         <li className="mb-4">
                                             <label className="mb-2 text-start d-block">
                                                 Choose Image or Upload
@@ -521,6 +518,22 @@ export default function Wishlist(props) {
                                         </Accordion>
                                     </div>
 
+                                    <div className="pt-4 pb-3"  >
+                                        <strong className="text-start d-block">Exclusive Reward *</strong>
+                                        <p className="text-small mb-3" >Choose an exclusive picture as an reward for gifter.</p>
+
+                                       {item && item.reward_url? <div className="default-wish-img border mb-2">
+                                            <img src={item && item.reward_url}className="img-fluid"/>
+                                        </div> : '' }
+
+                                        <GlobalUploader
+                                            type="minimal"
+                                            clear={clear}
+                                            sendFile={getrewardFile}
+                                            options={st.rewards}
+                                        />
+                                    </div>
+
                                     {/* <div className="twitter-an mt-3 pt-2">
                                             <div className="repeatpurchase mt-1 mb-2 text-start">
                                                 <label
@@ -545,17 +558,12 @@ export default function Wishlist(props) {
                                                 disabled={processing}
                                                 type="submit"
                                                 className="flex w-100 btn-pink lg mx-auto"
-                                                spinnerClassName="fill-red-600"
-                                            >
-                                                {processing
-                                                    ? "Updating.."
-                                                    : "Update Wish"}
+                                                spinnerClassName="fill-red-600">{processing ? "Updating..":"Update Wish"}
                                             </LoaderButton>
                                         ) : (
                                             <>
                                                 <strong>
-                                                    {" "}
-                                                    Categorize this wish *{" "}
+                                                    Categorize this wish *
                                                 </strong>
                                                 <p>
                                                     {" "}
@@ -647,6 +655,10 @@ export default function Wishlist(props) {
                                             </>
                                         )}
                                     </div>
+
+                                   
+
+                                    
                                 </form>
                             </div>
                         </Tab>

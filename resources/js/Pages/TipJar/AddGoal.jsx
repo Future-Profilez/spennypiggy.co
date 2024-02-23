@@ -20,9 +20,9 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
    const { data, setData, post,get, processing, errors, reset } = useForm({
       name: '',
       target: '',
-      default_price: '',
+      // default_price: '',
       description: '',
-      duration: 0
+      // duration: 0
    }); 
 
    useEffect(()=>{
@@ -38,7 +38,6 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
    const addgoal = (e) => {
       e.preventDefault();
       if(stripe_enabled == 1){
-         // return true;
       } else {
          errorAlert("You can not add goal without adding your stripe account.");
          return false;
@@ -134,7 +133,7 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
                            <p className="mt-1">The wish item amount is set to {formatMultiPrice(data.price, global_currency)}.</p>
                      </div>
                   </div>
-                  <div className="form-field mb-4">
+                  {/* <div className="form-field mb-4">
                      <label className="d-block text-start mb-2">Minimum amount to pay</label>
                      <div className="position-relative currency-wrapper " >
                         <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
@@ -143,7 +142,7 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
                            type="number" placeholder="Enter minimum amount to pay.. "
                         />
                      </div>
-                  </div>
+                  </div> */}
                   <div className="form-field mb-4">
                         <label className="d-block text-start mb-2">Goal Description</label>
                         <textarea placeholder="Description..."
@@ -151,7 +150,7 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
                         onChange={(e) => setData('description',e.target.value)}
                         type="text" />
                   </div>
-                  <p className="font-bold mb-2 " >Goal Duration</p>
+                  {/* <p className="font-bold mb-2 " >Goal Duration</p>
                   <div className="time-periods mb-4 ">
                      <div className="repeatpurchase mb-2 text-start">
                         <label className="cursor-pointer text-capitalize" htmlFor={'time-0'}>
@@ -171,7 +170,7 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
                            Until mark as compeleted
                         </label>
                      </div>
-                  </div>
+                  </div> */}
                   <LoaderButton onClick={addgoal} disabled={processing}
                      type='submit' className="flex w-100 btn-pink lg mx-auto"
                      spinnerClassName="fill-red-600" >

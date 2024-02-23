@@ -7,9 +7,7 @@ import { useAlerts } from '@/Components/Alerts';
 import axios from 'axios';
 import LoaderButton from '@/Components/LoaderButton';
 import { useEffect } from 'react';
-import { LazyLoadImage } from 'react-lazy-load-image-component';
-import { useMemo } from 'react';
-
+ 
 export default function AddIntro({IsloggedIn, uuid}){
 
   const [open, setOpen] = useState(false);
