@@ -985,20 +985,15 @@ class StripeController extends Controller
                 $tip_pay->save();
 
                 if(!empty($tip_pay->tipGoal)){
-                    $remaining_amount = $tip_pay->tipGoal->target - $tip_pay->tipGoal->fullfilled;
 
-                    if($remaining_amount < $tip_pay->amount){
-                        $amount = $tip_pay->amount - $remaining_amount;
-                        $real_amount = $tip_pay->amount - $amount;
-                        $tip_pay->tipGoal->fullfilled += $real_amount;
-
-                        $tip_pay->tipGoal->completed = 1;
-                        $tip_pay->tipGoal->completed_at = Carbon::now();
-
-                        $tip_pay->tipGoal->save();
-                    }
-                    else{
+                    if(!empty($tip_pay->tipGoal)){
                         $tip_pay->tipGoal->fullfilled += $tip_pay->amount;
+                        $tip_pay->tipGoal->save();
+
+
+                        if($tip_pay->tipGoal->user->auto_tweet == 1){
+                            TipJarTweet::dispatch($tip_pay);
+                        }
                     }
 
 
@@ -1007,13 +1002,13 @@ class StripeController extends Controller
                     }
                 }
 
-                return to_route('user.show', ['username' => $tip_pay->tipGoal->user->username])->with('success', "You have paid tip to the tip jar successfully!");
+                return to_route('user.show', ['username' => $tip_pay->creator->username])->with('success', "Thank you for your support!");
             }
 
             $tip_pay->save();
-            return to_route('user.show', ['username' => $tip_pay->tipGoal->user->username])->with('warning', "Payment is in {$session->payment_status} status.");
+            return to_route('user.show', ['username' => $tip_pay->creator->username])->with('warning', "Payment is in {$session->payment_status} status.");
         } catch (Exception $e) {
-            return to_route('user.show', ['username' => $tip_pay->tipGoal->user->username])->with('error', $e->getMessage());
+            return to_route('user.show', ['username' => $tip_pay->creator->username])->with('error', $e->getMessage());
         }
         // return response()->json([
         //     'success'   =>  true,
