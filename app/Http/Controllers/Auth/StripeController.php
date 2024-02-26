@@ -829,9 +829,9 @@ class StripeController extends Controller
 
     public function tipToJar(Request $request, $creator_uid)
     {
-        $goal = TipGoal::where('completed', 0)->latest()->first();
-
         $creator = User::where('uuid',$creator_uid)->first();
+
+        $goal = TipGoal::where('user_id',$creator->id)->where('completed', 0)->latest()->first();
 
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         // if (!$goal) {

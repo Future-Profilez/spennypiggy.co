@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Models\Post;
 use App\Models\PostComment;
@@ -15,85 +16,101 @@ class PostsController extends Controller
 
     public function savePost(Request $request){
         $request->validate([
-            "type" => [
-                'required',
-                "string",
-            ],
-            "title" => [
-                'sometimes',
-                'required_if:type,blog'
-            ],
-            "content" => [
-                'sometimes',
-                "required_if:type,blog"
-            ],
-            'for_module' => [
-                'sometimes',
-                'string'
-            ],
-        ]);
+             "type" => [
+                 'required',
+                 "string",
+             ],
+             "title" => [
+                 'sometimes',
+                 'required_if:type,blog'
+             ],
+             "content" => [
+                 'sometimes',
+                 "required_if:type,blog"
+             ],
+             'for_module' => [
+                 'sometimes',
+                 'string'
+             ],
+         ]);
 
-        Post::create([
-            'user_id' => Auth::id(),
-            'type' => $request->type,
-            'for_module' => $request->for_module,
-            'title' => $request->title ?? null,
-            'content' => $request->content ?? null,
-            'image' => $request->image ?? null,
-        ]);
+         $checkdata = Helpers::checkBlockData($request);
+         if ($checkdata == 1) {
+             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,
+              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
+         }
+         else
+         {
+             Post::create([
+                 'user_id' => Auth::id(),
+                 'type' => $request->type,
+                 'for_module' => $request->for_module,
+                 'title' => $request->title ?? null,
+                 'content' => $request->content ?? null,
+                 'image' => $request->image ?? null,
+             ]);
 
-        return response()->json([
-            'status' => true,
-            'msg' => "Post saved successfully."
-        ]);
-    }
+             return response()->json([
+                 'status' => true,
+                 'msg' => "Post saved successfully."
+             ]);
+         }
+     }
 
 
-    public function editPost(Request $request,$uuid){
-        $post = Post::where('uuid',$uuid)->first();
+     public function editPost(Request $request,$uuid){
+         $post = Post::where('uuid',$uuid)->first();
 
-        $request->validate([
-            "type" => [
-                'required',
-                "string",
-            ],
-            "title" => [
-                'sometimes',
-                "string",
-            ],
-            "content" => [
-                'sometimes',
-                "string",
-            ],
-            'for_module' => [
-                'required',
-                'string'
-            ],
-            'image' => [
-                'sometimes',
-                'string',
-            ]
-        ]);
+         $request->validate([
+             "type" => [
+                 'required',
+                 "string",
+             ],
+             "title" => [
+                 'sometimes',
+                 "string",
+             ],
+             "content" => [
+                 'sometimes',
+                 "string",
+             ],
+             'for_module' => [
+                 'required',
+                 'string'
+             ],
+             'image' => [
+                 'sometimes',
+                 'string',
+             ]
+         ]);
 
-        if(!empty($post)){
-            $post->type = $request->type;
-            $post->for_module = $request->for_module;
-            $post->title = $request->title ?? null;
-            $post->content = $request->content ?? null;
-            $post->image = $request->image ?? null;
-            $post->save();
+         $checkdata = Helpers::checkBlockData($request);
+         if ($checkdata == 1) {
+             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,
+              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
+         }
+         else
+         {
+             if(!empty($post)){
+                 $post->type = $request->type;
+                 $post->for_module = $request->for_module;
+                 $post->title = $request->title ?? null;
+                 $post->content = $request->content ?? null;
+                 $post->image = $request->image ?? null;
+                 $post->save();
 
-            return response()->json([
-                'status' => true,
-                'msg' => "Post edited successfully."
-            ]);
-        }
+                 return response()->json([
+                     'status' => true,
+                     'msg' => "Post edited successfully."
+                 ]);
+             }
 
-        return response()->json([
-            'status' => false,
-            'msg' => "Post not found."
-        ]);
-    }
+             return response()->json([
+                 'status' => false,
+                 'msg' => "Post not found."
+             ]);
+         }
+     }
 
 
     public function deletePost($uuid){
