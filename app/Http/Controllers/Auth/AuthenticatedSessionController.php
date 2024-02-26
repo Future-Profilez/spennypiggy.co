@@ -408,8 +408,8 @@ class AuthenticatedSessionController extends Controller
                 if (!empty($slinks)) {
                     $sociallinks = [
                         [
-                            'social' => 'whoyouinto',
-                            'url'    => $slinks->whoyouinto ?? null,
+                            'social' => 'facebook',
+                            'url'    => $slinks->facebook ?? null,
                         ],
                         [
                             'social' => 'twitter',
@@ -424,24 +424,16 @@ class AuthenticatedSessionController extends Controller
                             'url'    => $slinks->reddit ?? null,
                         ],
                         [
-                            'social' => 'discord',
-                            'url'    => $slinks->discord ?? null,
+                            'social' => 'youtube',
+                            'url'    => $slinks->youtube ?? null,
                         ],
                         [
-                            'social' => 'onlyfans',
-                            'url'    => $slinks->onlyfans ?? null,
+                            'social' => 'tumblr',
+                            'url'    => $slinks->tumblr ?? null,
                         ],
                         [
-                            'social' => 'loyalfans',
-                            'url'    => $slinks->loyalfans ?? null,
-                        ],
-                        [
-                            'social' => 'fansly',
-                            'url'    => $slinks->fansly ?? null,
-                        ],
-                        [
-                            'social' => 'manyvids',
-                            'url'    => $slinks->manyvids ?? null,
+                            'social' => 'twitch',
+                            'url'    => $slinks->twitch ?? null,
                         ],
                         [
                             'social' => 'other',
