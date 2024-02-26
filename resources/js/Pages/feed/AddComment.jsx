@@ -1,13 +1,19 @@
 import React, { useState } from 'react'
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
+import { usePage } from '@inertiajs/react';
 
 export default function AddComment({post_uuid, update, is_reply, comment_uuid}) {
   
+    const { auth } = usePage().props;
     const [reply, setReply] = useState('');
     const [loading, setLoading] = useState();
 
     const addCommmnt = () => {
+      if(auth && auth.user == undefined || null){
+        toast.error("You must log in first.")
+        return false;
+      }
       setLoading(true);
       if(is_reply){
           axios.post(`/post/comment-reply/${comment_uuid}`, {

@@ -86,7 +86,7 @@ export default function AddBills(props) {
         text={`${text ? text : 'Add Bills'}`} >
         <div className="editprofileModal  wishlistModal ">
             <div className="editprofileModalInner">
-                <h2 className="font-GillSans pt-4 px-3">Add A Bill </h2>
+                <h2 className="font-GillSans pt-4 px-3">{isEdit ? "Update Bill" : "Add A Bill" }</h2>
                 <div className="wishinfo">
                     <form onSubmit={createBills}>
                         <ul className="ps-0" >

@@ -21,8 +21,8 @@ export default function SendTip(props) {
       <Popup 
           modalclassName="pinkmodal sendSurprize-modal shadow-pink"
           space="4" size="md" action={close} classes={`btn-pink mt-3 sm px-3 my-2`}
-          text={`🪙 Support`} >
-          <h2 className='text-large font-semibold mb-4'>Support</h2>
+          text={`Fill my Piggy Bank 🪙`} >
+          <h2 className='text-large font-semibold mb-4'>Fill my Piggy Bank</h2>
           <div className='row' >
             <div className='col-md-6' >
               <div className="form-field mb-4">
@@ -70,7 +70,7 @@ export default function SendTip(props) {
                   id="termaccept"  name="termaccept"  
                   value="termaccept" required 
                   onChange={(e) => setData("termaccept", e.target.value)}></input>
-                    By supporting, you agree that this tip is only being made as a gift and not for any service in return.
+                    By Supporting me, you agree that this support is a donation and as a thank you, you get access to my Profile feed
                 </p>
               </label>
           </div>

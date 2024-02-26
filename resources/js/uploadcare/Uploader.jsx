@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useCallback, useEffect, useRef } from "react";
 LR.registerBlocks(LR);
 import { PACKAGE_VERSION } from "@uploadcare/blocks/env";
+import AdultScan from "@/includes/AdultScan";
 
 export default function GlobalUploader({ options, sendFile, clear, view, isUploading, type }) {
 
@@ -52,32 +53,31 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
 
       }, []); 
 
-
     return <>
 
         {view && 
-        <div className={'uploadcare-view mb-0'}>
-          {files.map((file) => (
-            <div className="uploadcare-view-wrap"  >
-            {file.isImage ? <>
-                <img
-                  className="rounded border"
-                  key={file.uuid} width="25%" alt="Preview"
-                  src={`https://ucarecdn.com/${file.uuid}/${file.cdnUrlModifiers || ""}`}
+          <div className={'uploadcare-view mb-0'}>
+            {files.map((file) => (
+              <div className="uploadcare-view-wrap"  >
+              {file.isImage ? <>
+                  <img
+                    className="rounded border"
+                    key={file.uuid} width="25%" alt="Preview"
+                    src={`https://ucarecdn.com/${file.uuid}/${file.cdnUrlModifiers || ""}`}
+                  />
+                </> 
+                : 
+                <video playsInline controls
+                  className="rounded"
+                  key={file.uuid}
+                  src={`https://ucarecdn.com/${file.uuid}/`}
+                  alt="Preview"
                 />
-              </> 
-              : 
-              <video playsInline controls
-                className="rounded"
-                key={file.uuid}
-                src={`https://ucarecdn.com/${file.uuid}/`}
-                alt="Preview"
-              />
-            }
-            </div>
-          ))}
-        </div>
-      }
+              }
+              </div>
+            ))}
+          </div>
+        }
         {type =='minimal' ?  
             <lr-file-uploader-minimal  
             class={options}  
@@ -116,6 +116,7 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
             </lr-data-output>
           </lr-file-uploader-regular> 
         : ''}
+
         
     </>
 }

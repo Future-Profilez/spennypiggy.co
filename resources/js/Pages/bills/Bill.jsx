@@ -68,10 +68,10 @@ export default function Bill(props) {
           </div>
          <Wishlist currency={currency} setuped={setuped} openPop={open} item={itm} editpop={true} fetchingcats={fetchingcats} categories={categories} />
          */}
-         {/* <div className='p-sm-4 p-3 pt-0' >
+         <div className='p-sm-4 p-3 pt-0' >
             <AddBills classes="btn-pink px-2 w-100 sm" text="Update Bill"
             item={itm} isEdit={true} />
-          </div> */}
+          </div>
         </>
           : 
           <div className='p-sm-4 p-3 pt-0' >

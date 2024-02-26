@@ -6,6 +6,7 @@ import subscriberimg from '../../../assets/img/subscribers-img.png'
 import membershipimg from '../../../assets/img/membership-img.png'
 import PostLike from './PostLike'
 import CommentList from './CommetsLists'
+import { Link } from "@inertiajs/react";
 
 export default function Post({item, user}) {
   
@@ -35,13 +36,14 @@ export default function Post({item, user}) {
   return (
     <>
       <div className="post-wrap bg-light rounded-4 p-3 mb-4">
-        <div className="headerpost">
+
+        <Link href={`${user && user.username}`} className="headerpost" >
           <img className="author-img" src={user && user.avatar_url || "SPENNY PIGGY"} />
           <div>
             <p className="authors text-dark"> <b> {user && user.name || "SPENNY PIGGY"} </b> </p>
             <p className="authors text-muted text-small"> <TimeFormat dateString={item?.updated_at || ''} />   </p>
           </div>
-        </div>
+        </Link>
         {item && item.type =='image' ? 
           <div className='post-images' >
             <img className="post-img w-100" src={posturl()} />

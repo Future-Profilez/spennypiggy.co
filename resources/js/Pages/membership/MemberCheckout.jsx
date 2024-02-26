@@ -162,9 +162,9 @@ export default function SubCheckout(props) {
                                         </label>
                                         <div className="tearmlist ps-3">
                                             <ul className="ps-0">
-                                                <li> I am making a non-refundable cash gift donation. </li>
-                                                <li> I expect no product or service in return from the gift recipient. </li>
-                                                <li> This payment is a donation intended for the gift recipient. </li>
+                                                <li> For Memberships and subscriptions, I understand I am making a non-refundable purchase that provides access to exclusive posts. </li>
+                                                <li> I understand that for wishes or support payments I am making a non-refundable donation of support and understand I will recieve a thank you message as a reward. </li>
+                                                <li> This payment of purchase or donation is intended soley for the wish recipient </li>
                                                 <li> I have taken the necessary steps to confirm the membershiplist owner is authentic and I understand that Spenny Piggy will not be held responsible for any issues arising from a catfishing situation. </li>
                                                 <li> I understand that by violating these terms I may be subject to legal action or can fall a victim of scams. </li>
                                                 <li> I understand that by checking the box above and then clicking "CHECKOUT",I will have created a legally binding e-signature to this agreement. </li>

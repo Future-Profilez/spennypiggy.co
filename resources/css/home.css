@@ -536,7 +536,9 @@ select#country{width:150px;}
 .funpart{padding-bottom:0;}
 .welcomeTitle{text-transform:uppercase !important;}
 }
-@media (max-width:575px){.infobox{height:auto;}
+@media (max-width:575px){
+    .infobox{height:auto;}
+.dropdown-add svg{width:40px;height:40px;}
 .wishbanner img{height:230px;}
 /* .userPr{display:block !important;}
 .update-profile{margin-bottom:20px;}
@@ -738,3 +740,14 @@ lr-cloud-image-editor#my-editor{height:80vh;}
 .position-2 .profile-image{background:var(--mint) !important;}
 .static-page.termspage ul{padding-bottom:20px;}
 .static-page.termspage strong{margin-top:15px !important;display:inline-block;margin-bottom:10px !important;}
+.tabs-container{position:relative;}
+.tabs-container.IsloggedIn .add-options.dropdown{position:absolute;right:0;}
+.tabs-container.IsloggedIn .inlinetab > ul{margin-right:70px !important;}
+
+ul.socialmedia li svg path { 
+    fill: var(--voilet);
+}
+ul.socialmedia li svg {
+    width: 25px !important;
+    height: 24px !important;
+}

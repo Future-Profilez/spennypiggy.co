@@ -12,31 +12,30 @@ export default function Social({links, updatedLinks}) {
 
     const { data, setData, post, processing, reset } = useForm({
         twitter: links?.twitter ? links.twitter : '',
-        whoyouinto: links?.whoyouinto ? links.whoyouinto : '',
         reddit: links?.reddit ? links.reddit : '',
         instagram: links?.instagram ? links.instagram : '',
         discord: links?.discord ? links.discord : '',
-        onlyfans: links?.onlyfans ? links.onlyfans : '',
-        loyalfans: links?.loyalfans ? links.loyalfans : '',
-        fansly: links?.fansly ? links.fansly : '',
-        manyvids: links?.manyvids ? links.manyvids : '',
+        facebook: links?.facebook ? links.facebook : '',
+        youtube: links?.youtube ? links.youtube : '',
+        twitch: links?.twitch ? links.twitch : '',
+        tumblr: links?.tumblr ? links.tumblr : '',
         other: links?.other ? links.other : '',
     });
-
+ 
     useEffect(() => {
         setTimeout(()=>{
             setData('twitter', links?.twitter || '');
-            setData('whoyouinto', links?.whoyouinto || '');
             setData('reddit', links?.reddit || '');
             setData('instagram', links?.instagram || '');
             setData('discord', links?.discord || '');
-            setData('onlyfans', links?.onlyfans || '');
-            setData('loyalfans', links?.loyalfans || '');
-            setData('fansly', links?.fansly || '');
-            setData('manyvids', links?.manyvids || '');
+            setData('facebook', links?.facebook || '');
+            setData('youtube', links?.youtube || '');
+            setData('twitch', links?.twitch || '');
+            setData('tumblr', links?.tumblr || '');
             setData('other', links?.other || '');
         },1000);
     }, [links]);
+
     const createSocial = (e) => {
         e.preventDefault();
         post(route('save_social_links'), {
@@ -62,24 +61,16 @@ export default function Social({links, updatedLinks}) {
             }
         });
     };
+
     return <>
         <Popup action={close} space='4' modalclass="pinkmodal full" size="md"
             classes='' text="Add Socials" >
             <div className='editprofileModalInner  '> 
                 <div className="swishinfo">
-                    <h2 className="pb-4 font-GillSans text-center text-uppercase" >Social Links</h2>
+                    <h2 className="pb-4 font-GillSans text-xl text-uppercase" >Social Links</h2>
                     <form onSubmit={createSocial}>
                         <ul className=" ps-0  row" >
-                            <li className="mb-4 col-md-6">
-                                <label className="mb-2 text-start d-block">Whoyouinto</label>
-                                <input id="whoyouinto"
-                                    name="whoyouinto" 
-                                    defaultValue={links?.whoyouinto || ''}
-                                    type="text" placeholder={'Enter username'}
-                                    className="form-input px-2 py-2 border w-full rounded-md"
-                                    onChange={(e) => setData('whoyouinto', e.target.value)}
-                                />
-                            </li>
+                           
                             <li className="mb-4 col-md-6">
                                 <label className="mb-2 text-start d-block">Twitter</label>
                                 <input id="twitter"
@@ -110,57 +101,51 @@ export default function Social({links, updatedLinks}) {
                                     onChange={(e) => setData('reddit', e.target.value)}
                                 />
                             </li>
+
                             <li className="mb-4 col-md-6">
-                                <label className="mb-2 text-start d-block">Discord URL</label>
-                                <input id="discord"
-                                    name="discord"
-                                    type="text" placeholder="eg. https://discordapp.com/users/3748jgf34hjsd8734"
-                                    defaultValue={links?.discord||''}
+                                <label className="mb-2 text-start d-block">Facebook</label>
+                                <input id="facebook"
+                                    name="facebook" 
+                                    defaultValue={links?.facebook || ''}
+                                    type="text" placeholder={'Enter facebook profile or page url'}
                                     className="form-input px-2 py-2 border w-full rounded-md"
-                                    onChange={(e) => setData('discord', e.target.value)}
+                                    onChange={(e) => setData('facebook', e.target.value)}
                                 />
                             </li>
 
                             <li className="mb-4 col-md-6">
-                                <label className="mb-2 text-start d-block">OnlyFans</label>
-                                <input id="onlyfans"
-                                    name="onlyfans"
-                                    type="text" placeholder="Enter username"
-                                    defaultValue={links?.onlyfans||''}
+                                <label className="mb-2 text-start d-block">Youtube</label>
+                                <input id="youtube"
+                                    name="youtube" 
+                                    defaultValue={links?.youtube || ''}
+                                    type="text" placeholder={'Enter channel or video url'}
                                     className="form-input px-2 py-2 border w-full rounded-md"
-                                    onChange={(e) => setData('onlyfans', e.target.value)}
+                                    onChange={(e) => setData('youtube', e.target.value)}
                                 />
                             </li>
+
                             <li className="mb-4 col-md-6">
-                                <label className="mb-2 text-start d-block">LoyalFans</label>
-                                <input id="loyalfans"
-                                    name="loyalfans"
-                                    type="text" placeholder="Enter username"
-                                    defaultValue={links?.loyalfans||''}
+                                <label className="mb-2 text-start d-block">Twitch</label>
+                                <input id="twitch"
+                                    name="twitch" 
+                                    defaultValue={links?.twitch || ''}
+                                    type="text" placeholder={'Enter url'}
                                     className="form-input px-2 py-2 border w-full rounded-md"
-                                    onChange={(e) => setData('loyalfans', e.target.value)}
+                                    onChange={(e) => setData('twitch', e.target.value)}
                                 />
                             </li>
+
                             <li className="mb-4 col-md-6">
-                                <label className="mb-2 text-start d-block">Fansly</label>
-                                <input id="fansly"
-                                    name="fansly"
-                                    type="text" placeholder="Enter username"
-                                    defaultValue={links?.fansly||''}
+                                <label className="mb-2 text-start d-block">Tumblr</label>
+                                <input id="tumblr"
+                                    name="tumblr" 
+                                    defaultValue={links?.tumblr || ''}
+                                    type="text" placeholder={'Enter username'}
                                     className="form-input px-2 py-2 border w-full rounded-md"
-                                    onChange={(e) => setData('fansly', e.target.value)}
+                                    onChange={(e) => setData('tumblr', e.target.value)}
                                 />
                             </li>
-                            <li className="mb-4 col-md-6">
-                                <label className="mb-2 text-start d-block">ManyVids</label>
-                                <input id="manyvids"
-                                    name="manyvids"
-                                    type="text" placeholder="Enter full profile url"
-                                    defaultValue={links?.manyvids||''}
-                                    className="form-input px-2 py-2 border w-full rounded-md"
-                                    onChange={(e) => setData('manyvids', e.target.value)}
-                                />
-                            </li>
+
                             <li className="mb-4 col-md-6">
                                 <label className="mb-2 text-start d-block">Other</label>
                                 <input id="other"
