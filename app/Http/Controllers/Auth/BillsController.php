@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
+use Stripe\StripeClient;
 
 class BillsController extends Controller
 {
@@ -99,6 +100,80 @@ class BillsController extends Controller
                 'status' => true,
                 'msg' => "Bill added successfully."
             ]);
+    }
+
+    public function billEdit(Request $request,$id){
+
+
+        $validator = Validator::make($request->all(), [
+            "name" => [
+                "required",
+                "string",
+            ],
+            "price" => [
+                "required",
+                "numeric",
+                "min:0"
+            ],
+        ]);
+
+        if ($validator->fails()) {
+
+            return response()->json([
+                "status" => false,
+                "msg" => "Validation failed",
+                "errors" => $validator->errors(),
+            ]);
+        }
+
+        $user = User::where('id',Auth::id())->first();
+
+        $bill = Bills::where('uuid',$id)->first();
+
+        if(!empty($bill)){
+            $media = $request->thumbnail;
+
+            $price = Helpers::priceFormat($request->cookie('currency', 'GBP'), $request->price, $user->default_currency);
+            $taxamount = round(($price * config('app.single_tax') / 100), 2, PHP_ROUND_HALF_UP);
+            $createpriceid = $price + $taxamount;
+
+            $bill->user_id = Auth::id();
+            $bill->name = $request->name;
+            $bill->currency = $user->default_currency;
+            $bill->price = $price;
+            $bill->tax_amount = $taxamount;
+            $bill->thumbnail = !empty($media) ? $media : null;
+
+            $bill->save();
+
+            try {
+                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                    $stripe_client = $stripe->products->update([
+                        'name' => $request->name ?? $bill->wishname,
+                        'images' => [$bill->perma_link],
+                        "default_price_data" => ["currency" => $user->default_currency, "unit_amount_decimal" => $createpriceid * 100],
+                        // "url" => $request->item_url ?? null
+                    ]);
+
+                    $bill->product_id = $stripe_client->id;
+                    $bill->price_id = $stripe_client->default_price;
+                    $bill->save();
+
+            } catch (Exception $e) {
+                $bill->delete();
+
+                return response()->json([
+                    'status' => false,
+                    'msg' => "Stripe Error: " . $e->getMessage()
+                ]);
+            }
+
+            return response()->json([
+                'status' => true,
+                'msg' => "Bill edited successfully."
+            ]);
+        }
+
     }
 
 

@@ -362,11 +362,12 @@ class WishitemController extends Controller
                         }
                     }
 
+                    $user = User::whereId(Auth::id())->first();
                     $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                     $stripe_client = $stripe->products->update([
                         'name' => $request->wishname ?? $wish->wishname,
                         'images' => [$updatedata->perma_link],
-                        "default_price_data" => ["currency" => "usd", "unit_amount_decimal" => $createpriceid * 100],
+                        "default_price_data" => ["currency" => $user->default_currency, "unit_amount_decimal" => $createpriceid * 100],
                         // "url" => $request->item_url ?? null
                     ]);
 
@@ -374,7 +375,6 @@ class WishitemController extends Controller
                     $updatedata->price_id = $stripe_client->default_price;
                     $updatedata->save();
 
-                    $user = User::whereId(Auth::id())->first();
                     //send email
                     SaveWishlist::dispatch($user);
                     return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been updated.");

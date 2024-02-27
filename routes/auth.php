@@ -184,6 +184,7 @@ Route::middleware('auth')->group(function () {
 
         Route::prefix("bill")->name("bill.")->group(function () {
             Route::post('save', [BillsController::class, 'billSave'])->name('save');
+            Route::post('edit/{id}', [BillsController::class, 'billEdit'])->name('edit');
             Route::get('remove/{uuid}', [BillsController::class, 'removeLevel'])->name('remove');
         });
 
