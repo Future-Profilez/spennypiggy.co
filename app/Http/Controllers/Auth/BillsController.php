@@ -205,6 +205,7 @@ class BillsController extends Controller
             return redirect()->back()->with('error', 'Bill not found!');
         }
 
+        $vat_percentage_amount = 0;
         if ($request->isMethod("POST")) {
             $request->validate([
                 'name' => [
@@ -244,6 +245,16 @@ class BillsController extends Controller
             $price = round($bill->price, 2, PHP_ROUND_HALF_UP);
 
             $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
+
+            if(!empty($bill->user->vat_amount_percentage)){
+                $vat_percentage_amount = $price * $bill->user->vat_amount_percentage / 100;
+            }
+            // else{
+            //     $vat_percentage_amount = $price * 10 / 100;
+            // }
+
+            $price += $vat_percentage_amount;
+
             $amount = $price + $tax;
             $unit_amount = Helpers::priceFormat($bill->currency, $amount, $currency) * 100;
             $tax =   Helpers::priceFormat($bill->currency, $tax, $currency);
@@ -251,9 +262,9 @@ class BillsController extends Controller
             $items  =   [
                 'quantity' =>   1
             ];
-            if($currency == strtolower($bill->currency)) {
-                $items['price']  =   $bill->price_id;
-            } else {
+            // if($currency == strtolower($bill->currency)) {
+            //     $items['price']  =   $bill->price_id;
+            // } else {
                 $items['price_data']    =   [
                     'currency'  =>  $currency,
                     'product'   =>  $bill->product_id,
@@ -263,7 +274,7 @@ class BillsController extends Controller
                         'interval_count'    =>  1
                     ]
                 ];
-            }
+            // }
 
             $payload    =   [
                 "currency"  =>  $currency,
@@ -284,17 +295,17 @@ class BillsController extends Controller
                 'description'   => "{$bill->name} of {$bill->user->username}."
             ];
 
-            try {
+            // try {
                 $session = StripeControl::createCheckoutSession($payload);
                 $sub->update([
                     'session_id' =>  $session->id
                 ]);
 
                 return Inertia::location($session->url);
-            } catch (Exception $e) {
-                $sub->delete();
-                return back()->with('error', $e->getMessage());
-            }
+            // } catch (Exception $e) {
+            //     $sub->delete();
+            //     return back()->with('error', $e->getMessage());
+            // }
             // return response()->json([
             //     'success'   => true,
             //     'session'   => $session
@@ -305,6 +316,7 @@ class BillsController extends Controller
 
         return Inertia::render('bills/BillCheckout', [
             'bill'  => $bill,
+            'vat_amount' => $vat_percentage_amount,
             'reccure'   => $reccure
         ]);
     }

@@ -88,6 +88,8 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('mustHaveToVerify')->group(function () {
 
+        Route::get('/update-vat/{percent}', [AuthenticatedSessionController::class, 'updateVat']);
+
         Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
 
         Route::put('password', [PasswordController::class, 'update'])->name('password.update');

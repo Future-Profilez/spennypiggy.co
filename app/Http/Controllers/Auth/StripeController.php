@@ -552,6 +552,7 @@ class StripeController extends Controller
             return redirect()->back()->with('error', 'Wish item not found!');
         }
 
+        $vat_percentage_amount = 0;
         if ($request->isMethod("POST")) {
             $request->validate([
                 'name' => [
@@ -591,12 +592,22 @@ class StripeController extends Controller
             $price = number_format($wish->price, 2);
 
             $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
-            if ($currency == strtolower($wish->currency)) {
-                $items = [
-                    "price" =>  $wish->price_id,
-                    'quantity'      =>  1,
-                ];
-            } else {
+
+            if(!empty($wish->user->vat_amount_percentage)){
+                $vat_percentage_amount = $wish->price * $wish->user->vat_amount_percentage / 100;
+            }
+            // else{
+            //     $vat_percentage_amount = $wish->price * 10 / 100;
+            // }
+
+            $price += $vat_percentage_amount;
+
+            // if ($currency == strtolower($wish->currency)) {
+            //     $items = [
+            //         "price" =>  $wish->price_id,
+            //         'quantity'      =>  1,
+            //     ];
+            // } else {
 
                 $amount = $price + $tax;
                 $unit_amount = Helpers::priceFormat($wish->currency, $amount, $currency) * 100;
@@ -613,7 +624,7 @@ class StripeController extends Controller
                         ]
                     ]
                 ];
-            }
+            // }
             $payload = [
                 "mode"  =>  'subscription',
                 "currency"  =>  strtolower($request->cookie("currency", "GBP")),
@@ -653,6 +664,7 @@ class StripeController extends Controller
 
         return Inertia::render('cart/SubCheckout', [
             'wish'  => $wish,
+            'vat_amount' => $vat_percentage_amount,
             'reccure'   => $reccure
         ]);
     }

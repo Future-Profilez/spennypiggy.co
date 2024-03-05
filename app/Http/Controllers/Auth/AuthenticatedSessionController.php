@@ -545,4 +545,17 @@ class AuthenticatedSessionController extends Controller
         $token->delete();
         return to_route('user.show', ['username' => $user->username])->with('success', 'Welcome back. Login successfull.');
     }
+
+
+    public function updateVat($percent){
+        $user = User::where('id',Auth::id())->first();
+
+        $user->vat_amount_percentage = $percent;
+        $user->save();
+
+        return response()->json([
+         'success'   => true,
+         'message'   =>  'Vat updated successfully'
+        ]);
+    }
 }

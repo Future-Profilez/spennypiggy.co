@@ -236,6 +236,7 @@ class MembershipController extends Controller
             return redirect()->back()->with('error', 'Membership not found!');
         }
 
+        $vat_percentage_amount = 0;
         if ($request->isMethod("POST")) {
             $request->validate([
                 'name' => [
@@ -275,6 +276,16 @@ class MembershipController extends Controller
             $price = round($membership->price, 2, PHP_ROUND_HALF_UP);
 
             $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
+
+            if(!empty($membership->user->vat_amount_percentage)){
+                $vat_percentage_amount = $price * $membership->user->vat_amount_percentage / 100;
+            }
+            // else{
+            //     $vat_percentage_amount = $price * 10 / 100;
+            // }
+
+            $price += $vat_percentage_amount;
+
             $amount = $price + $tax;
             $unit_amount = Helpers::priceFormat($membership->currency, $amount, $currency) * 100;
             $tax =   Helpers::priceFormat($membership->currency, $tax, $currency);
@@ -282,9 +293,9 @@ class MembershipController extends Controller
             $items  =   [
                 'quantity' =>   1
             ];
-            if($currency == strtolower($membership->currency)) {
-                $items['price']  =   $membership->price_id;
-            } else {
+            // if($currency == strtolower($membership->currency)) {
+            //     $items['price']  =   $membership->price_id;
+            // } else {
                 $items['price_data']    =   [
                     'currency'  =>  $currency,
                     'product'   =>  $membership->product_id,
@@ -296,7 +307,7 @@ class MembershipController extends Controller
                         'interval_count'    =>  1
                     ];
                 }
-            }
+            // }
 
             $payload    =   [
                 "currency"  =>  $currency,
@@ -389,6 +400,7 @@ class MembershipController extends Controller
 
         return Inertia::render('membership/MemberCheckout', [
             'membership'  => $membership,
+            'vat_amount' => $vat_percentage_amount,
             'reccure'   => $reccure
         ]);
     }
