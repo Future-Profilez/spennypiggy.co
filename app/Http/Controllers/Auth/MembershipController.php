@@ -179,7 +179,9 @@ class MembershipController extends Controller
             $mem->level = $request->level;
             $mem->price = $price;
             $mem->tax_amount = $taxamount;
-            $mem->thumbnail = $media['uuid'];
+            if(!empty($media)){
+                $mem->thumbnail = $media['uuid'];
+            }
             $mem->rewards = $rewards;
 
             $mem->save();
