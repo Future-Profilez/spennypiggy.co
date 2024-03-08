@@ -237,6 +237,17 @@ class MembershipController extends Controller
         }
 
         $vat_percentage_amount = 0;
+
+        $currency   =   strtolower($request->cookie("currency", "GBP"));
+        $tax = round($membership->tax_amount, 2, PHP_ROUND_HALF_UP);
+        $price = round($membership->price, 2, PHP_ROUND_HALF_UP);
+
+        $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
+
+        if(!empty($membership->user->vat_amount_percentage)){
+            $vat_percentage_amount = $price * $membership->user->vat_amount_percentage / 100;
+        }
+
         if ($request->isMethod("POST")) {
             $request->validate([
                 'name' => [
@@ -270,19 +281,6 @@ class MembershipController extends Controller
                 'surprise_message'  =>  $request->message ?? NULL,
                 'anonymous' => $request->anonymous ?? 0
             ]);
-
-            $currency   =   strtolower($request->cookie("currency", "GBP"));
-            $tax = round($membership->tax_amount, 2, PHP_ROUND_HALF_UP);
-            $price = round($membership->price, 2, PHP_ROUND_HALF_UP);
-
-            $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
-
-            if(!empty($membership->user->vat_amount_percentage)){
-                $vat_percentage_amount = $price * $membership->user->vat_amount_percentage / 100;
-            }
-            // else{
-            //     $vat_percentage_amount = $price * 10 / 100;
-            // }
 
             $price += $vat_percentage_amount;
 

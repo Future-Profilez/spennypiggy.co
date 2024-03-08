@@ -553,6 +553,17 @@ class StripeController extends Controller
         }
 
         $vat_percentage_amount = 0;
+
+        $currency   =   strtolower($request->cookie("currency", "GBP"));
+        $tax = number_format($wish->tax_amount, 2);
+        $price = number_format($wish->price, 2);
+
+        $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
+
+        if(!empty($wish->user->vat_amount_percentage)){
+            $vat_percentage_amount = $price * $wish->user->vat_amount_percentage / 100;
+        }
+
         if ($request->isMethod("POST")) {
             $request->validate([
                 'name' => [
@@ -586,19 +597,6 @@ class StripeController extends Controller
                 'surprise_message'  =>  $request->message ?? NULL,
                 'anonymous' => $request->anonymous ?? 0
             ]);
-
-            $currency   =   strtolower($request->cookie("currency", "GBP"));
-            $tax = number_format($wish->tax_amount, 2);
-            $price = number_format($wish->price, 2);
-
-            $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
-
-            if(!empty($wish->user->vat_amount_percentage)){
-                $vat_percentage_amount = $wish->price * $wish->user->vat_amount_percentage / 100;
-            }
-            // else{
-            //     $vat_percentage_amount = $wish->price * 10 / 100;
-            // }
 
             $price += $vat_percentage_amount;
 
