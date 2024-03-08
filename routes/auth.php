@@ -167,6 +167,7 @@ Route::middleware('auth')->group(function () {
 
         Route::prefix("membership")->name("membership.")->group(function () {
             Route::post('save', [MembershipController::class, 'membershipLevelSave'])->name('save');
+            Route::post('edit/{uuid}', [MembershipController::class, 'updateLevel'])->name('edit');
             Route::get('remove/{uuid}', [MembershipController::class, 'removeLevel'])->name('remove');
             Route::get('dashboard', [MembershipController::class, 'membershipDashboard'])->name('dashboard');
             Route::get('graph', [MembershipController::class, 'membershipGraph'])->name('graph');

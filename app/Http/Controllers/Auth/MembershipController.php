@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
+use Stripe\StripeClient;
 
 class MembershipController extends Controller
 {
@@ -129,83 +130,92 @@ class MembershipController extends Controller
     }
 
 
-    // public function updateLevel(Request $request,$uuid){
-    //     $request->validate(
-    //         [
-    //             "level" => [
-    //                 "required",
-    //                 "string",
-    //             ],
-    //             "month_price" => [
-    //                 "required",
-    //                 "numeric",
-    //                 "min:0"
-    //             ],
-    //             "rewards" => [
-    //                 "required"
-    //             ],
-    //         ]
-    //     );
+    public function updateLevel(Request $request,$uuid){
+        $request->validate(
+            [
+                "level" => [
+                    "required",
+                    "string",
+                ],
+                "month_price" => [
+                    "required",
+                    "numeric",
+                    "min:0"
+                ],
+                "rewards" => [
+                    "required"
+                ],
+            ]
+        );
 
-    //     $checkdata = Helpers::checkBlockData($request);
-    //     if ($checkdata == 1) {
-    //         return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg.paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,
-    //      😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
-    //     }
-    //     else
-    //     {
+        $checkdata = Helpers::checkBlockData($request);
+        if ($checkdata == 1) {
+            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg.paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,
+         😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
+        }
+        else
+        {
 
-    //         $user = User::where('id',Auth::id())->first();
+            $user = User::where('id',Auth::id())->first();
 
-    //         $media = $request->thumbnail;
-    //         $rewards = json_encode($request->rewards);
+            $mem = Membership::where('uuid',$uuid)->first();
+
+            if(empty($mem)){
+                return response()->json([
+                    "status" => false,
+                    "msg" => "Membership not found."
+                ]);
+            }
+
+            $media = $request->thumbnail;
+            $rewards = json_encode($request->rewards);
 
 
-    //         $price = Helpers::priceFormat($request->cookie('currency', 'GBP'), $request->month_price, $user->default_currency);
-    //         $taxamount = round(($price * config('app.member_tax') / 100), 2, PHP_ROUND_HALF_UP);
-    //         $createpriceid = $price + $taxamount;
+            $price = Helpers::priceFormat($request->cookie('currency', 'GBP'), $request->month_price, $user->default_currency);
+            $taxamount = round(($price * config('app.member_tax') / 100), 2, PHP_ROUND_HALF_UP);
+            $createpriceid = $price + $taxamount;
 
-    //         $mem = new Membership();
-    //         $mem->user_id = Auth::id();
-    //         $mem->level = $request->level;
-    //         $mem->price = $price;
-    //         $mem->tax_amount = $taxamount;
-    //         $mem->thumbnail = $media['uuid'];
-    //         $mem->rewards = $rewards;
+            $mem->user_id = Auth::id();
+            $mem->level = $request->level;
+            $mem->price = $price;
+            $mem->tax_amount = $taxamount;
+            $mem->thumbnail = $media['uuid'];
+            $mem->rewards = $rewards;
 
-    //         $mem->save();
+            $mem->save();
 
-    //         $productPayload = [
-    //             "name"  => $user->username . '_' . $mem->level,
-    //             "images" => [$mem->perma_link],
-    //             "default_price_data"    =>  [
-    //                 "currency"  =>  $user->default_currency,
-    //                 "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
-    //             ],
-    //             "url"   =>  env('APP_URL') . '/' . $user->username
-    //         ];
+            $productPayload = [
+                "name"  => $user->username . '_' . $mem->level,
+                "images" => [$mem->perma_link],
+                "default_price_data"    =>  [
+                    "currency"  =>  $user->default_currency,
+                    "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
+                ],
+                "url"   =>  env('APP_URL') . '/' . $user->username
+            ];
 
-    //         if ($request->level != 'lifetime') {
-    //             $productPayload['default_price_data']['recurring']  =   [
-    //                 'interval'  =>  StripeControl::$periods["monthly"],
-    //                 'interval_count'    =>  1
-    //             ];
-    //         }
+            if ($request->level != 'lifetime') {
+                $productPayload['default_price_data']['recurring']  =   [
+                    'interval'  =>  StripeControl::$periods["monthly"],
+                    'interval_count'    =>  1
+                ];
+            }
 
-    //         try {
-    //             $product = StripeControl::createProduct($productPayload);
-    //             $mem->product_id = $product->id;
-    //             $mem->price_id = $product->default_price;
-    //             $mem->save();
+            try {
+                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                $product = $stripe->products->update($productPayload);
+                $mem->product_id = $product->id;
+                $mem->price_id = $product->default_price;
+                $mem->save();
 
-    //         } catch (Exception $e) {
-    //             $mem->delete();
-    //             return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
-    //         }
+            } catch (Exception $e) {
+                $mem->delete();
+                return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
+            }
 
-    //         return redirect()->back()->with('success','Membership level is added in your profile.');
-    //     }
-    // }
+            return redirect()->back()->with('success','Membership level is added in your profile.');
+        }
+    }
 
 
     public function removeLevel($uuid){
