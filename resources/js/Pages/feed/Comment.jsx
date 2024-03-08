@@ -4,7 +4,6 @@ import AddComment from './AddComment';
 export default function Comment({c, update}) {
 
   const [handleReply, sethandleReply] = useState(false);
-
   const updates = () =>{ 
     sethandleReply(false);
     update && update();
