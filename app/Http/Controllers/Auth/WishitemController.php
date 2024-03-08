@@ -312,6 +312,7 @@ class WishitemController extends Controller
                 return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive,
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
             } else {
+                $old_price = $wish->price;
                 if (!empty($request->price)) {
                     if($request->susbcription == 0){
                         $tax_percent = config('app.single_tax');
@@ -348,35 +349,61 @@ class WishitemController extends Controller
                     ]);
 
 
-                    $updatedata->refresh();
+                    $wish->refresh();
                     if (!empty($request->category)) {
                         foreach ($request->category as $key => $value) {
-                            WishCategory::where('wish_item_id', $updatedata->id)->update([
+                            WishCategory::where('wish_item_id', $wish->id)->update([
                                 'user_category_id' => $value
                             ]);
                             // $wish_cat = new WishCategory();
                             // $wish_cat->uuid = Uuid::uuid4();
-                            // $wish_cat->wish_id = $updatedata->id;
+                            // $wish_cat->wish_id = $wish->id;
                             // $wish_cat->category_id = $value;
                             // $wish_cat->save();
                         }
                     }
 
                     $user = User::whereId(Auth::id())->first();
-                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-                    $stripe_client = $stripe->products->update([
-                        'name' => $request->wishname ?? $wish->wishname,
-                        'images' => [$updatedata->perma_link],
-                        "default_price_data" => ["currency" => $user->default_currency, "unit_amount_decimal" => $createpriceid * 100],
-                        // "url" => $request->item_url ?? null
-                    ]);
+                    if (in_array($request->subscription, [0, 1])) {
 
-                    $updatedata->stripe_product_id = $stripe_client->id;
-                    $updatedata->price_id = $stripe_client->default_price;
-                    $updatedata->save();
+                        $productPayload = [
+                            "name"  =>  $wish->wishname,
+                            "images" => [$wish->perma_link],
+                            "default_price_data"    =>  [
+                                "currency"  =>  $user->default_currency,
+                                "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
+                            ],
+                            "url"   =>  $request->item_url ?? env('APP_URL') . '/' . $user->username . "?item=$wish->uuid/"
+                        ];
+
+                        if ($request->subscription == 1) {
+                            $productPayload['default_price_data']['recurring']  =   [
+                                'interval'  =>  StripeControl::$periods[$request->subscription_period],
+                                'interval_count'    =>  1
+                            ];
+                        }
+
+
+                        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+
+                        if($old_price == $wish->price){
+                            $stripe_client = $stripe->products->update($wish->stripe_product_id,[
+                                'name' => $request->wishname ?? $wish->wishname,
+                                'images' => [$wish->perma_link],
+                                "default_price" => $wish->price_id,
+                                // "url" => $request->item_url ?? null
+                            ]);
+                        }else{
+                            $stripe_client = StripeControl::createProduct($productPayload);
+                            $wish->price_id = $stripe_client->default_price;
+                        }
+
+                        $wish->stripe_product_id = $stripe_client->id;
+                        $wish->save();
+                    }
 
                     //send email
-                    SaveWishlist::dispatch($user);
+                    // SaveWishlist::dispatch($user);
                     return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been updated.");
                 }
             }

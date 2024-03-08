@@ -159,7 +159,7 @@ class MembershipController extends Controller
             $user = User::where('id',Auth::id())->first();
 
             $mem = Membership::where('uuid',$uuid)->first();
-
+            $old_price = $mem->price;
             if(empty($mem)){
                 return response()->json([
                     "status" => false,
@@ -186,28 +186,37 @@ class MembershipController extends Controller
 
             $mem->save();
 
-            $productPayload = [
-                "name"  => $user->username . '_' . $mem->level,
-                "images" => [$mem->perma_link],
-                "default_price_data"    =>  [
-                    "currency"  =>  $user->default_currency,
-                    "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
-                ],
-                "url"   =>  env('APP_URL') . '/' . $user->username
-            ];
-
-            if ($request->level != 'lifetime') {
-                $productPayload['default_price_data']['recurring']  =   [
-                    'interval'  =>  StripeControl::$periods["monthly"],
-                    'interval_count'    =>  1
-                ];
-            }
-
             try {
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-                $product = $stripe->products->update($productPayload);
+
+                if($old_price == $mem->price){
+                    $product = $stripe->products->update($mem->product_id,[
+                        "name"  => $user->username . '_' . $mem->level,
+                        "images" => [$mem->perma_link],
+                        "default_price" => $mem->price_id
+                    ]);
+                }
+                else{
+                    $productPayload = [
+                        "name"  => $user->username . '_' . $mem->level,
+                        "images" => [$mem->perma_link],
+                        "default_price_data"    =>  [
+                            "currency"  =>  $user->default_currency,
+                            "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
+                        ],
+                        "url"   =>  env('APP_URL') . '/' . $user->username
+                    ];
+
+                    if ($request->level != 'lifetime') {
+                        $productPayload['default_price_data']['recurring']  =   [
+                            'interval'  =>  StripeControl::$periods["monthly"],
+                            'interval_count'    =>  1
+                        ];
+                    }
+                    $product = StripeControl::createProduct($productPayload);
+                    $mem->price_id = $product->default_price;
+                }
                 $mem->product_id = $product->id;
-                $mem->price_id = $product->default_price;
                 $mem->save();
 
             } catch (Exception $e) {

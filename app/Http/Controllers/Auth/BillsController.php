@@ -129,6 +129,7 @@ class BillsController extends Controller
         $user = User::where('id',Auth::id())->first();
 
         $bill = Bills::where('uuid',$id)->first();
+        $old_price = $bill->price;
 
         if(!empty($bill)){
             $media = $request->thumbnail;
@@ -148,16 +149,36 @@ class BillsController extends Controller
 
             try {
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-                    $stripe_client = $stripe->products->update([
+
+                if($old_price == $bill->price)
+                {
+                    $stripe_client = $stripe->products->update($bill->product_id,[
                         'name' => $request->name ?? $bill->wishname,
                         'images' => [$bill->perma_link],
-                        "default_price_data" => ["currency" => $user->default_currency, "unit_amount_decimal" => $createpriceid * 100],
+                        "default_price" => $bill->price_id,
                         // "url" => $request->item_url ?? null
                     ]);
-
-                    $bill->product_id = $stripe_client->id;
+                }
+                else{
+                    $productPayload = [
+                        "name"  => $bill->name,
+                        "images" => [$bill->perma_link],
+                        "default_price_data"    =>  [
+                            "currency"  =>  $user->default_currency,
+                            "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
+                            'recurring' => [
+                                'interval'  =>  StripeControl::$periods["monthly"],
+                                'interval_count'    =>  1
+                            ]
+                        ],
+                        "url"   =>  env('APP_URL') . '/' . $user->username,
+                    ];
+                    $stripe_client = $stripe->products->create($productPayload);
                     $bill->price_id = $stripe_client->default_price;
-                    $bill->save();
+                }
+
+                $bill->product_id = $stripe_client->id;
+                $bill->save();
 
             } catch (Exception $e) {
                 $bill->delete();
