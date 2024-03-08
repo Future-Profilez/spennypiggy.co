@@ -7,7 +7,7 @@ import { Toaster } from "react-hot-toast";
 
 export default function SubCheckout(props) {
 
-    const {auth, wish, reccure} = props;
+    const {auth, wish, reccure, vat_amount  } = props;
     const { formatMultiPrice } = PriceFormat();
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
     const [email, setEmail] = useState(auth && auth.user && auth.user.email || '');
@@ -56,6 +56,8 @@ export default function SubCheckout(props) {
             infoAlert(flash.info);
         }
     },[flash]);
+
+    console.log("props",props)
 
     return (
         <>
@@ -106,6 +108,12 @@ export default function SubCheckout(props) {
                                 </strong>
                             </div>
                             <div className="cartSubTotal text-right mt-1">
+                                <span>VAT : </span>{" "}
+                                <strong className="text-end">
+                                    {formatMultiPrice(vat_amount || "", wish && wish.currency)}
+                                </strong>
+                            </div>
+                            <div className="cartSubTotal text-right mt-1">
                                 <span>Subtotal :</span>{" "}
                                 <strong className="text-end">
                                     {formatMultiPrice(wish.price || "", wish && wish.currency)}
@@ -114,7 +122,7 @@ export default function SubCheckout(props) {
                             <div className="cartSubTotal text-right mt-1">
                                 <strong className="text-dark">Total :</strong>{" "}
                                 <strong className="text-end">
-                                    {formatMultiPrice(wish.tax_amount + wish.price || "", wish && wish.currency)}
+                                    {formatMultiPrice(wish.tax_amount + wish.price + vat_amount || "", wish && wish.currency)}
                                 </strong>
                             </div>
                         </div>

@@ -49,8 +49,8 @@ export default function Comment({c, update}) {
   }
   
   return (
-    <div className="comment-box pt-4 pb-3 flex justify-center items-center">
-      <div className="w-full h-auto   flex flex-col space-y-2">
+    <div className="comment-box py-3 flex justify-center items-center">
+      <div className="w-full h-auto flex flex-col space-y-2">
       
         <div className="flex items-center space-x-2 w-full">
           <div className="flex flex-shrink-0 self-start cursor-pointer">

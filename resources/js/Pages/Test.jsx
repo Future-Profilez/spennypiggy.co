@@ -59,7 +59,6 @@ export default function Test() {
                 reply: "Nice post bawa",
             })
             .then((resp) => {
-                console.log("resp", resp);
             })
             .catch((_err) => {
                 console.error("error", _err);

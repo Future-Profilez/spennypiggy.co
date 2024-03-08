@@ -160,23 +160,27 @@ export default function Wishlist(props) {
             errorAlert("Please choose a category for this item.");
             return false;
         }
+        if (!editpop && data && data.reward_file == '' || null || undefined) {
+            errorAlert("Please choose a exclusive reward for this wish item.");
+            return false;
+        }
         if (editpop) {
             post(route(`update_wish_item`, [item && item.uuid]), {
                 preserveScroll: true,
                 onSuccess: (resp) => {
-                    if (resp.props.flash?.success) {
+                    if (resp.props.flash?.success !== null) {
                         successAlert(resp.props.flash?.success || "Updated successfully.");
+                        reset();
+                        setClose(false);
+                        setClear(new Date());
+                        setTimeout(() => {
+                            setClose();
+                        }, 100);
+                        fetchingcats();
                     }
                     if (resp.props.flash?.error) {
                         errorAlert(resp.props.flash?.error || "Something went wrong.");
                     }
-                    reset();
-                    setClose(false);
-                    setClear(new Date());
-                    setTimeout(() => {
-                        setClose();
-                    }, 100);
-                    fetchingcats();
                 },
                 onError: (_err) => {
                     console.error(_err);
@@ -188,19 +192,19 @@ export default function Wishlist(props) {
             post(route("save_wish_item"), {
                 preserveScroll: true,
                 onSuccess: (resp) => {
-                    reset();
-                    if (resp.props.flash?.success) {
+                    if (resp.props.flash?.success !== null) {
                         successAlert(resp.props.flash?.success ||"Wish added successfully.");
+                        reset();
+                        setClose(false);
+                        setClear(new Date());
+                        setTimeout(() => {
+                            setClose(); 
+                        }, 100);
+                        fetchingcats();
                     }
                     if (resp.props.flash?.error) {
                         errorAlert(resp.props.flash?.error || "Something went wrong.");
                     }
-                    setClose(false);
-                    setClear(new Date());
-                    setTimeout(() => {
-                        setClose(); 
-                    }, 100);
-                    fetchingcats();
                 },
                 onError: (_err) => {
                     console.error(_err);

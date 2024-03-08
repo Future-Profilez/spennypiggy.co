@@ -12,7 +12,7 @@ import AddBills from './AddBills';
 export default function Bill(props) {
    
   const { format, formatMultiPrice } = PriceFormat();
-  const { currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped, classes, showall, key } = props;
+  const { currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped, classes, showall, key  } = props;
 
   const { attributes, listeners, isDragging, index, over, setNodeRef, transform, transition } = useSortable({ id: itm && itm.id });
   const style = { 
@@ -54,7 +54,7 @@ export default function Bill(props) {
 
         <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
           <div>
-            <h4 className={`fon-bold text-dark el2`} >{itm.name}</h4>
+            <h4 className={`fon-bold text-dark el1 `} >{itm.name}</h4>
             <h5 className='font-CeraGRBold text-dark titleprice'>{formatMultiPrice(itm.price, itm?.currency || 'GBP')}
                 <button className='tooltipbtn' >?<p>*just not including service fee.</p></button>
             </h5>
@@ -68,17 +68,17 @@ export default function Bill(props) {
           </div>
          <Wishlist currency={currency} setuped={setuped} openPop={open} item={itm} editpop={true} fetchingcats={fetchingcats} categories={categories} />
          */}
-         <div className='p-sm-4 p-3 pt-0' >
-            <AddBills classes="btn-pink px-2 w-100 sm" text="Update Bill"
+         <div className='p-sm-4 p-3 pt-0 pt-sm-0' >
+            <AddBills fetchBills={props.fetchBills} classes="button  px-2 w-100 sm" text="Update Bill"
             item={itm} isEdit={true} />
           </div>
         </>
-          : 
-          <div className='p-sm-4 p-3 pt-0' >
-             <Link method='get'
-                href={route('bill.checkout',{uuid: itm.uuid})}
-                className='btn-pink sm text-center' >Pay Bill</Link>
-          </div>
+          : ''
+          // <div className='p-sm-4 p-3 pt-0 pt-sm-0 ' >
+          //    <Link method='get'
+          //       href={route('bill.checkout',{uuid: itm.uuid})}
+          //       className='btn-pink sm text-center w-100 d-block' >Pay Bill</Link>
+          // </div>
         } 
         {/* <div className='p-sm-4 p-3 pt-0' >
              <Link method='get'

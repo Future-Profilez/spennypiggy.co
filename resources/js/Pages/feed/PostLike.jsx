@@ -39,8 +39,6 @@ export default function PostLike({text, post_uuid, is_liked, likes_count, update
   };
 
   return (
-    <>  
     <div onClick={postlike} className={`likebtn ${ liked ? 'liked' : 'unliked' } `} dangerouslySetInnerHTML={{ __html: text }} />
-    </>
   )
 }

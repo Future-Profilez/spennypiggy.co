@@ -74,14 +74,13 @@ const membershipBenifits = [
   },
 ];
 
-export default function AddMembership(props) {
-
-   const { successAlert, errorAlert, errorsHandling } = useAlerts();
-   const [clear, setClear] = useState();
-   const [close, setClose] = useState();   
-
-
-   function selectRewards(e){ 
+export default function AddMembership({updateState, item}) {
+  
+  const { successAlert, errorAlert, errorsHandling } = useAlerts();
+  const [clear, setClear] = useState();
+  const [close, setClose] = useState();   
+  
+  function selectRewards(e){ 
     const checkboxes = document.getElementsByName("rewards");
     let result = [];
     for (var i = 0; i < checkboxes.length; i++) {
@@ -98,6 +97,8 @@ export default function AddMembership(props) {
       month_price: '',
       rewards: '',
     }); 
+
+
     let nameattr, valueattr;
     const handleInput = (e) => {
         nameattr = e.target.name;
@@ -109,14 +110,26 @@ export default function AddMembership(props) {
       setThumb(thumbs);
     };
     
+    useEffect(()=>{
+      if(item){ 
+        setData({
+          level: item.level || '',
+          month_price: item.price || '',
+          rewards: item.rewards || ''
+        }); 
+      }
+    },[item]);
+
+
 
     const [loading, setLoading] = useState(false);
     const AddMembership = (e) => {
         e.preventDefault();
         setLoading(true);
-        axios.post(`/membership/save`, {...data, thumbnail: thumb,}).then((resp)=>{
+        axios.post(`/membership/save`, {...data, thumbnail: thumb}).then((resp)=>{
           if(resp.data.status) { 
             successAlert(resp.data.msg)
+            updateState && updateState(new Date());
             setClose(false);
             setTimeout(() => {
               setClose();
@@ -139,7 +152,6 @@ export default function AddMembership(props) {
         });
     };
 
-   
     return (
         <Popup
             modalclass="pinkmodal full sendSurprize-modal shadow-pink ps-0"
@@ -160,16 +172,12 @@ export default function AddMembership(props) {
                                     onClick={()=>setData('level', m.value)}  >
                                     {m.title}
                                   </button> */}
-
                                   <input className="cursor-pointer d-none"  
                                   type="checkbox" id={m.value} value={m.value} name="level" 
                                   onChange={handleInput} />
-                                  <label 
-                                  className={`cursor-pointer text-capitalize ${data && data.level == m.value ? "active" : ''}`} 
-                                   htmlFor={m.value}>
+                                  <label className={`cursor-pointer text-capitalize ${data && data.level == m.value ? "active" : ''}`} htmlFor={m.value}>
                                       {m.title}
                                   </label>
-
                                 </li>
                               })}
                           </ul>
@@ -180,8 +188,8 @@ export default function AddMembership(props) {
                           <div className="position-relative  currency-wrapper" >
                             <span className="currency-tag">{'GBP'}</span>
                             <input className="form-input w-100 rounded"  
-                                onChange={handleInput}
-                                type="number"  name="month_price"
+                                onChange={handleInput} defaultValue={item && item.price || ''}
+                                type="number" name="month_price"
                                 placeholder={data && data.level =='lifetime' ? "Enter Lifetime membership price" : 'Enter monthly price.. '}  />
                           </div>
                       </div>
@@ -200,7 +208,7 @@ export default function AddMembership(props) {
                       <div className="d-flex memberships-lists flex-wrap mb-4 ">
                         {membershipBenifits && membershipBenifits.map((m, i)=>{
                           return <div className="member-reward me-2 mb-2 text-start">
-                              <input className="cursor-pointer d-none" 
+                              <input className="cursor-pointer d-none"  
                               type="checkbox" id={m.value} value={m.value} name="rewards" 
                               onChange={selectRewards} />
                               <label className="cursor-pointer text-capitalize" htmlFor={m.value}>
@@ -218,7 +226,7 @@ export default function AddMembership(props) {
                     </div> 
              
 
-              </div>
+              </div>  
         </Popup>
     );
 }

@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useState } from 'react';
 import PriceFormat from '@/includes/PriceFormat';
 import { Link } from "@inertiajs/react";
 import dummy from '../../../assets/img/uploadedimg.png';
+import EditMembership from './EditMembership';
 
 const rewards_lists = [
   {
@@ -47,7 +48,7 @@ const rewards_lists = [
   },
 ];
 
-export default function Membership({item, hidebtn, IsloggedIn}) {
+export default function Membership({item, hidebtn, IsloggedIn, fetch_membership}) {
 
   const { formatMultiPrice } = PriceFormat();
 
@@ -57,9 +58,10 @@ export default function Membership({item, hidebtn, IsloggedIn}) {
     return item && item[0] && item[0].title;
   }
 
-  const paynow = () => { 
-
-  }
+  useEffect(()=>{
+    setrewards(JSON.parse(item && item.rewards));
+  },[item]);
+ 
   
   return (
     <>
@@ -74,26 +76,33 @@ export default function Membership({item, hidebtn, IsloggedIn}) {
           </div>
         </div>
 
-        <ul className='lists_rewards mt-4 px-3' >
+      <div className='p-2 pt-0' >
+        <ul className='lists_rewards mt-3' >
+          <li  className='d-flex ' >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7.95801 14.9993L3.20801 10.2493L4.39551 9.06185L7.95801 12.6243L15.6038 4.97852L16.7913 6.16602L7.95801 14.9993Z" fill="#F94F97"/>
+            </svg> 
+            <p className='ps-2'>Access to Member only posts</p>
+          </li>
           {rewards && rewards.map((r, i)=>{
-            return <li key={`reward-${i}`} className='d-flex flex-wrap' >
+            return <li key={`reward-${i}`} className='d-flex ' >
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M7.95801 14.9993L3.20801 10.2493L4.39551 9.06185L7.95801 12.6243L15.6038 4.97852L16.7913 6.16602L7.95801 14.9993Z" fill="#F94F97"/>
                 </svg> 
-                &nbsp;  {getRewardTitle(r)}
+                <p className='ps-2'>{getRewardTitle(r)}</p>
               </li>
           })}
         </ul>
-
-        <div className='px-3 pt-3' >
           {hidebtn ? '' : 
           !IsloggedIn ? 
-            <Link className='btn-pink sm mb-3 ' method='get'
+            <Link className='btn-pink sm mt-3 ' method='get'
                 href={route('membership.checkout',{uuid: item.uuid})}>Join Now
             </Link> 
             : ''
           }
-        </div>
+          {IsloggedIn ? <EditMembership fetch_membership={fetch_membership} item={item} /> : ''}
+      </div>
+
 
       </div>
     </>

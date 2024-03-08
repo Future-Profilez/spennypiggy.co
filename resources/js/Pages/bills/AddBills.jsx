@@ -18,13 +18,13 @@ import PriceFormat from "@/includes/PriceFormat";
 import axios from "axios";
 
 export default function AddBills(props) {
-    const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
+    const { successAlert, errorAlert, infoAlert, errorsHandling } = useAlerts();
     const { global_currency, auth } = usePage().props;
     const inputRef = useRef(null);
     const [thumbnail, setThumbnail] = useState("");
     const [clear, setClear] = useState();
     const [close, setClose] = useState();
-    const { updatebill, item, isEdit, editpop, text, classes } = props;
+    const { updatebill, item, isEdit, editpop, text, classes, fetchBills } = props;
     const { formatMultiPrice } = PriceFormat();
     const BillsImages = [
         'be9060ab-1a76-452f-b805-1c71d9af4fb7',
@@ -57,25 +57,27 @@ export default function AddBills(props) {
     const createBills = async (e) => {
         e.preventDefault();
         setLoading(true);
-        axios.post(`/bill/save`, data).then((resp)=>{
-          if(resp.data.status) { 
-            if(updatebill){
-                updatebill("updated");
+        axios.post((isEdit ? `/bill/edit/${item.uuid}` : `/bill/save`), data).then((resp)=>{
+            fetchBills && fetchBills();
+            if(resp.data.status) { 
+                if(updatebill){
+                    updatebill("updated");
+                }
+                successAlert(resp.data.msg)
+                setClose(false);
+                setTimeout(() => {
+                setClose();
+                }, 100);
+                reset();
+                setClear(new Date());
+            } else { 
+                errorAlert(resp.data.msg);
             }
-            successAlert(resp.data.msg)
-            setClose(false);
-            setTimeout(() => {
-              setClose();
-            }, 100);
-            reset();
-            setClear(new Date());
-          } else { 
-            errorAlert(resp.data.msg);
-          }
-          setLoading(false);
+            setLoading(false);
         }).catch(err => { 
           console.error("err", err);
           setLoading(false);
+            // errorsHandling()
         });
      };
 

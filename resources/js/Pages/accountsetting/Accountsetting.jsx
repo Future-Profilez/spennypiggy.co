@@ -11,6 +11,7 @@ import PaymentDashboard from '../stripe/PaymentDashboard';
 import ChangeCurrency from '@/Components/ChangeCurrency';
 import LinkTwitter from '../twitter/LinkTwitter';
 import { useAlerts } from '@/Components/Alerts';
+import ChangeVat from '../account/ChangeVat';
 
 export default function Accountsetting(props) {
 
@@ -25,6 +26,14 @@ export default function Accountsetting(props) {
         }, 100);
     }
 
+    const updatevat = (e) => { 
+        setSassClose(false);
+        setTimeout(() => {
+            setSassClose();
+        }, 100);
+        setvatpercent(e)
+    }
+
     const switchNotification  = () =>{ 
         setSetEnabled(!emailEnabled);
         axios.get(`notification-switch`).then((resp) => {
@@ -33,6 +42,9 @@ export default function Accountsetting(props) {
             console.error("error", _err);
         });
     }
+ 
+    const [vatpercent, setvatpercent] = useState(auth && auth?.user?.vat_amount_percentage|| '')
+
 
     return (
         <Authenticated user={user}  auth={auth.user} >
@@ -66,6 +78,12 @@ export default function Accountsetting(props) {
                             <li>
                                 <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>DISPLAY CURRENCY <span className='text-gray'>{global_currency}</span></>} >
                                     <ChangeCurrency defaultvalue={global_currency} />
+                                </Popup>
+                            </li>
+
+                            <li>
+                                <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>VAT <span className='text-gray'>{vatpercent}%</span></>} >
+                                    <ChangeVat defaultvalue={vatpercent} updatevat={updatevat} />
                                 </Popup>
                             </li>
  

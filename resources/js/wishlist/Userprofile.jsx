@@ -7,7 +7,7 @@ import { LazyLoadImage } from 'react-lazy-load-image-component';
 import EditProfile from "@/Pages/account/EditProfile";
 import SendTip from "@/Pages/TipJar/SendTip";
 
-export default function Userprofile({auth, user, links, IsloggedIn, w, global_currency}) {
+export default function Userprofile({auth, user, links, IsloggedIn, global_currency}) {
 
     return (
         <div className="userprofilesec mb-4 ">

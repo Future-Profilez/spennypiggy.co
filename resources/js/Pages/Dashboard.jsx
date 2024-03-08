@@ -2,14 +2,12 @@ import React, { useState, useMemo, useEffect, Suspense } from "react";
 import { useAlerts } from "@/Components/Alerts";
 import { Head, Link, usePage } from "@inertiajs/react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
-import MyGoal from "./TipJar/MyGoal";
-import SocialLinks from "@/includes/SocialLinks";
+
 import { addicon } from "@/includes/Icons";
 const AddGoal = React.lazy(() => import("./TipJar/AddGoal"));
 const Wishlist = React.lazy(() => import("./Auth/Wishlist"));
 const Wishlistbox = React.lazy(() => import("@/wishlist/Wishlistbox"));
 const Userprofile = React.lazy(() => import("@/wishlist/Userprofile"));
-const EditProfile = React.lazy(() => import("@/Pages/account/EditProfile"));
 const ShareProfile = React.lazy(() => import("@/wishlist/ShareProfile"));
 const Nocontent = React.lazy(() => import("@/includes/Nocontent"));
 const LoadingScreen = React.lazy(() => import("@/includes/LoadingScreen"));
@@ -31,35 +29,24 @@ import { LazyLoadImage } from "react-lazy-load-image-component";
 import useWidthCount from "@/Components/useWidthCount";
 import{arrayMove,SortableContext,sortableKeyboardCoordinates,useSortable,rectSortingStrategy,}from "@dnd-kit/sortable";
 import{closestCenter,DndContext,KeyboardSensor,MouseSensor,TouchSensor,useSensor,useSensors,}from "@dnd-kit/core";
+const TipInner = React.lazy(() => import("./TipJar/TipInner"));
 const Billslist = React.lazy(() => import("./bills/Billslist"));
 const FeedList = React.lazy(() => import("./feed/FeedList"));
 const AddPost = React.lazy(() => import("./feed/AddPost"));
 const AddIntro = React.lazy(() => import("./intros/AddIntro"));
+const MyGoal = React.lazy(() => import("./TipJar/MyGoal"));
+const SocialLinks = React.lazy(() => import("@/includes/SocialLinks"));
 
 export default function Dashboard(props) {
     const w = useWidthCount();
-    const{auth,user,username,global_currency,itemid,min_surprise_amount}= props;
-    const [tab, setTab] = useState("about");
+    const{auth,user,username,global_currency,itemid}= props;
+    const [tab, setTab] = useState("home");
     const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
-    const [IsloggedIn, setIsLoggedIn] = useState(
-        (auth && auth.user && auth.user.username) == (user && user.username)
-    );
+    const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
     const [loading, setLoading] = useState(false);
     const [socialLinks, setSocialLinks] = useState([]);
     const [sLinks, setLinks] = useState([]);
     const [categories, setcategories] = useState([]);
-
-    const fetchingLinks = (signal) => {
-        axios
-            .get(`sociallinks/${username}`, { signal })
-            .then((resp) => {
-                setSocialLinks(resp.data.sociallinks);
-                setLinks(resp.data.slinks);
-            })
-            .catch((_err) => {
-                console.error("error", _err);
-            });
-    };
 
     const fetch_categories = async (signal) => {
         axios
@@ -93,13 +80,34 @@ export default function Dashboard(props) {
             });
         // }
     };
+    
+    useEffect(() => {
+        const controller = new AbortController();
+        const { signal } = controller;
+        if(tab == 'wishes'){
+            fetch_categories(signal);
+            fetchingcats(false, signal);
+        }
+        return () => controller.abort();
+    }, [tab]);
 
+
+    const [selectedCat, setSelectedCat] = useState('')
     const showCategory = (e) => {
-        const v = e.target.value;
-        fetchingcats(v);
+        fetchingcats(e);
+        setSelectedCat(e);
     };
 
-    // Fetching wishes and wishes categoris
+    const fetchingLinks = (signal) => {
+        axios.get(`sociallinks/${username}`, { signal })
+        .then((resp) => {
+            setSocialLinks(resp.data.sociallinks);
+            setLinks(resp.data.slinks);
+        })
+        .catch((_err) => {
+            console.error("error", _err);
+        });
+    };
     const [fetchingGoal, setfetchingGoal] = useState(false);
     const [goal, setGoal] = useState();
     const fetch_goal = async (signal) => {
@@ -107,8 +115,7 @@ export default function Dashboard(props) {
             return true;
         }
         setfetchingGoal(true);
-        axios
-            .get(`tip-jar/list/${user && user.uuid}`, { signal })
+        axios.get(`tip-jar/list/${user && user.uuid}`, { signal })
             .then((resp) => {
                 setGoal(resp.data.goal);
                 setfetchingGoal(false);
@@ -118,15 +125,6 @@ export default function Dashboard(props) {
                 setfetchingGoal(false);
             });
     };
-
-    useEffect(() => {
-        const controller = new AbortController();
-        const { signal } = controller;
-        fetch_categories(signal);
-        fetchingcats(false, signal);
-        return () => controller.abort();
-    }, [tab]);
-
     useEffect(() => {
         const controller = new AbortController();
         const { signal } = controller;
@@ -229,6 +227,11 @@ export default function Dashboard(props) {
             }, 100);
         }
     }
+    
+    const [isUpdated, setIsUpdated] = useState();
+    const updateState = (e) => { 
+        setIsUpdated(e);
+    }
 
     const Toggle = () => {
         return  <>
@@ -242,7 +245,7 @@ export default function Dashboard(props) {
                     ></Dropdown.Toggle>
                     <Dropdown.Menu>
                         <Suspense fallback={"Add Wishlist"}>
-                            <Wishlist
+                            <Wishlist  
                                 updateCategory={fetch_categories}
                                 currency={global_currency}
                                 setuped={auth.user &&auth.user.stripe_details_submitted ==1? true: false}
@@ -251,17 +254,13 @@ export default function Dashboard(props) {
                             />
                         </Suspense>
                         <Suspense fallback={"Add Membership"}>
-                            <AddMembership />
+                            <AddMembership updateState={updateState} />
                         </Suspense>
                         <Suspense fallback={"Add Membership"}>
-                            <AddBills
-                                updatebill={
-                                    updatebill
-                                }
-                            />
+                            <AddBills updatebill={updatebill}/>
                         </Suspense>
                         <Suspense fallback={"Add Post"}>
-                            <AddPost />
+                            <AddPost updateState={updateState} />
                         </Suspense>
                     </Dropdown.Menu>
                 </Dropdown>
@@ -274,9 +273,7 @@ export default function Dashboard(props) {
     return (
         <>
             <Guest auth={auth.user} user={user}>
-                <Head
-                    title={`${user?.name || auth?.user?.name} - Spenny Piggy`}
-                />
+                <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
                 <div className="wishlistPage blackbg pt-6 pb-0 pb-sm-5 ">
                     <div className="containerbox">
                         <VersionUpdate />
@@ -291,9 +288,7 @@ export default function Dashboard(props) {
                                 width={1200}
                             />
                         </div>
-
                         <Userprofile
-                            w={w}
                             auth={auth && auth.user}
                             IsloggedIn={IsloggedIn}
                             links={socialLinks}
@@ -321,7 +316,7 @@ export default function Dashboard(props) {
                                                                 {(user &&user.bio) ||""}
                                                             </p>
 
-                                                                <SocialLinks links={sLinks} />
+                                                            <SocialLinks links={sLinks} />
                                                             
                                                             {IsloggedIn ? (
                                                                 <div className="userProfileDate pt-0 pt-md-3">
@@ -360,39 +355,31 @@ export default function Dashboard(props) {
                                                                 ""
                                                             )}
                                                         </div>
-
                                                         {goal &&goal.completed == 0 ? <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ""}
-
                                                         <AddIntro uuid={user?.id || null} IsloggedIn={IsloggedIn}/>
-
-                                                        </div>
-                                                        <div className="ps-md-4 order-md-222 col-md-6">
-                                                            <FeedList
-                                                                user={user}
-                                                                IsloggedIn={
-                                                                    IsloggedIn
-                                                                }
-                                                            />
                                                         </div>
 
+                                                        {tab === "home" ? (
+                                                            <div className="ps-md-4 order-md-222 col-md-6">
+                                                                {w > 767 ? <TipInner classes={`mb-4`} /> : ''}
+                                                                <FeedList isUpdated={isUpdated}
+                                                                    user={user} 
+                                                                    IsloggedIn={IsloggedIn} 
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            ""
+                                                        )}
                                                     </div>
                                                 </Tab>
                                                 <Tab eventKey="wishes" title="Wishes">
                                                     <div className="min-height ">
-                                                        <div className="userManageHead flex items-center justify-between mb-8">
-                                                            <div>
-                                                                <select
-                                                                    id="country" onChange={showCategory} name="country"
-                                                                    autoComplete="country-name"
-                                                                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6">
-                                                                    <option value={""}>All</option>
-                                                                    {categories&&categories.length&&categories.map((c,i) => {
-                                                                        return (<option key={`cats-${i}`}value={c.id}>{c.category}</option>);
-                                                                    })}
-                                                                </select>
-                                                            </div>
-                                                            
-                                                        </div>
+                                                        {categories && categories.length ? <div className="new-wish-cats d-flex flex-wrap mb-3" >
+                                                            <div onClick={()=>showCategory('')} className={`${selectedCat == '' ? 'active' : ''} me-2 mb-2 wish-tags cursor-pointer`} >All</div>
+                                                            {categories.map((c,i) => {
+                                                                return (<div onClick={()=>showCategory(c.id)} className={`${selectedCat == c.id ? 'active' : ''} me-2 mb-2 wish-tags cursor-pointer`} key={`cats-${i}`} >{c.category}</div>);
+                                                            })}
+                                                        </div> : ''}
                                                         {loading ? (
                                                             <LoadingScreen />
                                                         ) : (
@@ -509,35 +496,21 @@ export default function Dashboard(props) {
                                                 </Tab>
                                                 <Tab eventKey="feed" title="Feed">
                                                     <Suspense fallback={"Loading..."}>
-                                                        
                                                         {tab === "feed" ? (
-
-                                                            <FeedList
-                                                                user={user}
-                                                                IsloggedIn={
-                                                                    IsloggedIn
-                                                                }
+                                                            <FeedList isUpdated={isUpdated}
+                                                                user={user} 
+                                                                IsloggedIn={IsloggedIn}
                                                             />
                                                         ) : ""}
                                                     </Suspense>
                                                 </Tab>
-                                                <Tab
-                                                    eventKey="membership"
-                                                    title="Membership"
-                                                >
+                                                <Tab eventKey="membership" title="Membership" >
                                                     <Suspense
-                                                        fallback={"Loading..."}
-                                                    >
+                                                        fallback={"Loading..."} >
                                                         {tab == "membership" ? (
-                                                            <MembershipsLists
-                                                                IsloggedIn={
-                                                                    IsloggedIn
-                                                                }
-                                                                username={
-                                                                    user?.username ||
-                                                                    auth?.user
-                                                                        ?.username
-                                                                }
+                                                            <MembershipsLists  isUpdated={isUpdated} 
+                                                                IsloggedIn={IsloggedIn}
+                                                                username={user?.username || auth?.user ?.username}
                                                             />
                                                         ) : (
                                                             ""

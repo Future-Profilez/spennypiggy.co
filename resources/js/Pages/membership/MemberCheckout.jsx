@@ -7,8 +7,9 @@ import PriceFormat from "@/includes/PriceFormat";
  
 export default function SubCheckout(props) {
 
+
     const { formatMultiPrice } = PriceFormat();
-    const { auth, membership} = props;
+    const { auth, membership, vat_amount } = props;
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
     const [email, setEmail] = useState(auth && auth.user && auth.user.email || '');
     const { successAlert, errorAlert, warningAlert, infoAlert } = useAlerts();
@@ -84,6 +85,12 @@ export default function SubCheckout(props) {
                                 </strong>
                             </div>
                             <div className="cartSubTotal text-right mt-1">
+                                <span>VAT :</span>{" "}
+                                <strong className="text-end">
+                                    {formatMultiPrice(vat_amount || "", membership && membership.currency)}
+                                </strong>
+                            </div>
+                            <div className="cartSubTotal text-right mt-1">
                                 <span>Subtotal :</span>{" "}
                                 <strong className="text-end">
                                     {formatMultiPrice(membership.price || "", membership && membership.currency)}
@@ -92,7 +99,7 @@ export default function SubCheckout(props) {
                             <div className="cartSubTotal text-right mt-1">
                                 <strong className="text-dark">Total :</strong>{" "}
                                 <strong className="text-end">
-                                    {formatMultiPrice(membership.tax_amount + membership.price || "", membership && membership.currency)}
+                                    {formatMultiPrice(membership.tax_amount + membership.price + vat_amount || "", membership && membership.currency)}
                                 </strong>
                             </div>
                         </div>
@@ -162,7 +169,7 @@ export default function SubCheckout(props) {
                                         </label>
                                         <div className="tearmlist ps-3">
                                             <ul className="ps-0">
-                                                <li> For Memberships and subscriptions, I understand I am making a non-refundable purchase that provides access to exclusive posts. </li>
+                                                <li> For Memberships and subscriptions, I understand I am making a non-refundable purchase that provides access to exclusive posts. This payment will be automatically taken on a monthly basis. Can be cancelled anytime. </li>
                                                 <li> I understand that for wishes or support payments I am making a non-refundable donation of support and understand I will recieve a thank you message as a reward. </li>
                                                 <li> This payment of purchase or donation is intended soley for the wish recipient </li>
                                                 <li> I have taken the necessary steps to confirm the membershiplist owner is authentic and I understand that Spenny Piggy will not be held responsible for any issues arising from a catfishing situation. </li>

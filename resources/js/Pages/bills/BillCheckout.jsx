@@ -8,7 +8,7 @@ import uploadedimg from '../../../assets/img/uploadedimg.png';
 export default function BillCheckout(props) {
 
     const { formatMultiPrice } = PriceFormat();
-    const { auth, bill} = props;
+    const { auth, bill, vat_amount} = props;
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
     const [email, setEmail] = useState(auth && auth.user && auth.user.email || '');
     const { successAlert, errorAlert, warningAlert, infoAlert } = useAlerts();
@@ -105,6 +105,12 @@ export default function BillCheckout(props) {
                                 </strong>
                             </div>
                             <div className="cartSubTotal text-right mt-1">
+                                <span>VAT :</span>{" "}
+                                <strong className="text-end">
+                                    {formatMultiPrice(vat_amount || "", bill && bill.currency)}
+                                </strong>
+                            </div>
+                            <div className="cartSubTotal text-right mt-1">
                                 <span>Subtotal :</span>{" "}
                                 <strong className="text-end">
                                     {formatMultiPrice(bill.price || "", bill && bill.currency)}
@@ -113,7 +119,7 @@ export default function BillCheckout(props) {
                             <div className="cartSubTotal text-right mt-1">
                                 <strong className="text-dark">Total :</strong>{" "}
                                 <strong className="text-end">
-                                    {formatMultiPrice(bill.tax_amount + bill.price || "", bill && bill.currency)}
+                                    {formatMultiPrice(bill.tax_amount + bill.price +vat_amount || "", bill && bill.currency)}
                                 </strong>
                             </div>
                         </div>

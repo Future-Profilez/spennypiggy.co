@@ -66,15 +66,17 @@ export const useAlerts = () => {
 
 
     const errorsHandling = (error, position = "top-right", duration = 3000) => {
-        {
+        if(error?.response?.data?.errors){ 
             Object.keys(error).map((key) => {
-                let e = error[key];
-                return toast.error(e, {
-                    duration: duration,
-                    position: position
+                let err = error[key];
+                err.map((m, i) => { 
+                    toast.error(m, {
+                        duration: duration,
+                        position: position
+                    });
                 });
-            })
-        }
+            });
+        } 
         return;
     }
 

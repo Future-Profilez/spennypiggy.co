@@ -341,8 +341,7 @@ button.loadmore-text{margin:auto;display:table;padding:6px 14px;font-size:17px;c
 .text-post-content:focus {
     box-shadow: none !important;
 }
-.post-wrap .post-img{width:100%;}
-.post-wrap .post-img{border-radius:10px;cursor:zoom-in;}
+.post-wrap .post-img{width:100%;border-radius:10px; }
 .post-wrap .author-img{
     height:45px;width:45px;display:inline;border-radius:50%;
     background-image:url("https://1000logos.net/wp-content/uploads/2017/05/NFL-Logo-1983.png");background-color:white;
@@ -353,8 +352,7 @@ button.loadmore-text{margin:auto;display:table;padding:6px 14px;font-size:17px;c
 .post-wrap .heart:hover{fill:red;}
 .post-wrap .interactions{margin-top:15px;}
 .post-wrap .like-count{margin-top:8px;margin-bottom:8px;font-size:14px;}
-.post-wrap .description{text-wrap:pretty;
-    max-width:500px;}
+.post-wrap .description{text-wrap:pretty; }
 .post-wrap input{width:100%;background-color:transparent;color:whitesmoke;border:none;outline:none;font-size:16px;}
 .post-wrap #custom-comment{color:lightgrey;text-wrap:wrap;max-width:500px;}
 .max-feed {
@@ -711,6 +709,20 @@ span.currency-tag{position:absolute;top:50%;left:10px;transform:translateY(-50%)
 .user-links p{font-size:14px;}
 button.close-btn{position:absolute;right:20px;top:20px;z-index:2;background:#fff;width:30px;height:30px;border-radius:10px;font-size:23px;line-height:30px;}
 .isintro span,.isintro span img,.isintro img{height:auto !important;max-height:300px;min-height:200px;display:block !important;}
+
+
+.font-large {
+    font-size: 19px;
+    line-height: 28px;
+}
+.tipheading span {
+    font-size: 26px;
+    display: inline-block;
+}
+
+.new-wish-cats .wish-tags{background:#141414;padding:5px 20px;border-radius:10px;color:#a1a1a1;}
+.new-wish-cats .wish-tags.active{background:var(--pink);color:#fff;}
+
 @media (max-width:767px){.videoPopup{width:100%;max-width:90%;}
 .videoPopup video{background:#000 !important;}
 .user-links{padding:14px;}
@@ -751,3 +763,10 @@ ul.socialmedia li svg {
     width: 25px !important;
     height: 24px !important;
 }
+
+.titlebadge {
+    font-size: 11px !important;
+    letter-spacing: 1px !important;
+    font-weight: 300 !important;
+}
+

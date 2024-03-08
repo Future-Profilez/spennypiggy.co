@@ -1,11 +1,5 @@
-import { Link } from '@inertiajs/react';
 import React from 'react';
-import fansly from '../../assets/img/Fansly.svg';
-import manyvids  from '../../assets/img/ManyVids.svg';
 export default function SocialLinks({ links }) {
-
-
-    console.log("links sadasd", links);
 
     const twitter = `<svg width="19" height="18" viewBox="0 0 19 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M14.9201 0.875H17.6767L11.6542 7.75833L18.7392 17.125H13.1909L8.84589 11.4442L3.87422 17.125H1.11589L7.55755 9.7625L0.761719 0.875H6.44922L10.3767 6.0675L14.9184 0.875H14.9201ZM13.9526 15.475H15.4801L5.62005 2.43833H3.98089L13.9526 15.475Z" fill="#8C52FF"/>

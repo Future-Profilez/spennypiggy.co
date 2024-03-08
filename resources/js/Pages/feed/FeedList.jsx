@@ -6,7 +6,7 @@ import Post from './Post';
 import { usePage } from '@inertiajs/react';
 import LoadingScreen from '@/includes/LoadingScreen';
 import Nocontent from '@/includes/Nocontent';
-export default function FeedList({ IsloggedIn}) {
+export default function FeedList({ isUpdated, updateState}) {
 
   const { user, auth } = usePage().props;
 
@@ -15,7 +15,6 @@ export default function FeedList({ IsloggedIn}) {
   const fetchdata = () => {
     setLoading(true);
     axios.get(`/posts/${user && user.username}`).then((resp) => {
-        console.log("resp", resp);
         setPosts(resp.data.posts);
         setLoading(false);
     }).catch((_err) => {
@@ -23,17 +22,24 @@ export default function FeedList({ IsloggedIn}) {
         setLoading(false);
     });
   };
-
+  
+  const [updatePost, setUpdatePost] = useState();
+  const updateposts = (e) => { 
+    setUpdatePost(e);
+  }
   useEffect(()=>{
     fetchdata();
-  },[])
+  },[isUpdated, updatePost]);
+
+
 
   return (
     <div className='max-feed m-auto'>
       {loading ? <LoadingScreen /> :
       <>
         {posts && posts.length ? posts.map((post, i)=>{ 
-          return <Post key={`post-${i}`} user={user} item={post} />
+          return <Post   updateState={updateposts}
+          key={`post-${i}`} item={post} />
         })
         : <Nocontent text="No Posts to see" /> }
       </>}

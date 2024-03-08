@@ -24,7 +24,6 @@ export default function GifterItems(props) {
     .then((resp) => {
         setLoading(false);
         const newd = resp.data.wishes
-        console.log("newd", newd);
         if(load){
           const result = data.concat(newd);
           setData(result);
@@ -46,7 +45,6 @@ export default function GifterItems(props) {
   },[]);
 
   const MessageMedia = ({w}) => {
-    console.log("media_url", w)
     return <>
       <Popup
         modalclassName="pinkmodal shadow-pink" space="0" size="md" action={close} classes={`mt-3 text-pink`}

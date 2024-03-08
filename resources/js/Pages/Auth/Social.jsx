@@ -159,10 +159,11 @@ export default function Social({links, updatedLinks}) {
                         </ul>
 
                         <LoaderButton disabled={processing} type='submit'
-                            className=' flex btn-pink sm w-100 mx-auto'
+                            className=' flex button sm w-100 justify-content-center p-3 text-center mx-auto'
                             spinnerClassName='fill-red-600'>
                             {processing ? "Processing" : "Add Links"}
                         </LoaderButton>
+                        
                     </form>
                 </div>
             </div>
