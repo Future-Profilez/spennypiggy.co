@@ -140,7 +140,7 @@ class BillsController extends Controller
         if(!empty($bill)){
             $media = $request->thumbnail;
 
-            $price = Helpers::priceFormat($request->cookie('currency', 'GBP'), $request->price, $user->default_currency);
+            $price = $request->price;
             $taxamount = round(($price * config('app.single_tax') / 100), 2, PHP_ROUND_HALF_UP);
             $createpriceid = $price + $taxamount;
 
