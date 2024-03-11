@@ -38,6 +38,10 @@ class BillsController extends Controller
                 "numeric",
                 "min:0"
             ],
+            'period' => [
+                'required',
+                'string'
+            ]
         ]);
 
         if ($validator->fails()) {
@@ -64,6 +68,7 @@ class BillsController extends Controller
             $bill->price = $price;
             $bill->tax_amount = $taxamount;
             $bill->thumbnail = !empty($media) ? $media : null;
+            $bill->subscription_period = $request->period;
 
             $bill->save();
 
@@ -74,7 +79,7 @@ class BillsController extends Controller
                     "currency"  =>  $user->default_currency,
                     "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
                     'recurring' => [
-                        'interval'  =>  StripeControl::$periods["monthly"],
+                        'interval'  =>  StripeControl::$periods[$bill->subscription_period],
                         'interval_count'    =>  1
                     ]
                 ],
@@ -130,6 +135,7 @@ class BillsController extends Controller
 
         $bill = Bills::where('uuid',$id)->first();
         $old_price = $bill->price;
+        $old_period = $bill->subscription_period;
 
         if(!empty($bill)){
             $media = $request->thumbnail;
@@ -144,22 +150,15 @@ class BillsController extends Controller
             $bill->price = $price;
             $bill->tax_amount = $taxamount;
             $bill->thumbnail = !empty($media) ? $media : null;
+            $bill->subscription_period = $request->period;
 
             $bill->save();
 
             try {
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
-                if($old_price == $bill->price)
+                if($old_price != $bill->price || $old_period != $bill->subscription_period)
                 {
-                    $stripe_client = $stripe->products->update($bill->product_id,[
-                        'name' => $request->name ?? $bill->wishname,
-                        'images' => [$bill->perma_link],
-                        "default_price" => $bill->price_id,
-                        // "url" => $request->item_url ?? null
-                    ]);
-                }
-                else{
                     $productPayload = [
                         "name"  => $bill->name,
                         "images" => [$bill->perma_link],
@@ -167,7 +166,7 @@ class BillsController extends Controller
                             "currency"  =>  $user->default_currency,
                             "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
                             'recurring' => [
-                                'interval'  =>  StripeControl::$periods["monthly"],
+                                'interval'  =>  StripeControl::$periods[$bill->subscription_period],
                                 'interval_count'    =>  1
                             ]
                         ],
@@ -175,6 +174,15 @@ class BillsController extends Controller
                     ];
                     $stripe_client = $stripe->products->create($productPayload);
                     $bill->price_id = $stripe_client->default_price;
+                }
+                else
+                {
+                    $stripe_client = $stripe->products->update($bill->product_id,[
+                        'name' => $request->name ?? $bill->wishname,
+                        'images' => [$bill->perma_link],
+                        "default_price" => $bill->price_id,
+                        // "url" => $request->item_url ?? null
+                    ]);
                 }
 
                 $bill->product_id = $stripe_client->id;
@@ -289,7 +297,7 @@ class BillsController extends Controller
                     'product'   =>  $bill->product_id,
                     'unit_amount_decimal'   =>  $unit_amount,
                     'reccuring' => [
-                        'interval'  =>  StripeControl::$periods['monthly'],
+                        'interval'  =>  StripeControl::$periods[$bill->subscription_period],
                         'interval_count'    =>  1
                     ]
                 ];
@@ -366,6 +374,12 @@ class BillsController extends Controller
                 $current = Carbon::now();
                 if ($bill_pay->recurring_type == "monthly") {
                     $current->addMonth();
+                }
+                if ($bill_pay->recurring_type == "weekly") {
+                    $current->addWeek();
+                }
+                if ($bill_pay->recurring_type == "yearly") {
+                    $current->addYear();
                 }
                 $bill_pay->upcoming_payment = $current;
                 $bill_pay->save();
