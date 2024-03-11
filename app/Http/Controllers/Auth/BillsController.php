@@ -68,7 +68,7 @@ class BillsController extends Controller
             $bill->price = $price;
             $bill->tax_amount = $taxamount;
             $bill->thumbnail = !empty($media) ? $media : null;
-            $bill->subscription_period = $request->period;
+            $bill->period = $request->period;
 
             $bill->save();
 
@@ -79,7 +79,7 @@ class BillsController extends Controller
                     "currency"  =>  $user->default_currency,
                     "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
                     'recurring' => [
-                        'interval'  =>  StripeControl::$periods[$bill->subscription_period],
+                        'interval'  =>  StripeControl::$periods[$bill->period],
                         'interval_count'    =>  1
                     ]
                 ],
@@ -135,7 +135,7 @@ class BillsController extends Controller
 
         $bill = Bills::where('uuid',$id)->first();
         $old_price = $bill->price;
-        $old_period = $bill->subscription_period;
+        $old_period = $bill->period;
 
         if(!empty($bill)){
             $media = $request->thumbnail;
@@ -150,14 +150,14 @@ class BillsController extends Controller
             $bill->price = $price;
             $bill->tax_amount = $taxamount;
             $bill->thumbnail = !empty($media) ? $media : null;
-            $bill->subscription_period = $request->period;
+            $bill->period = $request->period;
 
             $bill->save();
 
             try {
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
-                if($old_price != $bill->price || $old_period != $bill->subscription_period)
+                if($old_price != $bill->price || $old_period != $bill->period)
                 {
                     $productPayload = [
                         "name"  => $bill->name,
@@ -166,7 +166,7 @@ class BillsController extends Controller
                             "currency"  =>  $user->default_currency,
                             "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
                             'recurring' => [
-                                'interval'  =>  StripeControl::$periods[$bill->subscription_period],
+                                'interval'  =>  StripeControl::$periods[$bill->period],
                                 'interval_count'    =>  1
                             ]
                         ],
@@ -297,7 +297,7 @@ class BillsController extends Controller
                     'product'   =>  $bill->product_id,
                     'unit_amount_decimal'   =>  $unit_amount,
                     'reccuring' => [
-                        'interval'  =>  StripeControl::$periods[$bill->subscription_period],
+                        'interval'  =>  StripeControl::$periods[$bill->period],
                         'interval_count'    =>  1
                     ]
                 ];
