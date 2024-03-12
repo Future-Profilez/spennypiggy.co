@@ -436,7 +436,10 @@ class WishitemController extends Controller
             'category' => $request->category ?? null,
         ]);
 
-        return back()->with('success', 'Category Saved.');
+        return response()->json([
+            'status' => true,
+            'msg' => "Category Saved."
+        ]);;
     }
 
 
