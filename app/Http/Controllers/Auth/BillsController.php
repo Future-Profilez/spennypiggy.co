@@ -296,7 +296,7 @@ class BillsController extends Controller
                     'currency'  =>  $currency,
                     'product'   =>  $bill->product_id,
                     'unit_amount_decimal'   =>  $unit_amount,
-                    'reccuring' => [
+                    'recurring' => [
                         'interval'  =>  StripeControl::$periods[$bill->period],
                         'interval_count'    =>  1
                     ]
