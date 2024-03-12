@@ -114,6 +114,10 @@ Route::middleware('auth')->group(function () {
 
         Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
 
+        Route::post('edit-category/{id}', [WishitemController::class, 'editWishCategory'])->name('edit-category');
+
+        Route::get('delete-category/{id}', [WishitemController::class, 'deleteCategory'])->name('delete-category');
+
         Route::get('account', function () {
             $auto_tweet = Auth::user()->auto_tweet == 1 ? true : false;
             return Inertia::render('accountsetting/Accountsetting',[

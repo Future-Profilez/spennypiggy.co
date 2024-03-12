@@ -1398,4 +1398,33 @@ class WishitemController extends Controller
             'msg' => "Wish payment shared on twitter."
         ]);
     }
+
+    public function editWishCategory(Request $request,$id){
+        $category = UserCategory::where('id',$id)->first();
+
+        $category->category = $request->name;
+        $category->save();
+
+        return response()->json([
+            'status' => true,
+            'msg' => "Category Updated"
+        ]);
+    }
+
+
+    public function deleteCategory($id){
+        $wish_cat = WishCategory::where('user_category_id',$id)->get();
+
+        foreach ($wish_cat as $key => $value) {
+            $value->user_category_id = NULL;
+            $value->save();
+        }
+
+        UserCategory::where('id',$id)->delete();
+
+        return response()->json([
+            'status' => true,
+            'msg' => "Category Deleted."
+        ]);
+    }
 }
