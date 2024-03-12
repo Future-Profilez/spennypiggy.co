@@ -412,7 +412,7 @@ class WishitemController extends Controller
         }
     }
 
-    public function saveUserCategory(Request $request): RedirectResponse
+    public function saveUserCategory(Request $request)
     {
         $request->validate([
             "category" => [
