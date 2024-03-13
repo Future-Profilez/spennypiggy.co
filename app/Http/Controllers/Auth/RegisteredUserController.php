@@ -58,6 +58,7 @@ class RegisteredUserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'username' => ['required', 'string', 'lowercase', 'max:20', 'unique:users,username'],
+            'role' => ['required']
         ]);
 
         $checkdata = Helpers::checkBlockData($request);
@@ -71,6 +72,7 @@ class RegisteredUserController extends Controller
                 'username' => $request->username,
                 'gender' => $request->gender ?? null,
                 'password' => Hash::make($request->password),
+                'is_gifter' => $request->role
             ]);
             $user->refresh();
 
