@@ -200,7 +200,7 @@ class AuthenticatedSessionController extends Controller
                     // If $categoryID is specified, filter by the specific category
                     $query->whereHas('wishCategories', function ($query) use ($category_id) {
                         $query->where('user_category_id', $category_id);
-                    });
+                    })->with('wishCategories');
                 })
                 // ->orderBy('is_pin', 'DESC')
                 ->orderBy('sort', 'ASC')
