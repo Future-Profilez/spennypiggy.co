@@ -3,18 +3,17 @@ import "swiper/css/pagination";
 import "swiper/css/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import LoaderButton from "@/Components/LoaderButton";
-import { useForm, usePage, router } from "@inertiajs/react";
+import { useForm, usePage } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
 import GlobalUploader from "@/uploadcare/Uploader";
 import st from "../../../css/uploader.module.css";
-import Tab from "react-bootstrap/Tab";
-import Tabs from "react-bootstrap/Tabs";
 import Accordion from "react-bootstrap/Accordion";
 import uploadedimg from "../../../assets/img/uploadedimg.png";
 import Popup from "@/Components/Popup";
 import { Pagination, Navigation } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import PriceFormat from "@/includes/PriceFormat";
+import axios from "axios";
 
 export default function Wishlist(props) {
     const { global_currency, auth } = usePage().props;
@@ -48,29 +47,32 @@ export default function Wishlist(props) {
     const AddCategory = async () => {
         const value = inputRef.current.value;
         setAdding(true);
-        router.post(
-            "save-category",
-            { category: value },
-            {
-                preserveScroll: true,
-                onSuccess: (resp) => {
-                    inputRef.current.value = "";
-                    if (resp.props.flash?.success) {
-                        successAlert(resp.props.flash?.success || "Added");
-                    }
-                    if (resp.props.flash?.error) {
-                        errorAlert(resp.props.flash?.error);
-                    }
-                    setAdding(false);
-                    updateCategory();
-                },
-                onError: (_err) => {
-                    console.table("error", _err);
-                    setAdding(false);
-                    errorAlert(_err?.category);
-                },
-            }
-        );
+        axios.post("save-category",{ category: value }).then((res) => {
+            setAdding(false);
+            updateCategory();
+            successAlert(res.data.msg || "Added");
+        }).catch((err) => {
+            console.error("error", err);
+            setAdding(false);
+        });
+        // axios.post("save-category",{ category: value },{
+        //         preserveScroll: true,
+        //         onSuccess: (resp) => {
+        //             inputRef.current.value = "";
+        //             if (resp.props.flash?.success) {
+        //                 successAlert(resp.props.flash?.success || "Added");
+        //             }
+        //             if (resp.props.flash?.error) {
+        //                 errorAlert(resp.props.flash?.error);
+        //             }
+        //         },
+        //         onError: (_err) => {
+        //             console.table("error", _err);
+        //             setAdding(false);
+        //             errorAlert(_err?.category);
+        //         },
+        //     }
+        // );
     };
 
     const imageLinks = [
@@ -87,12 +89,11 @@ export default function Wishlist(props) {
         thumbnail: item && item.thumbnail ? item.thumbnail : imageLinks[0],
         reward_file: item && item.reward_file ? item.reward_file : "",
         subscription: item && item.subscription ? item.subscription : "",
-        subscription_period:
-            item && item.subscription_period ? item.subscription_period : "",
-        repeat_purchase:
-            item && item.repeat_purchase ? item.repeat_purchase : 1,
+        subscription_period: item && item.subscription_period ? item.subscription_period : "",
+        repeat_purchase: item && item.repeat_purchase ? item.repeat_purchase : 1,
         category: item && item.category ? item.category : 0,
     });
+    
     const [period, setPeriod] = useState(
         data.subscription_period || (item && item.subscription_period)
     );
@@ -124,15 +125,16 @@ export default function Wishlist(props) {
         let ss = data?.uuid;
         setRewardImage(ss);
     };
+
     useEffect(() => {
         setData("reward_file", rewardImage);
     }, [rewardImage]);
-
 
     const rpValue = (e) => {
         setRepeat(e.target.checked);
         setData("repeat_purchase", e.target.checked ? 1 : 0);
     };
+
     const spValue = (e) => {
         setData("subscription_period", e.target.value);
         setPeriod(e.target.value);
@@ -227,14 +229,9 @@ export default function Wishlist(props) {
         >
             <div className="editprofileModal  wishlistModal ">
                 <div className="editprofileModalInner">
-                    <h2 className="font-GillSans pt-4 px-3">Add A Wish </h2>
-                    <Tabs
-                        defaultActiveKey="1"
-                        id="uncontrolled-tab-example"
-                        className="mb-3"
-                    >
-                        <Tab eventKey="1" title="Custom">
-                            <div className="wishinfo">
+                            <h2 className='p-4 text-pink text-start font-GillSans uppercase text-large black-stroke font-semibold mb-1 pe-5'>{editpop ? " Edit Wish" : "Add A Wish"}</h2>
+                            <div className="wishinfo border-top pt-0">
+                                <p className="text-warning mb-4 pt-3" >When adding items please ensure they are specific i.e Holiday Clothes or New Gym Equipment. Items that are non specific will be rejected and removed. Our AI blcoks adult content but any overly suggestive images will also be rejected. Please reach out to support for further clarification</p>
                                 <form onSubmit={createWishList}>
                                     <ul className="ps-0">
                                         <li className="mb-4">
@@ -525,8 +522,9 @@ export default function Wishlist(props) {
                                     <div className="pt-4 pb-3"  >
                                         <strong className="text-start d-block">Exclusive Reward *</strong>
                                         <p className="text-small mb-3" >Choose an exclusive picture as an reward for gifter.</p>
+                                        <p className="text-small mb-3" >Rewards must be your own content, not stock imagery or content that you don’t have the ownership rights to. Wishes will be rejected if the reward is not sufficiently classed as unique content</p>
 
-                                       {item && item.reward_url? <div className="default-wish-img border mb-2">
+                                        {item && item.reward_url ? <div className="default-wish-img border mb-2">
                                             <img src={item && item.reward_url}className="img-fluid"/>
                                         </div> : '' }
 
@@ -550,65 +548,41 @@ export default function Wishlist(props) {
                                                     />
                                                     Auto Tweet
                                                 </label>
-
                                             </div>
                                                 <p className="text-small text-muted" >
                                                 Enable auto tweet for this item.
                                             </p>
                                         </div> */}
+                                        
                                     <div className="publish text-start">
-                                        {editpop ? (
-                                            <LoaderButton
-                                                disabled={processing}
-                                                type="submit"
-                                                className="flex w-100 btn-pink lg mx-auto"
-                                                spinnerClassName="fill-red-600">{processing ? "Updating..":"Update Wish"}
-                                            </LoaderButton>
-                                        ) : (
                                             <>
                                                 <strong>
                                                     Categorize this wish *
                                                 </strong>
-                                                <p>
-                                                    {" "}
-                                                    Organize your wishes to help
-                                                    gifters find what they're
-                                                    looking for while on your
-                                                    wishlist.{" "}
-                                                </p>
+                                                <p> Organize your wishes to help gifters find what they're looking for while on your wishlist.</p>
 
                                                 <div className="catslists">
                                                     {categories &&
                                                     categories.length
                                                         ? categories.map(
                                                               (c, i) => {
+                                                                // const isCategory = item && item.wish_categories.includes(c.id)
                                                                   return (
                                                                       <>
                                                                           <div className="repeatpurchase mb-2 text-start">
                                                                               <label
                                                                                   className="text-capitalize"
-                                                                                  htmlFor={
-                                                                                      "categories" +
-                                                                                      i
-                                                                                  }
-                                                                              >
+                                                                                  htmlFor={"categories" +i}>  
                                                                                   <input
                                                                                       type="checkbox"
-                                                                                      id={
-                                                                                          "categories" +
-                                                                                          i
-                                                                                      }
-                                                                                      value={
-                                                                                          c.id
-                                                                                      }
+                                                                                      id={"categories" +i}
+                                                                                      value={c.id}
                                                                                       name="category"
-                                                                                      onChange={
-                                                                                          catValue
-                                                                                      }
+                                                                                      onChange={catValue}
+                                                                                    //  checked={isCategory}
                                                                                   />
-                                                                                  {
-                                                                                      c.category
-                                                                                  }
+                                                                                  {c.category}
+                                                                                  {isCategory && isCategory.user_category_id} {c.id}
                                                                               </label>
                                                                           </div>
                                                                       </>
@@ -635,29 +609,26 @@ export default function Wishlist(props) {
                                                     </div>
                                                 </div>
 
-                                                <LoaderButton
-                                                    disabled={processing}
-                                                    type="submit"
-                                                    className="flex w-100 btn-pink lg mx-auto"
-                                                    spinnerClassName="fill-red-600"
-                                                >
-                                                    {processing
-                                                        ? "Processing"
-                                                        : "Add Wish"}
-                                                </LoaderButton>
-
-                                                {/* <AdultScan
-                                                fileuid={msgMedia && msgMedia.uuid}
-                                                onScan={saythankyou} content={<>
-                                                <LoaderButton
-                                                    disabled={loading}
-                                                    className="flex px-4  mb-3 btn-pink sm mx-auto"
-                                                    spinnerClassName="fill-red-600" >
-                                                    {loading ? "Sending..." : "Say Thanks"}
-                                                </LoaderButton>
-                                            </>} /> */}
+                                                {editpop ? (
+                                                    <LoaderButton
+                                                        disabled={processing}
+                                                        type="submit"
+                                                        className="flex w-100 btn-pink lg mx-auto"
+                                                        spinnerClassName="fill-red-600">{processing ? "Updating..":"Update Wish"}
+                                                    </LoaderButton>
+                                                ) : (
+                                                    <LoaderButton
+                                                        disabled={processing}
+                                                        type="submit"
+                                                        className="flex w-100 btn-pink lg mx-auto"
+                                                        spinnerClassName="fill-red-600"
+                                                    >
+                                                        {processing
+                                                            ? "Processing"
+                                                            : "Add Wish"}
+                                                    </LoaderButton>
+                                                )}
                                             </>
-                                        )}
                                     </div>
 
                                    
@@ -665,12 +636,6 @@ export default function Wishlist(props) {
                                     
                                 </form>
                             </div>
-                        </Tab>
-                        {/* <Tab eventKey="2" title="Prefill with URL">
-                                    Tab content for Profile
-                                </Tab>
-                            */}
-                    </Tabs>
                 </div>
             </div>
         </Popup>

@@ -93,7 +93,7 @@ body{background:#000;}
 .loginPage p{font-size:22px;}
 .loginform form ul li input:focus,.loginform form ul li input:hover{outline:0;}
 .loginform form ul li input:focus,.loginform form ul li input:focus-within{outline:0;box-shadow:8px 8px 0 0 var(--black);transition:all ease 0.3s;}
-.wishManage{width:100%;padding:0 0 0 25px;}
+.wishManage{width:100%; }
 .wishbanner img{height:305px;object-fit:cover;}
 .userManageRt{width:773px;padding:0 0 0 35px;}
 select#country{text-transform:capitalize;border-radius:10px;border:1px solid var(--mint) !important;background:var(--black);padding:11px 10px 12px;color:var(--mint);font-family:var(--font-CeraGRBold);font-size:20px;font-style:normal;font-weight:400;letter-spacing:-1.8px;min-width:121px;}
@@ -363,6 +363,16 @@ button.loadmore-text{margin:auto;display:table;padding:6px 14px;font-size:17px;c
     border-bottom: 1px solid #ececec !important;
 }
 
+.amount-coin:focus { 
+    border: 0 !important;
+    box-shadow: none !important;
+}
+.amount-coin {
+    border: 0 !important;
+    padding: 0 !important;
+    max-width: 36px !important;
+    text-align: center;
+}
 
 /* responsive */
 @media (max-width:1500px){.loveboxes{padding:0 20px;}
@@ -709,8 +719,6 @@ span.currency-tag{position:absolute;top:50%;left:10px;transform:translateY(-50%)
 .user-links p{font-size:14px;}
 button.close-btn{position:absolute;right:20px;top:20px;z-index:2;background:#fff;width:30px;height:30px;border-radius:10px;font-size:23px;line-height:30px;}
 .isintro span,.isintro span img,.isintro img{height:auto !important;max-height:300px;min-height:200px;display:block !important;}
-
-
 .font-large {
     font-size: 19px;
     line-height: 28px;
@@ -719,9 +727,16 @@ button.close-btn{position:absolute;right:20px;top:20px;z-index:2;background:#fff
     font-size: 26px;
     display: inline-block;
 }
-
-.new-wish-cats .wish-tags{background:#141414;padding:5px 20px;border-radius:10px;color:#a1a1a1;}
+.new-wish-cats .wish-tags{ padding:5px 20px;border-radius:10px;color:#a1a1a1; background:#141414;}
 .new-wish-cats .wish-tags.active{background:var(--pink);color:#fff;}
+.new-wish-cats .wish-tags.edit {background:var(--mint);color:#000;}
+ 
+
+.cats_edit input {
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 7px 10px;
+}
 
 @media (max-width:767px){.videoPopup{width:100%;max-width:90%;}
 .videoPopup video{background:#000 !important;}

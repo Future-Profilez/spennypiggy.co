@@ -1,11 +1,8 @@
-import React, { Children, useEffect, useRef, useState } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
+import React, {  useEffect,  useState } from 'react';
 import Modal from 'react-bootstrap/Modal';
 export default function Popup(props) {
-
   const { children, text, classes, action, custom, size, space, modalclass } = props;
   const [open, setOpen] = useState(false)
-  const cancelButtonRef = useRef(null);
   useEffect(()=>{
     if(action === false || undefined){
       setOpen(false)

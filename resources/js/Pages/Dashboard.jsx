@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect, Suspense } from "react";
 import { useAlerts } from "@/Components/Alerts";
 import { Head, Link, usePage } from "@inertiajs/react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
-
 import { addicon } from "@/includes/Icons";
 const AddGoal = React.lazy(() => import("./TipJar/AddGoal"));
 const Wishlist = React.lazy(() => import("./Auth/Wishlist"));
@@ -20,15 +19,7 @@ const MembershipsLists = React.lazy(() =>import("./membership/MembershipsLists")
 const AddMembership = React.lazy(() => import("./membership/AddMembership"));
 const Gifter = React.lazy(() => import("./gifter/Gifter"));
 const AddBills = React.lazy(() => import("./bills/AddBills"));
-import Dropdown from "react-bootstrap/Dropdown";
-import Tab from "react-bootstrap/Tab";
-import Tabs from "react-bootstrap/Tabs";
-import axios from "axios";
-import Guest from "@/Layouts/GuestLayout";
-import { LazyLoadImage } from "react-lazy-load-image-component";
-import useWidthCount from "@/Components/useWidthCount";
-import{arrayMove,SortableContext,sortableKeyboardCoordinates,useSortable,rectSortingStrategy,}from "@dnd-kit/sortable";
-import{closestCenter,DndContext,KeyboardSensor,MouseSensor,TouchSensor,useSensor,useSensors,}from "@dnd-kit/core";
+const EditCategories = React.lazy(() => import("@/wishlist/EditCategories"));
 const TipInner = React.lazy(() => import("./TipJar/TipInner"));
 const Billslist = React.lazy(() => import("./bills/Billslist"));
 const FeedList = React.lazy(() => import("./feed/FeedList"));
@@ -36,6 +27,17 @@ const AddPost = React.lazy(() => import("./feed/AddPost"));
 const AddIntro = React.lazy(() => import("./intros/AddIntro"));
 const MyGoal = React.lazy(() => import("./TipJar/MyGoal"));
 const SocialLinks = React.lazy(() => import("@/includes/SocialLinks"));
+import Dropdown from "react-bootstrap/Dropdown";
+import Tab from "react-bootstrap/Tab";
+import Tabs from "react-bootstrap/Tabs";
+import axios from "axios";
+import Guest from "@/Layouts/GuestLayout";
+import { LazyLoadImage } from "react-lazy-load-image-component";
+import useWidthCount from "@/Components/useWidthCount";
+
+import{arrayMove,SortableContext,sortableKeyboardCoordinates,useSortable,rectSortingStrategy,}from "@dnd-kit/sortable";
+import{closestCenter,DndContext,KeyboardSensor,MouseSensor,TouchSensor,useSensor,useSensors,}from "@dnd-kit/core";
+
 
 export default function Dashboard(props) {
     const w = useWidthCount();
@@ -59,6 +61,8 @@ export default function Dashboard(props) {
             });
     };
 
+
+    console.log("props", props);
     const [its, setIts] = useState();
     const fetchingcats = (cat, signal) => {
         setLoading(true);
@@ -288,13 +292,11 @@ export default function Dashboard(props) {
                                 width={1200}
                             />
                         </div>
-                        <Userprofile
-                            auth={auth && auth.user}
-                            IsloggedIn={IsloggedIn}
-                            links={socialLinks}
-                            user={user}
-                            global_currency={global_currency}
-                        />
+                        <Userprofile IsloggedIn={IsloggedIn} />
+
+                        {IsloggedIn ? <div className="alert bg-info">In order to comply with Stripe it is required that you post content for memberships, Bills and subscriptions regularly. Accounts not doing so will be suspended. Please reach out to support for more information</div>
+                        : ''}                        
+                        
                         {user && user.stripe_details_submitted == "1" ? (
                             <div className="wishManage">
                                 <div className="userManageRt mt-4">
@@ -379,6 +381,7 @@ export default function Dashboard(props) {
                                                             {categories.map((c,i) => {
                                                                 return (<div onClick={()=>showCategory(c.id)} className={`${selectedCat == c.id ? 'active' : ''} me-2 mb-2 wish-tags cursor-pointer`} key={`cats-${i}`} >{c.category}</div>);
                                                             })}
+                                                            <EditCategories fetch_categories={fetch_categories} username={auth && auth?.user?.username || null} /> 
                                                         </div> : ''}
                                                         {loading ? (
                                                             <LoadingScreen />

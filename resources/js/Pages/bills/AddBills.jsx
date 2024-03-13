@@ -37,7 +37,15 @@ export default function AddBills(props) {
         name: item && item.name ? item.name : "",
         price: item && item.price ? item.price : "",
         thumbnail: item && item.thumbnail ? item.thumbnail : BillsImages[0] ,
+        period: item && item.period ? item.period : "weekly",
     });
+
+    const [period, setPeriod] = useState(item && item.period ? item.period : "weekly");
+    const spValue = (e) => {
+        setPeriod(e.target.value);
+        console.log("e.target.value", e.target.value);
+        setData("period", e.target.value);
+    };
 
     const onSlideChange = (swiper) => {
         setData("thumbnail", BillsImages[swiper && swiper.activeIndex]);
@@ -75,9 +83,9 @@ export default function AddBills(props) {
             }
             setLoading(false);
         }).catch(err => { 
-          console.error("err", err);
-          setLoading(false);
-            // errorsHandling()
+            console.error("err", err);
+            setLoading(false);
+            errorsHandling(err)
         });
      };
 
@@ -88,14 +96,14 @@ export default function AddBills(props) {
         text={`${text ? text : 'Add Bills'}`} >
         <div className="editprofileModal  wishlistModal ">
             <div className="editprofileModalInner">
-                <h2 className="font-GillSans pt-4 px-3">{isEdit ? "Update Bill" : "Add A Bill" }</h2>
-                <div className="wishinfo">
+                <h2 className='p-4 text-pink text-start font-GillSans uppercase text-large black-stroke font-semibold mb-1 pe-5'>{isEdit ? "Update Bill" : "Add A Bill" }</h2>
+
+                <div className="wishinfo border-top">
+                <p className="text-warning mb-4" >When adding items please ensure they are specific i.e Holiday Clothes or New Gym Equipment. Items that are non specific will be rejected and removed. Our AI blcoks adult content but any overly suggestive images will also be rejected. Please reach out to support for further clarification</p>
                     <form onSubmit={createBills}>
                         <ul className="ps-0" >
                             <li className="mb-4">
-                                <label className="mb-2 text-start d-block">
-                                    Bill Name
-                                </label>
+                                <label className="mb-2 text-start d-block"> Bill Name </label>
                                 <input
                                     id="wishname"
                                     name="name"
@@ -117,17 +125,50 @@ export default function AddBills(props) {
                                         type="number"
                                         name="price"
                                         placeholder="Eg. 50"
-                                        value={data.price || item && item.price } step={`0.01`}
+                                        value={item && item.price || data.price } 
                                         className="form-input px-2 py-2 border w-full rounded-md"
                                         autoComplete="price"
                                         onChange={(e) => setData( "price", e.target.value )}
                                     />
                                 </div>
-                                <p className="mt-1"> 
-                                    The Bill  amount is set
-                                    to {formatMultiPrice(data.price, defaultCurrency)}. 
-                                </p>
+                                <p className="mt-1"> The Bill amount is set to {formatMultiPrice(data.price,defaultCurrency)}. </p>
                             </li>
+
+                            <li className="mb-4">
+                                <div className="singlewishbox rounded ">
+                                    <strong className="mb-2 text-start d-block "> Allows gifter to purchase this item on a recurring basis. </strong>
+                                    <div className="repeatpurchase mt-2 text-start">
+                                        <label htmlFor="weekly" className="w-auto">
+                                            <input
+                                                checked={period == "weekly"}
+                                                type="radio"
+                                                id="weekly"
+                                                value={"weekly"}
+                                                name="subscription_period"
+                                                onChange={spValue}
+                                            /> Weekly
+                                        </label>
+                                    </div>
+                                    <div className="repeatpurchase mt-2 text-start">
+                                        <label htmlFor="monthly" className="w-auto">
+                                            <input
+                                                checked={period == "monthly"}
+                                                type="radio"
+                                                id="monthly"
+                                                value={"monthly"}
+                                                name="subscription_period"
+                                                onChange={spValue}/> Monthly
+                                        </label>
+                                    </div>
+                                    <div className="repeatpurchase text-start">
+                                        <label htmlFor="yearly" className="w-auto" >
+                                            <input checked={period == "yearly"} type="radio" id="yearly" value={"yearly"} 
+                                            name="subscription_period" onChange={spValue} /> Yearly
+                                        </label>
+                                    </div>
+                                </div>
+                            </li>
+
                             <li className="mb-4">
                                 <label className="mb-2 text-start d-block">
                                     Choose Image or Upload

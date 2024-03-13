@@ -1,14 +1,14 @@
-import React, { useState, useMemo, useEffect,Suspense } from "react";
+import React from "react";
 import userphoto from "../../assets/img/userphoto.png";
-const SocialLinks = React.lazy(() => import('@/includes/SocialLinks'));
-const ShareProfile = React.lazy(() => import('./ShareProfile'));
-const SendSurprise = React.lazy(() => import('./SendSurprise'));
 import { LazyLoadImage } from 'react-lazy-load-image-component';
-import EditProfile from "@/Pages/account/EditProfile";
-import SendTip from "@/Pages/TipJar/SendTip";
+import { usePage } from '@inertiajs/react';
+const EditProfile = React.lazy(() => import('@/Pages/account/EditProfile'));
+const ShareProfile = React.lazy(() => import('./ShareProfile'));
+const SendTip = React.lazy(() => import('@/Pages/TipJar/SendTip'));
 
-export default function Userprofile({auth, user, links, IsloggedIn, global_currency}) {
-
+export default function Userprofile({ IsloggedIn }) {
+    const { user, global_currency, supporters}  = usePage().props;
+    console.log("user, global_currency, supporters", user, global_currency, supporters)
     return (
         <div className="userprofilesec mb-4 ">
              
@@ -40,7 +40,11 @@ export default function Userprofile({auth, user, links, IsloggedIn, global_curre
                 { !IsloggedIn ? 
                     user && user.stripe_details_submitted == 1 && 
                     // <SendSurprise auth={auth} owner={user} /> 
+                    <div>
                     <SendTip  />
+                    <p className="text-center text-mint" >{supporters} Supporters</p>
+                    </div>
+
                     :  
                     <EditProfile
                     user={user}

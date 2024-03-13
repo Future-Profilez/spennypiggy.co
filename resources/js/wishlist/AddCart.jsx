@@ -111,6 +111,9 @@ export default function AddCart(props) {
                         {item.subscription_period == 'weekly' ? " Week" : ''}
                         {item.subscription_period == 'monthly' ? " Month" : ''}
                     </Link>
+                    <p className="text-center mt-3" >Gain access to my exclusive subscriber only posts</p>
+
+                    
                 </div>
                 : <div className=" pb-2">
                     <ToCart currency={currency} sub={sub} ItemAdded={ItemAdded}  auth={auth}
