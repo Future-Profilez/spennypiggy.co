@@ -25,7 +25,7 @@
 
                     <td
                         style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                        Thank’s for topping up {{ $tip->tipGoal->user->name }}'s Tip Jar with {{ $symbol }}{{ $amount }}! You’ve just made their day a little brighter 😍🎁
+                        Thank’s for topping up {{ $tip->creator->name }}'s Tip Jar with {{ $symbol }}{{ $amount }}! You’ve just made their day a little brighter 😍🎁
                     </td>
                 </tr>
                 <tr>

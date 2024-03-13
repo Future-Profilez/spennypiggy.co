@@ -104,6 +104,8 @@ class AuthenticatedSessionController extends Controller
         $user = User::where('username', $username)->where(function ($q) {
             $q->whereNot('country', 'GB')->orWhereNull('country');
         })->first();
+
+        $support_count = TipGoalsPayment::where('creator_id',$user->id)->count();
         if (!$user) {
             return Inertia::render('NotFound');
         }
@@ -131,6 +133,7 @@ class AuthenticatedSessionController extends Controller
             "username" => $username,
             "user" => $user,
             "itemid" => $itemdid,
+            'supporters' => $support_count
         ]);
     }
 
@@ -200,7 +203,7 @@ class AuthenticatedSessionController extends Controller
                     // If $categoryID is specified, filter by the specific category
                     $query->whereHas('wishCategories', function ($query) use ($category_id) {
                         $query->where('user_category_id', $category_id);
-                    });
+                    })->with('wishCategories');
                 })
                 // ->orderBy('is_pin', 'DESC')
                 ->orderBy('sort', 'ASC')

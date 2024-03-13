@@ -16,6 +16,7 @@ use App\Jobs\TipJarMailToUser;
 use App\Jobs\TipJarPurchased;
 use App\Jobs\TipJarTweet;
 use App\Models\Currency;
+use App\Models\Post;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\StripeWebhookStatus;
@@ -80,6 +81,15 @@ class StripeController extends Controller
     public function initConnect(Request $request, $step = "init", $country = null, $currency = null)
     {
         $user = User::find(Auth::id());
+
+        $sub_post = Post::where('user_id',$user->id)->where('for_module','subscription')->first();
+        $mem_post = Post::where('user_id',$user->id)->where('for_module','membership')->first();
+        $support_post = Post::where('user_id',$user->id)->where('for_module','support')->first();
+
+        if(empty($sub_post) || empty($mem_post) || empty($support_post)){
+            return redirect(route("user.show", ["username" => $user->username]))->with("error", "Before connecting stripe account, it's necessary to add one post for your subscribers, members and supporters!");
+        }
+
         if (empty($user->account_id)) {
             // if (!$request->isMethod("POST")) {
             //     return redirect()->back()->with("error", "Invalid request!");
@@ -916,7 +926,7 @@ class StripeController extends Controller
                 'creator_id' => $creator->id,
                 'guest_name'    =>  $request->name,
                 'guest_email'    =>  $request->email,
-                'currency'      =>  $goal->currency,
+                'currency'      =>  $creator->default_currency,
                 'amount'        =>  $price,
                 'tax'           =>  $tax,
                 'message'  =>  $request->message ?? NULL,

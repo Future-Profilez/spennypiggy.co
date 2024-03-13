@@ -28,6 +28,7 @@ class User extends Authenticatable
         'uuid',
         'name',
         'email',
+        'is_gifter',
         'username',
         'password',
         'gender',
@@ -139,13 +140,24 @@ class User extends Authenticatable
 
     public function tip_goal_payment()
     {
-        return $this->hasManyThrough(TipGoalsPayment::class, TipGoal::class, 'user_id', 'tip_goal_id', 'id', 'id');
+        return $this->hasMany(TipGoalsPayment::class, 'creator_id');
     }
 
     public function subscriptions()
     {
         return $this->hasManyThrough(WishItemSubscription::class, WishItem::class, 'user_id', 'wish_item_id', 'id', 'id');
     }
+
+    public function membership_payments()
+    {
+        return $this->hasManyThrough(MembershipPayment::class, Membership::class, 'user_id', 'membership_id', 'id', 'id');
+    }
+
+    public function bill_payments()
+    {
+        return $this->hasManyThrough(BillPayment::class, Bills::class, 'user_id', 'bills_id', 'id', 'id');
+    }
+
     public function twitter_token()
     {
         return $this->hasOne(TwitterToken::class)->latestOfMany();

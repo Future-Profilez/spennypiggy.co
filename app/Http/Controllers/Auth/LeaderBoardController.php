@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\BillPayment;
+use App\Models\MembershipPayment;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\TipGoalsPayment;
@@ -56,7 +58,7 @@ class LeaderBoardController extends Controller
                             elseif($type == 'daily'){
                                 $query->where('wish_item_subscriptions.created_at', $currentDate);
                             }
-                        },
+                    },
                     'tip_goal_payment as total_tips' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
                         $query->select(DB::raw("COALESCE(SUM(amount), 0)"));
 
@@ -70,9 +72,65 @@ class LeaderBoardController extends Controller
                         elseif($type == 'daily'){
                             $query->where('tip_goals_payments.created_at', $currentDate);
                         }
-                     },
+                    },
+                    'membership_payments as total_member' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
+                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"));
+
+                        if($type == 'monthly'){
+                            $query->whereYear('membership_payments.created_at', '=', $currentYear)
+                            ->whereMonth('membership_payments.created_at',$currentMonth);
+                        }
+                        elseif($type == 'weekly'){
+                            $query->whereBetween('membership_payments.created_at', [$currentWeekStartDate,$currentWeekEndDate]);
+                        }
+                        elseif($type == 'daily'){
+                            $query->where('membership_payments.created_at', $currentDate);
+                        }
+                    },
+                    'bill_payments as total_bill' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
+                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"));
+
+                        if($type == 'monthly'){
+                            $query->whereYear('bill_payments.created_at', '=', $currentYear)
+                            ->whereMonth('bill_payments.created_at',$currentMonth);
+                        }
+                        elseif($type == 'weekly'){
+                            $query->whereBetween('bill_payments.created_at', [$currentWeekStartDate,$currentWeekEndDate]);
+                        }
+                        elseif($type == 'daily'){
+                            $query->where('bill_payments.created_at', $currentDate);
+                        }
+                    },
+                    'membership_payments as total_member' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
+                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"));
+
+                        if($type == 'monthly'){
+                            $query->whereYear('membership_payments.created_at', '=', $currentYear)
+                            ->whereMonth('membership_payments.created_at',$currentMonth);
+                        }
+                        elseif($type == 'weekly'){
+                            $query->whereBetween('membership_payments.created_at', [$currentWeekStartDate,$currentWeekEndDate]);
+                        }
+                        elseif($type == 'daily'){
+                            $query->where('membership_payments.created_at', $currentDate);
+                        }
+                    },
+                    'bill_payments as total_bill' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
+                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"));
+
+                        if($type == 'monthly'){
+                            $query->whereYear('bill_payments.created_at', '=', $currentYear)
+                            ->whereMonth('bill_payments.created_at',$currentMonth);
+                        }
+                        elseif($type == 'weekly'){
+                            $query->whereBetween('bill_payments.created_at', [$currentWeekStartDate,$currentWeekEndDate]);
+                        }
+                        elseif($type == 'daily'){
+                            $query->where('bill_payments.created_at', $currentDate);
+                        }
+                    },
                 ])
-                ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips'))
+                ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips + total_member + total_bill'))
                 ->paginate(50);
 
                 $data = [];
@@ -228,7 +286,20 @@ class LeaderBoardController extends Controller
                             });
                         });
                     })->orderBy('amount','DESC')->where('created_at','>',$lasthour)->get();
-                    $tips = TipGoalsPayment::whereHas('tipGoal',function($q){
+                    $tips = TipGoalsPayment::whereHas('creator',function($q){
+                        $q->where(function ($s) {
+                            $s->whereNot('country', 'GB')->orWhereNull('country');
+                        });
+                    })->orderBy('amount','DESC')->where('created_at','>',$lasthour)->get();
+
+                    $members = MembershipPayment::whereHas('membership',function($q){
+                        $q->whereHas('user',function($query){
+                            $query->where(function ($s) {
+                                $s->whereNot('country', 'GB')->orWhereNull('country');
+                            });
+                        });
+                    })->orderBy('amount','DESC')->where('created_at','>',$lasthour)->get();
+                    $bills = BillPayment::whereHas('bill',function($q){
                         $q->whereHas('user',function($query){
                             $query->where(function ($s) {
                                 $s->whereNot('country', 'GB')->orWhereNull('country');
@@ -251,7 +322,20 @@ class LeaderBoardController extends Controller
                             });
                         });
                     })->orderBy('amount','DESC')->where('created_at','>',$last24hour)->get();
-                    $tips = TipGoalsPayment::whereHas('tipGoal',function($q){
+                    $tips = TipGoalsPayment::whereHas('creator',function($q){
+                        $q->where(function ($s) {
+                            $s->whereNot('country', 'GB')->orWhereNull('country');
+                        });
+                    })->orderBy('amount','DESC')->where('created_at','>',$last24hour)->get();
+
+                    $members = MembershipPayment::whereHas('membership',function($q){
+                        $q->whereHas('user',function($query){
+                            $query->where(function ($s) {
+                                $s->whereNot('country', 'GB')->orWhereNull('country');
+                            });
+                        });
+                    })->orderBy('amount','DESC')->where('created_at','>',$last24hour)->get();
+                    $bills = BillPayment::whereHas('bill',function($q){
                         $q->whereHas('user',function($query){
                             $query->where(function ($s) {
                                 $s->whereNot('country', 'GB')->orWhereNull('country');
@@ -286,10 +370,32 @@ class LeaderBoardController extends Controller
 
                 foreach ($tips as $key => $value) {
                     $array[] = [
-                        'name' => $value->tipGoal->user->name,
-                        'username' => $value->tipGoal->user->username,
-                        'avatar_url' => $value->tipGoal->user->avatar_url,
-                        'cover_url' => $value->tipGoal->user->cover_url,
+                        'name' => $value->creator->name,
+                        'username' => $value->creator->username,
+                        'avatar_url' => $value->creator->avatar_url,
+                        'cover_url' => $value->creator->cover_url,
+                        'amount' => $value->amount,
+                        'currency' => $value->currency
+                    ];
+                }
+
+                foreach ($members as $key => $value) {
+                    $array[] = [
+                        'name' => $value->membership->user->name,
+                        'username' => $value->membership->user->username,
+                        'avatar_url' => $value->membership->user->avatar_url,
+                        'cover_url' => $value->membership->user->cover_url,
+                        'amount' => $value->amount,
+                        'currency' => $value->currency
+                    ];
+                }
+
+                foreach ($bills as $key => $value) {
+                    $array[] = [
+                        'name' => $value->bill->user->name,
+                        'username' => $value->bill->user->username,
+                        'avatar_url' => $value->bill->user->avatar_url,
+                        'cover_url' => $value->bill->user->cover_url,
                         'amount' => $value->amount,
                         'currency' => $value->currency
                     ];
@@ -320,5 +426,5 @@ class LeaderBoardController extends Controller
     }
 
 
-    
+
 }
