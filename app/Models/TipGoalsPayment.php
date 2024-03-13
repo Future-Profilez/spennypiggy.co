@@ -65,7 +65,7 @@ class TipGoalsPayment extends Model
     public function getSenderAttribute()
     {
         $sender = false;
-        if (Auth::check()) {
+        if (Auth::check() && !empty($this->tipGoal->user_id)) {
             $sender = $this->tipGoal->user_id == Auth::id() ? false : true;
         }
         return $sender;

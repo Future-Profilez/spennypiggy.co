@@ -352,14 +352,14 @@ class WishitemController extends Controller
                     $wish->refresh();
                     if (!empty($request->category)) {
                         foreach ($request->category as $key => $value) {
-                            WishCategory::where('wish_item_id', $wish->id)->update([
-                                'user_category_id' => $value
-                            ]);
-                            // $wish_cat = new WishCategory();
-                            // $wish_cat->uuid = Uuid::uuid4();
-                            // $wish_cat->wish_id = $wish->id;
-                            // $wish_cat->category_id = $value;
-                            // $wish_cat->save();
+
+                            WishCategory::where('wish_item_id', $wish->id)->delete();
+
+                            $wish_cat = new WishCategory();
+                            $wish_cat->uuid = Uuid::uuid4();
+                            $wish_cat->wish_item_id = $wish->id;
+                            $wish_cat->user_category_id = $value;
+                            $wish_cat->save();
                         }
                     }
 

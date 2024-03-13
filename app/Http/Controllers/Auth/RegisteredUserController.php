@@ -19,6 +19,7 @@ use Inertia\Response;
 use Ramsey\Uuid\Uuid;
 use App\Jobs\WelcomeUser;
 use App\Models\PromoCode;
+use App\Models\Referal;
 use Carbon\Carbon;
 
 class RegisteredUserController extends Controller
@@ -72,7 +73,7 @@ class RegisteredUserController extends Controller
                 'username' => $request->username,
                 'gender' => $request->gender ?? null,
                 'password' => Hash::make($request->password),
-                'is_gifter' => $request->role
+                'is_gifter' => $request->role ?? 0
             ]);
             $user->refresh();
 
