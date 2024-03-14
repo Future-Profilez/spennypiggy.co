@@ -105,10 +105,10 @@ class AuthenticatedSessionController extends Controller
             $q->whereNot('country', 'GB')->orWhereNull('country');
         })->first();
 
-        $support_count = TipGoalsPayment::where('creator_id',$user->id)->count();
         if (!$user) {
             return Inertia::render('NotFound');
         }
+        $support_count = TipGoalsPayment::where('creator_id',$user->id)->count();
         if (!empty(request()->query('item'))) {
             $itemdid = request()->query('item');
         } else {
