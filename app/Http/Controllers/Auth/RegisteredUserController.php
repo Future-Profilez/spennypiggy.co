@@ -18,6 +18,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Ramsey\Uuid\Uuid;
 use App\Jobs\WelcomeUser;
+use App\Models\AllowedDomain;
 use App\Models\PromoCode;
 use App\Models\Referal;
 use Carbon\Carbon;
@@ -62,6 +63,21 @@ class RegisteredUserController extends Controller
             'role' => ['required']
         ]);
 
+        $exist = User::where('email',$request->email)->whereNull('deleted_at')->first();
+
+        if(!empty($exist)){
+            return redirect()->back()->with('error',"This email already has been taken.");
+        }
+
+        $email = strtolower($request->email);
+        $domain = explode('@', $email);
+
+        $secure = AllowedDomain::all()->pluck('name')->toArray();
+
+        if (!in_array($domain[1], $secure)) {
+            return redirect()->back()->with('error',"Invalid Email Id.");
+        }
+
         $checkdata = Helpers::checkBlockData($request);
         if ($checkdata == 1) {
             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive,
@@ -73,7 +89,7 @@ class RegisteredUserController extends Controller
                 'username' => $request->username,
                 'gender' => $request->gender ?? null,
                 'password' => Hash::make($request->password),
-                'is_gifter' => $request->role ?? 0
+                'role' => $request->role ?? 0
             ]);
             $user->refresh();
 

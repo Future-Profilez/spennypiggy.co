@@ -851,6 +851,12 @@ class StripeController extends Controller
     {
         $creator = User::where('uuid',$creator_uid)->first();
 
+        if(Auth::check()){
+            if($creator->id == Auth::id()){
+                return redirect()->back()->with('error', "You can't pay yourself!");
+            }
+        }
+
         $goal = TipGoal::where('user_id',$creator->id)->where('completed', 0)->latest()->first();
 
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
