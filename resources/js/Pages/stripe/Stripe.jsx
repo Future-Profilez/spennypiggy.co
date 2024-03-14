@@ -131,11 +131,7 @@ export default function Stripe(props) {
                                             )
                                         }
                                     ></input>
-                                    I confirm that I will only use Spenny Piggy
-                                    to receive gifts, tips, donations. I will
-                                    not sell servicers or goods on my wishlist
-                                    and confirm that nothing on the prohibited
-                                    list above will be listed.
+                                    I confirm I will only use Spenny Piggy in line with the ToS and understand my account could be suspended for repeated violations. I also confirm that I will create and post exclusive content in exchange for receiving gifts, donations, subscriptions, memberships and bill payments. I also confirm that nothing on the above prohibited list will be added to my profile.
                                 </p>
                             </label>
                         </div>

@@ -66,7 +66,10 @@ export default function Dashboard(props) {
     const [its, setIts] = useState();
     const fetchingcats = (cat, signal) => {
         setLoading(true);
-        fetch(`/items/${username}${cat ? `/${cat}` : ""}`, { signal })
+        if(!cat){
+            setSelectedCat('');
+        }
+        fetch(`/items/${username}${cat ? `/${cat}` : ""}`)
             .then((response) => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
@@ -89,7 +92,7 @@ export default function Dashboard(props) {
         const controller = new AbortController();
         const { signal } = controller;
         if(tab == 'wishes'){
-            fetch_categories(signal);
+            fetch_categories();
             fetchingcats(false, signal);
         }
         return () => controller.abort();
@@ -248,25 +251,30 @@ export default function Dashboard(props) {
                         dangerouslySetInnerHTML={{__html:addicon}}
                     ></Dropdown.Toggle>
                     <Dropdown.Menu>
-                        <Suspense fallback={"Add Wishlist"}>
-                            <Wishlist  
-                                updateCategory={fetch_categories}
-                                currency={global_currency}
-                                setuped={auth.user &&auth.user.stripe_details_submitted ==1? true: false}
-                                fetchingcats={fetchingcats}
-                                categories={categories}
-                            />
-                        </Suspense>
-                        <Suspense fallback={"Add Membership"}>
-                            <AddMembership updateState={updateState} />
-                        </Suspense>
-                        <Suspense fallback={"Add Membership"}>
-                            <AddBills updatebill={updatebill}/>
-                        </Suspense>
+                        { auth.user && auth.user.stripe_details_submitted == 1 ? 
+                            <>
+                                <Suspense fallback={"Add Wishlist"}>
+                                    <Wishlist  
+                                        fetchcategories={fetch_categories}
+                                        currency={global_currency} 
+                                        setuped={auth.user &&auth.user.stripe_details_submitted == 1? true : false}
+                                        fetchingcats={fetchingcats}
+                                        categories={categories} 
+                                    />
+                                </Suspense> 
+                                <Suspense fallback={"Add Membership"}>
+                                    <AddMembership updateState={updateState} />
+                                </Suspense>
+                                <Suspense fallback={"Add Membership"}>
+                                    <AddBills updatebill={updatebill}/>
+                                </Suspense>
+                            </>
+                        : ''}
                         <Suspense fallback={"Add Post"}>
                             <AddPost updateState={updateState} />
                         </Suspense>
                     </Dropdown.Menu>
+
                 </Dropdown>
             ) : (
                 ""
@@ -294,10 +302,10 @@ export default function Dashboard(props) {
                         </div>
                         <Userprofile IsloggedIn={IsloggedIn} />
 
-                        {IsloggedIn ? <div className="alert bg-info">In order to comply with Stripe it is required that you post content for memberships, Bills and subscriptions regularly. Accounts not doing so will be suspended. Please reach out to support for more information</div>
+                        {IsloggedIn ? <div className="alert bg-info">In order to comply with Stripe it is required that you post content for memberships, Bills and subscriptions regularly. Accounts not doing so will be suspended. Please reach out to support for more information.</div>
                         : ''}                        
                         
-                        {user && user.stripe_details_submitted == "1" ? (
+                        {user && user.role == 1 ? (
                             <div className="wishManage">
                                 <div className="userManageRt mt-4">
                                     <div className={`tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`} >
@@ -322,21 +330,23 @@ export default function Dashboard(props) {
                                                             
                                                             {IsloggedIn ? (
                                                                 <div className="userProfileDate pt-0 pt-md-3">
-                                                                    {auth.user &&auth.user.stripe_details_submitted ==1 ? (
+                                                                    {auth.user && auth.user.stripe_details_submitted == 1 ? (
                                                                         <PaymentDashboard classes="btn-pink lg w-100 mt-3" text="Payment Dashboard" />
                                                                     ) : (
                                                                         <div className="finish mt-4 d-block">
                                                                             <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                                            <Link ref={"/stripe"} className="btn-pink lg" > Finish Setup
+                                                                            <Link href={"/stripe"} className="btn-pink lg" > Finish Setup
                                                                             </Link>
                                                                         </div>
                                                                     )}
 
-                                                                    <AddGoal
-                                                                        stripe_enabled={auth.user &&auth.user.stripe_details_submitted}
-                                                                        fetch_goal={fetch_goal}
-                                                                        activegoal={goal}
-                                                                    />
+                                                                    {auth.user && auth.user.stripe_details_submitted == 1 ? 
+                                                                        <AddGoal
+                                                                            stripe_enabled={auth.user && auth.user.stripe_details_submitted}
+                                                                            fetch_goal={fetch_goal}
+                                                                            activegoal={goal}
+                                                                        />
+                                                                    : ''}
 
 
                                                                     <div className="addsocial flex">
@@ -357,13 +367,16 @@ export default function Dashboard(props) {
                                                                 ""
                                                             )}
                                                         </div>
-                                                        {goal &&goal.completed == 0 ? <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ""}
+
+                                                        {goal && goal.completed == 0 ? <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ""}
+
                                                         <AddIntro uuid={user?.id || null} IsloggedIn={IsloggedIn}/>
+
                                                         </div>
 
                                                         {tab === "home" ? (
                                                             <div className="ps-md-4 order-md-222 col-md-6">
-                                                                {w > 767 ? <TipInner classes={`mb-4`} /> : ''}
+                                                                {user && user.stripe_details_submitted == 1 && w > 767 ? <TipInner classes={`mb-4`} /> : ''}
                                                                 <FeedList isUpdated={isUpdated}
                                                                     user={user} 
                                                                     IsloggedIn={IsloggedIn} 
@@ -377,11 +390,13 @@ export default function Dashboard(props) {
                                                 <Tab eventKey="wishes" title="Wishes">
                                                     <div className="min-height ">
                                                         {categories && categories.length ? <div className="new-wish-cats d-flex flex-wrap mb-3" >
-                                                            <div onClick={()=>showCategory('')} className={`${selectedCat == '' ? 'active' : ''} me-2 mb-2 wish-tags cursor-pointer`} >All</div>
+                                                            <div onClick={()=>showCategory('')} className={`${selectedCat == '' ? 'active' : ''} me-2  mb-2  wish-tags cursor-pointer`} >All</div>
+                                                            
                                                             {categories.map((c,i) => {
-                                                                return (<div onClick={()=>showCategory(c.id)} className={`${selectedCat == c.id ? 'active' : ''} me-2 mb-2 wish-tags cursor-pointer`} key={`cats-${i}`} >{c.category}</div>);
+                                                                return (<div onClick={()=>showCategory(c.id)} className={`${selectedCat == c.id ? 'active' : ''} me-2  mb-2  wish-tags cursor-pointer`} key={`cats-${i}`} >{c.category}</div>);
                                                             })}
-                                                            <EditCategories fetch_categories={fetch_categories} username={auth && auth?.user?.username || null} /> 
+
+                                                            {IsloggedIn ? <EditCategories fetch_categories={fetch_categories} username={auth && auth?.user?.username || null} /> : ''} 
                                                         </div> : ''}
                                                         {loading ? (
                                                             <LoadingScreen />
@@ -389,9 +404,7 @@ export default function Dashboard(props) {
                                                             ""
                                                         )}
                                                         <div className="row  items-lists">
-                                                            {IsloggedIn ||
-                                                            user?.stripe_details_submitted ==
-                                                                1 ? (
+                                                            {IsloggedIn || user?.stripe_details_submitted == 1 ? (
                                                                 <>
                                                                     {its &&
                                                                     its.length ? (
@@ -475,23 +488,9 @@ export default function Dashboard(props) {
                                                             ) : (
                                                                 <div className="col-md-12 p-5 my-5 notactive">
                                                                     <h5 className="loadingtext w-full text-center text-white mb-1">
-                                                                        {user.name}
-                                                                        's WishList
-                                                                        not
-                                                                        activated
-                                                                        yet.{" "}
+                                                                        {user.name}'s WishList not activated yet. 
                                                                     </h5>
-                                                                    <p className="text-center text-white text-large ">
-                                                                        {" "}
-                                                                        Until they
-                                                                        activate
-                                                                        their
-                                                                        wishlist,this
-                                                                        user won't
-                                                                        be able to
-                                                                        receive
-                                                                        gifts{" "}
-                                                                    </p>
+                                                                    <p className="text-center text-white text-large "> Until they activate their wishlist,this user won't be able to receive gifts </p>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -550,15 +549,12 @@ export default function Dashboard(props) {
                 </div>
 
                 {IsloggedIn ? (
-                    <Popup
-                        action={openCurrency}
-                        space="4"
-                        modalclassName="pinkmodal"
-                    >
-                        <ChangeCurrency
-                            currencyaction={currencyaction}
-                            defaultvalue={global_currency}
-                        />
+                    <Popup action={openCurrency} space="4"
+                    modalclassName="pinkmodal" >
+                    <ChangeCurrency
+                        currencyaction={currencyaction}
+                        defaultvalue={global_currency}
+                    />
                     </Popup>
                 ) : (
                     ""

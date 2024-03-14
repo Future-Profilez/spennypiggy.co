@@ -562,6 +562,10 @@ select#country{width:150px;}
 .userPr > .btn-pink{font-size:13px !important;}
 .infobox h3.headingSm{font-size:27px !important;}
 .full.modal .modal-dialog{margin:0 !important;}
+
+.full.modal .modal-dialog-centered {
+    align-items: normal !important;
+}
 .full.modal .modal-content{margin:0;max-width:100%;border:0 !important;border-radius:0 !important;box-shadow:none !important;}
 .wishtracker .nav.nav-tabs li button{font-size:15px !important;}
 .menu-toggle svg{width:45px;height:45px;}

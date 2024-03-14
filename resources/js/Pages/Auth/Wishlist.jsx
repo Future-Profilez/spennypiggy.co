@@ -16,17 +16,18 @@ import PriceFormat from "@/includes/PriceFormat";
 import axios from "axios";
 
 export default function Wishlist(props) {
+
     const { global_currency, auth } = usePage().props;
     const {
-        categories,
         fetchingcats,
-        updateCategory,
+        fetchcategories,
         currency,
         item,
         editpop,
         openPop,
         setuped,
     } = props;
+
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
     const [defaultKey, setDefaultKey] = useState(
@@ -35,44 +36,45 @@ export default function Wishlist(props) {
     const [clear, setClear] = useState();
     const [close, setClose] = useState();
     const { formatMultiPrice } = PriceFormat();
-    useEffect(() => {
-        setClose(openPop);
-    }, [openPop]);
-
     const [repeat, setRepeat] = useState(true);
     const [thumbnail, setThumbnail] = useState("");
     const [adding, setAdding] = useState(false);
     const [rewardImage, setRewardImage] = useState('');
+    useEffect(() => {
+        setClose(openPop);
+    }, [openPop]);
+
+
+    const [categories, setcategories] = useState([]);
+    const fetch_categories = async () => {
+        const controller = new AbortController();
+        const { signal } = controller;
+        axios.get(`/user_category/${auth && auth.user && auth.user.username}`, { signal })
+        .then((resp) => {
+            setcategories(resp.data.categories);
+        })
+        .catch((_err) => {
+            console.error("error", _err);
+        });
+    };
+
+    useEffect(()=>{
+        fetch_categories();
+    },[])
+
 
     const AddCategory = async () => {
         const value = inputRef.current.value;
         setAdding(true);
         axios.post("save-category",{ category: value }).then((res) => {
             setAdding(false);
-            updateCategory();
             successAlert(res.data.msg || "Added");
+            fetch_categories();
+            inputRef.current.value = '';
         }).catch((err) => {
-            console.error("error", err);
             setAdding(false);
+            errorsHandling(err);
         });
-        // axios.post("save-category",{ category: value },{
-        //         preserveScroll: true,
-        //         onSuccess: (resp) => {
-        //             inputRef.current.value = "";
-        //             if (resp.props.flash?.success) {
-        //                 successAlert(resp.props.flash?.success || "Added");
-        //             }
-        //             if (resp.props.flash?.error) {
-        //                 errorAlert(resp.props.flash?.error);
-        //             }
-        //         },
-        //         onError: (_err) => {
-        //             console.table("error", _err);
-        //             setAdding(false);
-        //             errorAlert(_err?.category);
-        //         },
-        //     }
-        // );
     };
 
     const imageLinks = [
@@ -107,15 +109,17 @@ export default function Wishlist(props) {
     };
 
     const [checkboxes, setCheckboxes] = useState([]);
+    const [real_category, setreal_category] = useState(item && item.real_category);
     const catValue = (event) => {
         const { value, checked } = event.target;
         if (checked) {
             setCheckboxes([...checkboxes, value]);
         } else {
+            setreal_category(checkboxes.filter((item) => item !== value));
             setCheckboxes(checkboxes.filter((item) => item !== value));
         }
     };
-
+    
     const getFileUID = async (data) => {
         let ss = data?.uuid;
         setThumbnail(ss);
@@ -125,6 +129,11 @@ export default function Wishlist(props) {
         let ss = data?.uuid;
         setRewardImage(ss);
     };
+
+    useEffect(() => {
+        console.log("Checkboxes State:", checkboxes);
+    }, [checkboxes]);
+
 
     useEffect(() => {
         setData("reward_file", rewardImage);
@@ -179,6 +188,7 @@ export default function Wishlist(props) {
                             setClose();
                         }, 100);
                         fetchingcats();
+                         fetchcategories && fetchcategories();
                     }
                     if (resp.props.flash?.error) {
                         errorAlert(resp.props.flash?.error || "Something went wrong.");
@@ -218,6 +228,10 @@ export default function Wishlist(props) {
     };
 
     const defaultCurrency = (auth && auth.user && auth.user.default_currency) || "GBP";
+                   
+         
+    
+
 
     return (
         <Popup
@@ -231,7 +245,7 @@ export default function Wishlist(props) {
                 <div className="editprofileModalInner">
                             <h2 className='p-4 text-pink text-start font-GillSans uppercase text-large black-stroke font-semibold mb-1 pe-5'>{editpop ? " Edit Wish" : "Add A Wish"}</h2>
                             <div className="wishinfo border-top pt-0">
-                                <p className="text-warning mb-4 pt-3" >When adding items please ensure they are specific i.e Holiday Clothes or New Gym Equipment. Items that are non specific will be rejected and removed. Our AI blcoks adult content but any overly suggestive images will also be rejected. Please reach out to support for further clarification</p>
+                                <p className="text-warning mb-4 pt-3" >When adding items please ensure they are specific i.e Holiday Clothes or New Gym Equipment. Items that are non specific will be rejected and removed. Our AI blocks adult content but any overly suggestive images will also be rejected. Please reach out to support for further clarification</p>
                                 <form onSubmit={createWishList}>
                                     <ul className="ps-0">
                                         <li className="mb-4">
@@ -246,12 +260,7 @@ export default function Wishlist(props) {
                                                 value={data.wishname}
                                                 className="form-input px-2 py-2 border w-full rounded-md"
                                                 autoComplete="name"
-                                                onChange={(e) =>
-                                                    setData(
-                                                        "wishname",
-                                                        e.target.value
-                                                    )
-                                                }
+                                                onChange={(e) => setData( "wishname",e.target.value )}
                                                 required
                                             />
                                         </li>
@@ -268,28 +277,15 @@ export default function Wishlist(props) {
                                                     type="number"
                                                     name="price"
                                                     placeholder="Eg. 50"
-                                                    value={
-                                                        data.price ||
-                                                        (item && item.price)
-                                                    }
+                                                    value={data.price || (item && item.price)}
                                                     step={`0.01`}
                                                     className="form-input px-2 py-2 border w-full rounded-md"
                                                     autoComplete="price"
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            "price",
-                                                            e.target.value
-                                                        )
-                                                    }
+                                                    onChange={(e) => setData( "price",e.target.value )}
                                                 />
                                             </div>
                                             <p className="mt-1">
-                                                The wish item amount is set to{" "}
-                                                {formatMultiPrice(
-                                                    data.price,
-                                                    defaultCurrency
-                                                )}
-                                                .
+                                                The wish item amount is set to {formatMultiPrice(data.price,defaultCurrency)}.
                                             </p>
                                         </li>
                                         <li className="mb-4">
@@ -301,18 +297,10 @@ export default function Wishlist(props) {
                                                 type="text"
                                                 placeholder="URL"
                                                 name="item_url"
-                                                value={
-                                                    data.item_url ||
-                                                    (item && item.item_url)
-                                                }
+                                                value={data.item_url || (item && item.item_url)}
                                                 className="form-input px-2 py-2 border w-full rounded-md"
                                                 autoComplete="item_url"
-                                                onChange={(e) =>
-                                                    setData(
-                                                        "item_url",
-                                                        e.target.value
-                                                    )
-                                                }
+                                                onChange={(e) => setData( "item_url",e.target.value )}
                                             />
                                         </li>
                                             
@@ -324,11 +312,7 @@ export default function Wishlist(props) {
                                             {item && item.perma_link ? (
                                                 <div className="default-wish-img mb-1">
                                                     <img
-                                                        src={
-                                                            (item &&
-                                                                item.perma_link) ||
-                                                            uploadedimg
-                                                        }
+                                                        src={(item && item.perma_link) || uploadedimg}
                                                         className="img-fluid"
                                                     />
                                                 </div>
@@ -352,9 +336,7 @@ export default function Wishlist(props) {
                                                         imageLinks.map(
                                                             (image) => {
                                                                 return (
-                                                                    <SwiperSlide
-                                                                        key={`swiper-item-${image}`}
-                                                                    >
+                                                                    <SwiperSlide key={`swiper-item-${image}`}>
                                                                         <div className="default-wish-img mb-1">
                                                                             <img
                                                                                 src={`https://ucarecdn.com/${image}/`}
@@ -367,10 +349,7 @@ export default function Wishlist(props) {
                                                         )}
                                                 </Swiper>
                                             )}
-
-                                            <h4 className="mt-2 mb-2 w-100 text-center">
-                                                OR
-                                            </h4>
+                                            <h4 className="mt-2 mb-2 w-100 text-center"> OR </h4>
                                             <GlobalUploader
                                                 type="minimal"
                                                 clear={clear}
@@ -425,19 +404,13 @@ export default function Wishlist(props) {
                                             </Accordion.Item>
                                             <Accordion.Item eventKey={1}>
                                                 <Accordion.Header
-                                                    onClick={(e) => setSubs(1)}
-                                                >
+                                                    onClick={(e) => setSubs(1)} >
                                                     <span className="activedote"></span>{" "}
                                                     Subscription
                                                 </Accordion.Header>
                                                 <Accordion.Body>
                                                     <div className="singlewishbox rounded ">
-                                                        <strong className="mb-2 text-start d-block ">
-                                                            Allows gifter to
-                                                            purchase this item
-                                                            on a recurring
-                                                            basis.
-                                                        </strong>
+                                                        <strong className="mb-2 text-start d-block "> Allows gifter to purchase this item on a recurring basis. </strong>
                                                         <div className="repeatpurchase text-start">
                                                             <label htmlFor="daily">
                                                                 <input
@@ -451,9 +424,7 @@ export default function Wishlist(props) {
                                                                         "daily"
                                                                     }
                                                                     name="subscription_period"
-                                                                    onChange={
-                                                                        spValue
-                                                                    }
+                                                                    onChange={spValue}
                                                                 />
                                                                 Daily
                                                             </label>
@@ -562,27 +533,26 @@ export default function Wishlist(props) {
                                                 <p> Organize your wishes to help gifters find what they're looking for while on your wishlist.</p>
 
                                                 <div className="catslists">
-                                                    {categories &&
-                                                    categories.length
+                                                    {categories && categories.length
                                                         ? categories.map(
                                                               (c, i) => {
-                                                                // const isCategory = item && item.wish_categories.includes(c.id)
+                                                                const filteritem = real_category && real_category.filter(item => item?.category == c?.category );
+                                                                const isCategory = filteritem && filteritem[0] ? true : null;
                                                                   return (
                                                                       <>
                                                                           <div className="repeatpurchase mb-2 text-start">
                                                                               <label
                                                                                   className="text-capitalize"
-                                                                                  htmlFor={"categories" +i}>  
+                                                                                  htmlFor={"categories"+i}>  
                                                                                   <input
-                                                                                      type="checkbox"
-                                                                                      id={"categories" +i}
-                                                                                      value={c.id}
-                                                                                      name="category"
-                                                                                      onChange={catValue}
-                                                                                    //  checked={isCategory}
+                                                                                    type="checkbox"
+                                                                                    id={"categories" +i}
+                                                                                    value={c.id}
+                                                                                    name="category"
+                                                                                    onChange={catValue}
+                                                                                    checked={isCategory}
                                                                                   />
                                                                                   {c.category}
-                                                                                  {isCategory && isCategory.user_category_id} {c.id}
                                                                               </label>
                                                                           </div>
                                                                       </>
