@@ -18,6 +18,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Ramsey\Uuid\Uuid;
 use App\Jobs\WelcomeUser;
+use App\Models\AllowedDomain;
 use App\Models\PromoCode;
 use App\Models\Referal;
 use Carbon\Carbon;
@@ -61,6 +62,21 @@ class RegisteredUserController extends Controller
             'username' => ['required', 'string', 'lowercase', 'max:20', 'unique:users,username'],
             'role' => ['required']
         ]);
+
+        $exist = User::where('email',$request->email)->whereNull('deleted_at')->first();
+
+        if(!empty($exist)){
+            return redirect()->back()->with('error',"This email already has been taken.");
+        }
+
+        $email = strtolower($request->email);
+        $domain = explode('@', $email);
+
+        $secure = AllowedDomain::all()->pluck('name')->toArray();
+
+        if (!in_array($domain[1], $secure)) {
+            return redirect()->back()->with('error',"Invalid Email Id.");
+        }
 
         $checkdata = Helpers::checkBlockData($request);
         if ($checkdata == 1) {

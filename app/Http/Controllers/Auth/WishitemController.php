@@ -351,9 +351,9 @@ class WishitemController extends Controller
 
                     $wish->refresh();
                     if (!empty($request->category)) {
+                        WishCategory::where('wish_item_id', $wish->id)->delete();
                         foreach ($request->category as $key => $value) {
 
-                            WishCategory::where('wish_item_id', $wish->id)->delete();
 
                             $wish_cat = new WishCategory();
                             $wish_cat->uuid = Uuid::uuid4();
