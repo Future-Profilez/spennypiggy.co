@@ -42,7 +42,8 @@ class WishItem extends Model
     protected $appends = [
         "perma_link",
         'is_cart',
-        'reward_url'
+        'reward_url',
+        'real_category'
     ];
 
     public static function boot()
@@ -111,6 +112,16 @@ class WishItem extends Model
     public function wishCategories()
     {
         return $this->hasMany(WishCategory::class);
+    }
+
+    public function getRealCategoryAttribute()
+    {
+        $arr = [];
+        foreach ($this->wishCategories as $category) {
+            $arr[] = $category->category;
+        }
+
+        return $arr;
     }
 
     public function getIsCartAttribute()
