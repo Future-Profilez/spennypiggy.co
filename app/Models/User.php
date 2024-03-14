@@ -28,7 +28,7 @@ class User extends Authenticatable
         'uuid',
         'name',
         'email',
-        'is_gifter',
+        'role',
         'username',
         'password',
         'gender',

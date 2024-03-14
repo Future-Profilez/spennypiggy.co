@@ -73,7 +73,7 @@ class RegisteredUserController extends Controller
                 'username' => $request->username,
                 'gender' => $request->gender ?? null,
                 'password' => Hash::make($request->password),
-                'is_gifter' => $request->role ?? 0
+                'role' => $request->role ?? 0
             ]);
             $user->refresh();
 
