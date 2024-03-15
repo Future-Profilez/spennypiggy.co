@@ -43,13 +43,13 @@ export default function Userprofile({ IsloggedIn }) {
                         <p className="text-center text-mint" >🐷 {supporters} Supporters</p>
                     </div>
                     :  
-                    <>
+                    <div>
                     <EditProfile
                     user={user}
                     global_currency={global_currency}
                     />
                     <p className="text-center text-mint" >🐷 {supporters} Supporters</p>
-                    </>
+                    </div>
                 || ''}
                 
             </div>
