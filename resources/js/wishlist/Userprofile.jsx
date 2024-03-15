@@ -37,19 +37,19 @@ export default function Userprofile({ IsloggedIn }) {
                 </div>
                 
 
-                { !IsloggedIn ? 
-                    user && user.stripe_details_submitted == 1 && 
-                    // <SendSurprise auth={auth} owner={user} /> 
+                { !IsloggedIn ? user && user.stripe_details_submitted == 1 && 
                     <div>
-                    <SendTip  />
-                    <p className="text-center text-mint" >{supporters} Supporters</p>
+                        <SendTip  />
+                        <p className="text-center text-mint" >🐷 {supporters} Supporters</p>
                     </div>
-
                     :  
+                    <>
                     <EditProfile
                     user={user}
                     global_currency={global_currency}
                     />
+                    <p className="text-center text-mint" >🐷 {supporters} Supporters</p>
+                    </>
                 || ''}
                 
             </div>

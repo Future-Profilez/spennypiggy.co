@@ -51,14 +51,12 @@ export default function Dashboard(props) {
     const [categories, setcategories] = useState([]);
 
     const fetch_categories = async (signal) => {
-        axios
-            .get(`/user_category/${username}`, { signal })
-            .then((resp) => {
-                setcategories(resp.data.categories);
-            })
-            .catch((_err) => {
-                console.error("error", _err);
-            });
+        axios.get(`/user_category/${username}`, { signal })
+        .then((resp) => {
+            setcategories(resp.data.categories);
+        }).catch((_err) => {
+            console.error("error", _err);
+        });
     };
 
 
@@ -132,6 +130,7 @@ export default function Dashboard(props) {
                 setfetchingGoal(false);
             });
     };
+
     useEffect(() => {
         const controller = new AbortController();
         const { signal } = controller;
@@ -302,7 +301,10 @@ export default function Dashboard(props) {
                         </div>
                         <Userprofile IsloggedIn={IsloggedIn} />
 
-                        {IsloggedIn ? <div className="alert bg-info">In order to comply with Stripe it is required that you post content for memberships, Bills and subscriptions regularly. Accounts not doing so will be suspended. Please reach out to support for more information.</div>
+                        {user && user?.role == 1 && IsloggedIn ? <div className="alert bg-info">
+                            In order to comply with Stripe it is required that you post content for memberships, 
+                            Bills and subscriptions regularly. Accounts not doing so will be suspended. 
+                            Please reach out to support for more information.</div>
                         : ''}                        
                         
                         {user && user.role == 1 ? (
@@ -330,21 +332,24 @@ export default function Dashboard(props) {
                                                             
                                                             {IsloggedIn ? (
                                                                 <div className="userProfileDate pt-0 pt-md-3">
-                                                                    {auth.user && auth.user.stripe_details_submitted == 1 ? (
-                                                                        <PaymentDashboard classes="btn-pink lg w-100 mt-3" text="Payment Dashboard" />
-                                                                    ) : (
-                                                                        <div className="finish mt-4 d-block">
-                                                                            <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                                            <Link href={"/stripe"} className="btn-pink lg" > Finish Setup
-                                                                            </Link>
-                                                                        </div>
-                                                                    )}
+                                                                    
+                                                                    {auth.user && auth.user.role == 1 && <>
+                                                                        {auth.user && auth.user.stripe_details_submitted == 1 ? (
+                                                                            <PaymentDashboard classes="btn-pink lg w-100 mt-3" text="Payment Dashboard" />
+                                                                        ) : (
+                                                                            <div className="finish mt-4 d-block">
+                                                                                <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                                                                <Link href={"/stripe"} className="btn-pink lg" > Finish Setup
+                                                                                </Link>
+                                                                            </div>
+                                                                        )}
+                                                                    </> || ''}
 
                                                                     {auth.user && auth.user.stripe_details_submitted == 1 ? 
                                                                         <AddGoal
-                                                                            stripe_enabled={auth.user && auth.user.stripe_details_submitted}
-                                                                            fetch_goal={fetch_goal}
-                                                                            activegoal={goal}
+                                                                        stripe_enabled={auth.user && auth.user.stripe_details_submitted}
+                                                                        fetch_goal={fetch_goal}
+                                                                        activegoal={goal}
                                                                         />
                                                                     : ''}
 
@@ -368,7 +373,7 @@ export default function Dashboard(props) {
                                                             )}
                                                         </div>
 
-                                                        {goal && goal.completed == 0 ? <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ""}
+                                                        {user && user?.stripe_details_submitted == 1 && goal && goal.completed == 0 ? <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ""}
 
                                                         <AddIntro uuid={user?.id || null} IsloggedIn={IsloggedIn}/>
 
@@ -542,9 +547,13 @@ export default function Dashboard(props) {
                                     </div>
                                 </div>
                             </div>
-                        ) : (
-                            <Gifter IsloggedIn={IsloggedIn} />
-                        )}
+                        ) : <>
+                            <Gifter 
+                            fetchingLinks={fetchingLinks} 
+                            sLinks={sLinks}
+                            IsloggedIn={IsloggedIn} />
+                        </>
+                        }
                     </div>
                 </div>
 
