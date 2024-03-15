@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect, Suspense } from "react";
 import { useAlerts } from "@/Components/Alerts";
 import { Head, Link, usePage } from "@inertiajs/react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
-
 import { addicon } from "@/includes/Icons";
 const AddGoal = React.lazy(() => import("./TipJar/AddGoal"));
 const Wishlist = React.lazy(() => import("./Auth/Wishlist"));
@@ -20,15 +19,7 @@ const MembershipsLists = React.lazy(() =>import("./membership/MembershipsLists")
 const AddMembership = React.lazy(() => import("./membership/AddMembership"));
 const Gifter = React.lazy(() => import("./gifter/Gifter"));
 const AddBills = React.lazy(() => import("./bills/AddBills"));
-import Dropdown from "react-bootstrap/Dropdown";
-import Tab from "react-bootstrap/Tab";
-import Tabs from "react-bootstrap/Tabs";
-import axios from "axios";
-import Guest from "@/Layouts/GuestLayout";
-import { LazyLoadImage } from "react-lazy-load-image-component";
-import useWidthCount from "@/Components/useWidthCount";
-import{arrayMove,SortableContext,sortableKeyboardCoordinates,useSortable,rectSortingStrategy,}from "@dnd-kit/sortable";
-import{closestCenter,DndContext,KeyboardSensor,MouseSensor,TouchSensor,useSensor,useSensors,}from "@dnd-kit/core";
+const EditCategories = React.lazy(() => import("@/wishlist/EditCategories"));
 const TipInner = React.lazy(() => import("./TipJar/TipInner"));
 const Billslist = React.lazy(() => import("./bills/Billslist"));
 const FeedList = React.lazy(() => import("./feed/FeedList"));
@@ -36,6 +27,17 @@ const AddPost = React.lazy(() => import("./feed/AddPost"));
 const AddIntro = React.lazy(() => import("./intros/AddIntro"));
 const MyGoal = React.lazy(() => import("./TipJar/MyGoal"));
 const SocialLinks = React.lazy(() => import("@/includes/SocialLinks"));
+import Dropdown from "react-bootstrap/Dropdown";
+import Tab from "react-bootstrap/Tab";
+import Tabs from "react-bootstrap/Tabs";
+import axios from "axios";
+import Guest from "@/Layouts/GuestLayout";
+import { LazyLoadImage } from "react-lazy-load-image-component";
+import useWidthCount from "@/Components/useWidthCount";
+
+import{arrayMove,SortableContext,sortableKeyboardCoordinates,useSortable,rectSortingStrategy,}from "@dnd-kit/sortable";
+import{closestCenter,DndContext,KeyboardSensor,MouseSensor,TouchSensor,useSensor,useSensors,}from "@dnd-kit/core";
+
 
 export default function Dashboard(props) {
     const w = useWidthCount();
@@ -49,20 +51,23 @@ export default function Dashboard(props) {
     const [categories, setcategories] = useState([]);
 
     const fetch_categories = async (signal) => {
-        axios
-            .get(`/user_category/${username}`, { signal })
-            .then((resp) => {
-                setcategories(resp.data.categories);
-            })
-            .catch((_err) => {
-                console.error("error", _err);
-            });
+        axios.get(`/user_category/${username}`, { signal })
+        .then((resp) => {
+            setcategories(resp.data.categories);
+        }).catch((_err) => {
+            console.error("error", _err);
+        });
     };
 
+
+    console.log("props", props);
     const [its, setIts] = useState();
     const fetchingcats = (cat, signal) => {
         setLoading(true);
-        fetch(`/items/${username}${cat ? `/${cat}` : ""}`, { signal })
+        if(!cat){
+            setSelectedCat('');
+        }
+        fetch(`/items/${username}${cat ? `/${cat}` : ""}`)
             .then((response) => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
@@ -85,7 +90,7 @@ export default function Dashboard(props) {
         const controller = new AbortController();
         const { signal } = controller;
         if(tab == 'wishes'){
-            fetch_categories(signal);
+            fetch_categories();
             fetchingcats(false, signal);
         }
         return () => controller.abort();
@@ -125,6 +130,7 @@ export default function Dashboard(props) {
                 setfetchingGoal(false);
             });
     };
+
     useEffect(() => {
         const controller = new AbortController();
         const { signal } = controller;
@@ -244,25 +250,30 @@ export default function Dashboard(props) {
                         dangerouslySetInnerHTML={{__html:addicon}}
                     ></Dropdown.Toggle>
                     <Dropdown.Menu>
-                        <Suspense fallback={"Add Wishlist"}>
-                            <Wishlist  
-                                updateCategory={fetch_categories}
-                                currency={global_currency}
-                                setuped={auth.user &&auth.user.stripe_details_submitted ==1? true: false}
-                                fetchingcats={fetchingcats}
-                                categories={categories}
-                            />
-                        </Suspense>
-                        <Suspense fallback={"Add Membership"}>
-                            <AddMembership updateState={updateState} />
-                        </Suspense>
-                        <Suspense fallback={"Add Membership"}>
-                            <AddBills updatebill={updatebill}/>
-                        </Suspense>
+                        { auth.user && auth.user.stripe_details_submitted == 1 ? 
+                            <>
+                                <Suspense fallback={"Add Wishlist"}>
+                                    <Wishlist  
+                                        fetchcategories={fetch_categories}
+                                        currency={global_currency} 
+                                        setuped={auth.user &&auth.user.stripe_details_submitted == 1? true : false}
+                                        fetchingcats={fetchingcats}
+                                        categories={categories} 
+                                    />
+                                </Suspense> 
+                                <Suspense fallback={"Add Membership"}>
+                                    <AddMembership updateState={updateState} />
+                                </Suspense>
+                                <Suspense fallback={"Add Membership"}>
+                                    <AddBills updatebill={updatebill}/>
+                                </Suspense>
+                            </>
+                        : ''}
                         <Suspense fallback={"Add Post"}>
                             <AddPost updateState={updateState} />
                         </Suspense>
                     </Dropdown.Menu>
+
                 </Dropdown>
             ) : (
                 ""
@@ -288,14 +299,15 @@ export default function Dashboard(props) {
                                 width={1200}
                             />
                         </div>
-                        <Userprofile
-                            auth={auth && auth.user}
-                            IsloggedIn={IsloggedIn}
-                            links={socialLinks}
-                            user={user}
-                            global_currency={global_currency}
-                        />
-                        {user && user.stripe_details_submitted == "1" ? (
+                        <Userprofile IsloggedIn={IsloggedIn} />
+
+                        {user && user?.role == 1 && IsloggedIn ? <div className="alert bg-info">
+                            In order to comply with Stripe it is required that you post content for memberships, 
+                            Bills and subscriptions regularly. Accounts not doing so will be suspended. 
+                            Please reach out to support for more information.</div>
+                        : ''}                        
+                        
+                        {user && user.role == 1 ? (
                             <div className="wishManage">
                                 <div className="userManageRt mt-4">
                                     <div className={`tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`} >
@@ -320,21 +332,26 @@ export default function Dashboard(props) {
                                                             
                                                             {IsloggedIn ? (
                                                                 <div className="userProfileDate pt-0 pt-md-3">
-                                                                    {auth.user &&auth.user.stripe_details_submitted ==1 ? (
-                                                                        <PaymentDashboard classes="btn-pink lg w-100 mt-3" text="Payment Dashboard" />
-                                                                    ) : (
-                                                                        <div className="finish mt-4 d-block">
-                                                                            <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                                            <Link ref={"/stripe"} className="btn-pink lg" > Finish Setup
-                                                                            </Link>
-                                                                        </div>
-                                                                    )}
+                                                                    
+                                                                    {auth.user && auth.user.role == 1 && <>
+                                                                        {auth.user && auth.user.stripe_details_submitted == 1 ? (
+                                                                            <PaymentDashboard classes="btn-pink lg w-100 mt-3" text="Payment Dashboard" />
+                                                                        ) : (
+                                                                            <div className="finish mt-4 d-block">
+                                                                                <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                                                                <Link href={"/stripe"} className="btn-pink lg" > Finish Setup
+                                                                                </Link>
+                                                                            </div>
+                                                                        )}
+                                                                    </> || ''}
 
-                                                                    <AddGoal
-                                                                        stripe_enabled={auth.user &&auth.user.stripe_details_submitted}
+                                                                    {auth.user && auth.user.stripe_details_submitted == 1 ? 
+                                                                        <AddGoal
+                                                                        stripe_enabled={auth.user && auth.user.stripe_details_submitted}
                                                                         fetch_goal={fetch_goal}
                                                                         activegoal={goal}
-                                                                    />
+                                                                        />
+                                                                    : ''}
 
 
                                                                     <div className="addsocial flex">
@@ -355,13 +372,16 @@ export default function Dashboard(props) {
                                                                 ""
                                                             )}
                                                         </div>
-                                                        {goal &&goal.completed == 0 ? <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ""}
+
+                                                        {user && user?.stripe_details_submitted == 1 && goal && goal.completed == 0 ? <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ""}
+
                                                         <AddIntro uuid={user?.id || null} IsloggedIn={IsloggedIn}/>
+
                                                         </div>
 
                                                         {tab === "home" ? (
                                                             <div className="ps-md-4 order-md-222 col-md-6">
-                                                                {w > 767 ? <TipInner classes={`mb-4`} /> : ''}
+                                                                {user && user.stripe_details_submitted == 1 && w > 767 ? <TipInner classes={`mb-4`} /> : ''}
                                                                 <FeedList isUpdated={isUpdated}
                                                                     user={user} 
                                                                     IsloggedIn={IsloggedIn} 
@@ -375,10 +395,13 @@ export default function Dashboard(props) {
                                                 <Tab eventKey="wishes" title="Wishes">
                                                     <div className="min-height ">
                                                         {categories && categories.length ? <div className="new-wish-cats d-flex flex-wrap mb-3" >
-                                                            <div onClick={()=>showCategory('')} className={`${selectedCat == '' ? 'active' : ''} me-2 mb-2 wish-tags cursor-pointer`} >All</div>
+                                                            <div onClick={()=>showCategory('')} className={`${selectedCat == '' ? 'active' : ''} me-2  mb-2  wish-tags cursor-pointer`} >All</div>
+                                                            
                                                             {categories.map((c,i) => {
-                                                                return (<div onClick={()=>showCategory(c.id)} className={`${selectedCat == c.id ? 'active' : ''} me-2 mb-2 wish-tags cursor-pointer`} key={`cats-${i}`} >{c.category}</div>);
+                                                                return (<div onClick={()=>showCategory(c.id)} className={`${selectedCat == c.id ? 'active' : ''} me-2  mb-2  wish-tags cursor-pointer`} key={`cats-${i}`} >{c.category}</div>);
                                                             })}
+
+                                                            {IsloggedIn ? <EditCategories fetch_categories={fetch_categories} username={auth && auth?.user?.username || null} /> : ''} 
                                                         </div> : ''}
                                                         {loading ? (
                                                             <LoadingScreen />
@@ -386,9 +409,7 @@ export default function Dashboard(props) {
                                                             ""
                                                         )}
                                                         <div className="row  items-lists">
-                                                            {IsloggedIn ||
-                                                            user?.stripe_details_submitted ==
-                                                                1 ? (
+                                                            {IsloggedIn || user?.stripe_details_submitted == 1 ? (
                                                                 <>
                                                                     {its &&
                                                                     its.length ? (
@@ -472,23 +493,9 @@ export default function Dashboard(props) {
                                                             ) : (
                                                                 <div className="col-md-12 p-5 my-5 notactive">
                                                                     <h5 className="loadingtext w-full text-center text-white mb-1">
-                                                                        {user.name}
-                                                                        's WishList
-                                                                        not
-                                                                        activated
-                                                                        yet.{" "}
+                                                                        {user.name}'s WishList not activated yet. 
                                                                     </h5>
-                                                                    <p className="text-center text-white text-large ">
-                                                                        {" "}
-                                                                        Until they
-                                                                        activate
-                                                                        their
-                                                                        wishlist,this
-                                                                        user won't
-                                                                        be able to
-                                                                        receive
-                                                                        gifts{" "}
-                                                                    </p>
+                                                                    <p className="text-center text-white text-large "> Until they activate their wishlist,this user won't be able to receive gifts </p>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -540,22 +547,23 @@ export default function Dashboard(props) {
                                     </div>
                                 </div>
                             </div>
-                        ) : (
-                            <Gifter IsloggedIn={IsloggedIn} />
-                        )}
+                        ) : <>
+                            <Gifter 
+                            fetchingLinks={fetchingLinks} 
+                            sLinks={sLinks}
+                            IsloggedIn={IsloggedIn} />
+                        </>
+                        }
                     </div>
                 </div>
 
                 {IsloggedIn ? (
-                    <Popup
-                        action={openCurrency}
-                        space="4"
-                        modalclassName="pinkmodal"
-                    >
-                        <ChangeCurrency
-                            currencyaction={currencyaction}
-                            defaultvalue={global_currency}
-                        />
+                    <Popup action={openCurrency} space="4"
+                    modalclassName="pinkmodal" >
+                    <ChangeCurrency
+                        currencyaction={currencyaction}
+                        defaultvalue={global_currency}
+                    />
                     </Popup>
                 ) : (
                     ""

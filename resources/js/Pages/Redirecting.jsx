@@ -1,6 +1,6 @@
 import React from 'react'
 import axios from 'axios'
-import { router, usePage } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { useEffect } from 'react';
 
