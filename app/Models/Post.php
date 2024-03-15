@@ -25,7 +25,8 @@ class Post extends Model
     protected $appends = [
         'image_url',
         'likes_count',
-        'liked'
+        'liked',
+        'comments_count'
     ];
 
     public static function boot()
@@ -54,6 +55,14 @@ class Post extends Model
 
     public function comments(){
         return $this->hasMany(PostComment::class,'post_id');
+    }
+
+    public function getCommentsCountAttribute(){
+        $count = $this->comments()->count();
+        foreach ($this->comments as $key => $value) {
+            $count += $value->replies()->count();
+        }
+        return $count;
     }
 
     public function getLikedAttribute(){
