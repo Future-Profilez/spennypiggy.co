@@ -48,7 +48,7 @@ export default function Userprofile({ IsloggedIn }) {
                     user={user}
                     global_currency={global_currency}
                     />
-                    <p className="text-center text-mint" >🐷 {supporters} Supporters</p>
+                    <p className="text-center text-mint mt-2" >🐷 {supporters} Supporters</p>
                     </div>
                 || ''}
                 
