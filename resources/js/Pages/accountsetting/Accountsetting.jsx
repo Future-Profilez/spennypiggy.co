@@ -82,7 +82,7 @@ export default function Accountsetting(props) {
                             </li>
 
                             <li>
-                                <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>VAT <span className='text-gray'>{vatpercent}%</span></>} >
+                                <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>VAT <span className='text-gray'>{vatpercent || "0"}%</span></>} >
                                     <ChangeVat defaultvalue={vatpercent} updatevat={updatevat} />
                                 </Popup>
                             </li>

@@ -45,7 +45,7 @@ export default function Post({item, updateState}) {
       return "subscriber only"
     }
     if(item && item.for_module === 'support'){
-      return "supportors only"
+      return "supporters only"
     }
   }
 
@@ -89,8 +89,9 @@ export default function Post({item, updateState}) {
           <div onClick={()=>setShowComments(!showComments)} dangerouslySetInnerHTML={{ __html: comment }} />
         </div>
         
-        <div>
-          <p className="like-count text-dark"><b><span id="like-number">{lcount || 0}</span> likes</b></p>
+        <div className='d-flex' >
+          <p className="like-count text-dark me-3"><b><span id="like-number">{lcount || 0}</span> likes</b></p>
+          <p className="like-count text-dark"><b><span id="like-number">{item?.comments_count || 0}</span> Comments</b></p>
         </div>
 
         {showComments ? <CommentList  post_uuid={item.uuid} /> : ''}

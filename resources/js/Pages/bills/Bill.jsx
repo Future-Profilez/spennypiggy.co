@@ -41,7 +41,8 @@ export default function Bill(props) {
     return r.toFixed(1);
   }
 
-  return <div key={key} style={IsloggedIn ? style : stylenone}  className={`billbox wish-item-box ${classes} ${isDragging ? 'dragging' : ''}`}> 
+  return <>
+    <div key={key} style={IsloggedIn ? style : stylenone}  className={`billbox wish-item-box ${classes} ${isDragging ? 'dragging' : ''}`}> 
       <div  className='wishlistcntbox  mb-3 mb-sm-4 whbg relative'>
         <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
           <LazyLoadImage
@@ -62,17 +63,18 @@ export default function Bill(props) {
         <p className='text-start text-small mt-3' >Pay bill and gain access to member only posts</p>
         </div>
 
-         <div className='p-sm-3 p-3 pt-0 pt-sm-0' >
+        <div className='p-sm-3 p-3 pt-0 pt-sm-0' >
             {IsloggedIn ?
                 <AddBills fetchBills={props.fetchBills} classes="button  px-2 w-100 sm" text="Update Bill"
                 item={itm} isEdit={true} />
               :
-            <Link method='get'
+            <Link method='get' 
               href={route('bill.checkout',{uuid: itm.uuid})}
               className='btn-pink sm text-center' >Pay Bill</Link>
             } 
-           </div>
+          </div>
         
       </div>
     </div>
+  </>
 }
