@@ -746,7 +746,7 @@ class StripeController extends Controller
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
         // This is your Stripe CLI webhook secret for testing your endpoint locally.
-        $endpoint_secret = 'whsec_qNWOiTkgFFtKhrjRNWKfwWXUyWdSSIyo';
+        $endpoint_secret = 'whsec_o1Y8bPrcVLiQInKYsJ8LrbxUpQslQYvl';
 
         $payload = @file_get_contents('php://input');
         $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
@@ -817,8 +817,28 @@ class StripeController extends Controller
                     'notification' => $subs->user->notification_send ?? 0
                 ];
 
-                $subs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+                $subs->status = "ended";
                 $subs->save();
+
+                $newSubs = new WishItemSubscription();
+                $newSubs->stripe_id = $subs->stripe_id;
+                $newSubs->session_id = $subs->session_id;
+                $newSubs->wish_item_id = $subs->wish_item_id;
+                $newSubs->user_id = $subs->user_id;
+                $newSubs->guest_name = $subs->guest_name;
+                $newSubs->guest_email = $subs->guest_email;
+                $newSubs->currency = $subs->currency;
+                $newSubs->amount = $subs->amount;
+                $newSubs->tax = $subs->tax;
+                $newSubs->recurring_for = $subs->recurring_for;
+                $newSubs->recurring_type = $subs->recurring_type;
+                $newSubs->surprise_message = $subs->surprise_message;
+                $newSubs->anonymous = $subs->anonymous;
+                $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+                $newSubs->status = "paid";
+                $newSubs->created_at = $subs->created_at;
+                $newSubs->updated_at = $subs->updated_at;
+                $newSubs->save();
 
                 SendRenewMail::dispatch($array);
             }
