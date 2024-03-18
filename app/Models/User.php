@@ -85,7 +85,7 @@ class User extends Authenticatable
         if (!empty($this->avatar)) {
 
             if(empty($this->avatar_cdn_modifier)){
-                $url = "https://ucarecdn.com/" . $this->avatar . '/';
+                $url = "https://ucarecdn.com/" . $this->avatar . '/-/format/jpeg/';
             }
             else{
                 $url = "https://ucarecdn.com/" . $this->avatar . '/' . $this->avatar_cdn_modifier . '-/preview/';
