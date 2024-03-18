@@ -7,7 +7,8 @@ import { useAlerts } from '@/Components/Alerts';
 import axios from 'axios';
 import LoaderButton from '@/Components/LoaderButton';
 import { useEffect } from 'react';
- 
+import wishlistbannerimg from "../../../assets/img/wishlistbannerimg.jpg";
+
 export default function AddIntro({IsloggedIn, uuid}){
 
   const [open, setOpen] = useState(false);
@@ -93,7 +94,7 @@ export default function AddIntro({IsloggedIn, uuid}){
         <div className='isintro cursor-pointer shadow-voilet'>
           <img
           alt={"image"} useIntersectionObserver={true} effect="blur"
-          height={350} src={ introVideo &&  introVideo.poster_url} className='' width={400} />
+          height={350} src={ introVideo && introVideo.poster_url || wishlistbannerimg} className='' width={400} />
           <div className='cursor-pointer playicon' >
             <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="32" cy="32" r="32" fill="#F94F97"/>

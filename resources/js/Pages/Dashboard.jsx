@@ -60,7 +60,6 @@ export default function Dashboard(props) {
     };
 
 
-    console.log("props", props);
     const [its, setIts] = useState();
     const fetchingcats = (cat, signal) => {
         setLoading(true);
@@ -90,7 +89,7 @@ export default function Dashboard(props) {
         const controller = new AbortController();
         const { signal } = controller;
         if(tab == 'wishes'){
-            fetch_categories();
+            fetch_categories(signal);
             fetchingcats(false, signal);
         }
         return () => controller.abort();
@@ -103,8 +102,8 @@ export default function Dashboard(props) {
         setSelectedCat(e);
     };
 
-    const fetchingLinks = (signal) => {
-        axios.get(`sociallinks/${username}`, { signal })
+    const fetchingLinks = () => {
+        axios.get(`sociallinks/${username}`)
         .then((resp) => {
             setSocialLinks(resp.data.sociallinks);
             setLinks(resp.data.slinks);
@@ -322,7 +321,7 @@ export default function Dashboard(props) {
                                                 <Tab eventKey="home" title="Home">
                                                     <div className="row  about-sec">
                                                         <div className="order-md-122 col-md-6">
-                                                        <div className=" box shadow-voilet rounded-lg mb-4">
+                                                        <div className=" box p-2 p-md-4 shadow-voilet rounded-lg mb-4">
                                                             <p className="font-bold">About me</p>
                                                             <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
                                                                 {(user &&user.bio) ||""}
@@ -353,7 +352,6 @@ export default function Dashboard(props) {
                                                                         />
                                                                     : ''}
 
-
                                                                     <div className="addsocial flex">
                                                                         <ul>
                                                                             <li>
@@ -361,7 +359,6 @@ export default function Dashboard(props) {
                                                                             </li>
                                                                             <li>
                                                                                 <ShareProfile username={user && user.name} classes={"d-flex ms-auto"}>
-                                                                                    <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg" > <path d="M22.46 6.5C21.69 6.85 20.86 7.08 20 7.19C20.88 6.66 21.56 5.82 21.88 4.81C21.05 5.31 20.13 5.66 19.16 5.86C18.37 5 17.26 4.5 16 4.5C13.65 4.5 11.73 6.42 11.73 8.79C11.73 9.13 11.77 9.46 11.84 9.77C8.28004 9.59 5.11004 7.88 3.00004 5.29C2.63004 5.92 2.42004 6.66 2.42004 7.44C2.42004 8.93 3.17004 10.25 4.33004 11C3.62004 11 2.96004 10.8 2.38004 10.5V10.53C2.38004 12.61 3.86004 14.35 5.82004 14.74C5.19077 14.9122 4.53013 14.9362 3.89004 14.81C4.16165 15.6625 4.69358 16.4084 5.41106 16.9429C6.12854 17.4775 6.99549 17.7737 7.89004 17.79C6.37367 18.9904 4.49404 19.6393 2.56004 19.63C2.22004 19.63 1.88004 19.61 1.54004 19.57C3.44004 20.79 5.70004 21.5 8.12004 21.5C16 21.5 20.33 14.96 20.33 9.29C20.33 9.1 20.33 8.92 20.32 8.73C21.16 8.13 21.88 7.37 22.46 6.5Z" fill="#5D25FD" /> </svg>
                                                                                     Share Profile
                                                                                 </ShareProfile>
                                                                             </li>

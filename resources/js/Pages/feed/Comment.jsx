@@ -1,7 +1,7 @@
 import { TimeFormat } from '@/includes/TimeFormat'
 import React, { useState } from 'react';
 import AddComment from './AddComment';
-export default function Comment({c, update}) {
+export default function Comment({c, update, updateComments}) {
 
   const [handleReply, sethandleReply] = useState(false);
 
@@ -89,7 +89,7 @@ export default function Comment({c, update}) {
                 })
             : ''}
 
-            {handleReply ? <AddComment is_reply={true} update={updates} comment_uuid={c?.uuid || ''}  /> : ''}
+            {handleReply ? <AddComment updateComments={updateComments} is_reply={true} update={updates} comment_uuid={c?.uuid || ''}  /> : ''}
 
           </div>
         </div>

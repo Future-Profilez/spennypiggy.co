@@ -700,7 +700,7 @@ span.currency-tag{position:absolute;top:50%;left:10px;transform:translateY(-50%)
 .introbox img,.introbox span{width:100% !important;display:block !important;height:100% !important;object-fit:cover;}
 .introbox{height:350px;border:1px solid var(--voilet);border-radius:30px;overflow:hidden;}
 .user-links{position:absolute;bottom:0;left:0;background:linear-gradient( 180deg,transparent 52.85%,rgba(0,0,0,0.82) 100% );}
-.playicon svg{width:50px;height:50px;}
+.playicon svg{width:50px;height:50px;box-shadow:0 0 10px #0004;border-radius:50%;}
 .playicon,.videoPopup{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
 .videoPopup video{height:auto;width:100%;max-height:87vh;}
 .videoPopup{position:fixed;z-index:999;min-width:200px;max-height:87vh;}
@@ -740,6 +740,39 @@ button.close-btn{position:absolute;right:20px;top:20px;z-index:2;background:#fff
     border: 1px solid #ccc;
     border-radius: 10px;
     padding: 7px 10px;
+}
+
+.tip-wrapper{border-radius:13px;}
+ .box-inner{background:#fff;border-radius:40px;border:4px solid var(--voilet);}
+.tip-wrapper{position:relative;}
+.piggyface{position:absolute;max-width:120px;top:-42px;left:-35px;z-index:auto;}
+.piggyface svg{width:100%;height:100%;}
+.piggynose {
+    position: absolute;
+    left: 6px;
+    top: 3px;
+    z-index: 2;
+}.tip-wrapper .box-inner{z-index:1;position:relative;}
+.piggynose{max-width:50px;}
+.piggynose svg{width:100%;height:100%;}
+.legright {
+    position: absolute;
+    right: -9px;
+    bottom: 25%;
+}
+
+.legleft {
+    position: absolute;
+    left: -12px;
+    bottom: 1%;
+}
+
+ .box-inner {
+    overflow: hidden;
+}
+
+.sendSurprize-modal .modal-content {
+    background: transparent !important;
 }
 
 @media (max-width:767px){.videoPopup{width:100%;max-width:90%;}

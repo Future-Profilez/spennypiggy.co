@@ -7,8 +7,7 @@ const ShareProfile = React.lazy(() => import('./ShareProfile'));
 const SendTip = React.lazy(() => import('@/Pages/TipJar/SendTip'));
 
 export default function Userprofile({ IsloggedIn }) {
-    const { user, global_currency, supporters}  = usePage().props;
-    console.log("user, global_currency, supporters", user, global_currency, supporters)
+    const { user, global_currency, supporters }  = usePage().props;
     return (
         <div className="userprofilesec mb-4 ">
              
@@ -17,9 +16,8 @@ export default function Userprofile({ IsloggedIn }) {
                     <div className="userphoto">
                         <LazyLoadImage
                         alt={"image"} useIntersectionObserver={true} effect="blur"
-                        height={200}
                         src={user && user.avatar_url ? user.avatar_url:userphoto}
-                        width={200} />
+                        height={200} width={200} />
                     </div>
                     <div className="ps-0 ps-md-3">
                         <h2 className="font-GillSans text-start ">{user && user.name}</h2>
@@ -40,15 +38,15 @@ export default function Userprofile({ IsloggedIn }) {
                 { !IsloggedIn ? user && user.stripe_details_submitted == 1 && 
                     <div>
                         <SendTip  />
-                        <p className="text-center text-mint" >🐷 {supporters} Supporters</p>
+                        {user && user.role == 1 ? <p className="text-center text-mint" >🐷 {supporters} Supporters</p> : ''}
                     </div>
                     :  
                     <div>
                     <EditProfile
-                    user={user}
-                    global_currency={global_currency}
+                        user={user}
+                        global_currency={global_currency}
                     />
-                    <p className="text-center text-mint mt-2" >🐷 {supporters} Supporters</p>
+                        {user && user.role == 1 ? <p className="text-center text-mint" >🐷 {supporters} Supporters</p> : ''}
                     </div>
                 || ''}
                 

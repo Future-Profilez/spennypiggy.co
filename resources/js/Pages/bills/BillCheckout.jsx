@@ -63,7 +63,7 @@ export default function BillCheckout(props) {
         <>
             <Authenticated auth={auth.user} user={user}>
                 <Head title={`Join - ${bill?.name} bill`}/>
-                <div className={`px-0 px-lg-2`}>
+                <div className={`px-0 pb-3 px-lg-2`}>
                     <div className="my-4 cartsub cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
                         <div className="cartMain">
                             <h2 className="pb-1 wishtitle">
@@ -193,6 +193,8 @@ export default function BillCheckout(props) {
                                             </label>
                                             <div className="tearmlist ps-3">
                                                 <ul className="ps-0">
+                                                <li> This payment will be automatically taken on a daily,weekly,monthly or yearly basis depending on yourchoice and can be cancelled anytime. </li>
+
                                                     <li> For Memberships and subscriptions, I understand I am making a non-refundable purchase that provides access to exclusive posts. </li>
                                                     <li> I understand that for wishes or support payments I am making a non-refundable donation of support and understand I will recieve a thank you message as a reward. </li>
                                                     <li> This payment of purchase or donation is intended soley for the wish recipient </li>

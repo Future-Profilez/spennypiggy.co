@@ -32,6 +32,10 @@ export default function Post({item, updateState}) {
   }
 
   const [lcount, setlcount] = useState(item?.likes_count || 0);
+  const [ccount, setccount] = useState(item?.comments_count || 0);
+  const updateComments = (e) => { 
+    setccount(ccount+1);
+  }
   const updatecount = (e) => { 
     setlcount(e);
   }
@@ -91,10 +95,10 @@ export default function Post({item, updateState}) {
         
         <div className='d-flex' >
           <p className="like-count text-dark me-3"><b><span id="like-number">{lcount || 0}</span> likes</b></p>
-          <p className="like-count text-dark"><b><span id="like-number">{item?.comments_count || 0}</span> Comments</b></p>
+          <p className="like-count text-dark"><b><span id="like-number">{ccount || 0}</span> Comments</b></p>
         </div>
 
-        {showComments ? <CommentList  post_uuid={item.uuid} /> : ''}
+        {showComments ? <CommentList updateComments={updateComments}  post_uuid={item.uuid} /> : ''}
         
       </div>
     </>

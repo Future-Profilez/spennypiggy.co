@@ -27,6 +27,20 @@ const comment = ` <svg className="comment" aria-label="Comment"  fill="#000000" 
 <path d="M20.656 17.008a9.993 9.993 0 1 0-3.59 3.615L22 22Z" fill="none" stroke="#000000" stroke-linejoin="round" stroke-width="2"></path>
 </svg>`
 
-export { crown, addicon, piggy, likes, comment };
+const piggyface = `<svg width="262" height="238" viewBox="0 0 262 238" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M11.9171 53.6462C24.2881 37.1262 66.8807 51.6393 80.3369 60.3436L44.2283 129.606C26.6835 132.607 -7.11547 79.0622 11.9171 53.6462Z" fill="#F94F97" stroke="#E6EA7B" stroke-width="3.51847"/>
+<path d="M206.557 6.3742C187.986 -2.63108 156.796 29.802 148.831 43.7088L212.687 88.6923C229.654 83.3113 235.127 20.2287 206.557 6.3742Z" fill="#F94F97" stroke="#E6EA7B" stroke-width="3.51847"/>
+<circle cx="134.379" cy="120.273" r="89.6997" transform="rotate(-13.6513 134.379 120.273)" fill="#F94F97" stroke="#E6EA7B" stroke-width="5.53702"/>
+<path d="M73.1514 88.7098C76.4221 71.8343 94.9395 65.3272 106.047 80.7203" stroke="#E6EA7B" stroke-width="5.53702" stroke-linecap="round"/>
+<path d="M140.947 72.2441C144.218 55.3686 162.735 48.8614 173.843 64.2546" stroke="#E6EA7B" stroke-width="5.53702" stroke-linecap="round"/>
+</svg>`;
+
+const piggynose = `<svg width="104" height="91" viewBox="0 0 104 91" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M92.2459 35.2816C96.4708 52.6773 82.3733 71.9087 59.3776 77.4937C36.3819 83.0787 15.0337 72.4561 10.8087 55.0605C6.58381 37.6648 20.6813 18.4334 43.677 12.8483C66.6728 7.26331 88.021 17.8859 92.2459 35.2816Z" fill="#F94F97" stroke="#E6EA7B" stroke-width="4.89907"/>
+<path d="M35.9346 37.1035L41.6441 60.612" stroke="#E6EA7B" stroke-width="7.73357" stroke-linecap="round"/>
+<path d="M63.9219 30.3057L69.6314 53.8142" stroke="#E6EA7B" stroke-width="7.73357" stroke-linecap="round"/>
+</svg>`;
+
+export { piggynose, piggyface, crown, addicon, piggy, likes, comment };
 
 {/* <div dangerouslySetInnerHTML={{ __html: piggy }} /> */}

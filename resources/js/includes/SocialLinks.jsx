@@ -79,7 +79,7 @@ export default function SocialLinks({ links }) {
                     </li> 
                 : ''}
 
-                {links && links.twitter ? 
+                {/* {links && links.twitter ? 
                     <li className={`px-2 mt-2 mb-2`} >  
                         <a target="_blank" title={"twitter"} href={`${gefullurl("twitter")}${links && links.twitter}`}  >
                             <div dangerouslySetInnerHTML={{ __html: twitter }}></div>  Twitter
@@ -93,7 +93,7 @@ export default function SocialLinks({ links }) {
                             <div dangerouslySetInnerHTML={{ __html: reddit }}></div> Reddit
                         </a>
                     </li> 
-                : ''}
+                : ''} */}
 
                 {links && links.tumblr ? 
                     <li className={`px-2 mt-2 mb-2`} >  
@@ -112,13 +112,13 @@ export default function SocialLinks({ links }) {
                     </li> 
                 : ''}
 
-                {links && links.other ? 
+                {/* {links && links.other ? 
                     <li className={`px-2 mt-2 mb-2`} >  
                         <a target="_blank" title={"other"} href={`${gefullurl("other")}${links && links.other}`}  >
                             <div dangerouslySetInnerHTML={{ __html: other }}></div>  Other
                         </a>
                     </li> 
-                : ''}
+                : ''} */}
             </ul>
         </div>
     )

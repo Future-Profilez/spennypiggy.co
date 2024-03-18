@@ -15,24 +15,22 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import PriceFormat from "@/includes/PriceFormat";
 import axios from "axios";
 
+
+const imageLinks = [
+    "be9060ab-1a76-452f-b805-1c71d9af4fb7",
+    "01bbc3bd-7e79-4dc0-817c-2c260da43c20",
+    "f0c45dc9-cc56-4955-a406-7527004a1373",
+    "4c42426a-1396-49e2-8b46-2381a2ae5d7b",
+];
+
 export default function Wishlist(props) {
 
     const { global_currency, auth } = usePage().props;
-    const {
-        fetchingcats,
-        fetchcategories,
-        currency,
-        item,
-        editpop,
-        openPop,
-        setuped,
-    } = props;
-
+    const{fetchingcats,fetchcategories,currency,item,editpop,openPop,setuped}= props;
+    const defaultCurrency = (auth && auth.user && auth.user.default_currency) || "GBP";
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
-    const [defaultKey, setDefaultKey] = useState(
-        item && item.subscription !== null ? +item.subscription : null
-    );
+    const [defaultKey, setDefaultKey] = useState(item && item.subscription !== null ? +item.subscription : null);
     const [clear, setClear] = useState();
     const [close, setClose] = useState();
     const { formatMultiPrice } = PriceFormat();
@@ -77,12 +75,7 @@ export default function Wishlist(props) {
         });
     };
 
-    const imageLinks = [
-        "be9060ab-1a76-452f-b805-1c71d9af4fb7",
-        "01bbc3bd-7e79-4dc0-817c-2c260da43c20",
-        "f0c45dc9-cc56-4955-a406-7527004a1373",
-        "4c42426a-1396-49e2-8b46-2381a2ae5d7b",
-    ];
+    
 
     const { data, setData, post, processing, errors, reset } = useForm({
         wishname: item && item.wishname ? item.wishname : "",
@@ -129,10 +122,6 @@ export default function Wishlist(props) {
         let ss = data?.uuid;
         setRewardImage(ss);
     };
-
-    useEffect(() => {
-        console.log("Checkboxes State:", checkboxes);
-    }, [checkboxes]);
 
 
     useEffect(() => {
@@ -226,11 +215,6 @@ export default function Wishlist(props) {
             });
         }
     };
-
-    const defaultCurrency = (auth && auth.user && auth.user.default_currency) || "GBP";
-                   
-         
-    
 
 
     return (

@@ -2,6 +2,7 @@ import { useAlerts } from "@/Components/Alerts";
 import LoaderButton from "@/Components/LoaderButton";
 import Popup from "@/Components/Popup";
 import { useForm } from "@inertiajs/react";
+import axios from "axios";
 import { useEffect } from "react";
 import { useState } from "react";
 
@@ -9,56 +10,52 @@ export default function Social({links, updatedLinks}) {
 
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [close, setClose] = useState();
+    const [loading, setloading] = useState(false);
 
-    const { data, setData, post, processing, reset } = useForm({
-        twitter: links?.twitter ? links.twitter : '',
-        reddit: links?.reddit ? links.reddit : '',
+    const [data, setData] = useState({
         instagram: links?.instagram ? links.instagram : '',
         discord: links?.discord ? links.discord : '',
         facebook: links?.facebook ? links.facebook : '',
         youtube: links?.youtube ? links.youtube : '',
         twitch: links?.twitch ? links.twitch : '',
         tumblr: links?.tumblr ? links.tumblr : '',
-        other: links?.other ? links.other : '',
     });
- 
-    useEffect(() => {
-        setTimeout(()=>{
-            setData('twitter', links?.twitter || '');
-            setData('reddit', links?.reddit || '');
-            setData('instagram', links?.instagram || '');
-            setData('discord', links?.discord || '');
-            setData('facebook', links?.facebook || '');
-            setData('youtube', links?.youtube || '');
-            setData('twitch', links?.twitch || '');
-            setData('tumblr', links?.tumblr || '');
-            setData('other', links?.other || '');
-        },1000);
-    }, [links]);
+
+    let nameattr, valueattr;
+    const handleInput = (e) => {
+        nameattr = e.target.name;
+        valueattr = e.target.value;
+        setData({ ...data, [nameattr]: valueattr });
+    }
+
+    useEffect(()=>{
+        setData({
+            instagram: links?.instagram ? links.instagram : '',
+            discord: links?.discord ? links.discord : '',
+            facebook: links?.facebook ? links.facebook : '',
+            youtube: links?.youtube ? links.youtube : '',
+            twitch: links?.twitch ? links.twitch : '',
+            tumblr: links?.tumblr ? links.tumblr : '',
+        });
+    },[links]);
 
     const createSocial = (e) => {
         e.preventDefault();
-        post(route('save_social_links'), {
-            preserveScroll: true,
-            onSuccess: (resp) => {
-                reset();
-                if(resp.props.flash?.success){
-                    successAlert(resp.props.flash?.success || "Updated successfully.");
-                    updatedLinks && updatedLinks(new Date());
-                }
-                if(resp.props.flash?.error){
-                    errorAlert(resp.props.flash?.error || "Something went wrong.")
-                } 
+        const response = axios.post('save_social_links', data);
+        response.then((res)=>{
+            if(res.data.status){
+                successAlert(res.data.msg || "Updated successfully.");
+                updatedLinks && updatedLinks();
                 setClose(false);
-                setTimeout(() => {
+                setTimeout(()=>{
                     setClose();
-                }, 100)
-            },
-            onError: (_err) => {
-                console.error(_err);
-                errorsHandling(_err);
-                errorAlert(resp.props.flash?.success || "Added");
+                },1000);
+            } else {
+                errorAlert(res.data.msg);
             }
+        }).catch((err)=>{
+            console.log("err", err);
+            errorsHandling(err);
         });
     };
 
@@ -71,7 +68,7 @@ export default function Social({links, updatedLinks}) {
                     <form onSubmit={createSocial}>
                         <ul className=" ps-0  row" >
                            
-                            <li className="mb-4 col-md-6">
+                            {/* <li className="mb-4 col-md-6">
                                 <label className="mb-2 text-start d-block">Twitter</label>
                                 <input id="twitter"
                                     name="twitter"  
@@ -80,7 +77,7 @@ export default function Social({links, updatedLinks}) {
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('twitter', e.target.value)}
                                 />
-                            </li>
+                            </li> */}
                             <li className="mb-4 col-md-6">
                                 <label className="mb-2 text-start d-block">Instagram </label>
                                 <input id="instagram"
@@ -88,10 +85,10 @@ export default function Social({links, updatedLinks}) {
                                     name="instagram"
                                     defaultValue={links?.instagram||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
-                                    onChange={(e) => setData('instagram', e.target.value)}
+                                    onChange={handleInput}
                                 />
                             </li>
-                            <li className="mb-4 col-md-6">
+                            {/* <li className="mb-4 col-md-6">
                                 <label className="mb-2 text-start d-block">Reddit</label>
                                 <input id="reddit"
                                     name="reddit"
@@ -100,7 +97,7 @@ export default function Social({links, updatedLinks}) {
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('reddit', e.target.value)}
                                 />
-                            </li>
+                            </li> */}
 
                             <li className="mb-4 col-md-6">
                                 <label className="mb-2 text-start d-block">Facebook</label>
@@ -109,18 +106,18 @@ export default function Social({links, updatedLinks}) {
                                     defaultValue={links?.facebook || ''}
                                     type="text" placeholder={'Enter facebook profile or page url'}
                                     className="form-input px-2 py-2 border w-full rounded-md"
-                                    onChange={(e) => setData('facebook', e.target.value)}
+                                    onChange={handleInput}
                                 />
                             </li>
 
-                            <li className="mb-4 col-md-6">
+                            <li className="mb-4 col-md-12">
                                 <label className="mb-2 text-start d-block">Youtube</label>
                                 <input id="youtube"
                                     name="youtube" 
                                     defaultValue={links?.youtube || ''}
                                     type="text" placeholder={'Enter channel or video url'}
                                     className="form-input px-2 py-2 border w-full rounded-md"
-                                    onChange={(e) => setData('youtube', e.target.value)}
+                                    onChange={handleInput}
                                 />
                             </li>
 
@@ -131,7 +128,7 @@ export default function Social({links, updatedLinks}) {
                                     defaultValue={links?.twitch || ''}
                                     type="text" placeholder={'Enter url'}
                                     className="form-input px-2 py-2 border w-full rounded-md"
-                                    onChange={(e) => setData('twitch', e.target.value)}
+                                    onChange={handleInput}
                                 />
                             </li>
 
@@ -142,11 +139,11 @@ export default function Social({links, updatedLinks}) {
                                     defaultValue={links?.tumblr || ''}
                                     type="text" placeholder={'Enter username'}
                                     className="form-input px-2 py-2 border w-full rounded-md"
-                                    onChange={(e) => setData('tumblr', e.target.value)}
+                                    onChange={handleInput}
                                 />
                             </li>
 
-                            <li className="mb-4 col-md-6">
+                            {/* <li className="mb-4 col-md-6">
                                 <label className="mb-2 text-start d-block">Other</label>
                                 <input id="other"
                                     name="other"
@@ -155,13 +152,13 @@ export default function Social({links, updatedLinks}) {
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('other', e.target.value)}
                                 />
-                            </li>
+                            </li> */}
                         </ul>
 
-                        <LoaderButton disabled={processing} type='submit'
+                        <LoaderButton disabled={loading} type='submit'
                             className=' flex button sm w-100 justify-content-center p-3 text-center mx-auto'
                             spinnerClassName='fill-red-600'>
-                            {processing ? "Processing" : "Add Links"}
+                            {loading ? "Processing" : "Add Social Links"}
                         </LoaderButton>
                         
                     </form>

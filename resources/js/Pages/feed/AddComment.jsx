@@ -3,7 +3,7 @@ import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import { usePage } from '@inertiajs/react';
 
-export default function AddComment({post_uuid, update, is_reply, comment_uuid}) {
+export default function AddComment({post_uuid, update, is_reply, comment_uuid, updateComments}) {
   
     const { auth } = usePage().props;
     const [reply, setReply] = useState('');
@@ -23,6 +23,7 @@ export default function AddComment({post_uuid, update, is_reply, comment_uuid}) 
               toast.success(resp.data.msg);
               update && update();
               setReply('');
+              updateComments && updateComments();
             } else { 
               toast.error(resp.data.msg);
             }
@@ -38,6 +39,7 @@ export default function AddComment({post_uuid, update, is_reply, comment_uuid}) 
               toast.success(resp.data.msg);
               update && update();
               setReply('');
+              updateComments && updateComments();
             } else { 
               toast.error(resp.data.msg);
             }

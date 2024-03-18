@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import Comment from './Comment'
 import AddComment from './AddComment'
 import axios from 'axios'
-export default function CommentList({post_uuid}){
+export default function CommentList({post_uuid, updateComments}){
 
   const [lists, setLists] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -23,7 +23,7 @@ export default function CommentList({post_uuid}){
 
   return (
     <>
-        <AddComment update={listComments} post_uuid={post_uuid}/>
+        <AddComment updateComments={updateComments} update={listComments} post_uuid={post_uuid}/>
         
         {loading ? 
         <div className='w-100 d-flex justify-content-center m-auto d-table' >
@@ -34,7 +34,7 @@ export default function CommentList({post_uuid}){
         {lists && lists.length ? 
           <>
             {lists.map((c, i)=>{ 
-              return <Comment c={c} update={listComments} />
+              return <Comment updateComments={updateComments} c={c} update={listComments} />
             })}
           </>
         : ''}

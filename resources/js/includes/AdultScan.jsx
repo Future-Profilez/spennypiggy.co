@@ -14,7 +14,9 @@ export default function AdultScan({fileuid, content, onScan, classes, type, scan
          if(fileuid && type !== 'video'){
             setScanning(true);
             axios.get(`check-adult-content/${fileuid}`,).then(resp => {
-               setScanning(false);
+               setTimeout(()=>{
+                  setScanning(false);
+               },2000);
                if(resp.data.status){
                   onScan();
                } else { 
@@ -22,7 +24,9 @@ export default function AdultScan({fileuid, content, onScan, classes, type, scan
                }
             }).catch(_err => {
                console.error("error", _err);
-               setScanning(false);
+               setTimeout(()=>{
+                  setScanning(false);
+               },2000);
             });
          } else { 
           onScan();
@@ -34,12 +38,15 @@ export default function AdultScan({fileuid, content, onScan, classes, type, scan
 
   return (
     <>
-      {scanning ? <div className={`scanning rounded bg-light shadow-sm border p-3 my-2 mb-4 ${scan_classes}`} >
+      {scanning ? 
+      <div className={`scanning rounded bg-light shadow-sm border p-3 my-2 mb-4 ${scan_classes}`} >
         <ProgressBar animated now={100} />
         <p className='text-center mt-2' >Adult content scanning...</p>
-      </div> : <div className={`${classes}`} onClick={checkAdult} >
+      </div> : 
+      <div className={`${classes}`} onClick={checkAdult} >
         {content}
-      </div> } 
+      </div> 
+      } 
 
     </>
   )

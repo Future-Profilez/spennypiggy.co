@@ -43,8 +43,6 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
     }
     
     const [loading, setLoading] = useState(false);
-
-
     const submitPost = (e) => { 
         setLoading(true);
         e && e.preventDefault();
@@ -63,7 +61,7 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
                 setTimeout(()=>{
                     setClose();
                 },100);
-                setClear(new Date())
+                setClear(new Date());
             } else {
                 toast.error(resp.data.msg);
             }
@@ -128,15 +126,10 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
                         disabled={loading}
                         className="flex btn-pink sm mt-4 w-full "
                         spinnerClassName="fill-red-600">
-
                         {isEdit ? 
-                        <>
-                            {loading ? "Updating.." :"Update Post"}
-                        </>
+                          loading ? "Updating.." :"Update Post" 
                         : 
-                        <>
-                            {loading ? "Posting.." : "Add New Post"}
-                        </>
+                          loading ? "Posting.." : "Add New Post" 
                         }
                     </LoaderButton>
                 </>} 

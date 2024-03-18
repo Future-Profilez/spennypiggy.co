@@ -4,12 +4,12 @@ import { Toaster } from "react-hot-toast";
 import Membership from "./Membership";
 import { useAlerts } from "@/Components/Alerts";
 import PriceFormat from "@/includes/PriceFormat";
+import Authenticated from "@/Layouts/AuthenticatedLayout";
  
 export default function SubCheckout(props) {
 
-
+    const { user, auth, membership, vat_amount } = props;
     const { formatMultiPrice } = PriceFormat();
-    const { auth, membership, vat_amount } = props;
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
     const [email, setEmail] = useState(auth && auth.user && auth.user.email || '');
     const { successAlert, errorAlert, warningAlert, infoAlert } = useAlerts();
@@ -60,8 +60,9 @@ export default function SubCheckout(props) {
 
     return (
         <>
+         <Authenticated auth={auth.user} user={user}>
             <Head title={`Join - ${membership?.level} membership`}/>
-            <div className={`px-0 px-lg-2`}>
+            <div className={`px-0 mb-3 px-lg-2`}>
                 <div className="my-4 cartsub cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
                     <div className="cartMain">
                         <h2 className="pb-1 wishtitle">
@@ -169,6 +170,7 @@ export default function SubCheckout(props) {
                                         </label>
                                         <div className="tearmlist ps-3">
                                             <ul className="ps-0">
+                                                <li> This payment will be automatically taken on a daily,weekly,monthly or yearly basis depending on yourchoice and can be cancelled anytime. </li>
                                                 <li> For Memberships and subscriptions, I understand I am making a non-refundable purchase that provides access to exclusive posts. This payment will be automatically taken on a monthly basis. Can be cancelled anytime. </li>
                                                 <li> I understand that for wishes or support payments I am making a non-refundable donation of support and understand I will recieve a thank you message as a reward. </li>
                                                 <li> This payment of purchase or donation is intended soley for the wish recipient </li>
@@ -193,6 +195,7 @@ export default function SubCheckout(props) {
                 </div>
             </div>
             <Toaster />
+         </Authenticated>
         </>
     );
 }
