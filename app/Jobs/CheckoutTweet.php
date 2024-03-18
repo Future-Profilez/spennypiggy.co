@@ -34,7 +34,7 @@ class CheckoutTweet implements ShouldQueue
         $user = User::find($this->payment_data->wish->user_id);
         if(!empty($user->twitter_token->token)) {
             $payload    =   [
-                'name' => $this->payment_data->payment->name,
+                'name' => $this->payment_data->payment->name ?? "Someone",
                 'amount' => Helpers::getCurrency($this->payment_data->payment->currency) . $this->payment_data->amount,
                 "user_link" =>  route("user.show", ["username" => $user->username, "_t" => time()])
                 // "user_link" =>  "https://uk.spennypiggy.co/jacksgifts?_t=".time()
