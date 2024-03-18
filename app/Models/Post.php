@@ -43,7 +43,7 @@ class Post extends Model
     {
         $url = false;
         if (!empty($this->image)) {
-            $url = "https://ucarecdn.com/" . $this->image . '/';
+            $url = "https://ucarecdn.com/" . $this->image . '/-/format/jpeg/';
         }
         return $url;
     }

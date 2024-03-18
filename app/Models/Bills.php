@@ -43,7 +43,7 @@ class Bills extends Model
     {
         $url = false;
         if (!empty($this->thumbnail)) {
-            $url = "https://ucarecdn.com/" . $this->thumbnail . "/";
+            $url = "https://ucarecdn.com/" . $this->thumbnail . "/-/format/jpeg/";
         } else {
             $url = "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/";
         }
