@@ -198,15 +198,19 @@ class AuthenticatedSessionController extends Controller
         })->firstWhere('username', $username);
 
         if ($user) {
-            $items = $user->wishItems()
+            $query = $user->wishItems()
                 ->when($category_id, function ($query) use ($category_id) {
                     // If $categoryID is specified, filter by the specific category
                     $query->whereHas('wishCategories', function ($query) use ($category_id) {
                         $query->where('user_category_id', $category_id);
                     });
-                })
+                });
+
+            if((Auth::check() && $user->id != Auth::id()) || !(Auth::check())){
+                $query->where('is_approved',1);
+            }
                 // ->orderBy('is_pin', 'DESC')
-                ->orderBy('sort', 'ASC')
+            $items = $query->orderBy('sort', 'ASC')
                 ->latest()
                 ->get();
 
@@ -258,8 +262,13 @@ class AuthenticatedSessionController extends Controller
         })->firstWhere('username', $username);
 
         if ($user) {
-            $membership = $user->memberships()
-                ->latest()
+            $query = $user->memberships();
+
+            if((Auth::check() && $user->id != Auth::id()) || !(Auth::check())){
+                $query->where('approved',1);
+            }
+
+            $membership = $query->latest()
                 ->get();
 
 
@@ -282,8 +291,13 @@ class AuthenticatedSessionController extends Controller
         })->firstWhere('username', $username);
 
         if ($user) {
-            $post = $user->posts()
-                ->latest()
+            $query = $user->posts();
+
+            if((Auth::check() && $user->id != Auth::id()) || !(Auth::check())){
+                $query->where('approved',1);
+            }
+
+            $post = $query->latest()
                 ->get();
 
 
@@ -381,8 +395,13 @@ class AuthenticatedSessionController extends Controller
         })->firstWhere('username', $username);
 
         if ($user) {
-            $bills = $user->bills()
-                ->latest()
+            $query = $user->bills();
+
+            if((Auth::check() && $user->id != Auth::id()) || !(Auth::check())){
+                $query->where('approved',1);
+            }
+
+            $bills = $query->latest()
                 ->get();
 
 
