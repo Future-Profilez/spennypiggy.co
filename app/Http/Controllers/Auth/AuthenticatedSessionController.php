@@ -206,7 +206,7 @@ class AuthenticatedSessionController extends Controller
                     });
                 });
 
-            if(Auth::check() && $user->id != Auth::id()){
+            if((Auth::check() && $user->id != Auth::id()) || !(Auth::check())){
                 $query->where('is_approved',1);
             }
                 // ->orderBy('is_pin', 'DESC')
@@ -264,7 +264,7 @@ class AuthenticatedSessionController extends Controller
         if ($user) {
             $query = $user->memberships();
 
-            if(Auth::check() && $user->id != Auth::id()){
+            if((Auth::check() && $user->id != Auth::id()) || !(Auth::check())){
                 $query->where('approved',1);
             }
 
@@ -293,7 +293,7 @@ class AuthenticatedSessionController extends Controller
         if ($user) {
             $query = $user->posts();
 
-            if(Auth::check() && $user->id != Auth::id()){
+            if((Auth::check() && $user->id != Auth::id()) || !(Auth::check())){
                 $query->where('approved',1);
             }
 
@@ -397,7 +397,7 @@ class AuthenticatedSessionController extends Controller
         if ($user) {
             $query = $user->bills();
 
-            if(Auth::check() && $user->id != Auth::id()){
+            if((Auth::check() && $user->id != Auth::id()) || !(Auth::check())){
                 $query->where('approved',1);
             }
 
