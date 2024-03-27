@@ -48,8 +48,8 @@ export default function Header() {
         <>
             <div className="blackbg headermain py-8">
                 <div className="containerbox">
-                    <div className="header flex w-full items-center content-center justify-between pinkbg border-mint shadow-mint">
-                        {auth?.user?.username ? (
+                    <div className="header flex w-full items-center content-center justify-between ">
+                        {/* {auth?.user?.username ? (
                             <Link
                                 href={`/${auth?.user?.username || ""}`}
                                 className="headtitle text-wh font-GillSans d-none d-lg-flex" >
@@ -61,7 +61,14 @@ export default function Header() {
                                 className="headtitle text-wh font-GillSans d-none d-lg-flex" >
                                 Sign Up
                             </Link>
-                        )}
+                        )} */}
+
+                        <div className="leftspaces d-none d-md-block  menu-toggle cursor-pointer cartLink position-relative" onClick={toggleClass} >
+                            <svg width="49" height="48" viewBox="0 0 49 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8.42188 36.75H40.5781M8.42188 24.75H40.5781M8.42188 12.75H40.5781" stroke="#05EFB8" stroke-width="2.625" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+
                         <div className="spennylogo">
                             <Link href={route("home")}>
                                 <LazyLoadImage
@@ -75,7 +82,7 @@ export default function Header() {
                             </Link>
                         </div>
 
-                        <div className="cartLogin">
+                        <div className="leftspaces cartLogin">
                             <Link href={route("discover")} className="me-3 discover-icon">
                                 <svg
                                     width="36"
@@ -145,89 +152,16 @@ export default function Header() {
                             </Link>
 
                             {auth?.user?.username || false ? (
-                                // <Link method="get" href={route('logout')} as="button" className='btn-mint mx-3  d-none d-xl-flex'>Logout</Link>
                                 ""
                             ) : (
-                                <Link href={route("login")} className="btn-mint mx-3  d-none d-xl-flex"> Login </Link>
+                                <Link href={route("login")} className="button sm text-uppercase bg-none px-4 mx-3 d-none d-xl-flex"> Login </Link>
                             )}
-
-                            <div className="menu-toggle cursor-pointer cartLink position-relative" onClick={toggleClass} >
-                                <svg
-                                    width="58"
-                                    height="59"
-                                    viewBox="0 0 58 59"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <g filter="url(#filter0_d_467_5581)">
-                                        <rect
-                                            y="0.5"
-                                            width="55"
-                                            height="55"
-                                            rx="11"
-                                            fill="#F94F97"
-                                        />
-                                        <rect
-                                            x="0.55"
-                                            y="1.05"
-                                            width="53.9"
-                                            height="53.9"
-                                            rx="10.45"
-                                            stroke="#E6EA7B"
-                                            strokeWidth="1.1"
-                                        />
-                                    </g>
-                                    <path
-                                        d="M17.8125 35.4375H36.1875M17.8125 28.4375H36.1875M17.8125 21.4375H36.1875"
-                                        stroke="#E6EA7B"
-                                        strokeWidth="2.625"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                    <defs>
-                                        <filter
-                                            id="filter0_d_467_5581"
-                                            x="0"
-                                            y="0.5"
-                                            width="58"
-                                            height="58"
-                                            filterUnits="userSpaceOnUse"
-                                            colorInterpolationFilters="sRGB"
-                                        >
-                                            <feFlood
-                                                floodOpacity="0"
-                                                result="BackgroundImageFix"
-                                            />
-                                            <feColorMatrix
-                                                in="SourceAlpha"
-                                                type="matrix"
-                                                values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-                                                result="hardAlpha"
-                                            />
-                                            <feOffset dx="3" dy="3" />
-                                            <feComposite
-                                                in2="hardAlpha"
-                                                operator="out"
-                                            />
-                                            <feColorMatrix
-                                                type="matrix"
-                                                values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0"
-                                            />
-                                            <feBlend
-                                                mode="normal"
-                                                in2="BackgroundImageFix"
-                                                result="effect1_dropShadow_467_5581"
-                                            />
-                                            <feBlend
-                                                mode="normal"
-                                                in="SourceGraphic"
-                                                in2="effect1_dropShadow_467_5581"
-                                                result="shape"
-                                            />
-                                        </filter>
-                                    </defs>
-                                </svg>
+                            <div className="d-block d-md-none menu-toggle cursor-pointer cartLink position-relative" onClick={toggleClass} >
+                            <svg width="49" height="48" viewBox="0 0 49 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8.42188 36.75H40.5781M8.42188 24.75H40.5781M8.42188 12.75H40.5781" stroke="#05EFB8" stroke-width="2.625" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
                             </div>
+                           
                         </div>
                     </div>
                 </div>

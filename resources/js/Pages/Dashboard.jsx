@@ -319,74 +319,74 @@ export default function Dashboard(props) {
                                                 id="noanim-tab-example"
                                                 className="mb-3" >
                                                 <Tab eventKey="home" title="Home">
-                                                    <div className="row  about-sec">
-                                                        <div className="order-md-122 col-md-6">
-                                                        <div className=" box p-2 p-md-4 shadow-voilet rounded-lg mb-4">
-                                                            <p className="font-bold">About me</p>
-                                                            <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
-                                                                {(user &&user.bio) ||""}
-                                                            </p>
+                                                    <div className="row about-sec">
+                                                        <div className="col-md-6">
+                                                            <div className="box p-2 p-md-4 shadow-voilet rounded-lg mb-4">
+                                                                <p className="font-bold">About me</p>
+                                                                <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
+                                                                    {(user &&user.bio) ||""}
+                                                                </p>
 
-                                                            <SocialLinks links={sLinks} />
-                                                            
-                                                            {IsloggedIn ? (
-                                                                <div className="userProfileDate pt-0 pt-md-3">
-                                                                    
-                                                                    {auth.user && auth.user.role == 1 && <>
-                                                                        {auth.user && auth.user.stripe_details_submitted == 1 ? (
-                                                                            <PaymentDashboard classes="btn-pink lg w-100 mt-3" text="Payment Dashboard" />
-                                                                        ) : (
-                                                                            <div className="finish mt-4 d-block">
-                                                                                <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                                                <Link href={"/stripe"} className="btn-pink lg" > Finish Setup
-                                                                                </Link>
-                                                                            </div>
-                                                                        )}
-                                                                    </> || ''}
+                                                                <SocialLinks links={sLinks} />
+                                                                
+                                                                {IsloggedIn ? (
+                                                                    <div className="userProfileDate pt-0 pt-md-3">
+                                                                        
+                                                                        {auth.user && auth.user.role == 1 && <>
+                                                                            {auth.user && auth.user.stripe_details_submitted == 1 ? (
+                                                                                <PaymentDashboard classes="btn-pink lg w-100 mt-3" text="Payment Dashboard" />
+                                                                            ) : (
+                                                                                <div className="finish mt-4 d-block">
+                                                                                    <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                                                                    <Link href={"/stripe"} className="btn-pink lg" > Finish Setup
+                                                                                    </Link>
+                                                                                </div>
+                                                                            )}
+                                                                        </> || ''}
 
-                                                                    {auth.user && auth.user.stripe_details_submitted == 1 ? 
-                                                                        <AddGoal
-                                                                        stripe_enabled={auth.user && auth.user.stripe_details_submitted}
-                                                                        fetch_goal={fetch_goal}
-                                                                        activegoal={goal}
-                                                                        />
-                                                                    : ''}
+                                                                        {auth.user && auth.user.stripe_details_submitted == 1 ? 
+                                                                            <AddGoal
+                                                                            stripe_enabled={auth.user && auth.user.stripe_details_submitted}
+                                                                            fetch_goal={fetch_goal}
+                                                                            activegoal={goal}
+                                                                            />
+                                                                        : ''}
 
-                                                                    <div className="addsocial flex">
-                                                                        <ul>
-                                                                            <li>
-                                                                                <Social updatedLinks={fetchingLinks}links={sLinks}/>
-                                                                            </li>
-                                                                            <li>
-                                                                                <ShareProfile username={user && user.name} classes={"d-flex ms-auto"}>
-                                                                                    Share Profile
-                                                                                </ShareProfile>
-                                                                            </li>
-                                                                        </ul>
+                                                                        <div className="addsocial flex">
+                                                                            <ul>
+                                                                                <li>
+                                                                                    <Social updatedLinks={fetchingLinks}links={sLinks}/>
+                                                                                </li>
+                                                                                <li>
+                                                                                    <ShareProfile username={user && user.name} classes={"d-flex ms-auto"}>
+                                                                                        Share Profile
+                                                                                    </ShareProfile>
+                                                                                </li>
+                                                                            </ul>
+                                                                        </div>
                                                                     </div>
+                                                                ) : (
+                                                                    ""
+                                                                )}
+                                                            </div>
+
+                                                            {user && user?.stripe_details_submitted == 1 && goal && goal.completed == 0 ? <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ""}
+
+                                                            <AddIntro uuid={user?.id || null} IsloggedIn={IsloggedIn}/>
+
+                                                            </div>
+
+                                                            {tab === "home" ? (
+                                                                <div className="ps-md-4 col-md-6">
+                                                                    {user && user.stripe_details_submitted == 1 && w > 767 ? <TipInner classes={`mb-4`} /> : ''}
+                                                                    <FeedList isUpdated={isUpdated}
+                                                                        user={user} 
+                                                                        IsloggedIn={IsloggedIn} 
+                                                                    />
                                                                 </div>
                                                             ) : (
                                                                 ""
                                                             )}
-                                                        </div>
-
-                                                        {user && user?.stripe_details_submitted == 1 && goal && goal.completed == 0 ? <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ""}
-
-                                                        <AddIntro uuid={user?.id || null} IsloggedIn={IsloggedIn}/>
-
-                                                        </div>
-
-                                                        {tab === "home" ? (
-                                                            <div className="ps-md-4 order-md-222 col-md-6">
-                                                                {user && user.stripe_details_submitted == 1 && w > 767 ? <TipInner classes={`mb-4`} /> : ''}
-                                                                <FeedList isUpdated={isUpdated}
-                                                                    user={user} 
-                                                                    IsloggedIn={IsloggedIn} 
-                                                                />
-                                                            </div>
-                                                        ) : (
-                                                            ""
-                                                        )}
                                                     </div>
                                                 </Tab>
                                                 <Tab eventKey="wishes" title="Wishes">

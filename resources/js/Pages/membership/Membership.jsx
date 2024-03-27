@@ -65,7 +65,10 @@ export default function Membership({item, hidebtn, IsloggedIn, fetch_membership}
   
   return (
     <>
-      <div className='membership-box shadow-voilet p-2 box overflow-hidden rounded-lg' >
+      <div className=' position-relative membership-box shadow-voilet p-2 box overflow-hidden rounded-lg' >
+
+      {IsloggedIn && item && item.approved === 0 ?  <div className='approvalmessge membership m-3 rounded-3 p-3 py-2 mb-2 ' >Membership waiting for approval. Currently only you can see this membership.</div> : ''}
+
         <div className='membership-head' >
           <div className='m-imag rounded-lg ' >
             <img src={item && item.perma_link || dummy } alt='image' className='img-fluid w-100' />

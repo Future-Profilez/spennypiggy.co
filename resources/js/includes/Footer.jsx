@@ -127,7 +127,7 @@ export default function Footer(props) {
                 <div id="footer" className="footer">
                     <div className="containerbox">
                         <div className="footlogo m-auto d-table">
-                            <LazyLoadImage
+                            <LazyLoadImage className="rounded-4 p-2 px-3 blackbg "
                                 alt={"image"}
                                 height={"auto"}
                                 src={footlogo}

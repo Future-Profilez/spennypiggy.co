@@ -49,6 +49,9 @@ export default function Wishlistbox(props) {
 
   return <div key={key} style={IsloggedIn ? style : stylenone}  className={`wish-item-box ${classes} ${isDragging ? 'dragging' : ''}`}> 
       <div  className='wishlistcntbox mb-3 mb-sm-4 whbg relative  shadow-voilet '>
+
+      {IsloggedIn && itm && itm.is_approved === 0 ?  <div className='approvalmessge membership m-3 rounded-3 p-3 py-2 mb-2 ' >Wish item waiting for approval. Currently only you can see this wish.</div> : ''}
+
         {IsloggedIn ?
         <>
           <div className='movesvg' ref={setNodeRef} {...listeners} {...attributes} >

@@ -43,28 +43,17 @@ export default function HappyCreators() {
     ]
 
   return (
-   <div className="happycreator mintbg">
+   <div id="reviews"  className="happycreator py-5 lightpink-50">
    <div className="containerbox">
-       <h2 className="headingMd text-shadow-black text-pink text-center mb-10">
-           Happy Creators
-       </h2>
+       <h2 className='headingSm shadow-none text-dark stroke-none mb-3 text-center mb-6 max-width-1000 m-auto d-table' >Happy Creators</h2>
        <div className="creatorslider">
-           <Swiper spaceBetween={0}
+           <Swiper spaceBetween={20}
                pagination={{ clickable: true }}
                modules={[Pagination]}
-               slidesPerView={width < "1199" ? 1 : 3} >
+               slidesPerView={width < "1199" ? 1 : 2} >
                {msg && msg.map((m , i)=>{ 
                    return <SwiperSlide key={`swiper-item-${i}`} >
-                           <div className="happyclientSec">
-                               {/* <div className="clientdetail">
-                                   <img src={userimg} alt />
-                                   <div className="clientname">
-                                       <strong className="font-CeraGRBold">
-                                           Dave Turner
-                                       </strong>
-                                       @DaveTheRave
-                                   </div>
-                               </div> */}
+                           <div className="happyclientSec shadow-black-sm">
                                <div className="clientdetail">
                                    <div className="clientname ps-0">
                                        <strong className="font-CeraGRBold">

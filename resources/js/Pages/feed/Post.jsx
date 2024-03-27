@@ -56,6 +56,7 @@ export default function Post({item, updateState}) {
   return (
     <>
       <div className="post-wrap bg-light rounded-4 p-3 mb-3 mb-md-4">
+        {IsloggedIn && item && item.approved == 0 ?  <div className='approvalmessge rounded-3 p-3 py-2 mb-2 ' >Post waiting for approval. Currently only you can see this post.</div> : ''}
         <div className='d-flex align-items-center justify-content-between mb-3' >
             <Link href={`${user && user.username}`} className="headerpost mb-0 head w-auto" >
                 <img className="author-img" src={user && user.avatar_url || "SPENNY PIGGY"} />

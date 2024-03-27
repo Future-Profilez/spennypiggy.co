@@ -42,8 +42,11 @@ export default function Bill(props) {
   }
 
   return <>
-    <div key={key} style={IsloggedIn ? style : stylenone}  className={`billbox wish-item-box ${classes} ${isDragging ? 'dragging' : ''}`}> 
+    <div key={key} style={IsloggedIn ? style : stylenone}  className={` position-relative billbox wish-item-box ${classes} ${isDragging ? 'dragging' : ''}`}> 
+      
+      
       <div  className='wishlistcntbox  mb-3 mb-sm-4 whbg relative'>
+    {IsloggedIn && itm && itm.approved === 0 ?  <div className='approvalmessge membership m-3 rounded-3 p-3 py-2 mb-2 ' >Bill item waiting for approval. Currently only you can see this bill.</div> : ''}
         <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
           <LazyLoadImage
           alt={"image"} useIntersectionObserver={true} effect="blur"
