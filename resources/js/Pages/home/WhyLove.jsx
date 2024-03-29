@@ -12,6 +12,7 @@ import image9 from '../../../assets/fea/9.png';
 import image11 from '../../../assets/fea/11.png';
 import image12 from '../../../assets/fea/12.png';
 import image13 from '../../../assets/fea/13.png';
+import cc from '../../../assets/fea/cc.png';
 
 export default function WhyLove() {
 
@@ -60,6 +61,12 @@ export default function WhyLove() {
          icon:image9,
          title :"Monthly Bills",
          heading: "Make exclusive content available to supporters or members.",
+      },
+      {
+         hide:true,
+         icon:cc,
+         title :"Plus much more In the works! 🤩.",
+         heading: "",
       } 
    ];
 
@@ -89,7 +96,7 @@ export default function WhyLove() {
             <h2 className='headingSm shadow-none text-white stroke-none mb-4 text-center mb-6 max-width-1000 m-auto d-table' >Features that you need</h2>
             <div className="whylovebox">
                {features && features.map((item, i)=>{
-                  return <div className="loveboxes px-4 mt-4  mb-4">
+                  return <div data-aos="flip-down" className={` ${item.hide ? "d-lg-none" : ''}  loveboxes px-4 mt-4  mb-4`}>
                         <div className='featureicon' >
                            <LazyLoadImage
                            alt={"image"}
@@ -107,9 +114,9 @@ export default function WhyLove() {
    <div className="whylove yellowbg border-black border-bottom-0 border-end-0 border-start-0">
       <div className="containerbox">
             <h2 className='headingSm shadow-none text-dark stroke-none mb-4 text-center mb-6 max-width-1000 m-auto d-table' >Premium Only Features </h2>
-            <div className="whylovebox pre d-block d-lg-flex">
+            <div data-aos="flip-down" className="whylovebox pre d-block d-lg-flex">
                {premium && premium.map((item, i)=>{
-                  return <div className="loveboxes px-4 mt-4  mb-4">
+                  return <div className={`loveboxes px-4 mt-4  mb-4`}>
                         <div className='featureicon' >
                            <LazyLoadImage
                            alt={"image"}

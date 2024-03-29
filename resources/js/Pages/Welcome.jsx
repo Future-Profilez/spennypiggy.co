@@ -17,8 +17,14 @@ import lockprofile from "../../assets/img/lockprofile.png";
 import Membership from "./home/Membership";
 import NotForBusiness from "./home/NotForBusiness";
 import FAQ from "./home/FAQ";
-
+import { useEffect } from "react";
+import AOS from "aos";
+import "aos/dist/aos.css";
 export default function Home({ auth, user }) {
+
+    useEffect(()=>{
+        AOS && AOS.init();
+    },[]);
 
     return <>
         <LiveBar reps={15} classes={'pb-2 pb-md-0 blackbg barouter'} text={"🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨"} />

@@ -62,9 +62,9 @@ body{position:relative;font-family:var(--para-font);}
 .border-voilet { 
   border-color: var(--voilet) !important;
 }
-.btn-pink.lg{font-size:19px;padding:14px 10px;}
-.btn-pink.md{font-size:16px;padding:12px 10px;}
-.btn-pink.sm{font-size:14px;padding:10px 10px;}
+.btn-pink.lg{font-size:19px;padding:14px 30px;}
+.btn-pink.md{font-size:16px;padding:12px 30px;}
+.btn-pink.sm{font-size:14px;padding:10px 30px;}
 .btn-pink.shadow-mint{box-shadow:2px 3px 0 0 var(--mint);}
 .btn-pink.shadow-mint:hover{box-shadow:5px 5px 0 0 var(--mint);}
 .btn-pink lg:hover,.btn-pink lg:focus{box-shadow:none;transition:all ease 0.3s;}

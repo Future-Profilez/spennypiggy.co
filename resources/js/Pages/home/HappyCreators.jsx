@@ -53,7 +53,7 @@ export default function HappyCreators() {
                slidesPerView={width < "1199" ? 1 : 2} >
                {msg && msg.map((m , i)=>{ 
                    return <SwiperSlide key={`swiper-item-${i}`} >
-                           <div className="happyclientSec shadow-black-sm">
+                           <div data-aos="fade-left" className="happyclientSec shadow-black-sm">
                                <div className="clientdetail">
                                    <div className="clientname ps-0">
                                        <strong className="font-CeraGRBold">

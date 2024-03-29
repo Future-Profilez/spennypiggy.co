@@ -61,7 +61,7 @@ button.closelightbox {
       {isOpen && (
         <div className="lightbox-overlay" onClick={closeLightbox}>
           <div className="lightbox-content p-3">
-            <iframe src="https://player.vimeo.com/video/838281634?h=2daaa2890c"   frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+            <iframe src="https://player.vimeo.com/video/892796707?h=d636ff2918"   frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
             <button className="closelightbox" onClick={closeLightbox} >&times;</button>
           </div> 
         </div>

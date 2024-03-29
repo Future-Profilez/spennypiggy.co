@@ -321,6 +321,9 @@ export default function Dashboard(props) {
                                                 <Tab eventKey="home" title="Home">
                                                     <div className="row about-sec">
                                                         <div className="col-md-6">
+                                                            
+                                                            {user && user?.stripe_details_submitted == 1 && goal && goal.completed == 0 ? <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ""}
+
                                                             <div className="box p-2 p-md-4 shadow-voilet rounded-lg mb-4">
                                                                 <p className="font-bold">About me</p>
                                                                 <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
@@ -369,8 +372,6 @@ export default function Dashboard(props) {
                                                                     ""
                                                                 )}
                                                             </div>
-
-                                                            {user && user?.stripe_details_submitted == 1 && goal && goal.completed == 0 ? <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ""}
 
                                                             <AddIntro uuid={user?.id || null} IsloggedIn={IsloggedIn}/>
 

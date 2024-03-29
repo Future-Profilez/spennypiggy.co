@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, Head, router } from "@inertiajs/react";
-import spennypiggy from "../../assets/img/spenny-piggy.png";
+// import spennypiggy from "../../assets/img/spenny-piggy.png";
+import spennypiggy from "../../assets/img/logo.png";
 import { useState } from "react";
 import { useEffect } from "react";
 import DeviceID from "./DeviceID";

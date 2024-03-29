@@ -20,7 +20,9 @@ export default function Membership() {
       </div>
         
         <div className='position-relative p-0 p-md-4' >
-              <div className='membership-image py-2 m-auto d-table d-flex justify-content-center max-width-900 mt-3 ' >
+        <LiveBar reps={20} color={`yellowbg`} classes={'commingsooon'} text={"  Coming Soon      "} />
+
+              <div data-aos="zoom-in-up" className='membership-image py-2 m-auto d-table d-flex justify-content-center max-width-900 mt-3 ' >
                 <LazyLoadImage
                   alt={"image"} 
                   useIntersectionObserver={true}
@@ -32,7 +34,6 @@ export default function Membership() {
                 />
               </div>
               <strong className='font-[23px] text-center my-2 m-auto d-table' >*Supporters just pay payment processing. No service fees.</strong>
-              <LiveBar reps={20} color={`yellowbg`} classes={'commingsooon'} text={"  Coming Soon      "} />
         </div>
 
     </div>

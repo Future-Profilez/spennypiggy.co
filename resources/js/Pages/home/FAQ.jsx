@@ -40,7 +40,7 @@ export default function FAQ() {
               <div className='faqaccordian' >
                   <Accordion defaultActiveKey={0}>
                     {faqs && faqs.map((f, i)=>{
-                      return <Accordion.Item eventKey={i} className='border-black rounded-4 mb-4 shadow-black-sm' >
+                      return <Accordion.Item eventKey={i} data-aos="zoom-in-up" className='border-black rounded-4 mb-4 shadow-black-sm' >
                           <Accordion.Header onClick={(e) => setOpen(i)}>
                               {f.title}
                           </Accordion.Header>

@@ -126,7 +126,7 @@ export default function TipInner({classes}) {
                     id="termaccept"  name="termaccept"  
                     value="termaccept" required 
                     onChange={(e) => setData("termaccept", e.target.value)}></input>
-                      By supporting me, you agree that this support is a donation and as a thank you, you get access to my profile feed and supporter only posts. To view these, you will need to create an account with the e-mail you used to send the support”
+                      By supporting me, you agree that this support is a donation and as a thank you, you get access to my profile feed and supporter only posts. To view these, you will need to create an account with the e-mail you used to send the support
                   </p>
                 </label>
             </div>

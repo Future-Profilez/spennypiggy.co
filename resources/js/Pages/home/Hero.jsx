@@ -8,7 +8,7 @@ import TrustBox from './TrustBox';
 import Scrollspy from 'react-scrollspy';
 import { useState } from 'react';
 import { useEffect } from 'react';
-import Lightbox from '@/includes/Lightbox';
+ 
 
 export default function Hero({auth}) {
 
@@ -80,7 +80,7 @@ export default function Hero({auth}) {
 
       <div style={{ backgroundImage:`url(${herobanner})` }}  id="home" className="heroSec position-relative">
         <div className="containerbox">
-          <div className="welcome">
+          <div className="welcome" data-aos="zoom-out" >
               <div className="welcomeLeft m-auto py-5 d-table">
                   <h2 className="text-center welcomeHeading shadow-yellow font-GillSans text-uppercase mb-1">
                     Oink! Oink! B*tch{" "}
@@ -91,8 +91,8 @@ export default function Hero({auth}) {
 
                   <div className=" pt-4 wishlistbtn wishlistbtnFixed m-auto d-table">
                     {auth?.user?.username ?  
-                    <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink wishlistbutton lg px-4 shadow-mint border-mint log " > My Wishlist </Link>
-                      : <Link href="/register" className="btn-pink wishlistbutton lg px-4 shadow-mint border-mint " > Create Wishlist </Link> 
+                    <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink wishlistbutton lg px-5 shadow-mint border-mint log " > My Wishlist </Link>
+                      : <Link href="/register" className="btn-pink wishlistbutton lg px-5 shadow-mint border-mint " > Create Wishlist </Link> 
                     }
                     <div className='itsfree-tag d-none d-md-block' >
                       <img alt={"image"}  className=' '
@@ -114,8 +114,6 @@ export default function Hero({auth}) {
                   </div> */}
 
                   {/* <div className="itsfree ps-0 mt-0 mt-md-3 pt-1 text-start"> Its’s Free 🎉 </div> */}
-                  
-                 
                   
               </div>
           </div>

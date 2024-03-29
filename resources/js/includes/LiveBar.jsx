@@ -40,7 +40,7 @@ const LiveBar = (props) => {
 
   return <>
      
-    <div className={props.classes} >
+    <div data-aos="fade-up" className={props.classes} >
     <LiveBarWrapper className={`livebar ${props.color ? props.color : "mintbg"} py-3 pb-3 px-2`}>
       <ScrollingContainer>
         <ScrollingContent>
