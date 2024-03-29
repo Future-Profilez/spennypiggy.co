@@ -8,6 +8,7 @@ use App\Jobs\BillPayMail;
 use App\Jobs\MembershipMail;
 use App\Models\BillPayment;
 use App\Models\Bills;
+use App\Models\Logs;
 use App\Models\User;
 use App\StripeControl;
 use Carbon\Carbon;
@@ -103,7 +104,7 @@ class BillsController extends Controller
 
             return response()->json([
                 'status' => true,
-                'msg' => "Bill added successfully."
+                'msg' => "Bill added successfully, your upload will be approved shortly."
             ]);
     }
 
@@ -186,7 +187,14 @@ class BillsController extends Controller
                 }
 
                 $bill->product_id = $stripe_client->id;
+                $bill->approved = 0;
                 $bill->save();
+
+                $logs = Logs::where('edited_bill_id',$bill->id)->where('status','pending')->first();
+                if(!empty($logs)){
+                    $logs->status = 'updated';
+                    $logs->save();
+                }
 
             } catch (Exception $e) {
                 $bill->delete();

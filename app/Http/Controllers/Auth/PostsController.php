@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Helpers;
 use App\Http\Controllers\Controller;
+use App\Models\Logs;
 use App\Models\Post;
 use App\Models\PostComment;
 use App\Models\PostLike;
@@ -52,7 +53,7 @@ class PostsController extends Controller
 
              return response()->json([
                  'status' => true,
-                 'msg' => "Post saved successfully."
+                 'msg' => "Post saved successfully, your upload will be approved shortly."
              ]);
          }
      }
@@ -97,7 +98,14 @@ class PostsController extends Controller
                  $post->title = $request->title ?? null;
                  $post->content = $request->content ?? null;
                  $post->image = $request->image ?? null;
+                 $post->approved = 0;
                  $post->save();
+
+                $logs = Logs::where('edited_post_id',$post->id)->where('status','pending')->first();
+                if(!empty($logs)){
+                    $logs->status = 'updated';
+                    $logs->save();
+                }
 
                  return response()->json([
                      'status' => true,

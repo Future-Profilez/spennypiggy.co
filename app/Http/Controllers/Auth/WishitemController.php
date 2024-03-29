@@ -18,6 +18,7 @@ use App\Jobs\ThankyouMailToUser;
 use App\Jobs\TipJarTweet;
 use App\Jobs\WelcomeUser;
 use App\Mail\CheckError;
+use App\Models\Logs;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\Subscription;
@@ -299,7 +300,7 @@ class WishitemController extends Controller
             }
         }
 
-        return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
+        return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added, your upload will be approved shortly.");
     }
 
 
@@ -399,7 +400,14 @@ class WishitemController extends Controller
                         }
 
                         $wish->stripe_product_id = $stripe_client->id;
+                        $wish->is_approved = 0;
                         $wish->save();
+
+                        $logs = Logs::where('edited_wish_id',$wish->id)->where('status','pending')->first();
+                        if(!empty($logs)){
+                            $logs->status = 'updated';
+                            $logs->save();
+                        }
                     }
 
                     //send email
@@ -446,6 +454,7 @@ class WishitemController extends Controller
     public function discover_all_wishes($order,$type,$price) {
 
         $query = WishItem::where('deleted_at', null)
+        ->where('is_approved',1)
         ->with(['user'])
         ->whereHas('user',function($q){
             $q->where(function($s){

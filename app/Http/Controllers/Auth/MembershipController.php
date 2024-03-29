@@ -10,6 +10,7 @@ use App\Jobs\SubscribeAutoTweet;
 use App\Jobs\SubscribedMail;
 use App\Jobs\SubscriptionCancelAtEnd;
 use App\Jobs\SubscriptionFailed;
+use App\Models\Logs;
 use App\Models\Membership;
 use App\Models\MembershipPayment;
 use App\Models\StripePaymentDetail;
@@ -125,7 +126,7 @@ class MembershipController extends Controller
 
             return response()->json([
                 'status' => true,
-                'msg' => "Membership added successfully."
+                'msg' => "Membership added successfully, your upload will be approved shortly."
             ]);
     }
 
@@ -217,7 +218,14 @@ class MembershipController extends Controller
                     $mem->price_id = $product->default_price;
                 }
                 $mem->product_id = $product->id;
+                $mem->approved = 0;
                 $mem->save();
+
+                $logs = Logs::where('edited_membership_id',$mem->id)->where('status','pending')->first();
+                if(!empty($logs)){
+                    $logs->status = 'updated';
+                    $logs->save();
+                }
 
             } catch (Exception $e) {
                 $mem->delete();
