@@ -603,4 +603,41 @@ class ProfileController extends Controller
             "per_page" => $posts->perPage() ?? null,
         ]);
     }
+
+    public function gifterMedia($username){
+        $user = User::where('username', $username)->first();
+
+        $categorizedPayments = [];
+        
+        $payment = StripePaymentItems::whereHas('wish',function($q){
+            $q->whereNotNull('reward');
+        })->whereHas('payment',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->get();
+
+
+        foreach ($payment as $key => $value) {
+            $ownerId = $value->payment->owner_id;
+
+
+            if (array_key_exists($ownerId, $categorizedPayments)) {
+
+                $categorizedPayments[$ownerId]['reward'][] = $value->wish->reward_url;
+                $categorizedPayments[$ownerId]['count'] += 1;
+            } else {
+
+                $categorizedPayments[$ownerId]['username'] = $value->payment->owner->username;
+                $categorizedPayments[$ownerId]['name'] = $value->payment->owner->name;
+                $categorizedPayments[$ownerId]['count'] = 1;
+                $categorizedPayments[$ownerId]['reward'] = [$value->wish->reward_url];
+            }
+        }
+
+        $categorizedPayments = array_values($categorizedPayments);
+
+        return response()->json([
+            'status' => true,
+            'medias' => $categorizedPayments,
+        ]);
+    }
 }
