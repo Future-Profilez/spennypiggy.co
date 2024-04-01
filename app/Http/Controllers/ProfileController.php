@@ -608,7 +608,7 @@ class ProfileController extends Controller
         $user = User::where('username', $username)->first();
 
         $categorizedPayments = [];
-        
+
         $payment = StripePaymentItems::whereHas('wish',function($q){
             $q->whereNotNull('reward');
         })->whereHas('payment',function($q)use($user){
@@ -638,6 +638,49 @@ class ProfileController extends Controller
         return response()->json([
             'status' => true,
             'medias' => $categorizedPayments,
+        ]);
+    }
+
+
+    public function gifterSubscription($username){
+        $user = User::where('username', $username)->first();
+
+        $user_subs = WishItemSubscription::where('user_id', $user->id)->with(['wish_item', 'wish_item.user'])->paginate(30);
+
+        $trackData = [];
+        foreach ($user_subs as $key => $value) {
+            $trackData[$key] = [
+                'owner' => [
+                    'name' => $value->wish_item->user->name,
+                    'avatar' => $value->wish_item->user->avatar_url,
+                    'cover' => $value->wish_item->user->cover_url,
+                    'username' => $value->wish_item->user->username,
+                    'stripe_details_submitted' => $value->wish_item->user->stripe_details_submitted
+                ],
+                'amount' => $value->amount,
+                'tax' => $value->tax,
+                'currency' => $value->currency,
+                'created_at' => Carbon::parse($value->created_at)->format('Y-m-d H:i:s'),
+                'anonymous' => $value->anonymous
+            ];
+
+
+            if(!empty($value->wish_item)){
+                $trackData[$key]['wish_item'] = [
+                    'name' => $value->wish_item->wishname,
+                    'perma_link' => $value->wish_item->perma_link,
+                ];
+            }
+
+        }
+
+        return response()->json([
+            'status' => true,
+            'subscriptions' => $trackData,
+            "last_page" => $user_subs->lastPage() ?? null,
+            "current_page" => $user_subs->currentPage() ?? null,
+            "total" => $user_subs->total() ?? null,
+            "per_page" => $user_subs->perPage() ?? null,
         ]);
     }
 }
