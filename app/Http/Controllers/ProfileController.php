@@ -580,7 +580,7 @@ class ProfileController extends Controller
             $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
         })->pluck('creator_id');
 
-        $posts = Post::where(function($query)use($tip,$lifetime,$mem,$subscription,$bills){
+        $posts = Post::whereNotNull('image')->where(function($query)use($tip,$lifetime,$mem,$subscription,$bills){
             $query->where(function($qu) use($tip){
                 $qu->whereIn('user_id',$tip)->where('for_module','support');
             })->orWhere(function($qu) use($lifetime,$mem){
