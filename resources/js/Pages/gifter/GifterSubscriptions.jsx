@@ -17,20 +17,20 @@ export default function GifterSubscriptions(props) {
 
   const fetch_items = async (p, load) => {
     setLoading(true);
-    axios.get(`/gifter-subs/${username}?page=${p}`)
+    axios.get(`/gifter-subscriptions/${username}?page=${p}`)
     .then((resp) => {
-        // setLoading(false);
-        // const newd = resp.data.tips
-        // if(load){
-        //   const result = data.concat(newd);
-        //   setData(result);
-        // } else { 
-        //   setData(newd);
-        // }
-        // setPage(p);
-        // if(resp.data.last_page == resp.data.current_page){
-        //   setHasMore(false);
-        // }
+        setLoading(false);
+        const newd = resp.data.subscriptions
+        if(load){
+          const result = data.concat(newd);
+          setData(result);
+        } else { 
+          setData(newd);
+        }
+        setPage(p);
+        if(resp.data.last_page == resp.data.current_page){
+          setHasMore(false);
+        }
     }).catch((_err) => {
         console.error("error", _err);
         setLoading(false);
@@ -46,13 +46,11 @@ export default function GifterSubscriptions(props) {
       const total_amount = (+w.amount)+(+w.tax)
       const uname = user && user.username;
       const amount = formatMultiPrice(total_amount, w && w.currency);
+      const item  = w && w.wish_item && w.wish_item.name;
       const owner  = w && w.owner && w.owner.name;
       const goalname  = w && w.tipGoal && w.tipGoal.name;
-
       return <div className='pb-3'>
-          <p className=' ' ><span className='text-capitalize' >{uname}</span> just tip amount of {amount} on <b>{owner}'s</b> <b>'{goalname}'</b> goal. 
-          {/* <span className='text-small text-time text-capitalize' >14hrs ago</span> */}
-          </p>
+          <p className='' ><span className='text-capitalize' >{uname}</span> just subscribe  <b>{owner}'s</b> subscription <b>{item}</b> of amount {amount}.</p>
       </div>
     }
     return <div className='wish-grant  my-2' key={key} >
@@ -62,7 +60,7 @@ export default function GifterSubscriptions(props) {
 
   return (
     <div className='box rounded-lg p-4 mt-4 ' >
-      <h3 className='text-large text-dark title mb-2' >Tips </h3>
+      <h3 className='text-large text-dark title mb-2' >Subscriptions </h3>
         {data && data.map((d, i)=>{ 
           return <div key={`wishes-items-${i}`} ><Item  w={d} /></div>
         })}

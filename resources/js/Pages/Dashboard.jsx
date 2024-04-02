@@ -34,7 +34,6 @@ import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import useWidthCount from "@/Components/useWidthCount";
-
 import{arrayMove,SortableContext,sortableKeyboardCoordinates,useSortable,rectSortingStrategy,}from "@dnd-kit/sortable";
 import{closestCenter,DndContext,KeyboardSensor,MouseSensor,TouchSensor,useSensor,useSensors,}from "@dnd-kit/core";
 
@@ -153,7 +152,6 @@ export default function Dashboard(props) {
         }
     });
 
-    // Update movement of wish items
     const updateMovement = async (updated) => {
         const array = [];
         updated.forEach((name) => {
@@ -289,13 +287,13 @@ export default function Dashboard(props) {
                         <VersionUpdate />
                         <div className="wishbanner ">
                             <LazyLoadImage
-                                alt={"image"}
-                                useIntersectionObserver={true}
-                                effect="blur"
-                                height={400}
-                                className="w-full border-black border-2 shadow-mint rounded-2xl"
-                                src={user?.cover_url || wishlistbannerimg}
-                                width={1200}
+                            alt={"image"}
+                            useIntersectionObserver={true}
+                            effect="blur"
+                            height={400}
+                            className="w-full border-black border-2 shadow-mint rounded-2xl"
+                            src={user?.cover_url || wishlistbannerimg}
+                            width={1200}
                             />
                         </div>
                         <Userprofile IsloggedIn={IsloggedIn} />

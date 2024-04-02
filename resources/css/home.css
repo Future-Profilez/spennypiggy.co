@@ -294,7 +294,7 @@ div#msgText p b{font-weight:700 !important;padding:0 4px;color:#000;}
 .userprofilesec{margin-top:-50px;}
 ul.socialmedia a{display:flex;text-transform:uppercase;font-size:17px;}
 ul.socialmedia a > div{padding-right:4px;}
-.nav.nav-tabs{flex-wrap:nowrap !important;overflow:auto;}
+.nav.nav-tabs{flex-wrap:nowrap !important;overflow:auto;  }
 .nav.nav-tabs::-webkit-scrollbar{display:none;}
 .nav.nav-tabs{-ms-overflow-style:none;scrollbar-width:none;padding-bottom:10px;}
 .membership-box{height:100%;box-shadow:0 0 26px 4px #0002;}
@@ -479,7 +479,7 @@ lr-cloud-image-editor#my-editor{height:80vh;}
 .static-page.termspage strong{margin-top:15px !important;display:inline-block;margin-bottom:10px !important;}
 .tabs-container{position:relative;}
 .tabs-container.IsloggedIn .add-options.dropdown{position:absolute;right:0;}
-.tabs-container.IsloggedIn .inlinetab > ul{margin-right:70px !important;}
+.tabs-container.IsloggedIn:not(.gifter) .inlinetab > ul{margin-right:70px !important;}
 ul.socialmedia li svg path{fill:var(--voilet);}
 ul.socialmedia li svg{width:25px !important;height:24px !important;}
 .titlebadge{font-size:11px !important;letter-spacing:1px !important;font-weight:300 !important;} 

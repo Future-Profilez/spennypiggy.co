@@ -12,7 +12,6 @@ import { useDispatch } from "react-redux";
 import { add_to_cart } from "../Pages/redux/UserSlice";
 import ChangeCurrency from "@/Components/ChangeCurrency";
 import { usePage } from "@inertiajs/react";
-
 export default function Header() {
     const { global_currency, auth } = usePage().props;
     const deviceid = DeviceID();
