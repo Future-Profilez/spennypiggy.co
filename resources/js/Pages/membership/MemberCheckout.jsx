@@ -171,7 +171,7 @@ export default function SubCheckout(props) {
                                         <div className="tearmlist ps-3">
                                             <ul className="ps-0">
                                                 <li> This payment will be automatically taken on a daily,weekly,monthly or yearly basis depending on yourchoice and can be cancelled anytime. </li>
-                                                <li> For Memberships and subscriptions, I understand I am making a non-refundable purchase that provides access to exclusive posts. This payment will be automatically taken on a monthly basis. Can be cancelled anytime. </li>
+                                                <li> For Memberships and subscriptions, I understand I am making a non-refundable purchase that provides access to exclusive posts. This payment will be automatically taken on a daily, weekly, monthly or yearly basis depending on the subscription type. Can be cancelled anytime. </li>
                                                 <li> I understand that for wishes or support payments I am making a non-refundable donation of support and understand I will recieve a thank you message as a reward. </li>
                                                 <li> This payment of purchase or donation is intended soley for the wish recipient </li>
                                                 <li> I have taken the necessary steps to confirm the membershiplist owner is authentic and I understand that Spenny Piggy will not be held responsible for any issues arising from a catfishing situation. </li>

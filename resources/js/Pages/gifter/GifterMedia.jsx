@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import axios from 'axios';
 import Gallerybox from "@/includes/Gallerybox";
+import Nocontent from "@/includes/Nocontent";
 
 export default function GifterMedia ({username}) {
 
@@ -76,7 +77,7 @@ export default function GifterMedia ({username}) {
           <div className="my-4 md:my-10 flex gap-6 flex-wrap">
             {media && media.length ? media.map((itm, i)=>{ 
                 return <MediaGroup item={itm} />
-            }) : ''} 
+            }) : <Nocontent text="No Posts to see" /> } 
           </div>
           }
         </>

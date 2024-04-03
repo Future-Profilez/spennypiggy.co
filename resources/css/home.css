@@ -365,11 +365,11 @@ div#msgText p.valid svg path{stroke:#27b227;}
 .swiper-button-next,.swiper-button-prev{border-radius:10px;background:#fff;padding:10px;width:35px !important;height:35px !important;}
 .swiper-button-next:after,.swiper-button-prev:after{width:20px !important;height:20px !important;font-size:21px !important;margin-left:3px;color:#000;font-weight:bolder !important;}
 .swiper-button-prev:after{margin-left:0 !important;margin-right:3px !important;}
-.tooltipbtn{width:13px;height:14px;background:#000;color:#fff;font-size:11px;border-radius:50%;margin-left:6px;display:inline-block;}
+.tooltipbtn{width:13px;height:14px;background:#505050;color:#fff;font-size:11px;border-radius:50%;margin-left:6px;display:inline-block;}
 .text-small,.tooltipbtn p{font-size:14px;}
-.tooltipbtn p{position:absolute;background:#000;padding:10px;border-radius:11px;max-width:290px;left:-58px;z-index:2;top:20px;width:130px;display:none;}
+.tooltipbtn p{position:absolute;background:#505050;padding:10px;border-radius:11px;max-width:290px;left:-58px;z-index:2;top:20px;width:130px;display:none;}
 .tooltipbtn{position:relative;}
-.tooltipbtn p:after{content:"";width:10px;height:10px;background:#000;position:absolute;left:40px;top:-3px;transform:rotate(45deg);}
+.tooltipbtn p:after{content:"";width:10px;height:10px;background:#505050;position:absolute;left:40px;top:-3px;transform:rotate(45deg);}
 .titleprice:hover .tooltipbtn p{display:block !important;}
 .welcomeRt{animation:menu 0.5s linear;transition:0.6s;}
 .wishtracker .nav.nav-tabs li button{margin-right:15px;background:0 0;color:#fff;border:0 !important;padding:15px 10px !important;font-size:17px;border-bottom:2px solid transparent !important;}

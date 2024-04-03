@@ -187,19 +187,19 @@ export default function SubCheckout(props) {
                                         <label
                                             htmlFor="agreeterm"
                                             className="text-start" >
-                                            <input
-                                                onChange={(e) => setData('agree', e.target.checked)}
-                                                type="checkbox"
-                                                id="agreeterm"
-                                                name="agreeterm"
-                                                className="me-2"
-                                                value="agreeterm" ></input>
+                                            <input 
+                                            onChange={(e) => setData('agree', e.target.checked)} 
+                                            type="checkbox" 
+                                            id="agreeterm" 
+                                            name="agreeterm" 
+                                            className="me-2" 
+                                            value="agreeterm" ></input>
                                             I agree to the <Link target='_blank' className="text-voilet" href={route("terms-and-conditions")} >Terms of Service</Link> and <a className="text-voilet" target='_blank' href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>  and the following statements:
                                         </label>
                                         <div className="tearmlist ps-3">
                                             <ul className="ps-0">
                                                 <li> This payment will be automatically taken on a daily,weekly,monthly or yearly basis depending on yourchoice and can be cancelled anytime. </li>
-                                                <li> For Memberships and subscriptions, I understand I am making a non-refundable purchase that provides access to exclusive posts. </li>
+                                                <li> For Memberships and subscriptions, I understand I am making a non-refundable purchase that provides access to exclusive posts. This payment will be automatically taken on a daily, weekly, monthly or yearly basis depending on the subscription type. Can be cancelled anytime. </li>
                                                 <li> I understand that for wishes or support payments I am making a non-refundable donation of support and understand I will recieve a thank you message as a reward. </li>
                                                 <li> This payment of purchase or donation is intended soley for the wish recipient </li>
                                                 <li> I have taken the necessary steps to confirm the wishlist owner is authentic and I understand that Spenny Piggy will not be held responsible for any issues arising from a catfishing situation. </li>

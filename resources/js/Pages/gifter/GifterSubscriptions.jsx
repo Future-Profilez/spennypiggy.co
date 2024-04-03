@@ -15,9 +15,9 @@ export default function GifterSubscriptions(props) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  const fetch_items = async (p, load) => {
+  const fetch_items = async (p, load, signal) => {
     setLoading(true);
-    axios.get(`/gifter-subscriptions/${username}?page=${p}`)
+    axios.get(`/gifter-subscriptions/${username}?page=${p}`, {signal})
     .then((resp) => {
         setLoading(false);
         const newd = resp.data.subscriptions
@@ -38,7 +38,10 @@ export default function GifterSubscriptions(props) {
   };
 
   useEffect(()=>{
-    fetch_items(page);
+    const controller = new AbortController();
+    const { signal } = controller;
+    fetch_items(page, false, signal);
+    return () => controller.abort();
   },[]);
 
   const Item = ({key, w}) => { 

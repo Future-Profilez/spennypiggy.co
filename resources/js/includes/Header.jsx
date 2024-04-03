@@ -48,7 +48,7 @@ export default function Header() {
         <>
             <div className="blackbg headermain py-8">
                 <div className="containerbox">
-                    <div className="header flex w-full items-center content-center justify-between ">
+                    <div className="header flex w-full items-center  justify-between ">
                         {/* {auth?.user?.username ? (
                             <Link
                                 href={`/${auth?.user?.username || ""}`}
@@ -62,11 +62,13 @@ export default function Header() {
                                 Sign Up
                             </Link>
                         )} */}
-
-                        <div className="leftspaces d-none d-md-block  menu-toggle cursor-pointer cartLink position-relative" onClick={toggleClass} >
-                            <svg width="49" height="48" viewBox="0 0 49 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M8.42188 36.75H40.5781M8.42188 24.75H40.5781M8.42188 12.75H40.5781" stroke="#05EFB8" stroke-width="2.625" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
+                        <div className="d-none d-md-flex  leftspaces items-center justify-content-start" >
+                            <div className="  menu-toggle cursor-pointer cartLink position-relative" onClick={toggleClass} >
+                                <svg width="49" height="48" viewBox="0 0 49 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M8.42188 36.75H40.5781M8.42188 24.75H40.5781M8.42188 12.75H40.5781" stroke="#05EFB8" stroke-width="2.625" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <Link className="d-none d-md-block ms-3 text-[30px]"  href={"/leaderboard"} >🌟</Link>
                         </div>
 
                         <div className="spennylogo">
@@ -83,7 +85,17 @@ export default function Header() {
                         </div>
 
                         <div className="leftspaces cartLogin">
-                            <Link href={route("discover")} className="me-3 discover-icon">
+
+                            {auth && auth.user && auth.user.stripe_details_submitted == "1" ? ( "" ) : 
+                                router.page && router.page && router.page.component == "Dashboard" ? (
+                                <ChangeCurrency
+                                    defaultvalue={global_currency}
+                                    changer={true}
+                                />) 
+                            : ""}
+
+
+                            <Link href={route("discover")} className="me-3 ms-1 discover-icon">
                                 <svg
                                     width="36"
                                     height="36"
@@ -114,17 +126,7 @@ export default function Header() {
                                 </svg>
                             </Link>
 
-                            {auth && auth.user && auth.user.stripe_details_submitted == "1" ? ( "" ) 
-                            : 
-                            router.page && router.page && router.page.component == "Dashboard" ? (
-                                <ChangeCurrency
-                                    defaultvalue={global_currency}
-                                    changer={true}
-                                />
-                            ) : (
-                                ""
-                            )
-                            }
+                            
                             <Link
                                 href={route("cart")}
                                 as="button"

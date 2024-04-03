@@ -15,9 +15,9 @@ export default function GifterTips(props) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  const fetch_items = async (p, load) => {
+  const fetch_items = async (p, load, signal) => {
     setLoading(true);
-    axios.get(`/gifter-tips/${username}?page=${p}`)
+    axios.get(`/gifter-tips/${username}?page=${p}`, {signal})
     .then((resp) => {
         setLoading(false);
         const newd = resp.data.tips
@@ -38,8 +38,13 @@ export default function GifterTips(props) {
   };
 
   useEffect(()=>{
-    fetch_items(page);
+    const controller = new AbortController();
+    const { signal } = controller;
+    fetch_items(page, false, signal);
+    return () => controller.abort();
   },[]);
+
+
 
   const Item = ({key, w}) => { 
     

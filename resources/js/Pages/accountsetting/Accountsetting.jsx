@@ -57,12 +57,15 @@ export default function Accountsetting(props) {
                     </div>
                     <div className='accsettingList p-4'>
                         <ul>
-                            <li>{auth && auth.user && auth.user.stripe_details_submitted == 1 ? 
-                               <PaymentDashboard classes='w-100 text-dark paymentbutton' text={<>PAYMENT DASHBOARD <span className='text-mint'>Connected</span></>} />
-                            : 
-                                <Link href={route("stripe")} >PAYMENT DASHBOARD <span className='text-voilet'>Connect Stripe</span></Link>
-                            }
-                            </li>
+                            {auth && auth.user == 1 ? 
+                                <li>
+                                    {auth && auth.user && auth.user.stripe_details_submitted == 1 ? 
+                                        <PaymentDashboard classes='w-100 text-dark paymentbutton' text={<>PAYMENT DASHBOARD <span className='text-mint'>Connected</span></>} />
+                                        : 
+                                        <Link href={route("stripe")} >PAYMENT DASHBOARD <span className='text-voilet'>Connect Stripe</span></Link>
+                                    }
+                                </li> 
+                            : ''}
 
                             <li>
                                 <Popup space='4' modalclassName="pinkmodal" 
