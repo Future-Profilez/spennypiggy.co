@@ -420,6 +420,33 @@ class WishitemController extends Controller
         }
     }
 
+
+    public function deleteWishItem($uuid){
+        $wishitem = WishItem::where('uuid',$uuid)->first();
+
+        if(!$wishitem){
+            return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Wish Item not found.");
+        }
+
+        WishCategory::where('wish_item_id', $wishitem->id)->delete();
+
+        UserCart::where('wish_item_id', $wishitem->id)->delete();
+
+        $si = StripePaymentItems::where('wish_item_id', $wishitem->id)->get();
+
+        foreach ($si as $key => $value) {
+            StripePaymentDetail::where('id',$value->stripe_payment_detail_id)->delete();
+            $value->delete();
+        }
+
+        WishItemSubscription::where('wish_item_id',$wishitem->id)->delete();
+
+        $wishitem->delete();
+
+        return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been deleted.");
+    }
+
+
     public function saveUserCategory(Request $request)
     {
         $request->validate([

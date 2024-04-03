@@ -239,7 +239,17 @@ class MembershipController extends Controller
 
     public function removeLevel($uuid){
 
-        Membership::whereUuid($uuid)->delete();
+        $mem = Membership::whereUuid($uuid)->first();
+
+        if(empty($mem)){
+            return response()->json([
+                "status" => false,
+                "msg" => "Membership not found."
+            ]);
+        }
+
+        MembershipPayment::where('membership_id',$mem->id)->delete();
+        $mem->delete();
 
         return redirect()->back()->with('success','Membership removed successfully.');
     }

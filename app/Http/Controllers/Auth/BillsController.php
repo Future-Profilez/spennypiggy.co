@@ -214,11 +214,19 @@ class BillsController extends Controller
     }
 
 
-    public function removeLevel($uuid){
+    public function removeBill($uuid){
 
-        Bills::whereUuid($uuid)->delete();
+        $bill = Bills::whereUuid($uuid)->first();
 
-        return redirect()->back()->with('success','Bill removed successfully.');
+        if(!empty($bill)){
+            BillPayment::where('bills_id',$bill->id)->delete();
+
+            $bill->delete();
+            return redirect()->back()->with('success','Bill removed successfully.');
+        }
+
+        return redirect()->back()->with('error','Bill not found.');
+
     }
 
 
