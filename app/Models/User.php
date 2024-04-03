@@ -12,6 +12,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
 
 class User extends Authenticatable
 {
@@ -83,14 +84,24 @@ class User extends Authenticatable
     {
         $url = false;
         if (!empty($this->avatar)) {
-
-            if(empty($this->avatar_cdn_modifier)){
-                $url = "https://ucarecdn.com/" . $this->avatar . '/-/format/jpeg/';
+            if($this->avatar_approved == 0){
+                if(Auth::check() && Auth::id() == $this->id){
+                    if(empty($this->avatar_cdn_modifier)){
+                        $url = "https://ucarecdn.com/" . $this->avatar . '/-/format/jpeg/';
+                    }
+                    else{
+                        $url = "https://ucarecdn.com/" . $this->avatar . '/' . $this->avatar_cdn_modifier . '-/preview/';
+                    }
+                }
             }
             else{
-                $url = "https://ucarecdn.com/" . $this->avatar . '/' . $this->avatar_cdn_modifier . '-/preview/';
+                if(empty($this->avatar_cdn_modifier)){
+                    $url = "https://ucarecdn.com/" . $this->avatar . '/-/format/jpeg/';
+                }
+                else{
+                    $url = "https://ucarecdn.com/" . $this->avatar . '/' . $this->avatar_cdn_modifier . '-/preview/';
+                }
             }
-
         }
         return $url;
     }
@@ -100,11 +111,23 @@ class User extends Authenticatable
     {
         $url = false;
         if (!empty($this->cover)) {
-            if(empty($this->cover_cdn_modifier)){
-                $url = "https://ucarecdn.com/" . $this->cover . '/';
+            if($this->cover_approved == 0){
+                if(Auth::check() && Auth::id() == $this->id){
+                    if(empty($this->cover_cdn_modifier)){
+                        $url = "https://ucarecdn.com/" . $this->cover . '/';
+                    }
+                    else{
+                        $url = "https://ucarecdn.com/" . $this->cover . '/' . $this->cover_cdn_modifier . '-/preview/';
+                    }
+                }
             }
             else{
-                $url = "https://ucarecdn.com/" . $this->cover . '/' . $this->cover_cdn_modifier . '-/preview/';
+                if(empty($this->cover_cdn_modifier)){
+                    $url = "https://ucarecdn.com/" . $this->cover . '/';
+                }
+                else{
+                    $url = "https://ucarecdn.com/" . $this->cover . '/' . $this->cover_cdn_modifier . '-/preview/';
+                }
             }
         }
         return $url;
