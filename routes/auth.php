@@ -101,6 +101,8 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
 
+        Route::get('/delete-wish-item/{uuid}', [WishitemController::class, 'deleteWishItem'])->name('delete_wish_item');
+
         Route::prefix("stripe")->name("stripe.")->group(function () {
             Route::get("authorize", [StripeController::class, "index"])->name("index");
             Route::match(["get", "post"], "/connect-{step}/{country?}/{currency?}", [StripeController::class, "initConnect"])->name("connect");
@@ -192,7 +194,7 @@ Route::middleware('auth')->group(function () {
         Route::prefix("bill")->name("bill.")->group(function () {
             Route::post('save', [BillsController::class, 'billSave'])->name('save');
             Route::post('edit/{id}', [BillsController::class, 'billEdit'])->name('edit');
-            Route::get('remove/{uuid}', [BillsController::class, 'removeLevel'])->name('remove');
+            Route::get('remove/{uuid}', [BillsController::class, 'removeBill'])->name('remove');
         });
 
     });
@@ -201,8 +203,11 @@ Route::middleware('auth')->group(function () {
 Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');
 Route::get('gifter-subs/{username}', [ProfileController::class, 'gifterSubs'])->name('gifter-subscriptions');
 Route::get('gifter-tips/{username}', [ProfileController::class, 'gifterTips'])->name('gifter-tips');
+Route::get('gifter-access-posts/{username}', [ProfileController::class, 'gifterAccessPosts'])->name('gifter-access-posts');
 Route::get('gifter-memberships/{username}', [ProfileController::class, 'gifterMemberships'])->name('gifter-memberships');
+Route::get('gifter-medias/{username}', [ProfileController::class, 'gifterMedia'])->name('gifter-media');
 Route::get('gifter-thanks-message/{username}', [ProfileController::class, 'gifterThanksMessages'])->name('gifter-thanks-message');
+Route::get('gifter-subscriptions/{username}', [ProfileController::class, 'gifterSubscription'])->name('gifter-subscription');
 
 // Intro video
 Route::get('/redirecting', function () {

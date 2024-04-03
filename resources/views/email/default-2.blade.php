@@ -158,13 +158,12 @@
                     <tr>
                         <td
                             style="padding:15px 0 5px 0; font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #666666; text-align: center;">
-                            You’re receiving this email because you’re a valued member of the Spenny Piggy community. To
-                            stop receiving notification emails, Please click here</td>
+                            You’re receiving this email because you’re a valued member of the Spenny Piggy community.</td>
                     </tr>
                     <tr>
                         <td
                             style="padding:0 0 10px 0; font-family: Arial; font-weight: normal;font-size: 12px; line-height: 18px;color: #666666; text-align: center;">
-                            To stop receiving notification emails, For Unsubscribe <br> Please <a
+                            To stop receiving notification emails, Please <a
                                 href="www.spennypiggy.co" style="color:#5D25FD">click here</a>
                         </td>
                     </tr>

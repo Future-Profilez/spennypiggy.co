@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Logs;
 use App\Models\Post;
 use App\Models\PostComment;
+use App\Models\PostCommentReplies;
 use App\Models\PostLike;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -121,13 +122,22 @@ class PostsController extends Controller
      }
 
 
-    public function deletePost($uuid){
-        Post::where('uuid',$uuid)->delete();
+     public function deletePost($uuid){
 
-        return response()->json([
-            'status' => true,
-            'msg' => 'Post deleted.'
-        ]);
+        $post = Post::where('uuid', $uuid)->first();
+        if (!empty($post)) {
+            $comments = PostComment::where('post_id',$post->id)->get();
+            foreach ($comments as $comment) {
+                PostCommentReplies::where('post_comment_id',$comment->id)->delete();
+            }
+            PostComment::where('post_id',$post->id)->delete();
+            PostLike::where('post_id',$post->id)->delete();
+
+            $post->delete();
+            return redirect()->back()->with('success', 'Post deleted successfully');
+        } else {
+            return redirect()->back()->with('error', 'Data not found');
+        }
     }
 
 

@@ -5,11 +5,15 @@ namespace App\Http\Controllers;
 use App\Helpers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Jobs\SendIntroMailAdmin;
+use App\Models\Bills;
+use App\Models\Membership;
 use App\Models\MembershipPayment;
+use App\Models\Post;
 use App\Models\StripePaymentItems;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Models\UserIntro;
+use App\Models\WishItem;
 use App\Models\WishItemSubscription;
 use Carbon\Carbon;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -411,11 +415,11 @@ class ProfileController extends Controller
         foreach ($user_tips as $key => $value) {
             $trackData[$key] = [
                 'owner' => [
-                    'name' => $value->tipGoal->user->name,
-                    'avatar' => $value->tipGoal->user->avatar_url,
-                    'cover' => $value->tipGoal->user->cover_url,
-                    'username' => $value->tipGoal->user->username,
-                    'stripe_details_submitted' => $value->tipGoal->user->stripe_details_submitted
+                    'name' => $value->creator->name,
+                    'avatar' => $value->creator->avatar_url,
+                    'cover' => $value->creator->cover_url,
+                    'username' => $value->creator->username,
+                    'stripe_details_submitted' => $value->creator->stripe_details_submitted
                 ],
                 'amount' => $value->amount,
                 'tax' => $value->tax,
@@ -532,6 +536,151 @@ class ProfileController extends Controller
             "current_page" => $wishes->currentPage() ?? null,
             "total" => $wishes->total() ?? null,
             "per_page" => $wishes->perPage() ?? null,
+        ]);
+    }
+
+    public function gifterAccessPosts($username){
+        $user = User::where('username', $username)->first();
+
+        $data = [];
+        $subscription = WishItem::where('subscription',1)->whereHas('wishItemsSubscription',function($qu)use($user){
+            $qu->where(function($que){
+                $que->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now());
+            })->where(function($q) use($user){
+                $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
+            });
+        })->pluck('user_id');
+
+        $bills = Bills::whereHas('payments',function($qu)use($user){
+            $qu->where(function($que){
+                $que->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now());
+            })->where(function($q) use($user){
+                $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
+            });
+        })->pluck('user_id');
+
+        $mem = Membership::whereHas('payments',function($q) use($user){
+            $q->where('recurring_type','!=','lifetime')->where(function($que){
+                $que->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now());
+            })->where(function($q) use($user){
+                $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
+            });
+        })->pluck('user_id');
+
+        $lifetime = Membership::whereHas('payments',function($q) use($user){
+            $q->where(function($que){
+                $que->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now());
+            })->where(function($q) use($user){
+                $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
+            });
+        })->pluck('user_id');
+
+
+        $tip = TipGoalsPayment::where(function($q) use($user){
+            $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
+        })->pluck('creator_id');
+
+        $posts = Post::whereNotNull('image')->where(function($query)use($tip,$lifetime,$mem,$subscription,$bills){
+            $query->where(function($qu) use($tip){
+                $qu->whereIn('user_id',$tip)->where('for_module','support');
+            })->orWhere(function($qu) use($lifetime,$mem){
+                $qu->where(function($q)use($lifetime,$mem){
+                    $q->whereIn('user_id',$lifetime)->orWhereIn('user_id',$mem);
+                })->where('for_module','membership');
+            })->orWhere(function($qu) use($subscription,$bills){
+                $qu->where(function($q)use($subscription,$bills){
+                    $q->whereIn('user_id',$subscription)->orWhereIn('user_id',$bills);
+                })->where('for_module','subscription');
+            });
+        })->where('approved',1)->orderBy('created_at','DESC')->paginate(40);
+
+        return response()->json([
+            'status' => true,
+            'posts' => $posts,
+            "last_page" => $posts->lastPage() ?? null,
+            "current_page" => $posts->currentPage() ?? null,
+            "total" => $posts->total() ?? null,
+            "per_page" => $posts->perPage() ?? null,
+        ]);
+    }
+
+    public function gifterMedia($username){
+        $user = User::where('username', $username)->first();
+
+        $categorizedPayments = [];
+
+        $payment = StripePaymentItems::whereHas('wish',function($q){
+            $q->whereNotNull('reward');
+        })->whereHas('payment',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->get();
+
+
+        foreach ($payment as $key => $value) {
+            $ownerId = $value->payment->owner_id;
+
+
+            if (array_key_exists($ownerId, $categorizedPayments)) {
+
+                $categorizedPayments[$ownerId]['reward'][] = $value->wish->reward_url;
+                $categorizedPayments[$ownerId]['count'] += 1;
+            } else {
+
+                $categorizedPayments[$ownerId]['username'] = $value->payment->owner->username;
+                $categorizedPayments[$ownerId]['name'] = $value->payment->owner->name;
+                $categorizedPayments[$ownerId]['count'] = 1;
+                $categorizedPayments[$ownerId]['reward'] = [$value->wish->reward_url];
+            }
+        }
+
+        $categorizedPayments = array_values($categorizedPayments);
+
+        return response()->json([
+            'status' => true,
+            'medias' => $categorizedPayments,
+        ]);
+    }
+
+
+    public function gifterSubscription($username){
+        $user = User::where('username', $username)->first();
+
+        $user_subs = WishItemSubscription::where('user_id', $user->id)->with(['wish_item', 'wish_item.user'])->paginate(30);
+
+        $trackData = [];
+        foreach ($user_subs as $key => $value) {
+            $trackData[$key] = [
+                'owner' => [
+                    'name' => $value->wish_item->user->name,
+                    'avatar' => $value->wish_item->user->avatar_url,
+                    'cover' => $value->wish_item->user->cover_url,
+                    'username' => $value->wish_item->user->username,
+                    'stripe_details_submitted' => $value->wish_item->user->stripe_details_submitted
+                ],
+                'amount' => $value->amount,
+                'tax' => $value->tax,
+                'currency' => $value->currency,
+                'created_at' => Carbon::parse($value->created_at)->format('Y-m-d H:i:s'),
+                'anonymous' => $value->anonymous
+            ];
+
+
+            if(!empty($value->wish_item)){
+                $trackData[$key]['wish_item'] = [
+                    'name' => $value->wish_item->wishname,
+                    'perma_link' => $value->wish_item->perma_link,
+                ];
+            }
+
+        }
+
+        return response()->json([
+            'status' => true,
+            'subscriptions' => $trackData,
+            "last_page" => $user_subs->lastPage() ?? null,
+            "current_page" => $user_subs->currentPage() ?? null,
+            "total" => $user_subs->total() ?? null,
+            "per_page" => $user_subs->perPage() ?? null,
         ]);
     }
 }
