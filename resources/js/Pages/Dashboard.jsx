@@ -296,7 +296,7 @@ export default function Dashboard(props) {
                             width={1200}
                             />
 
-                        {IsloggedIn && auth?.user?.cover_approved == 0 ? 
+                        {IsloggedIn && auth && auth?.user.cover_url && auth?.user?.cover_approved == 0 ? 
                             <div className="absolute right-5 top-3 mx-auto">
                                 <button className='tooltipbtn' >
                                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -305,7 +305,6 @@ export default function Dashboard(props) {
                             <p>Cover image is waiting for approval. Currently only you can see this.</p></button>
                             </div> 
                         : ""}
-
 
                         </div>
 

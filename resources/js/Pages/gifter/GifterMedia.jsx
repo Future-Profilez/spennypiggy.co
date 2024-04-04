@@ -53,8 +53,6 @@ export default function GifterMedia ({username}) {
             </> 
             : '' } 
         </div>
-        
-         
       </>
     }
 

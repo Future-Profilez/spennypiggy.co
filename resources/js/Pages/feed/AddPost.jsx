@@ -7,7 +7,6 @@ import GlobalUploader from "@/uploadcare/Uploader";
 import LoaderButton from "@/Components/LoaderButton";
 import axios from "axios";
 import { toast } from 'react-hot-toast';
-import AdultScan from "@/includes/AdultScan";
 import { useAlerts } from "@/Components/Alerts";
 
 export default function AddPost({item, text, classes, isEdit, updateState}) {
@@ -118,13 +117,9 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
            </> :'' 
             }
 
-            <AdultScan type={filetype} 
-                fileuid={rewardImage}
-                onScan={submitPost} 
-                content={<>
-                     <LoaderButton 
+                     <LoaderButton onClick={submitPost}
                         disabled={loading}
-                        className="flex btn-pink sm mt-4 w-full "
+                        className="flex btn-pink lg mt-4 w-full "
                         spinnerClassName="fill-red-600">
                         {isEdit ? 
                           loading ? "Updating.." :"Update Post" 
@@ -132,8 +127,6 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
                           loading ? "Posting.." : "Add New Post" 
                         }
                     </LoaderButton>
-                </>} 
-            />
 
         {/* </form> */}
         

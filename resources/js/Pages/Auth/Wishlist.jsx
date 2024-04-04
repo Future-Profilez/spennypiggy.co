@@ -229,7 +229,7 @@ export default function Wishlist(props) {
                 <div className="editprofileModalInner">
                             <h2 className='p-4 text-pink text-start font-GillSans uppercase text-large black-stroke font-semibold mb-1 pe-5'>{editpop ? " Edit Wish" : "Add A Wish"}</h2>
                             <div className="wishinfo border-top pt-0">
-                                <p className="text-warning mb-4 pt-3" >When adding items please ensure they are specific i.e Holiday Clothes or New Gym Equipment. Items that are non specific will be rejected and removed. Our AI blocks adult content but any overly suggestive images will also be rejected. Please reach out to support for further clarification</p>
+                                <p className="text-danger mb-4 pt-3" >When adding items please ensure they are specific i.e Holiday Clothes or New Gym Equipment. Items that are non specific will be rejected and removed. Our AI blocks adult content but any overly suggestive images will also be rejected. Please reach out to support for further clarification</p>
                                 <form onSubmit={createWishList}>
                                     <ul className="ps-0">
                                         <li className="mb-4">

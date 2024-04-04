@@ -14,7 +14,6 @@ import { useAlerts } from '@/Components/Alerts';
 import ChangeVat from '../account/ChangeVat';
 
 export default function Accountsetting(props) {
-
     const { successAlert, errorAlert } = useAlerts();
     const {auth, user, global_currency, auto_tweet} = props;
     const [emailEnabled, setSetEnabled] = useState(auth && auth.user && auth.user.notification_send == 1 ? true : false )
@@ -42,9 +41,7 @@ export default function Accountsetting(props) {
             console.error("error", _err);
         });
     }
- 
     const [vatpercent, setvatpercent] = useState(auth && auth?.user?.vat_amount_percentage|| '')
-
 
     return (
         <Authenticated user={user}  auth={auth.user} >
@@ -57,10 +54,10 @@ export default function Accountsetting(props) {
                     </div>
                     <div className='accsettingList p-4'>
                         <ul>
-                            {auth && auth.user == 1 ? 
+                            {auth && auth?.user?.role == 1 ? 
                                 <li>
                                     {auth && auth.user && auth.user.stripe_details_submitted == 1 ? 
-                                        <PaymentDashboard classes='w-100 text-dark paymentbutton' text={<>PAYMENT DASHBOARD <span className='text-mint'>Connected</span></>} />
+                                        <PaymentDashboard classes='w-100 text-white rounded-3  border-0 paymentbutton' text={<>PAYMENT DASHBOARD <span className='text-mint'>Connected</span></>} />
                                         : 
                                         <Link href={route("stripe")} >PAYMENT DASHBOARD <span className='text-voilet'>Connect Stripe</span></Link>
                                     }
@@ -109,12 +106,6 @@ export default function Accountsetting(props) {
                             <li  >
                                 <div className='notification'>
                                 Receive e-mail notifications
-                                    {/* <label className="switch">
-                                        <input 
-                                        ></input>
-                                        <span  className="sliderSw round"></span>
-                                    </label> */}
-
                                     <label class="toggle-switch">
                                         <input id='notification_handle' checked={emailEnabled}
                                          type="checkbox" onChange={switchNotification}  />

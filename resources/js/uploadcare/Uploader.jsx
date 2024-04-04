@@ -3,17 +3,22 @@ import { useState } from "react";
 import { useCallback, useEffect, useRef } from "react";
 LR.registerBlocks(LR);
 import { PACKAGE_VERSION } from "@uploadcare/blocks/env";
-import AdultScan from "@/includes/AdultScan";
+import ProgressBar from 'react-bootstrap/ProgressBar';
+import { useAlerts } from "@/Components/Alerts";
+import axios from "axios";
 
 export default function GlobalUploader({ options, sendFile, clear, view, isUploading, type }) {
 
+
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
+  
     const [files, setFiles] = useState([]);
     const [checkIsUploading, setCheckIsUploading] = useState(false);
     const dataOutputRef = useRef();
+
     const handleUploaderEvent = useCallback((e) => {
         const { data } = e.detail;
-        sendFile(data[0]);
-        setFiles(data);
+        checkAdult(data);
     },[]);
     
     const handleResetUploader = () => {
@@ -51,7 +56,43 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
           isUploading && isUploading(checkIsUploading);
         });
 
-      }, []); 
+    }, []); 
+
+    const [scanning, setScanning] = useState(false);
+
+    const controller = new AbortController();
+    const { signal } = controller;
+
+    const checkAdult = async (d) => {
+      const f = d[0];
+      const type= f && f.contentInfo && f.contentInfo.mime && f.contentInfo.mime.type; 
+      const fileuid= f && f.uuid;
+      if(fileuid && type !== 'video'){
+          setScanning(true);
+          axios.get(`check-adult-content/${fileuid}`, {signal}).then(resp => {
+            setTimeout(()=>{
+                setScanning(false);
+            },100);
+            if(resp.data.status){
+              successAlert("File has been scanned !!");
+              sendFile(d[0]);
+              setFiles(d); 
+              controller.abort()
+            } else { 
+                errorAlert(resp.data.msg);
+                handleResetUploader();
+            }
+          }).catch(_err => {
+            console.error("error", _err);
+            setTimeout(()=>{
+                setScanning(false);
+            },2000);
+          });
+      } else { 
+        sendFile(d[0]);
+        setFiles(d); 
+      }
+    } 
 
     return <>
 
@@ -78,6 +119,9 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
             ))}
           </div>
         }
+       
+       
+
         {type =='minimal' ?  
             <lr-file-uploader-minimal  
             class={options}  
@@ -116,6 +160,13 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
             </lr-data-output>
           </lr-file-uploader-regular> 
         : ''}
+
+        {scanning ? 
+          <div className={`scanning rounded bg-light shadow-sm border p-3 my-2 mb-4`} >
+            <ProgressBar animated now={100} />
+            <p className='text-center mt-2' >Adult content scanning...</p>
+          </div> : '' 
+        } 
 
         
     </>

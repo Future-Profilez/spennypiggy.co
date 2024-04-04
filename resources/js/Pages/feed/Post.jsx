@@ -10,8 +10,11 @@ import Dropdown from 'react-bootstrap/Dropdown';
 import DropdownButton from 'react-bootstrap/DropdownButton';
 import AddPost from './AddPost';
 import {  Link, usePage } from "@inertiajs/react";
+import userphoto from "../../../assets/img/userphoto.png";
+import RemovePost from './RemovePost'
 
 export default function Post({item, updateState}) {
+
   const { auth, user } = usePage().props;
   const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
 
@@ -58,13 +61,21 @@ export default function Post({item, updateState}) {
       <div className="post-wrap bg-light rounded-4 p-3 mb-3 mb-md-4">
         {IsloggedIn && item && item.approved == 0 ?  <div className='approvalmessge rounded-3 p-3 py-2 mb-2 ' >Post waiting for approval. Currently only you can see this post.</div> : ''}
         <div className='d-flex align-items-center justify-content-between mb-3' >
+            {item?.user ? <Link href={`${item?.user?.username}`} className="headerpost mb-0 head w-auto" >
+                <img className="author-img" src={item?.user?.avatar_url || userphoto} />
+              <div>
+                <p className="authors text-dark"> <b> {item?.user?.name || "SPENNY PIGGY"} </b> </p>
+                <p className="authors text-muted text-small"> <TimeFormat dateString={item?.updated_at || ''} />   </p>
+              </div>
+            </Link>
+            : 
             <Link href={`${user && user.username}`} className="headerpost mb-0 head w-auto" >
-                <img className="author-img" src={user && user.avatar_url || "SPENNY PIGGY"} />
+                <img className="author-img" src={user && user.avatar_url || userphoto} />
               <div>
                 <p className="authors text-dark"> <b> {user && user.name || "SPENNY PIGGY"} </b> </p>
                 <p className="authors text-muted text-small"> <TimeFormat dateString={item?.updated_at || ''} />   </p>
               </div>
-            </Link>
+            </Link> }
             {IsloggedIn ? <DropdownButton
               className='edit-post pe-0 ' id="dropdown-basic-button"
               title={
@@ -74,6 +85,7 @@ export default function Post({item, updateState}) {
               <span className='bg-dark' ></span>
             </div>}>
                 <AddPost updateState={updateState} text={"Edit Post"} classes={``} item={item} isEdit={true} />
+                <RemovePost classes={`px-[18px] py-2 text-start w-full`} updateItems={updateState} uuid={item.uuid} text="Remove Post" />
             </DropdownButton> : ''} 
         </div>
         

@@ -33,7 +33,7 @@ export default function GifterFeed({username}) {
       {loading ? <LoadingScreen /> :
       <>
         {posts && posts.length ? posts.map((post, i)=>{ 
-          return <Post  key={`post-${i}`} item={post} />
+          return <Post key={`post-${i}`} item={post} />
         })
         : <Nocontent text="No Posts to see" /> }
       </>}
