@@ -554,7 +554,7 @@ class ProfileController extends Controller
 
         $data = [];
         $subscription = WishItem::where('subscription',1)->whereHas('wishItemsSubscription',function($qu)use($user){
-            $qu->where(function($que){
+            $qu->where('reccuring_for','continue')->where(function($que){
                 $que->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now());
             })->where(function($q) use($user){
                 $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
