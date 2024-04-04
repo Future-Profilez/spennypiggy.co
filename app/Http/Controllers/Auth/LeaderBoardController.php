@@ -250,7 +250,7 @@ class LeaderBoardController extends Controller
                             });
                         });
                     })->whereHas('payment',function($q){
-                        $q->where('status','paid');
+                        $q->where('payment_status','paid');
                     })->orderBy('amount','DESC')->where('created_at','>',$lasthour)->get();
                     $subscriptions = WishItemSubscription::whereHas('wish_item',function($q){
                         $q->whereHas('user',function($query){
@@ -288,7 +288,7 @@ class LeaderBoardController extends Controller
                             });
                         });
                     })->whereHas('payment',function($q){
-                        $q->where('status','paid');
+                        $q->where('payment_status','paid');
                     })->orderBy('amount','DESC')->where('created_at','>',$last24hour)->get();
                     $subscriptions = WishItemSubscription::whereHas('wish_item',function($q){
                         $q->whereHas('user',function($query){
