@@ -174,7 +174,17 @@ class ProfileController extends Controller
         ])->get("https://api.uploadcare.com/files/". $uuid ."/?include=appdata");
 
         $data = $response->json();
-        $tags = $data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'];
+        $tags = [];
+        if (isset($data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'])) {
+            $tags = $data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'];
+        }
+
+        if(empty($tags)){
+            return response()->json([
+                'status' => true,
+                'msg' => 'Success.'
+            ]);
+        }
 
         foreach ($tags as $key => $tag) {
             $name = explode(" ", $tag['Name']);

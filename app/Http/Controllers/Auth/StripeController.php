@@ -571,7 +571,7 @@ class StripeController extends Controller
         $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
 
         if(!empty($wish->user->vat_amount_percentage)){
-            $vat_percentage_amount = $price * $wish->user->vat_amount_percentage / 100;
+            $vat_percentage_amount = ($price+$tax) * $wish->user->vat_amount_percentage / 100;
         }
 
         if ($request->isMethod("POST")) {

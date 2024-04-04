@@ -287,7 +287,7 @@ class MembershipController extends Controller
         $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
 
         if(!empty($membership->user->vat_amount_percentage)){
-            $vat_percentage_amount = $price * $membership->user->vat_amount_percentage / 100;
+            $vat_percentage_amount = ($price+$tax) * $membership->user->vat_amount_percentage / 100;
         }
 
         if ($request->isMethod("POST")) {
