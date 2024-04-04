@@ -251,7 +251,10 @@ class MembershipController extends Controller
         MembershipPayment::where('membership_id',$mem->id)->delete();
         $mem->delete();
 
-        return redirect()->back()->with('success','Membership removed successfully.');
+        return response()->json([
+            'status' => true,
+            'msg' => "Membership removed successfully."
+        ]);
     }
 
 

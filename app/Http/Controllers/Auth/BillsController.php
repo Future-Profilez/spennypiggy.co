@@ -222,10 +222,15 @@ class BillsController extends Controller
             BillPayment::where('bills_id',$bill->id)->delete();
 
             $bill->delete();
-            return redirect()->back()->with('success','Bill removed successfully.');
+            return response()->json([
+                'status' => true,
+                'msg' => "Bill removed successfully."
+            ]);
         }
-
-        return redirect()->back()->with('error','Bill not found.');
+        return response()->json([
+            'status' => false,
+            'msg' => "Bill not found."
+        ]);
 
     }
 

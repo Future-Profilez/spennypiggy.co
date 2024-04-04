@@ -580,7 +580,7 @@ class ProfileController extends Controller
             $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
         })->pluck('creator_id');
 
-        $posts = Post::whereNotNull('image')->where(function($query)use($tip,$lifetime,$mem,$subscription,$bills){
+        $posts = Post::whereNotNull('image')->with('user')->where(function($query)use($tip,$lifetime,$mem,$subscription,$bills){
             $query->where(function($qu) use($tip){
                 $qu->whereIn('user_id',$tip)->where('for_module','support');
             })->orWhere(function($qu) use($lifetime,$mem){
@@ -593,6 +593,11 @@ class ProfileController extends Controller
                 })->where('for_module','subscription');
             });
         })->where('approved',1)->orderBy('created_at','DESC')->paginate(40);
+
+        $posts->map(function($q){
+            $q->is_lock = 0;
+            return $q;
+        });
 
         return response()->json([
             'status' => true,

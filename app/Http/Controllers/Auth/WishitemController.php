@@ -425,10 +425,13 @@ class WishitemController extends Controller
         $wishitem = WishItem::where('uuid',$uuid)->first();
 
         if(!$wishitem){
-            return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Wish Item not found.");
+            return response()->json([
+                'status' => false,
+                'msg' => "Wishitem not found."
+            ]);
         }
 
-        WishCategory::where('wish_item_id', $wishitem->id)->delete();
+       WishCategory::where('wish_item_id', $wishitem->id)->delete();
 
         UserCart::where('wish_item_id', $wishitem->id)->delete();
 
@@ -443,7 +446,10 @@ class WishitemController extends Controller
 
         $wishitem->delete();
 
-        return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been deleted.");
+        return response()->json([
+            'status' => true,
+            'msg' => "Wishitem removed successfully."
+        ]);
     }
 
 
