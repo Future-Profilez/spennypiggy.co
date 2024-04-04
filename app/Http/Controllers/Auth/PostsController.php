@@ -134,9 +134,16 @@ class PostsController extends Controller
             PostLike::where('post_id',$post->id)->delete();
 
             $post->delete();
-            return redirect()->back()->with('success', 'Post deleted successfully');
+
+            return response()->json([
+                'status' => true,
+                'msg' => "Post deleted successfully."
+            ]);
         } else {
-            return redirect()->back()->with('error', 'Data not found');
+            return response()->json([
+                'status' => false,
+                'msg' => "Data not found."
+            ]);
         }
     }
 

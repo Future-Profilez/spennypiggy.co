@@ -222,10 +222,15 @@ class BillsController extends Controller
             BillPayment::where('bills_id',$bill->id)->delete();
 
             $bill->delete();
-            return redirect()->back()->with('success','Bill removed successfully.');
+            return response()->json([
+                'status' => true,
+                'msg' => "Bill removed successfully."
+            ]);
         }
-
-        return redirect()->back()->with('error','Bill not found.');
+        return response()->json([
+            'status' => false,
+            'msg' => "Bill not found."
+        ]);
 
     }
 
@@ -259,7 +264,7 @@ class BillsController extends Controller
         $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
 
         if(!empty($bill->user->vat_amount_percentage)){
-            $vat_percentage_amount = $price * $bill->user->vat_amount_percentage / 100;
+            $vat_percentage_amount = ($price+$tax) * $bill->user->vat_amount_percentage / 100;
         }
 
         if ($request->isMethod("POST")) {

@@ -570,8 +570,10 @@ class StripeController extends Controller
 
         $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
 
-        if(!empty($wish->user->vat_amount_percentage)){
-            $vat_percentage_amount = $price * $wish->user->vat_amount_percentage / 100;
+        if($reccure == 'continue'){
+            if(!empty($wish->user->vat_amount_percentage)){
+                $vat_percentage_amount = ($price + $tax) * $wish->user->vat_amount_percentage / 100;
+            }
         }
 
         if ($request->isMethod("POST")) {
@@ -608,8 +610,9 @@ class StripeController extends Controller
                 'anonymous' => $request->anonymous ?? 0
             ]);
 
-            $price += $vat_percentage_amount;
-
+            if($reccure == 'continue'){
+                $price += $vat_percentage_amount;
+            }
             // if ($currency == strtolower($wish->currency)) {
             //     $items = [
             //         "price" =>  $wish->price_id,
@@ -722,7 +725,7 @@ class StripeController extends Controller
                     SubscribeAutoTweet::dispatch($sub);
                 }
 
-                return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('success', "Subscription Success. If you have paid for one time, subscription will be autocanceled on period end.");
+                return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('success', "Subscription Success! If you have paid for onetime subscription, it will be automatically cancelled after 24 hours.");
             }
 
             SubscriptionFailed::dispatch($sub);

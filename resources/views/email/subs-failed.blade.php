@@ -11,7 +11,7 @@
                 <tr>
                     <td
                         style="font-family: Arial; font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
-                        <span style="color: #8C52FF">Subscription </span>{{ $sub->status }} on <br> Spenny Piggy 🎁
+                        <span style="color: #8C52FF">Payment </span>{{ $sub->status }} on <br> Spenny Piggy 🎁
                     </td>
                 </tr>
                 <tr>
@@ -26,7 +26,7 @@
                     <td
                         style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
                         Hello {{ $sub->guest_name }}! <br><br>
-                        Your subscription for wish item {{ $sub->wish_item->wishname }} is in {{ $sub->status }} status on
+                        Your payment for subscription of wish item {{ $sub->wish_item->wishname }} is in {{ $sub->status }} status on
                         Spenny Piggy.
                     </td>
                 </tr>

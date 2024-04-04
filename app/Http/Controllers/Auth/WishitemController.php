@@ -425,10 +425,13 @@ class WishitemController extends Controller
         $wishitem = WishItem::where('uuid',$uuid)->first();
 
         if(!$wishitem){
-            return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Wish Item not found.");
+            return response()->json([
+                'status' => false,
+                'msg' => "Wishitem not found."
+            ]);
         }
 
-        WishCategory::where('wish_item_id', $wishitem->id)->delete();
+       WishCategory::where('wish_item_id', $wishitem->id)->delete();
 
         UserCart::where('wish_item_id', $wishitem->id)->delete();
 
@@ -443,7 +446,10 @@ class WishitemController extends Controller
 
         $wishitem->delete();
 
-        return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been deleted.");
+        return response()->json([
+            'status' => true,
+            'msg' => "Wishitem removed successfully."
+        ]);
     }
 
 
@@ -1042,8 +1048,8 @@ class WishitemController extends Controller
         })->with(['wish'])->orderBy('created_at', 'DESC')->get();
         $creator_subs = WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
             $q->where('user_id', $user->id);
-        })->with(['user', 'wish_item'])->orderBy('updated_at', 'DESC')->get();
-        $user_subs = WishItemSubscription::where('user_id', Auth::id())->with(['wish_item', 'wish_item.user'])->get();
+        })->with(['user', 'wish_item'])->where('status','paid')->orderBy('updated_at', 'DESC')->get();
+        $user_subs = WishItemSubscription::where('user_id', Auth::id())->with(['wish_item', 'wish_item.user'])->where('status','paid')->get();
 
         $trackData = $tracks->map(function ($q) {
 

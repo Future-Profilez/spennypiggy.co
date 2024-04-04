@@ -174,7 +174,17 @@ class ProfileController extends Controller
         ])->get("https://api.uploadcare.com/files/". $uuid ."/?include=appdata");
 
         $data = $response->json();
-        $tags = $data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'];
+        $tags = [];
+        if (isset($data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'])) {
+            $tags = $data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'];
+        }
+
+        if(empty($tags)){
+            return response()->json([
+                'status' => true,
+                'msg' => 'Success.'
+            ]);
+        }
 
         foreach ($tags as $key => $tag) {
             $name = explode(" ", $tag['Name']);
@@ -544,7 +554,7 @@ class ProfileController extends Controller
 
         $data = [];
         $subscription = WishItem::where('subscription',1)->whereHas('wishItemsSubscription',function($qu)use($user){
-            $qu->where(function($que){
+            $qu->where('reccuring_for','continue')->where(function($que){
                 $que->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now());
             })->where(function($q) use($user){
                 $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
@@ -580,7 +590,7 @@ class ProfileController extends Controller
             $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
         })->pluck('creator_id');
 
-        $posts = Post::whereNotNull('image')->where(function($query)use($tip,$lifetime,$mem,$subscription,$bills){
+        $posts = Post::whereNotNull('image')->with('user')->where(function($query)use($tip,$lifetime,$mem,$subscription,$bills){
             $query->where(function($qu) use($tip){
                 $qu->whereIn('user_id',$tip)->where('for_module','support');
             })->orWhere(function($qu) use($lifetime,$mem){
@@ -593,6 +603,11 @@ class ProfileController extends Controller
                 })->where('for_module','subscription');
             });
         })->where('approved',1)->orderBy('created_at','DESC')->paginate(40);
+
+        $posts->map(function($q){
+            $q->is_lock = 0;
+            return $q;
+        });
 
         return response()->json([
             'status' => true,
