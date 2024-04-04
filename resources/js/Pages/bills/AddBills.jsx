@@ -99,7 +99,7 @@ export default function AddBills(props) {
                 <h2 className='p-4 text-pink text-start font-GillSans uppercase text-large black-stroke font-semibold mb-1 pe-5'>{isEdit ? "Update Bill" : "Add A Bill" }</h2>
 
                 <div className="wishinfo border-top">
-                <p className="text-warning mb-4" >When adding items please ensure they are specific i.e Holiday Clothes or New Gym Equipment. Items that are non specific will be rejected and removed. Our AI blocks adult content but any overly suggestive images will also be rejected. Please reach out to support for further clarification</p>
+                <p className="text-danger mb-4" >When adding items please ensure they are specific i.e Holiday Clothes or New Gym Equipment. Items that are non specific will be rejected and removed. Our AI blocks adult content but any overly suggestive images will also be rejected. Please reach out to support for further clarification</p>
                     <form onSubmit={createBills}>
                         <ul className="ps-0" >
                             <li className="mb-4">

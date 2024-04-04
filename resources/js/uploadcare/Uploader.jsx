@@ -9,9 +9,7 @@ import axios from "axios";
 
 export default function GlobalUploader({ options, sendFile, clear, view, isUploading, type }) {
 
-
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
-  
     const [files, setFiles] = useState([]);
     const [checkIsUploading, setCheckIsUploading] = useState(false);
     const dataOutputRef = useRef();
@@ -29,8 +27,8 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
     }; 
 
     useEffect(() => {
-        handleResetUploader();
-    }, [clear]);
+       handleResetUploader();
+    },[clear]);
 
     useEffect(() => {
         const el = dataOutputRef && dataOutputRef.current;
@@ -75,7 +73,7 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
             },100);
             if(resp.data.status){
               successAlert("File has been scanned !!");
-              sendFile(d[0]);
+              sendFile(d[0] );
               setFiles(d); 
               controller.abort()
             } else { 
@@ -94,79 +92,77 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
       }
     } 
 
+
     return <>
-
-        {view && 
-          <div className={'uploadcare-view mb-0'}>
-            {files.map((file) => (
-              <div className="uploadcare-view-wrap"  >
-              {file.isImage ? <>
-                  <img
-                    className="rounded border"
-                    key={file.uuid} width="25%" alt="Preview"
-                    src={`https://ucarecdn.com/${file.uuid}/${file.cdnUrlModifiers || ""}`}
+          {view && 
+            <div className={'uploadcare-view mb-0'}>
+              {files.map((file) => (
+                <div className="uploadcare-view-wrap"  >
+                {file.isImage ? <>
+                    <img
+                      className="rounded border"
+                      key={file.uuid} width="25%" alt="Preview"
+                      src={`https://ucarecdn.com/${file.uuid}/${file.cdnUrlModifiers || ""}`}
+                    />
+                  </> 
+                  : 
+                  <video playsInline controls
+                    className="rounded"
+                    key={file.uuid}
+                    src={`https://ucarecdn.com/${file.uuid}/`}
+                    alt="Preview"
                   />
-                </> 
-                : 
-                <video playsInline controls
-                  className="rounded"
-                  key={file.uuid}
-                  src={`https://ucarecdn.com/${file.uuid}/`}
-                  alt="Preview"
-                />
-              }
-              </div>
-            ))}
-          </div>
-        }
-       
-       
+                }
+                </div>
+              ))}
+            </div>
+          }
 
-        {type =='minimal' ?  
-            <lr-file-uploader-minimal  
+          {type =='minimal' ?  
+              <lr-file-uploader-minimal  
+              class={options}  
+              css-src={`https://cdn.jsdelivr.net/npm/@uploadcare/blocks@${PACKAGE_VERSION}/web/lr-file-uploader-minimal.min.css`}>
+                <lr-data-output
+                    use-event ref={dataOutputRef}
+                    hidden use-template
+                    class={options}  
+                    onEvent={handleUploaderEvent}>
+                </lr-data-output>
+              </lr-file-uploader-minimal>  
+          : ''}
+
+          {type =='inline' ? 
+            <lr-file-uploader-inline  
             class={options}  
-            css-src={`https://cdn.jsdelivr.net/npm/@uploadcare/blocks@${PACKAGE_VERSION}/web/lr-file-uploader-minimal.min.css`}>
+            css-src={`https://cdn.jsdelivr.net/npm/@uploadcare/blocks@${PACKAGE_VERSION}/web/lr-file-uploader-inline.min.css`}>
               <lr-data-output
-                  use-event ref={dataOutputRef}
-                  hidden use-template
-                  class={options}  
-                  onEvent={handleUploaderEvent}>
+                use-event ref={dataOutputRef}
+                hidden use-template
+                class={options}  
+                onEvent={handleUploaderEvent}>
               </lr-data-output>
-            </lr-file-uploader-minimal>  
-        : ''}
+            </lr-file-uploader-inline>  
+          : ''}
 
-        {type =='inline' ? 
-          <lr-file-uploader-inline  
-          class={options}  
-          css-src={`https://cdn.jsdelivr.net/npm/@uploadcare/blocks@${PACKAGE_VERSION}/web/lr-file-uploader-inline.min.css`}>
-            <lr-data-output
-              use-event ref={dataOutputRef}
-              hidden use-template
-              class={options}  
-              onEvent={handleUploaderEvent}>
-            </lr-data-output>
-          </lr-file-uploader-inline>  
-        : ''}
+          {type =='regular' ? 
+            <lr-file-uploader-regular  cropPreset="1:1"
+            class={options}  
+            css-src={`https://cdn.jsdelivr.net/npm/@uploadcare/blocks@${PACKAGE_VERSION}/web/lr-file-uploader-regular.min.css`}>
+              <lr-data-output
+                use-event ref={dataOutputRef}
+                hidden use-template
+                class={options}  
+                onEvent={handleUploaderEvent}>
+              </lr-data-output>
+            </lr-file-uploader-regular> 
+          : ''}
 
-        {type =='regular' ? 
-          <lr-file-uploader-regular  cropPreset="1:1"
-          class={options}  
-          css-src={`https://cdn.jsdelivr.net/npm/@uploadcare/blocks@${PACKAGE_VERSION}/web/lr-file-uploader-regular.min.css`}>
-            <lr-data-output
-              use-event ref={dataOutputRef}
-              hidden use-template
-              class={options}  
-              onEvent={handleUploaderEvent}>
-            </lr-data-output>
-          </lr-file-uploader-regular> 
-        : ''}
-
-        {scanning ? 
-          <div className={`scanning rounded bg-light shadow-sm border p-3 my-2 mb-4`} >
-            <ProgressBar animated now={100} />
-            <p className='text-center mt-2' >Adult content scanning...</p>
-          </div> : '' 
-        } 
+          {scanning ? 
+            <div className={`scanning rounded bg-light shadow-sm border p-3 my-2 mb-4`} >
+              <ProgressBar animated now={100} />
+              <p className='text-center mt-2' >Adult content scanning...</p>
+            </div> : '' 
+          } 
 
         
     </>
