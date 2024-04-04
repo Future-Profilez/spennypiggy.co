@@ -93,10 +93,12 @@ class ProfileController extends Controller
 
             if(!empty($avatar)){
                 $user->avatar = $avatar['uuid'] ?? null;
+                $user->avatar_approved = 0;
                 $user->avatar_cdn_modifier = $avatar['cdnUrlModifiers'] ?? null;
             }
             if(!empty($cover)){
                 $user->cover = $cover['uuid'] ?? null;
+                $user->cover_approved = 0;
                 $user->cover_cdn_modifier = $cover['cdnUrlModifiers'] ?? null;
             }
 
