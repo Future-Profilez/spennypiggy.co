@@ -722,7 +722,7 @@ class StripeController extends Controller
                     SubscribeAutoTweet::dispatch($sub);
                 }
 
-                return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('success', "Subscription Success. If you have paid for one time, subscription will be autocanceled on period end.");
+                return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('success', "Subscription Success! If you have paid for onetime subscription, it will be automatically cancelled after 24 hours.");
             }
 
             SubscriptionFailed::dispatch($sub);

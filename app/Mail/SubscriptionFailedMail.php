@@ -33,7 +33,7 @@ class SubscriptionFailedMail extends Mailable
     public function build()
     {
         try {
-            $subject = 'Your subscription status is not paid on Spenny Piggy.';
+            $subject = 'Your payment status is not paid on Spenny Piggy.';
             return $this->view('email.subs-failed')
                 ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
                 ->subject($subject);

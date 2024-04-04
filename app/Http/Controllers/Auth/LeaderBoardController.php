@@ -249,6 +249,8 @@ class LeaderBoardController extends Controller
                                 $s->whereNot('country', 'GB')->orWhereNull('country');
                             });
                         });
+                    })->whereHas('payment',function($q){
+                        $q->where('status','paid');
                     })->orderBy('amount','DESC')->where('created_at','>',$lasthour)->get();
                     $subscriptions = WishItemSubscription::whereHas('wish_item',function($q){
                         $q->whereHas('user',function($query){
@@ -256,12 +258,12 @@ class LeaderBoardController extends Controller
                                 $s->whereNot('country', 'GB')->orWhereNull('country');
                             });
                         });
-                    })->orderBy('amount','DESC')->where('created_at','>',$lasthour)->get();
+                    })->where('status','paid')->orderBy('amount','DESC')->where('created_at','>',$lasthour)->get();
                     $tips = TipGoalsPayment::whereHas('creator',function($q){
                         $q->where(function ($s) {
                             $s->whereNot('country', 'GB')->orWhereNull('country');
                         });
-                    })->orderBy('amount','DESC')->where('created_at','>',$lasthour)->get();
+                    })->where('status','paid')->orderBy('amount','DESC')->where('created_at','>',$lasthour)->get();
 
                     $members = MembershipPayment::whereHas('membership',function($q){
                         $q->whereHas('user',function($query){
@@ -269,14 +271,14 @@ class LeaderBoardController extends Controller
                                 $s->whereNot('country', 'GB')->orWhereNull('country');
                             });
                         });
-                    })->orderBy('amount','DESC')->where('created_at','>',$lasthour)->get();
+                    })->where('status','paid')->orderBy('amount','DESC')->where('created_at','>',$lasthour)->get();
                     $bills = BillPayment::whereHas('bill',function($q){
                         $q->whereHas('user',function($query){
                             $query->where(function ($s) {
                                 $s->whereNot('country', 'GB')->orWhereNull('country');
                             });
                         });
-                    })->orderBy('amount','DESC')->where('created_at','>',$lasthour)->get();
+                    })->where('status','paid')->orderBy('amount','DESC')->where('created_at','>',$lasthour)->get();
                 }else{
                     $last24hour = Carbon::now()->subHour(24);
                     $wishes = StripePaymentItems::whereHas('wish',function($q){
@@ -285,6 +287,8 @@ class LeaderBoardController extends Controller
                                 $s->whereNot('country', 'GB')->orWhereNull('country');
                             });
                         });
+                    })->whereHas('payment',function($q){
+                        $q->where('status','paid');
                     })->orderBy('amount','DESC')->where('created_at','>',$last24hour)->get();
                     $subscriptions = WishItemSubscription::whereHas('wish_item',function($q){
                         $q->whereHas('user',function($query){
@@ -292,12 +296,12 @@ class LeaderBoardController extends Controller
                                 $s->whereNot('country', 'GB')->orWhereNull('country');
                             });
                         });
-                    })->orderBy('amount','DESC')->where('created_at','>',$last24hour)->get();
+                    })->where('status','paid')->orderBy('amount','DESC')->where('created_at','>',$last24hour)->get();
                     $tips = TipGoalsPayment::whereHas('creator',function($q){
                         $q->where(function ($s) {
                             $s->whereNot('country', 'GB')->orWhereNull('country');
                         });
-                    })->orderBy('amount','DESC')->where('created_at','>',$last24hour)->get();
+                    })->where('status','paid')->orderBy('amount','DESC')->where('created_at','>',$last24hour)->get();
 
                     $members = MembershipPayment::whereHas('membership',function($q){
                         $q->whereHas('user',function($query){
@@ -305,14 +309,14 @@ class LeaderBoardController extends Controller
                                 $s->whereNot('country', 'GB')->orWhereNull('country');
                             });
                         });
-                    })->orderBy('amount','DESC')->where('created_at','>',$last24hour)->get();
+                    })->where('status','paid')->orderBy('amount','DESC')->where('created_at','>',$last24hour)->get();
                     $bills = BillPayment::whereHas('bill',function($q){
                         $q->whereHas('user',function($query){
                             $query->where(function ($s) {
                                 $s->whereNot('country', 'GB')->orWhereNull('country');
                             });
                         });
-                    })->orderBy('amount','DESC')->where('created_at','>',$last24hour)->get();
+                    })->where('status','paid')->orderBy('amount','DESC')->where('created_at','>',$last24hour)->get();
                 }
 
                 $array = [];
