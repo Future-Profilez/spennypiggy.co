@@ -339,7 +339,7 @@ class WishitemController extends Controller
                         'price' => $price,
                         'item_url' => $request->item_url != "" ? $request->item_url : $wish->item_url,
                         'thumbnail' => $request->thumbnail ?? $wish->thumbnail,
-                        'reward' => $request->reward_file ?? null,
+                        'reward' => $request->reward_file ?? $wish->reward,
                         'subscription' => $request->subscription ?? $wish->subscription,
                         'subscription_period' => $request->subscription_period ?? $wish->subscription_period,
                         'repeat_purchase' => $request->repeat_purchase ??
