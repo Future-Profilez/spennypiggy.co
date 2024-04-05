@@ -36,6 +36,7 @@ class User extends Authenticatable
         'uuid',
         'deleted_at',
         'suspended_account',
+        'creator_category'
     ];
 
     public static function boot()
