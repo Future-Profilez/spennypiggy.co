@@ -664,7 +664,7 @@ class ProfileController extends Controller
 
         $user_subs = WishItemSubscription::where(function($q) use($user){
             $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
-        })->with(['wish_item', 'wish_item.user'])->paginate(30);
+        })->with(['wish_item', 'wish_item.user'])->where('status','paid')->paginate(30);
 
         $trackData = [];
         foreach ($user_subs as $key => $value) {
