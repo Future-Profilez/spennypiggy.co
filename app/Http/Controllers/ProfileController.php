@@ -93,10 +93,12 @@ class ProfileController extends Controller
 
             if(!empty($avatar)){
                 $user->avatar = $avatar['uuid'] ?? null;
+                $user->avatar_approved = 0;
                 $user->avatar_cdn_modifier = $avatar['cdnUrlModifiers'] ?? null;
             }
             if(!empty($cover)){
                 $user->cover = $cover['uuid'] ?? null;
+                $user->cover_approved = 0;
                 $user->cover_cdn_modifier = $cover['cdnUrlModifiers'] ?? null;
             }
 
@@ -554,7 +556,7 @@ class ProfileController extends Controller
 
         $data = [];
         $subscription = WishItem::where('subscription',1)->whereHas('wishItemsSubscription',function($qu)use($user){
-            $qu->where('reccuring_for','continue')->where(function($que){
+            $qu->where('recurring_for','continue')->where(function($que){
                 $que->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now());
             })->where(function($q) use($user){
                 $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
@@ -660,7 +662,9 @@ class ProfileController extends Controller
     public function gifterSubscription($username){
         $user = User::where('username', $username)->first();
 
-        $user_subs = WishItemSubscription::where('user_id', $user->id)->with(['wish_item', 'wish_item.user'])->paginate(30);
+        $user_subs = WishItemSubscription::where(function($q) use($user){
+            $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
+        })->with(['wish_item', 'wish_item.user'])->where('status','paid')->paginate(30);
 
         $trackData = [];
         foreach ($user_subs as $key => $value) {
@@ -685,6 +689,7 @@ class ProfileController extends Controller
                     'name' => $value->wish_item->wishname,
                     'perma_link' => $value->wish_item->perma_link,
                 ];
+                $trackData[$key]['media_url'] = $value->recurring_for == 'onetime' ? $value->wish_item->reward_url : false;
             }
 
         }
