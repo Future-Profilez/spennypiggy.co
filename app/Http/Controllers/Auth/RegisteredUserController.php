@@ -61,7 +61,6 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'username' => ['required', 'string', 'lowercase', 'max:20', 'unique:users,username'],
             'role' => ['required'],
-            'creator_category' => ['required']
         ]);
 
         $exist = User::where('email',$request->email)->whereNull('deleted_at')->first();
@@ -91,7 +90,7 @@ class RegisteredUserController extends Controller
                 'gender' => $request->gender ?? null,
                 'password' => Hash::make($request->password),
                 'role' => $request->role ?? 0,
-                'creator_category' => $request->creator_category,
+                'creator_category' => $request->creator_category ?? null,
             ]);
             $user->refresh();
 
