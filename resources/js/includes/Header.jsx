@@ -1,6 +1,5 @@
 import React from "react";
-import { Link, Head, router } from "@inertiajs/react";
-// import spennypiggy from "../../assets/img/spenny-piggy.png";
+import { Link, usePage, router } from "@inertiajs/react";
 import spennypiggy from "../../assets/img/logo.png";
 import { useState } from "react";
 import { useEffect } from "react";
@@ -11,38 +10,36 @@ import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 import { add_to_cart } from "../Pages/redux/UserSlice";
 import ChangeCurrency from "@/Components/ChangeCurrency";
-import { usePage } from "@inertiajs/react";
 export default function Header() {
+
     const { global_currency, auth } = usePage().props;
     const deviceid = DeviceID();
     const [isActive, setActive] = useState(false);
     const [shows, setShows] = useState(false);
+
     const toggleClass = () => {
         setActive(!isActive);
         setTimeout(()=>{
             setShows(!isActive);
-        },300)
+        },300);
     };
+
     const cart = useSelector((state) => state.data.cart.cart);
     const [count, setCount] = useState();
     const dispatch = useDispatch();
 
     async function fetchCounter() {
-        axios
-            .get(`counter/${deviceid}`)
-            .then((resp) => {
-                setCount(resp.data.counter);
-                dispatch(add_to_cart(resp.data.counter));
-            })
-            .catch((_err) => {
-                console.error("error", _err);
-            });
+        axios.get(`counter/${deviceid}`).then((resp) => {
+            setCount(resp.data.counter);
+            dispatch(add_to_cart(resp.data.counter));
+        }).catch((_err) => {
+            console.error("error", _err);
+        });
     }
 
     useEffect(() => {
         fetchCounter();
     }, [cart]);
-
 
     return (
         <>
@@ -156,7 +153,7 @@ export default function Header() {
                             {auth?.user?.username || false ? (
                                 ""
                             ) : (
-                                <Link href={route("login")} className="button sm text-uppercase bg-none px-4 mx-3 d-none d-xl-flex"> Login </Link>
+                                <Link href={route("login")} className="btn-pink sm text-uppercase bg-none px-4 mx-3 d-none d-xl-flex"> Login </Link>
                             )}
                             <div className="d-block d-md-none menu-toggle cursor-pointer cartLink position-relative" onClick={toggleClass} >
                             <svg width="49" height="48" viewBox="0 0 49 48" fill="none" xmlns="http://www.w3.org/2000/svg">

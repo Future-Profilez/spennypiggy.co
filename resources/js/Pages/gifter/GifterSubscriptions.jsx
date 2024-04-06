@@ -5,8 +5,9 @@ import { useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
 import PriceFormat from '@/includes/PriceFormat';
 import LoadingScreen from '@/includes/LoadingScreen';
+import Popup from '@/Components/Popup';
 
-export default function GifterSubscriptions(props) {
+export default function GifterSubscriptions({IsloggedIn}) {
 
   const { auth, user, username, global_currency, itemid, min_surprise_amount  } = usePage().props;
   const { formatMultiPrice } = PriceFormat();
@@ -37,6 +38,20 @@ export default function GifterSubscriptions(props) {
     });
   };
 
+
+  const MessageMedia = ({w}) => {
+    return <>
+      <Popup
+        modalclassName="pinkmodal shadow-pink" space="0" size="md" action={false} classes={`mt-2 text-pink ps-1`}
+        text={<> Adventure awaits 🌟🔍 tap here !! </>} > 
+          <div className='video-payer-pop' >
+            <img src={w && w?.media_url || ''} />
+          </div>
+      </Popup>
+    </>
+  }
+
+
   useEffect(()=>{
     const controller = new AbortController();
     const { signal } = controller;
@@ -53,10 +68,12 @@ export default function GifterSubscriptions(props) {
       const owner  = w && w.owner && w.owner.name;
       const goalname  = w && w.tipGoal && w.tipGoal.name;
       return <div className='pb-3'>
-          <p className='' ><span className='text-capitalize' >{uname}</span> just subscribe  <b>{owner}'s</b> subscription <b>{item}</b> of amount {amount}.</p>
+          <p className='' ><span className='text-capitalize' >{uname}</span> just subscribe  <b>{owner}'s</b> subscription <b>{item}</b> of amount {amount}. 
+          {IsloggedIn && w && w.media_url ? <MessageMedia w={w} /> : ''}
+          </p>
       </div>
     }
-    return <div className='wish-grant  my-2' key={key} >
+    return <div className='wish-grant my-2' key={key} >
         <Template  />
     </div>
   }

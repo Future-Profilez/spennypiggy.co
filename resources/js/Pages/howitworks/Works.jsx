@@ -24,7 +24,7 @@ export default function Works(props) {
                     <Tabs defaultActiveKey="1" id="uncontrolled-tab-example" className="mb-3">
                         <Tab eventKey="1" title="for Gifters">
                             <div className='funboxs mintbg shadow-black border-black mb-10'>
-                                <div className='funboximg'>
+                                <div className='funboximg' data-aos="fade-up" >
                                     <img src={vishitimg01} alt='img' />
                                     </div>
                                     <div className='funcnt'>
@@ -35,7 +35,7 @@ export default function Works(props) {
                             </div>
                             
                             <div className='funboxs pinkbg shadow-black border-black mb-10'>
-                                <div className='funcnt'>
+                                <div className='funcnt' data-aos="fade-up">
                                     <h5 className='text-voilet text-black mb-2'>STEP 2</h5>
                                     <h3 className='headingSm text-shadow-black mb-3 text-purple'>Create a Gift <br/>  Basket</h3>
                                     <p className='text-CeraGR text-wh'>Pick one or more items to add to your gift basket</p>
@@ -46,11 +46,11 @@ export default function Works(props) {
                             </div>
 
                             <div className='funboxs bluebg shadow-black border-black mb-10'>
-                                <div className='funboximg'>
-                                    <img src={fundbasketimg01} alt='img' />
+                                <div className='funboximg' >
+                                    <img src={fundbasketimg01} data-aos="fade-up" alt='img' />
                                 </div>
                                     
-                                <div className='funcnt'>
+                                <div className='funcnt' data-aos="fade-up" >
                                     <h5 className='text-mint mb-2'>STEP 3</h5>
                                     <h3 className='headingSm text-shadow-black mb-3 text-pink'>Fund Basket <br/> with Message</h3>
                                     <p className='text-CeraGR text-wh'>You can choose to leave a message and a pseudonym. Your email will be kept hidden, but we will relay any picture messages from the creator to this email.</p>
@@ -60,10 +60,10 @@ export default function Works(props) {
                         <Tab eventKey="2" title="for wishers">
                         <div className='funboxs mintbg shadow-black border-black mb-10'>
                                 <div className='funboximg'>
-                                    <img src={yourwishlist01} alt='img' />
+                                    <img src={yourwishlist01}  data-aos="fade-up" alt='img' />
                                     </div>
                                     
-                                    <div className='funcnt'>
+                                    <div className='funcnt' data-aos="fade-up" >
                                     <h5 className='text-voilet mb-2'>STEP 1</h5>
                                     <h3 className='headingSm text-shadow-black mb-3'>Create Your <br/> Wishlist</h3>
                                     <p className='text-CeraGR'>Add items from any online store or manually add offline wishes. With our custom gift entry, you can get creative. List full outfits, trips to the spa, shopping sprees, and more.</p>
@@ -71,22 +71,22 @@ export default function Works(props) {
                             </div>
                             
                             <div className='funboxs pinkbg shadow-black border-black mb-10'>
-                                <div className='funcnt'>
+                                <div className='funcnt' data-aos="fade-up">
                                     <h5 className='text-voilet text-black mb-2'>STEP 2</h5>
                                     <h3 className='headingSm text-shadow-black mb-3 text-purple'>Set up your <br/> payments</h3>
                                     <p className='text-CeraGR text-wh'>Using our secure established third party payment processor, set up your payments. This information is never seen by your gifter.</p>
                                 </div>
                                 <div className='funboximg'>
-                                    <img src={setuppaymentimg01} alt='img' />
+                                    <img src={setuppaymentimg01} data-aos="fade-up" alt='img' />
                                 </div>
                             </div>
 
                             <div className='funboxs bluebg shadow-black border-black mb-10'>
                                 <div className='funboximg'>
-                                    <img src={sharlinkimg} alt='img' />
+                                    <img src={sharlinkimg} alt='img' data-aos="fade-up" />
                                 </div>
                                     
-                                <div className='funcnt'>
+                                <div className='funcnt' data-aos="fade-up">
                                     <h5 className='text-mint mb-2'>STEP 3</h5>
                                     <h3 className='headingSm text-shadow-black mb-3 text-pink'>Share links to <br/> different <br/> platforms </h3>
                                     <p className='text-CeraGR text-wh'>Showcase your gift with a shout-out on your socials or thank your fans directly on Spenny Piggy via a personal text or video message.</p>

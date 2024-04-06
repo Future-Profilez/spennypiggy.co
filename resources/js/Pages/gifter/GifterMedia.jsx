@@ -75,7 +75,7 @@ export default function GifterMedia ({username}) {
           <div className="my-4 md:my-10 flex gap-6 flex-wrap">
             {media && media.length ? media.map((itm, i)=>{ 
                 return <MediaGroup item={itm} />
-            }) : <Nocontent text="No Posts to see" /> } 
+            }) : <div className="w-full m-auto" ><Nocontent text="No Posts to see" /> </div> } 
           </div>
           }
         </>
