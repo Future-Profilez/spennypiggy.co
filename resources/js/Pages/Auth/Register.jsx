@@ -34,11 +34,11 @@ export default function Register(props) {
     const creatortypes = [
         { "label": "Artist", "value": "Artist" },
         { "label": "Activist", "value": "Activist" },
+        { "label": "DJ", "value": "DJ" },
         { "label": "Beauty Creator", "value": "Beauty Creator" },
-        { "label": "Cosplay Creator", "value": "Cosplay Creator" },
         { "label": "Dancer", "value": "Dancer" },
         { "label": "Developer", "value": "Developer" },
-        { "label": "DJ", "value": "DJ" },
+        { "label": "Cosplay Creator", "value": "Cosplay Creator" },
         { "label": "Education Creator", "value": "Education Creator" },
         { "label": "Fashionista", "value": "Fashionista" },
         { "label": "Gamer", "value": "Gamer" },
@@ -239,7 +239,7 @@ export default function Register(props) {
         <GuestLayout>
             <IpRedirection />
             <Head title="Register" />
-            <div className='loginPage  blackbg pt-8 pb-16'>
+            <div className='loginPage  blackbg pb-4 pb-md-5'>
                 <div className='containerbox '>
                     <div className='loginform mt-3 mt-md-5 mx-auto border-black whbg shadow-mint'>
                         
@@ -254,14 +254,14 @@ export default function Register(props) {
                         <div className={`${step === 0 ? '' : 'd-none'}  what-are-you px-3 py-3 pb-5`} >
                             <div className='p-2 w-full max-w-[400px] m-auto'>
                                 <div  onClick={()=>handleBecomeCreator(1)}  className={`${role==1 ? 'active' : '' }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}>
-                                    <h2 className='font-bold text-[25px]' >I'm a Creator</h2>
-                                    <p className='text-muted text-[18px] mt-1 mb-0' >I'd like to create a wishlist</p>
+                                    <h2 className='text-[22px] font-GillSans text-uppercase' >I'm a Creator</h2>
+                                    <p className='text-muted text-[16px] mt-1 mb-0' >I'd like to create a wishlist</p>
                                 </div>
                             </div>
                             <div className='p-2 w-full max-w-[400px] m-auto'>
                                 <div  onClick={()=>handleBecomeCreator(0)}  className={`${role==0 ? 'active' : '' }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}>
-                                    <h2 className='font-bold text-[25px]' >I'm a Fan</h2>
-                                    <p className='text-muted text-[18px] mt-1 mb-0' >I'm here to follow and support creators</p>
+                                    <h2 className='text-[22px] font-GillSans text-uppercase' >I'm a Fan</h2>
+                                    <p className='text-muted text-[16px] mt-1 mb-0' >I'm here to follow and support creators</p>
                                 </div>
                             </div>
 
@@ -269,8 +269,7 @@ export default function Register(props) {
                         </div>
 
                         <div className={`${step === 1 ? '' : 'd-none'}  what-are-you px-3`} >
-                            <div className='px-0 px-md-4 px-lg-5 py-4'>
-                                <h2 className='text-center text-[28px] font-bold mb-2 ' >Choose interests</h2>
+                            <div className='px-0 px-md-4 px-lg-5 pb-4'>
                                 <p className='text-center text-[17px] text-muted ' >Choose from the following categories. This helps people find your profile. You can change these at any time.</p>
                                 
                                 <div className='d-flex creator-tags justify-content-center flex-wrap mt-4' >
@@ -286,7 +285,7 @@ export default function Register(props) {
                                             />
                                             <label
                                                 htmlFor={`tyeps-${index}`}
-                                                className="me-2 mb-2 bg-gray-200 px-4 py-[10px] rounded-[40px] text-md text-gray-600 cursor-pointer" >
+                                                className="me-1 mb-1 bg-gray-200 px-4 py-[10px] rounded-[40px] text-[15px] text-gray-600 cursor-pointer" >
                                                 {s.label}
                                             </label>
                                         </div>

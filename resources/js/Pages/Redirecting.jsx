@@ -68,7 +68,8 @@ export default function Redirecting() {
         <div className="loader-item">
           <div className="loader loader-3"></div>
         </div>
-        {url ? <h2 className='redirection-text mt-3 text-large' >Redirecting to {url} </h2> : ''}
+        {!url ? <h2 className='redirection-text text-center m-auto px-4  border-0 table mt-3 text-large' >Redirecting to {url} </h2> : ''}
+      
       </div>
     </div>
     </>

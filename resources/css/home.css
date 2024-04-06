@@ -78,7 +78,7 @@ body{background:#000;}
 .footlinks ul li a{color:var(--text-black);font-family:var(--font-CeraGR);font-size:16px;font-style:normal;font-weight:400;line-height:20px;}
 .footlinks ul li a:focus,.footlinks ul li a:hover{color:var(--black);text-decoration:underline;}
 .copyright{padding:10px 0;border-top:1px solid var(--gray);color:var(--black);font-family:var(--font-CeraGR);font-size:16px;font-style:normal;font-weight:400;line-height:250%;text-align:center;}
-.loginform{width:90%;max-width:576px;}
+.loginform{max-width:576px;}
 .loginheadbox{padding:30px 40px;border-radius:25px 25px 0 0;}
 .loginform{border-radius:30px 30px;}
 .loginheadbox .mintbg{margin:0 10px 0 0;}
@@ -806,7 +806,6 @@ button.cartLink svg{width:34px;height:34px;}
 .accsettingList ul li a,.accsettingList ul li button,.notification{font-size:16px;}
 .accsettingList ul li a > span,.accsettingList ul li button > span,.notification > span{margin-left:18px;word-break:break-all;text-align:left !important;line-height:16px;}
 .noResult h2.headingLg{font-size:30px;line-height:34px;}
-.loginform{width:96%;}
 .bannerrr{padding:16px !important;}
 .cartTotal .cartSubTotal{display:flex !important;justify-content:space-between;}
 .addCartModal{min-width:auto !important;}
@@ -881,6 +880,11 @@ select#country{width:100%;}
 }
 @media (max-width:575px){
   
+  .wishlistbtn .itsfree-tag {
+    right: -20px !important;
+    top: 80px !important;
+    max-width: 130px  !important;
+}
   .creatorslider .swiper-wrapper {
     padding-top: 0px;
     padding-bottom: 0px;
