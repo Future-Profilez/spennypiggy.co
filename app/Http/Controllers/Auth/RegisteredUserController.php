@@ -91,7 +91,7 @@ class RegisteredUserController extends Controller
                 'gender' => $request->gender ?? null,
                 'password' => Hash::make($request->password),
                 'role' => $request->role ?? 0,
-                'creator_category' => $request->creator_category,
+                'creator_category' => json_encode($request->creator_category) ?? null,
             ]);
             $user->refresh();
 
