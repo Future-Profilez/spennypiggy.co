@@ -61,7 +61,6 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'username' => ['required', 'string', 'lowercase', 'max:20', 'unique:users,username'],
             'role' => ['required'],
-            'creator_category' => ['required']
         ]);
 
         $exist = User::where('email',$request->email)->whereNull('deleted_at')->first();
