@@ -5,8 +5,9 @@ import { useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
 import PriceFormat from '@/includes/PriceFormat';
 import LoadingScreen from '@/includes/LoadingScreen';
+import Popup from '@/Components/Popup';
 
-export default function GifterSubscriptions(props) {
+export default function GifterSubscriptions({IsloggedIn}) {
 
   const { auth, user, username, global_currency, itemid, min_surprise_amount  } = usePage().props;
   const { formatMultiPrice } = PriceFormat();
@@ -15,30 +16,47 @@ export default function GifterSubscriptions(props) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  const fetch_items = async (p, load) => {
+  const fetch_items = async (p, load, signal) => {
     setLoading(true);
-    axios.get(`/gifter-subs/${username}?page=${p}`)
+    axios.get(`/gifter-subscriptions/${username}?page=${p}`, {signal})
     .then((resp) => {
-        // setLoading(false);
-        // const newd = resp.data.tips
-        // if(load){
-        //   const result = data.concat(newd);
-        //   setData(result);
-        // } else { 
-        //   setData(newd);
-        // }
-        // setPage(p);
-        // if(resp.data.last_page == resp.data.current_page){
-        //   setHasMore(false);
-        // }
+        setLoading(false);
+        const newd = resp.data.subscriptions
+        if(load){
+          const result = data.concat(newd);
+          setData(result);
+        } else { 
+          setData(newd);
+        }
+        setPage(p);
+        if(resp.data.last_page == resp.data.current_page){
+          setHasMore(false);
+        }
     }).catch((_err) => {
         console.error("error", _err);
         setLoading(false);
     });
   };
 
+
+  const MessageMedia = ({w}) => {
+    return <>
+      <Popup
+        modalclassName="pinkmodal shadow-pink" space="0" size="md" action={false} classes={`mt-2 text-pink ps-1`}
+        text={<> Adventure awaits 🌟🔍 tap here !! </>} > 
+          <div className='video-payer-pop' >
+            <img src={w && w?.media_url || ''} />
+          </div>
+      </Popup>
+    </>
+  }
+
+
   useEffect(()=>{
-    fetch_items(page);
+    const controller = new AbortController();
+    const { signal } = controller;
+    fetch_items(page, false, signal);
+    return () => controller.abort();
   },[]);
 
   const Item = ({key, w}) => { 
@@ -46,23 +64,23 @@ export default function GifterSubscriptions(props) {
       const total_amount = (+w.amount)+(+w.tax)
       const uname = user && user.username;
       const amount = formatMultiPrice(total_amount, w && w.currency);
+      const item  = w && w.wish_item && w.wish_item.name;
       const owner  = w && w.owner && w.owner.name;
       const goalname  = w && w.tipGoal && w.tipGoal.name;
-
       return <div className='pb-3'>
-          <p className=' ' ><span className='text-capitalize' >{uname}</span> just tip amount of {amount} on <b>{owner}'s</b> <b>'{goalname}'</b> goal. 
-          {/* <span className='text-small text-time text-capitalize' >14hrs ago</span> */}
+          <p className='' ><span className='text-capitalize' >{uname}</span> just subscribe  <b>{owner}'s</b> subscription <b>{item}</b> of amount {amount}. 
+          {IsloggedIn && w && w.media_url ? <MessageMedia w={w} /> : ''}
           </p>
       </div>
     }
-    return <div className='wish-grant  my-2' key={key} >
+    return <div className='wish-grant my-2' key={key} >
         <Template  />
     </div>
   }
 
   return (
     <div className='box rounded-lg p-4 mt-4 ' >
-      <h3 className='text-large text-dark title mb-2' >Tips </h3>
+      <h3 className='text-large text-dark title mb-2' >Subscriptions </h3>
         {data && data.map((d, i)=>{ 
           return <div key={`wishes-items-${i}`} ><Item  w={d} /></div>
         })}

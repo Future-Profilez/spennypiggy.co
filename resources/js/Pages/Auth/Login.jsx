@@ -44,7 +44,7 @@ export default function Login({ status, canResetPassword }) {
 
             <div className='loginPage blackbg px-3 py-5'>
                 <h2 className='headingLg mb-3 text-center '>Welcome Back !</h2>
-                <p className='text-center text-white mb-5 font-CeraGRBold'>Don't have an account? <Link href={route('register')} className=' mb-6 text-pink'>Signup</Link></p>
+                <p className='text-center text-white text-large mb-5 font-CeraGRBold'>Don't have an account? <Link href={route('register')} className=' mb-6 text-pink'>Signup</Link></p>
                 <div className='loginform mx-auto border-black whbg shadow-mint'>
                     <div className='loginheadbox pinkbg'>
                         <span className='mintbg'></span>
@@ -53,7 +53,7 @@ export default function Login({ status, canResetPassword }) {
                     <form onSubmit={submit} >
                         <div className='login-step1'>
                             <ul>
-                                <li>
+                                <li className="formfield">
                                     <label>Enter Email</label>
                                     <input id="email"
                                         type="email"
@@ -64,7 +64,7 @@ export default function Login({ status, canResetPassword }) {
                                         autoFocus={true}
                                         onChange={(e) => setData('email', e.target.value)} />
                                 </li>
-                                <li>
+                                <l className="formfield" >
                                     <label>Password</label>
                                     <input id="password"
                                         type="password"
@@ -84,7 +84,7 @@ export default function Login({ status, canResetPassword }) {
                                             </Link>
                                         </div>
                                     )}
-                                </li>
+                                </l>
                             </ul>
                             
 

@@ -7,19 +7,26 @@ import GlobalUploader from "@/uploadcare/Uploader";
 import LoaderButton from "@/Components/LoaderButton";
 import axios from "axios";
 import { toast } from 'react-hot-toast';
-import AdultScan from "@/includes/AdultScan";
 import { useAlerts } from "@/Components/Alerts";
+import { useRef } from "react";
 
 export default function AddPost({item, text, classes, isEdit, updateState}) {
 
     const [ close, setClose ] = useState();
-    const [ clear, setClear ] = useState();
     const { errorsHandling } = useAlerts();
     const [filetype, setfiletype] =  useState('image');
     const [rewardImage, setRewardImage] = useState(item?.image || '');
+    
+    const uploaderRef = useRef();
+    const resetUploader = () => {
+        if (uploaderRef.current) {
+            uploaderRef.current.reset();
+        }
+    };
+
     const getfile = async (data) => {
         setRewardImage(data?.uuid);
-        setfiletype(data && data.contentInfo && data.contentInfo.mime && data.contentInfo.mime.type)
+        setfiletype(data && data.contentInfo && data.contentInfo.mime && data.contentInfo.mime.type);
     };
 
     const [data, setData] = useState({
@@ -61,7 +68,7 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
                 setTimeout(()=>{
                     setClose();
                 },100);
-                setClear(new Date());
+                resetUploader();
             } else {
                 toast.error(resp.data.msg);
             }
@@ -72,8 +79,8 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
         });
     }
 
- 
-    
+   
+
 
     return (
     <Popup modalclass='' space="4" size='md' action={close} classes={`${classes} dropdown-item text-start p-0 `} text={text ? text : `Add Post`} >
@@ -101,7 +108,7 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
                 </>
                 : ''}
 
-                <GlobalUploader  view={false} type="minimal" clear={clear} sendFile={getfile} options={st.post} />
+                <GlobalUploader ref={uploaderRef} view={false} type="minimal" sendFile={getfile} options={st.post} />
             </div>
 
            { rewardImage ? <>
@@ -118,13 +125,9 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
            </> :'' 
             }
 
-            <AdultScan type={filetype} 
-                fileuid={rewardImage}
-                onScan={submitPost} 
-                content={<>
-                     <LoaderButton 
+                     <LoaderButton onClick={submitPost}
                         disabled={loading}
-                        className="flex btn-pink sm mt-4 w-full "
+                        className="flex btn-pink lg mt-4 w-full "
                         spinnerClassName="fill-red-600">
                         {isEdit ? 
                           loading ? "Updating.." :"Update Post" 
@@ -132,8 +135,6 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
                           loading ? "Posting.." : "Add New Post" 
                         }
                     </LoaderButton>
-                </>} 
-            />
 
         {/* </form> */}
         

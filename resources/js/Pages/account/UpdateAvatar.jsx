@@ -2,14 +2,19 @@ import Popup from "@/Components/Popup";
 import GlobalUploader from "@/uploadcare/Uploader";
 import { useState } from "react";
 import st from '../../../css/uploader.module.css'
-import AdultScan from "@/includes/AdultScan";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
-import { useEffect } from "react";
+import { useRef } from "react";
 
 export default function UpdateAvatar({getImageUID, text, close, type }) {
 
-    const [clear, setClear] = useState();
     const [ClosePop, setClosePop] = useState(close || null);
+
+    const uploaderRef = useRef();
+    const resetUploader = () => {
+        if (uploaderRef.current) {
+            uploaderRef.current.reset();
+        }
+    };
 
     const [isEditable, setIsEditable ] = useState(false);
     const [file,setFile] = useState();
@@ -31,7 +36,7 @@ export default function UpdateAvatar({getImageUID, text, close, type }) {
 
     const updateImage = () => {
         getImageUID(file);
-        setClear(new Date);
+        resetUploader();
         setClosePop(false);
         setTimeout(()=>{ 
             setClosePop();
@@ -39,9 +44,9 @@ export default function UpdateAvatar({getImageUID, text, close, type }) {
     }
 
     return <>
-        <Popup  modalclassName="updateavatar" action={ClosePop} text={text}  >
-            <div className='editprofileModal  innermodal  '>
-                <div className='editprofileModalInner  p-4'>
+        <Popup  modalclass="updateavatar p-4" action={ClosePop} text={text}  >
+            <div className='editprofileModal innermodal  '>
+                <div className='editprofileModalInner p-4'>
                     <h2 className="updateprofile" > Update {type == 'cover' ? "Cover":"Profile"} Image </h2>
 
                     <div className={`${isEditable ? '' : 'd-none'} editable`} >
@@ -50,13 +55,9 @@ export default function UpdateAvatar({getImageUID, text, close, type }) {
 
                     <div className={`${!isEditable ? '' : 'd-none'} edited`} >
                         <div className="py-4" >
-                            <GlobalUploader type='minimal' clear={clear} sendFile={getFileUID} options={st.profileimage} />
+                            <GlobalUploader type='minimal' ref={uploaderRef} sendFile={getFileUID} options={st.profileimage} />
                         </div>
-
-                        <AdultScan type={file && file.contentInfo && file.contentInfo.mime && file.contentInfo.mime.type} 
-                        fileuid={file && file.uuid}
-                        onScan={updateImage} content={<> <button className="btn-pink sm w-100" >Confirm</button> </>} 
-                        />
+                        <button onClick={updateImage} className="btn-pink sm w-100" >Confirm</button>
                     </div>
                     
                 </div>

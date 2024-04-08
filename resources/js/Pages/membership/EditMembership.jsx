@@ -7,6 +7,7 @@ import { useState } from "react";
 import GlobalUploader from "@/uploadcare/Uploader";
 import st from "../../../css/uploader.module.css";
 import axios from "axios";
+import { useRef } from "react";
 const memberships = [
   {
     'title': "Bronze Level",
@@ -74,7 +75,12 @@ const membershipBenifits = [
 ];
 export default function EditMembership({ fetch_membership, item }) {
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
-  const [clear, setClear] = useState();
+  const uploaderRef = useRef();
+  const resetUploader = () => {
+      if (uploaderRef.current) {
+          uploaderRef.current.reset();
+      }
+  };
   const [close, setClose] = useState();
   const [rewardItems, setRewardItems] = useState(JSON.parse(item?.rewards || ''));
   const [thumb, setThumb] = useState(null);
@@ -126,7 +132,7 @@ export default function EditMembership({ fetch_membership, item }) {
           setClose();
         }, 100);
         reset();
-        setClear(new Date());
+        resetUploader();
       } else {
         if (resp.data.errors) {
           Object.entries(resp.data.errors).forEach(([key, value]) => {
@@ -198,7 +204,7 @@ export default function EditMembership({ fetch_membership, item }) {
             <p className="text-muted mb-3">This is not required, but it can be a nice way to build your brand or make the offering more attractive.</p>
             <GlobalUploader
               type='minimal'
-              clear={clear}
+              ref={uploaderRef}
               sendFile={getFileUID}
               options={st.membership}
             />

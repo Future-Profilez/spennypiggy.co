@@ -81,7 +81,7 @@ export default function Hero({auth}) {
       <div style={{ backgroundImage:`url(${herobanner})` }}  id="home" className="heroSec position-relative">
         <div className="containerbox">
           <div className="welcome" data-aos="zoom-out" >
-              <div className="welcomeLeft m-auto py-5 d-table">
+              <div className="welcomeLeft m-auto pt-[100px] pb-[100px] d-table">
                   <h2 className="text-center welcomeHeading shadow-yellow font-GillSans text-uppercase mb-1">
                     Oink! Oink! B*tch{" "}
                   </h2>
@@ -90,10 +90,12 @@ export default function Hero({auth}) {
                   </h3>
 
                   <div className=" pt-4 wishlistbtn wishlistbtnFixed m-auto d-table">
-                    {auth?.user?.username ?  
-                    <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink wishlistbutton lg px-5 shadow-mint border-mint log " > My Wishlist </Link>
-                      : <Link href="/register" className="btn-pink wishlistbutton lg px-5 shadow-mint border-mint " > Create Wishlist </Link> 
+
+                    {auth?.user?.username 
+                      ?  <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink wishlistbutton  py-[8px] px-5  lg  log " > My Wishlist </Link>
+                      :  <Link href="/register" className="btn-pink wishlistbutton lg px-5 shadow-mint border-mint " > Create Wishlist </Link> 
                     }
+
                     <div className='itsfree-tag d-none d-md-block' >
                       <img alt={"image"}  className=' '
                         src={itsfree} 

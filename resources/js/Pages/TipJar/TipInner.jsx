@@ -60,7 +60,7 @@ export default function TipInner({classes}) {
             </svg>
           </div>
 
-          <h2 className='p-3 text-pink font-GillSans uppercase text-large black-stroke font-semibold mb-1 mt-4  pe-5'>Fill My Piggy bank 🐖</h2>
+          <h2 className='p-3 text-pink font-GillSans uppercase text-large black-stroke mb-1 mt-4 pe-5'>Fill My Piggy bank 🐖</h2>
           <div className='border-top p-3 pt-3' >
 
             <div className='tip-counter d-flex align-items-center justify-content-between mb-3' >
@@ -143,12 +143,9 @@ export default function TipInner({classes}) {
                 </label>
                 <p className="text-muted text-small mt-1 mb-3" >Your personal email and name will be private.</p>
             </div>
-            <Link className={`inline-flex items-center px-4 border 
-              border-transparent rounded-md font-semibold text-sm text-white 
-              uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 
-              active:bg-gray-900 focus:outline-none focus:ring-2 
-              focus:ring-indigo-500 focus:ring-offset-2 transition  justify-content-center
-              ease-in-out duration-150 false flex button p-3 text-center lg w-100  
+            <Link className={`inline-flex items-center px-4 border shadow-black
+               rounded-[30px] btn-pink md justify-content-center  border-0
+              ease-in-out duration-150 flex button text-center w-100  
               font-CeraGR mx-auto ${checkRef.current && checkRef.current.checked ? '' :'disabled'}`}  href={`tip-jar/pay/${user.uuid}`} 
               method="post" data={{...data, amount:amount}} > {processing ? "Processing" : 'Support Me'} </Link>
             <div className='securestripe text-center mt-3' >

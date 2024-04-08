@@ -4,6 +4,8 @@ import PriceFormat from '@/includes/PriceFormat';
 import { Link } from "@inertiajs/react";
 import dummy from '../../../assets/img/uploadedimg.png';
 import EditMembership from './EditMembership';
+import DropdownButton from 'react-bootstrap/DropdownButton';
+import RemoveMembership from './RemoveMembership';
 
 const rewards_lists = [
   {
@@ -77,7 +79,20 @@ export default function Membership({item, hidebtn, IsloggedIn, fetch_membership}
               <h3 className='text-large text-center text-white text-uppercase' >{item && item.level}</h3>
               <h2 className=' text-center text-white ' ><b>{formatMultiPrice(item && item.price, item && item.currency)}</b> per month</h2>
           </div>
+            {IsloggedIn ? <DropdownButton
+              className='edit-post pe-0 absolute top-5 m-1 right-3 z-1 ' id="dropdown-basic-button"
+              title={
+              <div className='dots' >
+              <span className='bg-dark' ></span>
+              <span className='bg-dark' ></span>
+              <span className='bg-dark' ></span>
+            </div>}>
+                <RemoveMembership classes={`px-[18px] py-2 text-start w-full`} updateItems={fetch_membership} uuid={item.uuid} text="Remove" />
+            </DropdownButton> : ''} 
         </div>
+
+
+
 
       <div className='p-2 pt-0' >
         <ul className='lists_rewards mt-3' >

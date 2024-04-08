@@ -47,7 +47,7 @@ export default function AdultScan({fileuid, content, onScan, classes, type, scan
         {content}
       </div> 
       } 
-
+      <div className={`${classes}`} onClick={onScan} >{content}</div> 
     </>
   )
 }

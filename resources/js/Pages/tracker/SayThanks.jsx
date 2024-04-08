@@ -11,7 +11,14 @@ import AdultScan from '@/includes/AdultScan';
 export default function SayThanks(props) {
    const { name, payment_id, getMessageStatus, clearAction, approvemsg } = props;
 
-   const [clear, setClear] = useState();
+   const uploaderRef = useRef();
+   const resetUploader = () => {
+       if (uploaderRef.current) {
+           uploaderRef.current.reset();
+       }
+   }; 
+
+
    useEffect(()=>{
       setClear(clearAction);
    }, [clearAction]);
@@ -43,7 +50,7 @@ export default function SayThanks(props) {
                setClose();
             },1000);
             getMessageStatus(message, msgMedia);
-            setClear(new Date());
+            resetUploader();
             approvemsg && approvemsg(0);
          } else {
             errorAlert(resp.data.message);
@@ -67,7 +74,7 @@ export default function SayThanks(props) {
          />
          <p className='mb-2 mt-3' >Choose Video or Picture</p>
          <GlobalUploader  type='minimal'
-            clear={clear}
+            ref={uploaderRef}
             sendFile={getFileUID}
             options={st.thankyoumessage}
          />

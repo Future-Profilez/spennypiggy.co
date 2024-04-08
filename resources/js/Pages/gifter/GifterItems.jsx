@@ -47,8 +47,8 @@ export default function GifterItems(props) {
   const MessageMedia = ({w}) => {
     return <>
       <Popup
-        modalclassName="pinkmodal shadow-pink" space="0" size="md" action={close} classes={`mt-3 text-pink`}
-        text={<>View Exclusive Reward </>} > 
+        modalclassName="pinkmodal shadow-pink" space="0" size="md" action={false} classes={`mt-3 text-pink`}
+        text={<>Adventure awaits 🌟🔍 tap here !! </>} > 
           <div className='video-payer-pop' >
             <img src={w && w?.media_url || ''} />
           </div>
@@ -72,27 +72,27 @@ export default function GifterItems(props) {
         <div className={`gift-icon mt-2 me-2 ${s == '0' ? 'mint' : s == '1' ? 'pink' : s == '2' ? 'voilet' : 'grey' }`} 
         dangerouslySetInnerHTML={{ __html: piggy }} />
         
-        {s == '0' ? 
-          <p className=' ' ><span className='text-capitalize' >{uname}</span> granted a wish of {amount} to <b>{owner}</b> on their wish <b>{wishname}</b>. 
-          {/* <span className='text-small text-time text-capitalize' >14hrs ago</span> */}
-          </p>
-          : ''
-        } 
+          {s == '0' ? 
+            <p className=' ' ><span className='text-capitalize' >{uname}</span> granted a wish of {amount} to <b>{owner}</b> on their wish <b>{wishname}</b>. 
+            {/* <span className='text-small text-time text-capitalize' >14hrs ago</span> */}
+            </p>
+            : ''
+          } 
 
-        {s == '2' ? 
-          <p className=' ' >
-            <span className='text-capitalize' >{uname}</span> has graciously contributed an amount of {amount} towards one of <b>{owner}</b>'s wish {<b>{wishname}</b>}.
-            {/* <span className='text-small text-time text-capitalize' >14hrs ago</span>  */}
-          </p>
-          : ''
-        }
+          {s == '2' ? 
+            <p className=' ' >
+              <span className='text-capitalize' >{uname}</span> has graciously contributed an amount of {amount} towards one of <b>{owner}</b>'s wish {<b>{wishname}</b>}.
+              {/* <span className='text-small text-time text-capitalize' >14hrs ago</span>  */}
+            </p>
+            : ''
+          }
 
-        {w && w.is_surprise   ? 
-          <p className='' ><span className='text-capitalize' >{uname}</span> send a surprise gift of {amount} to <b>{owner}</b>. 
-          {/* <span className='text-small text-time text-capitalize' >14hrs ago</span> */}
-          </p>
-          : ''
-        }
+          {w && w.is_surprise   ? 
+            <p className='' ><span className='text-capitalize' >{uname}</span> send a surprise gift of {amount} to <b>{owner}</b>. 
+            {/* <span className='text-small text-time text-capitalize' >14hrs ago</span> */}
+            </p>
+            : ''
+          }
       </div>
         {IsloggedIn && w && w.media_url ? <MessageMedia w={w} /> : ''}
       </div>

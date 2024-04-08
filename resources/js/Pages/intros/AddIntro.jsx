@@ -8,6 +8,7 @@ import axios from 'axios';
 import LoaderButton from '@/Components/LoaderButton';
 import { useEffect } from 'react';
 import wishlistbannerimg from "../../../assets/img/wishlistbannerimg.jpg";
+import { useRef } from 'react';
 
 export default function AddIntro({IsloggedIn, uuid}){
 
@@ -20,6 +21,13 @@ export default function AddIntro({IsloggedIn, uuid}){
   const getFileUID = async (data) => {
     setMsgMedia(data);
   }; 
+
+  const uploaderRef = useRef();
+  const resetUploader = () => {
+      if (uploaderRef.current) {
+          uploaderRef.current.reset();
+      }
+  };
 
   const [introVideo, setIntroVideo] = useState(null);
   const [videoLoading, setVideoLoading] = useState(false);
@@ -57,7 +65,7 @@ export default function AddIntro({IsloggedIn, uuid}){
           setTimeout(()=>{
             setClose();
           },1000);
-          setClear(new Date());
+          resetUploader();
           setOpen(false);
       } else {
           errorAlert(resp.data.msg);
@@ -138,7 +146,7 @@ export default function AddIntro({IsloggedIn, uuid}){
                 <p className='text-danger mb-4' >All videos are reviewed against our terms before being accepted or rejected.</p>
                 <div className='my-3' >
                   <GlobalUploader view={true}
-                    clear={clear} type='minimal'
+                    ref={uploaderRef} type='minimal'
                     sendFile={getFileUID}
                     options={st.profileVideo}
                   />  
