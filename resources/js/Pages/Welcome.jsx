@@ -20,6 +20,7 @@ import FAQ from "./home/FAQ";
 import { useEffect } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import SitelinksSearchBox from "@/global/SiteLink";
 export default function Home({ auth, user }) {
 
     useEffect(()=>{
@@ -29,7 +30,6 @@ export default function Home({ auth, user }) {
     return <>
         <LiveBar reps={15} classes={'pb-2 pb-md-0 blackbg barouter'} text={"🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨"} />
         <Guest auth={auth.user} user={auth.user}>
-            <Head title="Welcome" />
             <div>
                 <div className="homepromotion"></div>
                 <Hero auth={auth} />
@@ -85,6 +85,7 @@ export default function Home({ auth, user }) {
                 <FAQ />
                 
                 <JoinUs />
+                <SitelinksSearchBox />
             </div>
         </Guest>
     </>

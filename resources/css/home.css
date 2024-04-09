@@ -78,18 +78,18 @@ body{background:#000;}
 .footlinks ul li a{color:var(--text-black);font-family:var(--font-CeraGR);font-size:16px;font-style:normal;font-weight:400;line-height:20px;}
 .footlinks ul li a:focus,.footlinks ul li a:hover{color:var(--black);text-decoration:underline;}
 .copyright{padding:10px 0;border-top:1px solid var(--gray);color:var(--black);font-family:var(--font-CeraGR);font-size:16px;font-style:normal;font-weight:400;line-height:250%;text-align:center;}
-.loginform{width:90%;max-width:576px;}
+.loginform{max-width:576px;}
 .loginheadbox{padding:30px 40px;border-radius:25px 25px 0 0;}
 .loginform{border-radius:30px 30px;}
 .loginheadbox .mintbg{margin:0 10px 0 0;}
 .loginheadbox .bluebg,.loginheadbox .mintbg{width:30px;height:30px;border-radius:60px;border:1px solid var(--black);display:inline-block;vertical-align:middle;}
 .loginform form{padding:40px 50px;}
-.loginform form ul li{margin:0 0 40px;}
-.loginform form ul li label{display:block;width:100%;color:#333;font-family:var(--parabold-font);font-size:18px;font-style:normal;font-weight:400;line-height:120%;letter-spacing:-1.26px;text-transform:uppercase;margin:0 0 10px;}
-.loginform form ul li input,.loginform form ul li select{border-radius:12px;border:1px solid var(--black);background:var(--white);box-shadow:4px 4px 0 0 var(--black);display:block;width:100%;padding:20px;transition:all ease 0.3s;}
-.loginPage p{font-size:22px;}
-.loginform form ul li input:focus,.loginform form ul li input:hover{outline:0;}
-.loginform form ul li input:focus,.loginform form ul li input:focus-within{outline:0;box-shadow:8px 8px 0 0 var(--black);transition:all ease 0.3s;}
+.loginform form .formfield {margin:0 0 40px;}
+.loginform form .formfield  label{display:block;width:100%;color:#333;font-family:var(--parabold-font);font-size:16px;font-style:normal;font-weight:400;line-height:120%;letter-spacing:-1.26px;text-transform:uppercase;margin:0 0 10px;}
+.loginform form .formfield  input,.loginform form .formfield  select{border-radius:12px;border:1px solid var(--black);background:var(--white);
+  box-shadow:4px 4px 0 0 var(--black);display:block;width:100%;padding:14px 20px;transition:all ease 0.3s;}
+.loginform form .formfield input:focus,.loginform form .formfield input:hover{outline:0;}
+.loginform form .formfield input:focus,.loginform form .formfield input:focus-within{outline:0;box-shadow:8px 8px 0 0 var(--black);transition:all ease 0.3s;}
 .wishManage{width:100%;}
 .wishbanner img{height:305px;object-fit:cover;}
 .userManageRt{width:773px;padding:0 0 0 35px;}
@@ -332,7 +332,15 @@ button.loadmore-text{margin:auto;display:table;padding:6px 14px;font-size:17px;c
 /* post css */
 .text-post-content:focus{box-shadow:none !important;}
 .post-wrap .post-img{width:100%;border-radius:10px;}
-.post-wrap .author-img{height:45px;width:45px;display:inline;border-radius:50%;background-image:url("https://1000logos.net/wp-content/uploads/2017/05/NFL-Logo-1983.png");background-color:white;background-repeat:no-repeat;background-position:center center;background-size:contain;}
+.post-wrap .author-img {
+  height: 45px;
+  width: 45px;
+  display: inline;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 1px solid #dfdfdf !important;
+}
+
 .post-wrap .headerpost{display:flex;align-items:center;margin-bottom:15px;width:100%;}
 .post-wrap .authors{margin-left:15px;}
 .post-wrap svg{transition:fill 0.3s ease;cursor:pointer;margin-right:20px;}
@@ -494,6 +502,7 @@ ul.socialmedia li svg{width:25px !important;height:24px !important;}
   position: absolute;
   right: -100%;
   top: 10px;
+  max-width: 300px;
 }
 .wishlistbtn{position:relative;}
 
@@ -512,6 +521,8 @@ ul.socialmedia li svg{width:25px !important;height:24px !important;}
   .proud-banner {
     position: absolute;
     bottom: 0;
+    max-width: 180px;
+ 
 }
 
 .heroSec { 
@@ -550,6 +561,10 @@ ul.socialmedia li svg{width:25px !important;height:24px !important;}
   top: 0; z-index: 1; text-align: center;
 }
 
+.creator-tags input:checked +label {
+  background:var(--voilet); color: #fff;
+}
+
 /* responsive */
 @media (max-width:1500px){.loveboxes{padding:0 20px;}
 .loveboxes img{max-width:160px;}
@@ -560,208 +575,186 @@ ul.socialmedia li svg{width:25px !important;height:24px !important;}
 .containerbox{max-width:1140px;}
 .finish .btn-pink-lg{width:100%;}
 }
-@media (max-width:1199px){.addsocial ul li a,.addsocial ul li button{font-size:17px !important;}
-.containerbox{max-width:970px;}
-.menuList ul li .link,.menuList ul li a{font-size:18px !important;}
-.menuList .menuslists li .link,.menuList .menuslists li a{font-size:30px !important;line-height:33px !important;}
+@media (max-width:1199px){
+  .addsocial ul li a,.addsocial ul li button{font-size:17px !important;}
+  .containerbox{max-width:970px;}
+  .menuList ul li .link,.menuList ul li a{font-size:18px !important;}
+  .menuList .menuslists li .link,.menuList .menuslists li a{font-size:30px !important;line-height:33px !important;}
 }
-@media (max-width:1139px){.containerbox{max-width:960px;}
-.menuList{padding:25px 100px 25px 50px;}
-.userManageHead .btn-pink-md{width:230px;}
-.finish{padding:20px;border-radius:10px;}
-.finish .btn-pink-lg{width:95%;font-size:16px;border-radius:12px;height:50px;}
-.addsocial ul li a,.addsocial ul li button{font-size:19px;}
-.welcomeTitle{font-size:28px;}
-.funboxs{padding:30px;}
-.funcnt{padding-left:30px;}
-.funcnt h3 br{display:none;}
-.headingSm{font-size:39px;}
-.loginPage h2.headingLg{font-size:50px;line-height:60px;}
-}
+@media (max-width:1139px){
+  .containerbox{max-width:960px;}
+  .menuList{padding:25px 100px 25px 50px;}
+  .userManageHead .btn-pink-md{width:230px;}
+  .finish{padding:20px;border-radius:10px;}
+  .finish .btn-pink-lg{width:95%;font-size:16px;border-radius:12px;height:50px;}
+  .addsocial ul li a,.addsocial ul li button{font-size:19px;}
+  .welcomeTitle{font-size:28px;}
+  .funboxs{padding:30px;}
+  .funcnt{padding-left:30px;}
+  .funcnt h3 br{display:none;}
+  .headingSm{font-size:39px;}
+  .loginPage h2.headingLg{font-size:50px;line-height:60px;}
+  }
 @media (max-width:991px){
-.nextimage-wrap,.nextimage-wrap img,.nextimage-wrap span{width:100% !important;}
-.wishManage{padding:0;}
-.userphoto{padding-bottom:12px;margin:auto !important;}
-.containerbox{max-width:740px;}
-.MegaMenu{flex-wrap:wrap;align-items:flex-start;align-content:flex-start;}
-.menuImg{width:100%;padding:7px 11px;justify-content:flex-start;}
-.menuList{width:100%;padding:30px 20px;}
-.menuImg img{max-width:149px;}
-.wishbanner img{height:280px;}
-.userphotobox{border-radius:20px;margin-bottom:50px;}
-.userphoto img{width:100px;height:100px;}
-.userprofilesec h2{font-size:19px;}
-.userId{font-size:18px;}
-button.editProfile,select#country{padding:10px;font-size:18px;}
-.addsocial ul li a{display:flex;align-items:center;align-content:center;font-size:15px;line-height:15px;}
-.addsocial ul li a svg{width:14px;height:14px;vertical-align:middle;}
-.finish .btn-pink-lg{width:95%;font-size:14px;border-radius:7px;height:40px;}
-.userManageHead .btn-pink-md{width:190px;height:46px;border-radius:9px;font-size:16px;}
-select#country{width:150px;}
-.wishlistdetial{padding:15px;}
-.wishlistdetial h3{font-size:15px;}
-.userManageHead button.btn-pink{padding:13px 10px;}
-.header{height:auto;}
-.footlinks h2,.headtitle{font-size:20px;}
-.spennylogo img{max-width:150px;}
-.welcomeHeading{font-size:50px;line-height:55px;}
-.welcomeTitle{font-size:24px;line-height:35px;}
-.wishlistbtn .w-2\/5{width:15rem;}
-.itsfree{padding-inline-start:4rem;}
-.headingMd{font-size:45px;line-height:50px;}
-.headingSm{font-size:40px;line-height:43px;}
-.funboxs{height:340px;}
-.loveboxes .headingSm{font-size:28px;line-height:35px;}
-.footlinks h2{margin:0 0 10px;}
-.wishlistPage{padding-top:10px;}
-.userphotobox{height:250px;}
-.footlinks ul li{border-right:0 !important;}
-.loveboxes{width:50%;}
-.whylovebox.pre .loveboxes{width:100%;max-width:590px;margin:auto;}
-.userprofilesec{margin-top:0px;}
-.cartsub.cartPage{margin:0 !important;max-width:100% !important;border:0;box-shadow:none !important;border-radius:0 !important;}
-.creators-platforms span.lazy-load-image-background{max-width:133px;display:block;}
-.publish-image span{display:block !important;width:100% !important;height:auto !important;}
-.membership-image span{width:100% !important;display:block;height:auto !important;}
-html body .intercom-lightweight-app-launcher {
-  margin-bottom: 70px !important;
-}
+  .nextimage-wrap,.nextimage-wrap img,.nextimage-wrap span{width:100% !important;}
+  .wishManage{padding:0;}
+  .userphoto{padding-bottom:12px;margin:auto !important;}
+  .containerbox{max-width:740px;}
+  .MegaMenu{flex-wrap:wrap;align-items:flex-start;align-content:flex-start;}
+  .menuImg{width:100%;padding:7px 11px;justify-content:flex-start;}
+  .menuList{width:100%;padding:30px 20px;}
+  .menuImg img{max-width:149px;}
+  .wishbanner img{height:280px;}
+  .userphotobox{border-radius:20px;margin-bottom:50px;}
+  .userphoto img{width:100px;height:100px;}
+  .userprofilesec h2{font-size:19px;}
+  .userId{font-size:18px;}
+  button.editProfile,select#country{padding:10px;font-size:18px;}
+  .addsocial ul li a{display:flex;align-items:center;align-content:center;font-size:15px;line-height:15px;}
+  .addsocial ul li a svg{width:14px;height:14px;vertical-align:middle;}
+  .finish .btn-pink-lg{width:95%;font-size:14px;border-radius:7px;height:40px;}
+  .userManageHead .btn-pink-md{width:190px;height:46px;border-radius:9px;font-size:16px;}
+  select#country{width:150px;}
+  .wishlistdetial{padding:15px;}
+  .wishlistdetial h3{font-size:15px;}
+  .userManageHead button.btn-pink{padding:13px 10px;}
+  .header{height:auto;}
+  .footlinks h2,.headtitle{font-size:20px;}
+  .spennylogo img{max-width:150px;}
+  .welcomeHeading{font-size:50px;line-height:55px;}
+  .welcomeTitle{font-size:24px;line-height:35px;}
+  .wishlistbtn .w-2\/5{width:15rem;}
+  .itsfree{padding-inline-start:4rem;}
+  .headingMd{font-size:45px;line-height:50px;}
+  .headingSm{font-size:40px;line-height:43px;}
+  .funboxs{height:340px;}
+  .loveboxes .headingSm{font-size:28px;line-height:35px;}
+  .footlinks h2{margin:0 0 10px;}
+  .wishlistPage{padding-top:10px;}
+  .userphotobox{height:250px;}
+  .footlinks ul li{border-right:0 !important;}
+  .loveboxes{width:50%;}
+  .whylovebox.pre .loveboxes{width:100%;max-width:590px;margin:auto;}
+  .userprofilesec{margin-top:0px;}
+  .cartsub.cartPage{margin:0 !important;max-width:100% !important;border:0;box-shadow:none !important;border-radius:0 !important;}
+  .creators-platforms span.lazy-load-image-background{max-width:133px;display:block;}
+  .publish-image span{display:block !important;width:100% !important;height:auto !important;}
+  .membership-image span{width:100% !important;display:block;height:auto !important;}
+  html body .intercom-lightweight-app-launcher {
+    margin-bottom: 70px !important;
+  }
 }
 @media (max-width:767px){
-
-  .creatorslider .swiper-pagination {
-    position: static !important;
-    padding-top: 20px;
-}
-
-  .fillbankbtn {
-    position: fixed;
-    bottom: 10px;
-    left: 15px;
-    z-index: 1;
-    width: 100%;
-    border-radius: 17px;
-    max-width: calc(100% - 30px);
-    padding: 16px !important;
-    font-size: 17px !important;
-}
-.full.sendSurprize-modal .tip-wrapper {
-  border-radius: 0 !important;
-}
-
-  .proud-banner {
-    max-width: 170px;
-}
+  .creatorslider .swiper-pagination{position:static !important;padding-top:20px;}
+  .fillbankbtn{position:fixed;bottom:10px;left:15px;z-index:1;width:100%;border-radius:17px;max-width:calc(100% - 30px);padding:16px !important;font-size:17px !important;}
+  .full.sendSurprize-modal .tip-wrapper{border-radius:0 !important;}
+  .proud-banner{max-width:170px;}
   .update-profile{display:block !important;text-align:center !important;}
-.userphoto{margin:0 !important;}
-.inlinetab .nav-tabs{padding-left:24px;}
-.userprofilesec{margin-top:-20px;}
-.loveboxes h3{font-size:20px !important;line-height:22px !important;}
-.menuList .menuslists{display:block !important;}
-.wishtracker .nav.nav-tabs{padding:1px 11px !important;}
-.menuList .menuslists li{max-width:100%;padding-bottom:10px;margin-right:0 !important;padding-right:0 !important;}
-.shows.menuList{overflow:auto;max-height:96vh;}
-.menuList ul li{margin:5px 18px 5px 0 !important;}
-.funboximg img,.gifts-links,.welcomeRt img{margin:auto;}
-.wishlistdetial h4{font-size:16px;}
-.cartProRtbox{display:inline-flex;width:100%;justify-content:space-between;margin-top:10px;}
-.shadow-yellow{text-shadow:1px 3px 0 var(--yellow);}
-.shadow-voilet{box-shadow:5px 5px 0 0 var(--voilet);}
-.headingMd{font-size:45px !important;line-height:47px !important;}
-.headermain{padding-top:15px;padding-bottom:20px;}
-.closemega{position:absolute;right:31px;top:30px;}
-.closemega svg{width:43px;top:10px;}
-.headtitle,.howitmain p br{display:none;}
-.menuList ul li{margin-bottom:10px;}
-.menuList ul li .link,.menuList ul li a{font-size:3vh;}
-.accountphotosm{display:block;width:100%;}
-.userId a{margin-left:2px !important;}
-.userProfileDate{position:relative;}
-.userProfile{margin:0 auto;width:100%;}
-.userManageRt{padding:0;width:100%;}
-.wishinfo{padding:10px 15px 20px;}
-.joinus{padding:50px 15px;}
-.editForm,.editProfilePhoto{padding:0 15px;}
-.editprofileHead h2{font-size:18px;text-align:left;}
-.editprofileHead{justify-content:flex-start;}
-.editForm ul li textarea{height:90px;}
-.heroSec{padding:20px 5px 50px;}
-.welcome{flex-wrap:wrap;justify-content:center;flex-direction:column-reverse;margin-top:0;}
-.welcomeRt{margin-bottom:0;}
-.welcomeLeft,.welcomeRt{width:100%;text-align:center;}
-.welcomeHeading{margin-bottom:25px !important;}
-.welcomeTitle.shadow-yellow{text-shadow:1px 1px 0 var(--yellow);}
-.wishlistbtn{text-align:center;display:flex;justify-content:center;}
-.wishlistbutton:not(.log):before{content:"+";font-size:25px;margin-right:6px;}
-/* .wishlistbtnFixed a{border:1px solid var(--mint) !important;background:var(--black);box-shadow:none !important;transform:inherit !important;border-radius:19px !important;width:100% !important;margin:auto;padding:27px 20px !important;font-size:22px !important;} */
-.itsfree{padding-inline-start:0;text-align:center !important;}
-.addsocial ul li{width:auto;padding:0 20px;}
-.addsocial ul li a{font-size:20px;line-height:20px;}
-.addsocial ul li a svg{width:24px;height:24px;}
-.addsocial ul li:last-child{border:0 !important;}
-.finish button{width:96%;margin:auto;}
-.headingMd{}
-.text-shadow-black{text-shadow:1px 3px 0 var(--black);}
-.funpart{padding:50px 0;}
-.funboxs{flex-wrap:wrap;justify-content:center;height:auto;}
-.funboximg,.funcnt{width:100%;text-align:center;}
-.funcnt{padding:40px 0 0;}
-.whylove{padding:50px 0 10px;}
-.happycreator .headingMd{margin-bottom:2px;}
-.happyclientSec{border-radius:17px;}
-.headingSm{font-size:30px;line-height:30px;}
-.creatorslider .swiper{padding-bottom:10px;}
-/* .creatorslider .swiper-slide.swiper-slide-active .happyclientSec{border:3px solid var(--black);background:var(--pink);box-shadow:7px 7px 0 0 var(--black);transform:scale(0.96);margin-top:-10px;transition:all ease 0.3s;border-radius:30px;} */
-/* .creatorslider .swiper-slide.swiper-slide-active .clientname,.creatorslider .swiper-slide.swiper-slide-active .happyclientSec p,.creatorslider .swiper-slide.swiper-slide-active .postdate{color:var(--white);} */
-.funcnt p{font-size:14px;}
-.funboxs.pinkbg{flex-direction:column-reverse;}
-.footer .containerbox{flex-wrap:wrap;justify-content:center;}
-.footer{padding:20px 0 85px;}
-.footlogo{text-align:center;margin:0 0 10px;}
-.footlogo a img{max-width:140px;}
-.footlinksbox{width:100%;}
-.copyright,.footlinks{margin:20px 0 0;}
-.footlinks ul li{padding:0 8px;}
-.footlinks ul li a,.wishlistbtn .btn-pink.lg{font-size:16px;}
-.loginPage.py-14{padding-top:30px;}
-.loginPage h2.headingLg{font-size:40px;line-height:50px;margin-bottom:10px !important;}
-.loginPage p{font-size:18px;margin-bottom:30px !important;}
-.loginform form{padding:30px;}
-.loginheadbox{padding:20px;border-radius:28px 28px 0 0;}
-.loginform{border-radius:30px;}
-.loginform form ul li input{padding:12px;border-radius:5px;}
-.loginform form ul li{margin:0 0 18px;}
-.loginform form ul li label{margin-bottom:10px;font-size:15px;}
-.loginheadbox .bluebg,.loginheadbox .mintbg{width:18px;height:18px;}
-.wishlistbtn .w-3\/5{width:96%;}
-.accountsetting{margin-top:10px;width:92%;}
-.accsettingList{padding:15px 10px !important;}
-.accsettingList ul li a,.accsettingList ul li button,.notification{font-size:15px;}
-.cartbanner{margin-top:-164px;}
-.howitmain{padding-top:30px;}
-.howWorkTab .nav-tabs button{padding:11px 12px;font-size:17px;border-radius:9px;}
-.howWorkTab{margin-top:25px;padding-bottom:20px;}
-.noResult h2.headingLg{font-size:40px;line-height:44px;}
-.funpart{padding-bottom:0;}
-.welcomeTitle{text-transform:uppercase !important;}
-.publish-image span{display:block !important;width:100% !important;}
-.membership-image span{width:100% !important;display:block;height:auto !important;}
-.borderbox{display:block !important;border:0 !important;}
-.box-s,.box-e{height:auto !important;width:100% !important;border:0 !important;border-top:2px solid #000 !important;}
-.box-s span{margin:auto !important;}
-.box-e .max-width-500{text-align:center;max-width:100% !important;}
-.box-e,.box-s{padding:38px !important;}
-.box-s{padding-bottom:0px !important;}
-.e8_tag{display:block !important;}
-.e8_tag > div{width:100% !important;border-bottom:0 !important;border-right:0 !important;}
-.videoBg{max-width:100%;height:270px;   }
-
-.wishlistbtn .itsfree-tag {
-  right: 0;
-  top: 70px;
-}
-
-
+  .userphoto{margin:0 !important;}
+  .inlinetab .nav-tabs{padding-left:24px;}
+  .userprofilesec{margin-top:-20px;}
+  .loveboxes h3{font-size:20px !important;line-height:22px !important;}
+  .menuList .menuslists{display:block !important;}
+  .wishtracker .nav.nav-tabs{padding:1px 11px !important;}
+  .menuList .menuslists li{max-width:100%;padding-bottom:10px;margin-right:0 !important;padding-right:0 !important;}
+  .shows.menuList{overflow:auto;max-height:96vh;}
+  .menuList ul li{margin:5px 18px 5px 0 !important;}
+  .funboximg img,.gifts-links,.welcomeRt img{margin:auto;}
+  .wishlistdetial h4{font-size:16px;}
+  .cartProRtbox{display:inline-flex;width:100%;justify-content:space-between;margin-top:10px;}
+  .shadow-yellow{text-shadow:1px 3px 0 var(--yellow);}
+  .shadow-voilet{box-shadow:5px 5px 0 0 var(--voilet);}
+  .headingMd{font-size:45px !important;line-height:47px !important;}
+  .headermain{padding-top:15px;padding-bottom:20px;}
+  .closemega{position:absolute;right:31px;top:30px;}
+  .closemega svg{width:43px;top:10px;}
+  .headtitle,.howitmain p br{display:none;}
+  .menuList ul li{margin-bottom:10px;}
+  .menuList ul li .link,.menuList ul li a{font-size:3vh;}
+  .accountphotosm{display:block;width:100%;}
+  .userId a{margin-left:2px !important;}
+  .userProfileDate{position:relative;}
+  .userProfile{margin:0 auto;width:100%;}
+  .userManageRt{padding:0;width:100%;}
+  .wishinfo{padding:10px 15px 20px;}
+  .joinus{padding:50px 15px;}
+  .editForm,.editProfilePhoto{padding:0 15px;}
+  .editprofileHead h2{font-size:18px;text-align:left;}
+  .editprofileHead{justify-content:flex-start;}
+  .editForm ul li textarea{height:90px;}
+  .heroSec{padding:20px 5px 50px;}
+  .welcome{flex-wrap:wrap;justify-content:center;flex-direction:column-reverse;margin-top:0;}
+  .welcomeRt{margin-bottom:0;}
+  .welcomeLeft,.welcomeRt{width:100%;text-align:center;}
+  .welcomeHeading{margin-bottom:25px !important;}
+  .welcomeTitle.shadow-yellow{text-shadow:1px 1px 0 var(--yellow);}
+  .wishlistbtn{text-align:center;display:flex;justify-content:center;}
+  .wishlistbutton:not(.log):before{content:"+";font-size:25px;margin-right:6px;}
+  /* .wishlistbtnFixed a{border:1px solid var(--mint) !important;background:var(--black);box-shadow:none !important;transform:inherit !important;border-radius:19px !important;width:100% !important;margin:auto;padding:27px 20px !important;font-size:22px !important;}
+  */
+  .itsfree{padding-inline-start:0;text-align:center !important;}
+  .addsocial ul li{width:auto;padding:0 20px;}
+  .addsocial ul li a{font-size:20px;line-height:20px;}
+  .addsocial ul li a svg{width:24px;height:24px;}
+  .addsocial ul li:last-child{border:0 !important;}
+  .finish button{width:96%;margin:auto;}
+  .headingMd{}
+  .text-shadow-black{text-shadow:1px 3px 0 var(--black);}
+  .funpart{padding:50px 0;}
+  .funboxs{flex-wrap:wrap;justify-content:center;height:auto;}
+  .funboximg,.funcnt{width:100%;text-align:center;}
+  .funcnt{padding:40px 0 0;}
+  .whylove{padding:50px 0 10px;}
+  .happycreator .headingMd{margin-bottom:2px;}
+  .happyclientSec{border-radius:17px;}
+  .headingSm{font-size:30px;line-height:30px;}
+  .creatorslider .swiper{padding-bottom:10px;}
+  /* .creatorslider .swiper-slide.swiper-slide-active .happyclientSec{border:3px solid var(--black);background:var(--pink);box-shadow:7px 7px 0 0 var(--black);transform:scale(0.96);margin-top:-10px;transition:all ease 0.3s;border-radius:30px;}
+  */
+  /* .creatorslider .swiper-slide.swiper-slide-active .clientname,.creatorslider .swiper-slide.swiper-slide-active .happyclientSec p,.creatorslider .swiper-slide.swiper-slide-active .postdate{color:var(--white);}
+  */
+  .funcnt p{font-size:14px;}
+  .funboxs.pinkbg{flex-direction:column-reverse;}
+  .footer .containerbox{flex-wrap:wrap;justify-content:center;}
+  .footer{padding:20px 0 85px;}
+  .footlogo{text-align:center;margin:0 0 10px;}
+  .footlogo a img{max-width:140px;}
+  .footlinksbox{width:100%;}
+  .copyright,.footlinks{margin:20px 0 0;}
+  .footlinks ul li{padding:0 8px;}
+  .footlinks ul li a,.wishlistbtn .btn-pink.lg{font-size:16px;}
+  .loginPage.py-14{padding-top:30px;}
+  .loginPage h2.headingLg{font-size:40px;line-height:50px;margin-bottom:10px !important;}
+  .loginform form{padding:30px;}
+  .loginheadbox{padding:20px;border-radius:28px 28px 0 0;}
+  .loginform{border-radius:30px;}
+  .loginform form ul li input{padding:12px;border-radius:5px;}
+  .loginform form ul li{margin:0 0 18px;}
+  .loginform form ul li label{margin-bottom:10px;font-size:15px;}
+  .loginheadbox .bluebg,.loginheadbox .mintbg{width:18px;height:18px;}
+  .wishlistbtn .w-3\/5{width:96%;}
+  .accountsetting{margin-top:10px;width:92%;}
+  .accsettingList{padding:15px 10px !important;}
+  .accsettingList ul li a,.accsettingList ul li button,.notification{font-size:15px;}
+  .cartbanner{margin-top:-164px;}
+  .howitmain{padding-top:30px;}
+  .howWorkTab .nav-tabs button{padding:11px 12px;font-size:17px;border-radius:9px;}
+  .howWorkTab{margin-top:25px;padding-bottom:20px;}
+  .noResult h2.headingLg{font-size:40px;line-height:44px;}
+  .funpart{padding-bottom:0;}
+  .welcomeTitle{text-transform:uppercase !important;}
+  .publish-image span{display:block !important;width:100% !important;}
+  .membership-image span{width:100% !important;display:block;height:auto !important;}
+  .borderbox{display:block !important;border:0 !important;}
+  .box-s,.box-e{height:auto !important;width:100% !important;border:0 !important;border-top:2px solid #000 !important;}
+  .box-s span{margin:auto !important;}
+  .box-e .max-width-500{text-align:center;max-width:100% !important;}
+  .box-e,.box-s{padding:38px !important;}
+  .box-s{padding-bottom:0px !important;}
+  .e8_tag{display:block !important;}
+  .e8_tag > div{width:100% !important;border-bottom:0 !important;border-right:0 !important;}
+  .videoBg{max-width:100%;height:270px;}
+  .wishlistbtn .itsfree-tag{right:0;top:80px;}
 
 }
 @media(max-width:575px){
@@ -813,7 +806,6 @@ button.cartLink svg{width:34px;height:34px;}
 .accsettingList ul li a,.accsettingList ul li button,.notification{font-size:16px;}
 .accsettingList ul li a > span,.accsettingList ul li button > span,.notification > span{margin-left:18px;word-break:break-all;text-align:left !important;line-height:16px;}
 .noResult h2.headingLg{font-size:30px;line-height:34px;}
-.loginform{width:96%;}
 .bannerrr{padding:16px !important;}
 .cartTotal .cartSubTotal{display:flex !important;justify-content:space-between;}
 .addCartModal{min-width:auto !important;}
@@ -888,6 +880,11 @@ select#country{width:100%;}
 }
 @media (max-width:575px){
   
+  .wishlistbtn .itsfree-tag {
+    right: -20px !important;
+    top: 80px !important;
+    max-width: 130px  !important;
+}
   .creatorslider .swiper-wrapper {
     padding-top: 0px;
     padding-bottom: 0px;

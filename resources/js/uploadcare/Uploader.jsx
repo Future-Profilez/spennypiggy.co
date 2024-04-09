@@ -6,30 +6,33 @@ import { PACKAGE_VERSION } from "@uploadcare/blocks/env";
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import { useAlerts } from "@/Components/Alerts";
 import axios from "axios";
+import { forwardRef , useImperativeHandle } from "react";
 
-export default function GlobalUploader({ options, sendFile, clear, view, isUploading, type }) {
+const GlobalUploader = forwardRef(({ options, sendFile, clear, view, isUploading, type }, ref) => {
 
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [files, setFiles] = useState([]);
     const [checkIsUploading, setCheckIsUploading] = useState(false);
     const dataOutputRef = useRef();
 
+    const handleResetUploader = () => {
+      const ctxProvider = dataOutputRef.current;
+      if (!ctxProvider) return;
+      const resetUploaderState = () => dataOutputRef.current?.uploadCollection.clearAll();
+      resetUploaderState();
+    }; 
+
+    useImperativeHandle(ref, () => ({
+        reset: () => {
+          handleResetUploader();
+        }
+    }));
+
     const handleUploaderEvent = useCallback((e) => {
         const { data } = e.detail;
         checkAdult(data);
     },[]);
-    
-    const handleResetUploader = () => {
-      if (dataOutputRef.current) {
-          dataOutputRef.current.uploadCollection.clearAll();
-          dataOutputRef.current.$['*modalActive'] = false;
-      }
-    }; 
-
-    useEffect(() => {
-       handleResetUploader();
-    },[clear]);
-
+  
     useEffect(() => {
         const el = dataOutputRef && dataOutputRef.current;
         el && el.addEventListener("lr-data-output", handleUploaderEvent);
@@ -53,11 +56,9 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
           setCheckIsUploading(false);
           isUploading && isUploading(checkIsUploading);
         });
-
     }, []); 
 
     const [scanning, setScanning] = useState(false);
-
     const controller = new AbortController();
     const { signal } = controller;
 
@@ -164,6 +165,7 @@ export default function GlobalUploader({ options, sendFile, clear, view, isUploa
             </div> : '' 
           } 
 
-        
     </>
-}
+});
+
+export default GlobalUploader;

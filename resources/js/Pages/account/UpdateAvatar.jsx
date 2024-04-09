@@ -3,11 +3,18 @@ import GlobalUploader from "@/uploadcare/Uploader";
 import { useState } from "react";
 import st from '../../../css/uploader.module.css'
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
+import { useRef } from "react";
 
 export default function UpdateAvatar({getImageUID, text, close, type }) {
 
-    const [clear, setClear] = useState();
     const [ClosePop, setClosePop] = useState(close || null);
+
+    const uploaderRef = useRef();
+    const resetUploader = () => {
+        if (uploaderRef.current) {
+            uploaderRef.current.reset();
+        }
+    };
 
     const [isEditable, setIsEditable ] = useState(false);
     const [file,setFile] = useState();
@@ -29,7 +36,7 @@ export default function UpdateAvatar({getImageUID, text, close, type }) {
 
     const updateImage = () => {
         getImageUID(file);
-        setClear(new Date);
+        resetUploader();
         setClosePop(false);
         setTimeout(()=>{ 
             setClosePop();
@@ -48,7 +55,7 @@ export default function UpdateAvatar({getImageUID, text, close, type }) {
 
                     <div className={`${!isEditable ? '' : 'd-none'} edited`} >
                         <div className="py-4" >
-                            <GlobalUploader type='minimal' clear={clear} sendFile={getFileUID} options={st.profileimage} />
+                            <GlobalUploader type='minimal' ref={uploaderRef} sendFile={getFileUID} options={st.profileimage} />
                         </div>
                         <button onClick={updateImage} className="btn-pink sm w-100" >Confirm</button>
                     </div>

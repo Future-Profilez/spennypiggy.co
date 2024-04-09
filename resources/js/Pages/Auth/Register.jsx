@@ -31,6 +31,28 @@ export default function Register(props) {
     const length = (typeof window !== 'undefined') && document.getElementById('length');
     const [mypass, setmypass] = useState();
 
+    const creatortypes = [
+        { "label": "Artist", "value": "Artist" },
+        { "label": "Activist", "value": "Activist" },
+        { "label": "DJ", "value": "DJ" },
+        { "label": "Beauty Creator", "value": "Beauty Creator" },
+        { "label": "Dancer", "value": "Dancer" },
+        { "label": "Developer", "value": "Developer" },
+        { "label": "Cosplay Creator", "value": "Cosplay Creator" },
+        { "label": "Education Creator", "value": "Education Creator" },
+        { "label": "Fashionista", "value": "Fashionista" },
+        { "label": "Gamer", "value": "Gamer" },
+        { "label": "Gym Bunny", "value": "Gym Bunny" },
+        { "label": "Musician", "value": "Musician" },
+        { "label": "Model", "value": "Model" },
+        { "label": "Podcaster", "value": "Podcaster" },
+        { "label": "Streamer", "value": "Streamer" },
+        { "label": "Video Creator", "value": "Video Creator" },
+        { "label": "Writer", "value": "Writer" }
+    ]
+
+    const [step, setStep] = useState(0);
+
     const { data, setData, post, get, processing, errors, reset } = useForm({
         name: '',
         username: '',
@@ -40,13 +62,17 @@ export default function Register(props) {
         password_confirmation: '',
         promo: '',
         role: 0,
+        creator_category:''
     });
 
+    const [role, setRole] = useState(null);
     const handleBecomeCreator = (e)=> { 
-        if(e.target.checked){
-            setData("role", 1);
-        } else {
-            setData("role", 0);
+        setData("role", e);
+        setRole(e);
+        if(e == 1){ 
+            setStep(1);
+        }else {
+            setStep(2);
         }
     }
 
@@ -84,6 +110,32 @@ export default function Register(props) {
     const resetCaptcha = () => { 
         captchaRef.current && captchaRef.current.resetCaptcha();
         setVerified(false);
+    }
+
+    const [profileTags, setProfileTags] = useState([]);
+    const handleProfileTags = (e) => {
+        const tags = e.target.value.split(",");
+        const tagsArray = [...profileTags]; // Make a copy of the current state
+        for (let i = 0; i < tags.length; i++) {
+            const trimmedTag = tags[i].trim();
+            const tagIndex = tagsArray.indexOf(trimmedTag);
+            if (tagIndex !== -1) {
+                tagsArray.splice(tagIndex, 1);
+            } else {
+                tagsArray.push(trimmedTag);
+            }
+        }
+        setData("creator_category", tagsArray);
+        setProfileTags(tagsArray);
+    }
+
+    const handleNext = () => {
+        if(profileTags && profileTags.length <1){
+            errorAlert("Please select at least one tag");
+            return false;
+        } else {
+            setStep(step + 1);
+        }
     }
 
     const submit = (e) => {
@@ -187,163 +239,202 @@ export default function Register(props) {
         <GuestLayout>
             <IpRedirection />
             <Head title="Register" />
-            <div className='loginPage  blackbg py-14'>
+            <div className='loginPage  blackbg pb-4 pb-md-5'>
                 <div className='containerbox '>
+                    <div className='loginform mt-3 mt-md-5 mx-auto border-black whbg shadow-mint'>
+                        
+                        <div className='loginheadbox pinkbg p-4'>
+                            <span className='mintbg '></span>
+                            <span className='bluebg '></span>
+                        </div> 
 
-                    <h2 className='headingLg pb-0 pb-md-4 text-center  px-2'>Create Account</h2>
-                    <p className='text-center text-white mb-5 font-CeraGRBold'>Already registered? <Link className={'text-pink'} href={route('login')}  > Log In</Link></p>
+                        <h2 className='text-[30px] font-GillSans text-uppercase pt-8 text-center px-2'>Create Account</h2>
+                        <p className='text-center text-[18px] text-dark mb-4 '>Already registered? <Link className={'text-pink'} href={route('login')}  > Log In</Link></p>
 
-                    <div className='loginform register mt-4 mt-md-5 mx-auto border-black whbg shadow-mint'>
-                        <div className='loginheadbox pinkbg'>
-                            <span className='mintbg'></span>
-                            <span className='bluebg'></span>
-                        </div>
-                        <form onSubmit={submit} >
-                            <div className='login-step1'>
-                                <ul>
-                                    <li>
-                                        <label>Display Name</label>
-                                        <input id="name"
-                                            name="name"
-                                            value={data.name}
-                                            className="mt-1 block w-full"
-                                            autoComplete="name"
-                                            onChange={(e) => setData('name', e.target.value)}
-                                            required
-                                        />
-                                        <InputError>{errors?.name || ''}</InputError>
-                                    </li>
-                                    <li>
-                                        <label>Username</label>
-                                        <input id="username"
-                                            name="username" onBlur={checkUsername}
-                                            value={data.username}
-                                            className="mt-1 block w-full"
-                                            autoComplete="username"
-                                            isFocused={true}
-                                            onChange={(e) => setData('username', e.target.value)}
-                                            required
-                                        />
-                                        {data.username && usernameValid == 1 ? <p className='text-success text-small username-text'>Username is available.</p> : ''}
-                                        {data.username && usernameValid == 0 ? <p className='text-danger text-small username-text' >{validMsg}</p> : ''}
-                                    </li>
-                                    <li>
-                                        <label>Gender</label>
-                                        <select onChange={(e) => setData('gender', e.target.value)} >
-                                            <option disabled >Choose Gender</option>
-                                            <option value={'he'} >He</option>
-                                            <option value={'she'} >She</option>
-                                            <option value={'they'} >They</option>
-                                        </select>
-                                        <InputError>{errors?.gender || ''}</InputError>
-                                    </li>
-                                    <li>
-                                        <label>Email</label>
-                                        <input id="email"
-                                            type="email"
-                                            name="email"
-                                            value={data.email}
-                                            className="mt-1 block w-full"
-                                            autoComplete="username"
-                                            onChange={(e) => setData('email', e.target.value)}
-                                            required
-                                        />
-                                        <InputError>{errors?.email || ''}</InputError>
-                                    </li>
-                                    <li>
-                                        <label>Password</label>
-                                        <input id="password"
-                                            type="password"
-                                            name="password"
-                                            value={mypass}
-                                            className="mt-1 block w-full"
-                                            autoComplete="off"
-                                            onKeyUp={(e)=>setData('password', e.target.value)}
-                                            onChange={handlePassHints} required
-                                        />
-                                        <InputError>{errors?.password || ''}</InputError>
-                                    </li>
-                                    <li>
-                                        <label>Confirm Password</label>
-                                        <input
-                                            id="password_confirmation"
-                                            type="password"
-                                            name="password_confirmation"
-                                            value={data.password_confirmation}
-                                            className="mt-1 block w-full"
-                                            autoComplete="off"
-                                            onChange={(e) => setData('password_confirmation', e.target.value)}
-                                            required
-                                        />
-                                        <InputError>{errors?.password_confirmation || ''}</InputError>
-                                        <div className={`mt-3 ${mypass ? 'd-block' : 'd-none'}`} >
-
-                                            <div className="pass greybox border-0 p-3" >
-                                                <div id="msgText">
-                                                    <h3>Password must contain the following:</h3>
-                                                    <p id="letter" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> lowercase</b> letter</p>
-                                                    <p id="capital" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> capital (uppercase)</b> letter</p>
-                                                    <p id="number" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> number</b></p>
-                                                    <p id="special" className="text-grey"><CheckCircleIcon /> &nbsp;Special characters</p>
-                                                    <p id="length" className="text-grey mb-0"><CheckCircleIcon /> &nbsp;Password should minimum 8 characters.</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                </ul>
-
-                                <div className='termselect mb-4'>
-                                    <label htmlFor="role">
-                                        <p className='tersms-accept text-voilet' >
-                                            <input type="checkbox" id="role" name="role" value={1}
-                                             onChange={handleBecomeCreator}></input>
-                                           Register as a Creator.
-                                        </p>
-                                    </label>
-                                </div>
-
-
-                                <div className='promocode mb-4' >
-                                    <div className='d-flex align-items-center justify-content-between' >
-                                        <label className='mb-2'>Referral (optional) {codevalid ? <span className='text-success text-small' >Code Applied.</span> : ''}</label>
-                                    </div>
-                                    <div className='d-flex align-items-center' >
-                                        <input ref={promoinput}
-                                        placeholder="Enter Referral Code..." className='form-control ' />
-                                        {codevalid ? <div  onClick={removecode}  
-                                        className={`cursor-pointer ${codevalid ? "mintbg text-dark" : "pinkbg"} promocode-btn ms-2 text-center`}
-                                         >Remove</div>
-                                            : 
-                                        <div  onClick={checkPromo}  
-                                        className={`cursor-pointer ${codevalid ? "mintbg text-dark" : "pinkbg"} promocode-btn ms-2 text-center`}
-                                         >{ codevalid ? "Applied" : "Apply" }</div>}
-                                    </div> 
-                                </div>
-
-                                <div className='termselect'>
-                                    <label htmlFor="termaccept">
-                                        <p className='tersms-accept' >
-                                            <input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept"
-                                            required onChange={(e) => setData("termaccept", e.target.value)}></input>
-                                            By signing up you agree to our <Link className='text-voilet font-bold' target='_blank' href={route('terms-and-conditions')} >Terms & Conditions</Link>  and <a className='text-voilet font-bold' target='_blank' href={'https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6'} >Privacy Policy,</a>  and confirm that you are at least 18. years old.
-                                        </p>
-                                    </label>
-                                </div>
-
-                                <div className='m-auto hcaptcha-wrap d-table mb-3 mt-0 mt-md-3' >
-                                    <HCaptcha  ref={captchaRef}
-                                    sitekey={props.hcaptchakey || ''}
-                                    data-theme="light" 
-                                    data-size="compact" 
-                                    onVerify={onVerify}
-                                    />
-                                </div>
-
-                                <div className='wishlistbtn  rotate-btn text-center flex justify-center mt-4'>
-                                    <LoaderButton disabled={processing} className='btn-pink lg lg2 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Create Account"}</LoaderButton>
+                        <div className={`${step === 0 ? '' : 'd-none'}  what-are-you px-3 py-3 pb-5`} >
+                            <div className='p-2 w-full max-w-[400px] m-auto'>
+                                <div  onClick={()=>handleBecomeCreator(1)}  className={`${role==1 ? 'active' : '' }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}>
+                                    <h2 className='text-[22px] font-GillSans text-uppercase' >I'm a Creator</h2>
+                                    <p className='text-muted text-[16px] mt-1 mb-0' >I'd like to create a wishlist</p>
                                 </div>
                             </div>
-                        </form>
+                            <div className='p-2 w-full max-w-[400px] m-auto'>
+                                <div  onClick={()=>handleBecomeCreator(0)}  className={`${role==0 ? 'active' : '' }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}>
+                                    <h2 className='text-[22px] font-GillSans text-uppercase' >I'm a Fan</h2>
+                                    <p className='text-muted text-[16px] mt-1 mb-0' >I'm here to follow and support creators</p>
+                                </div>
+                            </div>
+
+                            <p className='text-muted text-base text-center max-w-[450px] m-auto mt-4' >You can support other creators with either of the account types and can change your account type anytime.</p>
+                        </div>
+
+                        <div className={`${step === 1 ? '' : 'd-none'}  what-are-you px-3`} >
+                            <div className='px-0 px-md-4 px-lg-5 pb-4'>
+                                <p className='text-center text-[17px] text-muted ' >Choose from the following categories. This helps people find your profile. You can change these at any time.</p>
+                                
+                                <div className='d-flex creator-tags justify-content-center flex-wrap mt-4' >
+                                    {creatortypes.map((s, index) => (
+                                        <div key={index} className="flex items-center">
+                                            <input
+                                                id={`tyeps-${index}`}
+                                                name={s.value}
+                                                type="checkbox"
+                                                value={s.value}
+                                                className="mr-2  text-indigo-500  hidden"
+                                                onChange={handleProfileTags}
+                                            />
+                                            <label
+                                                htmlFor={`tyeps-${index}`}
+                                                className="me-1 mb-1 bg-gray-200 px-4 py-[10px] rounded-[40px] text-[15px] text-gray-600 cursor-pointer" >
+                                                {s.label}
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <button onClick={handleNext} className='btn-pink md m-auto mt-3 w-full' >  Next</button>
+                            </div>
+                        </div>
+
+                        <div className={`${step === 2 ? '' : 'd-none'}`} >
+                            <form onSubmit={submit} >
+                                <div className='login-step1 '>
+                                    <div className='row'>
+                                        <div className='col-md-6 mb-4 formfield'>
+                                            <label>Display Name</label>
+                                            <input id="name"
+                                                name="name"
+                                                value={data.name}
+                                                className="mt-1 block w-full"
+                                                autoComplete="name"
+                                                onChange={(e) => setData('name', e.target.value)}
+                                                required
+                                            />
+                                            <InputError>{errors?.name || ''}</InputError>
+                                        </div>
+                                        <div className='col-md-6 mb-4 formfield'>
+                                            <label>Username</label>
+                                            <input id="username"
+                                                name="username" onBlur={checkUsername}
+                                                value={data.username}
+                                                className="mt-1 block w-full"
+                                                autoComplete="username"
+                                                isFocused={true}
+                                                onChange={(e) => setData('username', e.target.value)}
+                                                required
+                                            />
+                                            {/* {data.username && usernameValid == 1 ? <p className='text-success text-small username-text'>Username is available.</p> : ''} */}
+                                            {data.username && usernameValid == 0 ? <p className='text-danger text-small username-text' >{validMsg}</p> : ''}
+                                        </div>
+                                        <div className='col-md-6 mb-4 formfield'>
+                                            <label>Gender</label>
+                                            <select onChange={(e) => setData('gender', e.target.value)} >
+                                                <option disabled >Choose Gender</option>
+                                                <option value={'he'} >He</option>
+                                                <option value={'she'} >She</option>
+                                                <option value={'they'} >They</option>
+                                            </select>
+                                            <InputError>{errors?.gender || ''}</InputError>
+                                        </div>
+                                        <div className='col-md-6 mb-4 formfield'>
+                                            <label>Email</label>
+                                            <input id="email"
+                                                type="email"
+                                                name="email"
+                                                value={data.email}
+                                                className="mt-1 block w-full"
+                                                autoComplete="username"
+                                                onChange={(e) => setData('email', e.target.value)}
+                                                required
+                                            />
+                                            <InputError>{errors?.email || ''}</InputError>
+                                        </div>
+                                        <div className='col-md-6 mb-4 formfield'>
+                                            <label>Password</label>
+                                            <input id="password"
+                                                type="password"
+                                                name="password"
+                                                value={mypass}
+                                                className="mt-1 block w-full"
+                                                autoComplete="off"
+                                                onKeyUp={(e)=>setData('password', e.target.value)}
+                                                onChange={handlePassHints} required
+                                            />
+                                            <InputError>{errors?.password || ''}</InputError>
+                                        </div>
+                                        <div className='col-md-6 formfield'>
+                                            <div>
+                                                <label>Confirm Password</label>
+                                                <input
+                                                    id="password_confirmation"
+                                                    type="password"
+                                                    name="password_confirmation"
+                                                    value={data.password_confirmation}
+                                                    className="mt-1 block w-full"
+                                                    autoComplete="off"
+                                                    onChange={(e) => setData('password_confirmation', e.target.value)}
+                                                    required
+                                                />
+                                                <InputError>{errors?.password_confirmation || ''}</InputError>
+                                            </div>
+                                        </div>
+                                            <div className={`mb-3  ${mypass ? 'd-block' : 'd-none'}`} >
+                                                <div className="pass greybox border-0 p-3" >
+                                                    <div id="msgText">
+                                                        <h3>Password must contain the following:</h3>
+                                                        <p id="letter" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> lowercase</b> letter</p>
+                                                        <p id="capital" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> capital (uppercase)</b> letter</p>
+                                                        <p id="number" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> number</b></p>
+                                                        <p id="special" className="text-grey"><CheckCircleIcon /> &nbsp;Special characters</p>
+                                                        <p id="length" className="text-grey mb-0"><CheckCircleIcon /> &nbsp;Password should minimum 8 characters.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                    </div>
+
+                                    <div className='promocode mb-4' >
+                                        <div className='d-flex align-items-center justify-content-between' >
+                                            <label className='mb-2'>Referral (optional) {codevalid ? <span className='text-success text-small' >Code Applied.</span> : ''}</label>
+                                        </div>
+                                        <div className='d-flex align-items-center' >
+                                            <input ref={promoinput}
+                                            placeholder="Enter Referral Code..." className='form-control ' />
+                                            {codevalid ? <div  onClick={removecode}  
+                                            className={`cursor-pointer ${codevalid ? "mintbg text-dark" : "pinkbg"} promocode-btn ms-2 text-center`}
+                                            >Remove</div>
+                                                : 
+                                            <div  onClick={checkPromo}  
+                                            className={`cursor-pointer ${codevalid ? "mintbg text-dark" : "pinkbg"} promocode-btn ms-2 text-center`}
+                                            >{ codevalid ? "Applied" : "Apply" }</div>}
+                                        </div> 
+                                    </div>
+
+                                    <div className='termselect'>
+                                        <label htmlFor="termaccept">
+                                            <p className='tersms-accept' >
+                                                <input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept"
+                                                required onChange={(e) => setData("termaccept", e.target.value)}></input>
+                                                By signing up you agree to our <a className='text-voilet font-bold' target='_blank' href={route('terms-and-conditions')} >Terms & Conditions</a>  and <a className='text-voilet font-bold' target='_blank' href={'https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6'} >Privacy Policy,</a>  and confirm that you are at least 18. years old.
+                                            </p>
+                                        </label>
+                                    </div>
+
+                                    <div className='m-auto hcaptcha-wrap d-table mb-3 mt-0 mt-md-3' >
+                                        <HCaptcha  ref={captchaRef}
+                                        sitekey={props.hcaptchakey || ''}
+                                        data-theme="light" 
+                                        data-size="compact" 
+                                        onVerify={onVerify}
+                                        />
+                                    </div>
+
+
+                                    <div className='wishlistbtn  text-center flex justify-center mt-4'>
+                                        <LoaderButton disabled={processing} className='btn-pink w-full lg lg2 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Create Account"}</LoaderButton>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
                         
                     </div>
                 </div>

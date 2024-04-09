@@ -20,9 +20,9 @@ import axios from "axios";
 export default function AddBills(props) {
     const { successAlert, errorAlert, infoAlert, errorsHandling } = useAlerts();
     const { global_currency, auth } = usePage().props;
-    const inputRef = useRef(null);
+ 
     const [thumbnail, setThumbnail] = useState("");
-    const [clear, setClear] = useState();
+    
     const [close, setClose] = useState();
     const { updatebill, item, isEdit, editpop, text, classes, fetchBills } = props;
     const { formatMultiPrice } = PriceFormat();
@@ -39,6 +39,15 @@ export default function AddBills(props) {
         thumbnail: item && item.thumbnail ? item.thumbnail : BillsImages[0] ,
         period: item && item.period ? item.period : "weekly",
     });
+
+
+    const uploaderRef = useRef();
+    const resetUploader = () => {
+        if (uploaderRef.current) {
+            uploaderRef.current.reset();
+        }
+    };
+
 
     const [period, setPeriod] = useState(item && item.period ? item.period : "weekly");
     const spValue = (e) => {
@@ -77,7 +86,7 @@ export default function AddBills(props) {
                 setClose();
                 }, 100);
                 reset();
-                setClear(new Date());
+                resetUploader();
             } else { 
                 errorAlert(resp.data.msg);
             }
@@ -196,7 +205,7 @@ export default function AddBills(props) {
 
                                 <h4 className="mt-2 mb-2 w-100 text-center"  >OR</h4>
                                 <GlobalUploader type='minimal'
-                                    clear={clear}
+                                    ref={uploaderRef}
                                     sendFile={getFileUID}
                                     options={st.wishitemUploader}
                                 />

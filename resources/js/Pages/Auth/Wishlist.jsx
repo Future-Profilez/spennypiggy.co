@@ -31,7 +31,7 @@ export default function Wishlist(props) {
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
     const [defaultKey, setDefaultKey] = useState(item && item.subscription !== null ? +item.subscription : null);
-    const [clear, setClear] = useState();
+  
     const [close, setClose] = useState();
     const { formatMultiPrice } = PriceFormat();
     const [repeat, setRepeat] = useState(true);
@@ -42,6 +42,16 @@ export default function Wishlist(props) {
         setClose(openPop);
     }, [openPop]);
 
+    const uploaderRef = useRef();
+    const uploaderRef1 = useRef();
+    const resetUploader = () => {
+        if (uploaderRef.current) {
+            uploaderRef.current.reset();
+        }
+        if (uploaderRef1.current) {
+            uploaderRef1.current.reset();
+        }
+    };
 
     const [categories, setcategories] = useState([]);
     const fetch_categories = async () => {
@@ -172,12 +182,12 @@ export default function Wishlist(props) {
                         successAlert(resp.props.flash?.success || "Updated successfully.");
                         reset();
                         setClose(false);
-                        setClear(new Date());
                         setTimeout(() => {
                             setClose();
                         }, 100);
                         fetchingcats();
-                         fetchcategories && fetchcategories();
+                        resetUploader();
+                        fetchcategories && fetchcategories();
                     }
                     if (resp.props.flash?.error) {
                         errorAlert(resp.props.flash?.error || "Something went wrong.");
@@ -197,7 +207,7 @@ export default function Wishlist(props) {
                         successAlert(resp.props.flash?.success ||"Wish added successfully.");
                         reset();
                         setClose(false);
-                        setClear(new Date());
+                        resetUploader();
                         setTimeout(() => {
                             setClose(); 
                         }, 100);
@@ -336,7 +346,7 @@ export default function Wishlist(props) {
                                             <h4 className="mt-2 mb-2 w-100 text-center"> OR </h4>
                                             <GlobalUploader
                                                 type="minimal"
-                                                clear={clear}
+                                                ref={uploaderRef}
                                                 sendFile={getFileUID}
                                                 options={st.wishitemUploader}
                                             />
@@ -485,7 +495,7 @@ export default function Wishlist(props) {
 
                                         <GlobalUploader
                                             type="minimal"
-                                            clear={clear}
+                                            ref={uploaderRef1}
                                             sendFile={getrewardFile}
                                             options={st.rewards}
                                         />

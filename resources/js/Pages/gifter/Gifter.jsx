@@ -24,8 +24,7 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks  }){
 
   const AboutScreen = () => { 
     return <>
-        <div className="row about-sec max-w-3xl m-auto " >
-          <div className="col-md-12" >
+        <div className=" about-sec max-w-3xl m-auto " >
               <div className={`${user && !user.bio ? "d-nones":""} box shadow-voilet rounded-lg mb-4`} >
                   <p className="font-bold" >About me</p>
                   <p className={`text-muted text-start mt-2 `}>{(user && user.bio) || ""}</p>
@@ -45,7 +44,7 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks  }){
           
               <GifterTips />
               <GifterItems IsloggedIn={IsloggedIn} />
-              <GifterSubscriptions />
+              <GifterSubscriptions IsloggedIn={IsloggedIn} />
 
               {/* <GifterMembership /> */}
 
@@ -57,7 +56,6 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks  }){
               </div> : ''} */}
 
               {/* {IsloggedIn ? <ThankyouMessages /> : ''} */}
-          </div> 
         </div>
     </>
   }
