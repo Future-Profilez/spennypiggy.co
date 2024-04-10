@@ -486,13 +486,22 @@ class WishitemController extends Controller
 
     public function discover_all_wishes($order,$type,$price) {
 
+        $tag = false;
+
+        if(!empty(request()->query('tag'))){
+            $tag = str_replace('-',' ',request()->query('tag'));
+        }
+
         $query = WishItem::where('deleted_at', null)
         ->where('is_approved',1)
         ->with(['user'])
-        ->whereHas('user',function($q){
+        ->whereHas('user',function($q)use($tag){
             $q->where(function($s){
                 $s->whereNot('country', 'GB')->orWhereNull('country');
             });
+            if(!empty($tag)){
+                $q->whereJsonContains('creator_category',$tag);
+            }
         });
 
         if($order == 'new'){
