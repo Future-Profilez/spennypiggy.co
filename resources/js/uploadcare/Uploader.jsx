@@ -74,7 +74,7 @@ const GlobalUploader = forwardRef(({ options, sendFile, clear, view, isUploading
             },100);
             if(resp.data.status){
               successAlert("File has been scanned !!");
-              sendFile(d[0] );
+              sendFile(d[0]);
               setFiles(d); 
               controller.abort()
             } else { 
@@ -93,8 +93,8 @@ const GlobalUploader = forwardRef(({ options, sendFile, clear, view, isUploading
       }
     } 
 
-
     return <>
+
           {view && 
             <div className={'uploadcare-view mb-0'}>
               {files.map((file) => (

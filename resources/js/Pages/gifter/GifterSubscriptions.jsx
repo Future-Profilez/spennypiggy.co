@@ -68,7 +68,7 @@ export default function GifterSubscriptions({IsloggedIn}) {
       const owner  = w && w.owner && w.owner.name;
       const goalname  = w && w.tipGoal && w.tipGoal.name;
       return <div className='pb-3'>
-          <p className='' ><span className='text-capitalize' >{uname}</span> just subscribe  <b>{owner}'s</b> subscription <b>{item}</b> of amount {amount}. 
+          <p className='' ><span className='text-capitalize' >{uname}</span> just subscribed to <b>{owner}'s</b> subscription <b>{item}</b> of amount {amount}. 
           {IsloggedIn && w && w.media_url ? <MessageMedia w={w} /> : ''}
           </p>
       </div>

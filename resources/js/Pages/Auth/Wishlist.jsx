@@ -76,9 +76,13 @@ export default function Wishlist(props) {
         setAdding(true);
         axios.post("save-category",{ category: value }).then((res) => {
             setAdding(false);
-            successAlert(res.data.msg || "Added");
-            fetch_categories();
-            inputRef.current.value = '';
+            if(res.data.status){
+                successAlert(res.data.msg || "Added");
+                fetch_categories();
+                inputRef.current.value = '';
+            } else {
+                errorAlert(res.data.msg || "Something went wrong.");
+            }
         }).catch((err) => {
             setAdding(false);
             errorsHandling(err);
@@ -260,7 +264,7 @@ export default function Wishlist(props) {
                                         </li>
                                         <li className="mb-4">
                                             <label className="mb-2 text-start d-block">
-                                                Price{" "}
+                                                Price 
                                             </label>
                                             <div className="currency-wrapper position-relative">
                                                 <span className="currency-tag">

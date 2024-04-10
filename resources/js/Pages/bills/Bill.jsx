@@ -60,16 +60,18 @@ export default function Bill(props) {
               src={itm?.perma_link ? itm?.perma_link : uploadedimg} className=''
               width={243} />
 
-              {IsloggedIn ? <DropdownButton
-                    className='edit-post pe-0 absolute top-5 m-1 right-3 z-1 ' id="dropdown-basic-button"
-                    title={
-                    <div className='dots' >
-                    <span className='bg-dark' ></span>
-                    <span className='bg-dark' ></span>
-                    <span className='bg-dark' ></span>
-                  </div>}>
-                      <RemoveBill classes={`px-[18px] py-2 text-start w-full`} updateItems={fetchBills} uuid={itm.uuid} text="Remove Bill" />
-              </DropdownButton> : ''} 
+              {IsloggedIn ? 
+                <DropdownButton
+                className='edit-post pe-0 absolute top-5 m-1 right-3 z-1 ' id="dropdown-basic-button"
+                title={
+                <div className='dots' >
+                <span className='bg-dark' ></span>
+                <span className='bg-dark' ></span>
+                <span className='bg-dark' ></span>
+                </div>}>
+                        <RemoveBill classes={`px-[18px] py-2 text-start w-full`} updateItems={fetchBills} uuid={itm.uuid} text="Remove Bill" />
+                </DropdownButton> 
+              : ''} 
 
             </div>
 
@@ -81,17 +83,17 @@ export default function Bill(props) {
                 </h5>
               </div>
               <div className='subscribletag text-capitalize text-small' >  {itm && itm.period || "Monthly"} Subscribable  </div>  
-            <p className='text-start text-small mt-3' >Pay bill and gain access to member only posts</p>
+            <p className='text-start text-xs mt-3' >Pay bill and gain access to member only posts</p>
             </div>
 
             <div className='p-sm-3 p-3 pt-0 pt-sm-0' >
               {IsloggedIn ?
-                  <AddBills fetchBills={props.fetchBills} classes="button  px-2 w-100 sm" text="Update Bill"
+                  <AddBills fetchBills={props.fetchBills} classes="btn-pink px-2 sm text-center w-100" text="Update Bill"
                   item={itm} isEdit={true} />
                 :
               <Link method='get' 
                 href={route('bill.checkout',{uuid: itm.uuid})}
-                className='btn-pink sm text-center' >Pay Bill</Link>
+                className='btn-pink px-2 sm text-center' >Pay Bill</Link>
               } 
             </div>
         

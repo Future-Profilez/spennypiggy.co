@@ -8,9 +8,7 @@
 html {
   overflow-x: clip;
 }
-body {
-  overflow: hidden;
-}
+ 
 .modal-backdrop.show {
   opacity: 0.85 !important;
 }

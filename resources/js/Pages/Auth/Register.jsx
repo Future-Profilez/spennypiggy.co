@@ -125,7 +125,7 @@ export default function Register(props) {
                 tagsArray.push(trimmedTag);
             }
         }
-        setData("creator_category", tagsArray);
+        setData("creator_category", JSON.stringify(tagsArray));
         setProfileTags(tagsArray);
     }
 
