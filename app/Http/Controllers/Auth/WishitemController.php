@@ -465,6 +465,15 @@ class WishitemController extends Controller
             ],
         ]);
 
+        $checkdata = Helpers::checkBlockData($request);
+        if ($checkdata == 1) {
+            return response()->json([
+                'status' => false,
+                'msg' => "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,
+                😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦",
+            ]);
+        }
+
         $categories = UserCategory::where('user_id', Auth::id())->get();
         foreach ($categories as $key => $value) {
             if (strtolower($request->category) == strtolower($value->category)) {
