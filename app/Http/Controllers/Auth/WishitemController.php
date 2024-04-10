@@ -567,6 +567,21 @@ class WishitemController extends Controller
         ]);
     }
 
+    public function all_creators_categories() {
+        $categories = User::whereNotNull('creator_category')
+                       ->pluck('creator_category')
+                       ->map(function ($item) {
+                           return json_decode($item, true);
+                       })
+                       ->flatten()
+                       ->unique()
+                       ->values();
+        return response()->json([
+            'success' => true,
+            'categories' => $categories,
+        ]);
+    }
+
 
     public function wishItems(Request $request): RedirectResponse
     {

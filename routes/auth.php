@@ -222,6 +222,7 @@ Route::get('discover',function (){
 })->name("discover");
 Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class, 'discover_all_wishes'])->name('discover_wish');
 Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');
+Route::get('discover/creators/categories', [WishitemController::class, 'all_creators_categories'])->name('allcreators_categories');
 // Route::get('discover/creators_videos', [WishitemController::class, 'discover_creators_videos'])->name('discover_videos');
 
 Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
