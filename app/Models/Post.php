@@ -22,6 +22,11 @@ class Post extends Model
         'image',
     ];
 
+    protected $hidden = [
+        'id',
+        'user_id',
+    ];
+
     protected $appends = [
         'image_url',
         'likes_count',
@@ -48,6 +53,9 @@ class Post extends Model
         return $url;
     }
 
+    public function likes(){
+        return $this->hasMany(PostLike::class,'post_id');
+    }
 
     public function getLikesCountAttribute(){
         return $this->likes()->where('status',1)->count();
