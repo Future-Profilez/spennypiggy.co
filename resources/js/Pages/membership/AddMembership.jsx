@@ -8,6 +8,7 @@ import GlobalUploader from "@/uploadcare/Uploader";
 import st from "../../../css/uploader.module.css";
 import axios from "axios";
 import { useRef } from "react";
+import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 
 const memberships = [
   {
@@ -114,10 +115,17 @@ export default function AddMembership({updateState, item}) {
         valueattr = e.target.value;
         setData({ ...data, [nameattr]: valueattr });
     }
-     
+
+    const [isEditable, setIsEditable ] = useState(false);
     async function getFileUID(thumbs){
-      setThumb(thumbs);
+      setThumb(thumbs.uuid || "");
+      setIsEditable(true);
     };
+    const imageEdited = async (d,uuid) => {
+        const url = `${uuid}/${d.cdnUrlModifiers}-/preview/`
+        setIsEditable(false);
+        setThumb(url);
+    }; 
     
     useEffect(()=>{
       if(item){ 
@@ -206,11 +214,18 @@ export default function AddMembership({updateState, item}) {
                       <div className="col-md-12 form-field mb-4">
                       <label className="d-block text-start mb-1">Thumbnail</label>
                         <p className="text-muted mb-3" >This is not required, but it can be a nice way to build your brand or make the offering more attractive.</p>
-                        <GlobalUploader type='minimal'
-                          ref={uploaderRef}
-                          sendFile={getFileUID}
-                          options={st.membership}
-                        />
+
+                        <div className={`${!isEditable ? '' : 'd-none'} editable`} >
+                          <GlobalUploader type='minimal'
+                            ref={uploaderRef}
+                            sendFile={getFileUID}
+                            options={st.membership}
+                          />
+                        </div>
+                        <div className={`${isEditable ? '' : 'd-none'} editable`} >
+                            <UploadcareEditor setIsEditable={setIsEditable} uuid={thumb} updateFile={imageEdited}  />
+                        </div>
+
                       </div>
                     
                       <p className="font-bold mb-3 " >Choose membership Rewards</p>

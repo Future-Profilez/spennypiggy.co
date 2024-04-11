@@ -16,6 +16,7 @@ import 'swiper/css/navigation';
 import { useRef } from "react";
 import PriceFormat from "@/includes/PriceFormat";
 import axios from "axios";
+import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 
 export default function AddBills(props) {
     const { successAlert, errorAlert, infoAlert, errorsHandling } = useAlerts();
@@ -60,10 +61,20 @@ export default function AddBills(props) {
         setData("thumbnail", BillsImages[swiper && swiper.activeIndex]);
     };
 
+    const [isEditable, setIsEditable ] = useState(false);
     const getFileUID = async (data) => {
         let ss = data?.uuid;
         setThumbnail(ss);
-    };
+        setIsEditable(true);
+    }; 
+
+    const wishImageEdited = async (d,uuid) => {
+        const url = `${uuid}/${d.cdnUrlModifiers}-/preview/`
+        setThumbnail(url);
+        setIsEditable(false);
+    }; 
+
+
 
     useEffect(() => {
         setData("thumbnail", thumbnail);
@@ -204,11 +215,21 @@ export default function AddBills(props) {
                                     }
 
                                 <h4 className="mt-2 mb-2 w-100 text-center"  >OR</h4>
-                                <GlobalUploader type='minimal'
-                                    ref={uploaderRef}
-                                    sendFile={getFileUID}
-                                    options={st.wishitemUploader}
-                                />
+                              
+
+
+                                <div className={`${!isEditable ? '' : 'd-none'} editable`} >
+                                    <GlobalUploader type='minimal'
+                                        ref={uploaderRef}
+                                        sendFile={getFileUID}
+                                        options={st.wishitemUploader}
+                                    />
+                                </div>
+
+                                <div className={`${isEditable ? '' : 'd-none'} editable`} >
+                                    <UploadcareEditor uuid={thumbnail} updateFile={wishImageEdited}  />
+                                </div>
+
                             </li>
                         </ul>
                         <div className="publish text-start">

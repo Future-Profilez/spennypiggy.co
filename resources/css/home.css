@@ -209,7 +209,7 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 .termselect label input{display:inline-block;vertical-align:middle;margin:-1px 6px 0 0;}
 .accountsetting{max-width:675px;width:96%;}
 .accsettingList ul li{margin:0 0 10px;border-radius:10px;border:2px solid var(--black);background:var(--white);box-shadow:3px 3px 0 0 var(--black);}
-.accsettingList ul li a,.accsettingList ul li button,.notification{position:relative;display:flex;width:100% !important;padding:15px 40px 15px 15px !important;align-items:center;align-content:center;justify-content:space-between;color:#1e1e1e !important;font-family:var(--font-CeraGRBold);font-size:18px;font-style:normal;letter-spacing:-0.36px;line-height:27px;}
+.accsettingList ul li a,.accsettingList ul li button,.notification{position:relative;display:flex;width:100% !important;padding:15px 40px 15px 15px !important;align-items:center;align-content:center;justify-content:space-between; font-family:var(--font-CeraGRBold);font-size:18px;font-style:normal;letter-spacing:-0.36px;line-height:27px;}
 .accsettingList ul li button:focus,.accsettingList ul li button:hover{background:0 0 !important;}
 .accsettingList ul li a:after,.accsettingList ul li button:after,.notification:after{content:"";position:absolute;right:23px;top:37%;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:7px solid var(--black);}
 .switch{position:relative;display:inline-block;width:60px;height:16px;}

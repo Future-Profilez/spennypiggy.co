@@ -51,8 +51,13 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
     
     const [loading, setLoading] = useState(false);
     const submitPost = (e) => { 
-        setLoading(true);
         e && e.preventDefault();
+        
+        if(!rewardImage){
+            toast.error("Please chhose a media image for this post.");
+            return false
+        }
+        setLoading(true);
         axios.post(`${isEdit ? `/post/edit/${item.uuid}` : "/post/save"}`, {...data, image:rewardImage, type: rewardImage ? 'image' : "blog" })
         .then((resp) => {
             if(resp.data.status){
@@ -111,19 +116,18 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
                 <GlobalUploader ref={uploaderRef} view={false} type="minimal" sendFile={getfile} options={st.post} />
             </div>
 
-           { rewardImage ? <>
-                <p className="text-grey-500 mb-1 mt-4" >Choose Audience</p>
-                <div className="flex align-center justify-content-center flex-wrap" >
-                    <select id="countries" defaultValue={item?.for_module} onChange={handleInput} name="for_module" class="form-input  
-                    text-md w-full focus:ring-green-50 block ">
-                        {/* <option value="everyone">Everyone</option> */}
-                        <option value="membership">Memberships</option>
-                        <option value="subscription">Subscription</option>
-                        <option value="support">Supporters</option>
-                    </select>
-                </div>
-           </> :'' 
-            }
+                {/* { rewardImage ? <> */}
+                        <p className="text-grey-500 mb-1 mt-4" >Choose Audience</p>
+                        <div className="flex align-center justify-content-center flex-wrap" >
+                            <select id="countries" defaultValue={item?.for_module} onChange={handleInput} name="for_module" class="form-input  
+                            text-md w-full focus:ring-green-50 block ">
+                                {/* <option value="everyone">Everyone</option> */}
+                                <option value="membership">Memberships</option>
+                                <option value="subscription">Subscription</option>
+                                <option value="support">Supporters</option>
+                            </select>
+                        </div>
+                {/* </> :''  } */}
 
                      <LoaderButton onClick={submitPost}
                         disabled={loading}

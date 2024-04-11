@@ -12,6 +12,7 @@ import ChangeCurrency from '@/Components/ChangeCurrency';
 import LinkTwitter from '../twitter/LinkTwitter';
 import { useAlerts } from '@/Components/Alerts';
 import ChangeVat from '../account/ChangeVat';
+import DeleteStripeAccount from '../Profile/DeleteStripeAccount';
 
 export default function Accountsetting(props) {
     const { successAlert, errorAlert } = useAlerts();
@@ -57,7 +58,7 @@ export default function Accountsetting(props) {
                             {auth && auth?.user?.role == 1 ? 
                                 <li>
                                     {auth && auth.user && auth.user.stripe_details_submitted == 1 ? 
-                                        <PaymentDashboard classes='w-100 text-white rounded-3  border-0 paymentbutton' text={<>PAYMENT DASHBOARD <span className='text-mint'>Connected</span></>} />
+                                        <PaymentDashboard classes='w-100 text-black rounded-3  border-0 paymentbutton' text={<>PAYMENT DASHBOARD <span className='text-mint'>Connected</span></>} />
                                         : 
                                         <Link href={route("stripe")} >PAYMENT DASHBOARD <span className='text-voilet'>Connect Stripe</span></Link>
                                     }
@@ -93,8 +94,8 @@ export default function Accountsetting(props) {
                                 <>
                                     { auth && auth.user && auth.user.twitter_username ? `AUTO TWEET` : 'SET UP AUTO TWEET'}
                                     <div className='d-flex' >
-                                    <img src={closeblacksm} alt="img" className='me-2' />
-                                    { auth && auth.user && auth.user.twitter_username ? `@${auth.user.twitter_username}` : ''}
+                                        <img src={closeblacksm} alt="img" className='me-2' />
+                                        { auth && auth.user && auth.user.twitter_username ? `@${auth.user.twitter_username}` : ''}
                                     </div>
                                 </> } >
                                     <LinkTwitter auto_tweet={auto_tweet}  
@@ -121,6 +122,17 @@ export default function Accountsetting(props) {
                                     <DeleteUserForm />
                                 </Popup >
                             </li>
+
+
+                            {auth && auth?.user?.stripe_details_submitted == 1 ? 
+                             <li>
+                                <Popup space='4' modalclassName="pinkmodal" 
+                                text={<>DELETE STRIPE ACCOUNT  </>} >
+                                    <DeleteStripeAccount />
+                                </Popup >
+                            </li>  : ''
+                            }
+                            
                             
                         </ul>
                     </div>

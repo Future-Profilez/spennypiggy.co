@@ -93,11 +93,8 @@ export default function Allwishes(props) {
                                 return (
                                     <li className="pe-2 mb-2" key={`page-${i}`}>
                                         <button
-                                            className={
-                                                p == page ? "active" : ""
-                                            }
-                                            onClick={() => fetch_wishes(p, tag)}
-                                        >
+                                            className={p == page ? "active" : ""}
+                                            onClick={() => fetch_wishes(p, tag)}>
                                             {p}
                                         </button>
                                     </li>
@@ -111,107 +108,107 @@ export default function Allwishes(props) {
         );
     };
 
-    return (
-        <>
-            <div className="filters d-block d-sm-flex align-items-center justify-content-between w-100 mb-4">
-                <Switch />
-                <div className="d-flex align-items-center">
-                    <div className="filter-select-wrap">
-                        <select
-                            onChange={(e) => setType(e.target.value)}
-                            id="types"
-                            class=" filter-select bg-gray-50 border border-gray-300 text-gray-900
-                    text-sm rounded-md focus:ring-blue-500 focus:border-blue-500
-                    block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400
-                    dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                        >
-                            <option selected value="all">
-                                All Wishes
-                            </option>
-                            <option value="subscription">Subscription</option>
-                            <option value="crowdfund">Crowdfunded</option>
-                            <option value="sing le">Single</option>
-                        </select>
-                    </div>
-                    <div className="filter-select-wrap ps-3">
-                        <select
-                            onChange={(e) => setprice(e.target.value)}
-                            id="prices"
-                            class="filter-select bg-gray-50 border border-gray-300 text-gray-900
+        return (
+            <>
+                <div className="filters d-block d-sm-flex align-items-center justify-content-between w-100 mb-4">
+                    <Switch />
+                    <div className="d-flex align-items-center">
+                        <div className="filter-select-wrap">
+                            <select
+                                onChange={(e) => setType(e.target.value)}
+                                id="types"
+                                class=" filter-select bg-gray-50 border border-gray-300 text-gray-900
                         text-sm rounded-md focus:ring-blue-500 focus:border-blue-500
                         block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400
                         dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                        >
-                            <option selected value="all">
-                                By Price
-                            </option>
-                            <option value="5to10">Price 5 - 10</option>
-                            <option value="10to30">Price 10 - 30</option>
-                            <option value="30to50">Price 30 - 50</option>
-                            <option value="50to100">Price 50 - 100</option>
-                            <option value="100plus">Price 100 +</option>
-                        </select>
+                            >
+                                <option selected value="all">
+                                    All Wishes
+                                </option>
+                                <option value="subscription">Subscription</option>
+                                {/* <option value="crowdfund">Crowdfunded</option> */}
+                                <option value="sing le">Single</option>
+                            </select>
+                        </div>
+                        <div className="filter-select-wrap ps-3">
+                            <select
+                                onChange={(e) => setprice(e.target.value)}
+                                id="prices"
+                                class="filter-select bg-gray-50 border border-gray-300 text-gray-900
+                            text-sm rounded-md focus:ring-blue-500 focus:border-blue-500
+                            block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400
+                            dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                            >
+                                <option selected value="all">
+                                    By Price
+                                </option>
+                                <option value="5to10">Price 5 - 10</option>
+                                <option value="10to30">Price 10 - 30</option>
+                                <option value="30to50">Price 30 - 50</option>
+                                <option value="50to100">Price 50 - 100</option>
+                                <option value="100plus">Price 100 +</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div className="mt-3 mb-2 tagsfilterbar d-flex flex-wrap">
-                <button onClick={() => fetch_wishes(page, "")}
-                    className={` me-2 mb-2  rounded-[12px] text-[14px] p-2 px-3 ${ tag == "" ? "bluebg text-white" : "bg-gray-300"}`}>All</button>
-                {lists &&
-                    lists.map((l, i) => {
-                        return (
-                            <button
-                                onClick={() => fetch_wishes(page, l)}
-                                className={` me-2 mb-2  rounded-[12px] text-[14px] p-2 px-3 ${
-                                    tag == l? "bluebg text-white": "bg-gray-300"}`} >
-                                {l}
-                            </button>
-                        );
-                    })}
-            </div>
+                <div className="mt-3 mb-2 tagsfilterbar d-flex flex-wrap">
+                    <button onClick={() => fetch_wishes(page, "")}
+                        className={` me-2 mb-2  rounded-[12px] text-[14px] p-2 px-3 ${ tag == "" ? "bluebg text-white" : "bg-gray-300"}`}>All</button>
+                    {lists &&
+                        lists.map((l, i) => {
+                            return (
+                                <button
+                                    onClick={() => fetch_wishes(page, l)}
+                                    className={` me-2 mb-2  rounded-[12px] text-[14px] p-2 px-3 ${
+                                        tag == l? "bluebg text-white": "bg-gray-300"}`} >
+                                    {l}
+                                </button>
+                            );
+                        })}
+                </div>
 
-            <div className="row">
-                {loading ? (
-                    <div className="w-100 d-flex justify-content-center">
-                        <LoadingScreen />
-                    </div>
-                ) : (
-                    <>
-                        {wishes && wishes.length ? (
-                            wishes.map((w, i) => {
-                                return (
-                                    <Wishlistbox
-                                        key={`wish-item-${i}`}
-                                        classes="col-xl-3 col-lg-4 col-6"
-                                        currency={global_currency}
-                                        // fetchingcats={fetchingcats}
-                                        // categories={categories}
-                                        IsloggedIn={false}
-                                        showall={true}
-                                        auth={auth.user}
-                                        setuped={
-                                            auth &&
-                                            auth.user &&
-                                            auth.user
-                                                .stripe_details_submitted == 1
-                                                ? true
-                                                : false
-                                        }
-                                        itm={w}
-                                    />
-                                );
-                            })
-                        ) : (
-                            <div className="my-5">
-                                <Nocontent text={"No Result Found"} />
-                            </div>
-                        )}
-                    </>
-                )}
-            </div>
+                <div className="row">
+                    {loading ? (
+                        <div className="w-100 d-flex justify-content-center">
+                            <LoadingScreen />
+                        </div>
+                    ) : (
+                        <>
+                            {wishes && wishes.length ? (
+                                wishes.map((w, i) => {
+                                    return (
+                                        <Wishlistbox
+                                            key={`wish-item-${i}`}
+                                            classes="col-xl-3 col-lg-4 col-6"
+                                            currency={global_currency}
+                                            // fetchingcats={fetchingcats}
+                                            // categories={categories}
+                                            IsloggedIn={false}
+                                            showall={true}
+                                            auth={auth.user}
+                                            setuped={
+                                                auth &&
+                                                auth.user &&
+                                                auth.user
+                                                    .stripe_details_submitted == 1
+                                                    ? true
+                                                    : false
+                                            }
+                                            itm={w}
+                                        />
+                                    );
+                                })
+                            ) : (
+                                <div className="my-5">
+                                    <Nocontent text={"No Result Found"} />
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
 
-            <Pagination number={data && data.last_page} />
-        </>
-    );
-}
+                <Pagination number={data && data.last_page} />
+            </>
+        );
+    }

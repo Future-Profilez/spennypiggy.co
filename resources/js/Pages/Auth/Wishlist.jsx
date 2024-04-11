@@ -14,6 +14,7 @@ import { Pagination, Navigation } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import PriceFormat from "@/includes/PriceFormat";
 import axios from "axios";
+import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 
 
 const imageLinks = [
@@ -89,8 +90,6 @@ export default function Wishlist(props) {
         });
     };
 
-    
-
     const { data, setData, post, processing, errors, reset } = useForm({
         wishname: item && item.wishname ? item.wishname : "",
         price: item && item.price ? item.price : "",
@@ -127,10 +126,19 @@ export default function Wishlist(props) {
         }
     };
     
+    const [isEditable, setIsEditable ] = useState(false);
     const getFileUID = async (data) => {
         let ss = data?.uuid;
         setThumbnail(ss);
-    };
+        setIsEditable(true);
+    }; 
+
+    const wishImageEdited = async (d,uuid) => {
+        const url = `${uuid}/${d.cdnUrlModifiers}-/preview/`
+        setThumbnail(url);
+        setIsEditable(false);
+    }; 
+
 
     const getrewardFile = async (data) => {
         let ss = data?.uuid;
@@ -348,12 +356,20 @@ export default function Wishlist(props) {
                                                 </Swiper>
                                             )}
                                             <h4 className="mt-2 mb-2 w-100 text-center"> OR </h4>
-                                            <GlobalUploader
-                                                type="minimal"
-                                                ref={uploaderRef}
-                                                sendFile={getFileUID}
-                                                options={st.wishitemUploader}
-                                            />
+
+                                            <div className={`${!isEditable ? '' : 'd-none'} editable`} >
+                                                <GlobalUploader
+                                                    type="minimal"
+                                                    ref={uploaderRef}
+                                                    sendFile={getFileUID}
+                                                    options={st.wishitemUploader}
+                                                />
+                                            </div>
+
+                                            <div className={`${isEditable ? '' : 'd-none'} editable`} >
+                                                <UploadcareEditor uuid={thumbnail} updateFile={wishImageEdited}  />
+                                            </div>
+
                                         </li>
                                     </ul>
 
@@ -470,7 +486,7 @@ export default function Wishlist(props) {
                                                     </div>
                                                 </Accordion.Body>
                                             </Accordion.Item>
-                                            <Accordion.Item eventKey={2}>
+                                            {/* <Accordion.Item eventKey={2}>
                                                 <Accordion.Header
                                                     onClick={(e) => setSubs(2)}
                                                 >
@@ -484,7 +500,7 @@ export default function Wishlist(props) {
                                                         wish item.
                                                     </p>
                                                 </Accordion.Body>
-                                            </Accordion.Item>
+                                            </Accordion.Item> */}
                                         </Accordion>
                                     </div>
 
@@ -503,6 +519,9 @@ export default function Wishlist(props) {
                                             sendFile={getrewardFile}
                                             options={st.rewards}
                                         />
+
+                                       
+
                                     </div>
 
                                     {/* <div className="twitter-an mt-3 pt-2">
