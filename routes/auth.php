@@ -197,6 +197,7 @@ Route::middleware('auth')->group(function () {
             Route::get('remove/{uuid}', [BillsController::class, 'removeBill'])->name('remove');
         });
 
+        Route::get('delete-stripe-account', [StripeController::class, 'deleteStripeAccount'])->name('deleteStripeAccount');
     });
 });
 

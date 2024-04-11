@@ -321,4 +321,28 @@ class StripeControl
             throw new Exception("Stripe API Error: " . $e->getMessage());
         }
     }
+
+
+     /**
+     * Deleting and account
+     *
+     * @param string $account_id account Id
+     * @return Throwable|\Stripe\Subscription
+     */
+    public static function deleteAccount($account_id)
+    {
+        self::setClient();
+        try {
+
+            return self::$client->accounts->delete($account_id, []);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
 }
