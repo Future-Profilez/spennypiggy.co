@@ -1065,4 +1065,25 @@ class StripeController extends Controller
         //     'status'    =>  $status
         // ]);
     }
+
+
+    /**
+     * Deleting the stripe account through user.
+     *
+     * @param string $uuid user UUID
+     * @return mixed
+     */
+    public function deleteStripeAccount()
+    {
+        $user = User::where('id',Auth::id())->first();
+
+        if($user->account_id){
+            StripeControl::deleteAccount($user->account_id);
+            $user->account_id = NULL;
+            $user->stripe_details_submitted = 0;
+            $user->save();
+        }
+
+        return to_route('user.show', ['username' => $user->username])->with('success', 'Stripe account deleted successfully!');
+    }
 }

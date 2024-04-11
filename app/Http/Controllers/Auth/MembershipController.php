@@ -73,7 +73,6 @@ class MembershipController extends Controller
                 ]);
             }
 
-            $media = $request->thumbnail;
             $rewards = json_encode($request->rewards);
 
 
@@ -87,7 +86,7 @@ class MembershipController extends Controller
             $mem->currency = $user->default_currency;
             $mem->price = $price;
             $mem->tax_amount = $taxamount;
-            $mem->thumbnail = !empty($media) ? $media['uuid'] : null;
+            $mem->thumbnail = $request->thumbnail ?? null;
             $mem->rewards = $rewards;
 
             $mem->save();
@@ -168,7 +167,6 @@ class MembershipController extends Controller
                 ]);
             }
 
-            $media = $request->thumbnail;
             $rewards = json_encode($request->rewards);
 
 
@@ -180,8 +178,8 @@ class MembershipController extends Controller
             $mem->level = $request->level;
             $mem->price = $price;
             $mem->tax_amount = $taxamount;
-            if(!empty($media)){
-                $mem->thumbnail = $media['uuid'];
+            if(!empty($request->thumbnail)){
+                $mem->thumbnail = $request->thumbnail;
             }
             $mem->rewards = $rewards;
 
