@@ -43,6 +43,19 @@
         console.log("%cWelcome to Spenny Piggy.", css1.join(";"));
     </script>
    
+   <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "url": "https://spennypiggy.co/",
+            "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://spennypiggy.co/search?q={search_term_string}",
+                "query-input": "required name=search_term_string"
+            }
+        }
+    </script>
+    
     {{-- @laravelPWA --}}
     @routes
     @viteReactRefresh
