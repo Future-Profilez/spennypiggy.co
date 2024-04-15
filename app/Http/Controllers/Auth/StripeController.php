@@ -749,7 +749,7 @@ class StripeController extends Controller
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
         // This is your Stripe CLI webhook secret for testing your endpoint locally.
-        $endpoint_secret = 'whsec_o1Y8bPrcVLiQInKYsJ8LrbxUpQslQYvl';
+        $endpoint_secret = 'whsec_i0FWwRfVCgFqvblVy7N9nqkudzT6mc6Q';
 
         $payload = @file_get_contents('php://input');
         $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
@@ -771,42 +771,9 @@ class StripeController extends Controller
             exit();
         }
 
-        // $invoice = null;
-        // // Handle the event
-        // switch ($event->type) {
-        //     case 'invoice.created':
-        //         $invoice = $event;
-        //     case 'invoice.deleted':
-        //         $invoice = $event;
-        //     case 'invoice.finalization_failed':
-        //         $invoice = $event;
-        //     case 'invoice.finalized':
-        //         $invoice = $event;
-        //     case 'invoice.marked_uncollectible':
-        //         $invoice = $event;
-        //     case 'invoice.paid':
-        //         $invoice = $event;
-        //     case 'invoice.payment_action_required':
-        //         $invoice = $event;
-        //     case 'invoice.payment_failed':
-        //         $invoice = $event;
-        //     case 'invoice.payment_succeeded':
-        //         $invoice = $event;
-        //     case 'invoice.sent':
-        //         $invoice = $event;
-        //     case 'invoice.upcoming':
-        //         $invoice = $event;
-        //     case 'invoice.updated':
-        //         $invoice = $event;
-        //     case 'invoice.voided':
-        //         $invoice = $event;
-        //         // ... handle other event types
-        //     default:
-        //         echo 'Received unknown event type ' . $event->type;
-        // }
         $array = [];
         if (!empty($event)) {
-            $subs = WishItemSubscription::where('stripe_id', $event->data->object->subscription)->first();
+            $subs = WishItemSubscription::where('stripe_id', $event->data->object->subscription)->latest()->first();
 
             $ret = StripeControl::getSubscription($event->data->object->subscription);
 
@@ -840,10 +807,15 @@ class StripeController extends Controller
                 $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
                 $newSubs->status = "paid";
                 $newSubs->created_at = $subs->created_at;
-                $newSubs->updated_at = $subs->updated_at;
+                $newSubs->updated_at = Carbon::now();
                 $newSubs->save();
 
-                SendRenewMail::dispatch($array);
+                SendRenewMail::dispatch($array,'renew');
+            }elseif ($event->type == "customer.subscription.deleted" && !empty($subs)) {
+                $subs->status = 'cancelled';
+                $subs->save();
+
+                SendRenewMail::dispatch($array,'cancelled');
             }
 
             if (!empty($subs)) {
