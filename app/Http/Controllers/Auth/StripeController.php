@@ -942,7 +942,7 @@ class StripeController extends Controller
 
                 $stripe_client = StripeControl::createProduct([
                     'name' => $goal->name ?? 'Support-creator',
-                    'images' => ["https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"],
+                    'images' => ["https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/"],
                     "default_price_data" => ["currency" => strtolower($creator->default_currency), "unit_amount_decimal" => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100],
                 ]);
             } catch (Exception $e) {

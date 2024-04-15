@@ -779,7 +779,7 @@ class WishitemController extends Controller
                     'user' => $wish->user->toArray(),
                     'wish' => $wish->wish ? $wish->wish->toArray() : [],
                     'owner' => $wish->owner->toArray(),
-                    'url' => $wish->wish ? $wish->wish->perma_link : 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/',
+                    'url' => $wish->wish ? $wish->wish->perma_link : 'https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/',
                     'amount' => $wish->amount,
                     'priceid' => $wish->priceid,
                     'uuiddata' => $wish->uuid,
@@ -885,7 +885,7 @@ class WishitemController extends Controller
                 'user' => $wish->user ? $wish->user->toArray() : [], // Check if user is not null
                 'wish' => $wish->wish ? $wish->wish->toArray() : [],
                 'owner' => $wish->owner ? $wish->owner->toArray() : [],
-                'url' => $wish->wish ? $wish->wish->perma_link : 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/',
+                'url' => $wish->wish ? $wish->wish->perma_link : 'https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/',
                 'amount' => $wish->amount,
                 'priceid' => $wish->priceid,
                 'uuiddata' => $wish->uuid,
@@ -991,7 +991,7 @@ class WishitemController extends Controller
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
         $stripe_client = $stripe->products->create([
             'name' => 'Surprise Gift',
-            'images' => ['https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/'],
+            'images' => ['https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/'],
             "default_price_data" => ["currency" => $owner->default_currency, "unit_amount_decimal" => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100],
         ]);
 
@@ -1280,7 +1280,7 @@ class WishitemController extends Controller
 
         // $productPayload = [
         //     "name"  =>  $goal->name,
-        //     "images" => ["https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"],
+        //     "images" => ["https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/"],
         //     "default_price_data"    =>  [
         //         "currency"  =>  $user->default_currency,
         //         "unit_amount_decimal"   => $createpriceid * 100,
