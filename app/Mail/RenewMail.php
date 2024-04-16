@@ -33,7 +33,7 @@ class RenewMail extends Mailable
     public function build()
     {
         try {
-            if($this->type == 'bill'){
+            if($this->module == 'bill' || $this->module == 'membership' || $this->module == 'site'){
                 $subject = "Subscription for $this->module " . $this->type . ".";
             }
             else{

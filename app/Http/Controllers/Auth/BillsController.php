@@ -439,7 +439,7 @@ class BillsController extends Controller
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
         // This is your Stripe CLI webhook secret for testing your endpoint locally.
-        $endpoint_secret = 'whsec_i0FWwRfVCgFqvblVy7N9nqkudzT6mc6Q';
+        $endpoint_secret = 'whsec_tuck6Z96sSloUF7kuABTtbhvRiVaF8N8';
 
         $payload = @file_get_contents('php://input');
         $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];

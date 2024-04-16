@@ -16,6 +16,7 @@ use App\Jobs\TipJarMailToUser;
 use App\Jobs\TipJarPurchased;
 use App\Jobs\TipJarTweet;
 use App\Models\Currency;
+use App\Models\MonthlyCharge;
 use App\Models\Post;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
@@ -749,7 +750,7 @@ class StripeController extends Controller
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
         // This is your Stripe CLI webhook secret for testing your endpoint locally.
-        $endpoint_secret = 'whsec_i0FWwRfVCgFqvblVy7N9nqkudzT6mc6Q';
+        $endpoint_secret = 'whsec_o1Y8bPrcVLiQInKYsJ8LrbxUpQslQYvl';
 
         $payload = @file_get_contents('php://input');
         $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
@@ -1057,5 +1058,82 @@ class StripeController extends Controller
         }
 
         return to_route('user.show', ['username' => $user->username])->with('success', 'Stripe account deleted successfully!');
+    }
+
+
+    public function mandatorySubscriptionStatus(Request $request)
+    {
+
+        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+
+        // This is your Stripe CLI webhook secret for testing your endpoint locally.
+        $endpoint_secret = 'whsec_JhA8Jabgen1oYBOg9YZuCc8jenon9XoU';
+
+        $payload = @file_get_contents('php://input');
+        $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
+        $event = null;
+
+        try {
+            $event = Webhook::constructEvent(
+                $payload,
+                $sig_header,
+                $endpoint_secret
+            );
+        } catch (\UnexpectedValueException $e) {
+            // Invalid payload
+            http_response_code(400);
+            exit();
+        } catch (\Stripe\Exception\SignatureVerificationException $e) {
+            // Invalid signature
+            http_response_code(400);
+            exit();
+        }
+
+        $array = [];
+        if (!empty($event)) {
+            $subs = MonthlyCharge::where('stripe_id', $event->data->object->subscription)->first();
+
+            $ret = StripeControl::getSubscription($event->data->object->subscription);
+
+            if ($event->type == "invoice.updated" && !empty($subs)) {
+
+                $array = [
+                    'email' => $event->data->object->customer_email,
+                    'name' => $event->data->object->customer_name,
+                    'invoice_pdf' => $event->data->object->invoice_pdf,
+                    'uuid' => $subs->uuid,
+                    'notification' => $subs->user->notification_send ?? 0
+                ];
+
+                $subs->status = "ended";
+                $subs->save();
+
+                $newSubs = new MonthlyCharge();
+                $newSubs->stripe_id = $subs->stripe_id;
+                $newSubs->session_id = $subs->session_id;
+                $newSubs->user_id = $subs->user_id;
+                $newSubs->name = $subs->name;
+                $newSubs->email = $subs->email;
+                $newSubs->currency = $subs->currency;
+                $newSubs->amount = $subs->amount;
+                $newSubs->tax = $subs->tax;
+                $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+                $newSubs->status = "paid";
+                $newSubs->created_at = $subs->created_at;
+                $newSubs->updated_at = $subs->updated_at;
+                $newSubs->save();
+
+                SendRenewMail::dispatch($array,'renew','site');
+            }
+            elseif ($event->type == "customer.subscription.deleted" && !empty($subs)) {
+                $subs->status = 'cancelled';
+                $subs->save();
+
+                SendRenewMail::dispatch($array,'cancelled','site');
+            }
+
+        }
+
+        return true;
     }
 }

@@ -11,7 +11,7 @@
                 <tr>
                     <td
                         style="font-family: Arial; font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
-                        <span style="color: #8C52FF">Subscription {{ $module == "bill " ? "for $module " : "" }} </span>{{ $type == "renew" ? "Renewed" : "Cancelled" }} on <br> Spenny Piggy 🎁
+                        <span style="color: #8C52FF">Subscription {{ $module == "bill" || $module == "membership" || $module == "site" ? "for $module " : "" }} </span>{{ $type == "renew" ? "Renewed" : "Cancelled" }} on <br> Spenny Piggy 🎁
                     </td>
                 </tr>
                 <tr>

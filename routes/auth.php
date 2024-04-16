@@ -276,7 +276,11 @@ Route::get('/files/{filename}', function (string $filename) {
 
 Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status')->withoutMiddleware(VerifyCsrfToken::class);
 
+Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status')->withoutMiddleware(VerifyCsrfToken::class);
+
 Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-status')->withoutMiddleware(VerifyCsrfToken::class);
+
+Route::post('mandatory-status/', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status')->withoutMiddleware(VerifyCsrfToken::class);
 
 /* wishtender */
 Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('leaderboard');
