@@ -108,6 +108,13 @@ class AuthenticatedSessionController extends Controller
         if (!$user) {
             return Inertia::render('NotFound');
         }
+
+        if(!empty($user)){
+            if((Auth::check() && Auth::id() != $user->id && $user->suspended_account == 1) || (!Auth::check() && $user->suspended_account == 1)){
+                return Inertia::render('NotFound');
+            }
+        }
+
         $support_count = TipGoalsPayment::where('creator_id',$user->id)->count();
         if (!empty(request()->query('item'))) {
             $itemdid = request()->query('item');

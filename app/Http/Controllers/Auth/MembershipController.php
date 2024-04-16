@@ -650,6 +650,12 @@ class MembershipController extends Controller
 
                 SendRenewMail::dispatch($array,'cancelled','membership');
             }
+            elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
+                $subs->status = 'failed';
+                $subs->save();
+
+                SendRenewMail::dispatch($array,'failed','membership');
+            }
 
         }
 

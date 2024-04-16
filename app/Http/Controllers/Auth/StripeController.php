@@ -811,12 +811,18 @@ class StripeController extends Controller
                 $newSubs->updated_at = Carbon::now();
                 $newSubs->save();
 
-                SendRenewMail::dispatch($array,'renew');
+                SendRenewMail::dispatch($array,'renew','main');
             }elseif ($event->type == "customer.subscription.deleted" && !empty($subs)) {
                 $subs->status = 'cancelled';
                 $subs->save();
 
-                SendRenewMail::dispatch($array,'cancelled');
+                SendRenewMail::dispatch($array,'cancelled','main');
+            }
+            elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
+                $subs->status = 'failed';
+                $subs->save();
+
+                SendRenewMail::dispatch($array,'failed','main');
             }
 
             if (!empty($subs)) {
@@ -1130,6 +1136,12 @@ class StripeController extends Controller
                 $subs->save();
 
                 SendRenewMail::dispatch($array,'cancelled','site');
+            }
+            elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
+                $subs->status = 'failed';
+                $subs->save();
+
+                SendRenewMail::dispatch($array,'failed','site');
             }
 
         }
