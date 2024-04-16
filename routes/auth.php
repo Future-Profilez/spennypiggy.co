@@ -198,6 +198,9 @@ Route::middleware('auth')->group(function () {
         });
 
         Route::get('delete-stripe-account', [StripeController::class, 'deleteStripeAccount'])->name('deleteStripeAccount');
+
+        Route::get('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->name("mandatory.checkout");
+        Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleMandatorySubscription'])->name('mandatory.handle');
     });
 });
 

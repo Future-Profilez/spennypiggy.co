@@ -1067,6 +1067,143 @@ class StripeController extends Controller
     }
 
 
+    /**
+     * Pay for monthly charge
+     *
+     * @return mixed
+     */
+    public function payMonthlyCharge(Request $request)
+    {
+
+        $currency = strtolower($request->cookie("currency", "GBP"));
+        $price = 4.00;
+        $tax = round(($price * 20 / 100), 2, PHP_ROUND_HALF_UP);
+
+        $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
+
+        // if ($request->isMethod("POST")) {
+            // $request->validate([
+            //     'name' => [
+            //         'nullable',
+            //         'sometimes',
+            //         'string',
+            //         'max:50'
+            //     ],
+            //     'email' =>  [
+            //         'required',
+            //         'email:dns'
+            //     ],
+            //     'message' =>  [
+            //         'sometimes',
+            //         'nullable',
+            //         'string',
+            //         'max:800'
+            //     ]
+            // ]);
+            $user = User::where('id',Auth::id())->first();
+            $sub = MonthlyCharge::create([
+                'user_id'       =>  $user->id,
+                'name'    =>  $user->name ?? NULL,
+                'email'   =>  $user->email,
+                'currency'      =>  "GBP",
+                'amount'        =>  $price,
+                'tax'   =>  $tax,
+            ]);
+
+            $amount = $price + $tax;
+            $unit_amount = Helpers::priceFormat("GBP", $amount, $currency) * 100;
+            $items  =   [
+                'quantity'      =>  1,
+                'price_data'    =>   [
+                    'currency'  =>  $currency,
+                    'product'   =>  env("SUBSCRIPTION_4_PRODUCT_ID"),
+                    'unit_amount_decimal'   =>  $unit_amount,
+                    'recurring' =>  [
+                        'interval'  =>  StripeControl::$periods["monthly"],
+                        'interval_count'    =>  1
+                    ]
+                ]
+            ];
+            // }
+            $payload = [
+                "mode"  =>  'subscription',
+                "currency"  =>  strtolower($request->cookie("currency", "GBP")),
+                'line_items' =>  [$items],
+                'subscription_data' =>  [
+                    'application_fee_percent'   =>  $fee_per,
+                    'transfer_data' => [
+                        'destination' => "acct_1O3maCG7xsNScLmX", // Creator's connected account ID
+                    ],
+                    'on_behalf_of'  => "acct_1O3maCG7xsNScLmX",
+                    'description'   => "Subscription for using site through stripe."
+                ],
+                'customer_email'    =>  $user->email,
+                'success_url'       =>  route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
+                'cancel_url'       =>  route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
+            ];
+
+            try {
+                $session = StripeControl::createCheckoutSession($payload);
+                $sub->update([
+                    'session_id' =>  $session->id
+                ]);
+
+                return Inertia::location($session->url);
+            } catch (Exception $e) {
+                $sub->delete();
+                return back()->with('error', $e->getMessage());
+            }
+            // return response()->json([
+            //     'success'   => true,
+            //     'session'   => $session
+            // ]);
+
+
+        // }
+
+        // return Inertia::render('cart/SubCheckout');
+    }
+
+
+    /**
+     * Handle Checkout Session for mandatory subscription of 4 pound
+     *
+     * @param string $uuid Subscription UUID
+     * @param string $status Status of Subscription
+     * @return mixed
+     */
+    public function handleMandatorySubscription($uuid, $status)
+    {
+        $sub = MonthlyCharge::whereUuid($uuid)->first();
+        if (!$sub) {
+            return to_route('home')->with("error", 'Insufficient data!');
+        }
+        if ($sub->status !== 'initiated') {
+            return to_route('home')->with("error", 'Subscription already processed!');
+        }
+        try {
+            $session = StripeControl::getCheckoutSession($sub->session_id);
+            $sub->status = $session->payment_status;
+            if ($session->payment_status == 'paid') {
+                $sub->stripe_id = $session->subscription;
+
+                $sub->upcoming_payment = Carbon::now()->addMonth();
+                $sub->save();
+
+                // SubscribedMail::dispatch($sub);
+
+                return to_route('user.show', ['username' => $sub->user->username])->with('success', "Subscription Success!");
+            }
+
+            SubscriptionFailed::dispatch($sub);
+
+            $sub->save();
+            return to_route('user.show', ['username' => $sub->user->username])->with('warning', "Subscription is in {$session->payment_status} status.");
+        } catch (Exception $e) {
+            return to_route('user.show', ['username' => $sub->user->username])->with('error', $e->getMessage());
+        }
+    }
+
     public function mandatorySubscriptionStatus(Request $request)
     {
 
