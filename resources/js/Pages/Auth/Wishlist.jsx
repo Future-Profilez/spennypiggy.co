@@ -18,7 +18,11 @@ import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 
 
 const imageLinks = [
-    "be9060ab-1a76-452f-b805-1c71d9af4fb7",
+    "901c0a0e-e5de-4d7a-8ac3-de11a4632542",
+    "ca1392cd-d81e-4e00-b106-55fcba62bc84",
+    "467f7ad0-e397-45fe-be22-a6e8e8afe9fa",
+    "897b3ec3-63f8-42c0-83b3-a3a9a1b90b7c",
+    "be9060ab-1a76-452f-b805-1c71d9af4fb7",// first
     "01bbc3bd-7e79-4dc0-817c-2c260da43c20",
     "f0c45dc9-cc56-4955-a406-7527004a1373",
     "4c42426a-1396-49e2-8b46-2381a2ae5d7b",
@@ -505,8 +509,8 @@ export default function Wishlist(props) {
                                     </div>
 
                                     <div className="pt-4 pb-3"  >
-                                        <strong className="text-start d-block">Exclusive Reward *</strong>
-                                        <p className="text-small mb-3" >Choose an exclusive picture as an reward for gifter.</p>
+                                        <strong className="text-start d-block">Exclusive Reward or Art commission *</strong>
+                                        <p className="text-small mb-3" >Create an exclusive image as a reward “think a custom photoshoot” or add an exclusive art commission “Unique drawing or painting</p>
                                         <p className="text-small mb-3" >Rewards must be your own content, not stock imagery or content that you don’t have the ownership rights to. Wishes will be rejected if the reward is not sufficiently classed as unique content</p>
 
                                         {item && item.reward_url ? <div className="default-wish-img border mb-2">

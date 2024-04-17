@@ -116,16 +116,14 @@ export default function Board(props) {
 
     return (
         <Authenticated auth={auth && auth.user}>
-            <Head title={"Cart"} />
-            <div className="blackbg">
-                <div className="containerbox pb-5 ">
+            <Head title={"Leaderboard"} />
+            <div className="blackbg pt-4">
+                <div className="containerbox pb-5 pt-2 ">
                     <div className="row">
                         <div className="col-lg-8 mb-4">
                             <div className="pe-md-4">
                                 <div className="pt-4 pt-md-0 d-block d-md-flex align-items-center justify-content-between mb-4 pb-4">
-                                    <h2 className="text-bl font-GillSans  text-start text-2xl uppercase text-white ">
-                                        Leaderboard
-                                    </h2>
+                                    <h1 className="text-bl font-GillSans text-start text-2xl uppercase text-white ">Leaderboard</h1>
                                     <div className="changePeriod">
                                         <button
                                             className={period == "monthly" ? "active":""}

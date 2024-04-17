@@ -238,7 +238,7 @@ export default function Register(props) {
     return (
         <GuestLayout>
             <IpRedirection />
-            <Head title="Register" />
+            <Head title="Create Wishlist" />
             <div className='loginPage  blackbg pb-4 pb-md-5'>
                 <div className='containerbox '>
                     <div className='loginform mt-3 mt-md-5 mx-auto border-black whbg shadow-mint'>
@@ -248,6 +248,7 @@ export default function Register(props) {
                             <span className='bluebg '></span>
                         </div> 
 
+                        <h1 className='text-[30px] font-GillSans text-uppercase d-none pt-8 text-center px-2'>Create Wishlist</h1>
                         <h2 className='text-[30px] font-GillSans text-uppercase pt-8 text-center px-2'>Create Account</h2>
                         <p className='text-center text-[18px] text-dark mb-4 '>Already registered? <Link className={'text-pink'} href={route('login')}  > Log In</Link></p>
 

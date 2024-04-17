@@ -27,6 +27,7 @@ const AddPost = React.lazy(() => import("./feed/AddPost"));
 const AddIntro = React.lazy(() => import("./intros/AddIntro"));
 const MyGoal = React.lazy(() => import("./TipJar/MyGoal"));
 const SocialLinks = React.lazy(() => import("@/includes/SocialLinks"));
+const SiteSubscription = React.lazy(() => import("./Profile/SiteSubscription"));
 import Dropdown from "react-bootstrap/Dropdown";
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
@@ -38,8 +39,9 @@ import{arrayMove,SortableContext,sortableKeyboardCoordinates,useSortable,rectSor
 import{closestCenter,DndContext,KeyboardSensor,MouseSensor,TouchSensor,useSensor,useSensors,}from "@dnd-kit/core";
 import PaymentUnActivated from "@/Components/PaymentUnActivated";
 
-
 export default function Dashboard(props) {
+
+    console.log("props", props)
     const w = useWidthCount();
     const{auth,user,username,global_currency,itemid}= props;
     const [tab, setTab] = useState("home");
@@ -285,17 +287,18 @@ export default function Dashboard(props) {
                 <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
                 <div className="wishlistPage blackbg pt-6 pb-0 pb-sm-5 ">
                     <div className="containerbox">
+                         {/* <CanvaButton />  */}
                         <VersionUpdate />
                         <div className="wishbanner relative ">
-                            <LazyLoadImage
-                            alt={"image"}
-                            useIntersectionObserver={true}
-                            effect="blur"
-                            height={400}
-                            className="w-full border-black border-2 shadow-mint rounded-2xl"
-                            src={user?.cover_url || wishlistbannerimg}
-                            width={1200}
-                            />
+                        <LazyLoadImage
+                        alt={"image"}
+                        useIntersectionObserver={true}
+                        effect="blur"
+                        height={400}
+                        className="w-full border-black border-2 shadow-mint rounded-2xl"
+                        src={user?.cover_url || wishlistbannerimg}
+                        width={1200}
+                        />
 
                         {IsloggedIn && auth && auth?.user.cover_url && auth?.user?.cover_approved == 0 ? 
                             <div className="absolute right-5 top-3 mx-auto">
@@ -332,9 +335,9 @@ export default function Dashboard(props) {
                                                 <Tab eventKey="home" title="Home">
                                                     <div className="row about-sec align-self-start">
                                                         <div className="col-md-6  h-auto">
-                                                            <div className="sticky top-8" >
+                                                            <div className="about-sticky" >
                                                                 {user && user?.stripe_details_submitted == 1 && goal && goal.completed == 0 ? <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ""}
-                                                                <div className="box p-2 position-sticky top-0 p-md-4 shadow-voilet rounded-lg mb-4">
+                                                                <div className="box p-2 p-md-4 shadow-voilet rounded-lg mb-4">
                                                                     <p className="font-bold">About me</p>
                                                                     <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
                                                                         {(user &&user.bio) ||""}
@@ -344,14 +347,20 @@ export default function Dashboard(props) {
                                                                     
                                                                     {IsloggedIn ? (
                                                                         <div className="userProfileDate pt-0 pt-md-3">
-                                                                            
-                                                                            {auth.user && auth.user.role == 1 && <>
-                                                                                {auth.user && auth.user.stripe_details_submitted == 1 ? (
+
+                                                                            {auth.user && auth.user.role == 1 && <> 
+                                                                                {auth.user && auth.user.monthly_charge_enabled ? '' : <SiteSubscription user={auth.user} /> }
+                                                                            </>
+                                                                            || ''} 
+
+                                                                            {auth.user && auth.user.role == 1 && auth.user.monthly_charge_enabled &&
+                                                                               <> 
+                                                                               {auth.user && auth.user.stripe_details_submitted == 1  ? (
                                                                                     <PaymentDashboard classes="btn-pink lg w-100 mt-3" text="Payment Dashboard" />
                                                                                 ) : (
                                                                                     <div className="finish mt-4 d-block">
                                                                                         <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                                                        <Link href={"/stripe"} className="btn-pink text-xs lg" > Finish Setup
+                                                                                        <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-xs lg" > Finish Setup
                                                                                         </Link>
                                                                                     </div>
                                                                                 )}

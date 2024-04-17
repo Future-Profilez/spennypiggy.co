@@ -87,9 +87,7 @@ export default function AddMembership({updateState, item}) {
       }
   };
 
-
   const [close, setClose] = useState();   
-  
   function selectRewards(e){ 
     const checkboxes = document.getElementsByName("rewards");
     let result = [];
@@ -136,7 +134,6 @@ export default function AddMembership({updateState, item}) {
         }); 
       }
     },[item]);
-
 
 
     const [loading, setLoading] = useState(false);

@@ -157,13 +157,13 @@ export default function Footer(props) {
                                         <Link href={route("how-it-works")}> How it works </Link>
                                     </li>
                                     <li>
-                                        <a href="https://blog.spennypiggy.co"> Blog </a>
+                                        <a href="https://blog.spennypiggy.co"> Blog</a>
                                     </li>
                                     <li>
-                                        <Link href={route("terms-and-conditions")}> Terms </Link>
+                                        <Link href={'/terms.pdf'}> Terms </Link>
                                     </li>
                                     <li>
-                                        <Link href={route("promotion-terms")}> Promotion Terms </Link>
+                                        <Link href={route("promotion-terms")}> Promotion Terms</Link>
                                     </li>
                                     <li>
                                         {/* <ContentPrefrences classes="m-auto d-table" />{" "} */}

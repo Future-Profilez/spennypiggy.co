@@ -43,7 +43,7 @@ export default function Header() {
 
     return (
         <>
-            <div className="blackbg headermain py-8">
+            <div className="blackbg headermain py-6 ">
                 <div className="containerbox">
                     <div className="header flex w-full items-center  justify-between ">
                         {/* {auth?.user?.username ? (

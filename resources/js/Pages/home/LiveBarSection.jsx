@@ -85,6 +85,9 @@ export default function LiveBarSection() {
            </>
            } images={[ { src: spennys }]} />
 
+
+           <p className='text-center mt-4' >*all transactions provide exclusive content or member only access.</p>
+
         </div>
         <LiveBar classes={'barouter mt-2 mt-md-5 pt-4'} text={"💰⚡ Fast & Easy payments through: Apple pay, Cashapp Pay "} />
       </div>

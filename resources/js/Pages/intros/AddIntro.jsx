@@ -120,7 +120,7 @@ export default function AddIntro({IsloggedIn, uuid}){
   }
 
   return (
-    <div className={`mb-4 ${videoLoading ? 'd-none' : '' } `}>
+    <div className={`pb-4 ${videoLoading ? 'd-none' : '' } `}>
       {introVideo ? 
         <div className='position-relative'>
           <ProfileIntro /> 

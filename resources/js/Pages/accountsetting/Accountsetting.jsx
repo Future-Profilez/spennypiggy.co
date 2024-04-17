@@ -58,16 +58,17 @@ export default function Accountsetting(props) {
                             {auth && auth?.user?.role == 1 ? 
                                 <li>
                                     {auth && auth.user && auth.user.stripe_details_submitted == 1 ? 
-                                        <PaymentDashboard classes='w-100 text-black rounded-3  border-0 paymentbutton' text={<>PAYMENT DASHBOARD <span className='text-mint'>Connected</span></>} />
+                                        <PaymentDashboard classes='w-100 text-black rounded-3  border-0 paymentbutton' text={<>PAYMENT DASHBOARD <span className='text-mint text-sm'>Linked</span></>} />
                                         : 
-                                        <Link href={route("stripe")} >PAYMENT DASHBOARD <span className='text-voilet'>Connect Stripe</span></Link>
+                                        <Link href={route("stripe")} >STRIPE ACCOUNT <span className='text-voilet'>Link</span></Link>
                                     }
                                 </li> 
                             : ''}
+                           
 
                             <li>
                                 <Popup space='4' modalclassName="pinkmodal" 
-                                text={<>Email <span className='text-gray'>{auth && auth.user && auth.user.email}</span></>} >
+                                text={<>EMAIL <span className='text-gray'>{auth && auth.user && auth.user.email}</span></>} >
                                     <UpdateProfileInformation />
                                 </Popup >
                             </li>
@@ -93,8 +94,8 @@ export default function Accountsetting(props) {
                                 text={
                                 <>
                                     { auth && auth.user && auth.user.twitter_username ? `AUTO TWEET` : 'SET UP AUTO TWEET'}
-                                    <div className='d-flex' >
-                                        <img src={closeblacksm} alt="img" className='me-2' />
+                                    <div className='d-flex items-center' >
+                                        <img src={closeblacksm} alt="img" className='me-2 w-5 h-5' />
                                         { auth && auth.user && auth.user.twitter_username ? `@${auth.user.twitter_username}` : ''}
                                     </div>
                                 </> } >
@@ -124,15 +125,14 @@ export default function Accountsetting(props) {
                             </li>
 
 
-                            {auth && auth?.user?.stripe_details_submitted == 1 ? 
+                            {/* {auth && auth?.user?.stripe_details_submitted == 1 ? 
                              <li>
                                 <Popup space='4' modalclassName="pinkmodal" 
                                 text={<>DELETE STRIPE ACCOUNT  </>} >
                                     <DeleteStripeAccount />
                                 </Popup >
                             </li>  : ''
-                            }
-                            
+                            } */}
                             
                         </ul>
                     </div>

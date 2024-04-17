@@ -19,7 +19,6 @@ body{background:#000;}
 .welcomeTitle{font-size:35px;}
 .spennylogo img{width:100%;height:100%;}
 .funboximg span.lazy-load-image-background,.spennylogo .lazy-load-image-background,.welcomeRt span.lazy-load-image-background{width:auto !important;height:auto !important;}
-.wishlistbtn a:not(.wishlistbutton){transform:rotate(-11deg);}
 .welcomeTitle{-webkit-text-stroke:1px #e6ea81;text-transform:capitalize !important;text-shadow:2px 2px 0#e6ea81;}
 .menuImg{width:45%;border-right:1px solid var(--yellow);padding:120px 40px 40px;display:inline-flex;align-items:flex-start;align-content:flex-start;}
 .menuList{align-items:center;align-content:center;justify-content:flex-start;padding:30px 2% 30px 10%;width:100%;flex-wrap:wrap;}
@@ -209,9 +208,9 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 .termselect label input{display:inline-block;vertical-align:middle;margin:-1px 6px 0 0;}
 .accountsetting{max-width:675px;width:96%;}
 .accsettingList ul li{margin:0 0 10px;border-radius:10px;border:2px solid var(--black);background:var(--white);box-shadow:3px 3px 0 0 var(--black);}
-.accsettingList ul li a,.accsettingList ul li button,.notification{position:relative;display:flex;width:100% !important;padding:15px 40px 15px 15px !important;align-items:center;align-content:center;justify-content:space-between; font-family:var(--font-CeraGRBold);font-size:18px;font-style:normal;letter-spacing:-0.36px;line-height:27px;}
+.accsettingList ul li a,.accsettingList ul li button,.notification{position:relative;display:flex;width:100% !important;padding:15px 30px 15px 15px !important;align-items:center;align-content:center;justify-content:space-between; font-family:var(--font-CeraGRBold);font-size:18px;font-style:normal;letter-spacing:-0.36px;line-height:27px;}
 .accsettingList ul li button:focus,.accsettingList ul li button:hover{background:0 0 !important;}
-.accsettingList ul li a:after,.accsettingList ul li button:after,.notification:after{content:"";position:absolute;right:23px;top:37%;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:7px solid var(--black);}
+.accsettingList ul li a:after,.accsettingList ul li button:after,.notification:after{content:"";position:absolute;right:15px;top:37%;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:7px solid var(--black);}
 .switch{position:relative;display:inline-block;width:60px;height:16px;}
 .switch input{opacity:0;width:0;height:0;}
 .switch .sliderSw{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#a194ba;-webkit-transition:0.4s;transition:0.4s;}
@@ -504,7 +503,21 @@ ul.socialmedia li svg{width:25px !important;height:24px !important;}
 .approvalmessge{background:#fff1d2;color:#f7ab00;border:1px solid #ffdd90;}
 .approvalmessge.membership{position:absolute;left:0;font-size:13px;top:0;z-index:1;text-align:center;}
 .creator-tags input:checked +label{background:var(--voilet);color:#fff;}
+
+.headermain {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+
+
 /* responsive */
+@media (min-width:767px){
+  .about-sticky { 
+    position: sticky; top: 133px;
+  }
+}
 @media (max-width:1500px){.loveboxes{padding:0 20px;}
 .loveboxes img{max-width:160px;}
 .menuList ul li .link,.menuList ul li a{font-size:30px;}
@@ -598,7 +611,7 @@ html body .intercom-lightweight-app-launcher{margin-bottom:70px !important;}
 .shadow-yellow{text-shadow:1px 3px 0 var(--yellow);}
 .shadow-voilet{box-shadow:5px 5px 0 0 var(--voilet);}
 .headingMd{font-size:45px !important;line-height:47px !important;}
-.headermain{padding-top:15px;padding-bottom:20px;}
+.headermain{padding-top:15px;padding-bottom:15px;}
 .closemega{position:absolute;right:31px;top:30px;}
 .closemega svg{width:43px;top:10px;}
 .headtitle,.howitmain p br{display:none;}

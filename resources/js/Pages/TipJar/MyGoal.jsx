@@ -19,14 +19,12 @@ export default function MyGoal({goal}) {
     `}</style>
     <div className='box mygoal rounded-lg mb-4 shadow-voilet border p-0'>
       <div className='border-bottom border-voilet' >
-        <h2 className='text-large font-semibold font-GillSans text-uppercase lightpink p-3 goaltitle'>{goal?.name || ''}</h2>
+        <h2 className='text-large   font-GillSans text-uppercase lightpink p-3 goaltitle'>{goal?.name || 'MY PIGGY BANK'}</h2>
       </div>
       <div className='p-3' >
-        <p className='mb-3 '>{ goal?.description || ''}</p>
+        <p className='mb-3 '>Total Earnings</p>
         {goal.days ? <p className='mb-3 text-voilet '>{goal.days > 1 ? `${goal.days} Days` : `${goal.days} Day`} left to goal ends.</p> : ''}
-        <ProgressBar 
-        now={goal?.fullfilled} 
-        max={goal?.target} />
+        <ProgressBar now={goal?.fullfilled}  max={goal?.target} />
         <p className='text-muted text-small mt-2' >{getPercentage(goal?.target, goal?.fullfilled)}% of {formatMultiPrice(goal?.target, goal?.currency)} goal.</p>
       </div>
     </div>

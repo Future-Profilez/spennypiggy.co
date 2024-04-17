@@ -5,6 +5,7 @@ import { useForm, Head } from "@inertiajs/react";
 import React from "react";
 import { useState } from "react";
 import { useRef } from "react";
+import Popup from '@/Components/Popup';
 
 export default function Stripe(props) {
     const { auth, user } = props;
@@ -114,7 +115,7 @@ export default function Stripe(props) {
                         </strong>
                         <Countries send={getCountry} />
 
-                        <div className="termselect mt-4">
+                        {/* <div className="termselect mt-4">
                             <label htmlFor="termaccept">
                                 <p>
                                     <input
@@ -134,17 +135,43 @@ export default function Stripe(props) {
                                     I confirm I will only use Spenny Piggy in line with the ToS and understand my account could be suspended for repeated violations. I also confirm that I will create and post exclusive content in exchange for receiving gifts, donations, subscriptions, memberships and bill payments. I also confirm that nothing on the above prohibited list will be added to my profile.
                                 </p>
                             </label>
-                        </div>
+                        </div> */}
                     </div>
                     <div className="text-center flex justify-center mb-4 ">
-                        <button
-                            className="btn-pink  lg w-1/2"
-                            onClick={() => {
-                                return checkTerms();
-                            }}
-                        >
-                            Go to Stripe
-                        </button>
+                       
+
+                        <Popup modalclass="pinkmodal full stripe-terms shadow-pink ps-0"
+                            space="4" size="md"
+                            action={close} classes={`btn-pink lg w-1/2`}
+                            text={`Accept TERMS`} >
+                                <div className="addgoal" >
+                                    <h2 className="text-uppercase font-GillSans pb-4 font-large">Important notice !</h2>
+
+                                    <p className='mb-2'><strong>Oink! @{auth && auth.user && auth.user.username}</strong></p>
+                                    <p className='mb-2' > To comply with Stripes new rules, you must be posting exclusive content for your:</p>
+
+                                    <div className='d-block py-3' >
+                                        <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >FOR Supporters</h2>
+                                        <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >FOR Subscribers</h2>
+                                        <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >FOR Members</h2>
+                                    </div>
+
+                                    <p className='mb-1 text-[17px]'>Please ensure you create an Image Post for each group above. </p>
+                                    <p className='mb-1 text-[17px]'>That is a minimum of 3 posts per month.</p>
+                                    <p className='mb-1 text-[17px]'>Oink! Oink! 🐷</p>
+
+                                    <div className='termselect mt-4'>
+                                        <label htmlFor="termaccept">
+                                            <p className='text-[15px]' ><input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept"
+                                                required onChange={(e) => setData("termaccept", e.target.value)}></input>
+                                                I confirm I will only use Spenny Piggy in line with the ToS and understand my account could be suspended for repeated violations. I also confirm that I will create and post exclusive content in exchange for receiving gifts, donations, subscriptions, memberships and bill payments. I also confirm that nothing on the above prohibited list will be added to my profile.
+                                            </p></label>
+                                    </div>
+
+                                    <button className='btn-pink md m-auto mt-4  d-table' onClick={() => { return checkTerms(); }}>Go to Stripe</button>
+                                </div>  
+                            </Popup>
+
                     </div>
 
                     {/* <p className='alert alert-success text-center font-bold my-4' >Thanks for registering! You will soon be able to link your stripe account within the next 5 weeks. As soon as you can we will drop you an e-mail 🤑</p> */}
