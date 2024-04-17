@@ -201,6 +201,10 @@ Route::middleware('auth')->group(function () {
 
         Route::get('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->name("mandatory.checkout");
         Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleMandatorySubscription'])->name('mandatory.handle');
+
+        Route::get('/stripe-subscription', function () {
+            return Inertia::render('stripe/ActivateSubscription');
+        })->name('stripe-subscription');
     });
 });
 
