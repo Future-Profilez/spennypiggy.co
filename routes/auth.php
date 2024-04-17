@@ -203,7 +203,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleMandatorySubscription'])->name('mandatory.handle');
 
         Route::get('/stripe-subscription', function () {
-            return Inertia::render('stripe/ActivateSubscription');
+            return Inertia::render('Profile/ActivateSubscription');
         })->name('stripe-subscription');
     });
 });

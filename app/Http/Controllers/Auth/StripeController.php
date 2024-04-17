@@ -1132,9 +1132,9 @@ class StripeController extends Controller
                 'subscription_data' =>  [
                     'application_fee_percent'   =>  $fee_per,
                     'transfer_data' => [
-                        'destination' => "acct_1O3maCG7xsNScLmX", // Creator's connected account ID
+                        'destination' => "acct_1OOc6oCmFHIIsmOr", // Creator's connected account ID
                     ],
-                    'on_behalf_of'  => "acct_1O3maCG7xsNScLmX",
+                    // 'on_behalf_of'  => "acct_1OOc6oCmFHIIsmOr",
                     'description'   => "Subscription for using site through stripe."
                 ],
                 'customer_email'    =>  $user->email,

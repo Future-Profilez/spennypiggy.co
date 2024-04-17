@@ -190,5 +190,6 @@ return [
     'subs_tax' => 20,
     'crowd_tax' => 10,
     'member_tax' => 15,
-    'jar_tax' => 8,
+    'jar_tax' => 20,
+    'bill_tax' => 8,
 ];

@@ -61,7 +61,7 @@ class BillsController extends Controller
             $media = $request->thumbnail;
 
             $price = $request->price;
-            $taxamount = round(($price * config('app.single_tax') / 100), 2, PHP_ROUND_HALF_UP);
+            $taxamount = round(($price * config('app.bill_tax') / 100), 2, PHP_ROUND_HALF_UP);
             $createpriceid = $price + $taxamount;
 
             $bill = new Bills();
