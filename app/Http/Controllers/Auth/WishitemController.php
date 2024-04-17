@@ -1360,9 +1360,20 @@ class WishitemController extends Controller
 
         $total_earnings = $bill_payment + $mem_payment + $wish_payment + $sub_payment;
 
+        if($total_earnings < 100){
+            $target = 100;
+        }elseif($total_earnings < 1000){
+            $target = 1000;
+        }elseif($total_earnings < 10000){
+            $target = 10000;
+        }elseif($total_earnings < 100000){
+            $target = 100000;
+        }
+
         return response()->json([
             'status' => true,
-            'goal' => $total_earnings
+            'goal' => $total_earnings,
+            'target' => $target
         ]);
     }
 
