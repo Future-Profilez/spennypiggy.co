@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Models\UserIntro;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
+use App\StripeControl;
 use Carbon\Carbon;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -129,6 +130,11 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+
+        StripeControl::deleteAccount($user->account_id);
+        $user->account_id = NULL;
+        $user->stripe_details_submitted = 0;
+        $user->save();
 
         Auth::logout();
 
