@@ -66,7 +66,8 @@ class User extends Authenticatable
     protected $appends = [
         'avatar_url',
         'cover_url',
-        'twitter_username'
+        'twitter_username',
+        'monthly_charge_enabled'
     ];
 
     /**
@@ -212,5 +213,17 @@ class User extends Authenticatable
 
     public function getDefaultCurrencyAttribute($value){
         return strtoupper($value);
+    }
+
+    public function getMonthlyChargeEnabledAttribute(){
+        if(Auth::check() && $this->id == Auth::id()){
+            $charge = MonthlyCharge::where('user_id',$this->id)->where('status','paid')->first();
+
+            if(!empty($charge)){
+                return true;
+            }
+            return false;
+        }
+        return false;
     }
 }

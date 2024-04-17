@@ -9,23 +9,19 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class RenewMail extends Mailable
+class SendSuspendedMailForSubscription extends Mailable
 {
     use Queueable, SerializesModels;
-    public $data;
-    public $type;
-    public $module;
+
     /**
      * Create a new message instance.
      */
-    public function __construct($data,$type,$module)
+    public function __construct()
     {
-        $this->data = $data;
-        $this->type = $type;
-        $this->module = $module;
+
     }
 
-    /**
+      /**
      * Build the message.
      *
      * @return $this
@@ -33,13 +29,8 @@ class RenewMail extends Mailable
     public function build()
     {
         try {
-            if($this->module == 'bill' || $this->module == 'membership' || $this->module == 'site'){
-                $subject = "Subscription for $this->module " . $this->type . ".";
-            }
-            else{
-                $subject = 'Subscription ' . $this->type . ".";
-            }
-            return $this->view('email.subscription-renew')
+            $subject = '⚠️ Your account is suspended! ⚠️';
+            return $this->view('email.account-suspend')
                 ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
                 ->subject($subject);
         } catch (\Exception $e) {

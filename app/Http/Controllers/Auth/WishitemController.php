@@ -18,7 +18,9 @@ use App\Jobs\ThankyouMailToUser;
 use App\Jobs\TipJarTweet;
 use App\Jobs\WelcomeUser;
 use App\Mail\CheckError;
+use App\Models\BillPayment;
 use App\Models\Logs;
+use App\Models\MembershipPayment;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\Subscription;
@@ -779,7 +781,7 @@ class WishitemController extends Controller
                     'user' => $wish->user->toArray(),
                     'wish' => $wish->wish ? $wish->wish->toArray() : [],
                     'owner' => $wish->owner->toArray(),
-                    'url' => $wish->wish ? $wish->wish->perma_link : 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/',
+                    'url' => $wish->wish ? $wish->wish->perma_link : 'https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/',
                     'amount' => $wish->amount,
                     'priceid' => $wish->priceid,
                     'uuiddata' => $wish->uuid,
@@ -885,7 +887,7 @@ class WishitemController extends Controller
                 'user' => $wish->user ? $wish->user->toArray() : [], // Check if user is not null
                 'wish' => $wish->wish ? $wish->wish->toArray() : [],
                 'owner' => $wish->owner ? $wish->owner->toArray() : [],
-                'url' => $wish->wish ? $wish->wish->perma_link : 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/',
+                'url' => $wish->wish ? $wish->wish->perma_link : 'https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/',
                 'amount' => $wish->amount,
                 'priceid' => $wish->priceid,
                 'uuiddata' => $wish->uuid,
@@ -991,7 +993,7 @@ class WishitemController extends Controller
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
         $stripe_client = $stripe->products->create([
             'name' => 'Surprise Gift',
-            'images' => ['https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/'],
+            'images' => ['https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/'],
             "default_price_data" => ["currency" => $owner->default_currency, "unit_amount_decimal" => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100],
         ]);
 
@@ -1079,10 +1081,10 @@ class WishitemController extends Controller
         $tracks = StripePaymentItems::whereHas('payment', function ($query) use ($user) {
             $query->where('user_id', $user->id)->orWhere('owner_id', $user->id);
         })->with(['wish'])->orderBy('created_at', 'DESC')->get();
-        $creator_subs = WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
+        $creator_subs = WishItemSubscription::where('recurring_for','continue')->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now())->whereHas('wish_item', function ($q) use ($user) {
             $q->where('user_id', $user->id);
-        })->with(['user', 'wish_item'])->where('status','paid')->orderBy('updated_at', 'DESC')->get();
-        $user_subs = WishItemSubscription::where('user_id', Auth::id())->with(['wish_item', 'wish_item.user'])->where('status','paid')->get();
+        })->with(['user', 'wish_item'])->whereIn('status',['paid','cancelled'])->orderBy('updated_at', 'DESC')->get();
+        $user_subs = WishItemSubscription::where('recurring_for','continue')->where('user_id', Auth::id())->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now())->with(['wish_item', 'wish_item.user'])->whereIn('status',['paid','cancelled'])->get();
 
         $trackData = $tracks->map(function ($q) {
 
@@ -1280,7 +1282,7 @@ class WishitemController extends Controller
 
         // $productPayload = [
         //     "name"  =>  $goal->name,
-        //     "images" => ["https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/"],
+        //     "images" => ["https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/"],
         //     "default_price_data"    =>  [
         //         "currency"  =>  $user->default_currency,
         //         "unit_amount_decimal"   => $createpriceid * 100,
@@ -1334,15 +1336,44 @@ class WishitemController extends Controller
     public function listGoal($uuid)
     {
 
-        TipGoal::where('status', 1)->where('completed', 0)->where('completed_at', '<', Carbon::now())->update(['completed' => 1]);
+        $user = User::where('uuid',$uuid)->first();
+        // TipGoal::where('status', 1)->where('completed', 0)->where('completed_at', '<', Carbon::now())->update(['completed' => 1]);
 
-        $goal = TipGoal::whereHas('user', function ($q) use ($uuid) {
-            $q->where('uuid', $uuid);
-        })->where('completed', 0)->first();
+        // $goal = TipGoal::whereHas('user', function ($q) use ($uuid) {
+        //     $q->where('uuid', $uuid);
+        // })->where('completed', 0)->first();
+        $bill_payment = BillPayment::whereHas('bill',function($q) use($user){
+            $q->where('user_id',$user->id);
+        })->sum('amount');
+
+        $mem_payment = MembershipPayment::whereHas('membership',function($q) use($user){
+            $q->where('user_id',$user->id);
+        })->sum('amount');
+
+        $wish_payment = StripePaymentItems::whereHas('wish',function($q) use($user){
+            $q->where('user_id', $user->id);
+        })->sum('amount');
+
+        $sub_payment = WishItemSubscription::whereHas('wish_item',function($q) use($user){
+            $q->where('user_id', $user->id);
+        })->sum('amount');
+
+        $total_earnings = $bill_payment + $mem_payment + $wish_payment + $sub_payment;
+
+        if($total_earnings < 100){
+            $target = 100;
+        }elseif($total_earnings < 1000){
+            $target = 1000;
+        }elseif($total_earnings < 10000){
+            $target = 10000;
+        }elseif($total_earnings < 100000){
+            $target = 100000;
+        }
 
         return response()->json([
             'status' => true,
-            'goal' => $goal
+            'goal' => $total_earnings,
+            'target' => $target
         ]);
     }
 

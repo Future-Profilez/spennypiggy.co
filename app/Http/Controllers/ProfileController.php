@@ -6,6 +6,7 @@ use App\Helpers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Jobs\SendIntroMailAdmin;
 use App\Models\Bills;
+use App\Models\Logs;
 use App\Models\Membership;
 use App\Models\MembershipPayment;
 use App\Models\Post;
@@ -15,6 +16,7 @@ use App\Models\User;
 use App\Models\UserIntro;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
+use App\StripeControl;
 use Carbon\Carbon;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -105,6 +107,14 @@ class ProfileController extends Controller
             $user->save();
             $user->refresh();
 
+            if(!empty($request->bio)){
+                $logs = Logs::where('edited_about_me_id',$user->id)->where('status','pending')->first();
+                if(!empty($logs)){
+                    $logs->status = 'updated';
+                    $logs->save();
+                }
+            }
+
             return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
         }
     }
@@ -120,6 +130,11 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+
+        StripeControl::deleteAccount($user->account_id);
+        $user->account_id = NULL;
+        $user->stripe_details_submitted = 0;
+        $user->save();
 
         Auth::logout();
 

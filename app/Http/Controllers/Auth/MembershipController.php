@@ -6,6 +6,7 @@ use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\MembershipAutoTweet;
 use App\Jobs\MembershipMail;
+use App\Jobs\SendRenewMail;
 use App\Jobs\SubscribeAutoTweet;
 use App\Jobs\SubscribedMail;
 use App\Jobs\SubscriptionCancelAtEnd;
@@ -29,6 +30,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
 use Stripe\StripeClient;
+use Stripe\Webhook;
 
 class MembershipController extends Controller
 {
@@ -571,6 +573,93 @@ class MembershipController extends Controller
             'status' => true,
             'data' => $result
         ]);
+    }
+
+
+    public function membershipStatus(Request $request)
+    {
+
+        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+
+        // This is your Stripe CLI webhook secret for testing your endpoint locally.
+        $endpoint_secret = 'whsec_a5n2XAXrZTXHKcRYKGnYoIvMc9do2u6N';
+
+        $payload = @file_get_contents('php://input');
+        $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
+        $event = null;
+
+        try {
+            $event = Webhook::constructEvent(
+                $payload,
+                $sig_header,
+                $endpoint_secret
+            );
+        } catch (\UnexpectedValueException $e) {
+            // Invalid payload
+            http_response_code(400);
+            exit();
+        } catch (\Stripe\Exception\SignatureVerificationException $e) {
+            // Invalid signature
+            http_response_code(400);
+            exit();
+        }
+
+        $array = [];
+        if (!empty($event)) {
+            $subs = MembershipPayment::where('stripe_id', $event->data->object->subscription)->latest()->first();
+
+            $ret = StripeControl::getSubscription($event->data->object->subscription);
+
+            if ($event->type == "invoice.updated" && !empty($subs)) {
+
+                $array = [
+                    'email' => $event->data->object->customer_email,
+                    'name' => $event->data->object->customer_name,
+                    'invoice_pdf' => $event->data->object->invoice_pdf,
+                    'uuid' => $subs->uuid,
+                    'notification' => $subs->user->notification_send ?? 0
+                ];
+
+                $subs->status = "ended";
+                $subs->save();
+
+                $newSubs = new MembershipPayment();
+                $newSubs->stripe_id = $subs->stripe_id;
+                $newSubs->session_id = $subs->session_id;
+                $newSubs->membership_id = $subs->membership_id;
+                $newSubs->user_id = $subs->user_id;
+                $newSubs->guest_name = $subs->guest_name;
+                $newSubs->guest_email = $subs->guest_email;
+                $newSubs->currency = $subs->currency;
+                $newSubs->amount = $subs->amount;
+                $newSubs->tax = $subs->tax;
+                $newSubs->recurring_for = $subs->recurring_for;
+                $newSubs->recurring_type = $subs->recurring_type;
+                $newSubs->message = $subs->message;
+                $newSubs->anonymous = $subs->anonymous;
+                $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+                $newSubs->status = "paid";
+                $newSubs->created_at = $subs->created_at;
+                $newSubs->updated_at = Carbon::now();
+                $newSubs->save();
+
+                SendRenewMail::dispatch($array,'renew','membership');
+            }elseif ($event->type == "customer.subscription.deleted" && !empty($subs)) {
+                $subs->status = 'cancelled';
+                $subs->save();
+
+                SendRenewMail::dispatch($array,'cancelled','membership');
+            }
+            elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
+                $subs->status = 'failed';
+                $subs->save();
+
+                SendRenewMail::dispatch($array,'failed','membership');
+            }
+
+        }
+
+        return true;
     }
 
 }

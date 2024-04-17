@@ -198,6 +198,13 @@ Route::middleware('auth')->group(function () {
         });
 
         Route::get('delete-stripe-account', [StripeController::class, 'deleteStripeAccount'])->name('deleteStripeAccount');
+
+        Route::get('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->name("mandatory.checkout");
+        Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleMandatorySubscription'])->name('mandatory.handle');
+
+        Route::get('/stripe-subscription', function () {
+            return Inertia::render('Profile/ActivateSubscription');
+        })->name('stripe-subscription');
     });
 });
 
@@ -275,6 +282,12 @@ Route::get('/files/{filename}', function (string $filename) {
 });
 
 Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status')->withoutMiddleware(VerifyCsrfToken::class);
+
+Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status')->withoutMiddleware(VerifyCsrfToken::class);
+
+Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-status')->withoutMiddleware(VerifyCsrfToken::class);
+
+Route::post('mandatory-status/', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status')->withoutMiddleware(VerifyCsrfToken::class);
 
 /* wishtender */
 Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('leaderboard');

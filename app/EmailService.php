@@ -152,11 +152,11 @@ class EmailService
         }
     }
 
-    public static function sendRenewMail($data)
+    public static function sendRenewMail($data,$type,$module)
     {
         try {
 
-            Mail::to($data['email'])->send(new RenewMail($data));
+            Mail::to($data['email'])->send(new RenewMail($data,$type,$module));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }

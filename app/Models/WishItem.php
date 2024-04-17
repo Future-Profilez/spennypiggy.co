@@ -86,7 +86,7 @@ class WishItem extends Model
             // $url = Uploadcare::getUrl($this->thumbnail, $this->type, $watermark, $check);
             $url = "https://ucarecdn.com/" . $this->thumbnail . "/-/format/jpeg/";
         } else {
-            $url = "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/";
+            $url = "https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/";
         }
 
         return $url;
@@ -98,7 +98,7 @@ class WishItem extends Model
         if (!empty($this->reward)) {
             $url = "https://ucarecdn.com/" . $this->reward . "/-/format/jpeg/";
         } else {
-            $url = "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/";
+            $url = "https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/";
         }
 
         return $url;

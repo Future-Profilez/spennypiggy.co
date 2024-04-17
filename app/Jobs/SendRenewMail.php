@@ -15,12 +15,16 @@ class SendRenewMail implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $array;
+    public $type;
+    public $module;
     /**
      * Create a new job instance.
      */
-    public function __construct($array)
+    public function __construct($array,$type,$module)
     {
         $this->array = $array;
+        $this->type = $type;
+        $this->module = $module;
     }
 
     /**
@@ -29,7 +33,7 @@ class SendRenewMail implements ShouldQueue
     public function handle(): void
     {
         if($this->array['notification'] == 1){
-            EmailService::sendRenewMail($this->array);
+            EmailService::sendRenewMail($this->array,$this->type,$this->module);
         }
     }
 }
