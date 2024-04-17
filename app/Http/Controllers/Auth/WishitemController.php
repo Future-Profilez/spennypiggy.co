@@ -18,7 +18,9 @@ use App\Jobs\ThankyouMailToUser;
 use App\Jobs\TipJarTweet;
 use App\Jobs\WelcomeUser;
 use App\Mail\CheckError;
+use App\Models\BillPayment;
 use App\Models\Logs;
+use App\Models\MembershipPayment;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\Subscription;
@@ -1334,15 +1336,33 @@ class WishitemController extends Controller
     public function listGoal($uuid)
     {
 
-        TipGoal::where('status', 1)->where('completed', 0)->where('completed_at', '<', Carbon::now())->update(['completed' => 1]);
+        $user = User::where('uuid',$uuid)->first();
+        // TipGoal::where('status', 1)->where('completed', 0)->where('completed_at', '<', Carbon::now())->update(['completed' => 1]);
 
-        $goal = TipGoal::whereHas('user', function ($q) use ($uuid) {
-            $q->where('uuid', $uuid);
-        })->where('completed', 0)->first();
+        // $goal = TipGoal::whereHas('user', function ($q) use ($uuid) {
+        //     $q->where('uuid', $uuid);
+        // })->where('completed', 0)->first();
+        $bill_payment = BillPayment::whereHas('bill',function($q) use($user){
+            $q->where('user_id',$user->id);
+        })->sum('amount');
+
+        $mem_payment = MembershipPayment::whereHas('membership',function($q) use($user){
+            $q->where('user_id',$user->id);
+        })->sum('amount');
+
+        $wish_payment = StripePaymentItems::whereHas('wish',function($q) use($user){
+            $q->where('user_id', $user->id);
+        })->sum('amount');
+
+        $sub_payment = WishItemSubscription::whereHas('wish_item',function($q) use($user){
+            $q->where('user_id', $user->id);
+        })->sum('amount');
+
+        $total_earnings = $bill_payment + $mem_payment + $wish_payment + $sub_payment;
 
         return response()->json([
             'status' => true,
-            'goal' => $goal
+            'goal' => $total_earnings
         ]);
     }
 
