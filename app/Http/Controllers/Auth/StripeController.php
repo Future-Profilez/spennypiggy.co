@@ -1130,11 +1130,11 @@ class StripeController extends Controller
                 "currency"  =>  strtolower($request->cookie("currency", "GBP")),
                 'line_items' =>  [$items],
                 'subscription_data' =>  [
-                    'application_fee_percent'   =>  $fee_per,
-                    'transfer_data' => [
-                        'destination' => "acct_1OOc6oCmFHIIsmOr", // Creator's connected account ID
-                    ],
-                    // 'on_behalf_of'  => "acct_1OOc6oCmFHIIsmOr",
+                    // 'application_fee_percent'   =>  $fee_per,
+                    // 'transfer_data' => [
+                    //     'destination' => "acct_1O3maCG7xsNScLmX", // Creator's connected account ID
+                    // ],
+                    // 'on_behalf_of'  => "acct_1O3maCG7xsNScLmX",
                     'description'   => "Subscription for using site through stripe."
                 ],
                 'customer_email'    =>  $user->email,
