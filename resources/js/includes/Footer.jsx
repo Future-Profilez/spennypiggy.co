@@ -160,7 +160,7 @@ export default function Footer(props) {
                                         <a href="https://blog.spennypiggy.co"> Blog</a>
                                     </li>
                                     <li>
-                                        <Link href={'/terms.pdf'}> Terms </Link>
+                                        <Link target="_blank" href="https://www.notion.so/9d23c0290e9d4dcaa3b3511bc67cb30e?v=082ffd064479442e8f11a061aad6c945&pvs=4"> Terms </Link>
                                     </li>
                                     <li>
                                         <Link href={route("promotion-terms")}> Promotion Terms</Link>
@@ -173,7 +173,6 @@ export default function Footer(props) {
                             </div>
                         </div>
 
-                        
                     </div>
                     <div className="copyright">
                         Copyright &copy; {(new Date().getFullYear())} Spenny Piggy

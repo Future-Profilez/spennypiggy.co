@@ -59,7 +59,7 @@ export default function Userprofile({ IsloggedIn }) {
                         user={user}
                         global_currency={global_currency}
                     />
-                        {user && user.role == 1 ? <p className="text-center text-mint" >🐷 {supporters} Supporters</p> : ''}
+                        {user && user.role == 1 ? <p className="text-center text-mint mt-2" >🐷 {supporters} Supporters</p> : ''}
                     </div>
                 || ''}
                 

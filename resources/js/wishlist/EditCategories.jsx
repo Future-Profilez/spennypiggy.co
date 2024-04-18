@@ -74,8 +74,8 @@ export default function EditCategories({username, fetch_categories}) {
          <Popup size="md" text="Edit Categories" space={4}
             action={close}
             modalclassName="pinkmodal"
-            classes="me-2 mb-2 wish-tags cursor-pointer edit " >
-               <h2 className="font-GillSans text-bl uppercase text-lg relative z-1 "> Edit Categories </h2>
+            classes="me-2 mb-2 wish-tags cursor-pointer edit text-nowrap " >
+               <h2 className="font-GillSans text-bl  uppercase text-lg relative z-1 "> Edit Categories </h2>
                {data && data.map((s, i)=>{
                   return <Item item={s} />
                })}
