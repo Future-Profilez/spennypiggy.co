@@ -960,6 +960,7 @@ class StripeController extends Controller
                     ],
                     'application_fee_amount' => $tax * 100,
                     'on_behalf_of'  => $creator->account_id,
+                    'description' => "Supporter Membership Payment."
                 ],
                 'customer_email' =>  $request->email,
                 'success_url'       =>  route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "success"]),

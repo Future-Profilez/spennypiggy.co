@@ -22,6 +22,9 @@ class PostsController extends Controller
                  'required',
                  "string",
              ],
+             'image' => [
+                'required'
+            ],
              "title" => [
                  'sometimes',
                  'required_if:type,blog'
