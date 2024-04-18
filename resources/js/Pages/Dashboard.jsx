@@ -348,7 +348,10 @@ export default function Dashboard(props) {
                                                             <div className="row about-sec align-self-start">
                                                                 <div className="col-md-6  h-auto">
                                                                     <div className="about-sticky" >
-                                                                        {user && user?.stripe_details_submitted == 1 && goal && goal.completed == 0 ? <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ""}
+
+                                                                        {user && goal && user?.stripe_details_submitted == 1 ? 
+                                                                        <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ""}
+
                                                                         <div className="box p-2 p-md-4 shadow-voilet rounded-lg mb-4">
                                                                             <p className="font-bold">About me</p>
                                                                             <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
@@ -378,13 +381,13 @@ export default function Dashboard(props) {
                                                                                         )}
                                                                                     </> || ''}
 
-                                                                                    {auth.user && auth.user.stripe_details_submitted == 1 ? 
+                                                                                    {/* {auth.user && auth.user.stripe_details_submitted == 1 ? 
                                                                                         <AddGoal
                                                                                         stripe_enabled={auth.user && auth.user.stripe_details_submitted}
                                                                                         fetch_goal={fetch_goal}
                                                                                         activegoal={goal}
                                                                                         />
-                                                                                    : ''}
+                                                                                    : ''} */}
 
                                                                                     <div className="addsocial flex">
                                                                                         <ul>
