@@ -13,6 +13,7 @@ import LinkTwitter from '../twitter/LinkTwitter';
 import { useAlerts } from '@/Components/Alerts';
 import ChangeVat from '../account/ChangeVat';
 import DeleteStripeAccount from '../Profile/DeleteStripeAccount';
+import SiteSubscription from '../Profile/SiteSubscription';
 
 export default function Accountsetting(props) {
     const { successAlert, errorAlert } = useAlerts();
@@ -55,17 +56,26 @@ export default function Accountsetting(props) {
                     </div>
                     <div className='accsettingList p-4'>
                         <ul>
+
+
                             {auth && auth?.user?.role == 1 ? 
-                                <li>
-                                    {auth && auth.user && auth.user.stripe_details_submitted == 1 ? 
-                                        <PaymentDashboard classes='w-100 text-black rounded-3  border-0 paymentbutton' text={<>PAYMENT DASHBOARD <span className='text-mint text-sm'>Linked</span></>} />
-                                        : 
-                                        <Link href={route("stripe")} >STRIPE ACCOUNT <span className='text-voilet'>Link</span></Link>
-                                    }
-                                </li> 
+                                <>
+                                {auth.user && auth.user.monthly_charge_enabled ? 
+                                    <li>
+                                        {auth && auth.user && auth.user.stripe_details_submitted == 1 ? 
+                                            <PaymentDashboard classes='w-100 text-black rounded-3  border-0 paymentbutton' text={<>PAYMENT DASHBOARD <span className='text-mint text-sm'>Linked</span></>} />
+                                            : 
+                                            <Link href={route("stripe")} >LINK STRIPE <span className='text-voilet'>Link</span></Link>
+                                        }
+                                    </li> 
+                                 :  
+                                    <li>
+                                        <Link href={'/stripe-subscription'} >Activate Subscription  <span className='text-voilet'>Activate</span></Link>
+                                    </li> 
+                                  }
+                                </>
                             : ''}
                            
-
                             <li>
                                 <Popup space='4' modalclassName="pinkmodal" 
                                 text={<>EMAIL <span className='text-gray'>{auth && auth.user && auth.user.email}</span></>} >
