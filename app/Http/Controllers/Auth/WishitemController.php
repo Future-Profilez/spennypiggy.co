@@ -1335,13 +1335,13 @@ class WishitemController extends Controller
      */
     public function listGoal($uuid)
     {
-
         $user = User::where('uuid',$uuid)->first();
         // TipGoal::where('status', 1)->where('completed', 0)->where('completed_at', '<', Carbon::now())->update(['completed' => 1]);
 
         // $goal = TipGoal::whereHas('user', function ($q) use ($uuid) {
         //     $q->where('uuid', $uuid);
         // })->where('completed', 0)->first();
+        $arr = [];
         $bill_payment = BillPayment::whereHas('bill',function($q) use($user){
             $q->where('user_id',$user->id);
         })->sum('amount');
@@ -1369,11 +1369,18 @@ class WishitemController extends Controller
         }elseif($total_earnings < 100000){
             $target = 100000;
         }
+        elseif($total_earnings < 1000000){
+            $target = 1000000;
+        }else{
+            $target = 10000000;
+        }
 
+        $arr['fullfilled'] = $total_earnings;
+        $arr['target'] = $target;
+        $arr['currency'] = $user->default_currency;
         return response()->json([
             'status' => true,
-            'goal' => $total_earnings,
-            'target' => $target
+            'goal' => $arr,
         ]);
     }
 

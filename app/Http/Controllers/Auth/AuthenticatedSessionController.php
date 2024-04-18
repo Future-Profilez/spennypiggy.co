@@ -346,7 +346,7 @@ class AuthenticatedSessionController extends Controller
                         $subs = [];
                         $bills = [];
                         if ($p->for_module == 'subscription') {
-                            $subs = WishItemSubscription::where('reccuring_for','continue')->where(function($que){
+                            $subs = WishItemSubscription::where('recurring_for','continue')->where(function($que){
                                 $que->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now());
                             })->whereHas('wish_item',function($q) use($user){
                                 $q->where('user_id',$user->id);
