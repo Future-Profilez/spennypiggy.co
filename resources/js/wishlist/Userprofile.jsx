@@ -48,10 +48,13 @@ export default function Userprofile({ IsloggedIn }) {
                 </div>
                 
 
-                { !IsloggedIn ? user && user.stripe_details_submitted == 1 && 
+                {!IsloggedIn ? user && user.stripe_details_submitted == 1 && 
                     <div>
-                        <SendTip  />
-                        {user && user.role == 1 ? <p className="text-center text-mint" >🐷 {supporters} Supporters</p> : ''}
+                        {user && user.role == 1 ? 
+                        <>
+                            <SendTip  />
+                            {user && user.role == 1 ? <p className="text-center text-mint" >🐷 {supporters} Supporters</p> : ''}
+                        </> : ''}
                     </div>
                     :  
                     <div>

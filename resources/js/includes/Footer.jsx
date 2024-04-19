@@ -160,7 +160,7 @@ export default function Footer(props) {
                                         <a href="https://blog.spennypiggy.co"> Blog</a>
                                     </li>
                                     <li>
-                                        <Link target="_blank" href="https://www.notion.so/9d23c0290e9d4dcaa3b3511bc67cb30e?v=082ffd064479442e8f11a061aad6c945&pvs=4"> Terms </Link>
+                                        <Link target="_blank" href="https://d36ape3u423eoo.cloudfront.net/06d9ffdf-a19c-40e7-88ec-2ce51221ad68/terms.pdf"> Terms </Link>
                                     </li>
                                     <li>
                                         <Link href={route("promotion-terms")}> Promotion Terms</Link>
