@@ -503,7 +503,8 @@ ul.socialmedia li svg{width:25px !important;height:24px !important;}
 .col-reverse{flex-direction:row-reverse;}
 .livebar p{font-size:18px;text-transform:uppercase;}
 .barouter{width:100%;overflow:hidden;}
-.proud-banner{position:absolute;bottom:0;max-width:180px;}
+.proud-banner{position:absolute;bottom:0; }
+.proud-banner img { max-width:180px;}
 .heroSec{background-position:center center;background-size:cover;}
 .percent-eight{position:absolute;top:50%;left:50%;opacity:0.7;transform:translate(-50%,-50%);}
 .percent-eight-text{position:relative;z-index:1;}
@@ -714,6 +715,24 @@ html body .intercom-lightweight-app-launcher{margin-bottom:70px !important;}
 .e8_tag > div{width:100% !important;border-bottom:0 !important;border-right:0 !important;}
 .videoBg{max-width:100%;height:270px;}
 .wishlistbtn .itsfree-tag{right:0;top:80px;}
+
+.wishlistbtn .itsfree-tag {
+  max-width: 120px;
+}
+.proud-banner {
+  max-width: 88%;
+  justify-content: center;
+}
+
+.proud-banner img {
+  max-width: 120px;
+}
+.proud-banner {
+  align-items: end;
+}
+.proud-banner p {
+  font-size: 12px;
+}
 }
 @media(max-width:575px){
 .wishManage .rts___btn{ font-size:16px; }

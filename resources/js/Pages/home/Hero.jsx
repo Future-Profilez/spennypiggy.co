@@ -122,7 +122,11 @@ export default function Hero({auth}) {
                   
               </div>
           </div>
-          <img className="proud-banner"  alt={"image"} src={proud}  />
+
+          <div className="proud-banner d-flex  items-center w-full max-w-[500px]" >
+            <img  className='object-contain' alt={"image"} src={proud}  />
+            <p className='text-white ps-4 pb-3' >*Requires a monthly £4 subscription to cover stripe fees & compliance costs.</p>
+          </div>
         </div>
       </div>
     </>

@@ -97,7 +97,7 @@ export default function Post({item, updateState}) {
         : ''}
 
         <div>
-          <p className="description text-dark mt-3 mb-1"><b>{item?.title || ''}</b></p>
+          <p className="description text-dark mt-3 mb-1 pe-5"><b>{item?.title || ''}</b></p>
           <p className="description text-muted">{item?.content || ''}</p>
         </div>
 

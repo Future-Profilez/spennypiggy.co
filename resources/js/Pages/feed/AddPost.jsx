@@ -52,9 +52,8 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
     const [loading, setLoading] = useState(false);
     const submitPost = (e) => { 
         e && e.preventDefault();
-        
-        if(!rewardImage){
-            toast.error("Please chhose a media image for this post.");
+        if(rewardImage == '' || rewardImage == null){
+            toast.error("Please choose a media image for this post.");
             return false
         }
         setLoading(true);
@@ -116,18 +115,15 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
                 <GlobalUploader ref={uploaderRef} view={false} type="minimal" sendFile={getfile} options={st.post} />
             </div>
 
-                {/* { rewardImage ? <> */}
-                        <p className="text-grey-500 mb-1 mt-4" >Choose Audience</p>
-                        <div className="flex align-center justify-content-center flex-wrap" >
-                            <select id="countries" defaultValue={item?.for_module} onChange={handleInput} name="for_module" class="form-input  
-                            text-md w-full focus:ring-green-50 block ">
-                                {/* <option value="everyone">Everyone</option> */}
-                                <option value="membership">Memberships</option>
-                                <option value="subscription">Subscription</option>
-                                <option value="support">Supporters</option>
-                            </select>
-                        </div>
-                {/* </> :''  } */}
+                    <p className="text-grey-500 mb-1 mt-4" >Choose Audience</p>
+                    <div className="flex align-center justify-content-center flex-wrap" >
+                        <select id="countries" defaultValue={item?.for_module} onChange={handleInput} name="for_module" class="form-input  
+                        text-md w-full focus:ring-green-50 block ">
+                            <option value="membership">Memberships</option>
+                            <option value="subscription">Subscription</option>
+                            <option value="support">Supporters</option>
+                        </select>
+                    </div>
 
                      <LoaderButton onClick={submitPost}
                         disabled={loading}

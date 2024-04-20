@@ -1,10 +1,10 @@
 import React from "react";
-import footlogo from "../../assets/img/footlogo.png";
+import footlogo from "../../assets/img/logo.png";
 import { Link, usePage } from "@inertiajs/react";
 import { Helmet } from "react-helmet";
 import { useEffect } from "react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
-const ContentPrefrences = React.lazy(() => import("./ContentPrefrences"));
+// import spennypiggy from "../../assets/img/logo.png";
 
 export default function Footer(props) {
     
@@ -126,8 +126,8 @@ export default function Footer(props) {
 
                 <div id="footer" className="footer">
                     <div className="containerbox">
-                        <div className="footlogo m-auto d-table">
-                            <LazyLoadImage className="rounded-4 p-2 px-3 blackbg "
+                        <div className="footlogo py-2 m-auto d-table">
+                            <LazyLoadImage className="rounded-4 p-3 blackbg "
                                 alt={"image"}
                                 height={"auto"}
                                 src={footlogo}
@@ -160,7 +160,7 @@ export default function Footer(props) {
                                         <a href="https://blog.spennypiggy.co"> Blog</a>
                                     </li>
                                     <li>
-                                        <Link target="_blank" href="https://www.notion.so/9d23c0290e9d4dcaa3b3511bc67cb30e?v=082ffd064479442e8f11a061aad6c945&pvs=4"> Terms </Link>
+                                        <a target="_blank" href="https://ucarecdn.com/bac24059-121e-4e2c-8867-54f634e11778/terms.pdf"> Terms </a>
                                     </li>
                                     <li>
                                         <Link href={route("promotion-terms")}> Promotion Terms</Link>
