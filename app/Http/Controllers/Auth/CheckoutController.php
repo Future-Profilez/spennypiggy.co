@@ -84,7 +84,7 @@ class CheckoutController extends Controller
                     'transfer_data' => [
                         'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
                     ],
-                    'application_fee_amount' => $taxNew * 100,
+                    'application_fee_amount' => Helpers::priceFormat($dd->owner->default_currency, $taxNew, $currency) * 100,
                 ],
                 'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
                 // 'currency' => 'usd',

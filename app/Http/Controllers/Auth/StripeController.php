@@ -88,7 +88,7 @@ class StripeController extends Controller
         $support_post = Post::where('user_id',$user->id)->where('for_module','support')->first();
 
         if(empty($sub_post) || empty($mem_post) || empty($support_post)){
-            return redirect(route("user.show", ["username" => $user->username]))->with("error", "Before connecting stripe account, it's necessary to add one post for your subscribers, members and supporters!");
+            return redirect(route("user.show", ["username" => $user->username]))->with("error", "Before connecting your stripe account, it's necessary to add one image post for your subscribers, members and supporters! So 3 in total.");
         }
 
         if (empty($user->account_id)) {
