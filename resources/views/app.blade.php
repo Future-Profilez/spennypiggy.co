@@ -5,7 +5,6 @@
     <meta charset="utf-8">
     <meta name="robots" content="index, follow">
     <meta name="googlebot" content="index,follow" />
-    {{-- <title inertia>    le> --}}
 
     {!! \App\SeoMeta::render() !!}
     
@@ -41,7 +40,6 @@
     <script type="text/javascript" src="//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js"></script>
 
     <!-- <script src="https://sdk.canva.com/v1/button.js"></script> -->
-
     <script>
         const css1 = [
             "font-size: 15px",
@@ -52,7 +50,6 @@
         ];
         console.log("%cWelcome to Spenny Piggy.", css1.join(";"));
     </script>
-    
     <script type="application/ld+json">
         {
             "@context": "https://schema.org",
@@ -66,7 +63,7 @@
         }
     </script>
   
-  <script async type="application/ld+json">
+  <!-- <script async type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "Organization",
@@ -81,8 +78,8 @@
         "https://blog.spennypiggy.co/"
       ]
     }
-    </script>
-  <script async type="application/ld+json">
+    </script> -->
+  <!-- <script async type="application/ld+json">
           {
           "@context":"http://schema.org",
           "@type":"SiteNavigationElement",
@@ -94,8 +91,8 @@
           "https://spennypiggy.co/discover",
           "https://uk.spennypiggy.co/register"]
           }
-        </script>
-        <script async type="application/ld+json">
+        </script> -->
+        <!-- <script async type="application/ld+json">
             {
             "@context": "https://schema.org",
             "@type": "FAQPage",
@@ -132,7 +129,7 @@
                 }
             ]
             }
-        </script> 
+        </script>  -->
 
     {{-- @laravelPWA --}}
     @routes
