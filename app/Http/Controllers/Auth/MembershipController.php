@@ -487,7 +487,7 @@ class MembershipController extends Controller
                 //     MembershipAutoTweet::dispatch($mem);
                 // }
 
-                return to_route('user.show', ['username' => $mem->membership->user->username])->with('success', "Payment for subscription of membership is success.");
+                return to_route('thank-you', ['username' => $mem->membership->user->username])->with('success', "Payment for subscription of membership is success.");
             }
 
             // SubscriptionFailed::dispatch($mem);

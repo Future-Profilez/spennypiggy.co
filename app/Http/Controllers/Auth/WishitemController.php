@@ -308,117 +308,118 @@ class WishitemController extends Controller
 
     public function updateWishItem(Request $request, $uuid = null)
     {
-        try {
-            $wish = WishItem::where('uuid', $uuid)->first();
-            $checkdata = Helpers::checkBlockData($request);
-            if ($checkdata == 1) {
-                return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive,
-             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
-            } else {
-                $old_price = $wish->price;
-                if (!empty($request->price)) {
-                    if($request->susbcription == 0){
-                        $tax_percent = config('app.single_tax');
-                    }
-                    elseif($request->subscription == 1){
-                        $tax_percent = config('app.subs_tax');
-                    }
-                    elseif($request->subscription == 2){
-                        $tax_percent = config('app.crowd_tax');
-                    }
-                    $taxamount = $request->price * $tax_percent / 100;
-                    $price = $request->price;
-                    $createpriceid = $taxamount + $price;
-                } else {
-                    $taxamount = $wish->tax_amount;
-                    $price = $wish->price;
-                    $createpriceid = $taxamount + $price;
-                }
-                if (!empty($wish)) {
-                    $updatedata = WishItem::where('uuid', $uuid)->update([
-                        "user_id" => Auth::id(),
-                        'wishname' => $request->wishname ?? $wish->wishname,
-                        'price' => $price,
-                        'item_url' => $request->item_url != "" ? $request->item_url : $wish->item_url,
-                        'thumbnail' => $request->thumbnail ?? $wish->thumbnail,
-                        'reward' => $request->reward_file ?? $wish->reward,
-                        'subscription' => $request->subscription ?? $wish->subscription,
-                        'subscription_period' => $request->subscription_period ?? $wish->subscription_period,
-                        'repeat_purchase' => $request->repeat_purchase ??
-                            $wish->repeat_purchase,
-                        'fullfill_amount' => $request->fullfill_amount ??
-                            $wish->fullfill_amount,
-                        'tax_amount' => $taxamount,
-                    ]);
+        $wish = WishItem::where('uuid', $uuid)->first();
+        $checkdata = Helpers::checkBlockData($request);
+        if ($checkdata == 1) {
+            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg.paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,
+            😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
+        }
+
+        $old_price = $wish->price;
+        if (!empty($request->price)) {
+            if($request->susbcription == 0){
+                $tax_percent = config('app.single_tax');
+            }
+            elseif($request->subscription == 1){
+                $tax_percent = config('app.subs_tax');
+            }
+            elseif($request->subscription == 2){
+                $tax_percent = config('app.crowd_tax');
+            }
+            $taxamount = $request->price * $tax_percent / 100;
+            $price = $request->price;
+            $createpriceid = $taxamount + $price;
+        } else {
+            $taxamount = $wish->tax_amount;
+            $price = $wish->price;
+            $createpriceid = $taxamount + $price;
+        }
+        if (!empty($wish)) {
+            $updatedata = WishItem::where('uuid', $uuid)->update([
+                "user_id" => Auth::id(),
+                'wishname' => $request->wishname ?? $wish->wishname,
+                'price' => $price,
+                'item_url' => $request->item_url != "" ? $request->item_url : $wish->item_url,
+                'thumbnail' => $request->thumbnail ?? $wish->thumbnail,
+                'reward' => $request->reward_file ?? $wish->reward,
+                'subscription' => $request->subscription ?? $wish->subscription,
+                'subscription_period' => $request->subscription_period ?? $wish->subscription_period,
+                'repeat_purchase' => $request->repeat_purchase ??
+                    $wish->repeat_purchase,
+                'fullfill_amount' => $request->fullfill_amount ??
+                    $wish->fullfill_amount,
+                'tax_amount' => $taxamount,
+            ]);
 
 
-                    $wish->refresh();
-                    if (!empty($request->category)) {
-                        WishCategory::where('wish_item_id', $wish->id)->delete();
-                        foreach ($request->category as $key => $value) {
+            $wish->refresh();
+            if (!empty($request->category)) {
+
+                WishCategory::where('wish_item_id', $wish->id)->delete();
+                foreach ($request->category as $key => $value) {
 
 
-                            $wish_cat = new WishCategory();
-                            $wish_cat->uuid = Uuid::uuid4();
-                            $wish_cat->wish_item_id = $wish->id;
-                            $wish_cat->user_category_id = $value;
-                            $wish_cat->save();
-                        }
-                    }
-
-                    $user = User::whereId(Auth::id())->first();
-                    if (in_array($request->subscription, [0, 1])) {
-
-                        $productPayload = [
-                            "name"  =>  $wish->wishname,
-                            "images" => [$wish->perma_link],
-                            "default_price_data"    =>  [
-                                "currency"  =>  $user->default_currency,
-                                "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
-                            ],
-                            "url"   =>  $request->item_url ?? env('APP_URL') . '/' . $user->username . "?item=$wish->uuid/"
-                        ];
-
-                        if ($request->subscription == 1) {
-                            $productPayload['default_price_data']['recurring']  =   [
-                                'interval'  =>  StripeControl::$periods[$request->subscription_period],
-                                'interval_count'    =>  1
-                            ];
-                        }
-
-
-                        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-
-                        if($old_price == $wish->price){
-                            $stripe_client = $stripe->products->update($wish->stripe_product_id,[
-                                'name' => $request->wishname ?? $wish->wishname,
-                                'images' => [$wish->perma_link],
-                                "default_price" => $wish->price_id,
-                                // "url" => $request->item_url ?? null
-                            ]);
-                        }else{
-                            $stripe_client = StripeControl::createProduct($productPayload);
-                            $wish->price_id = $stripe_client->default_price;
-                        }
-
-                        $wish->stripe_product_id = $stripe_client->id;
-                        $wish->is_approved = 0;
-                        $wish->save();
-
-                        $logs = Logs::where('edited_wish_id',$wish->id)->where('status','pending')->first();
-                        if(!empty($logs)){
-                            $logs->status = 'updated';
-                            $logs->save();
-                        }
-                    }
-
-                    //send email
-                    // SaveWishlist::dispatch($user);
-                    return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been updated.");
+                    $wish_cat = new WishCategory();
+                    $wish_cat->uuid = Uuid::uuid4();
+                    $wish_cat->wish_item_id = $wish->id;
+                    $wish_cat->user_category_id = $value;
+                    $wish_cat->save();
                 }
             }
-        } catch (\Throwable $th) {
-            //throw $th;
+
+            $user = User::whereId(Auth::id())->first();
+            if (in_array($request->subscription, [0, 1])) {
+
+                $productPayload = [
+                    "name"  =>  $wish->wishname,
+                    "images" => [$wish->perma_link],
+                    "default_price_data"    =>  [
+                        "currency"  =>  $user->default_currency,
+                        "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
+                    ],
+                    "url"   =>  $request->item_url ?? env('APP_URL') . '/' . $user->username . "?item=$wish->uuid/"
+                ];
+
+                if ($request->subscription == 1) {
+                    $productPayload['default_price_data']['recurring']  =   [
+                        'interval'  =>  StripeControl::$periods[$request->subscription_period],
+                        'interval_count'    =>  1
+                    ];
+                }
+
+                try {
+                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+
+                    if($old_price == $wish->price){
+                        $stripe_client = $stripe->products->update($wish->stripe_product_id,[
+                            'name' => $request->wishname ?? $wish->wishname,
+                            'images' => [$wish->perma_link],
+                            "default_price" => $wish->price_id,
+                            // "url" => $request->item_url ?? null
+                        ]);
+                    }else{
+                        $stripe_client = StripeControl::createProduct($productPayload);
+                        $wish->price_id = $stripe_client->default_price;
+                    }
+
+                    $wish->stripe_product_id = $stripe_client->id;
+                    $wish->is_approved = 0;
+                    $wish->save();
+
+                    $logs = Logs::where('edited_wish_id',$wish->id)->where('status','pending')->first();
+                    if(!empty($logs)){
+                        $logs->status = 'updated';
+                        $logs->save();
+                    }
+                }
+                catch (Exception $e) {
+                    $wish->delete();
+                    return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
+                }
+            }
+            //send email
+            // SaveWishlist::dispatch($user);
+            return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been updated.");
         }
     }
 

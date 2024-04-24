@@ -84,7 +84,7 @@ class CheckoutController extends Controller
                     'transfer_data' => [
                         'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
                     ],
-                    'application_fee_amount' => Helpers::priceFormat($dd->owner->default_currency, $taxNew, $currency) * 100,
+                    'application_fee_amount' => Helpers::priceFormat($dd->owner->default_currency, $taxNew, 'USD') * 100,
                 ],
                 'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
                 // 'currency' => 'usd',
@@ -215,7 +215,7 @@ class CheckoutController extends Controller
                 CheckoutMailToUser::dispatch($stripeid,$curr->symbol);
             }
 
-            return redirect(route('user.show', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
+            return redirect(route('thank-you', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
             return redirect(route('user.show', [$stripeid->owner->username]))->with('error', 'Something went wrong!');
         }
