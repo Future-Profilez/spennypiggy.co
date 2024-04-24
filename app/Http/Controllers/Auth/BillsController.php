@@ -415,7 +415,7 @@ class BillsController extends Controller
                 //     bill_paybershipAutoTweet::dispatch($bill_pay);
                 // }
 
-                return to_route('user.show', ['username' => $bill_pay->bill->user->username])->with('success', "Payment for subscription of bill is success.");
+                return to_route('thank-you', ['username' => $bill_pay->bill->user->username])->with('success', "Payment for subscription of bill is success.");
             }
 
             // SubscriptionFailed::dispatch($bill_pay);

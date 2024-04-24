@@ -353,8 +353,11 @@ Route::prefix("wish")->name("wish.")->group(function () {
     Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleSubscription'])->name('subscribe.handle');
 });
 
-Route::get('payment/thankyou', function () {
-    return Inertia::render('Profile/Thankyou');
+Route::get('payment/thankyou/{username}', function ($username) {
+    $owner = User::where('username',$username)->first();
+    return Inertia::render('Profile/Thankyou',[
+        'owner' => $owner
+    ]);
 })->name("thank-you");
 
 Route::prefix("membership")->name("membership.")->group(function () {

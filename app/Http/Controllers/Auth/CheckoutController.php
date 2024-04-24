@@ -215,7 +215,7 @@ class CheckoutController extends Controller
                 CheckoutMailToUser::dispatch($stripeid,$curr->symbol);
             }
 
-            return redirect(route('user.show', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
+            return redirect(route('thank-you', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
             return redirect(route('user.show', [$stripeid->owner->username]))->with('error', 'Something went wrong!');
         }
