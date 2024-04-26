@@ -73,6 +73,8 @@ class CheckoutController extends Controller
                 $taxNew += $dd->tax * $dd->quantity;
             }
 
+            // $transfering_amount = $subtotal - $taxNew;
+
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
             $sessionCreate = $stripe->checkout->sessions->create([
@@ -83,8 +85,9 @@ class CheckoutController extends Controller
                 'payment_intent_data' => [
                     'transfer_data' => [
                         'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
+                        'amount' => Helpers::priceFormat($dd->owner->default_currency, $subtotal, $currency) * 100,
                     ],
-                    'application_fee_amount' => Helpers::priceFormat($dd->owner->default_currency, $taxNew, 'USD') * 100,
+                    // 'application_fee_amount' => $taxNew,
                 ],
                 'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
                 // 'currency' => 'usd',

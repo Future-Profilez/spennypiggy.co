@@ -324,7 +324,9 @@ class MembershipController extends Controller
                 'anonymous' => $request->anonymous ?? 0
             ]);
 
+            $tranfering_amount = Helpers::priceFormat($membership->currency, $price, $currency) * 100;
             $price += $vat_percentage_amount;
+            $amount_per = round(($price / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
 
             $amount = $price + $tax;
             $unit_amount = Helpers::priceFormat($membership->currency, $amount, $currency) * 100;
@@ -362,17 +364,19 @@ class MembershipController extends Controller
                 $payload['payment_intent_data']     =   [
                     'transfer_data' => [
                         'destination' => $membership->user->account_id, // Creator's connected account ID
+                        'amount' => Helpers::priceFormat($membership->currency, $price, $currency) * 100,
                     ],
-                    'application_fee_amount' => $tax * 100,
+                    // 'application_fee_amount' => $tax * 100,
                     // 'on_behalf_of'  => $membership->user->account_id,
                     'description'   => "Membership for {$membership->level} of {$membership->user->username}."
                 ];
             } else {
                 $payload['mode']    =   'subscription';
                 $payload['subscription_data']     =   [
-                    'application_fee_percent'   =>  $fee_per,
+                    // 'application_fee_percent'   =>  $fee_per,
                     'transfer_data' => [
                         'destination' => $membership->user->account_id, // Creator's connected account ID
+                        'amount_percent' => $amount_per,
                     ],
                     'on_behalf_of'  => $membership->user->account_id,
                     // 'cancel_at_period_end'  =>  $reccure == 'onetime',
