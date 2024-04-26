@@ -18,11 +18,6 @@ export default function WhyLove() {
 
    const features = [
       {
-         icon:image1,
-         title :"Goals",
-         heading: "Set a crowdfunding goal and encourage fans to contribute to achieve it!",
-      },
-      {
          icon:image2,
          title :"Posts",
          heading: "Share your creative journey with blog posts, videos and audio clips.",
@@ -96,7 +91,7 @@ export default function WhyLove() {
             <h2 className='headingSm shadow-none text-white stroke-none mb-4 text-center mb-6 max-width-1000 m-auto d-table' >Features that you need</h2>
             <div className="whylovebox">
                {features && features.map((item, i)=>{
-                  return <div data-aos="flip-down" className={` ${item.hide ? "d-lg-none" : ''}  loveboxes px-4 mt-4  mb-4`}>
+                  return <div data-aos="flip-down" className={` ${item.hide ? "d-lg-none" : ''}  ${item.hide ? "w-100" : ''}  loveboxes px-4 mt-4  mb-4`}>
                         <div className='featureicon' >
                            <LazyLoadImage
                            alt={"image"}
