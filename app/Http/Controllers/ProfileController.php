@@ -727,15 +727,47 @@ class ProfileController extends Controller
         $subPost = Post::where('id',$user->id)->where('for_module','subscription')->first();
         $supPost = Post::where('id',$user->id)->where('for_module','support')->first();
 
+        $total = 0;
+
+        $basic_profile = empty($user->avatar) || empty($user->bio) || empty($user->cover) || empty($user->social_links) ? 0 : 1;
+        if($basic_profile){
+            $total += 1;
+        }
+        $intro = !empty($user->intro) ? 1 : 0;
+        if($intro){
+            $total += 1;
+        }
+        $post_required = !empty($memPost) && !empty($subPost) && !empty($supPost) ? 1 : 0;
+        if($post_required){
+            $total += 1;
+        }
+        $vat_setting = !empty($user->vat_amount_percentage) ? 1 : 0;
+        if($vat_setting){
+            $total += 1;
+        }
+        $payment_connect = $user->stripe_details_submitted ? 1 : 0;
+        if($payment_connect){
+            $total += 1;
+        }
+        $contents = !empty($user->wishItems) && !empty($user->memberships) && !empty($user->bills) ? 1 : 0;
+        if($contents){
+            $total += 1;
+        }
+        $auto_tweets = $user->auto_tweet;
+        if($auto_tweets){
+            $total += 1;
+        }
+
         return response()->json([
             'status' => true,
-            'basic_profile' => empty($user->avatar) || empty($user->bio) || empty($user->cover) || empty($user->social_links) ? 0 : 1,
-            'intro' => !empty($user->intro) ? 1 : 0,
-            'post_required' => !empty($memPost) && !empty($subPost) && !empty($supPost) ? 1 : 0,
-            'vat_setting' => !empty($user->vat_amount_percentage) ? 1 : 0,
-            'payment_connect' => $user->stripe_details_submitted ? 1 : 0,
-            'contents' => !empty($user->wishItems) && !empty($user->memberships) && !empty($user->bills) ? 1 : 0,
-            'auto_tweets' => $user->auto_tweet,
+            'basic_profile' => $basic_profile,
+            'intro' => $intro,
+            'post_required' => $post_required,
+            'vat_setting' => $vat_setting,
+            'payment_connect' => $payment_connect,
+            'contents' => $contents,
+            'auto_tweets' => $auto_tweets,
+            'total' => $total,
         ]);
     }
 }
