@@ -40,6 +40,7 @@ import{closestCenter,DndContext,KeyboardSensor,MouseSensor,TouchSensor,useSensor
 import PaymentUnActivated from "@/Components/PaymentUnActivated";
 import { Tabs, Tab } from "react-tabs-scrollable";
 import "react-tabs-scrollable/dist/rts.css";
+import ProfileSteps from "./Profile/ProfileSteps";
 
 export default function Dashboard(props) {
 
@@ -412,6 +413,7 @@ export default function Dashboard(props) {
                                                                 </div>
 
                                                                 <div className="ps-md-4 col-md-6">
+                                                                    {IsloggedIn ? <ProfileSteps user={user} IsloggedIn={IsloggedIn} /> : ''}
                                                                     {tab == "0" ? <>
                                                                         {user && user.stripe_details_submitted == 1 && w > 767 ? <TipInner classes={`mb-4`} /> : ''}
                                                                         <FeedList isUpdated={isUpdated}

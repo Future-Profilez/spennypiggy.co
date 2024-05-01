@@ -39,7 +39,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <script type="text/javascript" src="//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js"></script>
 
-    <!-- <script src="https://sdk.canva.com/v1/button.js"></script> -->
+    <script src="https://sdk.canva.com/v1/button.js"></script>
     <script>
         const css1 = [
             "font-size: 15px",

@@ -10,6 +10,7 @@ import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 import { add_to_cart } from "../Pages/redux/UserSlice";
 import ChangeCurrency from "@/Components/ChangeCurrency";
+import CanvaButton from "./Canva";
 export default function Header() {
 
     const { global_currency, auth } = usePage().props;
@@ -58,7 +59,7 @@ export default function Header() {
                                 className="headtitle text-wh font-GillSans d-none d-lg-flex" >
                                 Sign Up
                             </Link>
-                        )} */}
+                        )} */} 
                         <div className="d-none d-md-flex  leftspaces items-center justify-content-start" >
                             <div className="  menu-toggle cursor-pointer cartLink position-relative" onClick={toggleClass} >
                                 <svg width="49" height="48" viewBox="0 0 49 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -82,7 +83,6 @@ export default function Header() {
                         </div>
 
                         <div className="leftspaces cartLogin">
-
                             {auth && auth.user && auth.user.stripe_details_submitted == "1" ? ( "" ) : 
                                 router.page && router.page && router.page.component == "Dashboard" ? (
                                 <ChangeCurrency
@@ -90,8 +90,6 @@ export default function Header() {
                                     changer={true}
                                 />) 
                             : ""}
-
-
                             <Link href={route("discover")} className="me-3 ms-1 discover-icon">
                                 <svg
                                     width="36"
@@ -101,7 +99,6 @@ export default function Header() {
                                     xmlns="http://www.w3.org/2000/svg"
                                 >
                                     <g clip-path="url(#clip0_1439_828)">
-                                        {" "}
                                         <path
                                             fill-rule="evenodd"
                                             clip-rule="evenodd"
@@ -122,8 +119,6 @@ export default function Header() {
                                     </defs>{" "}
                                 </svg>
                             </Link>
-
-                            
                             <Link
                                 href={route("cart")}
                                 as="button"
