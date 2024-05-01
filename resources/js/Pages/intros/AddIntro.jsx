@@ -10,7 +10,7 @@ import { useEffect } from 'react';
 import wishlistbannerimg from "../../../assets/img/wishlistbannerimg.jpg";
 import { useRef } from 'react';
 
-export default function AddIntro({IsloggedIn, uuid}){
+export default function AddIntro({IsloggedIn, uuid, text, classes}){
 
   const [open, setOpen] = useState(false);
   const [loading,setloading] = useState(false);
@@ -111,7 +111,8 @@ export default function AddIntro({IsloggedIn, uuid}){
           </div>
         </div>
         {IsloggedIn && introVideo && introVideo.approved !== 1 ? <div className='mt-4 alert alert-warning  rounded p-2' >Profile intro video is waiting for approval. Currently only you can see this intro.</div> : ''}
-        </>} > 
+        </>} 
+        > 
           <div className='video-payer-pop' >
             <video playsInline='false' autoPlay src={introVideo && introVideo?.perma_link || ''} controls controlsList='nodownload' />
           </div>
@@ -129,8 +130,8 @@ export default function AddIntro({IsloggedIn, uuid}){
         : 
         <>
         { IsloggedIn ? 
-              <Popup modalclassName="pinkmodal sendSurprize-modal shadow-pink" space="4" size="md" action={close} classes={`w-100`}
-                text={ 
+              <Popup modalclassName="pinkmodal sendSurprize-modal shadow-pink" space="4" size="md" action={close} classes={`${classes} w-100`}
+                text={text ? text : 
                   <div className='cursor-pointer box shadow-voilet rounded-lg p-3 py-4 d-flex align-items-center justify-content-center' >
                     <div>
                         <div className='svg-icon m-auto d-table' >
@@ -139,7 +140,8 @@ export default function AddIntro({IsloggedIn, uuid}){
                         <p className='w-100 text-center mt-2' >Add Intro</p>
                     </div>
                   </div> 
-                } >  
+                } 
+              >  
               <div className='wrap' >
                 <h2 className="text-uppercase font-GillSans pb-1 font-large">Add Intro Video</h2>
                 <p className='text-muted mb-3' >Add a 15 to 30 sec video to introduce yourself.</p>
