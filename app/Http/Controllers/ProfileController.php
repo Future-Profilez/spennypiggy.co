@@ -718,4 +718,24 @@ class ProfileController extends Controller
             "per_page" => $user_subs->perPage() ?? null,
         ]);
     }
+
+
+    public function profileStepsStatus(){
+        $user = User::where('id', Auth::id())->first();
+
+        $memPost = Post::where('id',$user->id)->where('for_module','membership')->first();
+        $subPost = Post::where('id',$user->id)->where('for_module','subscription')->first();
+        $supPost = Post::where('id',$user->id)->where('for_module','support')->first();
+
+        return response()->json([
+            'status' => true,
+            'basic_profile' => empty($user->avatar) || empty($user->bio) || empty($user->cover) || empty($user->social_links) ? 0 : 1,
+            'intro' => !empty($user->intro) ? 1 : 0,
+            'post_required' => !empty($memPost) && !empty($subPost) && !empty($supPost) ? 1 : 0,
+            'vat_setting' => !empty($user->vat_amount_percentage) ? 1 : 0,
+            'payment_connect' => $user->stripe_details_submitted ? 1 : 0,
+            'contents' => !empty($user->wishItems) && !empty($user->memberships) && !empty($user->bills) ? 1 : 0,
+            'auto_tweets' => $user->auto_tweet,
+        ]);
+    }
 }
