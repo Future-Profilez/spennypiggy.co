@@ -733,6 +733,11 @@ class ProfileController extends Controller
         if($basic_profile){
             $total += 1;
         }
+
+        // $social_links = empty($user->social_links) ? 0 : 1;
+        // if($social_links){
+        //     $total += 1;
+        // }
         $userIntro = UserIntro::where('user_id',$user->id)->first();
         $intro = !empty($userIntro) ? 1 : 0;
         if($intro){
@@ -768,6 +773,7 @@ class ProfileController extends Controller
             'payment_connect' => $payment_connect,
             'contents' => $contents,
             'auto_tweets' => $auto_tweets,
+            // 'social_links' => $social_links,
             'total' => $total,
         ]);
     }
