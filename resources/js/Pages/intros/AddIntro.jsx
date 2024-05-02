@@ -10,7 +10,7 @@ import { useEffect } from 'react';
 import wishlistbannerimg from "../../../assets/img/wishlistbannerimg.jpg";
 import { useRef } from 'react';
 
-export default function AddIntro({IsloggedIn, uuid, text, classes}){
+export default function AddIntro({IsloggedIn, uuid, text, classes, setIntroStatus}){
 
   const [open, setOpen] = useState(false);
   const [loading,setloading] = useState(false);
@@ -67,6 +67,7 @@ export default function AddIntro({IsloggedIn, uuid, text, classes}){
           },1000);
           resetUploader();
           setOpen(false);
+          setIntroStatus && setIntroStatus(1)
       } else {
           errorAlert(resp.data.msg);
       }

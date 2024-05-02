@@ -67,3 +67,7 @@ h2.wishtitle{font-size:24px;font-weight:900;}
 .tooltipbtn:hover p { 
   display: block;
 }
+
+.editpoststep { 
+  padding: 0 !important;
+}

@@ -9,7 +9,7 @@ import UpdateAvatar from './UpdateAvatar';
 import LoaderButton from '@/Components/LoaderButton';
 import PriceFormat from '@/includes/PriceFormat';
 
-export default function EditProfile({ user, global_currency, classes }) {
+export default function EditProfile({ user, global_currency, classes, updateProfileSteps }) {
 
     const { formatMultiPrice } = PriceFormat();
     const [close, setClose] = useState()
@@ -49,6 +49,7 @@ export default function EditProfile({ user, global_currency, classes }) {
                 }, 1000);
                 if(resp.props.flash?.success){
                     successAlert(resp.props.flash?.success || "Updated successfully.");
+                    updateProfileSteps && updateProfileSteps();
                 }
                 if(resp.props.flash?.error){
                     errorAlert(resp.props.flash?.error || "Something went wrong.")
