@@ -723,9 +723,9 @@ class ProfileController extends Controller
     public function profileStepsStatus(){
         $user = User::where('id', Auth::id())->first();
 
-        $memPost = Post::where('id',$user->id)->where('for_module','membership')->first();
-        $subPost = Post::where('id',$user->id)->where('for_module','subscription')->first();
-        $supPost = Post::where('id',$user->id)->where('for_module','support')->first();
+        $memPost = Post::where('user_id',$user->id)->where('for_module','membership')->first();
+        $subPost = Post::where('user_id',$user->id)->where('for_module','subscription')->first();
+        $supPost = Post::where('user_id',$user->id)->where('for_module','support')->first();
 
         $total = 0;
 
