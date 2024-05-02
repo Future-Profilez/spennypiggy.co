@@ -206,6 +206,8 @@ Route::middleware('auth')->group(function () {
             return Inertia::render('Profile/ActivateSubscription');
         })->name('stripe-subscription');
     });
+
+    Route::get('profile-steps-status/', [ProfileController::class, 'profileStepsStatus'])->name("profle-steps-status");
 });
 
 Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');

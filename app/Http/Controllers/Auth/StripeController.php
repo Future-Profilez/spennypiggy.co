@@ -611,9 +611,11 @@ class StripeController extends Controller
                 'anonymous' => $request->anonymous ?? 0
             ]);
 
+            $tranfering_amount = Helpers::priceFormat($wish->currency, $price, $currency) * 100;
             if($reccure == 'continue'){
                 $price += $vat_percentage_amount;
             }
+            $amount_per = round(($price / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
             // if ($currency == strtolower($wish->currency)) {
             //     $items = [
             //         "price" =>  $wish->price_id,
@@ -642,9 +644,10 @@ class StripeController extends Controller
                 "currency"  =>  strtolower($request->cookie("currency", "GBP")),
                 'line_items' =>  [$items],
                 'subscription_data' =>  [
-                    'application_fee_percent'   =>  $fee_per,
+                    // 'application_fee_percent'   =>  $fee_per,
                     'transfer_data' => [
                         'destination' => $wish->user->account_id, // Creator's connected account ID
+                        'amount_percent' => $amount_per,
                     ],
                     // 'on_behalf_of'  => $wish->user->account_id,
                     // 'cancel_at_period_end'  =>  $reccure == 'onetime',
@@ -1131,11 +1134,11 @@ class StripeController extends Controller
                 "currency"  =>  strtolower($request->cookie("currency", "GBP")),
                 'line_items' =>  [$items],
                 'subscription_data' =>  [
-                    // 'application_fee_percent'   =>  $fee_per,
+                    // 'application_fee_percent'   =>  100,
                     // 'transfer_data' => [
-                    //     'destination' => "acct_1O3maCG7xsNScLmX", // Creator's connected account ID
+                    //     'destination' => "acct_1OOc6oCmFHIIsmOr", // Creator's connected account ID
                     // ],
-                    // 'on_behalf_of'  => "acct_1O3maCG7xsNScLmX",
+                    // 'on_behalf_of'  => "acct_1OOc6oCmFHIIsmOr",
                     'description'   => "Subscription for using site through stripe."
                 ],
                 'customer_email'    =>  $user->email,

@@ -303,7 +303,9 @@ class BillsController extends Controller
                 'anonymous' => $request->anonymous ?? 0
             ]);
 
+            $tranfering_amount = Helpers::priceFormat($bill->currency, $price, $currency) * 100;
             $price += $vat_percentage_amount;
+            $amount_per = round(($price / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
 
             $amount = $price + $tax;
             $unit_amount = Helpers::priceFormat($bill->currency, $amount, $currency) * 100;
@@ -336,9 +338,10 @@ class BillsController extends Controller
 
             $payload['mode']    =   'subscription';
             $payload['subscription_data']     =   [
-                'application_fee_percent'   =>  $fee_per,
+                // 'application_fee_percent'   =>  $fee_per,
                 'transfer_data' => [
                     'destination' => $bill->user->account_id, // Creator's connected account ID
+                    'amount_percent' => $amount_per,
                 ],
                 // 'on_behalf_of'  => $bill->user->account_id,
                 // 'cancel_at_period_end'  =>  $reccure == 'onetime',

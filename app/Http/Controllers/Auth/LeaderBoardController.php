@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Models\BillPayment;
 use App\Models\MembershipPayment;
@@ -100,13 +101,35 @@ class LeaderBoardController extends Controller
                         }
                     },
                 ])
-                ->havingRaw('total_payments + total_subscriptions + total_tips + total_member + total_bill > 0')
+                // ->havingRaw('total_payments + total_subscriptions + total_tips + total_member + total_bill > 0')
                 ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips + total_member + total_bill'))
                 ->paginate(50);
 
+                $users->map(function($user){
+                    $user->total_payments = Helpers::priceFormat($user->default_currency, $user->total_payments, 'USD');
+                    $user->total_subscriptions = Helpers::priceFormat($user->default_currency, $user->total_subscriptions, 'USD');
+                    $user->total_tips = Helpers::priceFormat($user->default_currency, $user->total_tips, 'USD');
+                    $user->total_member = Helpers::priceFormat($user->default_currency, $user->total_member, 'USD');
+                    $user->total_bill = Helpers::priceFormat($user->default_currency, $user->total_bill, 'USD');
+
+                    $user->total_amount = $user->total_payments + $user->total_subscriptions + $user->total_tips + $user->total_member + $user->total_bill;
+                });
+
+                $users = $users->sortByDesc('total_amount');
+
+                $perPage = 50;
+                $page = request()->get('page', 1);
+                $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $users->forPage($page, $perPage),
+                    $users->count(),
+                    $perPage,
+                    $page,
+                    ['path' => request()->url(), 'query' => request()->query()]
+                );
+
                 $data = [];
                 $rank = 1;
-                foreach ($users as $query) {
+                foreach ($paginator as $query) {
                     $data[] = [
                         'rank' => $rank,
                         'name' => $query->name ?? '',
@@ -114,6 +137,7 @@ class LeaderBoardController extends Controller
                         'avatar' => $query->avatar_url,
                         'coverimg' =>  $query->cover_url,
                         'top' => $rank / 100,
+                        'amount' => $query->total_amount
                     ];
                     $rank++;
                 }
@@ -128,10 +152,10 @@ class LeaderBoardController extends Controller
                     "success" => true,
                     'data' => $data,
                     "message" => 'Wishtender wishes get successfully',
-                    "last_page" => $users->lastPage() ?? null,
-                    "current_page" => $users->currentPage() ?? null,
-                    "total" => $users->total() ?? null,
-                    "per_page" => $users->perPage() ?? null,
+                    "last_page" => $paginator->lastPage() ?? null,
+                    "current_page" => $paginator->currentPage() ?? null,
+                    "total" => $paginator->total() ?? null,
+                    "per_page" => $paginator->perPage() ?? null,
                 ]);
         } catch (\Exception $e) {
             return response()->json([
