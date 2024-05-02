@@ -733,7 +733,8 @@ class ProfileController extends Controller
         if($basic_profile){
             $total += 1;
         }
-        $intro = !empty($user->intro) ? 1 : 0;
+        $userIntro = UserIntro::where('user_id',$user->id)->first();
+        $intro = !empty($userIntro) ? 1 : 0;
         if($intro){
             $total += 1;
         }
