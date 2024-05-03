@@ -7,6 +7,7 @@ use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\CheckoutMailToUser;
 use App\Jobs\CheckoutUser;
+use App\Jobs\NotificationSave;
 use App\Jobs\SendRenewMail;
 use App\Jobs\SubscribeAutoTweet;
 use App\Jobs\SubscribedMail;
@@ -729,6 +730,16 @@ class StripeController extends Controller
                     SubscribeAutoTweet::dispatch($sub);
                 }
 
+                if($sub->anonymous == 1){
+                    $username = "Anonymous user";
+                }
+                else{
+                    $username = $sub->guest_name ?? "Anonymous user";
+                }
+
+                $message = $username . " just subscribed to your subscription wish " . $sub->wish_item->name;
+                NotificationSave::dispatch($message,$sub->wish_item->user,$sub->user,'Wish Subscription');
+
                 return to_route('thank-you', ['username' => $sub->wish_item->user->username])->with('success', "Subscription Success! If you have paid for onetime subscription, it will be automatically cancelled after 24 hours.");
             }
 
@@ -1033,6 +1044,16 @@ class StripeController extends Controller
                         TipJarTweet::dispatch($tip_pay);
                     }
                 }
+
+                if($tip_pay->anonymous == 1){
+                    $username = "Anonymous user";
+                }
+                else{
+                    $username = $tip_pay->guest_name ?? "Anonymous user";
+                }
+
+                $message = $username . " just granted some coins to your piggy bank";
+                NotificationSave::dispatch($message,$tip_pay->creator,$tip_pay->user,'Piggy Bank');
 
                 return to_route('user.show', ['username' => $tip_pay->creator->username])->with('success', "Thank you for your support!");
             }

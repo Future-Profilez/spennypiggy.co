@@ -6,6 +6,7 @@ use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\BillPayMail;
 use App\Jobs\MembershipMail;
+use App\Jobs\NotificationSave;
 use App\Jobs\SendRenewMail;
 use App\Models\BillPayment;
 use App\Models\Bills;
@@ -412,6 +413,15 @@ class BillsController extends Controller
 
                 BillPayMail::dispatch($bill_pay);
 
+                if($bill_pay->anonymous == 1){
+                    $username = "Anonymous user";
+                }
+                else{
+                    $username = $bill_pay->guest_name ?? "Anonymous user";
+                }
+
+                $message = $username . " just subscribed to your bill " . $bill_pay->bill->name;
+                NotificationSave::dispatch($message,$bill_pay->bill->user,$bill_pay->user,'Bill');
                 // if ($bill_pay->wish_item->user->auto_tweet == 1) {
                 //     // MakeAutoTweets::dispatch($user);
                 //     SubscribeAutoTweet::dispatch($bill_pay);
