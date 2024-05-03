@@ -208,6 +208,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::get('profile-steps-status/', [ProfileController::class, 'profileStepsStatus'])->name("profle-steps-status");
+    Route::get('get-notification/', [ProfileController::class, 'getNotifications'])->name("get-notification");
 });
 
 Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');

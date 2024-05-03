@@ -9,6 +9,7 @@ use App\Models\Bills;
 use App\Models\Logs;
 use App\Models\Membership;
 use App\Models\MembershipPayment;
+use App\Models\Notification;
 use App\Models\Post;
 use App\Models\StripePaymentItems;
 use App\Models\TipGoalsPayment;
@@ -775,6 +776,27 @@ class ProfileController extends Controller
             'auto_tweets' => $auto_tweets,
             'social_links' => $social_links,
             'total' => $total,
+        ]);
+    }
+
+
+    /**
+     * Get the list of notifications
+     *
+     * @return JsonResponse
+    */
+    public function getNotifications(){
+        $user = User::where('id', Auth::id())->first();
+
+        $notifications = Notification::where('user_id',$user->id)->orderBy('created_at','DESC')->paginate(30);
+
+        return response()->json([
+           'status' => true,
+            'notifications' => $notifications,
+            "last_page" => $notifications->lastPage() ?? null,
+            "current_page" => $notifications->currentPage() ?? null,
+            "total" => $notifications->total() ?? null,
+            "per_page" => $notifications->perPage() ?? null,
         ]);
     }
 }
