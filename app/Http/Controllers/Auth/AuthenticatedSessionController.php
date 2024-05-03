@@ -135,7 +135,7 @@ class AuthenticatedSessionController extends Controller
         SeoMeta::addTag('meta', ['property' => 'twitter:image', 'content' => $image]);
         SeoMeta::addTag('meta', ['property' => 'twitter:site', 'content' => '@spennypiggy']);
         SeoMeta::addTag('meta', ['property' => 'twitter:creator', 'content' => '@spennypiggy']);
-        SeoMeta::addTag('meta', ['property' => 'twitter:image:alt', 'content' => 'Financial Gifts,Donations & Memberships']);
+        SeoMeta::addTag('meta', ['property' => 'twitter:image:alt', 'content' => 'Financial Gifts,Donations & Memberships']); 
         SeoMeta::addTag('meta', ['property' => 'twitter:image:src', 'content' => $image]);
         SeoMeta::addTag('meta', ['property' => 'og:image', 'content' => $image]);
 
