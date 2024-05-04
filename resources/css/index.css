@@ -2,13 +2,25 @@
 @font-face{font-family:'CeraGRMedium';src:url('../assets/fonts/CeraGRMedium.woff') format('woff'),url('../assets/fonts/CeraGRMedium.woff2') format('woff2');}
 */
 
+
+@keyframes load {
+  0% { transition: 0.3s; opacity: 0; }
+  50% { transition: 0.3s; opacity: 0.5; }
+  100% { transition: 0.3s; opacity: 1; }
+}
+
+div {
+  animation: load 0.4s linear;
+}
+
+
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 html {
   overflow-x: clip;
 }
- 
 .modal-backdrop.show {
   opacity: 0.85 !important;
 }
@@ -42,32 +54,34 @@ h2.wishtitle{font-size:24px;font-weight:900;}
 .stripeterms li{font-weight:600;}
 .stripeterms li p{font-weight:400;font-size:14px;}
 .collapse{visibility:visible !important;}
-@media(max-width:991px){.userphotobox{height:280px;}
+
+
+@media(max-width:991px){
+  .userphotobox{height:280px;}
 }
+
+@media(max-width:767px){
+  #toast-notification {
+      position: fixed;
+      right: 0;
+      min-width: auto !important;
+      max-width: calc(100% - 20px);
+      right: 10px;
+      top: 90px;
+  }
+}
+
+.notifications-lists {
+  max-height:500px;
+  overflow: auto;
+}
+
 .loadingtext{font-size:20px;line-height:inherit !important;}
 .text-large{font-size:20px;}
 .croud-add input, .croud-add select{border-radius:10px;background:#f2f2f2;border:1px solid #ccc;padding:12px 15px;}
 /* modal css */
 .pinkmodal.modal .modal-content{border-radius:25px;border:2px solid var(--pink);box-shadow:10px 10px 0 0 var(--pink);}
-.custom-country-select select {
-  padding: 10px 16px;
-  border-radius: 10px;
-  width: 100%;
-}
-.identity {
-  color: #fff;
-  font-family: var(--parabold-font);
-  font-weight: 900 !important;
-  padding: 6px 5px;
-  border-radius: 11px;
-  font-size: 15px;
-}
-
-
-.tooltipbtn:hover p { 
-  display: block;
-}
-
-.editpoststep { 
-  padding: 0 !important;
-}
+.custom-country-select select{padding:10px 16px;border-radius:10px;width:100%;}
+.identity{color:#fff;font-family:var(--parabold-font);font-weight:900 !important;padding:6px 5px;border-radius:11px;font-size:15px;}
+.tooltipbtn:hover p{display:block;}
+.editpoststep{padding:0 !important;}

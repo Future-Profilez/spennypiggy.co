@@ -11,6 +11,7 @@ import { useDispatch } from "react-redux";
 import { add_to_cart } from "../Pages/redux/UserSlice";
 import ChangeCurrency from "@/Components/ChangeCurrency";
 import CanvaButton from "./Canva";
+import Notifications from "./Notifications";
 export default function Header() {
 
     const { global_currency, auth } = usePage().props;
@@ -90,6 +91,9 @@ export default function Header() {
                                     changer={true}
                                 />) 
                             : ""}
+
+                            {auth && auth.user ? <Notifications /> : ""}
+
                             <Link href={route("discover")} className="me-3 ms-1 discover-icon">
                                 <svg
                                     width="36"
@@ -144,6 +148,7 @@ export default function Header() {
                                     ""
                                 )}
                             </Link>
+
 
                             {auth?.user?.username || false ? (
                                 ""

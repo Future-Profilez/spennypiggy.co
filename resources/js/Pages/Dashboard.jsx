@@ -413,7 +413,7 @@ export default function Dashboard(props) {
                                                                 </div>
 
                                                                 <div className="ps-md-4 col-md-6">
-                                                                    {IsloggedIn ? <ProfileSteps user={user} IsloggedIn={IsloggedIn} /> : ''}
+                                                                    {IsloggedIn ? <ProfileSteps fetchingLinks={fetchingLinks} sLinks={sLinks} user={user} IsloggedIn={IsloggedIn} /> : ''}
                                                                     {tab == "0" ? <>
                                                                         {user && user.stripe_details_submitted == 1 && w > 767 ? <TipInner classes={`mb-4`} /> : ''}
                                                                         <FeedList isUpdated={isUpdated}

@@ -11,8 +11,9 @@ import AddPost from "../feed/AddPost";
 import ChangeVat from "../account/ChangeVat";
 import Popup from "@/Components/Popup";
 import { checkedItem } from "@/includes/Icons";
+import Social from "../Auth/Social";
 
-export default function ProfileSteps({ IsloggedIn }) {
+export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
 
     const { auth, user, global_currency } = usePage().props;
     const [status, setStatus] = useState();
@@ -40,9 +41,10 @@ export default function ProfileSteps({ IsloggedIn }) {
     const updateProfileSteps = ()=> {
         window.location.reload(false)
     }
+
     return (
         <>
-            {status && status.total < 7 ? (
+            {status && status.total < 8 ? (
                 <>
                     <style>{`
                         .check-icon.checked svg path {fill: #139700 !important;}
@@ -181,6 +183,30 @@ export default function ProfileSteps({ IsloggedIn }) {
                                         classes="updatebtn"
                                         global_currency={global_currency}
                                     />
+                                )} 
+                            </div>
+                        </div>
+
+
+                        {/* social_links */}
+                        <div className="profile-steps border border-gray-200 rounded-lg d-flex  items-center p-3 mt-3 justify-content-between">
+                            <div className="step-title d-flex max-w-[390px] pe-3">
+                                <div
+                                    className={`check-icon me-2 pt-1 ${ status && status.social_links == 1 ? "checked": "" }`} >
+                                    <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
+                                </div>
+                                <div>
+                                    <h2 className="text-dark font-bold">Add social links</h2>
+                                    <p className="text-gray-500 text-[14px]">
+                                        Add your all social link for your fans.
+                                    </p>
+                                </div>
+                            </div>
+                            <div>
+                                {status && status.social_links == 1 ? (
+                                    <p className="text-success">Added</p>
+                                ) : (
+                                    <Social updatedLinks={fetchingLinks}links={sLinks}/>
                                 )} 
                             </div>
                         </div>
