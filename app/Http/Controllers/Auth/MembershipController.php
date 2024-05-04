@@ -6,6 +6,7 @@ use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\MembershipAutoTweet;
 use App\Jobs\MembershipMail;
+use App\Jobs\NotificationSave;
 use App\Jobs\SendRenewMail;
 use App\Jobs\SubscribeAutoTweet;
 use App\Jobs\SubscribedMail;
@@ -485,6 +486,15 @@ class MembershipController extends Controller
                     MembershipMail::dispatch($mem);
                 }
 
+                if($mem->anonymous == 1){
+                    $username = "Anonymous user";
+                }
+                else{
+                    $username = $mem->guest_name ?? "Anonymous user";
+                }
+
+                $message = $username . " just subscribed to your " . $mem->membership->name . " membership";
+                NotificationSave::dispatch($message,$mem->membership->user,$mem->user,'Membership');
                 // if ($mem->wish_item->user->auto_tweet == 1) {
                 //     // MakeAutoTweets::dispatch($user);
                 //     SubscribeAutoTweet::dispatch($mem);

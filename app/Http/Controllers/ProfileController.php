@@ -9,6 +9,7 @@ use App\Models\Bills;
 use App\Models\Logs;
 use App\Models\Membership;
 use App\Models\MembershipPayment;
+use App\Models\Notification;
 use App\Models\Post;
 use App\Models\StripePaymentItems;
 use App\Models\TipGoalsPayment;
@@ -729,15 +730,15 @@ class ProfileController extends Controller
 
         $total = 0;
 
-        $basic_profile = empty($user->avatar) || empty($user->bio) || empty($user->cover) || empty($user->social_links) ? 0 : 1;
+        $basic_profile = empty($user->avatar) || empty($user->bio) || empty($user->cover) ? 0 : 1;
         if($basic_profile){
             $total += 1;
         }
 
-        // $social_links = empty($user->social_links) ? 0 : 1;
-        // if($social_links){
-        //     $total += 1;
-        // }
+        $social_links = empty($user->social_links) ? 0 : 1;
+        if($social_links){
+            $total += 1;
+        }
         $userIntro = UserIntro::where('user_id',$user->id)->first();
         $intro = !empty($userIntro) ? 1 : 0;
         if($intro){
@@ -773,8 +774,29 @@ class ProfileController extends Controller
             'payment_connect' => $payment_connect,
             'contents' => $contents,
             'auto_tweets' => $auto_tweets,
-            // 'social_links' => $social_links,
+            'social_links' => $social_links,
             'total' => $total,
+        ]);
+    }
+
+
+    /**
+     * Get the list of notifications
+     *
+     * @return JsonResponse
+    */
+    public function getNotifications(){
+        $user = User::where('id', Auth::id())->first();
+
+        $notifications = Notification::where('notifiable_id',$user->id)->with('user')->orderBy('created_at','DESC')->paginate(30);
+
+        return response()->json([
+            'status' => true,
+            'notifications' => $notifications->items(),
+            "last_page" => $notifications->lastPage() ?? null,
+            "current_page" => $notifications->currentPage() ?? null,
+            "total" => $notifications->total() ?? null,
+            "per_page" => $notifications->perPage() ?? null,
         ]);
     }
 }
