@@ -209,6 +209,15 @@ Route::middleware('auth')->group(function () {
 
     Route::get('profile-steps-status/', [ProfileController::class, 'profileStepsStatus'])->name("profle-steps-status");
     Route::get('get-notification/', [ProfileController::class, 'getNotifications'])->name("get-notification");
+
+    Route::prefix('earnings')->group(function () {
+        Route::get('all-data/{type?}', [LeaderBoardController::class, 'earnings'])->name('earnings');
+        Route::get('graph-data/{type?}', [LeaderBoardController::class, 'graphData'])->name('graph-data');
+        Route::get('top-wishes', [LeaderBoardController::class, 'topWishes'])->name('top-wishes');
+        Route::get('top-subscription', [LeaderBoardController::class, 'topSubscription'])->name('top-subscription');
+        Route::get('top-bill', [LeaderBoardController::class, 'topBill'])->name('top-bill');
+        Route::get('top-piggy-bank', [LeaderBoardController::class, 'topPiggyBank'])->name('top-piggy-bank');
+    });
 });
 
 Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');
