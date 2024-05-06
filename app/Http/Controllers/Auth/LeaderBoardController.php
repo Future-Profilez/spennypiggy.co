@@ -626,66 +626,80 @@ class LeaderBoardController extends Controller
 
 
     public function graphData($type){
-        if($type == 'month'){
-            $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->first();
+        $currentYear = Carbon::now()->year;
 
-            $currentYear = Carbon::now()->year;
+        $data = [];
 
-            $single_wish = StripePaymentItems::whereHas('wish',function($q){
-                $q->whereNotNull('stripe_product_id');
-            })->whereHas('payment',function($query) use($user){
-                $query->where('owner_id',$user->id);
-            });
-
-            $subscriptions = WishItemSubscription::whereHas('wish_item',function($q) use($user){
-                $q->where('user_id',$user->id);
-            });
-
-            $tip_goal = TipGoalsPayment::whereHas('tipGoal',function($q) use($user){
-                $q->where('user_id',$user->id);
-            });
-
-            $membership = MembershipPayment::whereHas('membership',function($q) use($user){
-                $q->where('user_id',$user->id);
-            });
-
-            $bill = BillPayment::whereHas('bill',function($q) use($user){
-                $q->where('user_id',$user->id);
-            });
-
-            $data = [];
-
+        if ($type == 'month') {
             for ($month = 1; $month <= 12; $month++) {
-
                 $date = Carbon::create($currentYear, $month, 1);
 
-                $month_no = $date->month;
-                $single_wish->whereYear('created_at', $currentYear)
-                ->whereMonth('created_at',$month_no);
+                // Clone initial queries
+                $single_wish_query = clone $this->initialQuery($user,"wish");
+                $subscriptions_query = clone $this->initialQuery($user,"subs");
+                $tip_goal_query = clone $this->initialQuery($user,"tip");
+                $membership_query = clone $this->initialQuery($user,"mem");
+                $bill_query = clone $this->initialQuery($user,"bill");
 
-                $subscriptions->whereYear('created_at', '=', $currentYear)
-                ->whereMonth('created_at',$month_no);
+                // Apply additional conditions for each query
+                $single_wish_query->whereYear('created_at', $currentYear)
+                    ->whereMonth('created_at', $month);
+                $subscriptions_query->whereYear('created_at', '=', $currentYear)
+                    ->whereMonth('created_at', $month);
+                $tip_goal_query->whereYear('created_at', '=', $currentYear)
+                    ->whereMonth('created_at', $month);
+                $membership_query->whereYear('created_at', '=', $currentYear)
+                    ->whereMonth('created_at', $month);
+                $bill_query->whereYear('created_at', '=', $currentYear)
+                    ->whereMonth('created_at', $month);
 
-                $tip_goal->whereYear('created_at', '=', $currentYear)
-                ->whereMonth('created_at',$month_no);
-
-                $membership->whereYear('created_at', '=', $currentYear)
-                ->whereMonth('created_at',$month_no);
-
-                $bill->whereYear('created_at', '=', $currentYear)
-                ->whereMonth('created_at',$month_no);
-
+                // Fetch sums for each category
                 $data[$month - 1] = [
-                    'single_wish' => $single_wish->sum('amount'),
-                    'subscriptions' => $subscriptions->sum('amount'),
-                    'tip_goal' => $tip_goal->sum('amount'),
-                    'membership' => $membership->sum('amount'),
-                    'bill' => $bill->sum('amount'),
+                    'single_wish' => $single_wish_query->sum('amount'),
+                    'subscriptions' => $subscriptions_query->sum('amount'),
+                    'tip_goal' => $tip_goal_query->sum('amount'),
+                    'membership' => $membership_query->sum('amount'),
+                    'bill' => $bill_query->sum('amount'),
                     'month' => $date->format('F')
                 ];
             }
 
-            return $data;
+        }
+    }
+
+    public function initialQuery($user,$type){
+
+        if($type == 'wish'){
+            return StripePaymentItems::whereHas('wish',function($q){
+                $q->whereNotNull('stripe_product_id');
+            })->whereHas('payment',function($query) use($user){
+                $query->where('owner_id',$user->id);
+            });
+        }
+
+        if($type = 'subs'){
+            return WishItemSubscription::whereHas('wish_item',function($q) use($user){
+                $q->where('user_id',$user->id);
+            });
+        }
+
+        if($type == 'tip'){
+            return TipGoalsPayment::whereHas('tipGoal',function($q) use($user){
+                $q->where('user_id',$user->id);
+            });
+        }
+
+        if($type =='mem'){
+            return MembershipPayment::whereHas('membership',function($q) use($user){
+                $q->where('user_id',$user->id);
+            });
+        }
+
+        if($type == 'bill'){
+            return BillPayment::whereHas('bill',function($q) use($user){
+                $q->where('user_id',$user->id);
+            });
         }
     }
 
