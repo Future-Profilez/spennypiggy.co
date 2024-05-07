@@ -207,6 +207,10 @@ Route::middleware('auth')->group(function () {
         })->name('stripe-subscription');
     });
 
+    Route::get('/earnings', function () {
+        return Inertia::render('earnings/Earnings');
+
+    })->name('earnings-page');
     Route::get('profile-steps-status/', [ProfileController::class, 'profileStepsStatus'])->name("profle-steps-status");
     Route::get('get-notification/', [ProfileController::class, 'getNotifications'])->name("get-notification");
     Route::get('mark-as-read/', [ProfileController::class, 'markRead'])->name("mark-as-read");
