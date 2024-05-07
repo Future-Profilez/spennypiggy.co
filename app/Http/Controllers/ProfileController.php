@@ -788,6 +788,7 @@ class ProfileController extends Controller
     public function getNotifications(){
         $user = User::where('id', Auth::id())->first();
 
+        Notification::where('is_read',0)->update(['is_read' => 1]);
         $notifications = Notification::where('notifiable_id',$user->id)->with('user')->orderBy('created_at','DESC')->paginate(30);
 
         return response()->json([
