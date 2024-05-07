@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Auth;
 
 use App\Helpers;
 use App\Http\Controllers\Controller;
+use App\Jobs\NotificationSave;
 use App\Models\Logs;
 use App\Models\Post;
 use App\Models\PostComment;
 use App\Models\PostCommentReplies;
 use App\Models\PostLike;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -154,9 +156,11 @@ class PostsController extends Controller
     public function postLike($uuid){
         $post = Post::where('uuid',$uuid)->first();
 
+        $user = User::where('id',Auth::id())->first();
+
         if(!empty($post)){
             $is_liked = false;
-            $like = PostLike::where('user_id',Auth::id())->where('post_id',$post->id)->first();
+            $like = PostLike::where('user_id',$user->id)->where('post_id',$post->id)->first();
 
             if(!empty($like)){
 
@@ -165,6 +169,10 @@ class PostsController extends Controller
                     $like->save();
 
                     $is_liked = true;
+
+
+                    $message = $user->name . " liked your post " . $post->title;
+                    NotificationSave::dispatch($message,$post->user,$user,'Post Like');
 
                 }
                 else{
@@ -183,11 +191,14 @@ class PostsController extends Controller
             else
             {
                 PostLike::create([
-                    'user_id' => Auth::id(),
+                    'user_id' => $user->id,
                     'post_id' => $post->id,
                     'status' => 1
                 ]);
                 $is_liked = true;
+
+                $message = $user->name . " liked your post " . $post->title;
+                NotificationSave::dispatch($message,$post->user,$user,'Post Like');
             }
 
             return response()->json([
@@ -212,12 +223,15 @@ class PostsController extends Controller
         ]);
 
         $post = Post::where('uuid',$uuid)->first();
-
+        $user = User::where('id',Auth::id())->first();
         if(!empty($post)){
             $post->comments()->create([
-                'user_id' => Auth::id(),
+                'user_id' => $user->id,
                 'comment' => $request->comment
             ]);
+
+            $message = $user->name . " commented on your post " . $post->title;
+            NotificationSave::dispatch($message,$post->user,$user,'Post Comment');
 
             return response()->json([
              'status' => true,
@@ -241,12 +255,15 @@ class PostsController extends Controller
         ]);
 
         $comment = PostComment::where('uuid',$comment_uid)->first();
-
+        $user = User::where('id',Auth::id())->first();
         if(!empty($comment)){
             $comment->replies()->create([
-                'user_id' => Auth::id(),
+                'user_id' => $user->id,
                 'reply' => $request->reply
             ]);
+
+            $message = $user->name . " commented on your post " . $comment->post->title;
+            NotificationSave::dispatch($message,$comment->post->user,$user,'Post Comment');
 
             return response()->json([
             'status' => true,

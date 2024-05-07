@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Currency;
+use App\Models\Notification;
 use App\Models\UserCart;
 use App\Models\WishItem;
 use Illuminate\Http\Request;
@@ -38,12 +39,13 @@ class HandleInertiaRequests extends Middleware
 
         $user = $request->user();
         $items = UserCart::where('user_id', $user->id ?? null)->where('status',1)->count();
-
+        $notification_count = Notification::where('notifiable_id',$user->id ?? null)->where('is_read',0)->count();
         return [
             ...parent::share($request),
             'auth' => [
                 'user' => $user,
             ],
+            'notification_count' => $notification_count,
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),

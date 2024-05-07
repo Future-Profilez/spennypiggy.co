@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -425,5 +426,394 @@ class LeaderBoardController extends Controller
     }
 
 
+     /**
+     * Earnings
+     *
+     * @return JSON
+     */
+    public function earnings($type = 'today')
+    {
+        $user = User::where('id', Auth::id())->first();
+
+        $currentMonth = Carbon::now()->month;
+        $currentYear = Carbon::now()->year;
+        $currentWeekStartDate = Carbon::now()->startOfWeek();
+        $currentWeekEndDate = Carbon::now()->endOfWeek();
+        $currentDate = Carbon::today();
+
+        $single_wish = StripePaymentItems::whereHas('wish',function($q){
+            $q->whereNotNull('stripe_product_id');
+        })->whereHas('payment',function($query) use($user){
+            $query->where('owner_id',$user->id);
+        });
+
+        // $crowd_wish = StripePaymentItems::whereHas('wish',function($q){
+        //     $q->whereNull('stripe_product_id');
+        // })->whereHas('payment',function($query) use($user){
+        //     $query->where('owner_id',$user->id);
+        // });
+
+        // $surprise = StripePaymentItems::whereNull('wish_item_id')
+        // ->whereHas('payment',function($query) use($user){
+        //     $query->where('owner_id',$user->id);
+        // });
+
+        $subscriptions = WishItemSubscription::whereHas('wish_item',function($q) use($user){
+            $q->where('user_id',$user->id);
+        });
+
+        $tip_goal = TipGoalsPayment::whereHas('tipGoal',function($q) use($user){
+            $q->where('user_id',$user->id);
+        });
+
+        $membership = MembershipPayment::whereHas('membership',function($q) use($user){
+            $q->where('user_id',$user->id);
+        });
+
+        $bill = BillPayment::whereHas('bill',function($q) use($user){
+            $q->where('user_id',$user->id);
+        });
+
+        if ($type == 'today') {
+
+            $single_wish->where('created_at', $currentDate);
+            // $crowd_wish->where('created_at', $currentDate);
+            // $surprise->where('created_at', $currentDate);
+            $subscriptions->where('created_at', $currentDate);
+            $tip_goal->where('created_at', $currentDate);
+            $membership->where('created_at', $currentDate);
+            $bill->where('created_at', $currentDate);
+        } else if ($type == 'week') {
+
+            $single_wish->whereBetween('created_at', [
+                $currentWeekStartDate,
+                $currentWeekEndDate,
+            ]);
+            // $crowd_wish->whereBetween('created_at', [
+            //     $currentWeekStartDate,
+            //     $currentWeekEndDate,
+            // ]);
+            // $surprise->whereBetween('created_at', [
+            //     $currentWeekStartDate,
+            //     $currentWeekEndDate,
+            // ]);
+            $subscriptions->whereBetween('created_at', [
+                $currentWeekStartDate,
+                $currentWeekEndDate,
+            ]);
+            $tip_goal->whereBetween('created_at', [
+                $currentWeekStartDate,
+                $currentWeekEndDate,
+            ]);
+
+            $membership->whereBetween('created_at', [
+                $currentWeekStartDate,
+                $currentWeekEndDate,
+            ]);
+            $bill->whereBetween('created_at', [
+                $currentWeekStartDate,
+                $currentWeekEndDate,
+            ]);
+        } else if ($type == 'month') {
+
+            $single_wish->whereYear('created_at', '=', $currentYear)
+            ->whereMonth('created_at',$currentMonth);
+
+            // $crowd_wish->whereYear('created_at', '=', $currentYear)
+            // ->whereMonth('created_at',$currentMonth);
+
+            // $surprise->whereYear('created_at', '=', $currentYear)
+            // ->whereMonth('created_at',$currentMonth);
+
+            $subscriptions->whereYear('created_at', '=', $currentYear)
+            ->whereMonth('created_at',$currentMonth);
+
+            $tip_goal->whereYear('created_at', '=', $currentYear)
+            ->whereMonth('created_at',$currentMonth);
+
+            $membership->whereYear('created_at', '=', $currentYear)
+            ->whereMonth('created_at',$currentMonth);
+
+            $bill->whereYear('created_at', '=', $currentYear)
+            ->whereMonth('created_at',$currentMonth);
+        }
+
+        // $performance = Earning::performance($type);
+
+        $resp['gross'] = number_format($single_wish->sum('amount') + $subscriptions->sum('amount') + $tip_goal->sum('amount') + $membership->sum('amount') + $bill->sum('amount'), 2);
+
+        // if ($performance['tip_goal'] == 0 && $tip_goal->sum('amount') == 0) {
+        //     $per = 0;
+        // } elseif ($performance['tip_goal'] == 0) {
+        //     $per = 100;
+        // } else {
+        //     $per = (($tip_goal->sum('amount') - $performance['tip_goal']) / $performance['tip_goal']) * 100;
+        // }
+
+
+        $resp['earnings'][0] = [
+            'amount' => $single_wish->sum('amount'),
+            // 'performance' => $per,
+            // 'increase' => $single_wish->sum('amount') > $performance['single_wish'] ? true : false,
+            'percent' => $single_wish->sum('amount') != 0 ?  number_format(($single_wish->sum('amount') * 100) / $resp['gross'], 2) : 0,
+            'title' => 'single wish',
+            'tag' => 'single_wish'
+        ];
+
+
+        $resp['earnings'][1] = [
+            'amount' => $tip_goal->sum('amount'),
+            // 'performance' => $per,
+            // 'increase' => $tip_goal->sum('amount') > $performance['tip_goal'] ? true : false,
+            'percent' => $tip_goal->sum('amount') != 0 ?  number_format(($tip_goal->sum('amount') * 100) / $resp['gross'], 2) : 0,
+            'title' => 'tip goal',
+            'tag' => 'tip_goal'
+        ];
+
+
+        // if ($performance['bill'] == 0 && $bill->sum('amount') == 0) {
+        //     $per = 0;
+        // } elseif ($performance['bill'] == 0) {
+        //     $per = 100;
+        // } else {
+        //     $per = (($bill->sum('amount') - $performance['bill']) / $performance['bill']) * 100;
+        // }
+        $resp['earnings'][3] = [
+            'amount' => $bill->sum('amount'),
+            // 'performance' => $per,
+            // 'increase' => $bill->sum('amount') > $performance['bill'] ? true : false,
+            'percent' => $bill->sum('amount') != 0 ?  number_format(($bill->sum('amount') * 100) / $resp['gross'], 2) : 0,
+            'title' => 'bills',
+            'tag' => 'bills'
+        ];
+
+        // if ($performance['subscriptions'] == 0 && $subscriptions->sum('amount') == 0) {
+        //     $per = 0;
+        // } elseif ($performance['subscriptions'] == 0) {
+        //     $per = 100;
+        // } else {
+        //     $per = (($subscriptions->sum('amount') - $performance['subscriptions']) / $performance['subscriptions']) * 100;
+        // }
+        $resp['earnings'][4] = [
+            'amount' => $subscriptions->sum('amount'),
+            // 'performance' => $per,
+            // 'increase' => $subscriptions->sum('amount') > $performance['subscriptions'] ? true : false,
+            'percent' => $subscriptions->sum('amount') != 0 ?  number_format(($subscriptions->sum('amount') * 100) / $resp['gross'], 2) : 0,
+            'title' => 'subscriptions',
+            'tag' => 'subscriptions'
+        ];
+
+
+
+        // if ($performance['membership'] == 0 && $membership->sum('amount') == 0) {
+        //     $per = 0;
+        // } elseif ($performance['membership'] == 0) {
+        //     $per = 100;
+        // } else {
+        //     $per = (($membership->sum('amount') - $performance['membership']) / $performance['membership']) * 100;
+        // }
+        $resp['earnings'][5] = [
+            'amount' => $membership->sum('amount'),
+            // 'performance' => $per,
+            // 'increase' => $membership->sum('amount') > $performance['membership'] ? true : false,
+            'percent' => $membership->sum('amount') != 0 ?  number_format(($membership->sum('amount') * 100) / $resp['gross'], 2) : 0,
+            'title' => 'memberships',
+            'tag' => 'memberships'
+        ];
+
+        return response()->json($resp, 200);
+    }
+
+
+    public function graphData($type){
+        $user = User::where('id', Auth::id())->first();
+        $currentYear = Carbon::now()->year;
+
+        $data = [];
+
+        if ($type == 'month') {
+            for ($month = 1; $month <= 12; $month++) {
+                $date = Carbon::create($currentYear, $month, 1);
+
+                // Clone initial queries
+                $single_wish_query = clone $this->initialQuery($user,"wish");
+                $subscriptions_query = clone $this->initialQuery($user,"subs");
+                $tip_goal_query = clone $this->initialQuery($user,"tip");
+                $membership_query = clone $this->initialQuery($user,"mem");
+                $bill_query = clone $this->initialQuery($user,"bill");
+
+                // Apply additional conditions for each query
+                $single_wish_query->whereYear('created_at', $currentYear)
+                    ->whereMonth('created_at', $month);
+                $subscriptions_query->whereYear('created_at', '=', $currentYear)
+                    ->whereMonth('created_at', $month);
+                $tip_goal_query->whereYear('created_at', '=', $currentYear)
+                    ->whereMonth('created_at', $month);
+                $membership_query->whereYear('created_at', '=', $currentYear)
+                    ->whereMonth('created_at', $month);
+                $bill_query->whereYear('created_at', '=', $currentYear)
+                    ->whereMonth('created_at', $month);
+
+                // Fetch sums for each category
+                $data[$month - 1] = [
+                    'single_wish' => $single_wish_query->sum('amount'),
+                    'subscriptions' => $subscriptions_query->sum('amount'),
+                    'tip_goal' => $tip_goal_query->sum('amount'),
+                    'membership' => $membership_query->sum('amount'),
+                    'bill' => $bill_query->sum('amount'),
+                    'month' => $date->format('F')
+                ];
+            }
+
+        }
+        return response()->json([
+            'status' => true,
+            'data' => $data
+        ]);
+    }
+
+    public function initialQuery($user,$type){
+
+        if($type == 'wish'){
+            return StripePaymentItems::whereHas('wish',function($q){
+                $q->whereNotNull('stripe_product_id');
+            })->whereHas('payment',function($query) use($user){
+                $query->where('owner_id',$user->id);
+            });
+        }
+
+        if($type = 'subs'){
+            return WishItemSubscription::whereHas('wish_item',function($q) use($user){
+                $q->where('user_id',$user->id);
+            });
+        }
+
+        if($type == 'tip'){
+            return TipGoalsPayment::whereHas('tipGoal',function($q) use($user){
+                $q->where('user_id',$user->id);
+            });
+        }
+
+        if($type =='mem'){
+            return MembershipPayment::whereHas('membership',function($q) use($user){
+                $q->where('user_id',$user->id);
+            });
+        }
+
+        if($type == 'bill'){
+            return BillPayment::whereHas('bill',function($q) use($user){
+                $q->where('user_id',$user->id);
+            });
+        }
+    }
+
+
+    public function topWishes(){
+        $user = User::where('id', Auth::id())->first();
+
+        $pay = StripePaymentItems::whereHas('payment',function($q)use($user){
+            $q->where('owner_id',$user->id);
+        })->whereHas('wish',function($q)use($user){
+            $q->whereNotNull('stripe_product_id')->where('user_id',$user->id);
+        })->groupBy('wish_item_id')
+        ->selectRaw('wish_item_id, sum(amount) as total_amount')
+        ->orderBy('total_amount', 'DESC')->take(5)->get();
+
+        $resp = [];
+
+        foreach ($pay as $p) {
+            $resp[] = [
+                'uuid' => $p->wish->uuid,
+                'title' => $p->wish->wishname,
+                'amount' => $p->total_amount,
+                'media' => $p->wish->perma_link
+            ];
+        }
+
+        return response()->json([
+            'status' => true,
+            'data' => $resp
+        ]);
+    }
+
+
+    public function topSubscription(){
+        $user = User::where('id', Auth::id())->first();
+
+        $pay = WishItemSubscription::whereHas('wish_item',function($q)use($user){
+            $q->whereNotNull('stripe_product_id')->where('user_id',$user->id);
+        })->groupBy('wish_item_id')
+        ->selectRaw('wish_item_id, sum(amount) as total_amount')
+        ->orderBy('total_amount', 'DESC')->take(5)->get();
+
+        $resp = [];
+
+        foreach ($pay as $p) {
+            $resp[] = [
+                'uuid' => $p->wish_item->uuid,
+                'title' => $p->wish_item->wishname,
+                'amount' => $p->total_amount,
+                'media' => $p->wish_item->perma_link
+            ];
+        }
+
+        return response()->json([
+            'status' => true,
+            'data' => $resp
+        ]);
+    }
+
+
+    public function topBill(){
+        $user = User::where('id', Auth::id())->first();
+
+        $pay = BillPayment::whereHas('bill',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->groupBy('bills_id')
+        ->selectRaw('bills_id, sum(amount) as total_amount')
+        ->orderBy('total_amount', 'DESC')->take(5)->get();
+
+        $resp = [];
+
+        foreach ($pay as $p) {
+            $resp[] = [
+                'uuid' => $p->bill->uuid,
+                'title' => $p->bill->name,
+                'amount' => $p->total_amount,
+                'media' => $p->bill->perma_link
+            ];
+        }
+
+        return response()->json([
+            'status' => true,
+            'data' => $resp
+        ]);
+    }
+
+
+    public function topPiggyBank(){
+        $user = User::where('id', Auth::id())->first();
+
+        $pay = TipGoalsPayment::where('creator_id',$user->id)->with('user')->groupBy('user_id')
+        ->selectRaw('user_id,sum(amount) as total_amount')
+        ->orderBy('total_amount', 'DESC')->take(5)->get();
+
+        $resp = [];
+
+        foreach ($pay as $p) {
+            $resp[] = [
+                'uuid' => $p->user->uuid,
+                'name' => $p->user->name,
+                'username' => $p->user->username,
+                'amount' => $p->total_amount,
+                'media' => $p->user->avatar_url
+            ];
+        }
+
+        return response()->json([
+            'status' => true,
+            'data' => $resp
+        ]);
+    }
 
 }

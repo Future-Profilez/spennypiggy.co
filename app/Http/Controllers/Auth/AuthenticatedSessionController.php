@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Models\AuthRedirect;
 use App\Models\BillPayment;
 use App\Models\MembershipPayment;
+use App\Models\Notification;
 use App\Models\SocialLinks;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
@@ -116,6 +117,8 @@ class AuthenticatedSessionController extends Controller
         }
 
         $support_count = TipGoalsPayment::where('creator_id',$user->id)->count();
+        $notification_count = Notification::where('notifiable_id',$user->id)->where('is_read',0)->count();
+
         if (!empty(request()->query('item'))) {
             $itemdid = request()->query('item');
         } else {
@@ -132,7 +135,7 @@ class AuthenticatedSessionController extends Controller
         SeoMeta::addTag('meta', ['property' => 'twitter:image', 'content' => $image]);
         SeoMeta::addTag('meta', ['property' => 'twitter:site', 'content' => '@spennypiggy']);
         SeoMeta::addTag('meta', ['property' => 'twitter:creator', 'content' => '@spennypiggy']);
-        SeoMeta::addTag('meta', ['property' => 'twitter:image:alt', 'content' => 'Financial Gifts,Donations & Memberships']);
+        SeoMeta::addTag('meta', ['property' => 'twitter:image:alt', 'content' => 'Financial Gifts,Donations & Memberships']); 
         SeoMeta::addTag('meta', ['property' => 'twitter:image:src', 'content' => $image]);
         SeoMeta::addTag('meta', ['property' => 'og:image', 'content' => $image]);
 
@@ -140,7 +143,8 @@ class AuthenticatedSessionController extends Controller
             "username" => $username,
             "user" => $user,
             "itemid" => $itemdid,
-            'supporters' => $support_count
+            'supporters' => $support_count,
+            'notification_count' => $notification_count
         ]);
     }
 

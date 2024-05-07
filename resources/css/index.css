@@ -1,4 +1,17 @@
 
+
+@keyframes load {
+  0% { transition: 0.3s; opacity: 0; }
+  50% { transition: 0.3s; opacity: 0.5; }
+  100% { transition: 0.3s; opacity: 1; }
+}
+
+div {
+  animation: load 0.4s linear;
+}
+
+
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -49,6 +62,27 @@ h2.wishtitle{font-size:24px;font-weight:900;}
 .collapse{visibility:visible !important;}
 
 .notifications-lists{max-height:500px;overflow:auto;}
+
+@media(max-width:991px){
+  .userphotobox{height:280px;}
+}
+
+@media(max-width:767px){
+  #toast-notification {
+      position: fixed;
+      right: 0;
+      min-width: auto !important;
+      max-width: calc(100% - 20px);
+      right: 10px;
+      top: 90px;
+  }
+}
+
+.notifications-lists {
+  max-height:500px;
+  overflow: auto;
+}
+
 .loadingtext{font-size:20px;line-height:inherit !important;}
 .text-large{font-size:20px;}
 .croud-add input,.croud-add select{border-radius:10px;background:#f2f2f2;border:1px solid #ccc;padding:12px 15px;}
