@@ -77,7 +77,7 @@ class Post extends Model
         $like = null;
         $like = null;
         if (Auth::check()) {
-            $like = PostLike::where('post_id',$this->id)->where('user_id',Auth::check())->where('status',1)->first();
+            $like = PostLike::where('post_id',$this->id)->where('user_id',Auth::id())->where('status',1)->first();
         }
 
         if(!empty($like)){
