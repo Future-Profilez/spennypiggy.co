@@ -666,6 +666,10 @@ class LeaderBoardController extends Controller
             }
 
         }
+        return response()->json([
+            'status' => true,
+            'data' => $data
+        ]);
     }
 
     public function initialQuery($user,$type){
