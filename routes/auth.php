@@ -209,6 +209,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('profile-steps-status/', [ProfileController::class, 'profileStepsStatus'])->name("profle-steps-status");
     Route::get('get-notification/', [ProfileController::class, 'getNotifications'])->name("get-notification");
+    Route::get('mark-as-read/', [ProfileController::class, 'markRead'])->name("mark-as-read");
 
     Route::prefix('earnings')->group(function () {
         Route::get('all-data/{type?}', [LeaderBoardController::class, 'earnings'])->name('earnings');

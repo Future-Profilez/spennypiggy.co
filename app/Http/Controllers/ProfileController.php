@@ -788,7 +788,6 @@ class ProfileController extends Controller
     public function getNotifications(){
         $user = User::where('id', Auth::id())->first();
 
-        Notification::where('is_read',0)->update(['is_read' => 1]);
         $notifications = Notification::where('notifiable_id',$user->id)->with('user')->orderBy('created_at','DESC')->paginate(30);
 
         return response()->json([
@@ -798,6 +797,17 @@ class ProfileController extends Controller
             "current_page" => $notifications->currentPage() ?? null,
             "total" => $notifications->total() ?? null,
             "per_page" => $notifications->perPage() ?? null,
+        ]);
+    }
+
+    public function markRead(){
+        $user = User::where('id', Auth::id())->first();
+
+        Notification::where('notifiable_id',$user->id)->where('is_read',0)->update(['is_read' => 1]);
+
+        return response()->json([
+           'status' => true,
+           'message' => "Notifications marked as read."
         ]);
     }
 }
