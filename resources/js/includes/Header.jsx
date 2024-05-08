@@ -248,6 +248,7 @@ export default function Header() {
                     <ul className="menuslists" >
                         {auth?.user?.username || false ? (
                             <>
+                                
                                 <li>
                                     <Link
                                         onClick={toggleClass}
@@ -276,10 +277,21 @@ export default function Header() {
                                     </a>
                                 </li> 
 
+
                                 { auth && auth.user && auth.user.stripe_details_submitted == "1" ? 
+                                <>
+                                    <li>
+                                        <Link
+                                            onClick={toggleClass}
+                                            href={"/earnings"} >
+                                            Earnings
+                                        </Link>
+                                    </li>
+
                                     <li>
                                         <Link onClick={toggleClass} href={'/membership-dashboard'}> Membership Dashboard  </Link>
                                     </li>
+                                </>
                                 : ''}
 
                                 <li>

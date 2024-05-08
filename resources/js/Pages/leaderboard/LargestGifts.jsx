@@ -11,7 +11,6 @@ export default function LargestGifts() {
 
   const { formatMultiPrice } = PriceFormat();
 
-
   const [period, setperiod] = useState('last24hour');
   const [loading, setLoading] = useState(false);
 
@@ -33,6 +32,10 @@ export default function LargestGifts() {
       fetch(period);
     }
   },[]);
+
+
+  
+  
 
   const Income = ({s, index}) => {
     return <div className="rank py-3 border-bottom d-flex align-items-center justify-content-between">
