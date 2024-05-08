@@ -655,11 +655,11 @@ class LeaderBoardController extends Controller
 
             // Fetch sums for each category
             $data[$month - 1] = [
-                'single_wish' => $single_wish_query->sum('amount'),
-                'subscriptions' => $subscriptions_query->sum('amount'),
-                'tip_goal' => $tip_goal_query->sum('amount'),
-                'membership' => $membership_query->sum('amount'),
-                'bill' => $bill_query->sum('amount'),
+                'Wishes' => $single_wish_query->sum('amount'),
+                'Subscriptions' => $subscriptions_query->sum('amount'),
+                'Tips' => $tip_goal_query->sum('amount'),
+                'Memberships' => $membership_query->sum('amount'),
+                'Bills' => $bill_query->sum('amount'),
                 'month' => $date->format('F')
             ];
         }
