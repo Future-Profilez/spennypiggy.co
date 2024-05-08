@@ -540,7 +540,7 @@ class LeaderBoardController extends Controller
 
         // $performance = Earning::performance($type);
 
-        $resp['gross'] = number_format($single_wish->sum('amount') + $subscriptions->sum('amount') + $tip_goal->sum('amount') + $membership->sum('amount') + $bill->sum('amount'), 2);
+        $resp['gross'] = round($single_wish->sum('amount') + $subscriptions->sum('amount') + $tip_goal->sum('amount') + $membership->sum('amount') + $bill->sum('amount'), 2, PHP_ROUND_HALF_UP);
 
         // if ($performance['tip_goal'] == 0 && $tip_goal->sum('amount') == 0) {
         //     $per = 0;
@@ -555,7 +555,7 @@ class LeaderBoardController extends Controller
             'amount' => $single_wish->sum('amount'),
             // 'performance' => $per,
             // 'increase' => $single_wish->sum('amount') > $performance['single_wish'] ? true : false,
-            'percent' => $single_wish->sum('amount') != 0 ?  (($single_wish->sum('amount') * 100) / $resp['gross']) : 0,
+            'percent' => $single_wish->sum('amount') != 0 ?  round(($single_wish->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
             'title' => 'single wish',
             'tag' => 'single_wish'
         ];
@@ -565,7 +565,7 @@ class LeaderBoardController extends Controller
             'amount' => $tip_goal->sum('amount'),
             // 'performance' => $per,
             // 'increase' => $tip_goal->sum('amount') > $performance['tip_goal'] ? true : false,
-            'percent' => $tip_goal->sum('amount') != 0 ? (($tip_goal->sum('amount') * 100) / $resp['gross']) : 0,
+            'percent' => $tip_goal->sum('amount') != 0 ? round(($tip_goal->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
             'title' => 'tip goal',
             'tag' => 'tip_goal'
         ];
@@ -582,7 +582,7 @@ class LeaderBoardController extends Controller
             'amount' => $bill->sum('amount'),
             // 'performance' => $per,
             // 'increase' => $bill->sum('amount') > $performance['bill'] ? true : false,
-            'percent' => $bill->sum('amount') != 0 ? (($bill->sum('amount') * 100) / $resp['gross']) : 0,
+            'percent' => $bill->sum('amount') != 0 ? round(($bill->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
             'title' => 'bills',
             'tag' => 'bills'
         ];
@@ -598,7 +598,7 @@ class LeaderBoardController extends Controller
             'amount' => $subscriptions->sum('amount'),
             // 'performance' => $per,
             // 'increase' => $subscriptions->sum('amount') > $performance['subscriptions'] ? true : false,
-            'percent' => $subscriptions->sum('amount') != 0 ?  (($subscriptions->sum('amount') * 100) / $resp['gross']) : 0,
+            'percent' => $subscriptions->sum('amount') != 0 ?  round(($subscriptions->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
             'title' => 'subscriptions',
             'tag' => 'subscriptions'
         ];
@@ -616,7 +616,7 @@ class LeaderBoardController extends Controller
             'amount' => $membership->sum('amount'),
             // 'performance' => $per,
             // 'increase' => $membership->sum('amount') > $performance['membership'] ? true : false,
-            'percent' => $membership->sum('amount') != 0 ?  (($membership->sum('amount') * 100) / $resp['gross']) : 0,
+            'percent' => $membership->sum('amount') != 0 ?  round(($membership->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
             'title' => 'memberships',
             'tag' => 'memberships'
         ];
