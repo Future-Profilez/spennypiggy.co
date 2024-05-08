@@ -625,51 +625,50 @@ class LeaderBoardController extends Controller
     }
 
 
-    public function graphData($type){
+    public function graphData(){
         $user = User::where('id', Auth::id())->first();
         $currentYear = Carbon::now()->year;
 
         $data = [];
 
-        if ($type == 'month') {
-            for ($month = 1; $month <= 12; $month++) {
-                $date = Carbon::create($currentYear, $month, 1);
+        for ($month = 1; $month <= 12; $month++) {
+            $date = Carbon::create($currentYear, $month, 1);
 
-                // Clone initial queries
-                $single_wish_query = clone $this->initialQuery($user,"wish");
-                $subscriptions_query = clone $this->initialQuery($user,"subs");
-                $tip_goal_query = clone $this->initialQuery($user,"tip");
-                $membership_query = clone $this->initialQuery($user,"mem");
-                $bill_query = clone $this->initialQuery($user,"bill");
+            // Clone initial queries
+            $single_wish_query = clone $this->initialQuery($user,"wish");
+            $subscriptions_query = clone $this->initialQuery($user,"subs");
+            $tip_goal_query = clone $this->initialQuery($user,"tip");
+            $membership_query = clone $this->initialQuery($user,"mem");
+            $bill_query = clone $this->initialQuery($user,"bill");
 
-                // Apply additional conditions for each query
-                $single_wish_query->whereYear('created_at', $currentYear)
-                    ->whereMonth('created_at', $month);
-                $subscriptions_query->whereYear('created_at', '=', $currentYear)
-                    ->whereMonth('created_at', $month);
-                $tip_goal_query->whereYear('created_at', '=', $currentYear)
-                    ->whereMonth('created_at', $month);
-                $membership_query->whereYear('created_at', '=', $currentYear)
-                    ->whereMonth('created_at', $month);
-                $bill_query->whereYear('created_at', '=', $currentYear)
-                    ->whereMonth('created_at', $month);
+            // Apply additional conditions for each query
+            $single_wish_query->whereYear('created_at', $currentYear)
+                ->whereMonth('created_at', $month);
+            $subscriptions_query->whereYear('created_at', '=', $currentYear)
+                ->whereMonth('created_at', $month);
+            $tip_goal_query->whereYear('created_at', '=', $currentYear)
+                ->whereMonth('created_at', $month);
+            $membership_query->whereYear('created_at', '=', $currentYear)
+                ->whereMonth('created_at', $month);
+            $bill_query->whereYear('created_at', '=', $currentYear)
+                ->whereMonth('created_at', $month);
 
-                // Fetch sums for each category
-                $data[$month - 1] = [
-                    'single_wish' => $single_wish_query->sum('amount'),
-                    'subscriptions' => $subscriptions_query->sum('amount'),
-                    'tip_goal' => $tip_goal_query->sum('amount'),
-                    'membership' => $membership_query->sum('amount'),
-                    'bill' => $bill_query->sum('amount'),
-                    'month' => $date->format('F')
-                ];
-            }
-
+            // Fetch sums for each category
+            $data[$month - 1] = [
+                'single_wish' => $single_wish_query->sum('amount'),
+                'subscriptions' => $subscriptions_query->sum('amount'),
+                'tip_goal' => $tip_goal_query->sum('amount'),
+                'membership' => $membership_query->sum('amount'),
+                'bill' => $bill_query->sum('amount'),
+                'month' => $date->format('F')
+            ];
         }
+
         return response()->json([
             'status' => true,
             'data' => $data
         ]);
+
     }
 
     public function initialQuery($user,$type){
