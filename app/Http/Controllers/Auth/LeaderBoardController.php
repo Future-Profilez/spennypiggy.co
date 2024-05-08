@@ -794,7 +794,7 @@ class LeaderBoardController extends Controller
     public function topPiggyBank(){
         $user = User::where('id', Auth::id())->first();
 
-        $pay = TipGoalsPayment::where('creator_id',$user->id)->with('user')->groupBy('user_id')
+        $pay = TipGoalsPayment::where('creator_id',$user->id)->whereNotNull('user_id')->with('user')->groupBy('user_id')
         ->selectRaw('user_id,sum(amount) as total_amount')
         ->orderBy('total_amount', 'DESC')->take(5)->get();
 
