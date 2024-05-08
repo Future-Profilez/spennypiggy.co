@@ -25,24 +25,24 @@ export default function ConfirmPassword(props) {
 
     const submit = (e) => {
         e.preventDefault();
-        post(route("changePassword", { uuid: uuid }),{
-                preserveScroll: true,
-                onSuccess: (resp) => {
-                    if (resp.props.flash?.success) {
-                        successAlert(resp.props.flash?.success);
-                    }
-                    if (resp.props.flash?.error) {
-                        errorAlert(resp.props.flash?.error);
-                    }
-                    reset();
-                },
-                onError: (err) => {
-                    reset("password");
-                    Object.keys(err).map((key) => {
-                        errorAlert(err[key]);
-                    });
-                },
-            });
+        post(route("changePassword", { uuid: uuid }), {
+            preserveScroll: true,
+            onSuccess: (resp) => {
+                if (resp.props.flash?.success) {
+                    successAlert(resp.props.flash?.success);
+                }
+                if (resp.props.flash?.error) {
+                    errorAlert(resp.props.flash?.error);
+                }
+                reset();
+            },
+            onError: (err) => {
+                reset("password");
+                Object.keys(err).map((key) => {
+                    errorAlert(err[key]);
+                });
+            },
+        });
     };
 
     // useEffect(() => {

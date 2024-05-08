@@ -540,7 +540,7 @@ class LeaderBoardController extends Controller
 
         // $performance = Earning::performance($type);
 
-        $resp['gross'] = number_format($single_wish->sum('amount') + $subscriptions->sum('amount') + $tip_goal->sum('amount') + $membership->sum('amount') + $bill->sum('amount'), 2);
+        $resp['gross'] = round($single_wish->sum('amount') + $subscriptions->sum('amount') + $tip_goal->sum('amount') + $membership->sum('amount') + $bill->sum('amount'), 2, PHP_ROUND_HALF_UP);
 
         // if ($performance['tip_goal'] == 0 && $tip_goal->sum('amount') == 0) {
         //     $per = 0;
@@ -555,9 +555,9 @@ class LeaderBoardController extends Controller
             'amount' => $single_wish->sum('amount'),
             // 'performance' => $per,
             // 'increase' => $single_wish->sum('amount') > $performance['single_wish'] ? true : false,
-            'percent' => $single_wish->sum('amount') != 0 ?  number_format(($single_wish->sum('amount') * 100) / $resp['gross'], 2) : 0,
-            'title' => 'single wish',
-            'tag' => 'single_wish'
+            'percent' => $single_wish->sum('amount') != 0 ?  round(($single_wish->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
+            // 'title' => 'single wish',
+            'tag' => 'Wishes'
         ];
 
 
@@ -565,9 +565,9 @@ class LeaderBoardController extends Controller
             'amount' => $tip_goal->sum('amount'),
             // 'performance' => $per,
             // 'increase' => $tip_goal->sum('amount') > $performance['tip_goal'] ? true : false,
-            'percent' => $tip_goal->sum('amount') != 0 ?  number_format(($tip_goal->sum('amount') * 100) / $resp['gross'], 2) : 0,
-            'title' => 'tip goal',
-            'tag' => 'tip_goal'
+            'percent' => $tip_goal->sum('amount') != 0 ? round(($tip_goal->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
+            // 'title' => 'tip goal',
+            'tag' => 'Tips'
         ];
 
 
@@ -578,13 +578,13 @@ class LeaderBoardController extends Controller
         // } else {
         //     $per = (($bill->sum('amount') - $performance['bill']) / $performance['bill']) * 100;
         // }
-        $resp['earnings'][3] = [
+        $resp['earnings'][2] = [
             'amount' => $bill->sum('amount'),
             // 'performance' => $per,
             // 'increase' => $bill->sum('amount') > $performance['bill'] ? true : false,
-            'percent' => $bill->sum('amount') != 0 ?  number_format(($bill->sum('amount') * 100) / $resp['gross'], 2) : 0,
-            'title' => 'bills',
-            'tag' => 'bills'
+            'percent' => $bill->sum('amount') != 0 ? round(($bill->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
+            // 'title' => 'bills',
+            'tag' => 'Bills'
         ];
 
         // if ($performance['subscriptions'] == 0 && $subscriptions->sum('amount') == 0) {
@@ -594,13 +594,13 @@ class LeaderBoardController extends Controller
         // } else {
         //     $per = (($subscriptions->sum('amount') - $performance['subscriptions']) / $performance['subscriptions']) * 100;
         // }
-        $resp['earnings'][4] = [
+        $resp['earnings'][3] = [
             'amount' => $subscriptions->sum('amount'),
             // 'performance' => $per,
             // 'increase' => $subscriptions->sum('amount') > $performance['subscriptions'] ? true : false,
-            'percent' => $subscriptions->sum('amount') != 0 ?  number_format(($subscriptions->sum('amount') * 100) / $resp['gross'], 2) : 0,
-            'title' => 'subscriptions',
-            'tag' => 'subscriptions'
+            'percent' => $subscriptions->sum('amount') != 0 ?  round(($subscriptions->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
+            // 'title' => 'subscriptions',
+            'tag' => 'Subscriptions'
         ];
 
 
@@ -612,64 +612,63 @@ class LeaderBoardController extends Controller
         // } else {
         //     $per = (($membership->sum('amount') - $performance['membership']) / $performance['membership']) * 100;
         // }
-        $resp['earnings'][5] = [
+        $resp['earnings'][4] = [
             'amount' => $membership->sum('amount'),
             // 'performance' => $per,
             // 'increase' => $membership->sum('amount') > $performance['membership'] ? true : false,
-            'percent' => $membership->sum('amount') != 0 ?  number_format(($membership->sum('amount') * 100) / $resp['gross'], 2) : 0,
-            'title' => 'memberships',
-            'tag' => 'memberships'
+            'percent' => $membership->sum('amount') != 0 ?  round(($membership->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
+            // 'title' => 'memberships',
+            'tag' => 'Memberships'
         ];
 
         return response()->json($resp, 200);
     }
 
 
-    public function graphData($type){
+    public function graphData(){
         $user = User::where('id', Auth::id())->first();
         $currentYear = Carbon::now()->year;
 
         $data = [];
 
-        if ($type == 'month') {
-            for ($month = 1; $month <= 12; $month++) {
-                $date = Carbon::create($currentYear, $month, 1);
+        for ($month = 1; $month <= 12; $month++) {
+            $date = Carbon::create($currentYear, $month, 1);
 
-                // Clone initial queries
-                $single_wish_query = clone $this->initialQuery($user,"wish");
-                $subscriptions_query = clone $this->initialQuery($user,"subs");
-                $tip_goal_query = clone $this->initialQuery($user,"tip");
-                $membership_query = clone $this->initialQuery($user,"mem");
-                $bill_query = clone $this->initialQuery($user,"bill");
+            // Clone initial queries
+            $single_wish_query = clone $this->initialQuery($user,"wish");
+            $subscriptions_query = clone $this->initialQuery($user,"subs");
+            $tip_goal_query = clone $this->initialQuery($user,"tip");
+            $membership_query = clone $this->initialQuery($user,"mem");
+            $bill_query = clone $this->initialQuery($user,"bill");
 
-                // Apply additional conditions for each query
-                $single_wish_query->whereYear('created_at', $currentYear)
-                    ->whereMonth('created_at', $month);
-                $subscriptions_query->whereYear('created_at', '=', $currentYear)
-                    ->whereMonth('created_at', $month);
-                $tip_goal_query->whereYear('created_at', '=', $currentYear)
-                    ->whereMonth('created_at', $month);
-                $membership_query->whereYear('created_at', '=', $currentYear)
-                    ->whereMonth('created_at', $month);
-                $bill_query->whereYear('created_at', '=', $currentYear)
-                    ->whereMonth('created_at', $month);
+            // Apply additional conditions for each query
+            $single_wish_query->whereYear('created_at', $currentYear)
+                ->whereMonth('created_at', $month);
+            $subscriptions_query->whereYear('created_at', '=', $currentYear)
+                ->whereMonth('created_at', $month);
+            $tip_goal_query->whereYear('created_at', '=', $currentYear)
+                ->whereMonth('created_at', $month);
+            $membership_query->whereYear('created_at', '=', $currentYear)
+                ->whereMonth('created_at', $month);
+            $bill_query->whereYear('created_at', '=', $currentYear)
+                ->whereMonth('created_at', $month);
 
-                // Fetch sums for each category
-                $data[$month - 1] = [
-                    'single_wish' => $single_wish_query->sum('amount'),
-                    'subscriptions' => $subscriptions_query->sum('amount'),
-                    'tip_goal' => $tip_goal_query->sum('amount'),
-                    'membership' => $membership_query->sum('amount'),
-                    'bill' => $bill_query->sum('amount'),
-                    'month' => $date->format('F')
-                ];
-            }
-
+            // Fetch sums for each category
+            $data[$month - 1] = [
+                'Wishes' => $single_wish_query->sum('amount'),
+                'Subscriptions' => $subscriptions_query->sum('amount'),
+                'Tips' => $tip_goal_query->sum('amount'),
+                'Memberships' => $membership_query->sum('amount'),
+                'Bills' => $bill_query->sum('amount'),
+                'month' => $date->format('F')
+            ];
         }
+
         return response()->json([
             'status' => true,
             'data' => $data
         ]);
+
     }
 
     public function initialQuery($user,$type){
@@ -794,7 +793,7 @@ class LeaderBoardController extends Controller
     public function topPiggyBank(){
         $user = User::where('id', Auth::id())->first();
 
-        $pay = TipGoalsPayment::where('creator_id',$user->id)->with('user')->groupBy('user_id')
+        $pay = TipGoalsPayment::where('creator_id',$user->id)->whereNotNull('user_id')->with('user')->groupBy('user_id')
         ->selectRaw('user_id,sum(amount) as total_amount')
         ->orderBy('total_amount', 'DESC')->take(5)->get();
 

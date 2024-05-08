@@ -217,7 +217,7 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('earnings')->group(function () {
         Route::get('all-data/{type?}', [LeaderBoardController::class, 'earnings'])->name('earnings');
-        Route::get('graph-data/{type?}', [LeaderBoardController::class, 'graphData'])->name('graph-data');
+        Route::get('graph-data/', [LeaderBoardController::class, 'graphData'])->name('graph-data');
         Route::get('top-wishes', [LeaderBoardController::class, 'topWishes'])->name('top-wishes');
         Route::get('top-subscription', [LeaderBoardController::class, 'topSubscription'])->name('top-subscription');
         Route::get('top-bill', [LeaderBoardController::class, 'topBill'])->name('top-bill');
