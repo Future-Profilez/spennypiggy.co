@@ -555,7 +555,7 @@ class LeaderBoardController extends Controller
             'amount' => $single_wish->sum('amount'),
             // 'performance' => $per,
             // 'increase' => $single_wish->sum('amount') > $performance['single_wish'] ? true : false,
-            'percent' => $single_wish->sum('amount') != 0 ?  number_format(($single_wish->sum('amount') * 100) / $resp['gross'], 2) : 0,
+            'percent' => $single_wish->sum('amount') != 0 ? $single_wish->sum('amount') : 0,
             'title' => 'single wish',
             'tag' => 'single_wish'
         ];
@@ -565,7 +565,7 @@ class LeaderBoardController extends Controller
             'amount' => $tip_goal->sum('amount'),
             // 'performance' => $per,
             // 'increase' => $tip_goal->sum('amount') > $performance['tip_goal'] ? true : false,
-            'percent' => $tip_goal->sum('amount') != 0 ?  number_format(($tip_goal->sum('amount') * 100) / $resp['gross'], 2) : 0,
+            'percent' => $tip_goal->sum('amount') != 0 ? $tip_goal->sum('amount') : 0,
             'title' => 'tip goal',
             'tag' => 'tip_goal'
         ];
@@ -578,11 +578,11 @@ class LeaderBoardController extends Controller
         // } else {
         //     $per = (($bill->sum('amount') - $performance['bill']) / $performance['bill']) * 100;
         // }
-        $resp['earnings'][3] = [
+        $resp['earnings'][2] = [
             'amount' => $bill->sum('amount'),
             // 'performance' => $per,
             // 'increase' => $bill->sum('amount') > $performance['bill'] ? true : false,
-            'percent' => $bill->sum('amount') != 0 ?  number_format(($bill->sum('amount') * 100) / $resp['gross'], 2) : 0,
+            'percent' => $bill->sum('amount') != 0 ? $bill->sum('amount') : 0,
             'title' => 'bills',
             'tag' => 'bills'
         ];
@@ -594,11 +594,11 @@ class LeaderBoardController extends Controller
         // } else {
         //     $per = (($subscriptions->sum('amount') - $performance['subscriptions']) / $performance['subscriptions']) * 100;
         // }
-        $resp['earnings'][4] = [
+        $resp['earnings'][3] = [
             'amount' => $subscriptions->sum('amount'),
             // 'performance' => $per,
             // 'increase' => $subscriptions->sum('amount') > $performance['subscriptions'] ? true : false,
-            'percent' => $subscriptions->sum('amount') != 0 ?  number_format(($subscriptions->sum('amount') * 100) / $resp['gross'], 2) : 0,
+            'percent' => $subscriptions->sum('amount') != 0 ? $subscriptions->sum('amount') : 0,
             'title' => 'subscriptions',
             'tag' => 'subscriptions'
         ];
@@ -612,11 +612,11 @@ class LeaderBoardController extends Controller
         // } else {
         //     $per = (($membership->sum('amount') - $performance['membership']) / $performance['membership']) * 100;
         // }
-        $resp['earnings'][5] = [
+        $resp['earnings'][4] = [
             'amount' => $membership->sum('amount'),
             // 'performance' => $per,
             // 'increase' => $membership->sum('amount') > $performance['membership'] ? true : false,
-            'percent' => $membership->sum('amount') != 0 ?  number_format(($membership->sum('amount') * 100) / $resp['gross'], 2) : 0,
+            'percent' => $membership->sum('amount') != 0 ? $membership->sum('amount') : 0,
             'title' => 'memberships',
             'tag' => 'memberships'
         ];
