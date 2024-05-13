@@ -223,6 +223,11 @@ Route::middleware('auth')->group(function () {
         Route::get('top-bill', [LeaderBoardController::class, 'topBill'])->name('top-bill');
         Route::get('top-piggy-bank', [LeaderBoardController::class, 'topPiggyBank'])->name('top-piggy-bank');
     });
+
+    Route::get('/add-shop-item', function () {
+        return Inertia::render('shop/AddShopItem');
+
+    })->name('add-shop-item');
 });
 
 Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');
