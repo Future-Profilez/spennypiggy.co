@@ -1,0 +1,48 @@
+<?php
+
+namespace App\Mail;
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Queue\SerializesModels;
+
+class ShopBuyedMail extends Mailable
+{
+    use Queueable, SerializesModels;
+
+    public $data;
+    public $anon;
+    public $symbol;
+
+    /**
+     * Create a new message instance.
+     *
+     * @return void
+     */
+    public function __construct($data, $anon, $symbol)
+    {
+        $this->data = $data;
+        $this->anon = $anon;
+        $this->symbol = $symbol;
+    }
+
+    /**
+     * Build the message.
+     *
+     * @return $this
+     */
+    public function build()
+    {
+        try {
+            $name = $this->anon ? 'Anonymous user' : $this->data->name;
+            $subject = "$name just claimed shop item " . $this->data->shop->name;
+            return $this->view('email.shopbuy')
+                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+                ->subject($subject);
+        } catch (\Exception $e) {
+        }
+    }
+}

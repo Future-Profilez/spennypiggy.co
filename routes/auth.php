@@ -15,6 +15,7 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\PostsController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\ShopsController;
 use App\Http\Controllers\Auth\SocialLinksController;
 use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\TwitterController;
@@ -88,7 +89,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('mustHaveToVerify')->group(function () {
 
-        Route::get('/update-vat/{percent}', [AuthenticatedSessionController::class, 'updateVat']);
+        Route::get('update-vat/{percent}', [AuthenticatedSessionController::class, 'updateVat'])->name('updateVat');
 
         Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
 
@@ -97,7 +98,6 @@ Route::middleware('auth')->group(function () {
         Route::post('save_social_links', [SocialLinksController::class, 'saveSocialLinks'])->name('save_social_links');
 
         Route::post('save_wish_item', [WishitemController::class, 'addWishItem'])->name('save_wish_item');
-
 
         Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
 
@@ -188,8 +188,6 @@ Route::middleware('auth')->group(function () {
             Route::post('comment-reply/{comment_uid}', [PostsController::class, 'replyOnComment'])->name('comment-reply');
         });
 
-        Route::get('/earnings/{type?}', [LeaderBoardController::class, 'earnings'])->name('earnings');
-
 
         Route::prefix("bill")->name("bill.")->group(function () {
             Route::post('save', [BillsController::class, 'billSave'])->name('save');
@@ -197,7 +195,7 @@ Route::middleware('auth')->group(function () {
             Route::get('remove/{uuid}', [BillsController::class, 'removeBill'])->name('remove');
         });
 
-        Route::get('delete-stripe-account', [StripeController::class, 'deleteStripeAccount'])->name('deleteStripeAccount');
+        Route::match(['get', 'delete'],'delete-stripe-account', [StripeController::class, 'deleteStripeAccount'])->name('deleteStripeAccount');
 
         Route::get('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->name("mandatory.checkout");
         Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleMandatorySubscription'])->name('mandatory.handle');
@@ -205,6 +203,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/stripe-subscription', function () {
             return Inertia::render('Profile/ActivateSubscription');
         })->name('stripe-subscription');
+
     });
 
     Route::get('/earnings', function () {
@@ -224,10 +223,29 @@ Route::middleware('auth')->group(function () {
         Route::get('top-piggy-bank', [LeaderBoardController::class, 'topPiggyBank'])->name('top-piggy-bank');
     });
 
-    Route::get('/add-shop-item', function () {
-        return Inertia::render('shop/AddShopItem');
+    Route::get('/shop', function () {
+        return Inertia::render('/shop/ShopPage');
 
-    })->name('add-shop-item');
+    })->name('shop');
+
+    Route::prefix('shop')->group(function () {
+        Route::post('/add', [ShopsController::class, 'addShopItems'])->name('add-shop');
+        Route::post('/update/{uuid}', [ShopsController::class, 'updateShopItems'])->name('update-shop');
+        Route::post('/save-category', [ShopsController::class, 'saveUserShopCategory'])->name('save-category');
+        Route::get('/delete/{uuid}', [ShopsController::class, 'deleteShop'])->name('delete-shop');
+    });
+
+
+
+});
+
+Route::prefix('shop')->name('shop')->group(function () {
+    Route::get('/list/{username}', [ShopsController::class,'shopList'])->name('shop-list');
+    Route::get('/{slug}/{uuid}', [ShopsController::class,'singleShopList'])->name('single-shop-list');
+    Route::get('/buy/{uuid}', [ShopsController::class,'buyShopItem'])->name('buy-shop-item');
+    Route::get('/success-payment/{id}', [ShopsController::class,'successPayment'])->name('success-payment');
+    Route::get('/cancel-payment/{id}', [ShopsController::class,'cancelPayment'])->name('cancel-payment');
+
 });
 
 Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');
@@ -254,6 +272,9 @@ Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class,
 Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');
 Route::get('discover/creators/categories', [WishitemController::class, 'all_creators_categories'])->name('allcreators_categories');
 // Route::get('discover/creators_videos', [WishitemController::class, 'discover_creators_videos'])->name('discover_videos');
+
+
+
 
 Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
 Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity');
@@ -362,13 +383,12 @@ Route::get('posts/{username}', [AuthenticatedSessionController::class, 'user_pos
 
 Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('user.posts.comments');
 
-
-
-
 Route::get('/{username}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
 Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');
 Route::get('/items/{username}/{category_id?}', [AuthenticatedSessionController::class, 'userItems'])->name('user.items');
 Route::get('/user_category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.category');
+Route::get('/user_shop_category/{username}', [AuthenticatedSessionController::class, 'user_shop_category'])->name('user.shop.category');
+
 
 Route::prefix("wish")->name("wish.")->group(function () {
     Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name("subscribe.checkout");
