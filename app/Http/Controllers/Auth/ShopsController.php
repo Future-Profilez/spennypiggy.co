@@ -306,7 +306,10 @@ class ShopsController extends Controller
         $categories = UserShopCategories::where('user_id', Auth::id())->get();
         foreach ($categories as $key => $value) {
             if (strtolower($request->category) == strtolower($value->category)) {
-                return back()->with('error', 'Category is already exists.');
+                return response()->json([
+                    'status' => false,
+                    'msg' => "Category is already exists."
+                ]);
             }
         }
 
