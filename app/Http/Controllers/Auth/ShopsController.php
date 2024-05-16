@@ -114,7 +114,8 @@ class ShopsController extends Controller
         $shop->refresh();
 
         if (!empty($request->category)) {
-            foreach ($request->category as $key => $value) {
+            $categories = json_decode($request->category);
+            foreach ($categories as $key => $value) {
                 $cat = UserShopCategories::where('uuid',$value)->first();
                 $shop_cat = new ShopCategory();
                 $shop_cat->uuid = Uuid::uuid4();
