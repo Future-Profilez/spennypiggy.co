@@ -241,7 +241,7 @@ Route::middleware('auth')->group(function () {
 
 Route::prefix('shop')->name('shop')->group(function () {
     Route::get('/list/{username}', [ShopsController::class,'shopList'])->name('shop-list');
-    Route::get('/{slug}/{uuid}', [ShopsController::class,'singleShopList'])->name('single-shop-list');
+    Route::get('/item/{slug}/{uuid}', [ShopsController::class,'singleShopList'])->name('single-shop-list');
     Route::get('/buy/{uuid}', [ShopsController::class,'buyShopItem'])->name('buy-shop-item');
     Route::get('/success-payment/{id}', [ShopsController::class,'successPayment'])->name('success-payment');
     Route::get('/cancel-payment/{id}', [ShopsController::class,'cancelPayment'])->name('cancel-payment');
