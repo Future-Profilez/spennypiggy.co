@@ -293,7 +293,7 @@ class ShopsController extends Controller
 
     public function singleShopList($slug,$uuid){
 
-        $shop = Shop::where('uuid',$uuid)->first();
+        $shop = Shop::where('uuid',$uuid)->with('user')->first();
 
         return Inertia::render('shop/Item',[
             'shop' => $shop
