@@ -19,6 +19,7 @@ class Shop extends Model
         'description',
         'image',
         'price',
+        'currency',
         'success_page_type',
         'success_page_value',
         'success_page_type',

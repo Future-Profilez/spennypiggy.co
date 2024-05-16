@@ -224,7 +224,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::get('/shop', function () {
-        return Inertia::render('/shop/ShopPage');
+        return Inertia::render('shop/ShopPage');
 
     })->name('shop');
 

@@ -89,7 +89,8 @@ class ShopsController extends Controller
 
         $file = [];
         if(!empty($request->reward_file)){
-            $file = json_decode($request->reward_file);
+            $file = $request->reward_file;
+            // $file = json_decode($request->reward_file);
         }
 
         $shop = Shop::create([
@@ -102,12 +103,12 @@ class ShopsController extends Controller
             'image' => $request->image ?? null,
             'success_page_type' => $request->success_page_type,
             'success_page_value' => $request->success_page_value ?? null,
-            'reward_file_type' => !empty($file) ? $file['content_info']['mime']['type'] : null,
+            'reward_file_type' => !empty($file) ? $file['contentInfo']['mime']['type'] : null,
             'reward_file' => !empty($file) ? $file['uuid'] : null,
             'ask_question' => $request->ask_question ?? null,
             'slot_limitation' => $request->slot_limitation ?? null,
             'special_member_price' => $request->special_member_price ?? null,
-            'quantity_allow' => $request->quantity_allow ?? 0,
+            'quantity_allow' => $request->quantity_allow ?? null,
         ]);
 
         $shop->refresh();
@@ -148,7 +149,6 @@ class ShopsController extends Controller
             $shop->delete();
             return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
         }
-
     }
 
 
@@ -164,6 +164,12 @@ class ShopsController extends Controller
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         }
 
+        $file = [];
+        if(!empty($request->reward_file)){
+            $file = $request->reward_file;
+            // $file = json_decode($request->reward_file);
+        }
+
         if(!empty($shop)){
             Shop::where('uuid',$uuid)->create([
                 'type' => $request->type,
@@ -174,6 +180,8 @@ class ShopsController extends Controller
                 'image' => $request->image ?? null,
                 'success_page_type' => $request->success_page_type,
                 'success_page_value' => $request->success_page_value ?? null,
+                'reward_file_type' => !empty($file) ? $file['contentInfo']['mime']['type'] : $shop->reward_file_type,
+                'reward_file' => !empty($file) ? $file['uuid'] : $shop->reward_file,
                 'ask_question' => $request->ask_question ?? null,
                 'slot_limitation' => $request->slot_limitation ?? null,
                 'special_member_price' => $request->special_member_price ?? null,

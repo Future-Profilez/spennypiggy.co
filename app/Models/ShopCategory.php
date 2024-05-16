@@ -19,7 +19,7 @@ class ShopCategory extends Model
 
     protected $hidden = [
         'id',
-       'shop_id',
+        'shop_id',
         'user_shop_categories_id',
         'created_at',
         'updated_at',
@@ -32,5 +32,11 @@ class ShopCategory extends Model
         static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 
+    public function shop(){
+        return $this->belongsTo(Shop::class,'shop_id');
+    }
 
+    public function category(){
+        return $this->belongsTo(UserShopCategories::class,'user_shop_categories_id');
+    }
 }
