@@ -295,8 +295,7 @@ class ShopsController extends Controller
 
         $shop = Shop::where('uuid',$uuid)->first();
 
-        return response()->json([
-            'status' => true,
+        return Inertia::render('shop/Item',[
             'shop' => $shop
         ]);
     }
