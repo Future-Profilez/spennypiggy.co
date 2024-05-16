@@ -115,10 +115,11 @@ class ShopsController extends Controller
 
         if (!empty($request->category)) {
             foreach ($request->category as $key => $value) {
+                $cat = UserShopCategories::where('uuid',$value)->first();
                 $shop_cat = new ShopCategory();
                 $shop_cat->uuid = Uuid::uuid4();
                 $shop_cat->shop_id = $shop->id;
-                $shop_cat->user_shop_categories_id = $value;
+                $shop_cat->user_shop_categories_id = $cat->id;
                 $shop_cat->save();
             }
         }
