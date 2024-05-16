@@ -145,10 +145,17 @@ class ShopsController extends Controller
             $shop->price_id = $product->default_price;
             $shop->save();
 
-            return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Shop Item has been added, your upload will be approved shortly.");
+            return response()->json([
+                'status' => true,
+                'msg' => "Shop Item has been added, your upload will be approved shortly."
+            ]);
 
         } catch (Exception $e) {
             $shop->delete();
+            return response()->json([
+                'status' => false,
+                'msg' => "Stripe Error: " . $e->getMessage()
+            ]);
             return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
         }
     }
