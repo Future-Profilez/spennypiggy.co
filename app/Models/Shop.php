@@ -44,7 +44,8 @@ class Shop extends Model
     protected $appends = [
         'perma_link',
         'real_category',
-        'reward_file_url'
+        'reward_file_url',
+        'total_sold'
     ];
 
     public static function boot()
@@ -76,6 +77,13 @@ class Shop extends Model
         }
 
         return $url;
+    }
+
+
+    public function getTotalSoldAttribute(){
+        $payments = ShopPayment::where('shop_id',$this->id)->count();
+
+        return $payments;
     }
 
 

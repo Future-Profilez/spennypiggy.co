@@ -279,7 +279,10 @@ class ShopsController extends Controller
     public function shopList($username){
         $user = User::where('username',$username)->first();
 
-        $shops = Shop::where('user_id',$user->id)->orderBy('created_at','desc')->where('approved',1)->get();
+        $shops = [];
+        if(!empty($user)){
+            $shops = Shop::where('user_id',$user->id)->orderBy('created_at','desc')->where('approved',1)->get();
+        }
 
         return response()->json([
             'status' => true,
