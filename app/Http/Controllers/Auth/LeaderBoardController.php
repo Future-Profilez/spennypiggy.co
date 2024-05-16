@@ -34,7 +34,7 @@ class LeaderBoardController extends Controller
                 ->withCount([
                     'paymentitems as total_payments' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
                         $query->select(DB::raw("COALESCE(SUM(amount), 0)"))->where('stripe_payment_details.payment_status','paid');
-                        if($type == 'monthly'){
+                        if(empty($type) || $type == 'monthly'){
                             $query->whereYear('stripe_payment_items.created_at', '=', $currentYear)
                             ->whereMonth('stripe_payment_items.created_at',$currentMonth);
                         }
@@ -48,7 +48,7 @@ class LeaderBoardController extends Controller
                     'subscriptions as total_subscriptions' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
                         $query->select(DB::raw("COALESCE(SUM(amount), 0)"))->where('wish_item_subscriptions.status','paid');
 
-                            if($type == 'monthly'){
+                            if(empty($type) || $type == 'monthly'){
                                 $query->whereYear('wish_item_subscriptions.created_at', '=', $currentYear)
                                 ->whereMonth('wish_item_subscriptions.created_at',$currentMonth);
                             }
@@ -62,7 +62,7 @@ class LeaderBoardController extends Controller
                     'tip_goal_payment as total_tips' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
                         $query->select(DB::raw("COALESCE(SUM(amount), 0)"))->where('tip_goals_payments.status','paid');
 
-                        if($type == 'monthly'){
+                        if(empty($type) || $type == 'monthly'){
                             $query->whereYear('tip_goals_payments.created_at', '=', $currentYear)
                             ->whereMonth('tip_goals_payments.created_at',$currentMonth);
                         }
@@ -76,7 +76,7 @@ class LeaderBoardController extends Controller
                     'membership_payments as total_member' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
                         $query->select(DB::raw("COALESCE(SUM(amount), 0)"))->where('membership_payments.status','paid');
 
-                        if($type == 'monthly'){
+                        if(empty($type) || $type == 'monthly'){
                             $query->whereYear('membership_payments.created_at', '=', $currentYear)
                             ->whereMonth('membership_payments.created_at',$currentMonth);
                         }
@@ -90,7 +90,7 @@ class LeaderBoardController extends Controller
                     'bill_payments as total_bill' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
                         $query->select(DB::raw("COALESCE(SUM(amount), 0)"))->where('bill_payments.status','paid');
 
-                        if($type == 'monthly'){
+                        if(empty($type) || $type == 'monthly'){
                             $query->whereYear('bill_payments.created_at', '=', $currentYear)
                             ->whereMonth('bill_payments.created_at',$currentMonth);
                         }
