@@ -81,12 +81,12 @@ class EmailService
     {
         try {
             $emailData = [
-                'to' => $data->payment->owner->email,
-                'name' => $data->payment->owner->name,
-                'username' => $data->payment->owner->username,
-                'phone' => $data->payment->owner->phone,
-                'email' => $data->payment->owner->email,
-                'uuid' => $data->payment->owner->uuid,
+                'to' => $data->shop->user->email,
+                'name' => $data->shop->user->name,
+                'username' => $data->shop->user->username,
+                'phone' => $data->shop->user->phone,
+                'email' => $data->shop->user->email,
+                'uuid' => $data->shop->user->uuid,
             ];
 
             Mail::to($emailData['to'])

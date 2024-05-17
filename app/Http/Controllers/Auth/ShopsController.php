@@ -394,9 +394,9 @@ class ShopsController extends Controller
                 'currency' => $shop->user->default_currency,
                 'shop_id' => $shop->id,
                 'user_id' => (Auth::check()) ? Auth::id() : (!empty($logged_out_user) ? $logged_out_user->id : null),
-                'name' => request()->query('name') ?? '',
+                'name' => request()->query('from') ?? null,
                 'email' => request()->query('email'),
-                'message' => $message ?? '',
+                'message' => $message ?? null,
                 'anonymous' => request()->query('anonymous') ?? 0,
                 'quantity' => request()->query('quantity'),
             ]);
