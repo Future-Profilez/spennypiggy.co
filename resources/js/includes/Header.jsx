@@ -31,7 +31,7 @@ export default function Header() {
     const dispatch = useDispatch();
 
     async function fetchCounter() {
-        axios.get(`counter/${deviceid}`).then((resp) => {
+        axios.get(`/counter/${deviceid}`).then((resp) => {
             setCount(resp.data.counter);
             dispatch(add_to_cart(resp.data.counter));
         }).catch((_err) => {
@@ -277,9 +277,15 @@ export default function Header() {
                                     </a>
                                 </li> 
 
-
                                 { auth && auth.user && auth.user.stripe_details_submitted == "1" ? 
                                 <>
+                                    <li>
+                                        <Link
+                                            onClick={toggleClass}
+                                            href={"/shop"} >
+                                            Shop Dashboard
+                                        </Link>
+                                    </li>
                                     <li>
                                         <Link
                                             onClick={toggleClass}

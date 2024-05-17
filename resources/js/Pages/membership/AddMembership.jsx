@@ -1,7 +1,5 @@
 import { useAlerts } from "@/Components/Alerts";
 import React, { useEffect } from "react";
-import  LoaderButton from "@/Components/LoaderButton";
-import { useForm, usePage } from "@inertiajs/react";
 const Popup = React.lazy(() => import('@/Components/Popup'));
 import { useState } from "react";
 import GlobalUploader from "@/uploadcare/Uploader";
@@ -119,6 +117,7 @@ export default function AddMembership({updateState, item}) {
       setThumb(thumbs.uuid || "");
       setIsEditable(true);
     };
+
     const imageEdited = async (d,uuid) => {
         const url = `${uuid}/${d.cdnUrlModifiers}-/preview/`
         setIsEditable(false);
@@ -168,7 +167,7 @@ export default function AddMembership({updateState, item}) {
 
     return (
         <Popup
-            modalclass="pinkmodal full sendSurprize-modal shadow-pink ps-0"
+            modalclassName="pinkmodal full sendSurprize-modal shadow-pink ps-0"
             space="4" size="md"
             action={close} classes={`dropdown-item w-100`}
             text={`Add Membership`} >

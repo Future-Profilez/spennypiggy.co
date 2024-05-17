@@ -60,7 +60,7 @@ export default function Social({links, updatedLinks}) {
     };
 
     return <>
-        <Popup action={close} space='4' modalclass="pinkmodal full" size="md"
+        <Popup action={close} space='4' modalclassName="pinkmodal full" size="md"
             classes='' text="Add Socials" >
             <div className='editprofileModalInner  '> 
                 <div className="swishinfo">

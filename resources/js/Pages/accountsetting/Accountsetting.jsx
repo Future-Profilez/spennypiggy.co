@@ -115,15 +115,14 @@ export default function Accountsetting(props) {
                                 </Popup>
                             </li>
 
-                            <li  >
+                            <li>
                                 <div className='notification'>
                                 Receive e-mail notifications
-                                    <label class="toggle-switch">
+                                    <label className="toggle-switch">
                                         <input id='notification_handle' checked={emailEnabled}
                                          type="checkbox" onChange={switchNotification}  />
-                                        <span for='notification_handle' class="slider"></span>
+                                        <span for='notification_handle' className="slider"></span>
                                     </label>
-
                                 </div>
                             </li>
 

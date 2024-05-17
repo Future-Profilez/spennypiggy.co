@@ -117,7 +117,7 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
 
                     <p className="text-grey-500 mb-1 mt-4" >Choose Audience</p>
                     <div className="flex align-center justify-content-center flex-wrap" >
-                        <select id="countries" defaultValue={item?.for_module} onChange={handleInput} name="for_module" class="form-input  
+                        <select id="countries" defaultValue={item?.for_module} onChange={handleInput} name="for_module" className="form-input  
                         text-md w-full focus:ring-green-50 block ">
                             <option value="membership">Memberships</option>
                             <option value="subscription">Subscription</option>

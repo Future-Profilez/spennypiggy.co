@@ -5,6 +5,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import DeviceID from "@/includes/DeviceID";
 import axios from "axios";
 import { useEffect } from "react";
+import { add_to_cart } from '@/Pages/redux/UserSlice';
 
 export default function UserCarts(props) {
 

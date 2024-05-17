@@ -6,7 +6,7 @@ export default function SendTip(props) {
     return (
         <>
             <Popup
-            modalclass="pinkmodal full sendSurprize-modal shadow-pink "
+            modalclassName="pinkmodal full sendSurprize-modal shadow-pink "
             space="0" size="md" action={close}
             classes={`btn-pink mt-3 fillbankbtn sm px-3 my-2`}
             text={`Fill my Piggy Bank`} >

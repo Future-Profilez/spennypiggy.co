@@ -10,7 +10,6 @@ import TopEarnWishes from './TopEarnWishes';
 import TopEarnBills from './TopEarnBills';
 import TopSupporters from './TopSupporters';
 import MonthlyRevenue from './MonthlyRevenue';
-// const JoinUs = React.lazy(() => import('@/Components/JoinUs'));
 
 export default function Earnings(props) {
 
@@ -37,6 +36,7 @@ export default function Earnings(props) {
     });
   };
 
+
   useEffect(()=>{ 
     fetchingStats();
   },[earnType]);
@@ -52,7 +52,7 @@ export default function Earnings(props) {
       </div>
       <div className="flex flex-col text-center flex-1 justify-center self-start">
         <div className="text-sm tracking-tighter capitalize text-neutral-500">
-          {earnType}
+          {earnType} 
         </div>
         <div className="flex  justify-center py-1.5 text-lg font-bold tracking-tight text-emerald-500 uppercase whitespace-nowrap">
           <div className="my-auto">{data.percent}%</div>

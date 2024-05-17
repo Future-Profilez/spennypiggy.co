@@ -245,7 +245,7 @@ export default function Wishlist(props) {
 
     return (
         <Popup
-            modalclass="pinkmodal full"
+            modalclassName="pinkmodal full"
             size="md"
             action={close}
             classes={`${editpop ? "editpop" : "dropdown-item text-start p-0"}`}
@@ -512,20 +512,15 @@ export default function Wishlist(props) {
                                         <strong className="text-start d-block">Exclusive Reward or Art commission *</strong>
                                         <p className="text-small mb-3" >Create an exclusive image as a reward “think a custom photoshoot” or add an exclusive art commission “Unique drawing or painting</p>
                                         <p className="text-small mb-3" >Rewards must be your own content, not stock imagery or content that you don’t have the ownership rights to. Wishes will be rejected if the reward is not sufficiently classed as unique content</p>
-
                                         {item && item.reward_url ? <div className="default-wish-img border mb-2">
                                             <img src={item && item.reward_url}className="img-fluid"/>
                                         </div> : '' }
-
                                         <GlobalUploader
                                             type="minimal"
                                             ref={uploaderRef1}
                                             sendFile={getrewardFile}
                                             options={st.rewards}
                                         />
-
-                                       
-
                                     </div>
 
                                     {/* <div className="twitter-an mt-3 pt-2">
@@ -592,11 +587,8 @@ export default function Wishlist(props) {
                                                     />
                                                     <div
                                                         className="p-2 border cursor-pointer"
-                                                        onClick={AddCategory}
-                                                    >
-                                                        {adding
-                                                            ? "Adding.."
-                                                            : "Add"}
+                                                        onClick={AddCategory} >
+                                                        {adding ? "Adding..":"Add"}
                                                     </div>
                                                 </div>
 
@@ -621,9 +613,6 @@ export default function Wishlist(props) {
                                                 )}
                                             </>
                                     </div>
-
-                                   
-
                                     
                                 </form>
                             </div>

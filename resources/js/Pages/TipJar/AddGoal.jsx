@@ -93,7 +93,7 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
 
     return (
         <Popup
-            modalclass="pinkmodal sendSurprize-modal shadow-pink"
+            modalclassName="pinkmodal sendSurprize-modal shadow-pink"
             space="4" size="md"
             action={close} classes={`btn-pink  text-xs lg px-4 my-2 w-100`}
             text={goal ? `My Goal` : `Add Goal`} >

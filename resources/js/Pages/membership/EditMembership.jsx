@@ -163,7 +163,7 @@ export default function EditMembership({ fetch_membership, item }) {
 
   return (
     <Popup
-      modalclass="pinkmodal full sendSurprize-modal shadow-pink ps-0"
+      modalclassName="pinkmodal full sendSurprize-modal shadow-pink ps-0"
       space="4" size="md" 
       action={close} classes={`btn-pink w-100 sm mt-3`}
       text={`Edit`} >

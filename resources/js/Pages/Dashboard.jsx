@@ -29,8 +29,6 @@ const MyGoal = React.lazy(() => import("./TipJar/MyGoal"));
 const SocialLinks = React.lazy(() => import("@/includes/SocialLinks"));
 const SiteSubscription = React.lazy(() => import("./Profile/SiteSubscription"));
 import Dropdown from "react-bootstrap/Dropdown";
-// import Tab from "react-bootstrap/Tab";
-// import Tabs from "react-bootstrap/Tabs";
 import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
 import { LazyLoadImage } from "react-lazy-load-image-component";
@@ -41,13 +39,12 @@ import PaymentUnActivated from "@/Components/PaymentUnActivated";
 import { Tabs, Tab } from "react-tabs-scrollable";
 import "react-tabs-scrollable/dist/rts.css";
 import ProfileSteps from "./Profile/ProfileSteps";
+import ProfileProductLists from "./shop/ProfileProductLists";
 
 export default function Dashboard(props) {
 
     const w = useWidthCount();
     const{auth,user,username,global_currency,itemid}= props;
-
-    console.log(props)
     const [tab, setTab] = useState(0);
     const onTabClick = (e, d) => {
         setTab(d);
@@ -342,6 +339,7 @@ export default function Dashboard(props) {
                                                         <Tab key="2" >Feed</Tab>
                                                         <Tab key="3" >Membership</Tab>
                                                         <Tab key="4" >Bills</Tab>
+                                                        <Tab key="5" >Shop</Tab>
                                                     </Tabs>
                                                     {IsloggedIn ? <Toggle /> : ''}
                                                 </div>
@@ -568,6 +566,17 @@ export default function Dashboard(props) {
                                                         <Suspense fallback={<LoadingScreen />} >
                                                             {IsloggedIn || user?.stripe_details_submitted == 1 ? (
                                                                 <Billslist billupdate={billupdated} IsloggedIn={IsloggedIn} />
+                                                            ) : (
+                                                                <PaymentUnActivated  heading={`Bills not activated yet. `} 
+                                                                subheading={`Until they activate their bills, this user won't be able to receive gifts.`} /> 
+                                                            )}
+                                                        </Suspense>
+                                                    : "" }
+
+                                                    {tab == '5' ? 
+                                                        <Suspense fallback={<LoadingScreen />} >
+                                                            {IsloggedIn || user?.stripe_details_submitted == 1 ? (
+                                                                 <ProfileProductLists />
                                                             ) : (
                                                                 <PaymentUnActivated  heading={`Bills not activated yet. `} 
                                                                 subheading={`Until they activate their bills, this user won't be able to receive gifts.`} /> 
