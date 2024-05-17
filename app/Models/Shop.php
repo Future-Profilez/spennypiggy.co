@@ -81,7 +81,7 @@ class Shop extends Model
 
 
     public function getTotalSoldAttribute(){
-        $payments = ShopPayment::where('shop_id',$this->id)->count();
+        $payments = ShopPayment::where('shop_id',$this->id)->where('payment_status','paid')->count();
 
         return $payments;
     }

@@ -9,6 +9,7 @@ use App\Jobs\NotificationSave;
 use App\Jobs\ShopBuyed;
 use App\Jobs\ShopBuyedUser;
 use App\Models\Currency;
+use App\Models\MembershipPayment;
 use App\Models\Shop;
 use App\Models\ShopCategory;
 use App\Models\ShopPayment;
@@ -294,6 +295,23 @@ class ShopsController extends Controller
     public function singleShopList($slug,$uuid){
 
         $shop = Shop::where('uuid',$uuid)->with('user')->first();
+
+        if(Auth::check()){
+            $user = User::find(Auth::id());
+            $member = MembershipPayment::where(function($que)use($user){
+                $que->where('user_id',$user->id)->orWhere('guest_email',$user->email);
+            })->whereHas('membership',function($q)use($shop){
+                $q->where('user_id',$shop->user_id);
+            })->where('status','paid')->where('upcoming_payment','>=',Carbon::now())->count();
+            if($member >= 1){
+                $shop->is_member = 1;
+            }
+            else{
+                $shop->is_member = 0;
+            }
+        }else{
+            $shop->is_member = 0;
+        }
 
         return Inertia::render('shop/Item',[
             'shop' => $shop
