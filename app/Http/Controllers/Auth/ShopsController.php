@@ -387,7 +387,7 @@ class ShopsController extends Controller
 
             $lineItems[] = [
                 // 'price' => $dd->stripe_product_id ?? '',
-                'quantity' => request()->query('quantity'),
+                'quantity' => $shopPaymentDetail->quantity,
                 'price_data' => [
                     'currency' => $currency,
                     'product' => $shop->stripe_product_id,
@@ -483,6 +483,39 @@ class ShopsController extends Controller
         $payment->save();
         return redirect(route('user.show', [$payment->shop->user->username]))->with('error', 'Payment Cancel.');
         // return view('cancel');
+    }
+
+
+    public function deactivateShop($uuid){
+        $shop = Shop::where('uuid',$uuid)->first();
+        if(!empty($shop)){
+            if($shop->status == 1){
+                $shop->status = 0;
+                $shop->save();
+                return redirect()->back()->with('success','Shop Deactivated successfully.');
+            }
+            else{
+                $shop->status = 1;
+                $shop->save();
+                return redirect()->back()->with('success','Shop Activated successfully.');
+            }
+        }
+        else{
+            return redirect()->back()->with('error','Shop not found.');
+        }
+    }
+
+
+    public function answerPayment(Request $request,$uuid){
+        $payment = ShopPayment::where('uuid',$uuid)->first();
+
+        $payment->answer = $request->answer;
+        $payment->save();
+
+        return response()->json([
+            'status' => true,
+            'msg' => "Answer saved successfully."
+        ]);
     }
 
 }

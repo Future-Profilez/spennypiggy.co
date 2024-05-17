@@ -233,19 +233,20 @@ Route::middleware('auth')->group(function () {
         Route::post('/update/{uuid}', [ShopsController::class, 'updateShopItems'])->name('update-shop');
         Route::post('/save-category', [ShopsController::class, 'saveUserShopCategory'])->name('save-category');
         Route::get('/delete/{uuid}', [ShopsController::class, 'deleteShop'])->name('delete-shop');
+        Route::get('/deactivate/{uuid}', [ShopsController::class, 'deactivateShop'])->name('deactivate-shop');
     });
 
 
 
 });
 
-Route::prefix('shop')->name('shop')->group(function () {
+Route::prefix('shop')->group(function () {
     Route::get('/list/{username}', [ShopsController::class,'shopList'])->name('shop-list');
     Route::get('/item/{slug}/{uuid}', [ShopsController::class,'singleShopList'])->name('single-shop-list');
     Route::get('/buy/{uuid}', [ShopsController::class,'buyShopItem'])->name('buy-shop-item');
-    Route::get('/success-payment/{id}', [ShopsController::class,'successPayment'])->name('success-payment');
-    Route::get('/cancel-payment/{id}', [ShopsController::class,'cancelPayment'])->name('cancel-payment');
-
+    Route::post('/answer-to-payment/{uuid}', [ShopsController::class,'answerPayment'])->name('answerPayment');
+    Route::get('/success-payment/{id}', [ShopsController::class,'successPayment'])->name('shop.success-payment');
+    Route::get('/cancel-payment/{id}', [ShopsController::class,'cancelPayment'])->name('shop.cancel-payment');
 });
 
 Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');
