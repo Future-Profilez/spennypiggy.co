@@ -435,7 +435,10 @@ class ShopsController extends Controller
             $shopPaymentDetail->session_id =  $sessionCreate->id;
             $shopPaymentDetail->save();
 
-            return Inertia::location($sessionCreate->url);
+            return response()->json([
+                'status' => true,
+                'url' => $sessionCreate->url
+            ]);
         } catch (\Throwable $th) {
             // Log::error("Error in createCheckout: " . $th->getMessage());
             throw $th;
