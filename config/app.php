@@ -192,4 +192,5 @@ return [
     'member_tax' => 15,
     'jar_tax' => 20,
     'bill_tax' => 8,
+    'shop_tax' => 20
 ];

@@ -12,6 +12,8 @@ use App\Mail\SendAvatarRestrictionMail;
 use App\Mail\SendCoverRestrictionMail;
 use App\Mail\SendRestrictionMail;
 use App\Mail\SendTipJarMailToUser;
+use App\Mail\ShopBuyedMail;
+use App\Mail\ShopBuyedMailUser;
 use App\Mail\SubscriptionFailedMail;
 use App\Mail\SubscriptionMail;
 use App\Mail\SubsMail;
@@ -75,6 +77,25 @@ class EmailService
         }
     }
 
+    public static function shopBuyed($data, $anon,$symbol)
+    {
+        try {
+            $emailData = [
+                'to' => $data->shop->user->email,
+                'name' => $data->shop->user->name,
+                'username' => $data->shop->user->username,
+                'phone' => $data->shop->user->phone,
+                'email' => $data->shop->user->email,
+                'uuid' => $data->shop->user->uuid,
+            ];
+
+            Mail::to($emailData['to'])
+                ->send(new ShopBuyedMail($data, $anon,$symbol));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
     public static function checkOutToUser($data,$curr)
     {
         try {
@@ -88,6 +109,24 @@ class EmailService
             ];
             Mail::to($emailData['to'])
                 ->send(new CheckoutToUser($data,$curr));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+    public static function shopBuyedUser($data,$curr)
+    {
+        try {
+            $emailData = [
+                'to' => $data->user->email,
+                'name' => $data->user->name,
+                'username' => $data->user->username,
+                'phone' => $data->user->phone,
+                'email' => $data->user->email,
+                'uuid' => $data->user->uuid,
+            ];
+            Mail::to($emailData['to'])
+                ->send(new ShopBuyedMailUser($data,$curr));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
