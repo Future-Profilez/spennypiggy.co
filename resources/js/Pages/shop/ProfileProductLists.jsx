@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
 import Nocontent from '@/includes/Nocontent';
 import LoadingScreen from '@/includes/LoadingScreen';
-export default function ProfileProductLists() {
+export default function ProfileProductLists({profileuser}) {
 
    const { global_currency, auth, user } = usePage().props;
    const [lists, setLists] = useState([]);
@@ -14,7 +14,7 @@ export default function ProfileProductLists() {
 
    const fetchItems = () =>{
       setLoading(true);  
-      axios.get(`/shop/list/${auth.user && auth.user&&auth.user.username}`)
+      axios.get(`/shop/list/${profileuser && profileuser.username}`)
       .then(res =>{
          setLists(res.data.shops);
          setLoading(false);
