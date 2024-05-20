@@ -289,8 +289,8 @@ class ShopsController extends Controller
 
         $shops = [];
         if(!empty($user)){
-             // $shops = Shop::where('user_id',$user->id)->orderBy('created_at','desc')->where('approved',1)->get();
-             $shops = Shop::where('user_id',$user->id)->orderBy('created_at','desc')->get();
+             $shops = Shop::where('user_id',$user->id)->orderBy('created_at','desc')->where('approved',1)->get();
+            //  $shops = Shop::where('user_id',$user->id)->orderBy('created_at','desc')->get();
         }
 
         return response()->json([
