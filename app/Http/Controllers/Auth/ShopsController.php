@@ -9,6 +9,7 @@ use App\Jobs\NotificationSave;
 use App\Jobs\ShopBuyed;
 use App\Jobs\ShopBuyedUser;
 use App\Models\Currency;
+use App\Models\Logs;
 use App\Models\MembershipPayment;
 use App\Models\Shop;
 use App\Models\ShopCategory;
@@ -245,6 +246,12 @@ class ShopsController extends Controller
                 $shop->is_approved = 0;
                 $shop->save();
 
+                $logs = Logs::where('edited_shop_id',$shop->id)->where('status','pending')->first();
+                if(!empty($logs)){
+                    $logs->status = 'updated';
+                    $logs->save();
+                }
+
                 return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Shop Item has been added, your upload will be approved shortly.");
 
             } catch (Exception $e) {
@@ -282,7 +289,8 @@ class ShopsController extends Controller
 
         $shops = [];
         if(!empty($user)){
-            $shops = Shop::where('user_id',$user->id)->orderBy('created_at','desc')->where('approved',1)->get();
+             // $shops = Shop::where('user_id',$user->id)->orderBy('created_at','desc')->where('approved',1)->get();
+             $shops = Shop::where('user_id',$user->id)->orderBy('created_at','desc')->get();
         }
 
         return response()->json([
