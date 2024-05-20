@@ -1,16 +1,50 @@
 import { Link } from '@inertiajs/react';
-import React from 'react';
+import React, {Fragment} from 'react';
+import { Menu, Transition } from '@headlessui/react'
+import { HiDotsVertical } from "react-icons/hi";
+
 export default function MyShopProducts({lists}) {
 
    const slug = (inputString) => { 
       return inputString
-      .toLowerCase() // Convert the string to lowercase
-      .replace(/[^a-z0-9\s-]/g, '') // Remove all non-alphanumeric characters except spaces and hyphens
-      .trim() // Remove leading and trailing spaces
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/-+/g, '-'); // Replace multiple hyphens with a single hyphen
+      .toLowerCase() 
+      .replace(/[^a-z0-9\s-]/g, '') 
+      .trim() 
+      .replace(/\s+/g, '-') 
+      .replace(/-+/g, '-'); 
    }
 
+   const handleCopy = (text) => {
+      navigator.clipboard.writeText(text).then(() => {
+        setTimeout(() => setCopied(false), 2000);
+      }).catch(err => {
+        console.error('Failed to copy: ', err);
+      });
+   };
+
+   const Menus = ({url}) =>{ 
+      return <Menu as="div" className="relative inline-block text-left">
+      <div>
+        <Menu.Button className="inline-flex font-semibold text-gray-900  ">
+          <HiDotsVertical size="1.4rem" />
+        </Menu.Button>
+      </div>
+      <Transition
+         as="div"
+         enter="transition ease-out duration-100"
+         enterFrom="transform opacity-0 scale-95"
+         enterTo="transform opacity-100 scale-100"
+         leave="transition ease-in duration-75"
+         leaveFrom="transform opacity-100 scale-100" 
+         leaveTo="transform opacity-0 scale-95" >
+        <Menu.Items className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-xl overflow-hidden bg-white shadow-xl ring-1 ring-black ring-opacity-5">
+            <button className='px-[15px] py-[10px] text-start w-full' onClick={() => handleCopy(url)} >Copy Link</button>
+            <button className='px-[15px] py-[10px] border-t  text-start w-full' >Edit</button>
+            <button className='px-[15px] py-[10px] border-t  text-start w-full' onClick={() => {copyLink}} >Copy Link</button>
+        </Menu.Items>
+      </Transition>
+    </Menu>
+   }
    
   return (
     <div className='shopLists pt-12' > 
@@ -29,7 +63,9 @@ export default function MyShopProducts({lists}) {
                   </Link>
                </div>
                <p>{s.total_sold} Sold</p>
-               <p>View</p>
+               <p>
+               <Menus url={`${window.location.origin}/shop/item/${slug(s.name)}/${s.uuid}`} />
+               </p>
             </div>
             }) : <p className='text-gray-400 p-4 text-center bg-white rounded-[20px] my-3 ' >Nothing to see</p>}
             

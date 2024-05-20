@@ -12,6 +12,7 @@ export default function ShopDetailItem(props) {
    const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (shop && shop.user && shop && shop.user.username));
    const url = window.location.href;
 
+   console.log("props",props)
    const instashare = () => {
       const shareUrl = `https://www.instagram.com/?url=${encodeURIComponent(url)}&amp;text=${encodeURIComponent(shop.name)}`;
       window.open(shareUrl, '_blank');
@@ -26,6 +27,8 @@ export default function ShopDetailItem(props) {
    };
 
    const { formatMultiPrice} = PriceFormat();
+
+   const [open, setOpen] = useState();
 
   return (
     <>
@@ -94,7 +97,6 @@ export default function ShopDetailItem(props) {
                      <div className="col-span-4 sm:col-span-2 md:col-span-2 lg:col-span-1 xl:col-span-1">
                         <div className="mb-1 mt-4 font-medium text-gray-500">Social</div>
                         <ul className="mb-4 -ml-2 flex md:order-1 md:mb-0">
-
                            <li>
                               <a 
                               href={`https://twitter.com/intent/tweet?url=${url}`} target="_blank"
@@ -167,12 +169,10 @@ export default function ShopDetailItem(props) {
                               {((shop.slot_limitation - shop.total_sold) === 0 ) ?
                                  <button className='btn-pink sm disabled w-full sm:w-auto' >SOLD</button> 
                               : 
-                                 <BuyShopItem s={shop} text={'Get This'} classes="w-full sm:w-auto btn-pink font-light md  mb-3" /> 
+                                 <BuyShopItem open={open} s={shop} text={'Get This'} classes="w-full sm:w-auto btn-pink font-light md  mb-3" /> 
                               }
                            </>
                         }  
-
-                        
                      </div>
 
                   </div>

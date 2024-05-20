@@ -576,7 +576,7 @@ export default function Dashboard(props) {
                                                     {tab == '5' ? 
                                                         <Suspense fallback={<LoadingScreen />} >
                                                             {IsloggedIn || user?.stripe_details_submitted == 1 ? (
-                                                                 <ProfileProductLists />
+                                                                 <ProfileProductLists profileuser={user} />
                                                             ) : (
                                                                 <PaymentUnActivated  heading={`Bills not activated yet. `} 
                                                                 subheading={`Until they activate their bills, this user won't be able to receive gifts.`} /> 
