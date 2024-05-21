@@ -393,6 +393,14 @@ class ShopsController extends Controller
 
             $shop = Shop::where('uuid',$shop_id)->first();
 
+            if(!empty($shop->slot_limitation)){
+                $pay = ShopPayment::where('shop_id',$shop->id)->where('payment_status','paid')->count();
+
+                if($pay >= $shop->slot_limitation){
+                    return redirect()->back()->with("error", "Slots are full for this shop.");
+                }
+            }
+
             $amount = round(request()->query('amount'), 2, PHP_ROUND_HALF_UP);
 
             $tax = round(($amount * env('shop_tax',20) / 100), 2, PHP_ROUND_HALF_UP);
@@ -554,6 +562,18 @@ class ShopsController extends Controller
         return response()->json([
             'status' => true,
             'msg' => "Answer saved successfully."
+        ]);
+    }
+
+
+    public function ordersList(){
+        $payments = ShopPayment::whereHas('shop',function($q){
+            $q->where('user_id',Auth::id());
+        })->where('payment_status','paid')->latest()->get();
+
+        return response()->json([
+            'status' => true,
+            'orders' => $payments
         ]);
     }
 
