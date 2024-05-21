@@ -300,9 +300,15 @@ class ShopsController extends Controller
     }
 
 
-    public function singleShopList($slug,$uuid){
+    public function singleShopList($slug,$uuid,$session_id = null){
 
         $shop = Shop::where('uuid',$uuid)->with('user')->first();
+
+        if(!empty($session_id)){
+            $payments = ShopPayment::where('session_id',$session_id)->first();
+            $payments->opened = 1;
+            $payments->save();
+        }
 
         if(Auth::check()){
             $user = User::find(Auth::id());
@@ -321,8 +327,10 @@ class ShopsController extends Controller
             $shop->is_member = 0;
         }
 
+
         return Inertia::render('shop/Item',[
-            'shop' => $shop
+            'shop' => $shop,
+            'payment_id' => $session_id
         ]);
     }
 
@@ -498,7 +506,9 @@ class ShopsController extends Controller
             $curr = Currency::where('iso',strtoupper($currency))->first();
             ShopBuyedUser::dispatch($stripeid,$curr->symbol);
 
-            return redirect(route('thank-you', [$stripeid->shop->user->username]))->with('success', 'Payment Successful.');
+            $slug = strtolower(str_replace(" ","-",$stripeid->shop->name));
+
+            return redirect(route('single-shop-list', [$slug,$stripeid->shop->uuid,$stripeid->session_id]))->with('success', 'Payment Successful.');
         } catch (Exception $e) {
             return redirect(route('user.show', [$stripeid->shop->user->username]))->with('error',$e->getMessage());
         }
