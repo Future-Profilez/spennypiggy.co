@@ -26,6 +26,8 @@ use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
 use Stripe\StripeClient;
 
+use function Termwind\render;
+
 class ShopsController extends Controller
 {
 
@@ -85,8 +87,11 @@ class ShopsController extends Controller
         $user = User::find(Auth::id());
 
         if (Helpers::checkBlockData($request) == 1) {
-            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,
-             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
+            return response()->json([
+                'status' => false,
+                'msg' => "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,
+                😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦"
+            ]);
         }
 
         $file = [];
@@ -117,12 +122,12 @@ class ShopsController extends Controller
 
         if (!empty($request->category)) {
             $categories = json_decode($request->category);
-            foreach ($categories as $key => $value) {
-                $cat = UserShopCategories::where('uuid',$value)->first();
+            $cat = UserShopCategories::whereIn('uuid',$categories)->get();
+            foreach ($cat as $key => $value) {
                 $shop_cat = new ShopCategory();
                 $shop_cat->uuid = Uuid::uuid4();
                 $shop_cat->shop_id = $shop->id;
-                $shop_cat->user_shop_categories_id = $cat->id;
+                $shop_cat->user_shop_categories_id = $value->id;
                 $shop_cat->save();
             }
         }
@@ -130,7 +135,7 @@ class ShopsController extends Controller
         $taxamount = round(($request->price * env('shop_tax',20) / 100), 2, PHP_ROUND_HALF_UP);
         $createpriceid = $request->price + $taxamount;
 
-        $slug = strtolower(str_replace(" ","_",$shop->name));
+        $slug = strtolower(str_replace(" ","-",$shop->name));
         $productPayload = [
             "name"  =>  $shop->name,
             "images" => [$shop->perma_link],
@@ -158,7 +163,7 @@ class ShopsController extends Controller
                 'status' => false,
                 'msg' => "Stripe Error: " . $e->getMessage()
             ]);
-            return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
+            // return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
         }
     }
 
@@ -182,13 +187,13 @@ class ShopsController extends Controller
         }
 
         if(!empty($shop)){
-            Shop::where('uuid',$uuid)->create([
+            Shop::where('uuid',$uuid)->update([
                 'type' => $request->type,
                 'name' => $request->name,
                 'description' => $request->description,
                 'price' => $request->price,
                 'currency' => $user->default_currency,
-                'image' => $request->image ?? null,
+                'image' => !empty($request->image) ? $request->image : $shop->image,
                 'success_page_type' => $request->success_page_type,
                 'success_page_value' => $request->success_page_value ?? null,
                 'reward_file_type' => !empty($file) ? $file['contentInfo']['mime']['type'] : $shop->reward_file_type,
@@ -204,11 +209,13 @@ class ShopsController extends Controller
             if (!empty($request->category)) {
                 ShopCategory::where('shop_id',$shop->id)->delete();
 
-                foreach ($request->category as $key => $value) {
+                $categories = json_decode($request->category);
+                $cat = UserShopCategories::whereIn('uuid',$categories)->get();
+                foreach ($cat as $key => $value) {
                     $shop_cat = new ShopCategory();
                     $shop_cat->uuid = Uuid::uuid4();
                     $shop_cat->shop_id = $shop->id;
-                    $shop_cat->user_shop_categories_id = $value;
+                    $shop_cat->user_shop_categories_id = $value->id;
                     $shop_cat->save();
                 }
             }
@@ -243,7 +250,7 @@ class ShopsController extends Controller
                 }
 
                 $shop->stripe_product_id = $stripe_client->id;
-                $shop->is_approved = 0;
+                $shop->approved = 0;
                 $shop->save();
 
                 $logs = Logs::where('edited_shop_id',$shop->id)->where('status','pending')->first();
@@ -252,11 +259,19 @@ class ShopsController extends Controller
                     $logs->save();
                 }
 
-                return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Shop Item has been added, your upload will be approved shortly.");
+                return response()->json([
+                    'status' => true,
+                    'msg' => "Shop Item has been updated, your upload will be approved shortly."
+                ]);
+                // return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Shop Item has been added, your upload will be approved shortly.");
 
             } catch (Exception $e) {
                 $shop->delete();
-                return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
+                return response()->json([
+                    'status' => false,
+                    'msg' => "Stripe Error: " . $e->getMessage()
+                ]);
+                // return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
             }
         }
     }
@@ -289,8 +304,19 @@ class ShopsController extends Controller
 
         $shops = [];
         if(!empty($user)){
-             $shops = Shop::where('user_id',$user->id)->orderBy('created_at','desc')->where('approved',1)->get();
-            //  $shops = Shop::where('user_id',$user->id)->orderBy('created_at','desc')->get();
+            $query = Shop::where('user_id',$user->id)->orderBy('created_at','desc');
+
+            if(Auth::check()){
+                if(Auth::id() != $user->id){
+                    $query->where('approved',1);
+                }
+            }else{
+                $query->where('approved',1);
+            }
+
+            $shops = $query->get();
+            // $shops = Shop::where('user_id',$user->id)->orderBy('created_at','desc')->get();
+
         }
 
         return response()->json([
@@ -304,8 +330,10 @@ class ShopsController extends Controller
 
         $shop = Shop::where('uuid',$uuid)->with('user')->first();
 
+        $opened = null;
         if(!empty($session_id)){
             $payments = ShopPayment::where('session_id',$session_id)->first();
+            $opened = $payments->opened;
             $payments->opened = 1;
             $payments->save();
         }
@@ -330,7 +358,8 @@ class ShopsController extends Controller
 
         return Inertia::render('shop/Item',[
             'shop' => $shop,
-            'payment_id' => $session_id
+            'payment_id' => $session_id,
+            'opened' => $opened
         ]);
     }
 
@@ -427,42 +456,76 @@ class ShopsController extends Controller
 
             $shopPaymentDetail->refresh();
 
-            $lineItems[] = [
-                // 'price' => $dd->stripe_product_id ?? '',
-                'quantity' => $shopPaymentDetail->quantity,
-                'price_data' => [
-                    'currency' => $currency,
-                    'product' => $shop->stripe_product_id,
-                    'unit_amount_decimal' => Helpers::priceFormat($shop->user->default_currency, $total, $currency) * 100
-                ]
-            ];
+            if($shop->price > 0){
 
-            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+                $lineItems[] = [
+                    // 'price' => $dd->stripe_product_id ?? '',
+                    'quantity' => $shopPaymentDetail->quantity,
+                    'price_data' => [
+                        'currency' => $currency,
+                        'product' => $shop->stripe_product_id,
+                        'unit_amount_decimal' => Helpers::priceFormat($shop->user->default_currency, $total, $currency) * 100
+                    ]
+                ];
 
-            $sessionCreate = $stripe->checkout->sessions->create([
-                'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
-                'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
-                'line_items' => $lineItems,
-                'mode' => 'payment',
-                'payment_intent_data' => [
-                    'transfer_data' => [
-                        'destination' => $shop->user->account_id, // Creator's connected account ID
-                        'amount' => Helpers::priceFormat($shop->user->default_currency, $amount, $currency) * 100,
+                $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+
+                $sessionCreate = $stripe->checkout->sessions->create([
+                    'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
+                    'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
+                    'line_items' => $lineItems,
+                    'mode' => 'payment',
+                    'payment_intent_data' => [
+                        'transfer_data' => [
+                            'destination' => $shop->user->account_id, // Creator's connected account ID
+                            'amount' => Helpers::priceFormat($shop->user->default_currency, $amount, $currency) * 100,
+                        ],
+                        // 'application_fee_amount' => $taxNew * 100,
+                        'on_behalf_of'  => $shop->user->account_id,
                     ],
-                    // 'application_fee_amount' => $taxNew * 100,
-                    'on_behalf_of'  => $shop->user->account_id,
-                ],
-                'customer_email' =>  request()->query('email'),
-                // 'currency' => 'usd',
-            ]);
+                    'customer_email' =>  request()->query('email'),
+                    // 'currency' => 'usd',
+                ]);
 
-            $shopPaymentDetail->session_id =  $sessionCreate->id;
+                $shopPaymentDetail->session_id =  $sessionCreate->id;
+                $shopPaymentDetail->save();
+
+                return response()->json([
+                    'status' => true,
+                    'url' => $sessionCreate->url
+                ]);
+            }
+
+            $shopPaymentDetail->session_id = mt_rand(1000000000, 9999999999);
+            $shopPaymentDetail->payment_status = 'paid';
             $shopPaymentDetail->save();
 
-            return response()->json([
-                'status' => true,
-                'url' => $sessionCreate->url
-            ]);
+            if($shopPaymentDetail->anonymous == 1){
+                $username = "Anonymous user";
+            }
+            else{
+                $username = $shopPaymentDetail->name ?? "Anonymous user";
+            }
+
+            $message = $username . " just buyed your shop item " . $shopPaymentDetail->shop->name;
+            NotificationSave::dispatch($message,$shop->user,$shopPaymentDetail->user,'Shop');
+
+            $symbol = Currency::where('iso',strtoupper($shopPaymentDetail->currency))->first();
+
+            $message = $shopPaymentDetail->message;
+            if ($shopPaymentDetail->anonymous == 0) {
+                ShopBuyed::dispatch($shopPaymentDetail, false,$symbol->symbol);
+            } else {
+                ShopBuyed::dispatch($shopPaymentDetail, true,$symbol->symbol);
+            }
+
+            $curr = Currency::where('iso',strtoupper($currency))->first();
+            ShopBuyedUser::dispatch($shopPaymentDetail,$shop->reward_file_url,$curr->symbol);
+
+            $slug = strtolower(str_replace(" ","-",$shop->name));
+
+            return redirect(route('single-shop-list', [$slug,$shop->uuid,$shopPaymentDetail->session_id]))->with('success', 'Payment Successful.');
+
         } catch (\Throwable $th) {
             // Log::error("Error in createCheckout: " . $th->getMessage());
             throw $th;
@@ -499,20 +562,8 @@ class ShopsController extends Controller
                 ShopBuyed::dispatch($stripeid, true,$symbol->symbol);
             }
 
-            // if($dd->owner->auto_tweet == 1){
-            //     if(empty($dd->wish_item_id)){
-            //         SurpriseTweet::dispatch($payment_data);
-            //     }
-            //     elseif($dd->wish->subscription == 2){
-            //         CrowdfundTweet::dispatch($payment_data);
-            //     }
-            //     else{
-            //         CheckoutTweet::dispatch($payment_data);
-            //     }
-            // }
-
             $curr = Currency::where('iso',strtoupper($currency))->first();
-            ShopBuyedUser::dispatch($stripeid,$curr->symbol);
+            ShopBuyedUser::dispatch($stripeid,$stripeid->shop->reward_file_url,$curr->symbol);
 
             $slug = strtolower(str_replace(" ","-",$stripeid->shop->name));
 
@@ -553,8 +604,8 @@ class ShopsController extends Controller
     }
 
 
-    public function answerPayment(Request $request,$uuid){
-        $payment = ShopPayment::where('uuid',$uuid)->first();
+    public function answerPayment(Request $request,$payment_id){
+        $payment = ShopPayment::where('session_id',$payment_id)->first();
 
         $payment->answer = $request->answer;
         $payment->save();
@@ -569,12 +620,26 @@ class ShopsController extends Controller
     public function ordersList(){
         $payments = ShopPayment::whereHas('shop',function($q){
             $q->where('user_id',Auth::id());
-        })->where('payment_status','paid')->latest()->get();
+        })->with(['shop','shop.user'])->where('payment_status','paid')->latest()->get();
+
+        $payments->map(function($q){
+            $q->avatar_url = $q->user->avatar_url;
+            $q->username = $q->user->username;
+            return $q;
+        });
+
+        $total_claims = $payments->count();
+        $all_time = $payments->sum('amount');
+        $day30 = ShopPayment::whereHas('shop',function($q){
+            $q->where('user_id',Auth::id());
+        })->where('payment_status','paid')->where('created_at','<=',Carbon::now())->where('created_at','>=',Carbon::now()->subDays(30))->sum('amount');
 
         return response()->json([
             'status' => true,
-            'orders' => $payments
+            'orders' => $payments,
+            'total_claims' => $total_claims,
+            'all_time' => $all_time,
+            'thirtydays' => $day30
         ]);
     }
-
 }

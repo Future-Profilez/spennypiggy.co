@@ -114,7 +114,7 @@ class EmailService
         }
     }
 
-    public static function shopBuyedUser($data,$curr)
+    public static function shopBuyedUser($data,$url,$curr)
     {
         try {
             $emailData = [
@@ -126,7 +126,7 @@ class EmailService
                 'uuid' => $data->user->uuid,
             ];
             Mail::to($emailData['to'])
-                ->send(new ShopBuyedMailUser($data,$curr));
+                ->send(new ShopBuyedMailUser($data,$url,$curr));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
