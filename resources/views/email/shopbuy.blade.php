@@ -10,7 +10,7 @@
                 style="max-width: 296px; width: 100%; text-align: center;">
                 <tr>
                     <td
-                        style="font-family: Arial; font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
+                        style="font-family:Arial;font-weight:bold;font-size: 21px;color:#000;line-height: 26px;padding:0 0 25px 0;text-align:center">
                         New <span style="color: #8C52FF">Shop Item</span> claimed on <br> Spenny Piggy 🎁 </td>
                 </tr>
                 <tr>

@@ -234,6 +234,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/save-category', [ShopsController::class, 'saveUserShopCategory'])->name('save-category');
         Route::get('/delete/{uuid}', [ShopsController::class, 'deleteShop'])->name('delete-shop');
         Route::get('/deactivate/{uuid}', [ShopsController::class, 'deactivateShop'])->name('deactivate-shop');
+        Route::get('orders-list', [ShopsController::class, 'ordersList'])->name('orders-list');
     });
 
 

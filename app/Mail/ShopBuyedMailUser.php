@@ -14,6 +14,7 @@ class ShopBuyedMailUser extends Mailable
     use Queueable, SerializesModels;
 
     public $data;
+    public $url;
     public $curr;
 
 
@@ -22,9 +23,10 @@ class ShopBuyedMailUser extends Mailable
      *
      * @return void
      */
-    public function __construct($data,$curr)
+    public function __construct($data,$url,$curr)
     {
         $this->data = $data;
+        $this->url = $url;
         $this->curr = $curr;
     }
 
