@@ -39,7 +39,7 @@ import PaymentUnActivated from "@/Components/PaymentUnActivated";
 import { Tabs, Tab } from "react-tabs-scrollable";
 import "react-tabs-scrollable/dist/rts.css";
 import ProfileSteps from "./Profile/ProfileSteps";
-import ProfileProductLists from "./shop/ProfileProductLists";
+import ProfileProductLists from "./shop/profile/ProfileProductLists";
 
 export default function Dashboard(props) {
 

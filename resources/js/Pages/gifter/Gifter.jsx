@@ -17,7 +17,7 @@ import GifterMedia from './GifterMedia';
 import MembershipLists from './MembershipLists';
  
 
-export default function Gifter({ IsloggedIn, fetchingLinks, sLinks  }){
+export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
 
   const { auth, user, itemid  } = usePage().props;
   const [tab, setTab] = useState("home");

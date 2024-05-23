@@ -5,14 +5,24 @@ import BuyShopItem from './BuyShopItem';
 import { RiDiscountPercentFill } from "react-icons/ri";
 import { useState } from 'react';
 import PriceFormat from '@/includes/PriceFormat';
+import { useEffect } from 'react';
 
 export default function ShopDetailItem(props) {
 
    const { auth, user, shop } = props;
    const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (shop && shop.user && shop && shop.user.username));
    const url = window.location.href;
+   const [open, setOpen] = useState();
 
-   console.log("props",props)
+   useEffect(()=>{
+      if(props.payment_id && props.opened == 0){
+         setOpen(true);
+         if(shop.success_page_type == 'url'){
+            window.open((shop && shop.success_page_value), '_blank');
+         }
+      }
+   },[]);
+
    const instashare = () => {
       const shareUrl = `https://www.instagram.com/?url=${encodeURIComponent(url)}&amp;text=${encodeURIComponent(shop.name)}`;
       window.open(shareUrl, '_blank');
@@ -28,7 +38,6 @@ export default function ShopDetailItem(props) {
 
    const { formatMultiPrice} = PriceFormat();
 
-   const [open, setOpen] = useState();
 
   return (
     <>
@@ -166,10 +175,10 @@ export default function ShopDetailItem(props) {
                            <button className='btn-pink sm w-full disabled sm:w-auto' >Edit Item</button> 
                            : 
                            <>
-                              {((shop.slot_limitation - shop.total_sold) === 0 ) ?
+                              {(shop.slot_limitation && (shop.slot_limitation - shop.total_sold) === 0 ) ?
                                  <button className='btn-pink sm disabled w-full sm:w-auto' >SOLD</button> 
                               : 
-                                 <BuyShopItem open={open} s={shop} text={'Get This'} classes="w-full sm:w-auto btn-pink font-light md  mb-3" /> 
+                                 <BuyShopItem opened={props.opened} isPaid={props.payment_id} open={open} s={shop} text={'Get This'} classes="w-full sm:w-auto btn-pink font-light md  mb-3" /> 
                               }
                            </>
                         }  
