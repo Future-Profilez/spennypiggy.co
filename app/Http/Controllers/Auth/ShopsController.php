@@ -191,7 +191,7 @@ class ShopsController extends Controller
                 'type' => $request->type,
                 'name' => $request->name,
                 'description' => $request->description,
-                'price' => $request->price,
+                'price' => $request->price ?? 0,
                 'currency' => $user->default_currency,
                 'image' => !empty($request->image) ? $request->image : $shop->image,
                 'success_page_type' => $request->success_page_type,
@@ -524,8 +524,11 @@ class ShopsController extends Controller
 
             $slug = strtolower(str_replace(" ","-",$shop->name));
 
-            return redirect(route('single-shop-list', [$slug,$shop->uuid,$shopPaymentDetail->session_id]))->with('success', 'Payment Successful.');
-
+            return response()->json([
+                'status' => true,
+                'msg' => "Payment Successfull",
+                'url' => route('single-shop-list', [$slug,$shop->uuid,$shopPaymentDetail->session_id])
+            ]);
         } catch (\Throwable $th) {
             // Log::error("Error in createCheckout: " . $th->getMessage());
             throw $th;
@@ -632,7 +635,7 @@ class ShopsController extends Controller
         $all_time = $payments->sum('amount');
         $day30 = ShopPayment::whereHas('shop',function($q){
             $q->where('user_id',Auth::id());
-        })->where('payment_status','paid')->where('created_at','<=',Carbon::now())->where('created_at','>=',Carbon::now()->subDays(30))->sum('amount');
+        })->with(['shop','shop.user'])->where('payment_status','paid')->where('created_at','<=',Carbon::now())->where('created_at','>=',Carbon::now()->subDays(30))->sum('amount');
 
         return response()->json([
             'status' => true,
