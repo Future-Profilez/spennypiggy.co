@@ -626,8 +626,8 @@ class ShopsController extends Controller
         })->with(['shop','shop.user'])->where('payment_status','paid')->latest()->get();
 
         $payments->map(function($q){
-            $q->avatar_url = $q->user->avatar_url;
-            $q->username = $q->user->username;
+            $q->avatar_url = $q->user->avatar_url ?? false;
+            $q->username = $q->user->username ?? false;
             return $q;
         });
 
