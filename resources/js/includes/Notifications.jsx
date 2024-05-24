@@ -122,20 +122,20 @@ export default function Notifications() {
             <div className='notifications-lists' >
               {lists && lists.length ? lists.map((n, i)=>{
                 return  <>
-                <div className={`flex items-start justify-between ${n.is_read ? 'read' : 'unread' } my-2 ${ i == lists.length-1 ? '' : "border-gray-200 border-b" } py-3  `}>
+                <div className={`flex items-start justify-between ${n && n.is_read ? 'read' : 'unread' } my-2 ${ i == lists.length-1 ? '' : "border-gray-200 border-b" } py-3  `}>
                     <div className='d-flex' >
-                      {n.is_read ? "" : 
+                      {n && n.is_read ? "" : 
                         <div className="w-2 h-2 bg-indigo-700 rounded-[50%] min-w-2 mt-2 me-2">
                         </div>
                       }
                       <div className="me-3 text-sm font-normal">
-                          <div className={` text-[16px] font-normal ${n.is_read ? "text-gray-500" : "text-gray-900" }`}>{n && n.notification}</div> 
-                          <span className="text-xs font-medium text-blue-600 dark:text-blue-500"> <TimeFormat dateString={n.created_at} /> </span>   
+                          <div className={` text-[16px] font-normal ${n && n.is_read ? "text-gray-500" : "text-gray-900" }`}>{n && n.notification}</div> 
+                          <span className="text-xs font-medium text-blue-600 dark:text-blue-500"> <TimeFormat dateString={n && n.created_at} /> </span>   
                       </div>
                     </div>
                     <div className="relative inline-block shrink-0">
-                      <Link href={n.user.username || '/'} >
-                        <img className="w-12 h-12 rounded-4 object-cover" src={n?.user?.avatar_url || userphoto } alt="spenny piggy user"/>
+                      <Link href={n && n.user && n.user.username || '/'} >
+                        <img className="w-12 h-12 rounded-4 object-cover" src={ n && n?.user && n?.user?.avatar_url || userphoto } alt="spenny piggy user"/>
                       </Link>
                     </div>
                 </div>
