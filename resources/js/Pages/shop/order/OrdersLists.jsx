@@ -82,7 +82,7 @@ export default function OrdersLists() {
                         <div class="p-relative flex-shrink-0">
                               <img class="border border-gray-200 h-12 w-12 min-w-12 min-h-12 rounded-[50px] object-cover" src={item.avatar_url || userdefaultphoto} alt='user' />
                         </div>
-                        <div class=" ml-3 w-100 w-[70%] flex-vert-center">
+                        <div class=" ml-3 w-100 w-[40%] flex-vert-center">
                            <div>
                                  <div class="text-sm text-dark font-cr-medium flex bmc-pp bmc-pp-sm grey-pp-color">
                                     <span class="limit-text-line-2">
@@ -90,12 +90,12 @@ export default function OrdersLists() {
                                     </span>
                                  </div>
                                  <div className='hidden md:block '>
-                                    <div class="line-clamp-1 text-sm font-cr-regular text-[#666666] W-95">
+                                    <div class="text-break line-clamp-1 text-sm font-cr-regular text-[#666666] W-95">
                                        {item.email}
                                     </div>
                                  </div>
                                  <div class="block md:hidden">
-                                    <div class="line-clamp-1 text-sm font-cr-regular text-[#666666] W-95">
+                                    <div class="text-break line-clamp-1 text-sm font-cr-regular text-[#666666] W-95">
                                        {item.shop.name}
                                     </div>
                                  </div>

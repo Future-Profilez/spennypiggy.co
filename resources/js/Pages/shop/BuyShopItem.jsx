@@ -146,7 +146,7 @@ export default function BuyShopItem({opened, classes, text, s, open, isPaid}) {
                        <> 
                        <p>{s && s.success_page_value}</p>
                      </> :
-                     <a target="_blank" className='text-blue-800' href={s && s.success_page_value} >{s && s.success_page_value}</a>
+                     <a target="_blank" className='text-blue-800 text-break' href={s && s.success_page_value} >{s && s.success_page_value}</a>
                      }
 
                     {s.ask_question && !replySent ? <>
