@@ -178,7 +178,7 @@ export default function AddItem({item, update, title, pre_title, pre_description
             special_member_price: spPrice || '',
             quantity_allow: haveQty ? 1 : 0,
             image: thumb,
-            success_page_type: item.success_page_type || pagetype,
+            success_page_type: item && item.success_page_type || pagetype,
          };
          axios.post(`/shop/add`, data)
             .then((res) => {

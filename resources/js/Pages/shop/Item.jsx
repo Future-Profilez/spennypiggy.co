@@ -109,7 +109,7 @@ export default function ShopDetailItem(props) {
                            <li>
                               <a 
                               href={`https://twitter.com/intent/tweet?url=${url}`} target="_blank"
-                               className="text-muted inline-flex items-center rounded-lg p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                               className=" text-break text-muted inline-flex items-center rounded-lg p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
                                  aria-label="Twitter" ><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                     stroke-linejoin="round" className="h-7 w-7">
@@ -162,17 +162,17 @@ export default function ShopDetailItem(props) {
                      <div className='sm:flex items-center justify-between' >
                         <h3 className='text-3xl font-bold mb-3' >
                            {shop && shop.is_member == 1 && shop.special_member_price ? <>
-                              {formatMultiPrice(shop.special_member_price, shop?.currency || 'GBP') } <span className='line-through text-gray-400' >{formatMultiPrice(shop.price, shop?.currency || 'GBP') || "FREE"}</span>
+                              {formatMultiPrice(shop.special_member_price, shop?.currency || 'GBP') } <span className='line-through text-gray-400' >{shop.price > 0 ? formatMultiPrice(shop.price, shop?.currency || 'GBP') : "FREE"}</span>
                            </>  
                            : 
-                           <>
-                              {formatMultiPrice(shop.price, shop?.currency || 'GBP') || "FREE"} 
-                           </> }
+                           shop.price > 0 ? formatMultiPrice(shop.price, shop?.currency || 'GBP') : "Free"
+                           }
                             {shop.slot_limitation ? <span className='ms-3 text-pink text-lg font-light ' >Only {shop.slot_limitation - shop.total_sold} Left</span> :""}
                         </h3>
  
+                        {/* <button className='btn-pink sm w-full disabled sm:w-auto' >Edit Item</button>  */}
                         { IsloggedIn ? 
-                           <button className='btn-pink sm w-full disabled sm:w-auto' >Edit Item</button> 
+                           ""
                            : 
                            <>
                               {(shop.slot_limitation && (shop.slot_limitation - shop.total_sold) === 0 ) ?
