@@ -28,7 +28,7 @@ export default function TipInner({classes}) {
     }
   }
 
-  const [selectegTag, setselectegTag] = useState('25');
+  const [selectegTag, setselectegTag] = useState(5);
   const [custom, setCustom] = useState(false);
   const selectCustom = ()=> { 
      setCustom(true);
