@@ -164,7 +164,7 @@ export default function TipInner({classes}) {
                rounded-[30px] btn-pink md justify-content-center  border-0
               ease-in-out duration-150 flex button text-center w-100  
               font-CeraGR mx-auto ${checkRef.current && checkRef.current.checked ? '' :'disabled'}`}  href={`tip-jar/pay/${user.uuid}`} 
-              method="post" data={{...data, amount:amount}} > {processing ? "Processing" : 'Support Me'} </Link>
+              method="post" data={{...data, amount:amount}} > {processing ? "Processing" : 'Support Me'} {amount} </Link>
             <div className='securestripe text-center mt-3' >
               🔒 Secured via <b>Stripe</b>
             </div>

@@ -115,7 +115,6 @@ export default function OrdersLists() {
                         <div class=" text-[#4d4d4d] text-sm hidden lg:block pb-2 me-2">
                             <TimeFormat dateString={item.created_at} />
                         </div>
-
                         <Menu as="div" className=" relative inline-block text-left">
                            <Menu.Button className="inline-flex font-semibold text-gray-900  ">
                               <HiDotsVertical size="1.4rem" />

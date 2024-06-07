@@ -8,8 +8,9 @@ import { Link, usePage } from '@inertiajs/react';
 import { useRef } from 'react';
 
 export default function Notifications() {
-  const {  notification_count } = usePage().props;
 
+  
+  const {  notification_count } = usePage().props;
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState(notification_count);
   const [loading, setLoading] = useState(false);
