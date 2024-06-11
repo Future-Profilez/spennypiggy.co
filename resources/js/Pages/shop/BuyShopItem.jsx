@@ -120,7 +120,7 @@ export default function BuyShopItem({opened, classes, text, s, open, isPaid}) {
          text={text} >
          <div class={`${loading ? "item-purchasing" : ""}`}>
             <div className="mx-auto w-32 h-32 relative -mt-16 border-4 border-white rounded-full overflow-hidden">
-               <img className="object-cover object-center h-32" src={s.user.avatar_url   || userdefaultphoto } alt='Woman looking front' />
+               <img className="object-cover object-center h-32 w-full" src={s.user.avatar_url   || userdefaultphoto } alt='Woman looking front' />
             </div>
             <div className="text-center mt-2">
                <Link href={`/${s.user.username }`} className="font-semibold text-black">{s.user.name || "User"}</Link>
@@ -168,7 +168,7 @@ export default function BuyShopItem({opened, classes, text, s, open, isPaid}) {
                :
             <>
                <div className="text-center mt-2">
-                  {fairPrice ? <p className="text-gray-500 my-2 ">You will be charged <strong  className='text-black' > {formatMultiPrice((fairPrice || s.price), s?.currency || 'GBP') } + processing fee </strong>.</p> 
+                  {fairPrice ? <p className="text-gray-500 my-2 ">You will be charged <strong  className='text-black' > {formatMultiPrice((fairPrice || s.price), s?.currency || 'GBP') } + 12% processing fee </strong>.</p> 
                   : 
                   <p className="text-gray-500 my-2 ">You will get it for free.</p> 
                }
