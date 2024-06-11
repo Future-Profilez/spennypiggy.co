@@ -167,6 +167,9 @@ export default function AddItem({item, update, title, pre_title, pre_description
       };
 
       const addShopItem = () => { 
+         if(!isChecked){
+            return false;
+         }
          setLoading(true);
          const data = {
             ...shopItem, 
@@ -199,6 +202,9 @@ export default function AddItem({item, update, title, pre_title, pre_description
       };
 
       const updateItem = () => { 
+         if(!isChecked){
+            return false;
+         }
          setLoading(true);
          const data = {
             ...shopItem, 
@@ -247,7 +253,7 @@ export default function AddItem({item, update, title, pre_title, pre_description
 
                   <div className='shop-forms-field mb-4' >
                      <label className='w-full mb-2' >Description</label>
-                     <input name="description" defaultValue={pre_description} onChange={handelInputs} className='shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5' type='text' placeholder="Describe what you’re selling in a few sentence" />
+                     <input name="description" defaultValue={pre_description} onChange={handelInputs} className='shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5' type='text' placeholder="Describe what you’re selling in a few sentences" />
                   </div>
 
                   <div className='shop-forms-field mb-4' >
@@ -296,20 +302,25 @@ export default function AddItem({item, update, title, pre_title, pre_description
                            <textarea defaultValue={parsedContent} onChange={(e)=>setParsedContent(e.target.value)} className='mt-2 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5' placeholder='Enter confirmation message here !!' ></textarea>
                            <h2 className='text-md font-normal mb-3 mt-2' >Choose reward file </h2>
                               <div className={`uploader mb-4 mt-2 overflow-hidden`} >
-                                 {item && item.reward_file_type == 'image' ? 
+                                 
+                                 { item ? 
                                     <>
-                                       <img alt="image-profile" className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4" src={item && item.reward_file_url} />
-                                    </>
-                                    :  <video controls playsInline className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4" src={item && item.reward_file_url} />
+                                       {item && item.reward_file_type == 'image' ? 
+                                          <>
+                                             <img alt="image-profile" className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4" src={item && item.reward_file_url} />
+                                          </>
+                                          :  <video controls playsInline className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4" src={item && item.reward_file_url} />
+                                       }
+                                    </> : ""
                                  }
+
+
                                  <GlobalUploader type='minimal'
                                     ref={uploaderRef}
                                     sendFile={getRewardFile}
                                     options={st.shopreward}
                                  />
                               </div>
-
-
                            </div>
                            :
                            ''
@@ -406,9 +417,9 @@ export default function AddItem({item, update, title, pre_title, pre_description
                      </label>
                   </div>
 
-                  {isEdit ? <button onClick={updateItem} className='mt-4 mb-4 btn-pink md w-full max-w-[300px] m-auto d-table' >{loading ? "Updating..." : "Update"}</button>
+                  {isEdit ? <button disabled={!isChecked} onClick={updateItem} className='mt-4 mb-4 btn-pink md w-full max-w-[300px] m-auto d-table' >{loading ? "Updating..." : "Update"}</button>
                   :
-                  <button onClick={addShopItem} className='mt-4 mb-4 btn-pink md w-full max-w-[300px] m-auto d-table' >{loading ? "Publishing..." : "Publish"}</button>}
+                  <button disabled={!isChecked} onClick={addShopItem} className='mt-4 mb-4 btn-pink md w-full max-w-[300px] m-auto d-table' >{loading ? "Publishing..." : "Publish"}</button>}
                </div>
             </div>
          </Popup>

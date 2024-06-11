@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
 import Nocontent from '@/includes/Nocontent';
 import LoadingScreen from '@/includes/LoadingScreen';
-export default function ProfileProductLists({profileuser}) {
+export default function ProfileProductLists({profileuser, updateItems}) {
 
    const { global_currency, auth, user } = usePage().props;
    const [lists, setLists] = useState([]);

@@ -40,6 +40,7 @@ import { Tabs, Tab } from "react-tabs-scrollable";
 import "react-tabs-scrollable/dist/rts.css";
 import ProfileSteps from "./Profile/ProfileSteps";
 import ProfileProductLists from "./shop/profile/ProfileProductLists";
+import AddItem from "./shop/AddItem";
 
 export default function Dashboard(props) {
 
@@ -242,7 +243,7 @@ export default function Dashboard(props) {
     const updateState = (e) => { 
         setIsUpdated(e);
     }
-
+ 
     const Toggle = () => {
         return  <>
             {IsloggedIn ? (
@@ -271,6 +272,10 @@ export default function Dashboard(props) {
                                 <Suspense fallback={"Add Membership"}>
                                     <AddBills updatebill={updatebill}/>
                                 </Suspense>
+                                <Suspense fallback={"Add Membership"}>
+                                    <AddItem classes="dropdown-item"
+                                    product_type="digital_products" title='Add Digital Product' />
+                                </Suspense>
                             </>
                         : ''}
                         <Suspense fallback={"Add Post"}>
@@ -284,6 +289,38 @@ export default function Dashboard(props) {
             )}
         </>
     }
+
+
+    // const Toggle = () => {
+    //     const [showAdd, setShowAdd]= useState(false);
+    //     return  <>
+    //         {IsloggedIn ? <>
+    //             <div onClick={()=>setShowAdd(true)} className="addoption-action cursor-pointer px-3" dangerouslySetInnerHTML={{__html:addicon}} ></div>
+    //             {!showAdd ? 
+    //             <Suspense fallback={"Loading.."}>
+    //                 <div className="bg-[#0008] rounded-xl position-fixed shadow-lg z-[99999999999999999999] flex justify-center items-center top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full">
+    //                     <div className="bg-gray-300 w-full p-6 rounded-2xl shadow-lg z-10 max-w-[600px]">
+    //                         {auth.user && auth.user.stripe_details_submitted == 1 ? 
+    //                             <>
+    //                                 <Wishlist  
+    //                                 fetchcategories={fetch_categories}
+    //                                 currency={global_currency} 
+    //                                 setuped={auth.user &&auth.user.stripe_details_submitted == 1 ? true : false}
+    //                                 fetchingcats={fetchingcats}
+    //                                 categories={categories} />
+    //                                 <AddMembership updateState={updateState} />
+    //                                 <AddBills updatebill={updatebill}/>
+    //                             </>
+    //                         : '' }
+    //                         <AddPost updateState={updateState} />
+    //                     </div>
+    //                 </div> 
+    //             </Suspense>
+    //             : ""}
+    //         </> : ""
+    //         }
+    //     </>
+    // }
 
     return (
         <>
@@ -330,7 +367,7 @@ export default function Dashboard(props) {
                                     <div className={`tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`} >
                                        
                                         <div className="inlinetab">
-                                                <div className="newnav-tabs d-flex items-center mb-4 ">
+                                                <div className="newnav-tabs d-flex items-center justify-between mb-4 ">
                                                     <Tabs activeTab={tab}
                                                     onTabClick={onTabClick}
                                                     hideNavBtnsOnMobile={false} >
@@ -576,7 +613,7 @@ export default function Dashboard(props) {
                                                     {tab == '5' ? 
                                                         <Suspense fallback={<LoadingScreen />} >
                                                             {IsloggedIn || user?.stripe_details_submitted == 1 ? (
-                                                                 <ProfileProductLists profileuser={user} />
+                                                                 <ProfileProductLists  profileuser={user} />
                                                             ) : (
                                                                 <PaymentUnActivated  heading={`Bills not activated yet. `} 
                                                                 subheading={`Until they activate their bills, this user won't be able to receive gifts.`} /> 

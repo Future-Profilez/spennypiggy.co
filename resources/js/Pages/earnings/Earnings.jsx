@@ -72,7 +72,7 @@ export default function Earnings(props) {
                 <div className='flex flex-wrap justify-between items-center' >
                   <div className='max-w-[500px] pe-3' >
                     <h2 className='text-yellow text-uppercase font-GillSans text-[30px] pe-2' >Explore Earnings 💰</h2>
-                    <p className='text-white' >This is earning section where you can explore all the earning from Wishes, Bills, Membership and Piggy Bank</p>
+                    <p className='text-white' >This is the earnings section where you can dive into the detail of everything from wishes, bills, subscriptions, memberships, shop sales and the Piggy Bank 🏦.</p>
                   </div>
                   <div>
                     <select className='type-changer mt-4' onChange={handleEarnings} >
@@ -86,7 +86,8 @@ export default function Earnings(props) {
         </div>
         <div className='pt-20 howitmain whbg '>
             <div className='containerbox'>
-                <div className='md:-mt-[180px] pb-4 md:pb-8 md:pt-12 earnings-grid grid gap-3 xl:grid-cols-5 md:grid-cols-3 grid-cols-2' >
+                <div className='md:-mt-[180px] pb-4 md:pb-8 md:pt-12 earnings-grid grid gap-3 
+                xl:grid-cols-3 md:grid-cols-3 grid-cols-2' >
                   {lists && lists.map((e, i)=>{
                     return <div  key={`earn-stat-${i}`}>
                       <EARNER data={e} i={i} />

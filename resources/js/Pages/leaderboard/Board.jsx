@@ -25,7 +25,7 @@ export default function Board(props) {
         filterPositions(data);
     }, [data]);
 
-    const [period, setPeriod] = useState("monthly");
+    const [period, setPeriod] = useState("all");
     const [loading, setLoading] = useState(false);
     const switchTime = (e) => {
         setPeriod(e);
@@ -125,6 +125,11 @@ export default function Board(props) {
                                 <div className="pt-4 pt-md-0 d-block d-md-flex align-items-center justify-content-between mb-4 pb-4">
                                     <h1 className="text-bl font-GillSans text-start text-2xl uppercase text-white ">Leaderboard</h1>
                                     <div className="changePeriod">
+                                        <button
+                                            className={period == "all" ? "active":""}
+                                            onClick={() => switchTime("all")} >
+                                            All Time
+                                        </button>
                                         <button
                                             className={period == "monthly" ? "active":""}
                                             onClick={() => switchTime("monthly")} >
