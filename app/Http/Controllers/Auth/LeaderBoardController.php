@@ -30,11 +30,11 @@ class LeaderBoardController extends Controller
                 $currentWeekEndDate = Carbon::now()->endOfWeek();
                 $currentDate = Carbon::today();
 
-                $users = User::where('country', 'GB')->with(['paymentitems', 'subscriptions', 'tip_goal_payment', 'membership_payments', 'bill_payments'])
+                $users = User::where('stripe_details_submitted',1)->with(['paymentitems', 'subscriptions', 'tip_goal_payment', 'membership_payments', 'bill_payments'])
                 ->withCount([
                     'paymentitems as total_payments' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
                         $query->select(DB::raw("COALESCE(SUM(amount), 0)"))->where('stripe_payment_details.payment_status','paid');
-                        if(empty($type) || $type == 'monthly'){
+                        if($type == 'monthly'){
                             $query->whereYear('stripe_payment_items.created_at', '=', $currentYear)
                             ->whereMonth('stripe_payment_items.created_at',$currentMonth);
                         }
@@ -48,7 +48,7 @@ class LeaderBoardController extends Controller
                     'subscriptions as total_subscriptions' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
                         $query->select(DB::raw("COALESCE(SUM(amount), 0)"))->where('wish_item_subscriptions.status','paid');
 
-                            if(empty($type) || $type == 'monthly'){
+                            if($type == 'monthly'){
                                 $query->whereYear('wish_item_subscriptions.created_at', '=', $currentYear)
                                 ->whereMonth('wish_item_subscriptions.created_at',$currentMonth);
                             }
@@ -62,7 +62,7 @@ class LeaderBoardController extends Controller
                     'tip_goal_payment as total_tips' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
                         $query->select(DB::raw("COALESCE(SUM(amount), 0)"))->where('tip_goals_payments.status','paid');
 
-                        if(empty($type) || $type == 'monthly'){
+                        if($type == 'monthly'){
                             $query->whereYear('tip_goals_payments.created_at', '=', $currentYear)
                             ->whereMonth('tip_goals_payments.created_at',$currentMonth);
                         }
@@ -76,7 +76,7 @@ class LeaderBoardController extends Controller
                     'membership_payments as total_member' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
                         $query->select(DB::raw("COALESCE(SUM(amount), 0)"))->where('membership_payments.status','paid');
 
-                        if(empty($type) || $type == 'monthly'){
+                        if($type == 'monthly'){
                             $query->whereYear('membership_payments.created_at', '=', $currentYear)
                             ->whereMonth('membership_payments.created_at',$currentMonth);
                         }
@@ -90,7 +90,7 @@ class LeaderBoardController extends Controller
                     'bill_payments as total_bill' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
                         $query->select(DB::raw("COALESCE(SUM(amount), 0)"))->where('bill_payments.status','paid');
 
-                        if(empty($type) || $type == 'monthly'){
+                        if($type == 'monthly'){
                             $query->whereYear('bill_payments.created_at', '=', $currentYear)
                             ->whereMonth('bill_payments.created_at',$currentMonth);
                         }
@@ -101,19 +101,34 @@ class LeaderBoardController extends Controller
                             $query->where('bill_payments.created_at', $currentDate);
                         }
                     },
+                    'shop_payments as total_shop' => function ($query) use ($type,$currentMonth,$currentYear,$currentWeekStartDate,$currentWeekEndDate,$currentDate) {
+                        $query->select(DB::raw("COALESCE(SUM(amount), 0)"))->where('shop_payments.payment_status','paid');
+
+                        if($type == 'monthly'){
+                            $query->whereYear('shop_payments.created_at', '=', $currentYear)
+                            ->whereMonth('shop_payments.created_at',$currentMonth);
+                        }
+                        elseif($type == 'weekly'){
+                            $query->whereBetween('shop_payments.created_at', [$currentWeekStartDate,$currentWeekEndDate]);
+                        }
+                        elseif($type == 'daily'){
+                            $query->where('shop_payments.created_at', $currentDate);
+                        }
+                    },
                 ])
                 // ->havingRaw('total_payments + total_subscriptions + total_tips + total_member + total_bill > 0')
-                ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips + total_member + total_bill'))
-                ->paginate(50);
+                ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips + total_member + total_bill + total_shop'))
+                ->get();
 
                 $users->map(function($user){
-                    $user->total_payments = Helpers::priceFormat($user->default_currency, $user->total_payments, 'USD');
-                    $user->total_subscriptions = Helpers::priceFormat($user->default_currency, $user->total_subscriptions, 'USD');
-                    $user->total_tips = Helpers::priceFormat($user->default_currency, $user->total_tips, 'USD');
-                    $user->total_member = Helpers::priceFormat($user->default_currency, $user->total_member, 'USD');
-                    $user->total_bill = Helpers::priceFormat($user->default_currency, $user->total_bill, 'USD');
+                    $user->total_payments = Helpers::priceFormat($user->default_currency, $user->total_payments, 'GBP');
+                    $user->total_subscriptions = Helpers::priceFormat($user->default_currency, $user->total_subscriptions, 'GBP');
+                    $user->total_tips = Helpers::priceFormat($user->default_currency, $user->total_tips, 'GBP');
+                    $user->total_member = Helpers::priceFormat($user->default_currency, $user->total_member, 'GBP');
+                    $user->total_bill = Helpers::priceFormat($user->default_currency, $user->total_bill, 'GBP');
+                    $user->total_shop = Helpers::priceFormat($user->default_currency, $user->total_shop, 'GBP');
 
-                    $user->total_amount = $user->total_payments + $user->total_subscriptions + $user->total_tips + $user->total_member + $user->total_bill;
+                    $user->total_amount = $user->total_payments + $user->total_subscriptions + $user->total_tips + $user->total_member + $user->total_bill + $user->total_shop;
                 });
 
                 $users = $users->sortByDesc('total_amount');
