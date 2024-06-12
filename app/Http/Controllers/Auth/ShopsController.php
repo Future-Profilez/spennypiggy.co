@@ -132,7 +132,7 @@ class ShopsController extends Controller
             }
         }
 
-        $taxamount = round(($request->price * env('shop_tax',20) / 100), 2, PHP_ROUND_HALF_UP);
+        $taxamount = round(($request->price * config('app.shop_tax',20) / 100), 2, PHP_ROUND_HALF_UP);
         $createpriceid = $request->price + $taxamount;
 
         $slug = strtolower(str_replace(" ","-",$shop->name));
@@ -220,7 +220,7 @@ class ShopsController extends Controller
                 }
             }
 
-            $taxamount = round(($request->price * env('shop_tax',20) / 100), 2, PHP_ROUND_HALF_UP);
+            $taxamount = round(($request->price * config('app.shop_tax',20) / 100), 2, PHP_ROUND_HALF_UP);
             $createpriceid = $request->price + $taxamount;
 
             $slug = strtolower(str_replace(" ","_",$shop->name));
@@ -432,7 +432,7 @@ class ShopsController extends Controller
 
             $amount = round(request()->query('amount'), 2, PHP_ROUND_HALF_UP);
 
-            $tax = round(($amount * env('shop_tax',20) / 100), 2, PHP_ROUND_HALF_UP);
+            $tax = round(($amount * config('app.shop_tax',20) / 100), 2, PHP_ROUND_HALF_UP);
 
             $total = $amount + $tax;
 
