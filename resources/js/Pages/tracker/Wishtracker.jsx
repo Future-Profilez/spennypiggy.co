@@ -701,7 +701,7 @@ export default function Wishtracker(props) {
                         <Tab eventKey="3" title="My Goals">
                             <TipTracker auth={auth} />
                         </Tab>
-                        <Tab eventKey="4" title="Tips">
+                        <Tab eventKey="4" title="Piggy Bank">
                             <Tiplisting />
                         </Tab>
                     </Tabs>
