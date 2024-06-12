@@ -13,7 +13,7 @@ import MonthlyRevenue from './MonthlyRevenue';
 
 export default function Earnings(props) {
 
-  const colors = [ '#F94F96', 'var(--mint)', 'var(--voilet)','var(--yellow)', '#0005',   ]
+  const colors = [ '#F94F96', 'var(--mint)', 'var(--voilet)','var(--yellow)', '#0005', 'var(--mint)',  ]
   const { formatMultiPrice } = PriceFormat();
   const { auth } = usePage().props;
 

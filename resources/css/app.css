@@ -178,7 +178,7 @@ body{position:relative;font-family:var(--para-font);}
 .changePeriod button.active{border-bottom:2px solid var(--mint);color:#fff;}
 .postions .position-1{background:var(--voilet) !important;}
 .postions .position-1 .profile-content *{color:#fff !important;}
-.loading-state{opacity:0.6;filter:blur(5);pointer-events:none;}
+.loading-state{opacity:0.4;filter:blur(5);pointer-events:none;}
 .rank_lists.largest{position:sticky;top:20px;}
 .time-hrs{display:flex;margin:0 -8px;}
 .time-hrs button{background:#ededed;width:100%;text-align:center;border-radius:11px;padding:8px;margin:0 8px;}
@@ -200,7 +200,16 @@ body{position:relative;font-family:var(--para-font);}
 
 
 }
-@media (max-width:400px){.profile-image{width:50px;height:50px;padding:2px;margin-top:-30px;}
+@media (max-width:575px){
+  .tooltipbtn p {
+      max-width: 103px !important;
+  }
+  .tooltipbtn p:after {
+    left: 58px !important;
+}
+}
+@media (max-width:400px){
+  .profile-image{width:50px;height:50px;padding:2px;margin-top:-30px;}
 .rank_lists a:last-child{border:0;}
 }
 .react-select__input-container input{border:0 !important;box-shadow:none !important;}

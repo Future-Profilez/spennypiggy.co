@@ -54,6 +54,14 @@ h2.wishtitle{font-size:24px;font-weight:900;}
 .type-changer{border:0;border-radius:10px;padding:7px 30px 7px 10px;}
 .shadow{box-shadow:0 0 22px 0px #0003 !important;}
 .discount-tag svg{width:50px;height:50px;fill:var(--mint);}
+.editclass h2 { font-size: 16px !important;}
+
+.addShopItem.modal  .modal-dialog {
+    max-width: 100% !important;
+    max-height: inherit !important;
+    margin: 0 !important;
+}
+
 
 @media(max-width:991px){
   .userphotobox{height:280px;}

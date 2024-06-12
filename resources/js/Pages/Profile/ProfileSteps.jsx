@@ -5,7 +5,6 @@ import { useState } from "react";
 import { useEffect } from "react";
 import { ProgressBar } from "react-bootstrap";
 import AddIntro from "../intros/AddIntro";
-import LinkTwitter from "../twitter/LinkTwitter";
 import EditProfile from "../account/EditProfile";
 import AddPost from "../feed/AddPost";
 import ChangeVat from "../account/ChangeVat";
@@ -48,7 +47,8 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                 <>
                     <style>{`
                         .check-icon.checked svg path {fill: #139700 !important;}
-                    `}</style>
+                    `}</style>import TopSupporters from './../earnings/TopSupporters';
+
                     <div
                         div
                         className="profileSteps bg-white border border-gray-400 rounded-5 p-4 mb-4 " >
@@ -104,7 +104,7 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
                                         Add a 15 - 30 sec intro video for your
-                                        fans.
+                                        supportors.
                                     </p>
                                 </div>
                             </div>
@@ -139,7 +139,7 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                         Enable Auto Tweets
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
-                                        Enable auto tweets for your fans when
+                                        Enable auto tweets for your supporters when
                                         you get any wish granted.
                                     </p>
                                 </div>
@@ -170,7 +170,7 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                         Complete Basic Profile
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
-                                        Add a profile picture and bio
+                                        Add a profile picture and bio.
                                     </p>
                                 </div>
                             </div>
@@ -198,7 +198,7 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                 <div>
                                     <h2 className="text-dark font-bold">Add social links</h2>
                                     <p className="text-gray-500 text-[14px]">
-                                        Add your all social link for your fans.
+                                        Add a selection of social links.
                                     </p>
                                 </div>
                             </div>
@@ -230,7 +230,7 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
                                         You must add 1 post for subscribers, 1
-                                        for memberships, 1 for supportors.{" "}
+                                        for memberships and 1 for supportors. 
                                     </p>
                                 </div>
                             </div>
@@ -252,10 +252,10 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                 </div>
                                 <div>
                                     <h2 className="text-dark font-bold">
-                                        VAT setting
+                                        VAT settings
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
-                                        Add vat percentage.{" "}
+                                        Add vat percentage. 
                                     </p>
                                 </div>
                             </div>
@@ -280,7 +280,7 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                         Add wish bills and memberships
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
-                                        Add vat percentage.
+                                        Additional ways to fund your lifestyle.
                                     </p>
                                 </div>
                             </div>
