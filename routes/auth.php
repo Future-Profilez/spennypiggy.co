@@ -220,6 +220,7 @@ Route::middleware('auth')->group(function () {
         Route::get('top-wishes', [LeaderBoardController::class, 'topWishes'])->name('top-wishes');
         Route::get('top-subscription', [LeaderBoardController::class, 'topSubscription'])->name('top-subscription');
         Route::get('top-bill', [LeaderBoardController::class, 'topBill'])->name('top-bill');
+        Route::get('top-shop', [LeaderBoardController::class, 'topShop'])->name('top-shop');
         Route::get('top-piggy-bank', [LeaderBoardController::class, 'topPiggyBank'])->name('top-piggy-bank');
     });
 

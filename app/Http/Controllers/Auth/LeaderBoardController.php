@@ -6,6 +6,7 @@ use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Models\BillPayment;
 use App\Models\MembershipPayment;
+use App\Models\ShopPayment;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\TipGoalsPayment;
@@ -489,15 +490,20 @@ class LeaderBoardController extends Controller
             $q->where('user_id',$user->id);
         });
 
+        $shop = ShopPayment::whereHas('shop',function($q) use($user){
+            $q->where('user_id',$user->id);
+        });
+
         if ($type == 'today') {
 
-            $single_wish->where('created_at', $currentDate);
+            $single_wish->whereDate('created_at', $currentDate);
             // $crowd_wish->where('created_at', $currentDate);
             // $surprise->where('created_at', $currentDate);
-            $subscriptions->where('created_at', $currentDate);
-            $tip_goal->where('created_at', $currentDate);
-            $membership->where('created_at', $currentDate);
-            $bill->where('created_at', $currentDate);
+            $subscriptions->whereDate('created_at', $currentDate);
+            $tip_goal->whereDate('created_at', $currentDate);
+            $membership->whereDate('created_at', $currentDate);
+            $bill->whereDate('created_at', $currentDate);
+            $shop->whereDate('created_at', $currentDate);
         } else if ($type == 'week') {
 
             $single_wish->whereBetween('created_at', [
@@ -529,6 +535,10 @@ class LeaderBoardController extends Controller
                 $currentWeekStartDate,
                 $currentWeekEndDate,
             ]);
+            $shop->whereBetween('created_at', [
+                $currentWeekStartDate,
+                $currentWeekEndDate,
+            ]);
         } else if ($type == 'month') {
 
             $single_wish->whereYear('created_at', '=', $currentYear)
@@ -551,11 +561,14 @@ class LeaderBoardController extends Controller
 
             $bill->whereYear('created_at', '=', $currentYear)
             ->whereMonth('created_at',$currentMonth);
+
+            $shop->whereYear('created_at', '=', $currentYear)
+            ->whereMonth('created_at',$currentMonth);
         }
 
         // $performance = Earning::performance($type);
 
-        $resp['gross'] = round($single_wish->sum('amount') + $subscriptions->sum('amount') + $tip_goal->sum('amount') + $membership->sum('amount') + $bill->sum('amount'), 2, PHP_ROUND_HALF_UP);
+        $resp['gross'] = round($single_wish->sum('amount') + $subscriptions->sum('amount') + $tip_goal->sum('amount') + $membership->sum('amount') + $bill->sum('amount') + $shop->sum('amount'), 2, PHP_ROUND_HALF_UP);
 
         // if ($performance['tip_goal'] == 0 && $tip_goal->sum('amount') == 0) {
         //     $per = 0;
@@ -572,7 +585,7 @@ class LeaderBoardController extends Controller
             // 'increase' => $single_wish->sum('amount') > $performance['single_wish'] ? true : false,
             'percent' => $single_wish->sum('amount') != 0 ?  round(($single_wish->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
             'title' => 'single wish',
-            'tag' => 'Wishes'
+            'tag' => 'single_wish'
         ];
 
 
@@ -582,7 +595,7 @@ class LeaderBoardController extends Controller
             // 'increase' => $tip_goal->sum('amount') > $performance['tip_goal'] ? true : false,
             'percent' => $tip_goal->sum('amount') != 0 ? round(($tip_goal->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
             'title' => 'piggy bank',
-            'tag' => 'Tips'
+            'tag' => 'tip_goal'
         ];
 
 
@@ -599,7 +612,7 @@ class LeaderBoardController extends Controller
             // 'increase' => $bill->sum('amount') > $performance['bill'] ? true : false,
             'percent' => $bill->sum('amount') != 0 ? round(($bill->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
             'title' => 'bills',
-            'tag' => 'Bills'
+            'tag' => 'bills'
         ];
 
         // if ($performance['subscriptions'] == 0 && $subscriptions->sum('amount') == 0) {
@@ -615,7 +628,7 @@ class LeaderBoardController extends Controller
             // 'increase' => $subscriptions->sum('amount') > $performance['subscriptions'] ? true : false,
             'percent' => $subscriptions->sum('amount') != 0 ?  round(($subscriptions->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
             'title' => 'subscriptions',
-            'tag' => 'Subscriptions'
+            'tag' => 'subscriptions'
         ];
 
 
@@ -633,7 +646,17 @@ class LeaderBoardController extends Controller
             // 'increase' => $membership->sum('amount') > $performance['membership'] ? true : false,
             'percent' => $membership->sum('amount') != 0 ?  round(($membership->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
             'title' => 'memberships',
-            'tag' => 'Memberships'
+            'tag' => 'memberships'
+        ];
+
+
+        $resp['earnings'][5] = [
+            'amount' => $shop->sum('amount'),
+            // 'performance' => $per,
+            // 'increase' => $shop->sum('amount') > $performance['shop'] ? true : false,
+            'percent' => $shop->sum('amount') != 0 ?  round(($shop->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
+            'title' => 'shops',
+            'tag' => 'shops'
         ];
 
         return response()->json($resp, 200);
@@ -655,6 +678,7 @@ class LeaderBoardController extends Controller
             $tip_goal_query = clone $this->initialQuery($user,"tip");
             $membership_query = clone $this->initialQuery($user,"mem");
             $bill_query = clone $this->initialQuery($user,"bill");
+            $shop_query = clone $this->initialQuery($user,"shop");
 
             // Apply additional conditions for each query
             $single_wish_query->whereYear('created_at', $currentYear)
@@ -667,6 +691,8 @@ class LeaderBoardController extends Controller
                 ->whereMonth('created_at', $month);
             $bill_query->whereYear('created_at', '=', $currentYear)
                 ->whereMonth('created_at', $month);
+            $shop_query->whereYear('created_at', '=', $currentYear)
+                ->whereMonth('created_at', $month);
 
             // Fetch sums for each category
             $data[$month - 1] = [
@@ -675,6 +701,7 @@ class LeaderBoardController extends Controller
                 'Piggy Bank' => $tip_goal_query->sum('amount'),
                 'Memberships' => $membership_query->sum('amount'),
                 'Bills' => $bill_query->sum('amount'),
+                'Shops' => $shop_query->sum('amount'),
                 'month' => $date->format('F')
             ];
         }
@@ -716,6 +743,13 @@ class LeaderBoardController extends Controller
 
         if($type == 'bill'){
             return BillPayment::whereHas('bill',function($q) use($user){
+                $q->where('user_id',$user->id);
+            });
+        }
+
+
+        if($type == 'shop'){
+            return ShopPayment::whereHas('shop',function($q) use($user){
                 $q->where('user_id',$user->id);
             });
         }
@@ -795,6 +829,33 @@ class LeaderBoardController extends Controller
                 'title' => $p->bill->name,
                 'amount' => $p->total_amount,
                 'media' => $p->bill->perma_link
+            ];
+        }
+
+        return response()->json([
+            'status' => true,
+            'data' => $resp
+        ]);
+    }
+
+
+    public function topShop(){
+        $user = User::where('id', Auth::id())->first();
+
+        $pay = ShopPayment::whereHas('shop',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->groupBy('shop_id')
+        ->selectRaw('shop_id, sum(amount) as total_amount')
+        ->orderBy('total_amount', 'DESC')->take(5)->get();
+
+        $resp = [];
+
+        foreach ($pay as $p) {
+            $resp[] = [
+                'uuid' => $p->shop->uuid,
+                'title' => $p->shop->name,
+                'amount' => $p->total_amount,
+                'media' => $p->shop->perma_link
             ];
         }
 
