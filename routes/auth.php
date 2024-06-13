@@ -137,6 +137,8 @@ Route::middleware('auth')->group(function () {
 
         Route::get('user-tips', [WishitemController::class, 'userTips'])->name('user-tips');
 
+        Route::get('bill-tracker', [WishitemController::class, 'billTracker'])->name('bill-tracker');
+
         Route::get('subscriptions', [WishitemController::class, 'creatorSubscriptions'])->name('subscriptions');
 
         Route::get('subscribed', [WishitemController::class, 'userSubscribed'])->name('subscribed');

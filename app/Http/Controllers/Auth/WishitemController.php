@@ -1544,4 +1544,17 @@ class WishitemController extends Controller
             'msg' => "Category Deleted."
         ]);
     }
+
+
+    public function billTracker(){
+        $user = Auth::user();
+        $bill_payments = BillPayment::whereHas('bill',function($q) use($user){
+            $q->where('user_id',$user->id);
+        })->with('bill')->latest()->get();
+
+        return response()->json([
+            'status' => true,
+            'bill_payments' => $bill_payments
+        ]);
+    }
 }
