@@ -453,7 +453,7 @@ class ShopsController extends Controller
 
             $total = $amount + $tax;
 
-            if($shop->type == "digital_products" && $shop->vat_applicable == 1){
+            if($shop->vat_applicable == 1){
                 $vat_percentage_amount = $total * $shop->user->vat_amount_percentage / 100;
             }
 
