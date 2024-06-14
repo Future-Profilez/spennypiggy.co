@@ -355,11 +355,11 @@ class ShopsController extends Controller
             $shop->is_member = 0;
         }
 
-        if($shop->is_member == 0){
-            $amount = round($shop->price, 2, PHP_ROUND_HALF_UP);
+        if($shop->is_member == 1 && !empty($shop->special_member_price)){
+            $amount = round($shop->special_member_price, 2, PHP_ROUND_HALF_UP);
         }
         else{
-            $amount = round($shop->special_member_price, 2, PHP_ROUND_HALF_UP);
+            $amount = round($shop->price, 2, PHP_ROUND_HALF_UP);
         }
 
         $tax = round(($amount * config('app.shop_tax',20) / 100), 2, PHP_ROUND_HALF_UP);
