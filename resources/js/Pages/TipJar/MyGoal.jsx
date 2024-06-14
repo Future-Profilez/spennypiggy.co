@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import PriceFormat from '@/includes/PriceFormat';
 import mouse from '../../../assets/img/mouse.png';
+import { usePage } from '@inertiajs/react';
 
-export default function MyGoal({goal}) {
+export default function MyGoal({goal, IsloggedIn}) {
 
+  const { auth } = usePage().props;
+  const [showEarning, setShowEarning] = useState(auth && auth.user && auth.user.show_piggy_bank == 1 ? true : false );
   const { formatMultiPrice } = PriceFormat();
   const getPercentage = (actual, paid) => {
     const r = (paid/actual)*100;
@@ -26,7 +29,9 @@ export default function MyGoal({goal}) {
         <p className='mb-3 '>Total Earnings</p>
         {/* {goal.days ? <p className='mb-3 text-voilet '>{goal.days > 1 ? `${goal.days} Days` : `${goal.days} Day`} left to goal ends.</p> : ''} */}
         <ProgressBar now={goal?.fullfilled}  max={goal?.target} />
-        <p className='text-muted text-small mt-2' >{formatMultiPrice(goal?.fullfilled, goal?.currency)} earned.</p>
+
+        {IsloggedIn ? <p className='text-muted text-small mt-2' >{formatMultiPrice(goal?.fullfilled, goal?.currency)} earned.</p> : ''}
+        {showEarning && !IsloggedIn ? <p className='text-muted text-small mt-2' >{formatMultiPrice(goal?.fullfilled, goal?.currency)} earned.</p> : ''}
       </div>
     </div>
     </>

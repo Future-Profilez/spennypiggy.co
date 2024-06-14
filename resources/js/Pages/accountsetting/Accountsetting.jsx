@@ -18,7 +18,19 @@ import SiteSubscription from '../Profile/SiteSubscription';
 export default function Accountsetting(props) {
     const { successAlert, errorAlert } = useAlerts();
     const {auth, user, global_currency, auto_tweet} = props;
+
+    console.log("props", props)
     const [emailEnabled, setSetEnabled] = useState(auth && auth.user && auth.user.notification_send == 1 ? true : false )
+    const [showEarning, setShowEarning] = useState(auth && auth.user && auth.user.show_piggy_bank == 1 ? true : false );
+    const swicthEarning  = () =>{ 
+        setShowEarning(!showEarning);
+        axios.get(`piggy-bank-setting`).then((resp) => {
+            successAlert(resp.data.message);
+        }).catch((_err) => {
+            console.error("error", _err);
+        });
+    }
+
     const [passClose, setSassClose] = useState(null);
     const passwordUpdated = () => { 
         setSassClose(false);
@@ -43,6 +55,8 @@ export default function Accountsetting(props) {
             console.error("error", _err);
         });
     }
+
+    
     const [vatpercent, setvatpercent] = useState(auth && auth?.user?.vat_amount_percentage|| '')
 
     return (
@@ -124,8 +138,19 @@ export default function Accountsetting(props) {
                                         <span for='notification_handle' className="slider"></span>
                                     </label>
                                 </div>
-                            </li>
+                            </li> 
 
+                            <li>
+                                <div className='notification'>
+                                Show Piggy Bank Earning
+                                    <label className="toggle-switch">
+                                        <input id='showbankearning' checked={showEarning}
+                                         type="checkbox" onChange={swicthEarning}  />
+                                        <span for='showbankearning' className="slider"></span>
+                                    </label>
+                                </div>
+                            </li> 
+ 
                             <li>
                                 <Popup space='4' modalclassName="pinkmodal" 
                                 text={<>DELETE ACCOUNT  </>} >

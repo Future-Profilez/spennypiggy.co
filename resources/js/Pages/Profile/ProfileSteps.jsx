@@ -287,7 +287,7 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                         <div className="profile-steps border border-gray-200 rounded-lg d-flex  items-center p-3 mt-3 justify-content-between">
                             <div className="step-title d-flex max-w-[390px] pe-3">
                                 <div
-                                    className={`check-icon me-2 pt-1 ${status && status.contents !== 1 ? "checked": ""}`} >
+                                    className={`check-icon me-2 pt-1 ${status && status.contents == 1 ? "checked": ""}`} >
                                    <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
                                 </div>
                                 <div>
