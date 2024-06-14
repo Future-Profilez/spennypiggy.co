@@ -10,7 +10,7 @@ import PriceFormat from '@/includes/PriceFormat';
 import { useEffect } from 'react';
 import { useRef } from 'react';
 
-export default function BuyShopItem({opened, classes, text, s, open, isPaid}) {
+export default function BuyShopItem({vat_percent, opened, classes, text, s, open, isPaid}) {
 
    const { formatMultiPrice} = PriceFormat();
    const { global_currency, auth, user } = usePage().props;
@@ -143,9 +143,8 @@ export default function BuyShopItem({opened, classes, text, s, open, isPaid}) {
                      </div>
 
                      {s && s.success_page_type == 'text' ? 
-                       <> 
                        <p>{s && s.success_page_value}</p>
-                     </> :
+                      :
                      <a target="_blank" className='text-blue-800 text-break' href={s && s.success_page_value} >{s && s.success_page_value}</a>
                      }
 
@@ -168,7 +167,8 @@ export default function BuyShopItem({opened, classes, text, s, open, isPaid}) {
                :
             <>
                <div className="text-center mt-2">
-                  {fairPrice ? <p className="text-gray-500 my-2 ">You will be charged <strong  className='text-black' > {formatMultiPrice((fairPrice || s.price), s?.currency || 'GBP') } + 12% processing fee </strong>.</p> 
+                  {fairPrice ? <p className="text-gray-500 my-2 ">You will be charged <strong  className='text-black' > 
+                     {formatMultiPrice((fairPrice || s.price), s?.currency || 'GBP') } {vat_percent ? `+${formatMultiPrice(vat_percent, s?.currency || 'GBP')}` : ""} + 12% processing fee </strong>.</p> 
                   : 
                   <p className="text-gray-500 my-2 ">You will get it for free.</p> 
                }

@@ -15,6 +15,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import PriceFormat from "@/includes/PriceFormat";
 import axios from "axios";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
+import { IoAddSharp  } from "react-icons/io5";
 
 
 const imageLinks = [
@@ -31,7 +32,7 @@ const imageLinks = [
 export default function Wishlist(props) {
 
     const { global_currency, auth } = usePage().props;
-    const{fetchingcats,fetchcategories,currency,item,editpop,openPop,setuped}= props;
+    const{fetchingcats,fetchcategories,currency,item,editpop,openPop,setuped,customtext}= props;
     const defaultCurrency = (auth && auth.user && auth.user.default_currency) || "GBP";
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
@@ -242,15 +243,20 @@ export default function Wishlist(props) {
         }
     };
 
+    const AddItem = () => {
+    return <div className="flex items-center">
+        <IoAddSharp  size="2rem" />
+        <h2 className="ms-2">Add Wish Item</h2>
+    </div>
+    }
 
     return (
-        <Popup
+        <Popup 
             modalclassName="pinkmodal full"
             size="md"
             action={close}
-            classes={`${editpop ? "editpop" : "dropdown-item text-start p-0"}`}
-            text={`${editpop ? "" : " Add wish"}`}
-        >
+            classes={`${editpop ? "editpop" : "w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center"}`}
+            text={customtext || <AddItem /> } >
             <div className="editprofileModal  wishlistModal ">
                 <div className="editprofileModalInner">
                             <h2 className='p-4 text-pink text-start font-GillSans uppercase text-large black-stroke font-semibold mb-1 pe-5'>{editpop ? " Edit Wish" : "Add A Wish"}</h2>

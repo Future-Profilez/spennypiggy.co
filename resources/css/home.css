@@ -41,8 +41,8 @@ body{background:#000;}
 .bottom-links{border-top:1px solid #ffffff24;padding-top:30px;margin-top:30px;}
 .MegaMenu,.menuImg{justify-content:center;}
 .MegaMenu{display:flex;position:fixed;top:0;right:0;width:100%;height:100vh;background:var(--pink);align-items:stretch;align-content:stretch;}
-.MegaMenu{max-width:0;transition:0.2s ease;overflow:hidden !important;z-index:9999999 !important;}
-.MegaMenu.Open{max-width:2000px;transition:0.3s cubic-bezier(0.4,0,1,1);opacity:1 !important;}
+.MegaMenu{max-width:0;transition:0.2s ease;overflow:auto !important;z-index:9999999 !important;}
+.MegaMenu.Open{max-width:5000px;transition:0.3s cubic-bezier(0.4,0,1,1);opacity:1 !important;}
 .menuList.shows{opacity:1;transition:0.1s;}
 .menuList{opacity:0;transition:0.1s;}
 .rotate-btn a,.rotate-btn button{transform:rotate(-7deg);}
@@ -540,7 +540,9 @@ ul.socialmedia li svg{width:25px !important;height:24px !important;}
 
 .addoption-action svg path{stroke:#3cfccf;}
 .addoption-action svg{width:40px;height:40px;}
-
+.wishtracker-box li button {
+  white-space: nowrap !important;
+}
 /* responsive */
 @media (min-width:767px){
   .about-sticky{position:sticky;top:133px;}
@@ -632,7 +634,7 @@ html body .intercom-lightweight-app-launcher{margin-bottom:70px !important;}
 .loveboxes h3{font-size:20px !important;line-height:22px !important;}
 .menuList .menuslists{display:block !important;}
 .wishtracker .nav.nav-tabs{padding:1px 11px !important;}
-.menuList .menuslists li{max-width:100%;padding-bottom:10px;margin-right:0 !important;padding-right:0 !important;}
+.menuList .menuslists li{max-width:100%;padding-bottom:18px;margin-right:0 !important;padding-right:0 !important;}
 .shows.menuList{overflow:auto;max-height:96vh;}
 .menuList ul li{margin:5px 18px 5px 0 !important;}
 .funboximg img,.gifts-links,.welcomeRt img{margin:auto;}

@@ -7,6 +7,7 @@ import st from "../../../css/uploader.module.css";
 import axios from "axios";
 import { useRef } from "react";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
+import { IoAddSharp } from "react-icons/io5";
 
 const memberships = [
   {
@@ -165,12 +166,18 @@ export default function AddMembership({updateState, item}) {
         });
     };
 
+    const AddItem = () => {
+      return <div className="flex items-center">
+          <IoAddSharp  size="2rem" />
+          <h2 className="ms-2">Add Membership</h2>
+      </div>
+    }
     return (
         <Popup
             modalclassName="pinkmodal full sendSurprize-modal shadow-pink ps-0"
             space="4" size="md"
-            action={close} classes={`dropdown-item w-100`}
-            text={`Add Membership`} >
+            action={close} classes={`w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center`}
+            text={<AddItem />} >
               <div className="addgoal" >
                 <h2 className="text-uppercase font-GillSans pb-4 font-large">Add Membership</h2>
              

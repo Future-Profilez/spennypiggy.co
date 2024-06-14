@@ -17,6 +17,7 @@ import { useRef } from "react";
 import PriceFormat from "@/includes/PriceFormat";
 import axios from "axios";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
+import { IoAddSharp } from "react-icons/io5";
 
 export default function AddBills(props) {
     const { successAlert, errorAlert, infoAlert, errorsHandling } = useAlerts();
@@ -114,11 +115,18 @@ export default function AddBills(props) {
         });
      };
 
+     const AddItem = () => {
+        return <div className="flex items-center">
+            <IoAddSharp  size="2rem" />
+            <h2 className="ms-2">Add Bills</h2>
+        </div>
+      }
+
     const defaultCurrency = auth && auth.user && auth.user.default_currency || 'GBP';
     return (
         <Popup modalclass='pinkmodal full' size='md' action={close}
-        classes={classes ? classes : `  ${editpop ? "editpop"  : 'dropdown-item text-start p-0'}`}
-        text={`${text ? text : 'Add Bills'}`} >
+        classes={classes ? classes : `  ${editpop ? "editpop"  : 'w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center'}`}
+        text={text ? text : <AddItem /> } >
         <div className="editprofileModal  wishlistModal ">
             <div className="editprofileModalInner">
                 <h2 className='p-4 text-pink text-start font-GillSans uppercase text-large black-stroke font-semibold mb-1 pe-5'>{isEdit ? "Update Bill" : "Add A Bill" }</h2>

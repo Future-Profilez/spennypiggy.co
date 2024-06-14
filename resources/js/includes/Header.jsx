@@ -18,7 +18,6 @@ export default function Header() {
     const deviceid = DeviceID();
     const [isActive, setActive] = useState(false);
     const [shows, setShows] = useState(false);
-
     const toggleClass = () => {
         setActive(!isActive);
         setTimeout(()=>{
@@ -29,7 +28,6 @@ export default function Header() {
     const cart = useSelector((state) => state.data.cart.cart);
     const [count, setCount] = useState();
     const dispatch = useDispatch();
-
     async function fetchCounter() {
         axios.get(`/counter/${deviceid}`).then((resp) => {
             setCount(resp.data.counter);
@@ -38,7 +36,6 @@ export default function Header() {
             console.error("error", _err);
         });
     }
-
     useEffect(() => {
         fetchCounter();
     }, [cart]);
@@ -126,8 +123,7 @@ export default function Header() {
                             <Link
                                 href={route("cart")}
                                 as="button"
-                                className="cartLink d-flex me-3 position-relative"
-                            >
+                                className="cartLink d-flex me-3 position-relative" >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     width="36"
@@ -140,21 +136,16 @@ export default function Header() {
                                         fill="#3CFCCF"
                                     />
                                 </svg>
-                                {count ? (
+                                {count ? 
                                     <span className="site-counter d-block">
                                         {cart}
                                     </span>
-                                ) : (
-                                    ""
-                                )}
+                                : "" }
                             </Link>
 
-
-                            {auth?.user?.username || false ? (
-                                ""
-                            ) : (
+                            {auth?.user?.username || false ? "" : 
                                 <Link href={route("login")} className="btn-pink sm text-uppercase bg-none px-4 mx-3 d-none d-xl-flex"> Login </Link>
-                            )}
+                            }
                             <div className="d-block d-md-none menu-toggle cursor-pointer cartLink position-relative" onClick={toggleClass} >
                             <svg width="49" height="48" viewBox="0 0 49 48" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M8.42188 36.75H40.5781M8.42188 24.75H40.5781M8.42188 12.75H40.5781" stroke="#05EFB8" stroke-width="2.625" stroke-linecap="round" stroke-linejoin="round"/>
@@ -244,7 +235,7 @@ export default function Header() {
                         </defs>
                     </svg>
                 </div>
-                <div className={`${shows ? 'shows' : ''} menuList`}>
+                <div className={`${shows ? 'shows' : ''} menuList d-block`}>
                     <ul className="menuslists" >
                         {auth?.user?.username || false ? (
                             <>
