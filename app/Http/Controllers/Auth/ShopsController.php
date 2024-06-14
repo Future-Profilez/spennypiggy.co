@@ -355,7 +355,7 @@ class ShopsController extends Controller
             $shop->is_member = 0;
         }
 
-        if($shop->is_member = 0){
+        if($shop->is_member == 0){
             $amount = round($shop->price, 2, PHP_ROUND_HALF_UP);
         }
         else{
@@ -365,10 +365,9 @@ class ShopsController extends Controller
         $tax = round(($amount * config('app.shop_tax',20) / 100), 2, PHP_ROUND_HALF_UP);
 
         $vat_percentage_amount = 0;
-        if($shop->type == "digital_products" && !empty($shop->user->vat_amount_percentage)){
+        if($shop->vat_applicable == 1){
             $vat_percentage_amount = ($amount+$tax) * $shop->user->vat_amount_percentage / 100;
         }
-
 
         return Inertia::render('shop/Item',[
             'shop' => $shop,
