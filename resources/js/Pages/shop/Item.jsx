@@ -9,7 +9,8 @@ import { useEffect } from 'react';
 
 export default function ShopDetailItem(props) {
 
-   const { auth, user, shop } = props;
+   console.log("props",props)
+   const { vat_percent, auth, user, shop } = props;
    const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (shop && shop.user && shop && shop.user.username));
    const url = window.location.href;
    const [open, setOpen] = useState();
@@ -48,10 +49,10 @@ export default function ShopDetailItem(props) {
                   <Head title={shop.name || 'Spenny Piggy Shop'}  />
                   <div className="product-details max-w-[700px] px-2 mx-auto">
                 
-                     <nav className="hidden sm:flex mb-4" aria-label="Breadcrumb">
+                     <nav className="flex mb-4" aria-label="Breadcrumb">
                         <ol className="inline-flex flex-wrap items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                            <li className="inline-flex items-center">
-                              <Link to={`/${shop.user && shop.user.username}`} className="inline-flex items-center text-md font-medium text-gray-700  ">
+                              <Link href={`/${shop.user && shop.user.username}`} className="inline-flex items-center text-md font-medium text-gray-700  ">
                                  {shop.user && shop.user.name}
                               </Link>
                            </li>
@@ -178,7 +179,7 @@ export default function ShopDetailItem(props) {
                               {(shop.slot_limitation && (shop.slot_limitation - shop.total_sold) === 0 ) ?
                                  <button className='btn-pink sm disabled w-full sm:w-auto' >SOLD</button> 
                               : 
-                                 <BuyShopItem opened={props.opened} isPaid={props.payment_id} open={open} s={shop} text={'Get This'} classes="w-full sm:w-auto btn-pink font-light md  mb-3" /> 
+                                 <BuyShopItem vat_percent={vat_percent} opened={props.opened} isPaid={props.payment_id} open={open} s={shop} text={'Get This'} classes="w-full sm:w-auto btn-pink font-light md  mb-3" /> 
                               }
                            </>
                         }  

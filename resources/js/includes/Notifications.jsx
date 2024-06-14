@@ -15,13 +15,13 @@ export default function Notifications() {
   const [count, setCount] = useState(notification_count);
   const [loading, setLoading] = useState(false);
 
-  useEffect(()=>{
-    if(open){
-      document.body.classList.add('overflow-hidden');
-    } else {
-      document.body.classList.remove('overflow-hidden');
-    }
-  },[open]);
+  // useEffect(()=>{
+  //   if(open){
+  //     document.body.classList.add('overflow-hidden');
+  //   } else {
+  //     document.body.classList.remove('overflow-hidden');
+  //   }
+  // },[open]);
 
   const wrapperRef = useRef(null);
   useEffect(() => {

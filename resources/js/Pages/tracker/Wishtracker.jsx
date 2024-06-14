@@ -5,7 +5,6 @@ import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
 import Avatar from "@/includes/Avatar";
 import PriceFormat from "@/includes/PriceFormat";
-import SayThanks from "./SayThanks";
 import Collapse from "react-bootstrap/Collapse";
 import { useState } from "react";
 import axios from "axios";
@@ -14,7 +13,7 @@ import Nocontent from "@/includes/Nocontent";
 import userphoto from "../../../assets/img/userphoto.png";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { useAlerts } from "@/Components/Alerts";
-import TipTracker from "./TipTracker";
+import BillsTracker from "./BillsTracker";
 import Tiplisting from "./Tiplisting";
 import TweetNow from "./TweetNow";
 const defaultsec = "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/";
@@ -40,25 +39,6 @@ export default function Wishtracker(props) {
         const [open, setOpen] = useState(false);
         const [isUserRead, setIsUserRead] = useState(n && n.is_read_user);
         const [isOwnerRead, setIsOwnerRead] = useState(n && n.is_read_owner);
-        const [message_media, setmessage_media] = useState(
-            n && n.message_media
-        );
-        const [msgSent, setMsgSent] = useState(n && n.thankyou_message);
-        const [media_type, setmedia_type] = useState(n && n.media_type);
-        const [approved, setApproved] = useState(n && n.thank_you_approved);
-        function approvemsg(e) {
-            setApproved(e);
-        }
-
-        const [message_url, setmessage_url] = useState(n && n.message_url);
-        const getMessageStatus = (m, f) => {
-            if (f) {
-                setmessage_media(true);
-                setmessage_url(f && f.cdnUrl);
-                setmedia_type(f && f.contentInfo && f.contentInfo.mime.type);
-            }
-            setMsgSent(m);
-        };
 
         async function handleStatus(e) {
             setIsUserRead(1);
@@ -87,8 +67,7 @@ export default function Wishtracker(props) {
                 sender={n && n.sender}
                 is_read_owner={isOwnerRead}
                 onclick={controlStatus}
-                classes="w-100"
-            >
+                classes="w-100" >
                 <div
                     onClick={handleStatus}
                     className="trackItem cursor-pointer shadow-pink box mb-4"
@@ -345,13 +324,9 @@ export default function Wishtracker(props) {
                 <button
                     disabled={status !== "paid"}
                     onClick={() => cancel(id)}
-                    className={`${
-                        status !== "paid" ? "disabled" : ""
-                    } btn-pink sm w-100 px-2 mt-3`}
-                >
+                    className={`${ status !== "paid" ? "disabled" : ""} btn-pink sm w-100 px-2 mt-3`}>
                     {loading
-                        ? "Wait.."
-                        : manageStatus !== "paid"
+                        ? "Wait.." : manageStatus !== "paid"
                         ? "Cancelled"
                         : "Cancel Subscription"}
                 </button>
@@ -367,8 +342,7 @@ export default function Wishtracker(props) {
                     <Tabs
                         defaultActiveKey="1"
                         id="tracker-tab"
-                        className="mb-4 "
-                    >
+                        className="mb-4 " >
                         <Tab eventKey="1" title="Wish Tracker">
                             <div className="tracks mt-4 pt-4">
                                 {tracks &&
@@ -698,11 +672,11 @@ export default function Wishtracker(props) {
                                 </>
                             )}
                         </Tab>
-                        <Tab eventKey="3" title="My Goals">
-                            <TipTracker auth={auth} />
-                        </Tab>
-                        <Tab eventKey="4" title="Piggy Bank">
+                        <Tab eventKey="3" title="Piggy Bank">
                             <Tiplisting />
+                        </Tab>
+                        <Tab eventKey="4" title="Bills">
+                            <BillsTracker auth={auth} />
                         </Tab>
                     </Tabs>
                 </div>

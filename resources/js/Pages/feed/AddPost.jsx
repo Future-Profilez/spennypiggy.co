@@ -9,6 +9,7 @@ import axios from "axios";
 import { toast } from 'react-hot-toast';
 import { useAlerts } from "@/Components/Alerts";
 import { useRef } from "react";
+import { IoAddSharp } from "react-icons/io5";
 
 export default function AddPost({item, text, classes, isEdit, updateState}) {
 
@@ -83,11 +84,17 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
         });
     }
 
-   
-
+    const AddItem = () => {
+        return <div className="flex items-center">
+            <IoAddSharp  size="2rem" />
+            <h2 className="ms-2">Add Feed Post</h2>
+        </div>
+    }
 
     return (
-    <Popup modalclass='' space="4" size='md' action={close} classes={`${classes} dropdown-item text-start p-0 `} text={text ? text : `Add Post`} >
+    <Popup modalclass='' space="4" size='md' action={close} 
+    classes={`${classes} w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center`} 
+    text={text ? text : <AddItem />} >
         {/* <form onSubmit={submitPost} > */}
             <div className="flex align-items-center" >
                 <div className={`gift-icon me-2 voilet`} 
