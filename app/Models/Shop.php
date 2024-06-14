@@ -29,6 +29,7 @@ class Shop extends Model
         'slot_limitation',
         'special_member_price',
         'quantity_allow',
+        'vat_applicable'
     ];
 
     protected $hidden   =   [
