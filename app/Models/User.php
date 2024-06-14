@@ -239,6 +239,10 @@ class User extends Authenticatable
         return $this->hasOne(UserIntro::class,'user_id');
     }
 
+    public function shop(){
+        return $this->hasMany(Shop::class,'user_id');
+    }
+
     public function shop_payments()
     {
         return $this->hasManyThrough(ShopPayment::class, Shop::class, 'user_id', 'shop_id', 'id', 'id');

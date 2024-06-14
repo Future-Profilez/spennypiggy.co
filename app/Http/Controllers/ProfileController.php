@@ -908,6 +908,10 @@ class ProfileController extends Controller
         if($payment_connect){
             $total += 1;
         }
+        $shop = !empty($user->shop) ? 1 : 0;
+        if($shop){
+            $total += 1;
+        }
         $contents = !empty($user->wishItems) && !empty($user->memberships) && !empty($user->bills) ? 1 : 0;
         if($contents){
             $total += 1;
@@ -926,6 +930,7 @@ class ProfileController extends Controller
             'payment_connect' => $payment_connect,
             'contents' => $contents,
             'auto_tweets' => $auto_tweets,
+            'shop' => $shop,
             'social_links' => $social_links,
             'total' => $total,
         ]);
