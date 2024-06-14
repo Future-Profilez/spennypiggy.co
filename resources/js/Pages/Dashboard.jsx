@@ -45,6 +45,7 @@ export default function Dashboard(props) {
 
     const w = useWidthCount();
     const{auth,user,username,global_currency,itemid}= props;
+    
     const [tab, setTab] = useState(0);
     const onTabClick = (e, d) => {
         setTab(d);
