@@ -259,15 +259,13 @@ class ProfileController extends Controller
 
         TipGoal::where('user_id',$user->id)->delete();
 
-        TipGoalsPayment::whereHas('payment',function($q)use($user){
-            $q->where('user_id',$user->id)->orWhere('creator_id',$user->id);
-        })->delete();
+        TipGoalsPayment::where('user_id',$user->id)->orWhere('creator_id',$user->id)->delete();
 
         UserCart::where('user_id',$user->id)->orWhere('owner_id',$user->id)->delete();
 
         UserCategory::where('user_id',$user->id)->delete();
 
-        UserDocuments::where('user_id',$user->id)->delete();
+        // UserDocuments::where('user_id',$user->id)->delete();
 
         UserIntro::where('user_id',$user->id)->delete();
 
