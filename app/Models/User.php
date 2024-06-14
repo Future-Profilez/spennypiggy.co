@@ -31,11 +31,11 @@ class User extends Authenticatable
         'email',
         'role',
         'username',
-        'password',
+        'country',
         'gender',
+        'password',
         'uuid',
         'deleted_at',
-        'suspended_account',
         'creator_category'
     ];
 
@@ -151,6 +151,11 @@ class User extends Authenticatable
         return $this->hasMany(UserCategory::class, 'user_id');
     }
 
+    public function user_shop_categories()
+    {
+        return $this->hasMany(UserShopCategories::class, 'user_id');
+    }
+
     public function paymentitems()
     {
         return $this->hasManyThrough(
@@ -168,10 +173,12 @@ class User extends Authenticatable
         return $this->hasMany(TipGoalsPayment::class, 'creator_id');
     }
 
+
     public function subscriptions()
     {
         return $this->hasManyThrough(WishItemSubscription::class, WishItem::class, 'user_id', 'wish_item_id', 'id', 'id');
     }
+
 
     public function membership_payments()
     {
@@ -198,6 +205,7 @@ class User extends Authenticatable
         return $this->hasOne(SocialLinks::class, 'user_id');
     }
 
+
     public function memberships(){
         return $this->hasMany(Membership::class, 'user_id');
     }
@@ -209,7 +217,6 @@ class User extends Authenticatable
     public function bills(){
         return $this->hasMany(Bills::class, 'user_id');
     }
-
 
     public function getDefaultCurrencyAttribute($value){
         return strtoupper($value);
@@ -226,6 +233,7 @@ class User extends Authenticatable
         }
         return false;
     }
+
 
     public function intro(){
         return $this->hasOne(UserIntro::class,'user_id');

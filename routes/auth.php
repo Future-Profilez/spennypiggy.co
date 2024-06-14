@@ -213,6 +213,9 @@ Route::middleware('auth')->group(function () {
 
     })->name('earnings-page');
     Route::get('profile-steps-status/', [ProfileController::class, 'profileStepsStatus'])->name("profle-steps-status");
+
+    Route::get('piggy-bank-setting/', [ProfileController::class, 'piggyBankSetting'])->name("piggy-bank-setting");
+
     Route::get('get-notification/', [ProfileController::class, 'getNotifications'])->name("get-notification");
     Route::get('mark-as-read/', [ProfileController::class, 'markRead'])->name("mark-as-read");
 

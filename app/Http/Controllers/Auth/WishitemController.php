@@ -1552,6 +1552,15 @@ class WishitemController extends Controller
             $q->where('user_id',$user->id);
         })->with('bill')->latest()->get();
 
+        $bill_payments->map(function($q){
+            $q->user_data = [
+                'name' => $q->user->name,
+                'avatar' => $q->user->avatar_url,
+                'uuid' => $q->user->uuid
+            ];
+            return $q;
+        });
+
         return response()->json([
             'status' => true,
             'bill_payments' => $bill_payments

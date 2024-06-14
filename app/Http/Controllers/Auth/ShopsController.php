@@ -355,11 +355,26 @@ class ShopsController extends Controller
             $shop->is_member = 0;
         }
 
+        if($shop->is_member = 0){
+            $amount = round($shop->price, 2, PHP_ROUND_HALF_UP);
+        }
+        else{
+            $amount = round($shop->special_member_price, 2, PHP_ROUND_HALF_UP);
+        }
+
+        $tax = round(($amount * config('app.shop_tax',20) / 100), 2, PHP_ROUND_HALF_UP);
+
+        $vat_percentage_amount = 0;
+        if($shop->type == "digital_products" && !empty($shop->user->vat_amount_percentage)){
+            $vat_percentage_amount = ($amount+$tax) * $shop->user->vat_amount_percentage / 100;
+        }
+
 
         return Inertia::render('shop/Item',[
             'shop' => $shop,
             'payment_id' => $session_id,
-            'opened' => $opened
+            'opened' => $opened,
+            'vat_percent' => $vat_percentage_amount
         ]);
     }
 
@@ -430,11 +445,17 @@ class ShopsController extends Controller
                 }
             }
 
+            $vat_percentage_amount = 0;
+
             $amount = round(request()->query('amount'), 2, PHP_ROUND_HALF_UP);
 
             $tax = round(($amount * config('app.shop_tax',20) / 100), 2, PHP_ROUND_HALF_UP);
 
             $total = $amount + $tax;
+
+            if($shop->type == "digital_products" && $shop->vat_applicable == 1){
+                $vat_percentage_amount = $total * $shop->user->vat_amount_percentage / 100;
+            }
 
 
             if(!Auth::check()){
@@ -455,6 +476,8 @@ class ShopsController extends Controller
             ]);
 
             $shopPaymentDetail->refresh();
+
+            $total += $vat_percentage_amount;
 
             if($shop->price > 0){
 

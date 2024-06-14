@@ -5,16 +5,31 @@ namespace App\Http\Controllers;
 use App\Helpers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Jobs\SendIntroMailAdmin;
+use App\Models\BillPayment;
 use App\Models\Bills;
 use App\Models\Logs;
 use App\Models\Membership;
 use App\Models\MembershipPayment;
+use App\Models\MonthlyCharge;
 use App\Models\Notification;
 use App\Models\Post;
+use App\Models\PostComment;
+use App\Models\PostCommentReplies;
+use App\Models\PostLike;
+use App\Models\Shop;
+use App\Models\ShopCategory;
+use App\Models\ShopPayment;
+use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
+use App\Models\TipGoal;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
+use App\Models\UserCart;
+use App\Models\UserCategory;
+use App\Models\UserDocuments;
 use App\Models\UserIntro;
+use App\Models\UserShopCategories;
+use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
 use App\StripeControl;
@@ -132,9 +147,148 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
-        StripeControl::deleteAccount($user->account_id);
-        $user->account_id = NULL;
-        $user->stripe_details_submitted = 0;
+        $bills = BillPayment::where('user_id',$user->id)->where('status','paid')->get();
+
+        if(!empty($bills)){
+            foreach($bills as $bill){
+                StripeControl::cancelSubscription($bill->stripe_id);
+            }
+        }
+
+        $members = MembershipPayment::where('user_id',$user->id)->where('status','paid')->get();
+
+        if(!empty($members)){
+            foreach($members as $member){
+                StripeControl::cancelSubscription($member->stripe_id);
+            }
+        }
+
+        $wishSubs = WishItemSubscription::where('user_id',$user->id)->where('status','paid')->get();
+
+        if(!empty($wishSubs)){
+            foreach($wishSubs as $sub){
+                StripeControl::cancelSubscription($sub->stripe_id);
+            }
+        }
+
+        $monthlyCharges = MonthlyCharge::where('user_id',$user->id)->where('status','paid')->get();
+
+        if(!empty($monthlyCharges)){
+            foreach($monthlyCharges as $charge){
+                StripeControl::cancelSubscription($charge->stripe_id);
+            }
+        }
+
+        BillPayment::whereHas('bill',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhere('user_id',$user->id)->delete();
+
+        Bills::where('user_id',$user->id)->delete();
+
+        Logs::whereHas('removeWish',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('removePost',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('removeShop',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('editedShop',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('editedPost',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('editedAboutMe',function($q)use($user){
+            $q->where('id',$user->id);
+        })->orWhereHas('editedUserCategory',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('removeBill',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('editedBill',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('removeMembership',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('editedMembership',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('editedWish',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('suspendedUser',function($q)use($user){
+            $q->where('id',$user->id);
+        })->orWhereHas('deletedUser',function($q)use($user){
+            $q->where('id',$user->id);
+        })->delete();
+
+        MembershipPayment::where('user_id',$user->id)->orWhereHas('membership',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->delete();
+
+        Membership::where('user_id',$user->id)->delete();
+
+        MonthlyCharge::where('user_id',$user->id)->delete();
+
+        Notification::where('user_id',$user->id)->orWhere('notifiable_id',$user->id)->delete();
+
+        PostLike::whereHas('post',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhere('user_id',$user->id)->delete();
+
+        PostCommentReplies::whereHas('post_comment',function($q)use($user){
+            $q->where('user_id',$user->id)->whereHas('post',function($que)use($user){
+                $que->where('user_id',$user->id);
+            });
+        })->orWhere('user_id',$user->id)->delete();
+
+        PostComment::whereHas('post',function($que)use($user){
+            $que->where('user_id',$user->id);
+        })->orWhere('user_id',$user->id)->delete();
+
+        Post::where('user_id',$user->id)->delete();
+
+        ShopPayment::where('user_id',$user->id)->orWhereHas('shop',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->delete();
+
+        ShopCategory::whereHas('shop',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->delete();
+
+        Shop::where('user_id',$user->id)->delete();
+
+        StripePaymentItems::whereHas('payment',function($q)use($user){
+            $q->where('user_id',$user->id)->orWhere('owner_id',$user->id);
+        })->delete();
+
+        StripePaymentDetail::where('user_id',$user->id)->orWhere('owner_id',$user->id)->delete();
+
+        TipGoal::where('user_id',$user->id)->delete();
+
+        TipGoalsPayment::whereHas('payment',function($q)use($user){
+            $q->where('user_id',$user->id)->orWhere('creator_id',$user->id);
+        })->delete();
+
+        UserCart::where('user_id',$user->id)->orWhere('owner_id',$user->id)->delete();
+
+        UserCategory::where('user_id',$user->id)->delete();
+
+        UserDocuments::where('user_id',$user->id)->delete();
+
+        UserIntro::where('user_id',$user->id)->delete();
+
+        UserShopCategories::where('user_id',$user->id)->delete();
+
+        WishCategory::whereHas('wish',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->delete();
+
+        WishItemSubscription::where('user_id',$user->id)->orWhereHas('wish_item',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->delete();
+
+        WishItem::where('user_id',$user->id)->delete();
+
+
+        if(!empty($user->account_id)){
+            StripeControl::deleteAccount($user->account_id);
+            $user->account_id = NULL;
+            $user->stripe_details_submitted = 0;
+        }
         $user->save();
 
         Auth::logout();
@@ -808,6 +962,24 @@ class ProfileController extends Controller
         return response()->json([
            'status' => true,
            'message' => "Notifications marked as read."
+        ]);
+    }
+
+
+
+    public function piggyBankSetting(){
+        $user = User::where('id', Auth::id())->first();
+
+        if($user->show_piggy_bank == 0){
+            $user->show_piggy_bank = 1;
+        }
+        else{
+            $user->show_piggy_bank = 0;
+        }
+        $user->save();
+        return response()->json([
+           'status' => true,
+           'message' => 'Piggy Bank Settings Updated.'
         ]);
     }
 }

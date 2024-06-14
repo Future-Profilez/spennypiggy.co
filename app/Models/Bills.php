@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Ramsey\Uuid\Uuid;
 
 class Bills extends Model
 {
-    use HasFactory;
+    use HasFactory,SoftDeletes;
 
     protected $table = 'bills';
 
@@ -49,5 +50,9 @@ class Bills extends Model
         }
 
         return $url;
+    }
+
+    public function payments(){
+        return $this->hasMany(BillPayment::class);
     }
 }

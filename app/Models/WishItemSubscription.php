@@ -28,7 +28,8 @@ class WishItemSubscription extends Model
         'surprise_message',
         'anonymous',
         'end',
-        'upcoming_payment'
+        'upcoming_payment',
+        'twitter_response'
     ];
 
     protected $hidden   =   [

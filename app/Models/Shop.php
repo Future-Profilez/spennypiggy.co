@@ -43,9 +43,9 @@ class Shop extends Model
 
     protected $appends = [
         'perma_link',
-        'real_category',
         'reward_file_url',
-        'total_sold'
+        'total_sold',
+        'real_category'
     ];
 
     public static function boot()

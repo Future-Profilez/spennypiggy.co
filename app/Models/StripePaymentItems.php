@@ -26,7 +26,8 @@ class StripePaymentItems extends Model
         'thank_you_approved',
         'tax',
         'deleted_at',
-        'quantity'
+        'quantity',
+        'twitter_response'
     ];
 
     protected $appends = [
@@ -35,7 +36,6 @@ class StripePaymentItems extends Model
     ];
 
     protected $hidden   =   [
-        'uuid',
         'created_at',
         'updated_at',
         'deleted_at'
