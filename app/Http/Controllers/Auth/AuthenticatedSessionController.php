@@ -116,7 +116,7 @@ class AuthenticatedSessionController extends Controller
             }
         }
 
-        $support_count = TipGoalsPayment::where('creator_id',$user->id)->count();
+        $support_count = TipGoalsPayment::where('creator_id',$user->id)->where('status','paid')->count();
         $notification_count = Notification::where('notifiable_id',$user->id)->where('is_read',0)->count();
 
         if (!empty(request()->query('item'))) {
@@ -135,7 +135,7 @@ class AuthenticatedSessionController extends Controller
         SeoMeta::addTag('meta', ['property' => 'twitter:image', 'content' => $image]);
         SeoMeta::addTag('meta', ['property' => 'twitter:site', 'content' => '@spennypiggy']);
         SeoMeta::addTag('meta', ['property' => 'twitter:creator', 'content' => '@spennypiggy']);
-        SeoMeta::addTag('meta', ['property' => 'twitter:image:alt', 'content' => 'Financial Gifts,Donations & Memberships']); 
+        SeoMeta::addTag('meta', ['property' => 'twitter:image:alt', 'content' => 'Financial Gifts,Donations & Memberships']);
         SeoMeta::addTag('meta', ['property' => 'twitter:image:src', 'content' => $image]);
         SeoMeta::addTag('meta', ['property' => 'og:image', 'content' => $image]);
 
