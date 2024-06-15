@@ -54,8 +54,7 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                         <h2 className="mb-1 text-[20px] font-bold ">
                             Let’s get you started
                         </h2>
-                        <p className="text-gray-500 mb-3">
-                            Successful creators complete these steps
+                        <p className="text-gray-500 mb-3">Successful creators complete these steps, although not required.
                         </p>
                         <ProgressBar now={status && status.total} max={7} />
 
@@ -103,7 +102,7 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
                                         Add a 15 - 30 sec intro video for your
-                                        supportors.
+                                        supporters.
                                     </p>
                                 </div>
                             </div>
@@ -222,7 +221,7 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
                                         You must add 1 post for subscribers, 1
-                                        for memberships and 1 for supportors. 
+                                        for memberships and 1 for supporters. 
                                     </p>
                                 </div>
                             </div>

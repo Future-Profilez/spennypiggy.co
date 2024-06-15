@@ -43,10 +43,20 @@ import AddItem from "./shop/AddItem";
 
 export default function Dashboard(props) {
 
+    const parsePageId = (path) => path.substring(path.lastIndexOf('/') + 1)
+    const pageId = parsePageId(window.location.pathname);
+
+
+     
     const w = useWidthCount();
     const{auth,user,username,global_currency,itemid}= props;
     
     const [tab, setTab] = useState(0);
+    // useEffect(() => {
+    //     if(pageId == 'shop'){
+    //         setTab(5);
+    //     }
+    // });
     const onTabClick = (e, d) => {
         setTab(d);
     };

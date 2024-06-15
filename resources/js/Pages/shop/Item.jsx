@@ -6,10 +6,10 @@ import { RiDiscountPercentFill } from "react-icons/ri";
 import { useState } from 'react';
 import PriceFormat from '@/includes/PriceFormat';
 import { useEffect } from 'react';
+import { IoChevronBackOutline } from "react-icons/io5";
 
 export default function ShopDetailItem(props) {
 
-   console.log("props",props)
    const { vat_percent, auth, user, shop } = props;
    const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (shop && shop.user && shop && shop.user.username));
    const url = window.location.href;
@@ -49,7 +49,9 @@ export default function ShopDetailItem(props) {
                   <Head title={shop.name || 'Spenny Piggy Shop'}  />
                   <div className="product-details max-w-[700px] px-2 mx-auto">
                 
-                     <nav className="flex mb-4" aria-label="Breadcrumb">
+
+                     <button className='flex md:hidden items-center text-xl mb-4 ' onClick={()=>history.back()} ><span className='mt-1'><IoChevronBackOutline size="1.5rem" /></span> Back</button>
+                     <nav className="hidden md:flex mb-4" aria-label="Breadcrumb">
                         <ol className="inline-flex flex-wrap items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                            <li className="inline-flex items-center">
                               <Link href={`/${shop.user && shop.user.username}`} className="inline-flex items-center text-md font-medium text-gray-700  ">
