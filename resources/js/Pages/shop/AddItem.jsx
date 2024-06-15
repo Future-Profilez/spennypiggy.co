@@ -13,9 +13,9 @@ import { IoAddSharp } from "react-icons/io5";
 import ChangeVat from "../account/ChangeVat";
 
 export default function AddItem(props){
+
     const { auth, user } = usePage().props;
     const {item, update, title, pre_title, pre_description, pre_price, product_type, classes, isEdit } = props;
-      console.log("auth",auth);
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [open, setOpen] = useState(false);
 
@@ -574,11 +574,7 @@ export default function AddItem(props){
                                     type="text"
                                     placeholder="Enter new category"
                                 />
-                                <button
-                                    onClick={addCategory}
-                                    className="bg-gray-200 rounded-xl ms-3 p-[13px] px-4 text-nowrap"
-                                >
-                                    + Add
+                                <button onClick={addCategory} className="bg-gray-200 rounded-xl ms-3 p-[13px] px-4 text-nowrap"> + Add
                                 </button>
                             </div>
                         </div>
@@ -592,16 +588,11 @@ export default function AddItem(props){
                                 <div
                                     onClick={handleVat}
                                     className={` cursor-pointer relative w-11 h-6 
-                         peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer  
-                            peer-checked:after:border-white after:content-[''] 
-                            after:absolute after:top-[2px] after:start-[2px] after:bg-white 
-                            after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 
-                        ${
-                            haveVat == "1"
-                                ? "after:transition-all after:translate-x-full  bg-blue-600"
-                                : "bg-gray-200"
-                        }
-                        `}
+                                    peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer  
+                                    peer-checked:after:border-white after:content-[''] 
+                                    after:absolute after:top-[2px] after:start-[2px] after:bg-white 
+                                    after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 
+                                    ${haveVat == "1" ? "after:transition-all after:translate-x-full bg-blue-600":"bg-gray-200"}`}
                                 ></div>
                                 <span className="ms-3 text-md font-medium text-gray-900">
                                     Vat Applicable
@@ -609,7 +600,7 @@ export default function AddItem(props){
                                         ?
                                         <p>
                                             Enable vat for this item of your
-                                            choosen percentage.
+                                            chosen percentage.
                                         </p>
                                     </button>
                                 </span>
@@ -750,9 +741,9 @@ export default function AddItem(props){
                                         <p>
                                             Your supporters will be able to
                                             select the desired quantity of this
-                                            item && item. You will receive
-                                            payment based on the quantity they
-                                            choose multiplied by your set price.
+                                            item. You will receive
+                                            payment based on the quantity They've chosen
+                                            multiplied by your set price.
                                         </p>
                                     </button>
                                 </span>

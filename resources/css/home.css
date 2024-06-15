@@ -200,7 +200,7 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 .addMessage ul li.halfbox{width:50%;}
 .addMessage ul li label{color:var(--gray2);text-align:center;font-size:18px;font-style:normal;font-weight:400;line-height:150%;letter-spacing:-0.63px;margin:0 0 6px;}
 .addMessage ul li input[type="text"]{border-radius:3px;border:1px solid #e6e6e6;background:var(--white);width:100%;padding:15px;}
-.addMessage ul li textarea{border-radius:10px;background:#f3e4eb;height:183px;width:100%;padding:15px;}
+.addMessage ul li textarea{border-radius:10px;background:#f3e4eb;height:100px;width:100%;padding:15px;}
 .addMessage ul li.cheklistbox{position:relative;}
 .addMessage ul li.cheklistbox input[type="checkbox"]{border:1px solid var(--gray);}
 .cheklistnot,.tearmlist ul li{color:#666;font-style:normal;font-weight:400;line-height:150%;letter-spacing:-0.65px;}
@@ -635,8 +635,12 @@ html body .intercom-lightweight-app-launcher{margin-bottom:70px !important;}
 .menuList .menuslists{display:block !important;}
 .wishtracker .nav.nav-tabs{padding:1px 11px !important;}
 .menuList .menuslists li{max-width:100%;padding-bottom:18px;margin-right:0 !important;padding-right:0 !important;}
-.shows.menuList{overflow:auto;max-height:96vh;}
-.menuList ul li{margin:5px 18px 5px 0 !important;}
+.shows.menuList {
+  overflow: auto;
+  max-height: 96vh;
+  display: block !important;
+  align-items: baseline !important;
+}.menuList ul li{margin:5px 18px 5px 0 !important;}
 .funboximg img,.gifts-links,.welcomeRt img{margin:auto;}
 .wishlistdetial h4{font-size:16px;}
 .cartProRtbox{display:inline-flex;width:100%;justify-content:space-between;margin-top:10px;}

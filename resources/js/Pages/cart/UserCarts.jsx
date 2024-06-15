@@ -145,7 +145,7 @@ export default function UserCarts(props) {
                                         onChange={(e) =>
                                             setMessage(e.target.value)
                                         }
-                                        placeholder="Write message in under 800 Words..."
+                                        placeholder="Send some words of support..."
                                     ></textarea>
                                 </li>
                                 <li className="w-100 mt-3">
@@ -205,8 +205,8 @@ export default function UserCarts(props) {
                                     <div className="tearmlist ps-3">
                                         <ul className="ps-0">
                                             <li> For Memberships and subscriptions, I understand I am making a non-refundable purchase that provides access to exclusive posts. This payment will be automatically taken on a daily, weekly, monthly or yearly basis depending on the subscription type. Can be cancelled anytime.</li>
-                                            <li> I understand that for wishes or support payments I am making a non-refundable donation of support and understand I will recieve a thank you message as a reward. </li>
-                                            <li> This payment of purchase or donation is intended soley for the wish recipient </li>
+                                            <li> I understand that for wishes or support payments I am making a non-refundable gift of support and understand in exchange i will recieve a supporter membership or exclusive content reward. </li>
+                                            <li>I understand that all Profile shop purchases are non refundable and I have taken all necessary steps to understand what I am purchasing</li>
                                             <li>
                                                 I have taken the necessary steps
                                                 to confirm the wishlist owner is
