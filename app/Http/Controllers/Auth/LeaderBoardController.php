@@ -698,7 +698,7 @@ class LeaderBoardController extends Controller
             $data[$month - 1] = [
                 'Wishes' => $single_wish_query->sum('amount'),
                 'Subscriptions' => $subscriptions_query->sum('amount'),
-                'Piggy_Bank' => $tip_goal_query->sum('amount'),
+                'PiggyBank' => $tip_goal_query->sum('amount'),
                 'Memberships' => $membership_query->sum('amount'),
                 'Bills' => $bill_query->sum('amount'),
                 'Shops' => $shop_query->sum('amount'),
