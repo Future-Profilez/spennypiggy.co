@@ -529,7 +529,7 @@ class ShopsController extends Controller
                 $username = $shopPaymentDetail->name ?? "Anonymous user";
             }
 
-            $message = $username . " just buyed your shop item " . $shopPaymentDetail->shop->name;
+            $message = $username . " just purchased your shop item " . $shopPaymentDetail->shop->name;
             NotificationSave::dispatch($message,$shop->user,$shopPaymentDetail->user,'Shop');
 
             $symbol = Currency::where('iso',strtoupper($shopPaymentDetail->currency))->first();
@@ -570,7 +570,7 @@ class ShopsController extends Controller
                 $username = $stripeid->name ?? "Anonymous user";
             }
 
-            $message = $username . " just buyed your shop item " . $stripeid->shop->name;
+            $message = $username . " just purchased your shop item " . $stripeid->shop->name;
             NotificationSave::dispatch($message,$stripeid->shop->user,$stripeid->user,'Shop');
 
             ShopPayment::where('uuid', $id)->update([
