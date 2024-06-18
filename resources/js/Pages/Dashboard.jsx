@@ -315,11 +315,12 @@ export default function Dashboard(props) {
             {IsloggedIn ? <>
                 <div onClick={()=>setShowAdd(true)} className="addoption-action cursor-pointer px-3" dangerouslySetInnerHTML={{__html:addicon}} ></div>
                 {showAdd ? 
-                    <div className="bg-[#0002] rounded-xl position-fixed shadow-lg z-[99999999999999999999] flex justify-center items-center top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full">
-                        <div className="w-full max-w-[400px] px-3">
+                    <div className="bg-[#0001] rounded-xl position-fixed shadow-lg z-[99999999999999999999] flex justify-center items-center
+                     top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full">
+                        <div className="w-full max-w-[550px] px-3">
                             <Suspense fallback={"Loading.."}>
-                                <div className="bg-gray-200 w-full p-6 rounded-3xl shadow-lg z-10 w-full ">
-                                    <h2 className="font-bold text-black text-lg mb-4 text-center m-auto max-w-[200px] ">Add Item to fund your lifestyle.</h2>
+                                <div className="bg-gray-100 w-full p-10 rounded-3xl shadow-lg z-10 w-full ">
+                                    <h2 className="font-bold text-black text-2xl mb-4 text-center m-auto ">Add Item to fund your lifestyle.</h2>
                                     {auth.user && auth.user.stripe_details_submitted == 1 ? 
                                         <>
                                             <Wishlist  
@@ -330,7 +331,7 @@ export default function Dashboard(props) {
                                             categories={categories} />
                                             <AddMembership updateState={updateState} />
                                             <AddBills updatebill={updatebill}/>
-                                            <AddItem classes="w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center"
+                                            <AddItem classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
                                             product_type="digital_products"  />
                                         </>
                                     : '' }

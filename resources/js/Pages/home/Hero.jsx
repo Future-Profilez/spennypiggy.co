@@ -96,7 +96,7 @@ export default function Hero({auth}) {
                       <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink py-[8px] px-5 lg log" > 
                         My Wishlist 
                       </Link>
-                      :  <Link href="/register" className="btn-pink wishlistbutton lg px-5 shadow-mint border-mint " > Create Wishlist </Link> 
+                      :  <Link href="/register" className="btn-pink wishlistbutton lg px-5 shadow-mint border-mint " > Create  your page </Link> 
                     }
 
                     <div className='itsfree-tag d-none d-md-block' >

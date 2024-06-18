@@ -97,7 +97,7 @@ export default function UserCarts(props) {
             <div className="my-4 cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
                 <div className="cartMain">
                     <h2 className="pb-1 wishtitle">
-                        Wish Basket for {datas?.user?.name || ""}
+                        Your Basket for {datas?.user?.name || ""}
                         <Link className="text-voilet"
                             href={`/${datas?.user?.username || ""}`} >
                              @{datas?.user?.username || ""}
@@ -106,7 +106,7 @@ export default function UserCarts(props) {
                     <p className="pb-4">
                         You are about to send a payout to
                         <strong> {datas?.user?.name || ""} </strong> to fund their
-                        wishes.
+                        lifestyle.
                     </p>
                     <div className="CartItemBox">
                         {items && items.map((c, i) => {
@@ -151,6 +151,16 @@ export default function UserCarts(props) {
                                 <li className="w-100 mt-3">
                                     <li className="row">
                                         <div className="col-md-12 mb-4">
+                                            <label className="d-block text-start">Email </label>
+                                            <p className="text-small text-muted mb-1">Your e-mail remains private.</p>
+                                            <input required className={`${auth && auth.email ? 'disabled' : ''} form-input w-100 rounded`}
+                                                value={auth && auth.email}
+                                                disabled={auth && auth.email ? true : false}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                                type="email" placeholder="Enter Your Email..."
+                                            />
+                                        </div>
+                                        <div className="col-md-12 mb-4">
                                             <label className="d-block text-start">
                                                 From
                                             </label>
@@ -161,16 +171,6 @@ export default function UserCarts(props) {
                                                 } value={name}
                                                 type="text"
                                                 placeholder="Enter Your Name..."
-                                            />
-                                        </div>
-                                        <div className="col-md-12 mb-4">
-                                            <label className="d-block text-start">Email </label>
-                                            <p className="text-small text-muted mb-1">Your e-mail remains private. It is used for the creator to reply to your gift with a message via Spenny Piggy</p>
-                                            <input required className={`${auth && auth.email ? 'disabled' : ''} form-input w-100 rounded`}
-                                                value={auth && auth.email}
-                                                disabled={auth && auth.email ? true : false}
-                                                onChange={(e) => setEmail(e.target.value)}
-                                                type="email" placeholder="Enter Your Email..."
                                             />
                                         </div>
                                     </li>
@@ -200,7 +200,7 @@ export default function UserCarts(props) {
                                             name="agreeterm"
                                             className="me-2"
                                             value="agreeterm" ></input>
-                                        I agree to the <Link target='_blank' className="text-voilet" href={route("terms-and-conditions")} >Terms of Service</Link> and <a className="text-voilet" target='_blank' href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>  and the following statements:
+                                       I understand I am paying the creator directly and I agree to the <Link target='_blank' className="text-voilet" href={route("terms-and-conditions")} >Terms of Service</Link> and <a className="text-voilet" target='_blank' href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>  and the following statements:
                                     </label>
                                     <div className="tearmlist ps-3">
                                         <ul className="ps-0">
@@ -209,7 +209,7 @@ export default function UserCarts(props) {
                                             <li>I understand that all Profile shop purchases are non refundable and I have taken all necessary steps to understand what I am purchasing</li>
                                             <li>
                                                 I have taken the necessary steps
-                                                to confirm the wishlist owner is
+                                                to confirm the account owner is
                                                 authentic and I understand that
                                                 Spenny Piggy will not be held
                                                 responsible for any issues

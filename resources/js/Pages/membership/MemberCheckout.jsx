@@ -121,6 +121,17 @@ export default function SubCheckout(props) {
                                     <li className="w-100 mt-3">
                                         <div className="row">
                                             <div className="col-md-12 mb-4">
+                                                <label className="d-block text-start">Email </label>
+                                                <p className="text-small text-muted mb-1">Your e-mail remains private.</p>
+                                                <input className={`${auth && auth.user && auth.user.email ? 'disabled' : ''} form-input w-100 rounded`}
+                                                    value={data.email}
+                                                    disabled={auth && auth.user && auth.user.email ? true : false}
+                                                    onChange={(e) => setData('email',e.target.value)}
+                                                    type="email" placeholder="Enter Your Email..."
+                                                />
+                                                <span className="text-xs text-red-600">{errors.email}</span>
+                                            </div>
+                                            <div className="col-md-12 mb-4">
                                                 <label className="d-block text-start">
                                                     From
                                                 </label>
@@ -134,21 +145,10 @@ export default function SubCheckout(props) {
                                                 />
                                                 <span className="text-xs text-red-600">{errors.name}</span>
                                             </div>
-                                            <div className="col-md-12 mb-4">
-                                                <label className="d-block text-start">Email </label>
-                                                <p className="text-small text-muted mb-1">Your e-mail remains private. It is used for the creator to reply to your gift with a message via Spenny Piggy</p>
-                                                <input className={`${auth && auth.user && auth.user.email ? 'disabled' : ''} form-input w-100 rounded`}
-                                                    value={data.email}
-                                                    disabled={auth && auth.user && auth.user.email ? true : false}
-                                                    onChange={(e) => setData('email',e.target.value)}
-                                                    type="email" placeholder="Enter Your Email..."
-                                                />
-                                                <span className="text-xs text-red-600">{errors.email}</span>
-                                            </div>
+                                            
                                         </div>
                                     </li>
                                     <li className="cheklistbox">
-
                                     <label
                                         htmlFor="anonymous"
                                         className="text-start" >
@@ -166,7 +166,7 @@ export default function SubCheckout(props) {
                                                 name="agreeterm"
                                                 className="me-2"
                                                 value="agreeterm" ></input>
-                                            I agree to the <Link target='_blank' className="text-voilet" href={route("terms-and-conditions")} >Terms of Service</Link> and <a className="text-voilet" target='_blank' href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>  and the following statements:
+                                           I understand I am paying the creator directly and I agree to the <Link target='_blank' className="text-voilet" href={route("terms-and-conditions")} >Terms of Service</Link> and <a className="text-voilet" target='_blank' href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>  and the following statements:
                                         </label>
                                         <div className="tearmlist ps-3">
                                             <ul className="ps-0">
@@ -174,7 +174,7 @@ export default function SubCheckout(props) {
                                                 <li> For Memberships and subscriptions, I understand I am making a non-refundable purchase that provides access to exclusive posts. This payment will be automatically taken on a daily, weekly, monthly or yearly basis depending on the subscription type. Can be cancelled anytime. </li>
                                                 <li> I understand that for wishes or support payments I am making a non-refundable donation of support and understand I will recieve a thank you message as a reward. </li>
                                                 <li> This payment of purchase or donation is intended soley for the wish recipient </li>
-                                                <li> I have taken the necessary steps to confirm the membershiplist owner is authentic and I understand that Spenny Piggy will not be held responsible for any issues arising from a catfishing situation. </li>
+                                                <li> I have taken the necessary steps to confirm the account owner is authentic and I understand that Spenny Piggy will not be held responsible for any issues arising from a catfishing situation. </li>
                                                 <li> I understand that by violating these terms I may be subject to legal action or can fall a victim of scams. </li>
                                                 <li> I understand that by checking the box above and then clicking "CHECKOUT",I will have created a legally binding e-signature to this agreement. </li>
                                                 <li> By providing an e-mail,you confirm that you are happy to receive marketing updates. You can opt out at anytime. </li>
