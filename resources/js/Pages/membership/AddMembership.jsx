@@ -7,7 +7,7 @@ import st from "../../../css/uploader.module.css";
 import axios from "axios";
 import { useRef } from "react";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
-import { IoAddSharp } from "react-icons/io5";
+import { FaHouseChimneyUser } from "react-icons/fa6";
 
 const memberships = [
   {
@@ -167,16 +167,22 @@ export default function AddMembership({updateState, item}) {
     };
 
     const AddItem = () => {
-      return <div className="flex items-center">
-          <IoAddSharp  size="2rem" />
-          <h2 className="ms-2">Add Membership</h2>
+      return <div className=" flex items-center">
+          <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]" >
+              <FaHouseChimneyUser color="var(--pink)"  size="1.5rem" />
+          </div>
+          <div className="ps-3 text-start">
+              <h2 className="text-md">Add Membership Tier</h2>
+              <p className="text-sm font-normal">Let fans support you monthly</p>
+          </div>
       </div>
     }
+
     return (
         <Popup
             modalclassName="pinkmodal full sendSurprize-modal shadow-pink ps-0"
             space="4" size="md"
-            action={close} classes={`w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center`}
+            action={close} classes={`addop w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center`}
             text={<AddItem />} >
               <div className="addgoal" >
                 <h2 className="text-uppercase font-GillSans pb-4 font-large">Add Membership</h2>

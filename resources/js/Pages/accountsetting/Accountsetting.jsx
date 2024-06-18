@@ -130,7 +130,7 @@ export default function Accountsetting(props) {
                             </li>
 
                             <li>
-                                <div className='notification'>
+                                <div className='notification uppercase'>
                                 Receive e-mail notifications
                                     <label className="toggle-switch">
                                         <input id='notification_handle' checked={emailEnabled}
@@ -141,8 +141,8 @@ export default function Accountsetting(props) {
                             </li> 
 
                             <li>
-                                <div className='notification'>
-                                Show Piggy Bank Earning
+                                <div className='notification uppercase'>
+                                Show Piggy Bank Earnings
                                     <label className="toggle-switch">
                                         <input id='showbankearning' checked={showEarning}
                                          type="checkbox" onChange={swicthEarning}  />

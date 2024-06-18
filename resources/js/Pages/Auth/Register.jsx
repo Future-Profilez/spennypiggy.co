@@ -415,7 +415,7 @@ export default function Register(props) {
                                             <p className='tersms-accept' >
                                                 <input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept"
                                                 required onChange={(e) => setData("termaccept", e.target.value)}></input>
-                                                By signing up you agree to our <a className='text-voilet font-bold' target='_blank' href={route('terms-and-conditions')} >Terms & Conditions</a>  and <a className='text-voilet font-bold' target='_blank' href={'https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6'} >Privacy Policy,</a>  and confirm that you are at least 18. years old.
+                                                By signing up you agree to our <a className='text-voilet font-bold' target='_blank' href={route('terms-and-conditions')} >Terms & Conditions</a>  and <a className='text-voilet font-bold' target='_blank' href={'https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6'} >Privacy Policy,</a>  and confirm that you are at least 18. years old. Pages that break our terms will be unpublished.
                                             </p>
                                         </label>
                                     </div>

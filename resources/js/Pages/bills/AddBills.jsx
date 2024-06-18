@@ -17,7 +17,7 @@ import { useRef } from "react";
 import PriceFormat from "@/includes/PriceFormat";
 import axios from "axios";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
-import { IoAddSharp } from "react-icons/io5";
+import { SlCalender } from "react-icons/sl";
 
 export default function AddBills(props) {
     const { successAlert, errorAlert, infoAlert, errorsHandling } = useAlerts();
@@ -115,17 +115,23 @@ export default function AddBills(props) {
         });
      };
 
-     const AddItem = () => {
-        return <div className="flex items-center">
-            <IoAddSharp  size="2rem" />
-            <h2 className="ms-2">Add Bills</h2>
+    const AddItem = () => {
+        return <div className=" flex items-center">
+            <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]" >
+                <SlCalender color="var(--pink)"  size="1.5rem" />
+            </div>
+            <div className="ps-3 text-start">
+                <h2 className="text-md">Add Bills</h2>
+                <p className="text-sm font-normal">Get those pesky bills paid with exclusive content</p>
+            </div>
         </div>
-      }
+    }
+
 
     const defaultCurrency = auth && auth.user && auth.user.default_currency || 'GBP';
     return (
         <Popup modalclass='pinkmodal full' size='md' action={close}
-        classes={classes ? classes : `  ${editpop ? "editpop"  : 'w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center'}`}
+        classes={classes ? classes : `  ${editpop ? "editpop"  : 'addop w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center'}`}
         text={text ? text : <AddItem /> } >
         <div className="editprofileModal  wishlistModal ">
             <div className="editprofileModalInner">

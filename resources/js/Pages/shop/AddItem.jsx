@@ -9,8 +9,8 @@ import st from "../../../css/uploader.module.css";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 import GlobalUploader from "@/uploadcare/Uploader";
 import Popup from "@/Components/Popup";
-import { IoAddSharp } from "react-icons/io5";
 import ChangeVat from "../account/ChangeVat";
+import { AiOutlineShop } from "react-icons/ai";
 
 export default function AddItem(props){
 
@@ -310,21 +310,25 @@ export default function AddItem(props){
                 });
         };
 
-        const Add = () => {
-            return (
-                <div className="flex items-center">
-                    <IoAddSharp size="2rem" />
-                    <h2 className="ms-2">Add Digital Product</h2>
+        const AddItem = () => {
+            return <div className=" flex items-center">
+                <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]" >
+                    <AiOutlineShop color="var(--pink)"  size="1.5rem" />
                 </div>
-            );
-        };
+                <div className="ps-3 text-start">
+                    <h2 className="text-md">Sell Something</h2>
+                    <p className="text-sm font-normal">Sell digital or physical items from your page</p>
+                </div>
+            </div>
+        }
+
 
         return (
             <Popup
                 modalclass="addShopItem modal full"
                 size="lg"
                 action={close}
-                text={title || <Add />}
+                text={title || <AddItem />}
                 classes={`${classes ? classes : "px-3 py-2"}`}
             >
                 <div className="p-3 md:p-8 overflow-auto bg-white md:bg-gray-200 h-full">

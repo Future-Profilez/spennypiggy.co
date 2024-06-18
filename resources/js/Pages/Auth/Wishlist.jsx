@@ -15,7 +15,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import PriceFormat from "@/includes/PriceFormat";
 import axios from "axios";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
-import { IoAddSharp  } from "react-icons/io5";
+import { FaRegHeart } from "react-icons/fa";
 
 
 const imageLinks = [
@@ -244,9 +244,14 @@ export default function Wishlist(props) {
     };
 
     const AddItem = () => {
-    return <div className="flex items-center">
-        <IoAddSharp  size="2rem" />
-        <h2 className="ms-2">Add Wish Item</h2>
+    return <div className=" flex items-center">
+        <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]" >
+            <FaRegHeart color="var(--pink)"  size="1.5rem" />
+        </div>
+        <div className="ps-3 text-start">
+            <h2 className="text-md">Add Wish Item</h2>
+            <p className="text-sm font-normal">Let fans fund your lifestyle for a reward.</p>
+        </div>
     </div>
     }
 
@@ -255,7 +260,7 @@ export default function Wishlist(props) {
             modalclassName="pinkmodal full"
             size="md"
             action={close}
-            classes={`${editpop ? "editpop" : "w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center"}`}
+            classes={`${editpop ? "editpop" : "w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"}`}
             text={customtext || <AddItem /> } >
             <div className="editprofileModal  wishlistModal ">
                 <div className="editprofileModalInner">

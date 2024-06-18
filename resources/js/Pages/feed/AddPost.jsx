@@ -9,7 +9,8 @@ import axios from "axios";
 import { toast } from 'react-hot-toast';
 import { useAlerts } from "@/Components/Alerts";
 import { useRef } from "react";
-import { IoAddSharp } from "react-icons/io5";
+import { FaPenNib } from "react-icons/fa6";
+import Post from './Post';
 
 export default function AddPost({item, text, classes, isEdit, updateState}) {
 
@@ -83,17 +84,20 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
             errorsHandling(_err);
         });
     }
-
     const AddItem = () => {
-        return <div className="flex items-center">
-            <IoAddSharp  size="2rem" />
-            <h2 className="ms-2">Add Feed Post</h2>
+        return <div className=" flex items-center">
+            <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]" >
+                <FaPenNib color="var(--pink)"  size="1.5rem" />
+            </div>
+            <div className="ps-3 text-start">
+                <h2 className="text-md">Post Something</h2>
+                <p className="text-sm font-normal">Add an image, update or blog post</p>
+            </div>
         </div>
     }
-
     return (
     <Popup modalclass='' space="4" size='md' action={close} 
-    classes={`${classes} w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center`} 
+    classes={`${classes} w-full font-bold addop bg-white rounded-xl  p-3 mb-2 text-center`} 
     text={text ? text : <AddItem />} >
         {/* <form onSubmit={submitPost} > */}
             <div className="flex align-items-center" >

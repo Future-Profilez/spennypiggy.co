@@ -112,9 +112,8 @@ export default function Notifications() {
                     Mark all as read
                 </button>
             </div>
-
             <div className="flex items-center noti-title justify-between ">
-                <p className="text-lg font-semibold text-black-900   mb-2">Notification</p>
+                <p className="text-lg font-semibold text-black-900   mb-2">Notifications</p>
                 <button onClick={readAll} className="items-center flex text-gray-600 hover:text-gray-900 " >
                     Mark all as read
                 </button>

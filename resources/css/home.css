@@ -882,5 +882,9 @@ select#country{width:100%;}
   .howWorkTab ul{flex-wrap:nowrap !important;display:flex !important;}
 }
 
-
-
+.addop { 
+  transition: 0.5s ease;
+}
+.addop:hover { transform: scale(1.05); 
+  transition: 0.5s ease;
+}
