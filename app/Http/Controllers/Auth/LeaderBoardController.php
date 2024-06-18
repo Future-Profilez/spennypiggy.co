@@ -655,7 +655,7 @@ class LeaderBoardController extends Controller
             // 'performance' => $per,
             // 'increase' => $shop->sum('amount') > $performance['shop'] ? true : false,
             'percent' => $shop->sum('amount') != 0 ?  round(($shop->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
-            'title' => 'shops',
+            'title' => 'shop items',
             'tag' => 'shops'
         ];
 
