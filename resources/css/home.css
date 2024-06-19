@@ -49,7 +49,7 @@ body{background:#000;}
 .btn-pink-lg:focus,.btn-pink-lg:hover{box-shadow:none;transition:all ease 0.3s;}
 .funpart{padding:70px 0;}
 .funpart h2.headingMd{text-align:center;margin-bottom:30px;}
-.funboxs{height:400px;margin:0 auto 35px;padding:40px 100px;border-radius:30px;display:flex;align-items:center;align-content:flex-start;justify-content:space-between;text-align:left;}
+.funboxs{ margin:0 auto 35px;padding:40px 100px;border-radius:30px;display:flex;align-items:center;align-content:flex-start;justify-content:space-between;text-align:left;}
 .funboximg,.funcnt{width:50%;}
 .funcnt p{font-size:18px;font-style:normal;font-weight:400;line-height:120%;}
 .whylove{padding:80px 0;}
@@ -247,7 +247,8 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
   font-family: var(--heading-font);
   font-size: 20px;
   font-style: normal;
-  font-weight: lighter;
+  font-weight: 300;
+  letter-spacing: 1px;
   line-height: normal;
   text-transform: uppercase;
 }
