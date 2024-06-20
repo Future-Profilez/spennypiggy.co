@@ -357,7 +357,7 @@ export default function AddItem(props){
                                 onChange={handelInputs}
                                 className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5"
                                 type="text"
-                                placeholder="Describe what you’re selling in a few sentences"
+                                placeholder="Describe what you’re selling ?"
                             />
                         </div>
 
