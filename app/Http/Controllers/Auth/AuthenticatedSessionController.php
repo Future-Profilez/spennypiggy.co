@@ -9,6 +9,7 @@ use App\Models\BillPayment;
 use App\Models\MembershipPayment;
 use App\Models\Notification;
 use App\Models\SocialLinks;
+use App\Models\StripePaymentDetail;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Models\UserCategory;
@@ -116,7 +117,35 @@ class AuthenticatedSessionController extends Controller
             }
         }
 
-        $support_count = TipGoalsPayment::where('creator_id',$user->id)->where('status','paid')->count();
+        $arr = [];
+        $support_count = TipGoalsPayment::where('creator_id',$user->id)->where('status','paid')->get();
+        foreach ($support_count as $key => $value) {
+            if(!empty($value->user_id)){
+                $arr[$key] = $value->user_id;
+            }
+            else{
+                $u = User::where('email',$value->guest_email)->first();
+                if(!empty($u)){
+                    $arr[$key] = $u->id;
+                }
+                else{
+                    $arr[$key] = $value->guest_email;
+                }
+            }
+        }
+
+        $wish_count = StripePaymentDetail::where('owner_id',$user->id)->where('payment_status','paid')->get();
+
+        foreach ($wish_count as $key => $value) {
+            if(!empty($value->user_id)){
+                $arr[] = $value->user_id;
+            }
+            else{
+                $arr[] = $value->name;
+            }
+        }
+        $arr = array_unique($arr);
+        $supporters = count($arr);
         $notification_count = Notification::where('notifiable_id',$user->id)->where('is_read',0)->count();
 
         if (!empty(request()->query('item'))) {
@@ -143,7 +172,7 @@ class AuthenticatedSessionController extends Controller
             "username" => $username,
             "user" => $user,
             "itemid" => $itemdid,
-            'supporters' => $support_count,
+            'supporters' => $supporters,
             'notification_count' => $notification_count
         ]);
     }

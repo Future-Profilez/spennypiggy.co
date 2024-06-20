@@ -19,6 +19,8 @@ use App\Models\PostLike;
 use App\Models\Shop;
 use App\Models\ShopCategory;
 use App\Models\ShopPayment;
+use App\Models\ShopShippingInfo;
+use App\Models\ShopVarients;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\TipGoal;
@@ -240,6 +242,14 @@ class ProfileController extends Controller
         })->orWhere('user_id',$user->id)->delete();
 
         Post::where('user_id',$user->id)->delete();
+
+        ShopVarients::whereHas('shop',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->delete();
+
+        ShopShippingInfo::whereHas('shop',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->delete();
 
         ShopPayment::where('user_id',$user->id)->orWhereHas('shop',function($q)use($user){
             $q->where('user_id',$user->id);
