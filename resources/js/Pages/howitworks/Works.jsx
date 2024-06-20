@@ -18,8 +18,9 @@ export default function Works(props) {
         <Head title={"How it works"} />
         <div className='pt-20 howitmain whbg'>
             <div className='containerbox'>
-                <h2 className='headingMd text-shadow-black text-center mb-4'>How it works</h2>
-                <p className='text-center'>Setting up your wishlist on Spenny Piggy only takes a few minutes. Add gifts from our <br/> partner brand catalog or any other retailer in the world.</p>
+                <h2 className='headingMd text-shadow-black text-center mb-3'>How it works</h2>
+                <p className='text-center text-2xl mb-3'>Setting up your page online takes a few minutes to get started. 🚀🐷
+                </p>
                 <div className='howWorkTab mt-12 pb-12 mx-auto'>
                     <Tabs defaultActiveKey="1" id="uncontrolled-tab-example" className="mb-3">
                         <Tab eventKey="1" title="Supporters">
@@ -68,7 +69,7 @@ export default function Works(props) {
                                     <div className='funcnt' data-aos="fade-up" >
                                     <h5 className='text-voilet mb-2'>STEP 1</h5>
                                     <h3 className='headingSm text-shadow-black mb-3'>Set Up Your Page</h3>
-                                    <p className='text-CeraGR'>Craft your unique space to sell exclusive content and custom products.<br></br>
+                                    <p className='text-CeraGR'>Craft your unique space to sell exclusive content and custom products. <br></br>
                                         Publish an epic reward-based Wishlist or offer awesome tailored
                                         memberships. Make your page as unique as you are!</p>
                                 </div>
