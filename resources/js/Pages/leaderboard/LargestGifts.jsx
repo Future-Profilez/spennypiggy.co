@@ -30,7 +30,7 @@ export default function LargestGifts() {
     if (!loading) {
       fetchGifts(period);
     }
-  }, [period, loading]);
+  }, [period]);
 
   const GiftItem = ({ gift, index }) => (
     <div className="rank py-3 border-bottom d-flex align-items-center justify-content-between">
