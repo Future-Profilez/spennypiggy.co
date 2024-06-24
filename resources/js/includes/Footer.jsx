@@ -160,7 +160,7 @@ export default function Footer(props) {
                                         <a href="https://blog.spennypiggy.co"> Blog</a>
                                     </li>
                                     <li>
-                                        <a target="_blank" href="https://ucarecdn.com/bac24059-121e-4e2c-8867-54f634e11778/terms.pdf"> Terms </a>
+                                        <a target="_blank" href="https://ucarecdn.com/90485216-9757-4fb8-8002-d45c7ced6c46/"> Terms </a>
                                     </li>
                                     <li>
                                         <Link href={route("promotion-terms")}> Promotion Terms</Link>
