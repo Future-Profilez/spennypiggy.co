@@ -14,6 +14,8 @@ use App\Models\MembershipPayment;
 use App\Models\Shop;
 use App\Models\ShopCategory;
 use App\Models\ShopPayment;
+use App\Models\ShopShippingInfo;
+use App\Models\ShopVarients;
 use App\Models\User;
 use App\Models\UserShopCategories;
 use App\StripeControl;
@@ -45,7 +47,7 @@ class ShopsController extends Controller
                     "required",
                 ],
                 "price" => [
-                    "required",
+                    "sometimes",
                     'numeric'
                 ],
                 'image' => [
@@ -80,9 +82,31 @@ class ShopsController extends Controller
                 "category" => [
                     "sometimes",
                     "nullable"
+                ],
+                "vat_applicable" => [
+                    'required'
                 ]
             ]
         );
+
+        if($request->type == "physical"){
+            $request->validate(
+                [
+                    "shipping" => [
+                        "required",
+                    ],
+                    'shipping_info' => [
+                        'sometimes',
+                        'nullable',
+                        'string'
+                    ],
+                    "varients" => [
+                        'sometimes',
+                        'nullable'
+                    ]
+                ]
+            );
+        }
 
         $user = User::find(Auth::id());
 
@@ -100,23 +124,71 @@ class ShopsController extends Controller
             // $file = json_decode($request->reward_file);
         }
 
-        $shop = Shop::create([
-            "user_id" => $user->id,
-            'type' => $request->type,
-            'name' => $request->name,
-            'description' => $request->description,
-            'price' => $request->price,
-            'currency' => $user->default_currency,
-            'image' => $request->image ?? null,
-            'success_page_type' => $request->success_page_type,
-            'success_page_value' => $request->success_page_value ?? null,
-            'reward_file_type' => !empty($file) ? $file['contentInfo']['mime']['type'] : null,
-            'reward_file' => !empty($file) ? $file['uuid'] : null,
-            'ask_question' => $request->ask_question ?? null,
-            'slot_limitation' => $request->slot_limitation ?? null,
-            'special_member_price' => $request->special_member_price ?? null,
-            'quantity_allow' => $request->quantity_allow ?? null,
-        ]);
+        if($request->type != 'physical'){
+            $shop = Shop::create([
+                "user_id" => $user->id,
+                'type' => $request->type,
+                'name' => $request->name,
+                'description' => $request->description,
+                'price' => $request->price,
+                'currency' => $user->default_currency,
+                'image' => $request->image ?? null,
+                'success_page_type' => $request->success_page_type,
+                'success_page_value' => $request->success_page_value ?? null,
+                'reward_file_type' => !empty($file) ? $file['contentInfo']['mime']['type'] : null,
+                'reward_file' => !empty($file) ? $file['uuid'] : null,
+                'ask_question' => $request->ask_question ?? null,
+                'slot_limitation' => $request->slot_limitation ?? null,
+                'special_member_price' => $request->special_member_price ?? null,
+                'quantity_allow' => $request->quantity_allow ?? null,
+                'vat_applicable' => $request->vat_applicable
+            ]);
+        }
+        else{
+            $shop = Shop::create([
+                "user_id" => $user->id,
+                'type' => $request->type,
+                'name' => $request->name,
+                'description' => $request->description,
+                'price' => $request->price,
+                'currency' => $user->default_currency,
+                'image' => $request->image ?? null,
+                'success_page_type' => $request->success_page_type,
+                'success_page_value' => $request->success_page_value ?? null,
+                'reward_file_type' => !empty($file) ? $file['contentInfo']['mime']['type'] : null,
+                'reward_file' => !empty($file) ? $file['uuid'] : null,
+                'ask_question' => $request->ask_question ?? null,
+                'slot_limitation' => $request->slot_limitation ?? null,
+                'special_member_price' => $request->special_member_price ?? null,
+                'quantity_allow' => $request->quantity_allow ?? null,
+                'vat_applicable' => $request->vat_applicable,
+                'shipping_information' => $request->shipping_info ?? null
+            ]);
+
+            $shipping = json_decode($request->shipping);
+
+            foreach ($shipping as $key => $value) {
+                $ship = new ShopShippingInfo();
+                $ship->uuid = Uuid::uuid4();
+                $ship->shop_id = $shop->id;
+                $ship->country = $value->country;
+                $ship->shipping_price = $value->price;
+                $ship->save();
+            }
+
+            if(!empty($request->varients)){
+                $varients = json_decode($request->varients);
+                foreach ($varients as $key => $value) {
+                    $var = new ShopVarients();
+                    $var->uuid = Uuid::uuid4();
+                    $var->shop_id = $shop->id;
+                    $var->name = $value->name;
+                    $var->price = $value->price;
+                    $var->save();
+                }
+            }
+
+        }
 
         $shop->refresh();
 
@@ -132,7 +204,7 @@ class ShopsController extends Controller
             }
         }
 
-        $taxamount = round(($request->price * config('app.shop_tax',20) / 100), 2, PHP_ROUND_HALF_UP);
+        $taxamount = round(($request->price * config('app.shop_tax',12) / 100), 2, PHP_ROUND_HALF_UP);
         $createpriceid = $request->price + $taxamount;
 
         $slug = strtolower(str_replace(" ","-",$shop->name));
@@ -187,22 +259,70 @@ class ShopsController extends Controller
         }
 
         if(!empty($shop)){
-            Shop::where('uuid',$uuid)->update([
-                'type' => $request->type,
-                'name' => $request->name,
-                'description' => $request->description,
-                'price' => $request->price ?? 0,
-                'currency' => $user->default_currency,
-                'image' => !empty($request->image) ? $request->image : $shop->image,
-                'success_page_type' => $request->success_page_type,
-                'success_page_value' => $request->success_page_value ?? null,
-                'reward_file_type' => !empty($file) ? $file['contentInfo']['mime']['type'] : $shop->reward_file_type,
-                'reward_file' => !empty($file) ? $file['uuid'] : $shop->reward_file,
-                'ask_question' => $request->ask_question ?? null,
-                'slot_limitation' => $request->slot_limitation ?? null,
-                'special_member_price' => $request->special_member_price ?? null,
-                'quantity_allow' => $request->quantity_allow ?? 0,
-            ]);
+
+            if($request->type != 'physical'){
+                Shop::where('uuid',$uuid)->update([
+                    'type' => $request->type,
+                    'name' => $request->name,
+                    'description' => $request->description,
+                    'price' => $request->price ?? 0,
+                    'currency' => $user->default_currency,
+                    'image' => !empty($request->image) ? $request->image : $shop->image,
+                    'success_page_type' => $request->success_page_type,
+                    'success_page_value' => $request->success_page_value ?? null,
+                    'reward_file_type' => !empty($file) ? $file['contentInfo']['mime']['type'] : $shop->reward_file_type,
+                    'reward_file' => !empty($file) ? $file['uuid'] : $shop->reward_file,
+                    'ask_question' => $request->ask_question ?? null,
+                    'slot_limitation' => $request->slot_limitation ?? null,
+                    'special_member_price' => $request->special_member_price ?? null,
+                    'quantity_allow' => $request->quantity_allow ?? 0,
+                ]);
+            }
+            else{
+                Shop::where('uuid',$uuid)->update([
+                    "user_id" => $user->id,
+                    'type' => $request->type,
+                    'name' => $request->name,
+                    'description' => $request->description,
+                    'price' => empty($varients) ? $request->price : 0,
+                    'currency' => $user->default_currency,
+                    'image' => $request->image ?? null,
+                    'success_page_type' => $request->success_page_type,
+                    'success_page_value' => $request->success_page_value ?? null,
+                    'reward_file_type' => !empty($file) ? $file['contentInfo']['mime']['type'] : null,
+                    'reward_file' => !empty($file) ? $file['uuid'] : null,
+                    'ask_question' => $request->ask_question ?? null,
+                    'slot_limitation' => $request->slot_limitation ?? null,
+                    'special_member_price' => $request->special_member_price ?? null,
+                    'quantity_allow' => $request->quantity_allow ?? null,
+                    'vat_applicable' => $request->vat_applicable,
+                    'shipping_information' => $request->shipping_info ?? null
+                ]);
+
+                $shipping = json_decode($request->shipping);
+                ShopShippingInfo::where('shop_id',$shop->id)->delete();
+                foreach ($shipping as $key => $value) {
+                    $ship = new ShopShippingInfo();
+                    $ship->uuid = Uuid::uuid4();
+                    $ship->shop_id = $shop->id;
+                    $ship->country = $value->country;
+                    $ship->shipping_price = $value->price;
+                    $ship->save();
+                }
+
+                if(!empty($request->varients)){
+                    $varients = json_decode($request->varients);
+                    ShopVarients::where('shop_id',$shop->id)->delete();
+                    foreach ($varients as $key => $value) {
+                        $var = new ShopVarients();
+                        $var->uuid = Uuid::uuid4();
+                        $var->shop_id = $shop->id;
+                        $var->name = $value->name;
+                        $var->price = $value->price;
+                        $var->save();
+                    }
+                }
+            }
 
             $shop->refresh();
 
@@ -237,21 +357,23 @@ class ShopsController extends Controller
             try {
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
-                if($old_price == $shop->price){
-                    $stripe_client = $stripe->products->update($shop->stripe_product_id,[
-                        'name' => $request->name ?? $shop->name,
-                        'images' => [$shop->perma_link],
-                        "default_price" => $shop->price_id,
-                        // "url" => $request->item_url ?? null
-                    ]);
-                }else{
-                    $stripe_client = StripeControl::createProduct($productPayload);
-                    $shop->price_id = $stripe_client->default_price;
+                if($shop->type != 'physical'){
+                    if($old_price == $shop->price){
+                        $stripe_client = $stripe->products->update($shop->stripe_product_id,[
+                            'name' => $request->name ?? $shop->name,
+                            'images' => [$shop->perma_link],
+                            "default_price" => $shop->price_id,
+                            // "url" => $request->item_url ?? null
+                        ]);
+                    }else{
+                        $stripe_client = StripeControl::createProduct($productPayload);
+                        $shop->price_id = $stripe_client->default_price;
+                    }
+                    $shop->stripe_product_id = $stripe_client->id;
+                    $shop->approved = 0;
+                    $shop->save();
                 }
 
-                $shop->stripe_product_id = $stripe_client->id;
-                $shop->approved = 0;
-                $shop->save();
 
                 $logs = Logs::where('edited_shop_id',$shop->id)->where('status','pending')->first();
                 if(!empty($logs)){
@@ -287,6 +409,10 @@ class ShopsController extends Controller
         }
 
         ShopCategory::where('shop_id', $shop->id)->delete();
+
+        ShopShippingInfo::where('shop_id', $shop->id)->delete();
+
+        ShopVarients::where('shop_id', $shop->id)->delete();
 
         ShopPayment::where('shop_id', $shop->id)->get();
 
