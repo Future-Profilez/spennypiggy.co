@@ -11,6 +11,19 @@ import GlobalUploader from "@/uploadcare/Uploader";
 import Popup from "@/Components/Popup";
 import ChangeVat from "../account/ChangeVat";
 import { AiOutlineShop } from "react-icons/ai";
+import Select from 'react-select';
+const lists = [
+    // { value: "Physical_Product", label: 'Physical Product' },
+    { value: "Custom Digital Artwork 🖼️", label: 'Custom Digital Artwork 🖼️' },
+    { value: 'Custom Photoshoot 📷 ' , label: 'Custom Photoshoot 📷 ' },
+    { value: 'Video Happy Birthday 🎂 ', label: 'Video Happy Birthday 🎂 ' },
+    { value: 'Custom Drawing ✍️ ', label: 'Custom Drawing ✍️ ' },
+    { value: 'Nutrition Plan 🥬- pdf', label: 'Nutrition Plan 🥬- pdf' },
+    { value: 'Personal Training Plan 💪🏻- pdf', label: 'Personal Training Plan 💪🏻- pdf' },
+    { value: 'Style Guide 👗- pdf', label: 'Style Guide 👗- pdf' },
+    { value: 'My E-Book 📕- pdf', label: 'My E-Book 📕- pdf' },
+    { value: 'Digital Products', label: 'Digital Products' },
+];
 
 export default function AddItem(props){
 
@@ -28,6 +41,11 @@ export default function AddItem(props){
     }, [open]);
 
     const AddForm = () => {
+
+        const handleLists = (e) =>{
+            setShopItem({...shopItem,"type": e.value});
+        }
+
          const [isVat, setIsVat] = useState(auth && auth.user && auth.user.vat_amount_percentage ? true : false);
          const [vatpercent, setvatpercent] = useState((auth && auth?.user?.vat_amount_percentage) || "");
          const [passClose, setSassClose] = useState(false);
@@ -225,19 +243,18 @@ export default function AddItem(props){
         };
 
         const addShopItem = () => {
+            if(shopItem.type == ''){
+                errorAlert("Please choose a product type.");
+            }
             if (!isChecked) {
                 return false;
             }
             setLoading(true);
             const data = {
                 ...shopItem,
-                success_page_value:
-                    pagetype === "url" ? pageUrl : parsedContent,
+                success_page_value: pagetype === "url" ? pageUrl : parsedContent,
                 reward_file: rewardfile,
-                category:
-                    checkboxes && checkboxes.length
-                        ? JSON.stringify(checkboxes)
-                        : "",
+                category:checkboxes && checkboxes.length? JSON.stringify(checkboxes): "",
                 ask_question: question,
                 slot_limitation: slots || "",
                 special_member_price: spPrice || "",
@@ -338,6 +355,17 @@ export default function AddItem(props){
                     {/* <button className='fixed top-1 md:top-2 right-8 md:right-10 z-1 text-[35px] md:text-[45px]' onClick={()=>setOpen(false)} >&times;</button> */}
                     <div className="shop-forms-field p-0 md:p-8 max-w-[800px] m-auto rounded-[20px]">
                         <div className="shop-forms-field mb-4">
+                            <label className="w-full mb-2">Select what you’re offering</label>
+                             <Select  classNamePrefix="react-select" className="react-select-lists mb-4 mt-2 "
+                                options={lists} onChange={handleLists} defaultValue={'Digital Products'}
+                                placeholder={'Select what you’re offering..'}
+                            />
+                            {/* 
+                            shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5
+                            */}
+                        </div>
+
+                        <div className="shop-forms-field mb-4">
                             <label className="w-full mb-2">Name*</label>
                             <input
                                 name="name"
@@ -408,147 +436,141 @@ export default function AddItem(props){
                             </div>
                         </div>
 
-                        <div className="shop-forms-field mb-4">
-                            <label className="w-full mb-2">
-                                Success page *{" "}
-                            </label>
-                            <div className="success-page-types flex items-center flex-wrap">
-                                <div className="flex items-center mb-2 pe-3">
-                                    <input
-                                        onChange={handleSuccessPageType}
-                                        defaultChecked={
-                                            item &&
-                                            item.success_page_type == "text"
-                                                ? true
-                                                : false
-                                        }
-                                        id="success-option-1"
-                                        type="radio"
-                                        name="success-types"
-                                        value="text"
-                                        className="h-4 w-4 border-gray-300 focus:ring-2 focus:ring-blue-300 cursor-pointer"
-                                    />
-                                    <label
-                                        htmlFor="success-option-1"
-                                        className=" cursor-pointer text-md font-medium text-gray-900 ml-2 block"
-                                    >
-                                        Confirmation message
-                                    </label>
-                                </div>
-                                <div className="flex items-center mb-2 ">
-                                    <input
-                                        onChange={handleSuccessPageType}
-                                        defaultChecked={
-                                            item &&
-                                            item.success_page_type == "url"
-                                                ? true
-                                                : false
-                                        }
-                                        id="success-option-2"
-                                        type="radio"
-                                        name="success-types"
-                                        value="url"
-                                        className="h-4 w-4 border-gray-300 focus:ring-2 focus:ring-blue-300 cursor-pointer"
-                                    />
-                                    <label
-                                        htmlFor="success-option-2"
-                                        className=" cursor-pointer text-md font-medium text-gray-900 ml-2 block"
-                                    >
-                                        Redirect to a URL after purchase
-                                    </label>
-                                </div>
-                            </div>
-
-                            {pagetype == "text" ? (
-                                <div className="">
-                                    <textarea
-                                        defaultValue={parsedContent}
-                                        onChange={(e) =>
-                                            setParsedContent(e.target.value)
-                                        }
-                                        className="mt-2 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5"
-                                        placeholder="Enter confirmation message here !!"
-                                    ></textarea>
-                                    <h2 className="text-md font-normal mb-3 mt-2">
-                                        Add the item for sale (Video, Images,
-                                        Audio, or PDF) *{" "}
-                                    </h2>
-                                    <div
-                                        className={`uploader mb-4 mt-2 overflow-hidden`}
-                                    >
-                                        {item ? (
-                                            <>
-                                                {item &&
-                                                item.reward_file_type ==
-                                                    "image" ? (
-                                                    <img
-                                                        alt="image-profile"
-                                                        className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4"
-                                                        src={
-                                                            item &&
-                                                            item.reward_file_url
-                                                        }
-                                                    />
-                                                ) : (
-                                                    <video
-                                                        controls
-                                                        playsInline
-                                                        className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4"
-                                                        src={
-                                                            item &&
-                                                            item.reward_file_url
-                                                        }
-                                                    />
-                                                )}
-                                            </>
-                                        ) : (
-                                            ""
-                                        )}
-
-                                        <GlobalUploader
-                                            type="minimal"
-                                            ref={uploaderRef}
-                                            sendFile={getRewardFile}
-                                            options={st.shopreward}
+                        {shopItem && shopItem.type === 'Physical_Product' ? <>
+                            
+                        </> : <>
+                            <div className="shop-forms-field mb-4">
+                                <label className="w-full mb-2">
+                                    Success page *{" "}
+                                </label>
+                                <div className="success-page-types flex items-center flex-wrap">
+                                    <div className="flex items-center mb-2 pe-3">
+                                        <input
+                                            onChange={handleSuccessPageType}
+                                            defaultChecked={
+                                                item &&
+                                                item.success_page_type == "text"
+                                                    ? true
+                                                    : false
+                                            }
+                                            id="success-option-1"
+                                            type="radio"
+                                            name="success-types"
+                                            value="text"
+                                            className="h-4 w-4 border-gray-300 focus:ring-2 focus:ring-blue-300 cursor-pointer"
                                         />
+                                        <label
+                                            htmlFor="success-option-1"
+                                            className=" cursor-pointer text-md font-medium text-gray-900 ml-2 block"
+                                        >
+                                            Confirmation message
+                                        </label>
+                                    </div>
+                                    <div className="flex items-center mb-2 ">
+                                        <input
+                                            onChange={handleSuccessPageType}
+                                            defaultChecked={
+                                                item &&
+                                                item.success_page_type == "url"
+                                                    ? true
+                                                    : false
+                                            }
+                                            id="success-option-2"
+                                            type="radio"
+                                            name="success-types"
+                                            value="url"
+                                            className="h-4 w-4 border-gray-300 focus:ring-2 focus:ring-blue-300 cursor-pointer"
+                                        />
+                                        <label
+                                            htmlFor="success-option-2"
+                                            className=" cursor-pointer text-md font-medium text-gray-900 ml-2 block"
+                                        >
+                                            Redirect to a URL after purchase
+                                        </label>
                                     </div>
                                 </div>
-                            ) : (
-                                ""
-                            )}
-                            {pagetype == "url" ? (
-                                <input
-                                    defaultValue={pageUrl}
-                                    onChange={(e) => setpageUrl(e.target.value)}
-                                    className="mt-2 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5"
-                                    type="text"
-                                    placeholder="https://"
-                                />
-                            ) : (
-                                ""
-                            )}
-                        </div>
+
+                                {pagetype == "text" ? (
+                                    <div className="">
+                                        <textarea
+                                            defaultValue={parsedContent}
+                                            onChange={(e) =>
+                                                setParsedContent(e.target.value)
+                                            }
+                                            className="mt-2 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5"
+                                            placeholder="Enter confirmation message here !!"
+                                        ></textarea>
+                                        <h2 className="text-md font-normal mb-3 mt-2">
+                                            Add the item for sale (Video, Images,
+                                            Audio, or PDF) *{" "}
+                                        </h2>
+                                        <div
+                                            className={`uploader mb-4 mt-2 overflow-hidden`}
+                                        >
+                                            {item ? (
+                                                <>
+                                                    {item &&
+                                                    item.reward_file_type ==
+                                                        "image" ? (
+                                                        <img
+                                                            alt="image-profile"
+                                                            className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4"
+                                                            src={
+                                                                item &&
+                                                                item.reward_file_url
+                                                            }
+                                                        />
+                                                    ) : (
+                                                        <video
+                                                            controls
+                                                            playsInline
+                                                            className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4"
+                                                            src={
+                                                                item &&
+                                                                item.reward_file_url
+                                                            }
+                                                        />
+                                                    )}
+                                                </>
+                                            ) : (
+                                                ""
+                                            )}
+
+                                            <GlobalUploader
+                                                type="minimal"
+                                                ref={uploaderRef}
+                                                sendFile={getRewardFile}
+                                                options={st.shopreward}
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    ""
+                                )}
+                                {pagetype == "url" ? (
+                                    <input
+                                        defaultValue={pageUrl}
+                                        onChange={(e) => setpageUrl(e.target.value)}
+                                        className="mt-2 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5"
+                                        type="text"
+                                        placeholder="https://"
+                                    />
+                                ) : (
+                                    ""
+                                )}
+                            </div>
+                        </>}
+                        
 
                         <div className="shop-add-categories border-t pt-3 ">
                             <h2 className="text-lg font-bold mb-2">
                                 Choose Categories
                             </h2>
-                            <div className="categories-lists success-page-types">
+                            <div className="categories-lists grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 success-page-types">
                                 {categories &&
                                     categories.map((c, i) => {
-                                        const filteritem =
-                                            real_category &&
-                                            real_category.filter(
-                                                (item) =>
-                                                    item?.category.category ==
-                                                    c?.category
-                                            );
-                                        console.log("filteritem", filteritem);
-                                        const isCategory =
-                                            filteritem && filteritem[0]
-                                                ? true
-                                                : null;
-
+                                        const filteritem = real_category && real_category.filter( (item) => item?.category.category == c?.category );
+                                        const isCategory = filteritem && filteritem[0] ? true:null;
                                         return (
                                             <div className="flex items-center mb-2">
                                                 <input
@@ -695,43 +717,46 @@ export default function AddItem(props){
                             )}
                         </div>
 
-                        <div className="ad-setting my-2">
-                            <div className="inline-flex items-centercursor-pointer">
-                                <div
-                                    onClick={handleSpPrice}
-                                    className={` cursor-pointer relative w-11 h-6 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer     peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5  
-                        ${
-                            haveSpPrice
-                                ? "after:transition-all after:translate-x-full bg-blue-600"
-                                : "bg-gray-200 "
-                        }
-                        `}
-                                ></div>
-                                <span className="ms-3 text-md font-medium text-gray-900">
-                                    Special price for members (optional){" "}
-                                    <button className="tooltipbtn">
-                                        ?
-                                        <p>
-                                            Offer a discounted extra price to
-                                            attract new members and to keep your
-                                            current members engaged.
-                                        </p>
-                                    </button>
-                                </span>
-                            </div>
-                            {haveSpPrice ? (
-                                <input
-                                    onChange={(e) => setSpPrice(e.target.value)}
-                                    className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[13px] px-4"
-                                    type="text"
-                                    defaultValue={spPrice || ""}
-                                />
-                            ) : (
-                                ""
-                            )}
-                        </div>
+                        {shopItem && shopItem.type !== 'Physical_Product' ? <>
+                                <div className="ad-setting my-2">
+                                    <div className="inline-flex items-centercursor-pointer">
+                                        <div
+                                            onClick={handleSpPrice}
+                                            className={` cursor-pointer relative w-11 h-6 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer     peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5  
+                                ${
+                                    haveSpPrice
+                                        ? "after:transition-all after:translate-x-full bg-blue-600"
+                                        : "bg-gray-200 "
+                                }
+                                `}
+                                        ></div>
+                                        <span className="ms-3 text-md font-medium text-gray-900">
+                                            Special price for members (optional){" "}
+                                            <button className="tooltipbtn">
+                                                ?
+                                                <p>
+                                                    Offer a discounted extra price to
+                                                    attract new members and to keep your
+                                                    current members engaged.
+                                                </p>
+                                            </button>
+                                        </span>
+                                    </div>
+                                    {haveSpPrice ? (
+                                        <input
+                                            onChange={(e) => setSpPrice(e.target.value)}
+                                            className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[13px] px-4"
+                                            type="text"
+                                            defaultValue={spPrice || ""}
+                                        />
+                                    ) : (
+                                        ""
+                                    )}
+                                </div>
+                        </> : '' }
+                        
 
-                        <div className="ad-setting my-2">
+                        <div className="hidden ad-setting my-2">
                             <div className="inline-flex items-centercursor-pointer">
                                 <div
                                     onClick={handleQty}

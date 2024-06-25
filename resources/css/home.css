@@ -544,6 +544,13 @@ ul.socialmedia li svg{width:25px !important;height:24px !important;}
 .wishtracker-box li button {
   white-space: nowrap !important;
 }
+
+.react-select-lists .react-select__control {
+  background: #e5e7eb;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px !important;
+}
 /* responsive */
 @media (min-width:767px){
   .about-sticky{position:sticky;top:133px;}
