@@ -8,6 +8,7 @@ import LoadingScreen from '@/includes/LoadingScreen';
 import PriceFormat from '@/includes/PriceFormat';
 import Nocontent from '@/includes/Nocontent';
 export default function LargestGifts() {
+
   const { formatMultiPrice } = PriceFormat();
   const [period, setPeriod] = useState('last24hour');
   const [loading, setLoading] = useState(false);
@@ -56,21 +57,11 @@ export default function LargestGifts() {
 
   return (
     <div className="rank_lists largest bg-white p-4 rounded-lg mt-4">
-      <h2 className="text-bl font-GillSans text-start text-2xl uppercase text-dark mb-4">
-        Largest Gifts
-      </h2>
+      <h2 className="text-bl font-GillSans text-start text-2xl uppercase text-dark mb-4">Largest Gifts</h2>
+      
       <div className="time-hrs">
-        <button
-          className={period === 'last24hour' ? "active" : ''}
-          onClick={() => setPeriod('last24hour')}>
-          Last 24 hrs
-        </button>
-        <button
-          className={period === 'lasthour' ? "active" : ''}
-          onClick={() => setPeriod('lasthour')}
-        >
-          Last Hour
-        </button>
+        <button className={period === 'last24hour' ? "active" : ''} onClick={() => setPeriod('last24hour')}>Last 24 hrs </button>
+        <button className={period === 'lasthour' ? "active" : ''} onClick={() => setPeriod('lasthour')}> Last Hour </button>
       </div>
 
       {loading ? (
