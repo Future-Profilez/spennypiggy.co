@@ -13,7 +13,7 @@ import ChangeVat from "../account/ChangeVat";
 import { AiOutlineShop } from "react-icons/ai";
 import Select from 'react-select';
 const lists = [
-    { value: "Physical_Product", label: 'Physical Product' },
+    // { value: "Physical_Product", label: 'Physical Product' },
     { value: "Custom Digital Artwork 🖼️", label: 'Custom Digital Artwork 🖼️' },
     { value: 'Custom Photoshoot 📷 ' , label: 'Custom Photoshoot 📷 ' },
     { value: 'Video Happy Birthday 🎂 ', label: 'Video Happy Birthday 🎂 ' },
