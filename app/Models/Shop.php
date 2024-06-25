@@ -103,4 +103,9 @@ class Shop extends Model
         return $arr;
     }
 
+
+    public function shop_varients(){
+        return $this->hasMany(ShopVarients::class,'shop_id');
+    }
+
 }

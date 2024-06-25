@@ -250,10 +250,11 @@ Route::middleware('auth')->group(function () {
 Route::prefix('shop')->group(function () {
     Route::get('/list/{username}', [ShopsController::class,'shopList'])->name('shop-list');
     Route::get('/item/{slug}/{uuid}', [ShopsController::class,'singleShopList'])->name('single-shop-list');
-    Route::get('/buy/{uuid}', [ShopsController::class,'buyShopItem'])->name('buy-shop-item');
+    Route::match(['get', 'post'],'/buy/{uuid}', [ShopsController::class,'buyShopItem'])->name('buy-shop-item');
     Route::post('/answer-to-payment/{uuid}', [ShopsController::class,'answerPayment'])->name('answerPayment');
     Route::get('/success-payment/{id}', [ShopsController::class,'successPayment'])->name('shop.success-payment');
     Route::get('/cancel-payment/{id}', [ShopsController::class,'cancelPayment'])->name('shop.cancel-payment');
+    Route::get('/shipping-price/{shop_id}', [ShopsController::class,'shippingPrice'])->name('shop.shipping-price');
 });
 
 Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');

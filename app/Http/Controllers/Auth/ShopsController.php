@@ -454,7 +454,7 @@ class ShopsController extends Controller
 
     public function singleShopList($slug,$uuid,$session_id = null){
 
-        $shop = Shop::where('uuid',$uuid)->with('user')->first();
+        $shop = Shop::where('uuid',$uuid)->with(['user','shop_varients'])->first();
 
         $opened = null;
         if(!empty($session_id)){
@@ -547,7 +547,7 @@ class ShopsController extends Controller
     }
 
 
-    public function buyShopItem($shop_id)
+    public function buyShopItem(Request $request,$shop_id)
     {
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         try {
@@ -561,6 +561,23 @@ class ShopsController extends Controller
             }
 
             $shop = Shop::where('uuid',$shop_id)->first();
+            $shipping_price = 0;
+
+            if($shop->type == 'physical'){
+                $request->validate([
+                    "shipping_info" => [
+                        "required",
+                    ],
+                ]);
+
+                $shipping_info = $request->shipping_info;
+                $country = $request->query('country');
+                $shipping = ShopShippingInfo::where('shop_id',$shop->id)->where('country',$country)->first();
+                if(empty($shipping)){
+                    $shipping = ShopShippingInfo::where('shop_id',$shop->id)->where('country','all')->first();
+                }
+                $shipping_price = !empty($shipping) ? $shipping->shipping_price : 0;
+            }
 
             if(!empty($shop->slot_limitation)){
                 $pay = ShopPayment::where('shop_id',$shop->id)->where('payment_status','paid')->count();
@@ -572,16 +589,16 @@ class ShopsController extends Controller
 
             $vat_percentage_amount = 0;
 
+
             $amount = round(request()->query('amount'), 2, PHP_ROUND_HALF_UP);
 
             $tax = round(($amount * config('app.shop_tax',20) / 100), 2, PHP_ROUND_HALF_UP);
 
-            $total = $amount + $tax;
+            $total = $amount + $tax + $shipping_price;
 
             if($shop->vat_applicable == 1){
                 $vat_percentage_amount = $total * $shop->user->vat_amount_percentage / 100;
             }
-
 
             if(!Auth::check()){
                 $logged_out_user = User::where('email', request()->query('email'))->first();
@@ -598,6 +615,7 @@ class ShopsController extends Controller
                 'message' => $message ?? null,
                 'anonymous' => request()->query('anonymous') ?? 0,
                 'quantity' => request()->query('quantity'),
+                'shipping_info' => $shipping_info ?? null
             ]);
 
             $shopPaymentDetail->refresh();
