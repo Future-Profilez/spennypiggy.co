@@ -54,13 +54,6 @@ class ShopsController extends Controller
                     'required',
                     'string'
                 ],
-                'success_page_type' => [
-                    'required'
-                ],
-                "success_page_value" => [
-                    "required",
-                    "string"
-                ],
                 "ask_question" => [
                     "nullable",
                     "string",
@@ -133,7 +126,7 @@ class ShopsController extends Controller
                 'price' => $request->price,
                 'currency' => $user->default_currency,
                 'image' => $request->image ?? null,
-                'success_page_type' => $request->success_page_type,
+                'success_page_type' => $request->success_page_type ?? null,
                 'success_page_value' => $request->success_page_value ?? null,
                 'reward_file_type' => !empty($file) ? $file['contentInfo']['mime']['type'] : null,
                 'reward_file' => !empty($file) ? $file['uuid'] : null,
@@ -153,7 +146,7 @@ class ShopsController extends Controller
                 'price' => $request->price,
                 'currency' => $user->default_currency,
                 'image' => $request->image ?? null,
-                'success_page_type' => $request->success_page_type,
+                'success_page_type' => $request->success_page_type ?? null,
                 'success_page_value' => $request->success_page_value ?? null,
                 'reward_file_type' => !empty($file) ? $file['contentInfo']['mime']['type'] : null,
                 'reward_file' => !empty($file) ? $file['uuid'] : null,
@@ -183,7 +176,7 @@ class ShopsController extends Controller
                     $var->uuid = Uuid::uuid4();
                     $var->shop_id = $shop->id;
                     $var->name = $value->name;
-                    $var->price = $value->price;
+                    $var->price = $value->value;
                     $var->save();
                 }
             }
@@ -265,10 +258,10 @@ class ShopsController extends Controller
                     'type' => $request->type,
                     'name' => $request->name,
                     'description' => $request->description,
-                    'price' => $request->price ?? 0,
+                    'price' => $request->price,
                     'currency' => $user->default_currency,
                     'image' => !empty($request->image) ? $request->image : $shop->image,
-                    'success_page_type' => $request->success_page_type,
+                    'success_page_type' => $request->success_page_type ?? null,
                     'success_page_value' => $request->success_page_value ?? null,
                     'reward_file_type' => !empty($file) ? $file['contentInfo']['mime']['type'] : $shop->reward_file_type,
                     'reward_file' => !empty($file) ? $file['uuid'] : $shop->reward_file,
@@ -284,10 +277,10 @@ class ShopsController extends Controller
                     'type' => $request->type,
                     'name' => $request->name,
                     'description' => $request->description,
-                    'price' => empty($varients) ? $request->price : 0,
+                    'price' => $request->price,
                     'currency' => $user->default_currency,
                     'image' => $request->image ?? null,
-                    'success_page_type' => $request->success_page_type,
+                    'success_page_type' => $request->success_page_type ?? null,
                     'success_page_value' => $request->success_page_value ?? null,
                     'reward_file_type' => !empty($file) ? $file['contentInfo']['mime']['type'] : null,
                     'reward_file' => !empty($file) ? $file['uuid'] : null,
@@ -318,7 +311,7 @@ class ShopsController extends Controller
                         $var->uuid = Uuid::uuid4();
                         $var->shop_id = $shop->id;
                         $var->name = $value->name;
-                        $var->price = $value->price;
+                        $var->price = $value->value;
                         $var->save();
                     }
                 }
