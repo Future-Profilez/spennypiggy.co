@@ -54,14 +54,13 @@ button.closelightbox {
 }
 }
 
-
   `}</style>
     <div>
       <button className={classes} onClick={() => openLightbox(images[0])}>{text}</button>
       {isOpen && (
         <div className="lightbox-overlay" onClick={closeLightbox}>
           <div className="lightbox-content p-3">
-            <iframe src="https://player.vimeo.com/video/892796707?h=d636ff2918"   frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+            <iframe src="https://player.vimeo.com/video/969527099?badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479"   frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
             <button className="closelightbox" onClick={closeLightbox} >&times;</button>
           </div> 
         </div>

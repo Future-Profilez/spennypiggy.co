@@ -78,19 +78,17 @@ export default function LiveBarSection() {
         <div className='container px-4 w-100' >
           <h2 className='headingSm shadow-none text-dark stroke-none text-center mb-3 pt-4 pt-lg-0  ' >What is spenny Piggy ?</h2>
           
-           {/* <Lightbox classes="m-auto d-table" text={<>
+           <Lightbox classes="m-auto d-table" text={<>
               <div data-aos="zoom-out" className="videoBg w-100 mt-5 rounded-5 shadow-voilet" >
                 <img alt={"image"}  className='rounded-5 shadow-voilet' src={spennys} />
               </div>
            </>
-
-           
-           } images={[ { src: spennys }]} /> */}
+           } images={[ { src: spennys }]} />
            
 
-           <div className='shadow-voilet rounded-5 mt-5 bg-white max-w-[600px] mx-auto px-6 py-[80px]'  >
+           {/* <div className='shadow-voilet rounded-5 mt-5 bg-white max-w-[600px] mx-auto px-6 py-[80px]'  >
             <h2 className='headingSm shadow-none text-dark text-3xl stroke-none text-center' >New Video Coming Soon*</h2>
-           </div>
+           </div> */}
 
            <p className='text-center mt-4' >*all transactions provide exclusive content or member only access.</p>
 

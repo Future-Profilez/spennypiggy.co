@@ -11,6 +11,7 @@ import { IoChevronBackOutline } from "react-icons/io5";
 export default function ShopDetailItem(props) {
 
    const { vat_percent, auth, user, shop } = props;
+   console.log("props",props)
    const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (shop && shop.user && shop && shop.user.username));
    const url = window.location.href;
    const [open, setOpen] = useState();
@@ -36,9 +37,7 @@ export default function ShopDetailItem(props) {
       const shareUrl = `https://feedly.com/i/subscription/feed/${encodeURIComponent(url)}`;
       window.open(shareUrl, '_blank', 'noopener,noreferrer');
    };
-
    const { formatMultiPrice} = PriceFormat();
-
 
   return (
     <>

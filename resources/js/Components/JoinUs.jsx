@@ -7,11 +7,11 @@ export default function JoinUs() {
             Join thousands of creators
         </h2>
         <p data-aos="zoom-out-up" className=" mb-6 text-center mb-16 text-wh mb-5">
-        Create your wishlist, sell exclusive content or offer bespoke memberships! Whatever it is, start accepting support from your fans instantly!
+        Create your wishlist, sell exclusive content or offer bespoke memberships! Whatever it is, start accepting support instantly!
         </p>
         <div data-aos="zoom-out-up" className=" text-center flex items-center  justify-center content-center w-full"> 
             <Link href={route("register")}
-                className="btn-pink lg w-80 shadow-mint border-mint mb-4 mb-lg-0" >Join SpennyPiggy </Link>
+                className="btn-pink lg w-80 shadow-mint border-mint mb-4 mb-lg-0" >Join Spenny Piggy </Link>
         </div>
     </div>
     </>

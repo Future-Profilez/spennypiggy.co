@@ -62,7 +62,7 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
          return false;
       } 
       setLoading(true);
-      axios.get(`/shop/buy/${s.uuid}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}`).then(res => {
+      axios.get(`/shop/buy/${s.uuid}/1?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}`).then(res => {
          if(res.data.url){
             window.location.href = res.data.url;
          } else {
@@ -73,12 +73,26 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
            setLoading(false);
            errorsHandling(err)
        });
+      // axios.post(`/shop/buy/${s.uuid}/1?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}&country=${"GB"}`, {
+      //    "shipping_info" :"hsjdfgsdjfgjsgfshdgfjsdgfjshdgf"
+      // }).then(res => {
+      //    if(res.data.url){
+      //       window.location.href = res.data.url;
+      //    } else {
+      //       setLoading(false);
+      //       errorAlert('Something went wrong');
+      //    }
+      //  }).catch(err => {
+      //      setLoading(false);
+      //      errorsHandling(err)
+      //  });
    }
 
    const [replySent, setReplySent] = useState(false);
    const [posting, setposting] = useState(false);
    const [reply, setReply] = useState();
    const inputref = useRef();
+   
    const sendReply = async () => { 
       setposting(true)
       axios.post(`/shop/answer-to-payment/${isPaid}`, { 

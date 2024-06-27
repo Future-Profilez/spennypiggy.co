@@ -11,24 +11,37 @@ import GlobalUploader from "@/uploadcare/Uploader";
 import Popup from "@/Components/Popup";
 import ChangeVat from "../account/ChangeVat";
 import { AiOutlineShop } from "react-icons/ai";
-import Select from 'react-select';
+import Select from "react-select";
+import CountriesShipping from "./CountriesShipping";
+
 const lists = [
-    // { value: "Physical_Product", label: 'Physical Product' },
-    { value: "Custom Digital Artwork 🖼️", label: 'Custom Digital Artwork 🖼️' },
-    { value: 'Custom Photoshoot 📷 ' , label: 'Custom Photoshoot 📷 ' },
-    { value: 'Video Happy Birthday 🎂 ', label: 'Video Happy Birthday 🎂 ' },
-    { value: 'Custom Drawing ✍️ ', label: 'Custom Drawing ✍️ ' },
-    { value: 'Nutrition Plan 🥬- pdf', label: 'Nutrition Plan 🥬- pdf' },
-    { value: 'Personal Training Plan 💪🏻- pdf', label: 'Personal Training Plan 💪🏻- pdf' },
-    { value: 'Style Guide 👗- pdf', label: 'Style Guide 👗- pdf' },
-    { value: 'My E-Book 📕- pdf', label: 'My E-Book 📕- pdf' },
-    { value: 'Digital Products', label: 'Digital Products' },
+    // { value: "physical", label: 'Physical Product' },
+    { value: "Custom Digital Artwork 🖼️", label: "Custom Digital Artwork 🖼️" },
+    { value: "Custom Photoshoot 📷 ", label: "Custom Photoshoot 📷" },
+    { value: "Video Happy Birthday 🎂 ", label: "Video Happy Birthday 🎂" },
+    { value: "Custom Drawing ✍️ ", label: "Custom Drawing ✍️" },
+    { value: "Nutrition Plan 🥬- pdf", label: "Nutrition Plan 🥬- pdf" },
+    { value:"Personal Training Plan 💪🏻- pdf",label:"Personal Training Plan 💪🏻- pdf"},
+    { value: "Style Guide 👗- pdf", label: "Style Guide 👗- pdf" },
+    { value: "My E-Book 📕- pdf", label: "My E-Book 📕- pdf" },
+    { value: "Digital Products", label: "Digital Products" },
 ];
 
-export default function AddItem(props){
-
+export default function AddItem(props) {
     const { auth, user } = usePage().props;
-    const {item, update, title, pre_title, pre_description, pre_price, product_type, classes, isEdit } = props;
+    const defaultCurrency = user && user.default_currency || "GBP";
+
+    const {
+        item,
+        update,
+        title,
+        pre_title,
+        pre_description,
+        pre_price,
+        product_type,
+        classes,
+        isEdit,
+    } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [open, setOpen] = useState(false);
 
@@ -41,20 +54,23 @@ export default function AddItem(props){
     }, [open]);
 
     const AddForm = () => {
+        
 
-        const handleLists = (e) =>{
-            setShopItem({...shopItem,"type": e.value});
-        }
-
-         const [isVat, setIsVat] = useState(auth && auth.user && auth.user.vat_amount_percentage ? true : false);
-         const [vatpercent, setvatpercent] = useState((auth && auth?.user?.vat_amount_percentage) || "");
-         const [passClose, setSassClose] = useState(false);
+        const [isVat, setIsVat] = useState(
+            auth && auth.user && auth.user.vat_amount_percentage ? true : false
+        );
+        const [vatpercent, setvatpercent] = useState(
+            (auth && auth?.user?.vat_amount_percentage) || ""
+        );
+        const [passClose, setSassClose] = useState(false);
         const [categories, setCategories] = useState([]);
         const [fetchingCats, setFetchingCats] = useState(false);
         const [thumb, setThumb] = useState(null);
         const [thumbEditable, setIsThumbEditable] = useState(false);
         const [rewardfile, setrewardfile] = useState(null);
-        const [haveQuestion, setHaveQuestion] = useState(item && item.ask_question ? true : false);
+        const [haveQuestion, setHaveQuestion] = useState(
+            item && item.ask_question ? true : false
+        );
         const [question, setQuestion] = useState(
             (item && item.ask_question) || ""
         );
@@ -79,24 +95,43 @@ export default function AddItem(props){
         const [parsedContent, setParsedContent] = useState(
             (item && item.success_page_value) || ""
         );
-        const [pageUrl, setpageUrl] = useState(
-            (item && item.success_page_value) || ""
-        );
+        const [pageUrl,setpageUrl] = useState( (item && item.success_page_value) || "" );
         const [checkboxes, setCheckboxes] = useState([]);
-        const [real_category, setreal_category] = useState(
-            item && item.category
-        );
+        const [real_category, setreal_category] = useState(item && item.category);
         const [shopItem, setShopItem] = useState({
             type: product_type,
             name: pre_title || "",
             description: pre_description || "",
-            price: pre_price || "",
+            price: 10,
         });
+        
+        const [wwsShipping, setwwsShipping] = useState([]);
+        const [shipping, setShipping] = useState([]);
+        const [variants, setVariants] = useState([{ name: '', value: '' }]);
+
+        const handleShipping = (e) =>{ 
+            setShipping(e);
+            console.log("setShipping", e)
+        }
+        const handlewws = (e) => { 
+            setwwsShipping(e)
+            console.log("wwsShipping", e)
+        }
+
+        console.log("variants",variants);
+        console.log("setwwsShipping", wwsShipping);
+        console.log("shipping", shipping);
+
+        const [physical, setPhysical] = useState(shopItem && shopItem.type === "physical" ? true : false);
+        const handleLists = (e) => {
+            setShopItem({ ...shopItem, type: e.value });
+            setPhysical(e.value)
+        };
 
         useEffect(() => {
             let arr = [];
-            item && item.real_category.forEach((element) => {
-              arr.push(element.uuid);
+            item && item.real_category.forEach((element) =>{
+                arr.push(element.uuid);
             });
             setCheckboxes(arr);
         }, [item && item.category]);
@@ -113,29 +148,26 @@ export default function AddItem(props){
             return () => controller.abort();
         }, []);
 
-        const fetchAddedCategories = (signal) => {
-            if (fetchingCats) return;
+        const fetchAddedCategories = async (signal) => {
+            if(fetchingCats){
+                return false
+            }
             setFetchingCats(true);
-            axios
-                .get(
-                    `/user_shop_category/${
-                        auth.user.username || user.username
-                    }`,
-                    { signal }
-                )
-                .then((res) => {
-                    setCategories(res.data.categories);
-                    setFetchingCats(false);
-                })
-                .catch((err) => {
-                    console.log(err);
-                    setFetchingCats(false);
-                });
+            axios.get(`/user_shop_category/${auth.user.username || user.username}`,{signal}) .then((res) =>{
+                setCategories(res.data.categories);
+                setFetchingCats(false);
+            })
+            .catch((err) => {
+                console.log(err);
+                setFetchingCats(false);
+            });
         };
 
         const uploaderRef = useRef();
         const resetUploader = () => {
-            if(uploaderRef.current){uploaderRef.current.reset()}
+            if (uploaderRef.current) {
+                uploaderRef.current.reset();
+            }
         };
 
         async function getFileUID(thumbs) {
@@ -173,31 +205,33 @@ export default function AddItem(props){
             setHaveQty(!haveQty);
         };
 
-        const [haveVat, sethaveVat] = useState(item && item.vat_applicable ? 1 : 0);
+        const [haveVat, sethaveVat] = useState(
+            item && item.vat_applicable ? 1 : 0
+        );
 
         const handleVat = () => {
-            if(!isVat && haveVat == 0){
-               console.log(isVat, haveVat);
-               setSassClose(false);
-               setTimeout(() => {
-               setSassClose(true);
-               }, 100);
-               return false
+            if (!isVat && haveVat == 0) {
+                console.log(isVat, haveVat);
+                setSassClose(false);
+                setTimeout(() => {
+                    setSassClose(true);
+                }, 100);
+                return false;
             } else {
-               if(haveVat == 0) {
-                  sethaveVat(1);
-               }else {
-                  sethaveVat(0);
-               }
+                if (haveVat == 0) {
+                    sethaveVat(1);
+                } else {
+                    sethaveVat(0);
+                }
             }
         };
 
-         const updatevat = (e) => {
+        const updatevat = (e) => {
             sethaveVat(1);
             setIsVat(true);
             setSassClose(false);
             console.log("vat", e);
-         };
+        };
 
         const handleSuccessPageType = (e) => {
             setPageType(e.target.value);
@@ -243,18 +277,27 @@ export default function AddItem(props){
         };
 
         const addShopItem = () => {
-            if(shopItem.type == ''){
+            if (shopItem.type == "") {
                 errorAlert("Please choose a product type.");
             }
             if (!isChecked) {
                 return false;
             }
             setLoading(true);
+            const updatedVarients = () =>{
+                const arr = [];
+                variants.forEach((v, i) => {
+                    if(v.name !== ''  && v.value !== "") {
+                        arr.push(v)
+                    }
+                })
+                return arr
+            };
             const data = {
                 ...shopItem,
-                success_page_value: pagetype === "url" ? pageUrl : parsedContent,
+                success_page_value:pagetype === "url" ? pageUrl:parsedContent,
                 reward_file: rewardfile,
-                category:checkboxes && checkboxes.length? JSON.stringify(checkboxes): "",
+                category:checkboxes && checkboxes.length ? JSON.stringify(checkboxes):"",
                 ask_question: question,
                 slot_limitation: slots || "",
                 special_member_price: spPrice || "",
@@ -262,26 +305,30 @@ export default function AddItem(props){
                 vat_applicable: haveVat,
                 image: thumb,
                 success_page_type: (item && item.success_page_type) || pagetype,
+                shipping : JSON.stringify([
+                    {"country": "GB","price": "10"},
+                    {"country": "AX","price": "20"}
+                ]),
+                shipping_info: "hello",
+                varients : updatedVarients && updatedVarients.length ? JSON.stringify(updatedVarients) : ""
             };
-            axios
-                .post(`/shop/add`, data)
-                .then((res) => {
-                    if (res.data.status) {
-                        successAlert(res.data.msg || "Item Added !!");
-                        resetUploader();
-                        setOpen(false);
-                        update && update();
-                    } else {
-                        errorAlert(
-                            res.data.msg || "Failed to add a shop item."
-                        );
-                    }
-                    setLoading(false);
-                })
-                .catch((err) => {
-                    setLoading(false);
-                    errorsHandling(err);
-                });
+            axios.post(`/shop/add`,data) .then((res) =>{
+                if (res.data.status) {
+                    successAlert(res.data.msg || "Item Added !!");
+                    resetUploader();
+                    setOpen(false);
+                    update && update();
+                } else {
+                    errorAlert(
+                        res.data.msg || "Failed to add a shop item."
+                    );
+                }
+                setLoading(false);
+            })
+            .catch((err) => {
+                setLoading(false);
+                errorsHandling(err);
+            });
         };
 
         const updateItem = () => {
@@ -328,41 +375,60 @@ export default function AddItem(props){
         };
 
         const AddItem = () => {
-            return <div className=" flex items-center">
-                <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]" >
-                    <AiOutlineShop color="var(--pink)"  size="1.5rem" />
+            return (
+                <div className=" flex items-center">
+                    <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                        <AiOutlineShop color="var(--pink)" size="1.5rem" />
+                    </div>
+                    <div className="ps-3 text-start">
+                        <h2 className="text-md">Sell Something</h2>
+                        <p className="text-sm font-normal">
+                            Sell digital or physical items from your page
+                        </p>
+                    </div>
                 </div>
-                <div className="ps-3 text-start">
-                    <h2 className="text-md">Sell Something</h2>
-                    <p className="text-sm font-normal">Sell digital or physical items from your page</p>
-                </div>
-            </div>
-        }
-
+            );
+        };
+         
+        
+        const addVariant = () => {
+            setVariants([...variants, { name: '', value: '' }]);
+        };
+        const handleVariantChange = (index, field, value) => {
+            const newVariants = variants.map((variant, i) =>
+            i === index ? { ...variant, [field]: value } : variant
+            );
+            setVariants(newVariants);
+        };
+        const handleRemoveVariant = (index) => {
+            const newVariants = variants.filter((_, i) => i !== index);
+            setVariants(newVariants);
+            console.log('Product variants:', variants);
+        };
+        
 
         return (
             <Popup
-                modalclass="addShopItem modal full"
-                size="lg"
-                action={close}
-                text={title || <AddItem />}
-                classes={`${classes ? classes : "px-3 py-2"}`}
-            >
+            modalclass="addShopItem modal full"
+            size="lg"
+            action={close}
+            text={title || <AddItem />}
+            classes={`${classes ? classes : "px-3 py-2"}`} >
                 <div className="p-3 md:p-8 overflow-auto bg-white md:bg-gray-200 h-full">
                     <div className="flex items-center justify-center py-3 bg-white sticky -top-4 w-full mb-6">
                         <h2 className="text-[22px]">What are you offering?</h2>
                     </div>
-                    {/* <button className='fixed top-1 md:top-2 right-8 md:right-10 z-1 text-[35px] md:text-[45px]' onClick={()=>setOpen(false)} >&times;</button> */}
                     <div className="shop-forms-field p-0 md:p-8 max-w-[800px] m-auto rounded-[20px]">
                         <div className="shop-forms-field mb-4">
-                            <label className="w-full mb-2">Select what you’re offering</label>
-                             <Select  classNamePrefix="react-select" className="react-select-lists mb-4 mt-2 "
-                                options={lists} onChange={handleLists} defaultValue={'Digital Products'}
-                                placeholder={'Select what you’re offering..'}
+                            <label className="w-full mb-2"> Select what you’re offering </label>
+                            <Select
+                                classNamePrefix="react-select"
+                                className="react-select-lists mb-4 mt-2 "
+                                options={lists}
+                                onChange={handleLists}
+                                defaultValue={"Digital Products"}
+                                placeholder={"Select what you’re offering.."}
                             />
-                            {/* 
-                            shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5
-                            */}
                         </div>
 
                         <div className="shop-forms-field mb-4">
@@ -401,21 +467,8 @@ export default function AddItem(props){
                             />
                         </div>
 
-                        <h2 className="text-md font-normal mb-3 mt-3">
-                            Item image
-                        </h2>
-
-                        {isEdit ? (
-                            <>
-                                <img
-                                    alt="image-profile"
-                                    className="w-full max-h-[500px] object-cover h-auto rounded-4"
-                                    src={item && item.perma_link}
-                                />
-                            </>
-                        ) : (
-                            ""
-                        )}
+                        <h2 className="text-md font-normal mb-3 mt-3"> Item image </h2>
+                        {isEdit ? <img alt="image-profile" className="w-full max-h-[500px] object-cover h-auto rounded-4" src={item && item.perma_link} /> : ""}
                         <div className={`uploader mb-4 mt-2 overflow-hidden`}>
                             <GlobalUploader
                                 type="minimal"
@@ -423,11 +476,7 @@ export default function AddItem(props){
                                 sendFile={getFileUID}
                                 options={st.shop}
                             />
-                            <div
-                                className={`${
-                                    thumbEditable ? "" : "d-none"
-                                } editable`}
-                            >
+                            <div className={`${thumbEditable ? "":"d-none"} editable`}>
                                 <UploadcareEditor
                                     setIsEditable={setIsThumbEditable}
                                     uuid={thumb}
@@ -436,131 +485,165 @@ export default function AddItem(props){
                             </div>
                         </div>
 
-                        {shopItem && shopItem.type === 'Physical_Product' ? <>
-                            
-                        </> : <>
-                            <div className="shop-forms-field mb-4">
-                                <label className="w-full mb-2">
-                                    Success page *{" "}
-                                </label>
-                                <div className="success-page-types flex items-center flex-wrap">
-                                    <div className="flex items-center mb-2 pe-3">
+                        {physical ? (
+                            <>
+                            <h2 className="font-bold mb-1 pt-4 border-t border-gray-200">Options and Variants</h2>
+                            <p className="text-gray-500 max-w-[600px] pb-2">Offer variations of your products with different options for size, color etc. The first option will be selected by default.</p>
+                            <div className="add-form">
+                                {variants.map((variant, index) => (
+                                    <div className="flex items-center justify-between my-2">
                                         <input
-                                            onChange={handleSuccessPageType}
-                                            defaultChecked={
-                                                item &&
-                                                item.success_page_type == "text"
-                                                    ? true
-                                                    : false
-                                            }
-                                            id="success-option-1"
-                                            type="radio"
-                                            name="success-types"
-                                            value="text"
-                                            className="h-4 w-4 border-gray-300 focus:ring-2 focus:ring-blue-300 cursor-pointer"
+                                            type="text" className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[12px] px-[20px] me-2"
+                                            name={`variantName${index}`}
+                                            placeholder="Variant Name"
+                                            onChange={(e) => handleVariantChange(index, 'name', e.target.value)}
                                         />
-                                        <label
-                                            htmlFor="success-option-1"
-                                            className=" cursor-pointer text-md font-medium text-gray-900 ml-2 block"
-                                        >
-                                            Confirmation message
-                                        </label>
-                                    </div>
-                                    <div className="flex items-center mb-2 ">
+                                        <div className="relative me-2">
+                                         <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
                                         <input
-                                            onChange={handleSuccessPageType}
-                                            defaultChecked={
-                                                item &&
-                                                item.success_page_type == "url"
-                                                    ? true
-                                                    : false
-                                            }
-                                            id="success-option-2"
-                                            type="radio"
-                                            name="success-types"
-                                            value="url"
-                                            className="h-4 w-4 border-gray-300 focus:ring-2 focus:ring-blue-300 cursor-pointer"
+                                        type="text" className="shop-forms-input ps-[50px] bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[12px] px-[20px] "
+                                        name={`variantValue${index}`}
+                                        placeholder="Variant Price"
+                                        onChange={(e) => handleVariantChange(index, 'value', e.target.value)}
                                         />
-                                        <label
-                                            htmlFor="success-option-2"
-                                            className=" cursor-pointer text-md font-medium text-gray-900 ml-2 block"
-                                        >
-                                            Redirect to a URL after purchase
-                                        </label>
+                                        </div>
+                                        <button type="button" className="text-black shop-forms-input bg-gray-200 w-full bg-gray-300 text-[20px] border-0 rounded-xl p-[8px] px-[20px] max-w-[50px]" onClick={() => handleRemoveVariant(index)}> &times;</button>
                                     </div>
-                                </div>
-
-                                {pagetype == "text" ? (
-                                    <div className="">
-                                        <textarea
-                                            defaultValue={parsedContent}
-                                            onChange={(e) =>
-                                                setParsedContent(e.target.value)
-                                            }
-                                            className="mt-2 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5"
-                                            placeholder="Enter confirmation message here !!"
-                                        ></textarea>
-                                        <h2 className="text-md font-normal mb-3 mt-2">
-                                            Add the item for sale (Video, Images,
-                                            Audio, or PDF) *{" "}
-                                        </h2>
-                                        <div
-                                            className={`uploader mb-4 mt-2 overflow-hidden`}
-                                        >
-                                            {item ? (
-                                                <>
-                                                    {item &&
-                                                    item.reward_file_type ==
-                                                        "image" ? (
-                                                        <img
-                                                            alt="image-profile"
-                                                            className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4"
-                                                            src={
-                                                                item &&
-                                                                item.reward_file_url
-                                                            }
-                                                        />
-                                                    ) : (
-                                                        <video
-                                                            controls
-                                                            playsInline
-                                                            className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4"
-                                                            src={
-                                                                item &&
-                                                                item.reward_file_url
-                                                            }
-                                                        />
-                                                    )}
-                                                </>
-                                            ) : (
-                                                ""
-                                            )}
-
-                                            <GlobalUploader
-                                                type="minimal"
-                                                ref={uploaderRef}
-                                                sendFile={getRewardFile}
-                                                options={st.shopreward}
+                                ))}
+                                <button onClick={addVariant} className="button sm pinkbg px-3 py-2 mt-2 mb-3" >Add Variant</button>
+                            </div>
+                            <CountriesShipping handleShipping={handleShipping} handlewws={handlewws} />
+                            </>
+                        ) : (
+                            <>
+                                <div className="shop-forms-field mb-4">
+                                    <label className="w-full mb-2">
+                                        Success page *{" "}
+                                    </label>
+                                    <div className="success-page-types flex items-center flex-wrap">
+                                        <div className="flex items-center mb-2 pe-3">
+                                            <input
+                                                onChange={handleSuccessPageType}
+                                                defaultChecked={
+                                                    item &&
+                                                    item.success_page_type ==
+                                                        "text"
+                                                        ? true
+                                                        : false
+                                                }
+                                                id="success-option-1"
+                                                type="radio"
+                                                name="success-types"
+                                                value="text"
+                                                className="h-4 w-4 border-gray-300 focus:ring-2 focus:ring-blue-300 cursor-pointer"
                                             />
+                                            <label
+                                                htmlFor="success-option-1"
+                                                className=" cursor-pointer text-md font-medium text-gray-900 ml-2 block"
+                                            >
+                                                Confirmation message
+                                            </label>
+                                        </div>
+                                        <div className="flex items-center mb-2 ">
+                                            <input
+                                                onChange={handleSuccessPageType}
+                                                defaultChecked={
+                                                    item &&
+                                                    item.success_page_type ==
+                                                        "url"
+                                                        ? true
+                                                        : false
+                                                }
+                                                id="success-option-2"
+                                                type="radio"
+                                                name="success-types"
+                                                value="url"
+                                                className="h-4 w-4 border-gray-300 focus:ring-2 focus:ring-blue-300 cursor-pointer"
+                                            />
+                                            <label
+                                                htmlFor="success-option-2"
+                                                className=" cursor-pointer text-md font-medium text-gray-900 ml-2 block"
+                                            >
+                                                Redirect to a URL after purchase
+                                            </label>
                                         </div>
                                     </div>
-                                ) : (
-                                    ""
-                                )}
-                                {pagetype == "url" ? (
-                                    <input
-                                        defaultValue={pageUrl}
-                                        onChange={(e) => setpageUrl(e.target.value)}
-                                        className="mt-2 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5"
-                                        type="text"
-                                        placeholder="https://"
-                                    />
-                                ) : (
-                                    ""
-                                )}
-                            </div>
-                        </>}
-                        
+
+                                    {pagetype == "text" ? (
+                                        <div className="">
+                                            <textarea
+                                                defaultValue={parsedContent}
+                                                onChange={(e) =>
+                                                    setParsedContent(
+                                                        e.target.value
+                                                    )
+                                                }
+                                                className="mt-2 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5"
+                                                placeholder="Enter confirmation message here !!"
+                                            ></textarea>
+                                            <h2 className="text-md font-normal mb-3 mt-2">
+                                                Add the item for sale (Video,
+                                                Images, Audio, or PDF) *{" "}
+                                            </h2>
+                                            <div
+                                                className={`uploader mb-4 mt-2 overflow-hidden`}
+                                            >
+                                                {item ? (
+                                                    <>
+                                                        {item &&
+                                                        item.reward_file_type ==
+                                                            "image" ? (
+                                                            <img
+                                                                alt="image-profile"
+                                                                className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4"
+                                                                src={
+                                                                    item &&
+                                                                    item.reward_file_url
+                                                                }
+                                                            />
+                                                        ) : (
+                                                            <video
+                                                                controls
+                                                                playsInline
+                                                                className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4"
+                                                                src={
+                                                                    item &&
+                                                                    item.reward_file_url
+                                                                }
+                                                            />
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    ""
+                                                )}
+
+                                                <GlobalUploader
+                                                    type="minimal"
+                                                    ref={uploaderRef}
+                                                    sendFile={getRewardFile}
+                                                    options={st.shopreward}
+                                                />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        ""
+                                    )}
+                                    {pagetype == "url" ? (
+                                        <input
+                                            defaultValue={pageUrl}
+                                            onChange={(e) =>
+                                                setpageUrl(e.target.value)
+                                            }
+                                            className="mt-2 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5"
+                                            type="text"
+                                            placeholder="https://"
+                                        />
+                                    ) : (
+                                        ""
+                                    )}
+                                </div>
+                            </>
+                        )}
 
                         <div className="shop-add-categories border-t pt-3 ">
                             <h2 className="text-lg font-bold mb-2">
@@ -600,7 +683,12 @@ export default function AddItem(props){
                                     type="text"
                                     placeholder="Enter new category"
                                 />
-                                <button onClick={addCategory} className="bg-gray-200 rounded-xl ms-3 p-[13px] px-4 text-nowrap"> + Add
+                                <button
+                                    onClick={addCategory}
+                                    className="bg-gray-200 rounded-xl ms-3 p-[13px] px-4 text-nowrap"
+                                >
+                                    {" "}
+                                    + Add
                                 </button>
                             </div>
                         </div>
@@ -613,12 +701,13 @@ export default function AddItem(props){
                             <div className="inline-flex items-center cursor-pointer">
                                 <div
                                     onClick={handleVat}
-                                    className={` cursor-pointer relative w-11 h-6 
-                                    peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer  
-                                    peer-checked:after:border-white after:content-[''] 
-                                    after:absolute after:top-[2px] after:start-[2px] after:bg-white 
-                                    after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 
+                                    className={` cursor-pointer relative w-11 h-6
+                                    peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer
+                                    peer-checked:after:border-white after:content-['']
+                                    after:absolute after:top-[2px] after:start-[2px] after:bg-white
+                                    after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5
                                     ${haveVat == "1" ? "after:transition-all after:translate-x-full bg-blue-600":"bg-gray-200"}`}
+
                                 ></div>
                                 <span className="ms-3 text-md font-medium text-gray-900">
                                     Vat Applicable
@@ -632,27 +721,27 @@ export default function AddItem(props){
                                 </span>
                             </div>
 
-                              <Popup action={passClose} space='4' modalclassName="pinkmodal">
+                            <Popup
+                                action={passClose}
+                                space="4"
+                                modalclassName="pinkmodal"
+                            >
                                 <div className="addvat">
                                     <ChangeVat
                                         defaultvalue={vatpercent}
                                         updatevat={updatevat}
                                     />
                                 </div>
-                              </Popup>
+                            </Popup>
                         </div>
 
                         <div className="ad-setting my-2">
                             <div className="inline-flex items-center cursor-pointer">
                                 <div
                                     onClick={handleHaveQuestion}
-                                    className={` cursor-pointer relative w-11 h-6  peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer     peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 
-                        ${
-                            haveQuestion
-                                ? "after:transition-all after:translate-x-full  bg-blue-600"
-                                : "bg-gray-200"
-                        }
-                        `}
+                                    className={` cursor-pointer relative w-11 h-6  peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer     peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5
+                                    ${haveQuestion ? "after:transition-all after:translate-x-full bg-blue-600":"bg-gray-200"}
+                                    `}
                                 ></div>
                                 <span className="ms-3 text-md font-medium text-gray-900">
                                     Ask a question (optional)
@@ -685,66 +774,53 @@ export default function AddItem(props){
                             <div className="inline-flex items-centercursor-pointer">
                                 <div
                                     onClick={handleHaveSlots}
-                                    className={` cursor-pointer relative w-11 h-6  peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer     peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 
-                        ${
-                            haveSlots
-                                ? "after:transition-all after:translate-x-full  bg-blue-600"
-                                : "bg-gray-200"
-                        }
-                        `}
-                                ></div>
-                                <span className="ms-3 text-md font-medium text-gray-900">
-                                    Limit slots (optional){" "}
-                                    <button className="tooltipbtn">
-                                        ?
+                                    className={` cursor-pointer relative w-11 h-6  peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer     peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 ${haveSlots
+                                    ? "after:transition-all after:translate-x-full  bg-blue-600"
+                                    : "bg-gray-200"}`} ></div>
+                                    <span className="ms-3 text-md font-medium text-gray-900">
+                                    Limit slots (optional) 
+                                    <button className="tooltipbtn"> ?
                                         <p>
                                             A limited number of slots creates a
                                             sense of urgency and also saves you
                                             from burn-out.
                                         </p>
                                     </button>
-                                </span>
+                                    </span>
                             </div>
                             {haveSlots ? (
                                 <input
-                                    onChange={(e) => setSlots(e.target.value)}
-                                    className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[13px] px-4"
-                                    type="text"
-                                    defaultValue={slots || ""}
+                                    onChange={(e) => setSlots(e.target.value)} defaultValue={slots || ""}
+                                    className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[13px] px-4" type="text"
                                 />
-                            ) : (
-                                ""
-                            )}
+                            ) : ""}
                         </div>
 
-                        {shopItem && shopItem.type !== 'Physical_Product' ? <>
+                        {shopItem && shopItem.type !== "physical" ? (
+                            <>
                                 <div className="ad-setting my-2">
                                     <div className="inline-flex items-centercursor-pointer">
-                                        <div
-                                            onClick={handleSpPrice}
-                                            className={` cursor-pointer relative w-11 h-6 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer     peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5  
-                                ${
-                                    haveSpPrice
-                                        ? "after:transition-all after:translate-x-full bg-blue-600"
-                                        : "bg-gray-200 "
-                                }
-                                `}
-                                        ></div>
+                                        <div onClick={handleSpPrice}
+                                        className={` cursor-pointer relative w-11 h-6 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 ${haveSpPrice ? "after:transition-all after:translate-x-full bg-blue-600":"bg-gray-200 "}
+                                        `}></div>
                                         <span className="ms-3 text-md font-medium text-gray-900">
                                             Special price for members (optional){" "}
                                             <button className="tooltipbtn">
                                                 ?
                                                 <p>
-                                                    Offer a discounted extra price to
-                                                    attract new members and to keep your
-                                                    current members engaged.
+                                                    Offer a discounted extra
+                                                    price to attract new members
+                                                    and to keep your current
+                                                    members engaged.
                                                 </p>
                                             </button>
                                         </span>
                                     </div>
                                     {haveSpPrice ? (
                                         <input
-                                            onChange={(e) => setSpPrice(e.target.value)}
+                                            onChange={(e) =>
+                                                setSpPrice(e.target.value)
+                                            }
                                             className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[13px] px-4"
                                             type="text"
                                             defaultValue={spPrice || ""}
@@ -753,15 +829,21 @@ export default function AddItem(props){
                                         ""
                                     )}
                                 </div>
-                        </> : '' }
-                        
+                            </>
+                        ) : (
+                            ""
+                        )}
 
                         <div className="hidden ad-setting my-2">
                             <div className="inline-flex items-centercursor-pointer">
                                 <div
                                     onClick={handleQty}
-                                    className={` cursor-pointer relative w-11 h-6   peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer     peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 
-                                    ${haveQty? "after:transition-all after:translate-x-full  bg-blue-600": "bg-gray-200"} `}
+                                    className={` cursor-pointer relative w-11 h-6   peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer     peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5
+                                    ${
+                                        haveQty
+                                            ? "after:transition-all after:translate-x-full  bg-blue-600"
+                                            : "bg-gray-200"
+                                    } `}
                                 ></div>
                                 <span className="ms-3 text-md font-medium text-gray-900">
                                     Allow buyer to choose a quantity (optional){" "}
@@ -770,8 +852,8 @@ export default function AddItem(props){
                                         <p>
                                             Your supporters will be able to
                                             select the desired quantity of this
-                                            item. You will receive
-                                            payment based on the quantity They've chosen
+                                            item. You will receive payment based
+                                            on the quantity They've chosen
                                             multiplied by your set price.
                                         </p>
                                     </button>
