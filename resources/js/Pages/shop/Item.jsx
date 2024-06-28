@@ -39,6 +39,13 @@ export default function ShopDetailItem(props) {
    };
    const { formatMultiPrice} = PriceFormat();
 
+   const [price, setPrice] = useState(shop.price);
+   const [selectedVarient, setSelectedVarient] = useState(shop && shop.shop_varients[0].id);
+   const handleVarient = (e) => { 
+      const varient = shop.shop_varients.find(v => v.id == e.target.value);
+      setPrice(varient.price);
+      setSelectedVarient(varient.id);
+   }
   return (
     <>
       <Guest auth={auth.user} user={user}>
@@ -160,19 +167,27 @@ export default function ShopDetailItem(props) {
                            </li>
                         </ul>
                      </div>
+
+                     {shop.type === 'physical' ?
+                        <>
+                        <h2 className='text-lg mb-2'>Select Varient</h2>
+                        <select onChange={handleVarient} className='bg-white rounded-xl text-lg text-capitalize px-4 py-2.5 mb-3 w-full border-0'>
+                           {shop.shop_varients && shop.shop_varients.map((varient) => <option value={varient.id}>{varient.name}</option>)}
+                        </select> 
+                        </> : ""
+                     }
                      
                      <div className='sm:flex items-center justify-between' >
                         <h3 className='text-3xl font-bold mb-3' >
                            {shop && shop.is_member == 1 && shop.special_member_price ? <>
-                              {formatMultiPrice(shop.special_member_price, shop?.currency || 'GBP') } <span className='line-through text-gray-400' >{shop.price > 0 ? formatMultiPrice(shop.price, shop?.currency || 'GBP') : "FREE"}</span>
+                              {formatMultiPrice(shop.special_member_price, shop?.currency || 'GBP') } <span className='line-through text-gray-400' >{price > 0 ? formatMultiPrice(price, shop?.currency || 'GBP') : "FREE"}</span>
                            </>  
                            : 
-                           shop.price > 0 ? formatMultiPrice(shop.price, shop?.currency || 'GBP') : "Free"
+                           price > 0 ? formatMultiPrice(price, shop?.currency || 'GBP') : "Free"
                            }
                             {shop.slot_limitation ? <span className='ms-3 text-pink text-lg font-light ' >Only {shop.slot_limitation - shop.total_sold} Left</span> :""}
                         </h3>
  
-                        {/* <button className='btn-pink sm w-full disabled sm:w-auto' >Edit Item</button>  */}
                         { IsloggedIn ? 
                            ""
                            : 
@@ -180,7 +195,7 @@ export default function ShopDetailItem(props) {
                               {(shop.slot_limitation && (shop.slot_limitation - shop.total_sold) === 0 ) ?
                                  <button className='btn-pink sm disabled w-full sm:w-auto' >SOLD</button> 
                               : 
-                                 <BuyShopItem vat_percent={vat_percent} opened={props.opened} isPaid={props.payment_id} open={open} s={shop} text={'Get This'} classes="w-full sm:w-auto btn-pink font-light md  mb-3" /> 
+                                 <BuyShopItem selectedVarient={selectedVarient} vat_percent={vat_percent} opened={props.opened} isPaid={props.payment_id} open={open} s={shop} text={'Get This'} classes="w-full sm:w-auto btn-pink font-light md  mb-3" /> 
                               }
                            </>
                         }  

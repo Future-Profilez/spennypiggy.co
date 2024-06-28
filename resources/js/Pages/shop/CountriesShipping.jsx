@@ -7,69 +7,26 @@ import { useEffect } from 'react';
 export default function CountriesShipping({handleShipping, handlewws}) {
    const { auth, user } = usePage().props;
    const defaultCurrency = user && user.default_currency || "GBP";
-   const ProductVariantForm = ({ index, handleVariantChange, handleRemoveVariant }) => {
-      return (
-        <div className="flex items-center justify-between my-2">
-         <div className='countries-selections w-full me-2' >
-            <select className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[12px] px-[20px] "
-            onChange={(e) => handleVariantChange(index, 'country', e.target.value)} >
-               <option value={''} >Choose Country</option>
-               {AllContries && AllContries.map((c, i) => <option key={i} value={c.code}>{c.label}</option>)}
-            </select>
-         </div>
-          <div className="relative  w-full me-2">
-            <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
-            <input
-               type="number" className="shop-forms-input ps-[50px] bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[12px] px-[20px] "
-               name={`variantValue${index}`}
-               placeholder="Shipping Price"
-               onChange={(e) => handleVariantChange(index, 'price', e.target.value)}
-            />
-          </div>
-          <button type="button" className="text-black shop-forms-input bg-gray-200 w-full bg-gray-300 text-[20px] border-0 rounded-xl p-[8px] px-[20px] max-w-[50px]" onClick={() => handleRemoveVariant(index)}>
-            &times;   
-          </button>
-        </div>
-      );
+   const [shipping, setShippings] = useState([]);
+      
+   const addShipping = () => {
+         setShippings([...shipping, { country: '', price: '' }]);
+         handleShipping([...shipping, { country: '', price: '' }]);
    };
-
-  const ProductForm = () => {
-      const [shipping, setShippings] = useState([]);
+   const handleVariantChange = (index, field, value) => {
+         const newVariants = shipping.map((variant, i) =>
+         i === index ? { ...variant, [field]: value } : variant
+         );
+         setShippings(newVariants);
+         handleShipping(newVariants);
+   };
+   const handleRemoveVariant = (index) => {
+         const newVariants = shipping.filter((_, i) => i !== index);
+         setShippings(newVariants);
+         handleShipping(newVariants);
+         console.log('Product shipping:', shipping);
+   };
        
-      const addShipping = () => {
-          setShippings([...shipping, { country: '', price: '' }]);
-          handleShipping([...shipping, { country: '', price: '' }]);
-      };
-      const handleVariantChange = (index, field, value) => {
-          const newVariants = shipping.map((variant, i) =>
-          i === index ? { ...variant, [field]: value } : variant
-          );
-          setShippings(newVariants);
-          handleShipping(newVariants);
-      };
-      const handleRemoveVariant = (index) => {
-          const newVariants = shipping.filter((_, i) => i !== index);
-          setShippings(newVariants);
-          handleShipping(newVariants);
-          console.log('Product shipping:', shipping);
-      };
-       
-      return (
-          <div className="add-form">
-          {shipping.map((variant, index) => (
-              <ProductVariantForm
-              key={index}
-              index={index}
-              handleVariantChange={handleVariantChange}
-              handleRemoveVariant={handleRemoveVariant}
-              />
-          ))}
-          <button onClick={addShipping} className="button sm pinkbg px-3 py-2 mt-2 mb-3" >Add a Destination</button>
-          </div>
-      );
-  };
-
-   
    const [haveQty, setHaveQty] = useState(false);
    const handleQty = () => {
       if(haveQty){
@@ -77,11 +34,10 @@ export default function CountriesShipping({handleShipping, handlewws}) {
       }
       setHaveQty(!haveQty);
    };
+
    const inputww = (e) => {
       handlewws(e.target.value);
    }
-
-     
 
   return <>
       <h2 className="font-bold mb-1 pt-4 border-t border-gray-200 mt-4">Shipping</h2>
@@ -100,9 +56,35 @@ export default function CountriesShipping({handleShipping, handlewws}) {
          </div>
          {haveQty ? (
             <input onChange={inputww}
-            className="mt-2 mb-6 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[13px] px-4"
+            className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[13px] px-4"
             type="number" name="price" id="price" placeholder="Shipping Price" />
          ) :  ''}
-      <ProductForm />
+
+         <div className="add-form">
+            {shipping.map((variant, index) => (
+                <div className="flex items-center justify-between my-2">
+                  <div className='countries-selections w-full me-2' >
+                     <select className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[12px] px-[20px] "
+                     onChange={(e) => handleVariantChange(index, 'country', e.target.value)} >
+                        <option value={''} >Choose Country</option>
+                        {AllContries && AllContries.map((c, i) => <option key={i} value={c.code}>{c.label}</option>)}
+                     </select>
+                  </div>
+                  <div className="relative  w-full me-2">
+                     <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
+                     <input
+                        type="number" className="shop-forms-input ps-[50px] bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[12px] px-[20px] "
+                        name={`variantValue${index}`}
+                        placeholder="Shipping Price"
+                        onChange={(e) => handleVariantChange(index, 'price', e.target.value)}
+                     />
+                  </div>
+                  <button type="button" className="text-black shop-forms-input bg-gray-200 w-full bg-gray-300 text-[20px] border-0 rounded-xl p-[8px] px-[20px] max-w-[50px]" onClick={() => handleRemoveVariant(index)}>
+                     &times;   
+                  </button>
+               </div>
+            ))}
+            <button onClick={addShipping} className="button sm pinkbg px-3 py-2 mt-2 mb-3" >Add a Destination</button>
+         </div>
   </>
 }
