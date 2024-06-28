@@ -10,10 +10,10 @@ import PriceFormat from '@/includes/PriceFormat';
 import { useEffect } from 'react';
 import { useRef } from 'react';
 
-export default function BuyShopItem({vat_percent, opened, classes, text, s, open, isPaid}) {
+export default function BuyShopItem({vat_percent, opened, classes, text, s, open, isPaid, selectedVarient}) {
 
    const { formatMultiPrice} = PriceFormat();
-   const { global_currency, auth, user } = usePage().props;
+   const { global_currency, auth, user, shop } = usePage().props;
    const [close, setClose] = useState();
 
    useEffect(()=>{
@@ -57,35 +57,34 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
    const [quantity, setQuantity] = useState(1);
    const [loading, setLoading] = useState(false);
    const buyItem = () => {
-      if(isfairPrice && (fairPrice < s.price+1)) {
-         errorAlert('Fair Price must be greater than actual price');
-         return false;
-      } 
-      setLoading(true);
-      axios.get(`/shop/buy/${s.uuid}/1?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}`).then(res => {
-         if(res.data.url){
-            window.location.href = res.data.url;
-         } else {
-            setLoading(false);
-            errorAlert('Something went wrong');
-         }
-       }).catch(err => {
-           setLoading(false);
-           errorsHandling(err)
-       });
-      // axios.post(`/shop/buy/${s.uuid}/1?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}&country=${"GB"}`, {
-      //    "shipping_info" :"hsjdfgsdjfgjsgfshdgfjsdgfjshdgf"
-      // }).then(res => {
-      //    if(res.data.url){
-      //       window.location.href = res.data.url;
-      //    } else {
-      //       setLoading(false);
-      //       errorAlert('Something went wrong');
-      //    }
-      //  }).catch(err => {
-      //      setLoading(false);
-      //      errorsHandling(err)
-      //  });
+      if(shop.type === 'physical'){
+         axios.post(`/shop/buy/${s.uuid}/${selectedVarient}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}&country=${"GB"}`, {
+            "shipping_info" : "hsjdfgsdjfgjsgfshdgfjsdgfjshdgf"
+         }).then(res => {
+            if(res.data.url){
+               window.location.href = res.data.url;
+            } else {
+               setLoading(false);
+               errorAlert('Something went wrong');
+            }
+          }).catch(err => {
+              setLoading(false);
+              errorsHandling(err)
+          });
+      } else {
+         setLoading(true);
+         axios.get(`/shop/buy/${s.uuid}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}`).then(res => {
+            if(res.data.url){
+               window.location.href = res.data.url;
+            } else {
+               setLoading(false);
+               errorAlert('Something went wrong');
+            }
+          }).catch(err => {
+              setLoading(false);
+              errorsHandling(err)
+          });
+      }
    }
 
    const [replySent, setReplySent] = useState(false);

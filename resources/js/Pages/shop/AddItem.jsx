@@ -15,7 +15,8 @@ import Select from "react-select";
 import CountriesShipping from "./CountriesShipping";
 
 const lists = [
-    // { value: "physical", label: 'Physical Product' },
+    { value: "Digital Products", label: "Digital Products" },
+    { value: "physical", label: 'Physical Product' },
     { value: "Custom Digital Artwork 🖼️", label: "Custom Digital Artwork 🖼️" },
     { value: "Custom Photoshoot 📷 ", label: "Custom Photoshoot 📷" },
     { value: "Video Happy Birthday 🎂 ", label: "Video Happy Birthday 🎂" },
@@ -24,8 +25,18 @@ const lists = [
     { value:"Personal Training Plan 💪🏻- pdf",label:"Personal Training Plan 💪🏻- pdf"},
     { value: "Style Guide 👗- pdf", label: "Style Guide 👗- pdf" },
     { value: "My E-Book 📕- pdf", label: "My E-Book 📕- pdf" },
-    { value: "Digital Products", label: "Digital Products" },
 ];
+
+const updatedVarients = (data) =>{
+    const arr = [];
+    data.forEach((v, i) => {
+        if(v.name !== ''  && v.value !== "") {
+            arr.push(v)
+        }
+    })
+    return arr
+};
+
 
 export default function AddItem(props) {
     const { auth, user } = usePage().props;
@@ -99,15 +110,16 @@ export default function AddItem(props) {
         const [checkboxes, setCheckboxes] = useState([]);
         const [real_category, setreal_category] = useState(item && item.category);
         const [shopItem, setShopItem] = useState({
-            type: product_type,
+            type: product_type || 'Digital Products',
             name: pre_title || "",
             description: pre_description || "",
-            price: 10,
+            price: pre_price || '',
         });
         
         const [wwsShipping, setwwsShipping] = useState([]);
         const [shipping, setShipping] = useState([]);
         const [variants, setVariants] = useState([{ name: '', value: '' }]);
+        const [shipping_info, setShipping_info] = useState('');
 
         const handleShipping = (e) =>{ 
             setShipping(e);
@@ -117,15 +129,16 @@ export default function AddItem(props) {
             setwwsShipping(e)
             console.log("wwsShipping", e)
         }
-
-        console.log("variants",variants);
-        console.log("setwwsShipping", wwsShipping);
-        console.log("shipping", shipping);
+ 
 
         const [physical, setPhysical] = useState(shopItem && shopItem.type === "physical" ? true : false);
         const handleLists = (e) => {
             setShopItem({ ...shopItem, type: e.value });
-            setPhysical(e.value)
+            if(e.value === "physical"){
+                setPhysical(e.value)
+            } else {
+                setPhysical(false)
+            }
         };
 
         useEffect(() => {
@@ -277,22 +290,49 @@ export default function AddItem(props) {
         };
 
         const addShopItem = () => {
-            if (shopItem.type == "") {
-                errorAlert("Please choose a product type.");
-            }
+            if (!physical) {
+                if (!rewardfile && !pagetype) {
+                    errorAlert("Please fill the required fields");
+                    return false;
+                }
+                if(pagetype === "url" && !pageUrl){
+                    errorAlert("Success page url can not be empty");
+                    return false;
+                }
+                if(pagetype === "text" && !parsedContent){
+                    errorAlert("Success page content can not be empty");
+                    return false;
+                }
+            }  
+
             if (!isChecked) {
                 return false;
             }
             setLoading(true);
-            const updatedVarients = () =>{
+            const vars = updatedVarients(variants);
+            if(vars.length > 0 ){
+                setShopItem({ ...shopItem, price: vars[0].value });
+            }
+
+            const updatedShipping =  () =>{
                 const arr = [];
-                variants.forEach((v, i) => {
-                    if(v.name !== ''  && v.value !== "") {
-                        arr.push(v)
-                    }
-                })
+                shipping.forEach((v, i) => {
+                    if(v.country !== ''  && v.price !== "") { arr.push(v)}
+                });
+                if(wwsShipping > 0){  arr.push({country: "all", price: wwsShipping})}
                 return arr
-            };
+            }
+
+            const ships = updatedShipping()
+            if ( physical && ships.length < 1) {
+                errorAlert("Please add atleast one shipping method");
+                return false;
+            }
+            if ( physical && vars.length < 1) {
+                errorAlert("Please add atleast one variant");
+                return false;
+            }
+
             const data = {
                 ...shopItem,
                 success_page_value:pagetype === "url" ? pageUrl:parsedContent,
@@ -302,15 +342,13 @@ export default function AddItem(props) {
                 slot_limitation: slots || "",
                 special_member_price: spPrice || "",
                 quantity_allow: haveQty ? 1 : 0,
+                shipping : JSON.stringify(ships),
+                shipping_info: shipping_info,
+                varients : vars && vars.length ? JSON.stringify(vars) : "",
                 vat_applicable: haveVat,
                 image: thumb,
+                price : vars.length > 0 ? vars[0].value : shopItem.price,
                 success_page_type: (item && item.success_page_type) || pagetype,
-                shipping : JSON.stringify([
-                    {"country": "GB","price": "10"},
-                    {"country": "AX","price": "20"}
-                ]),
-                shipping_info: "hello",
-                varients : updatedVarients && updatedVarients.length ? JSON.stringify(updatedVarients) : ""
             };
             axios.post(`/shop/add`,data) .then((res) =>{
                 if (res.data.status) {
@@ -390,7 +428,6 @@ export default function AddItem(props) {
             );
         };
          
-        
         const addVariant = () => {
             setVariants([...variants, { name: '', value: '' }]);
         };
@@ -420,13 +457,13 @@ export default function AddItem(props) {
                     </div>
                     <div className="shop-forms-field p-0 md:p-8 max-w-[800px] m-auto rounded-[20px]">
                         <div className="shop-forms-field mb-4">
-                            <label className="w-full mb-2"> Select what you’re offering </label>
+                            <label className="w-full mb-1.5"> Select what you’re offering </label>
                             <Select
+                                defaultValue={{ value: "Digital Products", label: "Digital Products" }}
                                 classNamePrefix="react-select"
                                 className="react-select-lists mb-4 mt-2 "
                                 options={lists}
                                 onChange={handleLists}
-                                defaultValue={"Digital Products"}
                                 placeholder={"Select what you’re offering.."}
                             />
                         </div>
@@ -492,11 +529,9 @@ export default function AddItem(props) {
                             <div className="add-form">
                                 {variants.map((variant, index) => (
                                     <div className="flex items-center justify-between my-2">
-                                        <input
-                                            type="text" className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[12px] px-[20px] me-2"
-                                            name={`variantName${index}`}
-                                            placeholder="Variant Name"
-                                            onChange={(e) => handleVariantChange(index, 'name', e.target.value)}
+                                        <input type="text" className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[12px] px-[20px] me-2" name={`variantName${index}`}
+                                        placeholder="Variant Name"
+                                        onChange={(e) => handleVariantChange(index, 'name', e.target.value)}
                                         />
                                         <div className="relative me-2">
                                          <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
@@ -513,136 +548,141 @@ export default function AddItem(props) {
                                 <button onClick={addVariant} className="button sm pinkbg px-3 py-2 mt-2 mb-3" >Add Variant</button>
                             </div>
                             <CountriesShipping handleShipping={handleShipping} handlewws={handlewws} />
+                            
+                            <h2 className="font-bold pt-4 border-t border-gray-200 mb-2">Shipping Information</h2>
+                            <input type="text" className="shop-forms-input ps-[50px] bg-gray-200 w-full bg-gray-200 border-0 mb-6 rounded-xl p-[12px] px-[20px]"
+                            name={`shipping-information`}
+                            placeholder="Shipping information.."
+                            onChange={(e) => setShipping_info(e.target.value)}
+                            />
                             </>
                         ) : (
-                            <>
-                                <div className="shop-forms-field mb-4">
-                                    <label className="w-full mb-2">
-                                        Success page *{" "}
-                                    </label>
-                                    <div className="success-page-types flex items-center flex-wrap">
-                                        <div className="flex items-center mb-2 pe-3">
-                                            <input
-                                                onChange={handleSuccessPageType}
-                                                defaultChecked={
-                                                    item &&
-                                                    item.success_page_type ==
-                                                        "text"
-                                                        ? true
-                                                        : false
-                                                }
-                                                id="success-option-1"
-                                                type="radio"
-                                                name="success-types"
-                                                value="text"
-                                                className="h-4 w-4 border-gray-300 focus:ring-2 focus:ring-blue-300 cursor-pointer"
-                                            />
-                                            <label
-                                                htmlFor="success-option-1"
-                                                className=" cursor-pointer text-md font-medium text-gray-900 ml-2 block"
-                                            >
-                                                Confirmation message
-                                            </label>
-                                        </div>
-                                        <div className="flex items-center mb-2 ">
-                                            <input
-                                                onChange={handleSuccessPageType}
-                                                defaultChecked={
-                                                    item &&
-                                                    item.success_page_type ==
-                                                        "url"
-                                                        ? true
-                                                        : false
-                                                }
-                                                id="success-option-2"
-                                                type="radio"
-                                                name="success-types"
-                                                value="url"
-                                                className="h-4 w-4 border-gray-300 focus:ring-2 focus:ring-blue-300 cursor-pointer"
-                                            />
-                                            <label
-                                                htmlFor="success-option-2"
-                                                className=" cursor-pointer text-md font-medium text-gray-900 ml-2 block"
-                                            >
-                                                Redirect to a URL after purchase
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    {pagetype == "text" ? (
-                                        <div className="">
-                                            <textarea
-                                                defaultValue={parsedContent}
-                                                onChange={(e) =>
-                                                    setParsedContent(
-                                                        e.target.value
-                                                    )
-                                                }
-                                                className="mt-2 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5"
-                                                placeholder="Enter confirmation message here !!"
-                                            ></textarea>
-                                            <h2 className="text-md font-normal mb-3 mt-2">
-                                                Add the item for sale (Video,
-                                                Images, Audio, or PDF) *{" "}
-                                            </h2>
-                                            <div
-                                                className={`uploader mb-4 mt-2 overflow-hidden`}
-                                            >
-                                                {item ? (
-                                                    <>
-                                                        {item &&
-                                                        item.reward_file_type ==
-                                                            "image" ? (
-                                                            <img
-                                                                alt="image-profile"
-                                                                className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4"
-                                                                src={
-                                                                    item &&
-                                                                    item.reward_file_url
-                                                                }
-                                                            />
-                                                        ) : (
-                                                            <video
-                                                                controls
-                                                                playsInline
-                                                                className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4"
-                                                                src={
-                                                                    item &&
-                                                                    item.reward_file_url
-                                                                }
-                                                            />
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    ""
-                                                )}
-
-                                                <GlobalUploader
-                                                    type="minimal"
-                                                    ref={uploaderRef}
-                                                    sendFile={getRewardFile}
-                                                    options={st.shopreward}
-                                                />
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        ""
-                                    )}
-                                    {pagetype == "url" ? (
+                            <div className="shop-forms-field mb-4">
+                                <label className="w-full mb-2">
+                                    Success page *{" "}
+                                </label>
+                                <div className="success-page-types flex items-center flex-wrap">
+                                    <div className="flex items-center mb-2 pe-3">
                                         <input
-                                            defaultValue={pageUrl}
+                                            onChange={handleSuccessPageType}
+                                            defaultChecked={
+                                                item &&
+                                                item.success_page_type ==
+                                                    "text"
+                                                    ? true
+                                                    : false
+                                            }
+                                            id="success-option-1"
+                                            type="radio"
+                                            name="success-types"
+                                            value="text"
+                                            className="h-4 w-4 border-gray-300 focus:ring-2 focus:ring-blue-300 cursor-pointer"
+                                        />
+                                        <label
+                                            htmlFor="success-option-1"
+                                            className=" cursor-pointer text-md font-medium text-gray-900 ml-2 block"
+                                        >
+                                            Confirmation message
+                                        </label>
+                                    </div>
+                                    <div className="flex items-center mb-2 ">
+                                        <input
+                                            onChange={handleSuccessPageType}
+                                            defaultChecked={
+                                                item &&
+                                                item.success_page_type ==
+                                                    "url"
+                                                    ? true
+                                                    : false
+                                            }
+                                            id="success-option-2"
+                                            type="radio"
+                                            name="success-types"
+                                            value="url"
+                                            className="h-4 w-4 border-gray-300 focus:ring-2 focus:ring-blue-300 cursor-pointer"
+                                        />
+                                        <label
+                                            htmlFor="success-option-2"
+                                            className=" cursor-pointer text-md font-medium text-gray-900 ml-2 block"
+                                        >
+                                            Redirect to a URL after purchase
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {pagetype == "text" ? (
+                                    <div className="">
+                                        <textarea
+                                            defaultValue={parsedContent}
                                             onChange={(e) =>
-                                                setpageUrl(e.target.value)
+                                                setParsedContent(
+                                                    e.target.value
+                                                )
                                             }
                                             className="mt-2 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5"
-                                            type="text"
-                                            placeholder="https://"
-                                        />
-                                    ) : (
-                                        ""
-                                    )}
-                                </div>
-                            </>
+                                            placeholder="Enter confirmation message here !!"
+                                        ></textarea>
+                                        <h2 className="text-md font-normal mb-3 mt-2">
+                                            Add the item for sale (Video,
+                                            Images, Audio, or PDF) *{" "}
+                                        </h2>
+                                        <div
+                                            className={`uploader mb-4 mt-2 overflow-hidden`}
+                                        >
+                                            {item ? (
+                                                <>
+                                                    {item &&
+                                                    item.reward_file_type ==
+                                                        "image" ? (
+                                                        <img
+                                                            alt="image-profile"
+                                                            className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4"
+                                                            src={
+                                                                item &&
+                                                                item.reward_file_url
+                                                            }
+                                                        />
+                                                    ) : (
+                                                        <video
+                                                            controls
+                                                            playsInline
+                                                            className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4"
+                                                            src={
+                                                                item &&
+                                                                item.reward_file_url
+                                                            }
+                                                        />
+                                                    )}
+                                                </>
+                                            ) : (
+                                                ""
+                                            )}
+
+                                            <GlobalUploader
+                                                type="minimal"
+                                                ref={uploaderRef}
+                                                sendFile={getRewardFile}
+                                                options={st.shopreward}
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    ""
+                                )}
+                                {pagetype == "url" ? (
+                                    <input
+                                        defaultValue={pageUrl}
+                                        onChange={(e) =>
+                                            setpageUrl(e.target.value)
+                                        }
+                                        className="mt-2 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5"
+                                        type="text"
+                                        placeholder="https://"
+                                    />
+                                ) : (
+                                    ""
+                                )}
+                            </div>
                         )}
 
                         <div className="shop-add-categories border-t pt-3 ">
@@ -665,12 +705,7 @@ export default function AddItem(props) {
                                                     value={c.uuid}
                                                     className="h-5 w-5 rounded-1 border-gray-300 focus:ring-2 focus:ring-blue-300 cursor-pointer"
                                                 />
-                                                <label
-                                                    htmlFor={`category-item-${c.uuid}`}
-                                                    className=" cursor-pointer text-md font-medium text-gray-900 ml-2 block"
-                                                >
-                                                    {c.category}
-                                                </label>
+                                                <label htmlFor={`category-item-${c.uuid}`} className=" cursor-pointer text-md font-medium text-gray-900 ml-2 block" >{c.category}</label>
                                             </div>
                                         );
                                     })}
