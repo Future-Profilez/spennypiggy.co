@@ -7,6 +7,8 @@ import { useState } from 'react';
 import PriceFormat from '@/includes/PriceFormat';
 import { useEffect } from 'react';
 import { IoChevronBackOutline } from "react-icons/io5";
+import axios from 'axios';
+import AllContries from '../../includes/AllCountries';
 
 export default function ShopDetailItem(props) {
 
@@ -40,12 +42,42 @@ export default function ShopDetailItem(props) {
    const { formatMultiPrice} = PriceFormat();
 
    const [price, setPrice] = useState(shop.price);
-   const [selectedVarient, setSelectedVarient] = useState(shop && shop.shop_varients[0].id);
+   const [selectedVarient, setSelectedVarient] = useState(shop && shop.shop_varients[0] && shop.shop_varients[0].id);
    const handleVarient = (e) => { 
       const varient = shop.shop_varients.find(v => v.id == e.target.value);
       setPrice(varient.price);
       setSelectedVarient(varient.id);
    }
+
+   const [currentCountry, setCurrentCountry] = useState();
+   const getIp = async () => {
+      await axios.get(`https://ipapi.co/json/`).then((resp)=>{
+         if(resp.data && resp.data.country_code){
+            setCurrentCountry(resp.data.country_code);
+            console.log("resp.data.country_code",resp.data.country_code)
+         }
+      }).catch((err)=>{
+         console.error("api err", err)
+      });
+  };
+
+
+  const [shippingPrice, setShippingPrice] = useState(0);
+  const getShippingPrice = () => {
+   axios.get(`/shop/shipping-price/${shop.uuid}`).then((resp)=>{
+      setShippingPrice(resp.data && resp.data.shipping_price);
+   }).catch((err)=>{
+      console.error("api err", err)
+   });
+  }
+
+  useEffect(()=>{
+   getIp();
+   getShippingPrice()
+  },[shop]);
+
+   
+   
   return (
     <>
       <Guest auth={auth.user} user={user}>
@@ -106,7 +138,7 @@ export default function ShopDetailItem(props) {
                               <p className='mb-1 font-normal text-[13px]' >Become a member to get a discount and other exclusive benefits.</p>
                            </div>
                            <div className='py-2 ' >
-                              <Link   nk href={`/${shop.user && shop.user.username}`} className="button sm Join whitespace-nowrap" >Join Membership</Link>
+                              <Link href={`/${shop.user && shop.user.username}`} className="button sm Join whitespace-nowrap" >Join Membership</Link>
                            </div>
                         </div>
                      </div> : ''}
@@ -178,15 +210,18 @@ export default function ShopDetailItem(props) {
                      }
                      
                      <div className='sm:flex items-center justify-between' >
-                        <h3 className='text-3xl font-bold mb-3' >
-                           {shop && shop.is_member == 1 && shop.special_member_price ? <>
-                              {formatMultiPrice(shop.special_member_price, shop?.currency || 'GBP') } <span className='line-through text-gray-400' >{price > 0 ? formatMultiPrice(price, shop?.currency || 'GBP') : "FREE"}</span>
-                           </>  
-                           : 
-                           price > 0 ? formatMultiPrice(price, shop?.currency || 'GBP') : "Free"
-                           }
-                            {shop.slot_limitation ? <span className='ms-3 text-pink text-lg font-light ' >Only {shop.slot_limitation - shop.total_sold} Left</span> :""}
-                        </h3>
+                        <div className=' mb-3'>
+                           <h3 className='text-3xl font-bold' >
+                              {shop && shop.is_member == 1 && shop.special_member_price ? <>
+                                 {formatMultiPrice(shop.special_member_price, shop?.currency || 'GBP') } <span className='line-through text-gray-400' >{price > 0 ? formatMultiPrice(price, shop?.currency || 'GBP') : "FREE"}</span>
+                              </>  
+                              : 
+                              price > 0 ? formatMultiPrice(price, shop?.currency || 'GBP') : "Free"
+                              }
+                              {shop.slot_limitation ? <span className='ms-3 text-pink text-lg font-light ' >Only {shop.slot_limitation - shop.total_sold} Left</span> :""}
+                           </h3>
+                           <h2 className='mt-1'>Shipping Price : {formatMultiPrice(shippingPrice, shop?.currency || 'GBP')}</h2>
+                        </div>
  
                         { IsloggedIn ? 
                            ""
@@ -195,7 +230,7 @@ export default function ShopDetailItem(props) {
                               {(shop.slot_limitation && (shop.slot_limitation - shop.total_sold) === 0 ) ?
                                  <button className='btn-pink sm disabled w-full sm:w-auto' >SOLD</button> 
                               : 
-                                 <BuyShopItem selectedVarient={selectedVarient} vat_percent={vat_percent} opened={props.opened} isPaid={props.payment_id} open={open} s={shop} text={'Get This'} classes="w-full sm:w-auto btn-pink font-light md  mb-3" /> 
+                                 <BuyShopItem shippingPrice={shippingPrice} country={currentCountry} selectedVarient={selectedVarient} vat_percent={vat_percent} opened={props.opened} isPaid={props.payment_id} open={open} s={shop} text={'Get This'} classes="w-full sm:w-auto btn-pink font-light md  mb-3" /> 
                               }
                            </>
                         }  
