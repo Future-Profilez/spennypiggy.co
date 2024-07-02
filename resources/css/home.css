@@ -40,7 +40,7 @@ body{background:#000;}
 .bottom-links ul li a{font-size:20px;color:#fff;}
 .bottom-links{border-top:1px solid #ffffff24;padding-top:30px;margin-top:30px;}
 .MegaMenu,.menuImg{justify-content:center;}
-.MegaMenu{display:flex;position:fixed;top:0;right:0;width:100%;height:100vh;background:var(--pink);align-items:stretch;align-content:stretch;}
+.MegaMenu{display:flex;position:fixed;top:0;right:0;width:100%;height:100vh; align-items:stretch;align-content:stretch;}
 .MegaMenu{max-width:0;transition:0.2s ease;overflow:auto !important;z-index:9999999 !important;}
 .MegaMenu.Open{max-width:5000px;transition:0.3s cubic-bezier(0.4,0,1,1);opacity:1 !important;}
 .menuList.shows{opacity:1;transition:0.1s;}
@@ -688,7 +688,6 @@ html body .intercom-lightweight-app-launcher{margin-bottom:70px !important;}
 .addsocial ul li a svg{width:24px;height:24px;}
 .addsocial ul li:last-child{border:0 !important;}
 .finish button{width:96%;margin:auto;}
-.headingMd{}
 .text-shadow-black{text-shadow:1px 3px 0 var(--black);}
 .funpart{padding:50px 0;}
 .funboxs{flex-wrap:wrap;justify-content:center;height:auto;}
@@ -745,24 +744,12 @@ html body .intercom-lightweight-app-launcher{margin-bottom:70px !important;}
 .e8_tag > div{width:100% !important;border-bottom:0 !important;border-right:0 !important;}
 .videoBg{max-width:100%;height:270px;}
 .wishlistbtn .itsfree-tag{right:0;top:80px;}
+.wishlistbtn .itsfree-tag{max-width:120px;}
+.proud-banner{max-width:88%;justify-content:center;}
+.proud-banner img{max-width:120px;}
+.proud-banner{align-items:end;}
+.proud-banner p{font-size:12px;}
 
-.wishlistbtn .itsfree-tag {
-  max-width: 120px;
-}
-.proud-banner {
-  max-width: 88%;
-  justify-content: center;
-}
-
-.proud-banner img {
-  max-width: 120px;
-}
-.proud-banner {
-  align-items: end;
-}
-.proud-banner p {
-  font-size: 12px;
-}
 }
 @media(max-width:575px){
 .wishManage .rts___btn{ font-size:16px; }
@@ -890,9 +877,8 @@ select#country{width:100%;}
   .howWorkTab ul{flex-wrap:nowrap !important;display:flex !important;}
 }
 
-.addop { 
-  transition: 0.5s ease;
-}
-.addop:hover { transform: scale(1.05); 
-  transition: 0.5s ease;
-}
+.blur{backdrop-filter:blur(2px); transition: 0.5s;}
+.addop{transition:0.5s ease;}
+.addop:hover{transform:scale(1.05);transition:0.5s ease;}
+.menutoggle .menu{left:-100%;transition:0.4s;}
+.menutoggle.shows .menu{transition:0.4s;left:0%;}

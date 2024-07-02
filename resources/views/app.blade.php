@@ -63,7 +63,7 @@
         }
     </script>
   
-  <!-- <script async type="application/ld+json">
+  <script async type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "Organization",
@@ -78,8 +78,8 @@
         "https://blog.spennypiggy.co/"
       ]
     }
-    </script> -->
-  <!-- <script async type="application/ld+json">
+    </script>
+  <script async type="application/ld+json">
           {
           "@context":"http://schema.org",
           "@type":"SiteNavigationElement",
@@ -91,8 +91,8 @@
           "https://spennypiggy.co/discover",
           "https://uk.spennypiggy.co/register"]
           }
-        </script> -->
-        <!-- <script async type="application/ld+json">
+        </script>
+        <script async type="application/ld+json">
             {
             "@context": "https://schema.org",
             "@type": "FAQPage",
@@ -129,7 +129,7 @@
                 }
             ]
             }
-        </script>  -->
+        </script> 
 
     {{-- @laravelPWA --}}
     @routes

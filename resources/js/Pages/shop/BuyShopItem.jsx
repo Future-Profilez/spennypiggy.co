@@ -9,8 +9,9 @@ import toast from 'react-hot-toast';
 import PriceFormat from '@/includes/PriceFormat';
 import { useEffect } from 'react';
 import { useRef } from 'react';
+import AllContries from '../../includes/AllCountries';
 
-export default function BuyShopItem({vat_percent, opened, classes, text, s, open, isPaid, selectedVarient}) {
+export default function BuyShopItem({vat_percent, opened, classes, text, s, open, isPaid, selectedVarient, country, shippingPrice}) {
 
    const { formatMultiPrice} = PriceFormat();
    const { global_currency, auth, user, shop } = usePage().props;
@@ -31,6 +32,21 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
       } else { 
          return s.price
       }
+   }
+
+   const [shipping_info, setshipping_info] = useState({
+      country: '',
+      street_address: '',
+      city: '',
+      state: '',
+      postal_code: '',
+   });
+   const handleShipInput = (e) => {
+       setshipping_info({
+         ...shipping_info,
+         [e.target.name]: e.target.value
+       });
+ 
    }
 
    const [fairPrice, setfaiPrice] = useState(actualPrice());
@@ -58,8 +74,8 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
    const [loading, setLoading] = useState(false);
    const buyItem = () => {
       if(shop.type === 'physical'){
-         axios.post(`/shop/buy/${s.uuid}/${selectedVarient}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}&country=${"GB"}`, {
-            "shipping_info" : "hsjdfgsdjfgjsgfshdgfjsdgfjshdgf"
+         axios.post(`/shop/buy/${s.uuid}/${selectedVarient}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}&country=${country}`, {
+            "shipping_info" : JSON.stringify(shipping_info)
          }).then(res => {
             if(res.data.url){
                window.location.href = res.data.url;
@@ -200,6 +216,7 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
                {/* <p className='mb-1' >Enter a fair price (optional)</p>
                <input required onChange={enterFairPrice} min={s.price}
                className="form-input w-100 rounded mb-3" placeholder={`+${s.price}`} type="number" /> */}
+               
                <div className="form-field mb-3">
                   <p className='mb-1'>Name</p>
                   <input required disabled={auth && auth.user?.name ? true : false}
@@ -217,6 +234,44 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
                      type="email" placeholder="Enter email.. " />
                   <p className='text-[12px] text-muted mt-1 ' >Your email address is kept private and will not be shown to anyone.</p>
                </div>
+
+               {shop.type === 'physical' ? <div className='shippingdetails mt-3' >
+                  <div className="form-field mb-3 ">
+                     <p className='mb-2'>Shipping Information</p>
+                      <select className="form-input w-100 rounded" name="country" onChange={handleShipInput} >
+                        <option value={''} >Choose Country</option>
+                        {AllContries && AllContries.map((c, i) => <option key={i} value={c.code}>{c.label}</option>)}
+                     </select>
+                  </div>
+                  <div className="form-field mb-3 ">
+                     <input required  
+                        className="form-input w-100 rounded"
+                         onChange={handleShipInput} name="street_address"
+                        type="text" placeholder="Street Address" />
+                  </div>
+                  <div className="form-field mb-3 ">
+                     <input required  
+                        className="form-input w-100 rounded"
+                        onChange={handleShipInput} name="city"
+                        type="text" placeholder="City" />
+                  </div>
+                  <div className='grid grid-cols-2 gap-3' >
+                     <div className="form-field mb-3 ">
+                        <input required  
+                           className="form-input w-100 rounded"
+                           onChange={handleShipInput} name="state"
+                           type="text" placeholder="State" />
+                     </div>
+                     <div className="form-field mb-3 ">
+                        <input required  
+                           className="form-input w-100 rounded"
+                           onChange={handleShipInput} name="postal_code"
+                           type="email" placeholder="Postal Code" />
+                     </div>
+                  </div>
+               </div> : ''}
+
+
                <button disabled={loading} onClick={buyItem} class={`${loading ? "opacity-[0.5]" : ""}  w-1/2 block mx-auto rounded-full bg-gray-900 hover:shadow-lg font-semibold text-white px-6 py-2`}>{loading ? "Buying.." : "Pay"}</button>
                <div className='securestripe text-center mt-3' >
                   🔒 Secured via <b>Stripe</b>
