@@ -106,8 +106,7 @@ class ShopsController extends Controller
         if (Helpers::checkBlockData($request) == 1) {
             return response()->json([
                 'status' => false,
-                'msg' => "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
-             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦"
+                'msg' => "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress, 😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦"
             ]);
         }
 
@@ -492,10 +491,29 @@ class ShopsController extends Controller
             'shop' => $shop,
             'payment_id' => $session_id,
             'opened' => $opened,
-            'vat_percent' => $vat_percentage_amount
+            'vat_percent' => $vat_percentage_amount,
         ]);
     }
 
+    public function shippingPrice($shop_id){
+        $shop = Shop::where('uuid',$shop_id)->first();
+        $shipping_price = 0;
+        if($shop->type == 'physical'){
+            $country = request()->query('country');
+            if(!empty($country)){
+                $shipping = ShopShippingInfo::where('shop_id',$shop->id)->where('country',$country)->first();
+            }
+            if(empty($shipping) || empty($country)){
+                $shipping = ShopShippingInfo::where('shop_id',$shop->id)->where('country','all')->first();
+            }
+            $shipping_price = !empty($shipping) ? $shipping->shipping_price : 0;
+        }
+
+        return response()->json([
+            'status' => true,
+            'shipping_price' => $shipping_price
+        ]);
+    }
 
     public function saveUserShopCategory(Request $request)
     {
@@ -540,7 +558,7 @@ class ShopsController extends Controller
     }
 
 
-    public function buyShopItem(Request $request,$shop_id)
+    public function buyShopItem(Request $request,$shop_id,$varient_id = null)
     {
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         try {
@@ -554,6 +572,7 @@ class ShopsController extends Controller
             }
 
             $shop = Shop::where('uuid',$shop_id)->first();
+
             $shipping_price = 0;
 
             if($shop->type == 'physical'){
@@ -565,8 +584,10 @@ class ShopsController extends Controller
 
                 $shipping_info = $request->shipping_info;
                 $country = $request->query('country');
-                $shipping = ShopShippingInfo::where('shop_id',$shop->id)->where('country',$country)->first();
-                if(empty($shipping)){
+                if(!empty($country)){
+                    $shipping = ShopShippingInfo::where('shop_id',$shop->id)->where('country',$country)->first();
+                }
+                if(empty($shipping) || empty($country)){
                     $shipping = ShopShippingInfo::where('shop_id',$shop->id)->where('country','all')->first();
                 }
                 $shipping_price = !empty($shipping) ? $shipping->shipping_price : 0;
@@ -582,8 +603,13 @@ class ShopsController extends Controller
 
             $vat_percentage_amount = 0;
 
-
-            $amount = round(request()->query('amount'), 2, PHP_ROUND_HALF_UP);
+            if(!empty($varient_id)){
+                $var = ShopVarients::where('id',$varient_id)->first();
+                $amount = round($var->price, 2, PHP_ROUND_HALF_UP);
+            }
+            else{
+                $amount = round(request()->query('amount'), 2, PHP_ROUND_HALF_UP);
+            }
 
             $tax = round(($amount * config('app.shop_tax',20) / 100), 2, PHP_ROUND_HALF_UP);
 
@@ -603,6 +629,7 @@ class ShopsController extends Controller
                 'currency' => $shop->user->default_currency,
                 'shop_id' => $shop->id,
                 'user_id' => (Auth::check()) ? Auth::id() : (!empty($logged_out_user) ? $logged_out_user->id : null),
+                'varient_id' => $varient_id ?? null,
                 'name' => request()->query('from') ?? null,
                 'email' => request()->query('email'),
                 'message' => $message ?? null,
@@ -614,7 +641,6 @@ class ShopsController extends Controller
             $shopPaymentDetail->refresh();
 
             $total += $vat_percentage_amount;
-
             if($shop->price > 0){
 
                 $lineItems[] = [
@@ -741,7 +767,7 @@ class ShopsController extends Controller
 
         $payment->payment_status = "unpaid";
         $payment->save();
-        return redirect(route('user.show', [$payment->shop->user->username]))->with('error', 'Payment Cancel.');
+        return redirect(route('user.show', [$payment->shop->user->username]))->with('error', 'Payment Cancelled.');
         // return view('cancel');
     }
 
