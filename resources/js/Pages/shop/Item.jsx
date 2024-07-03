@@ -55,6 +55,7 @@ export default function ShopDetailItem(props) {
          if(resp.data && resp.data.country_code){
             setCurrentCountry(resp.data.country_code);
             console.log("resp.data.country_code",resp.data.country_code)
+            getShippingPrice(resp.data.country_code);
          }
       }).catch((err)=>{
          console.error("api err", err)
@@ -63,8 +64,8 @@ export default function ShopDetailItem(props) {
 
 
   const [shippingPrice, setShippingPrice] = useState(0);
-  const getShippingPrice = () => {
-   axios.get(`/shop/shipping-price/${shop.uuid}`).then((resp)=>{
+  const getShippingPrice = (c) => {
+   axios.get(`/shop/shipping-price/${shop.uuid}?country=${c}`).then((resp)=>{
       setShippingPrice(resp.data && resp.data.shipping_price);
    }).catch((err)=>{
       console.error("api err", err)
@@ -73,7 +74,6 @@ export default function ShopDetailItem(props) {
 
   useEffect(()=>{
    getIp();
-   getShippingPrice()
   },[shop]);
 
    
