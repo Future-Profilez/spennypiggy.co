@@ -13,7 +13,7 @@ import ChangeCurrency from "@/Components/ChangeCurrency";
 import Notifications from "./Notifications";
 import { IoSettingsOutline } from "react-icons/io5";
 import { FaHeart, FaRegStar, FaUserAlt } from "react-icons/fa";
-import { SlCalender } from "react-icons/sl";
+import { SlCalculator, SlCalender } from "react-icons/sl";
 import { FaBasketShopping, FaHouseChimneyUser } from "react-icons/fa6";
 import { GiInjustice, GiTwoCoins } from "react-icons/gi";
 import { IoIosUnlock } from "react-icons/io";
@@ -24,6 +24,8 @@ import { BsCookie } from "react-icons/bs";
 import { CiDiscount1 } from "react-icons/ci";
 import { LuBookMinus } from "react-icons/lu";
 import { MdClose } from "react-icons/md";
+import { AiOutlineLogout } from "react-icons/ai";
+import { RiPagesLine } from "react-icons/ri";
 
 export default function Header() {
 
@@ -174,7 +176,7 @@ export default function Header() {
                 <div class={`${shows ? 'shows' : 'unshow'} menutoggle min-h-screen text-gray-800`}>
                     <div className={`${shows ? 'showsblur opacity-[1] max-w-[5000px] '  : 'unshowblur opacity-[0] max-w-[1px]'} blur bg-[#0005] min-h-screen w-full min-w-screen fixed top-0 left-0`} onClick={toggleClass} ></div>
                     <div class="fixed menu p-2 z-10 top-0 left-0 pinkbg max-h-screen overflow-auto w-full max-w-[320px] h-full border-r">
-                        <button onClick={toggleClass} className="absolute top-4 right-4"><MdClose color="#fff" size={'2rem'} /></button> 
+                        <button onClick={toggleClass} className="absolute top-3 right-4"><MdClose color="#fff" size={'2rem'} /></button> 
                        <div class="overflow-y-auto overflow-x-hidden flex-grow">
                        <ul class=" flex flex-col pt-8 space-y-1">
                     {auth?.user?.username || false ? 
@@ -263,7 +265,7 @@ export default function Header() {
                             href={`/wish-tracker`}
                             class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
                             <span class="inline-flex justify-center items-center ml-4">
-                            <FaHouseChimneyUser
+                            <SlCalculator 
                              color="#fff" size={'1.2rem'} />
                             </span>
                             <span class="ml-2 text-[17px]
@@ -283,7 +285,7 @@ export default function Header() {
                              color="#fff" size={'1.2rem'} />
                             </span>
                             <span class="ml-2 text-[17px] 
-                            tracking-wide truncate">Subscription Billing</span>
+                            tracking-wide truncate text-white">Subscription Billing</span>
                             </a>
                         </li>
 
@@ -337,18 +339,7 @@ export default function Header() {
                             tracking-wide truncate text-white"> How it works</span>
                             </Link>
                         </li>
-                        <li>
-                            <Link onClick={toggleClass}
-                            href="https://blog.spennypiggy.co"
-                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
-                            <span class="inline-flex justify-center items-center ml-4">
-                            <ImBlog 
-                             color="#fff" size={'1.2rem'} />
-                            </span>
-                            <span class="ml-2 text-[17px]
-                            tracking-wide truncate text-white">Blog</span>
-                            </Link>
-                        </li>
+                       
                         <li>
                             <Link onClick={toggleClass}
                             href="https://blog.spennypiggy.co"
@@ -363,66 +354,92 @@ export default function Header() {
                         </li>
                     </>
                     }
-                <div className="bg-gray-200 h-[1px] w-full max-w-[85%] m-auto mt-3" ></div>
-                <ul className="pt-3 text-white ">
-                        <li>
-                            <a onClick={toggleClass}
-                            target="_blank" href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
-                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
-                            <span class="inline-flex justify-center items-center ml-4">
-                                <MdOutlinePrivacyTip
-                             color="#fff" size={'1.2rem'} />
-                            </span>
-                            <span class="ml-2 text-[17px]
-                            tracking-wide truncate text-white">Privacy Policy</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a onClick={toggleClass}
-                            target="_blank" href="https://app.termly.io/document/cookie-policy/45944c26-6e99-4065-833a-8fa224fb8e20"
-                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
-                            <span class="inline-flex justify-center items-center ml-4">
-                                <BsCookie 
-                             color="#fff" size={'1.2rem'} />
-                            </span>
-                            <span class="ml-2 text-[17px]
-                            tracking-wide truncate text-white">Cookies Policy</span>
-                            </a>
-                        </li>
-            
-                        <li>
-                            <a onClick={toggleClass}
-                            target="_blank" href="https://app.termly.io/document/acceptable-use/458f5fac-0c41-406f-a02f-b50adff1ec9c"
-                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
-                            <span class="inline-flex justify-center items-center ml-4">
-                                <LuBookMinus  
-                             color="#fff" size={'1.2rem'} />
-                            </span>
-                            <span class="ml-2 text-[17px]
-                            tracking-wide truncate text-white">Acceptable Use Policy</span>
-                            </a>
-                        </li>
-                        <li>
-                            <Link onClick={toggleClass}
-                            target="_blank" href={route("terms-and-conditions")}
-                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
-                            <span class="inline-flex justify-center items-center ml-4">
-                                <GiInjustice  
-                             color="#fff" size={'1.2rem'} />
-                            </span>
-                            <span class="ml-2 text-[17px]
-                            tracking-wide truncate text-white">Terms</span>
-                            </Link>
-                        </li>
-                        <li>
-                            <Link onClick={toggleClass}
-                                target="_blank" href={route("promotion-terms")}
-                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
-                                <span class="inline-flex justify-center items-center ml-4"><CiDiscount1   color="#fff" size={'1.4rem'} /></span>
-                                <span class="ml-2 text-[17px] tracking-wide truncate text-white">Promotion Terms</span>
-                            </Link>
-                        </li>
-                </ul>
+                        <div className="bg-[#ff87b8] h-[1px] w-full max-w-[85%] m-auto mt-3" ></div>
+                                <ul className="pt-3 text-white ">
+                                <li>
+                                    <Link onClick={toggleClass}
+                                    href="https://blog.spennypiggy.co"
+                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                                    <span class="inline-flex justify-center items-center ml-4">
+                                    <ImBlog 
+                                    color="#fff" size={'1.2rem'} />
+                                    </span>
+                                    <span class="ml-2 text-[17px]
+                                    tracking-wide truncate text-white">Blog</span>
+                                    </Link>
+                                </li>
+                                <li>
+                                    <a onClick={toggleClass}
+                                    target="_blank" href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
+                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                                    <span class="inline-flex justify-center items-center ml-4">
+                                        <MdOutlinePrivacyTip
+                                    color="#fff" size={'1.2rem'} />
+                                    </span>
+                                    <span class="ml-2 text-[17px]
+                                    tracking-wide truncate text-white">Privacy Policy</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a onClick={toggleClass}
+                                    target="_blank" href="https://app.termly.io/document/cookie-policy/45944c26-6e99-4065-833a-8fa224fb8e20"
+                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                                    <span class="inline-flex justify-center items-center ml-4">
+                                        <BsCookie 
+                                    color="#fff" size={'1.2rem'} />
+                                    </span>
+                                    <span class="ml-2 text-[17px]
+                                    tracking-wide truncate text-white">Cookies Policy</span>
+                                    </a>
+                                </li>
+                    
+                                <li>
+                                    <a onClick={toggleClass}
+                                    target="_blank" href="https://app.termly.io/document/acceptable-use/458f5fac-0c41-406f-a02f-b50adff1ec9c"
+                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                                    <span class="inline-flex justify-center items-center ml-4">
+                                        <LuBookMinus  
+                                    color="#fff" size={'1.2rem'} />
+                                    </span>
+                                    <span class="ml-2 text-[17px]
+                                    tracking-wide truncate text-white">Acceptable Use Policy</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <Link onClick={toggleClass}
+                                    target="_blank" href={route("terms-and-conditions")}
+                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                                    <span class="inline-flex justify-center items-center ml-4">
+                                        <GiInjustice  
+                                    color="#fff" size={'1.2rem'} />
+                                    </span>
+                                    <span class="ml-2 text-[17px]
+                                    tracking-wide truncate text-white">Terms</span>
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link onClick={toggleClass}
+                                        target="_blank" href={route("promotion-terms")}
+                                        class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                                        <span class="inline-flex justify-center items-center ml-4"><CiDiscount1   color="#fff" size={'1.4rem'} /></span>
+                                        <span class="ml-2 text-[17px] tracking-wide truncate text-white">Promotion Terms</span>
+                                    </Link>
+                                </li>
+
+                                {auth && auth?.user?.username ? (
+                                    <li className="d-block">
+                                        <Link onClick={toggleClass}
+                                        method="get" href={route("logout")}
+                                        class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                                        <span class="inline-flex justify-center items-center ml-4"><AiOutlineLogout   color="#fff" size={'1.4rem'} /></span>
+                                        <span class="ml-2 text-[17px] tracking-wide truncate text-white">Logout</span>
+                                    </Link>
+                                    </li>
+                                ) : (
+                                    ""
+                                )}
+
+                        </ul>
                 </ul>
                         </div>
                     </div>
