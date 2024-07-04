@@ -88,6 +88,7 @@ class CheckoutController extends Controller
                         'amount' => Helpers::priceFormat($dd->owner->default_currency, $subtotal, $currency) * 100,
                     ],
                     // 'application_fee_amount' => $taxNew,
+                    'description' => "Custom Content Purchase."
                 ],
                 'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
                 // 'currency' => 'usd',

@@ -270,7 +270,7 @@ class WishitemController extends Controller
         if (in_array($request->subscription, [0, 1])) {
 
             $productPayload = [
-                "name"  =>  $wish->wishname,
+                "name"  =>  $wish->wishname."(Custom Content Purchase)",
                 "images" => [$wish->perma_link],
                 "default_price_data"    =>  [
                     "currency"  =>  $user->default_currency,
@@ -371,7 +371,7 @@ class WishitemController extends Controller
             if (in_array($request->subscription, [0, 1])) {
 
                 $productPayload = [
-                    "name"  =>  $wish->wishname,
+                    "name"  =>  $wish->wishname."(Custom Content Purchase)",
                     "images" => [$wish->perma_link],
                     "default_price_data"    =>  [
                         "currency"  =>  $user->default_currency,
@@ -392,7 +392,7 @@ class WishitemController extends Controller
 
                     if($old_price == $wish->price){
                         $stripe_client = $stripe->products->update($wish->stripe_product_id,[
-                            'name' => $request->wishname ?? $wish->wishname,
+                            'name' => !empty($request->wishname) ? $request->wishname."(Custom Content Purchase)" : $wish->wishname."(Custom Content Purchase)",
                             'images' => [$wish->perma_link],
                             "default_price" => $wish->price_id,
                             // "url" => $request->item_url ?? null

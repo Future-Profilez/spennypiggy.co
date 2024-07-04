@@ -652,7 +652,8 @@ class StripeController extends Controller
                     ],
                     // 'on_behalf_of'  => $wish->user->account_id,
                     // 'cancel_at_period_end'  =>  $reccure == 'onetime',
-                    'description'   => "Subscription for {$wish->wishname} of {$wish->user->username}."
+                    // 'description'   => "Subscription for {$wish->wishname} of {$wish->user->username}."
+                    'description'   => "Membership Content Purchase."
                 ],
                 'customer_email'    =>  $request->email,
                 'success_url'       =>  route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
