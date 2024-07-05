@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers;
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Jobs\CheckProfilePhotosAdult;
 use App\Jobs\SendIntroMailAdmin;
 use App\Models\BillPayment;
 use App\Models\Bills;
@@ -45,9 +46,24 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use PhpParser\Node\Expr\Print_;
+use Uploadcare\Api;
+use Uploadcare\AuthUrl\AuthUrlConfig;
+use Uploadcare\AuthUrl\Token\AkamaiToken;
+use Uploadcare\Configuration;
+use Image;
 
 class ProfileController extends Controller
 {
+
+    protected $uploadcareApi;
+
+    public function __construct() {
+        $authUrlConfig = new AuthUrlConfig('ucarecdn.com', new AkamaiToken(env('UPLOADCARE_SECRET_KEY'), 300));
+        $config = Configuration::create(env('UPLOADCARE_PUBLIC_KEY'), env('UPLOADCARE_SECRET_KEY'))->setAuthUrlConfig($authUrlConfig);
+        $this->uploadcareApi = new Api($config);
+    }
+
     /**
      * Display the user's profile form.
      */
@@ -993,6 +1009,73 @@ class ProfileController extends Controller
         return response()->json([
            'status' => true,
            'message' => 'Piggy Bank Settings Updated.'
+        ]);
+    }
+
+    public function getImageGenerateAI(Request $request){
+        $request->validate([
+            'prompt' => [
+                'required',
+                'string'
+            ],
+           'size' => ['required','string'],
+        ]);
+
+        $secret = env('DALLE_SECRET_KEY');
+
+        $data = [
+            'model' => 'dall-e-3',
+            'prompt' => $request->prompt,
+            'n' => 1,
+            'size' => $request->size,
+        ];
+
+        try {
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . $secret,
+            ])->post('https://api.openai.com/v1/images/generations', $data);
+
+
+            $resp = json_decode($response);
+            $url = $resp->data[0]->url;
+
+            return response()->json([
+                'status' => true,
+                'image_url' => $url
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+               'status' => false,
+               'message' => 'Failed to generate image.',
+               'error' => $th
+            ]);
+        }
+    }
+
+
+    public function uploadDalleImage(Request $request){
+        $request->validate([
+            'url' => [
+                'required'
+            ]
+        ]);
+
+        $imageContent = file_get_contents($request->url);
+
+        // Create image from content
+        $image = Image::make($imageContent);
+
+        // Encode the image to a string
+        $encodedImage = (string) $image->encode();
+
+        // Upload to Uploadcare
+        $uploader = $this->uploadcareApi->uploader();
+        $response = $uploader->fromContent($encodedImage, 'image/jpeg');
+
+        return response()->json([
+            'status' => true,
+            'uuid' => $response->getUuid()
         ]);
     }
 }

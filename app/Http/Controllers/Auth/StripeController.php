@@ -111,7 +111,7 @@ class StripeController extends Controller
                     'business_type' => 'individual',
                     'business_profile' => [
                         'url'   =>  "https://spennypiggy.co/{$user->username}",
-                        'mcc'   =>  '5262' //'7278'
+                        'mcc'   =>  '7278' //'5262'
                     ],
                     'default_currency' => $currency,
                 ];

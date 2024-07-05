@@ -206,6 +206,8 @@ Route::middleware('auth')->group(function () {
             return Inertia::render('Profile/ActivateSubscription');
         })->name('stripe-subscription');
 
+        Route::post('/dalle-image', [ProfileController::class, 'getImageGenerateAI'])->name('dalle.image');
+        Route::post('/upload-dalle-image', [ProfileController::class, 'uploadDalleImage'])->name('upload.dalle.image');
     });
 
     Route::get('/earnings', function () {
