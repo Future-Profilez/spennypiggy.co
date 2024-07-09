@@ -13,6 +13,7 @@ import ChangeVat from "../account/ChangeVat";
 import { AiOutlineShop } from "react-icons/ai";
 import Select from "react-select";
 import CountriesShipping from "./CountriesShipping";
+import ImageGenerationWithAI from "@/Components/ImageGenerationWithAI";
 
 const lists = [
     { value: "Digital Products", label: "Digital Products" },
@@ -41,7 +42,7 @@ const updatedVarients = (data) =>{
 export default function AddItem(props) {
     const { auth, user } = usePage().props;
     const defaultCurrency = user && user.default_currency || "GBP";
-
+    
     const {
         item,
         update,
@@ -65,14 +66,10 @@ export default function AddItem(props) {
     }, [open]);
 
     const AddForm = () => {
-        
-
         const [isVat, setIsVat] = useState(
             auth && auth.user && auth.user.vat_amount_percentage ? true : false
         );
-        const [vatpercent, setvatpercent] = useState(
-            (auth && auth?.user?.vat_amount_percentage) || ""
-        );
+        const [vatpercent, setvatpercent] = useState((auth && auth?.user?.vat_amount_percentage) || "");
         const [passClose, setSassClose] = useState(false);
         const [categories, setCategories] = useState([]);
         const [fetchingCats, setFetchingCats] = useState(false);
@@ -196,7 +193,13 @@ export default function AddItem(props) {
 
         async function getRewardFile(file) {
             setrewardfile(file);
-            console.log("file", file);
+            setIsAiImage(false);
+        }
+
+        const [IsAiImage, setIsAiImage] = useState(false);
+        const getAIImage = (e) =>{ 
+            setrewardfile(e.uuid+'/-/text_align/left/center/-/font/10/fff/-/text/80px8p/8p,100p/Made%20with%20AI%20/-/format/jpeg/-/preview/');
+            setIsAiImage(e.url);
         }
 
         const handleHaveQuestion = () => {
@@ -347,6 +350,7 @@ export default function AddItem(props) {
                 varients : vars && vars.length ? JSON.stringify(vars) : "",
                 vat_applicable: haveVat,
                 image: thumb,
+                ai_generated: IsAiImage ? 1 : 0,
                 price : vars.length > 0 ? vars[0].value : shopItem.price,
                 success_page_type: (item && item.success_page_type) || pagetype,
             };
@@ -504,7 +508,7 @@ export default function AddItem(props) {
                             />
                         </div>
 
-                        <h2 className="text-md font-normal mb-3 mt-3"> Item image </h2>
+                        <h2 className="text-md font-normal mb-3 mt-3">Item image</h2>
                         {isEdit ? <img alt="image-profile" className="w-full max-h-[500px] object-cover h-auto rounded-4" src={item && item.perma_link} /> : ""}
                         <div className={`uploader mb-4 mt-2 overflow-hidden`}>
                             <GlobalUploader
@@ -553,25 +557,16 @@ export default function AddItem(props) {
                             <input type="text" className="shop-forms-input ps-[50px] bg-gray-200 w-full bg-gray-200 border-0 mb-6 rounded-xl p-[12px] px-[20px]"
                             name={`shipping-information`}
                             placeholder="Shipping information.."
-                            onChange={(e) => setShipping_info(e.target.value)}
-                            />
+                            onChange={(e) => setShipping_info(e.target.value)} />
                             </>
                         ) : (
                             <div className="shop-forms-field mb-4">
-                                <label className="w-full mb-2">
-                                    Success page *{" "}
-                                </label>
+                                <label className="w-full mb-2">Success page * </label>
                                 <div className="success-page-types flex items-center flex-wrap">
                                     <div className="flex items-center mb-2 pe-3">
                                         <input
                                             onChange={handleSuccessPageType}
-                                            defaultChecked={
-                                                item &&
-                                                item.success_page_type ==
-                                                    "text"
-                                                    ? true
-                                                    : false
-                                            }
+                                            defaultChecked={item && item.success_page_type == "text" ? true:false}
                                             id="success-option-1"
                                             type="radio"
                                             name="success-types"
@@ -622,10 +617,7 @@ export default function AddItem(props) {
                                             className="mt-2 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5"
                                             placeholder="Enter confirmation message here !!"
                                         ></textarea>
-                                        <h2 className="text-md font-normal mb-3 mt-2">
-                                            Add the item for sale (Video,
-                                            Images, Audio, or PDF) *{" "}
-                                        </h2>
+                                        <h2 className="text-md font-normal mb-3 mt-2"> Add the item for sale (Video,Images,Audio,or PDF) *</h2>
                                         <div
                                             className={`uploader mb-4 mt-2 overflow-hidden`}
                                         >
@@ -658,26 +650,35 @@ export default function AddItem(props) {
                                                 ""
                                             )}
 
+                                            
+                                            {IsAiImage ? 
+                                                <img
+                                                alt="image-profile"
+                                                className=" mb-2 mt-1 w-full max-h-[500px] object-cover h-auto rounded-4"
+                                                src={IsAiImage} /> 
+                                            : ""}
                                             <GlobalUploader
                                                 type="minimal"
                                                 ref={uploaderRef}
                                                 sendFile={getRewardFile}
                                                 options={st.shopreward}
                                             />
+                                            <div className="flex justify-center" >
+                                                <div>
+                                                    <h2 className="text-center text-gray-400 py-3" >Or</h2>
+                                                    <ImageGenerationWithAI update={getAIImage} />
+                                                </div>
+                                            </div>
+
                                         </div>
-                                    </div>
-                                ) : (
-                                    ""
-                                )}
+                                    </div> 
+                                ) : "" }
                                 {pagetype == "url" ? (
                                     <input
                                         defaultValue={pageUrl}
-                                        onChange={(e) =>
-                                            setpageUrl(e.target.value)
-                                        }
+                                        onChange={(e) =>setpageUrl(e.target.value)}
                                         className="mt-2 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5"
-                                        type="text"
-                                        placeholder="https://"
+                                        type="text" placeholder="https://"
                                     />
                                 ) : (
                                     ""
@@ -782,11 +783,7 @@ export default function AddItem(props) {
                                     Ask a question (optional)
                                     <button className="tooltipbtn">
                                         ?
-                                        <p>
-                                            If you'd like any additional
-                                            information to fulfil this offering,
-                                            you can leave a question here.
-                                        </p>
+                                        <p> If you'd like any additional information to fulfil this offering,you can leave a question here. </p>
                                     </button>
                                 </span>
                             </div>
