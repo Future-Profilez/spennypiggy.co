@@ -28,7 +28,6 @@ class TwitterToken extends Model
         'token',
         'secret',
         'refresh_token',
-        'expires_at',
         'created_at',
         'deleted_at',
         'updated_at'

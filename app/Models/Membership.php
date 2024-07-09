@@ -34,6 +34,10 @@ class Membership extends Model
         static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 
+    public function payments(){
+        return $this->hasMany(MembershipPayment::class);
+    }
+
     public function getPermaLinkAttribute()
     {
         $url = false;

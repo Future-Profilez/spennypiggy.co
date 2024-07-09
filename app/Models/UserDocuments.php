@@ -7,38 +7,27 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Ramsey\Uuid\Uuid;
 
-class PostComment extends Model
+class UserDocuments extends Model
 {
     use HasFactory,SoftDeletes;
 
     protected $fillable = [
-      'uuid',
-      'post_id',
-      'user_id',
-      'comment',
+        'uuid',
+        'user_id',
+        'doc_type',
+        'front',
+        'back'
     ];
 
     protected $hidden = [
         'id',
-        'user_id',
-        'post_id',
+        'created_at',
+        'updated_at'
     ];
 
     public static function boot()
     {
         parent::boot();
         static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
-    }
-
-    public function post(){
-        return $this->belongsTo(Post::class,'post_id');
-    }
-
-    public function user(){
-        return $this->belongsTo(User::class,'user_id');
-    }
-
-    public function replies(){
-        return $this->hasMany(PostCommentReplies::class,'post_comment_id');
     }
 }

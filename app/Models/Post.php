@@ -63,6 +63,7 @@ class Post extends Model
 
     public function comments(){
         return $this->hasMany(PostComment::class,'post_id');
+
     }
 
     public function getCommentsCountAttribute(){
@@ -74,7 +75,6 @@ class Post extends Model
     }
 
     public function getLikedAttribute(){
-        $like = null;
         $like = null;
         if (Auth::check()) {
             $like = PostLike::where('post_id',$this->id)->where('user_id',Auth::id())->where('status',1)->first();

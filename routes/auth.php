@@ -137,6 +137,8 @@ Route::middleware('auth')->group(function () {
 
         Route::get('user-tips', [WishitemController::class, 'userTips'])->name('user-tips');
 
+        Route::get('bill-tracker', [WishitemController::class, 'billTracker'])->name('bill-tracker');
+
         Route::get('subscriptions', [WishitemController::class, 'creatorSubscriptions'])->name('subscriptions');
 
         Route::get('subscribed', [WishitemController::class, 'userSubscribed'])->name('subscribed');
@@ -204,6 +206,8 @@ Route::middleware('auth')->group(function () {
             return Inertia::render('Profile/ActivateSubscription');
         })->name('stripe-subscription');
 
+        Route::post('/dalle-image', [ProfileController::class, 'getImageGenerateAI'])->name('dalle.image');
+        Route::post('/upload-dalle-image', [ProfileController::class, 'uploadDalleImage'])->name('upload.dalle.image');
     });
 
     Route::get('/earnings', function () {
@@ -211,6 +215,9 @@ Route::middleware('auth')->group(function () {
 
     })->name('earnings-page');
     Route::get('profile-steps-status/', [ProfileController::class, 'profileStepsStatus'])->name("profle-steps-status");
+
+    Route::get('piggy-bank-setting/', [ProfileController::class, 'piggyBankSetting'])->name("piggy-bank-setting");
+
     Route::get('get-notification/', [ProfileController::class, 'getNotifications'])->name("get-notification");
     Route::get('mark-as-read/', [ProfileController::class, 'markRead'])->name("mark-as-read");
 
@@ -245,10 +252,11 @@ Route::middleware('auth')->group(function () {
 Route::prefix('shop')->group(function () {
     Route::get('/list/{username}', [ShopsController::class,'shopList'])->name('shop-list');
     Route::get('/item/{slug}/{uuid}', [ShopsController::class,'singleShopList'])->name('single-shop-list');
-    Route::get('/buy/{uuid}', [ShopsController::class,'buyShopItem'])->name('buy-shop-item');
+    Route::match(['get', 'post'],'/buy/{uuid}', [ShopsController::class,'buyShopItem'])->name('buy-shop-item');
     Route::post('/answer-to-payment/{uuid}', [ShopsController::class,'answerPayment'])->name('answerPayment');
     Route::get('/success-payment/{id}', [ShopsController::class,'successPayment'])->name('shop.success-payment');
     Route::get('/cancel-payment/{id}', [ShopsController::class,'cancelPayment'])->name('shop.cancel-payment');
+    Route::get('/shipping-price/{shop_id}', [ShopsController::class,'shippingPrice'])->name('shop.shipping-price');
 });
 
 Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');

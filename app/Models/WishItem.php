@@ -32,11 +32,12 @@ class WishItem extends Model
         'is_pin',
         "fullfill_amount",
         'tax_amount',
+        "twitter_response",
         'delete_reason',
-        'deleted_at',
         'edited_reason',
         'edited_status',
-        'is_approved',
+        'deleted_at',
+        'is_approved'
     ];
 
     protected $appends = [
@@ -44,6 +45,10 @@ class WishItem extends Model
         'is_cart',
         'reward_url',
         'real_category'
+    ];
+
+    protected $casts = [
+        "twitter_response" => "array",
     ];
 
     public static function boot()
@@ -97,8 +102,6 @@ class WishItem extends Model
         $url = false;
         if (!empty($this->reward)) {
             $url = "https://ucarecdn.com/" . $this->reward . "/-/format/jpeg/";
-        } else {
-            $url = "https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/";
         }
 
         return $url;

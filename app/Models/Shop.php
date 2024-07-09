@@ -29,6 +29,8 @@ class Shop extends Model
         'slot_limitation',
         'special_member_price',
         'quantity_allow',
+        'shipping_information',
+        'vat_applicable'
     ];
 
     protected $hidden   =   [
@@ -43,9 +45,9 @@ class Shop extends Model
 
     protected $appends = [
         'perma_link',
-        'real_category',
         'reward_file_url',
-        'total_sold'
+        'total_sold',
+        'real_category'
     ];
 
     public static function boot()
@@ -99,6 +101,11 @@ class Shop extends Model
         }
 
         return $arr;
+    }
+
+
+    public function shop_varients(){
+        return $this->hasMany(ShopVarients::class,'shop_id');
     }
 
 }

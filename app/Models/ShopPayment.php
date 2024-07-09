@@ -34,7 +34,6 @@ class ShopPayment extends Model
         'id',
         'user_id',
         'shop_id',
-        'created_at',
         'updated_at',
         'deleted_at',
     ];

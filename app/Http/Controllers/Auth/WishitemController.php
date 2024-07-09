@@ -97,7 +97,7 @@ class WishitemController extends Controller
 
         $checkdata = Helpers::checkBlockData($request);
         if ($checkdata == 1) {
-            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive,
+            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         } else {
 
@@ -214,7 +214,7 @@ class WishitemController extends Controller
         // ]);
 
         if (Helpers::checkBlockData($request) == 1) {
-            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive,
+            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         }
 
@@ -270,7 +270,7 @@ class WishitemController extends Controller
         if (in_array($request->subscription, [0, 1])) {
 
             $productPayload = [
-                "name"  =>  $wish->wishname,
+                "name"  =>  $wish->wishname."(Custom Content Purchase)",
                 "images" => [$wish->perma_link],
                 "default_price_data"    =>  [
                     "currency"  =>  $user->default_currency,
@@ -311,8 +311,8 @@ class WishitemController extends Controller
         $wish = WishItem::where('uuid', $uuid)->first();
         $checkdata = Helpers::checkBlockData($request);
         if ($checkdata == 1) {
-            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg.paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,
-            😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
+            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
+             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         }
 
         $old_price = $wish->price;
@@ -371,7 +371,7 @@ class WishitemController extends Controller
             if (in_array($request->subscription, [0, 1])) {
 
                 $productPayload = [
-                    "name"  =>  $wish->wishname,
+                    "name"  =>  $wish->wishname."(Custom Content Purchase)",
                     "images" => [$wish->perma_link],
                     "default_price_data"    =>  [
                         "currency"  =>  $user->default_currency,
@@ -392,7 +392,7 @@ class WishitemController extends Controller
 
                     if($old_price == $wish->price){
                         $stripe_client = $stripe->products->update($wish->stripe_product_id,[
-                            'name' => $request->wishname ?? $wish->wishname,
+                            'name' => !empty($request->wishname) ? $request->wishname."(Custom Content Purchase)" : $wish->wishname."(Custom Content Purchase)",
                             'images' => [$wish->perma_link],
                             "default_price" => $wish->price_id,
                             // "url" => $request->item_url ?? null
@@ -472,8 +472,8 @@ class WishitemController extends Controller
         if ($checkdata == 1) {
             return response()->json([
                 'status' => false,
-                'msg' => "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,
-                😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦",
+                'msg' => "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
+             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦",
             ]);
         }
 
@@ -1542,6 +1542,28 @@ class WishitemController extends Controller
         return response()->json([
             'status' => true,
             'msg' => "Category Deleted."
+        ]);
+    }
+
+
+    public function billTracker(){
+        $user = Auth::user();
+        $bill_payments = BillPayment::whereHas('bill',function($q) use($user){
+            $q->where('user_id',$user->id);
+        })->with('bill')->latest()->get();
+
+        $bill_payments->map(function($q){
+            $q->user_data = [
+                'name' => $q->user->name,
+                'avatar' => $q->user->avatar_url,
+                'uuid' => $q->user->uuid
+            ];
+            return $q;
+        });
+
+        return response()->json([
+            'status' => true,
+            'bill_payments' => $bill_payments
         ]);
     }
 }

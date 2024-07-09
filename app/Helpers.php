@@ -11,7 +11,7 @@ class Helpers
 {
     public static function checkBlockData($request)
     {
-        $blockedWords = ['Paypig', 'Findom', 'Worship', 'Unlock', 'Unblock', 'Receive'];
+        $blockedWords = ['paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive','tax','fee','session','deposit','tribute','dick','goddess','master','mistress'];
         $blockedEmojis = ['😈', '💩', '💬', '👅', '🍆', '🍌', '🌽', '🌶️', '🍑', '💎', '💦'];
         foreach ($blockedWords as $word) {
             if (stripos($request->getContent(), $word) !== false) {
@@ -110,6 +110,6 @@ class Helpers
         ];
 
         return $arr[$curr];
-        
+
     }
 }

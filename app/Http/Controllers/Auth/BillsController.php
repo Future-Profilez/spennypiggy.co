@@ -346,7 +346,8 @@ class BillsController extends Controller
                 ],
                 // 'on_behalf_of'  => $bill->user->account_id,
                 // 'cancel_at_period_end'  =>  $reccure == 'onetime',
-                'description'   => "{$bill->name} of {$bill->user->username}."
+                // 'description'   => "{$bill->name} of {$bill->user->username}."
+                'description'   => "Membership Content Purchase."
             ];
 
             // try {
