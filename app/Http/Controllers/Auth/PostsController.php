@@ -55,6 +55,7 @@ class PostsController extends Controller
                  'title' => $request->title ?? null,
                  'content' => $request->content ?? null,
                  'image' => $request->image ?? null,
+                 "ai_generated" => $request->ai_generated ?? 0,
              ]);
 
              return response()->json([
@@ -104,6 +105,7 @@ class PostsController extends Controller
                  $post->title = $request->title ?? null;
                  $post->content = $request->content ?? null;
                  $post->image = $request->image ?? null;
+                 $post->ai_generated = $request->ai_generated ?? 0;
                  $post->approved = 0;
                  $post->save();
 

@@ -25,6 +25,7 @@ class WishItem extends Model
         "item_url",
         "thumbnail",
         'reward',
+        'ai_generated',
         "subscription",
         "subscription_period",
         "repeat_purchase",

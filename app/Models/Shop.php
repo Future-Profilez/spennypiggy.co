@@ -25,6 +25,7 @@ class Shop extends Model
         'success_page_type',
         'reward_file_type',
         'reward_file',
+        'ai_generated',
         'ask_question',
         'slot_limitation',
         'special_member_price',

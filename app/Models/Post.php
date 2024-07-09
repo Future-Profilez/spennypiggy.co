@@ -20,6 +20,7 @@ class Post extends Model
         'title',
         'content',
         'image',
+        'ai_generated',
     ];
 
     protected $hidden = [

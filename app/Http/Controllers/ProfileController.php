@@ -1030,27 +1030,26 @@ class ProfileController extends Controller
             'size' => $request->size,
         ];
 
-        try {
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-                'Authorization' => 'Bearer ' . $secret,
-            ])->post('https://api.openai.com/v1/images/generations', $data);
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $secret,
+        ])->post('https://api.openai.com/v1/images/generations', $data);
 
 
-            $resp = json_decode($response);
-            $url = $resp->data[0]->url;
+        $resp = json_decode($response);
+
+        if(!empty($resp->data[0])){
+            $url = $resp->data[0];
 
             return response()->json([
                 'status' => true,
                 'image_url' => $url
             ]);
-        } catch (\Throwable $th) {
-            return response()->json([
-               'status' => false,
-               'message' => 'Failed to generate image.',
-               'error' => $th
-            ]);
         }
+        return response()->json([
+            'status' => false,
+            'message' => "Please try with a different prompt."
+        ]);
     }
 
 
