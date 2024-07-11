@@ -65,7 +65,7 @@ export default function MyShopProducts({lists, loading, update}) {
                                     pre_title={s.name} title="Edit"
                                     pre_description={s.description} 
                                     pre_price={s.price} 
-                                    product_type={s.product_type}
+                                    product_type={s.type}
                                     item={s} isEdit={true} />
                               </Suspense>
                         </Dropdown.Menu>

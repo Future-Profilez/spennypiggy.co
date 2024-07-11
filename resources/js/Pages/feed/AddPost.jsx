@@ -10,15 +10,19 @@ import { toast } from 'react-hot-toast';
 import { useAlerts } from "@/Components/Alerts";
 import { useRef } from "react";
 import { FaPenNib } from "react-icons/fa6";
-import Post from './Post';
+import ImageGenerationWithAI from "@/Components/ImageGenerationWithAI";
 
-export default function AddPost({item, text, classes, isEdit, updateState}) {
+export default function AddPost({item, text, classes, isEdit, updateState, title}) {
 
     const [ close, setClose ] = useState();
     const { errorsHandling } = useAlerts();
     const [filetype, setfiletype] =  useState('image');
     const [rewardImage, setRewardImage] = useState(item?.image || '');
-    
+    const [isAiImage, setIsAiImage] = useState();
+    const getAIImage = (e) =>{ 
+        setRewardImage(e.uuid+'/-/text_align/left/center/-/font/10/fff/-/text/80px8p/8p,100p/Made%20with%20AI%20/-/format/jpeg/-/preview/');
+        setIsAiImage(e.url);
+    }
     const uploaderRef = useRef();
     const resetUploader = () => {
         if (uploaderRef.current) {
@@ -29,6 +33,7 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
     const getfile = async (data) => {
         setRewardImage(data?.uuid);
         setfiletype(data && data.contentInfo && data.contentInfo.mime && data.contentInfo.mime.type);
+        setIsAiImage(false)
     };
 
     const [data, setData] = useState({
@@ -59,7 +64,11 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
             return false
         }
         setLoading(true);
-        axios.post(`${isEdit ? `/post/edit/${item.uuid}` : "/post/save"}`, {...data, image:rewardImage, type: rewardImage ? 'image' : "blog" })
+        axios.post(`${isEdit ? `/post/edit/${item.uuid}` : "/post/save"}`, {...data, 
+            image:rewardImage, 
+            type: rewardImage ? 'image' : "blog",
+            ai_generated : isAiImage ? 1 : item.ai_generated || 0
+         })
         .then((resp) => {
             if(resp.data.status){
                 setRewardImage();
@@ -97,13 +106,13 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
     }
     return (
     <Popup modalclass='' space="4" size='md' action={close} 
-    classes={`${classes} w-full font-bold addop bg-white rounded-xl  p-3 mb-2 text-center`} 
+    classes={` w-full addop bg-white rounded-xl py-2 px-3 ${classes}`} 
     text={text ? text : <AddItem />} >
         {/* <form onSubmit={submitPost} > */}
             <div className="flex align-items-center" >
                 <div className={`gift-icon me-2 voilet`} 
                 dangerouslySetInnerHTML={{ __html: piggy }} />  
-                <h2 className="text-xl font-bold text-dark-500" >Add Post</h2>
+                <h2 className="text-xl font-bold text-dark-500" >{title ? title: "Add Post"}</h2>
             </div>
             
             <input onChange={handleInput} defaultValue={item?.title || ''} name="title" placeholder="Enter Title ..."
@@ -122,8 +131,20 @@ export default function AddPost({item, text, classes, isEdit, updateState}) {
                     <h2 className="w-100 my-2 text-center" >Or</h2>
                 </>
                 : ''}
+                {isAiImage ? 
+                    <div className="default-wish-img border relative mb-2 ">
+                        <img src={isAiImage}
+                        className="img-fluid" />
+                    </div> 
+                : ""}
 
                 <GlobalUploader ref={uploaderRef} view={false} type="minimal" sendFile={getfile} options={st.post} />
+                <div className="flex justify-center" >
+                    <div>
+                        <h2 className="text-center text-gray-400 py-3" >Or</h2>
+                        <ImageGenerationWithAI update={getAIImage} />
+                    </div>
+                </div>
             </div>
 
                     <p className="text-grey-500 mb-1 mt-4" >Choose Audience</p>

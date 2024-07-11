@@ -319,8 +319,8 @@ export default function Dashboard(props) {
                      top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full">
                         <div className="w-full max-w-[550px] px-3">
                             <Suspense fallback={"Loading.."}>
-                                <div className="bg-gray-100 w-full p-10 rounded-3xl shadow-lg z-10 w-full ">
-                                    <h2 className="font-bold text-black text-2xl mb-4 text-center m-auto ">Add Item to fund your lifestyle.</h2>
+                                <div className="bg-gray-100 w-full p-6 md:p-10 rounded-3xl shadow-lg z-10 w-full ">
+                                    <h2 className="font-bold text-black  text-xl md:text-2xl mb-4 text-center m-auto ">Add Item to fund your lifestyle.</h2>
                                     {auth.user && auth.user.stripe_details_submitted == 1 ? 
                                         <>
                                             <Wishlist  
@@ -331,11 +331,11 @@ export default function Dashboard(props) {
                                             categories={categories} />
                                             <AddMembership updateState={updateState} />
                                             <AddBills updatebill={updatebill}/>
-                                            <AddItem classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
+                                            <AddItem  classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
                                             product_type="digital_products"  />
                                         </>
                                     : '' }
-                                    <AddPost updateState={updateState} />
+                                    <AddPost classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} />
                                     <button onClick={()=>setShowAdd(false)} className="m-auto table p-2 mt-3"  >Cancel</button>
                                 </div>
                             </Suspense>

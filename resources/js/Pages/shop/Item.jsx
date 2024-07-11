@@ -115,8 +115,9 @@ export default function ShopDetailItem(props) {
                         </ol>
                      </nav>
 
-                     <div className="w-full">
+                     <div className="w-full relative">
                         <img className="w-full max-h-[400px] object-cover rounded-xl" alt="image of a girl posing" src={shop.perma_link}/>
+                        {shop.ai_generated == 1 ? <div className='absolute bottom-2 left-2 z-1 bg-black shadow-sm rounded-xl px-2 py-1 text-[8px] text-white'>MADE WITH AI </div> : ""}
                      </div> 
 
                      <h2 className='font-GillSans text-uppercase text-3xl pt-4 pb-3' >{shop.name}</h2>
@@ -215,12 +216,13 @@ export default function ShopDetailItem(props) {
                               {shop && shop.is_member == 1 && shop.special_member_price ? <>
                                  {formatMultiPrice(shop.special_member_price, shop?.currency || 'GBP') } <span className='line-through text-gray-400' >{price > 0 ? formatMultiPrice(price, shop?.currency || 'GBP') : "FREE"}</span>
                               </>  
-                              : 
-                              price > 0 ? formatMultiPrice(price, shop?.currency || 'GBP') : "Free"
+                              : price > 0 ? formatMultiPrice(price, shop?.currency || 'GBP') : "Free"
                               }
                               {shop.slot_limitation ? <span className='ms-3 text-pink text-lg font-light ' >Only {shop.slot_limitation - shop.total_sold} Left</span> :""}
                            </h3>
-                           <h2 className='mt-1'>Shipping Price : {formatMultiPrice(shippingPrice, shop?.currency || 'GBP')}</h2>
+                           {shop.type === 'physical' ? <h2 className='mt-1'>
+                              Shipping Price : {formatMultiPrice(shippingPrice, shop?.currency || 'GBP')}</h2>
+                           : ''}
                         </div>
  
                         { IsloggedIn ? 

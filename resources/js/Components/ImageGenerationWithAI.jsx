@@ -58,7 +58,7 @@ export default function ImageGenerationWithAI({ classes, size, update }) {
                 size="md"
                 action={close}
                 text={<> USE AI 🤖</>}
-                classes={`${classes ? classes:"button bg-pink d-table d-sm-flex m-auto m-sm-0"}`}>
+                classes={`${classes ? classes : "button bg-pink d-table d-sm-flex m-auto m-sm-0"}`}>
                 <div className="p-4">
                     <h2 className="mb-0 text-large font-bold">
                         IMAGE GENERATE WITH AI 
