@@ -425,7 +425,7 @@ class ShopsController extends Controller
 
         $shops = [];
         if(!empty($user)){
-            $query = Shop::where('user_id',$user->id)->orderBy('created_at','desc');
+            $query = Shop::where('user_id',$user->id)->with(['user','shop_varients'])->orderBy('created_at','desc');
 
             if(Auth::check()){
                 if(Auth::id() != $user->id){
@@ -561,7 +561,7 @@ class ShopsController extends Controller
     }
 
 
-    public function buyShopItem(Request $request,$shop_id,$varient_id = null)
+    public function buyShopItem(Request $request,$shop_id,$varient_id)
     {
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         try {
@@ -606,7 +606,7 @@ class ShopsController extends Controller
 
             $vat_percentage_amount = 0;
 
-            if(!empty($varient_id)){
+            if($varient_id != "no_varient"){
                 $var = ShopVarients::where('id',$varient_id)->first();
                 $amount = round($var->price, 2, PHP_ROUND_HALF_UP);
             }

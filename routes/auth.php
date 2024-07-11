@@ -18,6 +18,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\ShopsController;
 use App\Http\Controllers\Auth\SocialLinksController;
 use App\Http\Controllers\Auth\StripeController;
+use App\Http\Controllers\Auth\TestController;
 use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
@@ -33,6 +34,7 @@ use Inertia\Inertia;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
 use App\StripeControl;
+use App\Uploadcare;
 use Illuminate\Support\Facades\Http;
 
 // Route::get('/frd', function () {
@@ -208,6 +210,7 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/dalle-image', [ProfileController::class, 'getImageGenerateAI'])->name('dalle.image');
         Route::post('/upload-dalle-image', [ProfileController::class, 'uploadDalleImage'])->name('upload.dalle.image');
+
     });
 
     Route::get('/earnings', function () {
@@ -245,17 +248,20 @@ Route::middleware('auth')->group(function () {
         Route::get('orders-list', [ShopsController::class, 'ordersList'])->name('orders-list');
     });
 
-
+    Route::get('create-applicant', [TestController::class, 'createApplicant']);
+    Route::get('generate-verification-link', [TestController::class, 'generateVerificationLink']);
 
 });
 
+Route::post('/report-content/', [ProfileController::class,'reportContent'])->name('report-content');
+
 Route::prefix('shop')->group(function () {
     Route::get('/list/{username}', [ShopsController::class,'shopList'])->name('shop-list');
-    Route::get('/item/{slug}/{uuid}', [ShopsController::class,'singleShopList'])->name('single-shop-list');
-    Route::match(['get', 'post'],'/buy/{uuid}', [ShopsController::class,'buyShopItem'])->name('buy-shop-item');
-    Route::post('/answer-to-payment/{uuid}', [ShopsController::class,'answerPayment'])->name('answerPayment');
-    Route::get('/success-payment/{id}', [ShopsController::class,'successPayment'])->name('shop.success-payment');
-    Route::get('/cancel-payment/{id}', [ShopsController::class,'cancelPayment'])->name('shop.cancel-payment');
+    Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class,'singleShopList'])->name('single-shop-list');
+    Route::match(['get', 'post'],'/buy/{uuid}/{varient_id}', [ShopsController::class,'buyShopItem'])->name('buy-shop-item');
+    Route::post('/answer-to-payment/{payment_id}', [ShopsController::class,'answerPayment'])->name('answerPayment');
+    Route::get('/success-payment/{uuid}', [ShopsController::class,'successPayment'])->name('shop.success-payment');
+    Route::get('/cancel-payment/{uuid}', [ShopsController::class,'cancelPayment'])->name('shop.cancel-payment');
     Route::get('/shipping-price/{shop_id}', [ShopsController::class,'shippingPrice'])->name('shop.shipping-price');
 });
 
@@ -422,6 +428,11 @@ Route::prefix("bill")->name("bill.")->group(function () {
     Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [BillsController::class, 'buyBill'])->name("checkout");
     Route::get('/handle/{uuid}/{status}', [BillsController::class, 'handlePayment'])->name('handle');
 });
+
+Route::get('image/dalle', [TestController::class, 'testAiImage'])->name("image-dalle");
+
+
+Route::match(["get", "post"],'/test-kyc-webhook',[TestController::class,'reviewWebhook'])->name("test-kyc")->withoutMiddleware(VerifyCsrfToken::class);
 
 
 
