@@ -17,9 +17,10 @@ export default function ProfileProduct({item}) {
 
   return (
       <article class="max-w-sm w-full bg-white rounded-[22px] overflow-hidden ">
-         <div>
+         <div className='relative'>
             <Link href={url} >
-               <img class="object-cover h-[130px] sm:h-[200px] w-full" src={item.perma_link} alt="Converse sneakers" />
+               <img class="object-cover h-[130px] sm:h-[200px] w-full" src={item.perma_link} alt={item.name} />
+               {item.ai_generated == 1 ? <div className='absolute bottom-2 left-2 z-1 bg-black shadow-sm rounded-xl px-2 py-1 text-[8px] text-white'>MADE WITH AI </div> : ""}
             </Link>
          </div>
          <Link href={url}  class="flex flex-col gap-1 mt-2 sm:mt-4 px-3 sm:px-4">

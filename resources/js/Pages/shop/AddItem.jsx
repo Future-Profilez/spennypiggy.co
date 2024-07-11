@@ -394,6 +394,7 @@ export default function AddItem(props) {
                 image: thumb,
                 vat_applicable: haveVat,
                 success_page_type: pagetype,
+                ai_generated: IsAiImage ? 1 : 0,
             };
             axios
                 .post(`/shop/update/${item.uuid}`, data)
@@ -452,7 +453,7 @@ export default function AddItem(props) {
             <Popup
             modalclass="addShopItem modal full"
             size="lg"
-            action={close}
+            action={open}
             text={title || <AddItem />}
             classes={`${classes ? classes : "px-3 py-2"}`} >
                 <div className="p-3 md:p-8 overflow-auto bg-white md:bg-gray-200 h-full">
@@ -462,13 +463,12 @@ export default function AddItem(props) {
                     <div className="shop-forms-field p-0 md:p-8 max-w-[800px] m-auto rounded-[20px]">
                         <div className="shop-forms-field mb-4">
                             <label className="w-full mb-1.5"> Select what you’re offering </label>
-                            <Select
-                                defaultValue={{ value: "Digital Products", label: "Digital Products" }}
-                                classNamePrefix="react-select"
-                                className="react-select-lists mb-4 mt-2 "
-                                options={lists}
-                                onChange={handleLists}
-                                placeholder={"Select what you’re offering.."}
+                            <Select 
+                            defaultValue={product_type ? lists.filter((item) => item.value === product_type)  : { value: "Digital Products", label: "Digital Products" }}
+                            classNamePrefix="react-select"
+                            className="react-select-lists mb-4 mt-2 "
+                            options={lists} onChange={handleLists}
+                            placeholder={"Select what you’re offering.."}
                             />
                         </div>
 
@@ -554,7 +554,8 @@ export default function AddItem(props) {
                             <CountriesShipping handleShipping={handleShipping} handlewws={handlewws} />
                             
                             <h2 className="font-bold pt-4 border-t border-gray-200 mb-2">Shipping Information</h2>
-                            <input type="text" className="shop-forms-input ps-[50px] bg-gray-200 w-full bg-gray-200 border-0 mb-6 rounded-xl p-[12px] px-[20px]"
+                            <input type="text" className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 
+                            mb-6 rounded-xl p-[12px] px-[20px]"
                             name={`shipping-information`}
                             placeholder="Shipping information.."
                             onChange={(e) => setShipping_info(e.target.value)} />

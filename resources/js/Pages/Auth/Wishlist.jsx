@@ -16,6 +16,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import axios from "axios";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 import { FaRegHeart } from "react-icons/fa";
+import ImageGenerationWithAI from "@/Components/ImageGenerationWithAI";
 
 
 const imageLinks = [
@@ -44,6 +45,8 @@ export default function Wishlist(props) {
     const [thumbnail, setThumbnail] = useState("");
     const [adding, setAdding] = useState(false);
     const [rewardImage, setRewardImage] = useState('');
+    const [isAiImage, setIsAiImage] = useState();
+
     useEffect(() => {
         setClose(openPop);
     }, [openPop]);
@@ -66,8 +69,7 @@ export default function Wishlist(props) {
         axios.get(`/user_category/${auth && auth.user && auth.user.username}`, { signal })
         .then((resp) => {
             setcategories(resp.data.categories);
-        })
-        .catch((_err) => {
+        }).catch((_err) => {
             console.error("error", _err);
         });
     };
@@ -105,8 +107,9 @@ export default function Wishlist(props) {
         subscription_period: item && item.subscription_period ? item.subscription_period : "",
         repeat_purchase: item && item.repeat_purchase ? item.repeat_purchase : 1,
         category: item && item.category ? item.category : 0,
+        ai_generated: isAiImage ? 1 : 0,
     });
-    
+ 
     const [period, setPeriod] = useState(
         data.subscription_period || (item && item.subscription_period)
     );
@@ -114,6 +117,7 @@ export default function Wishlist(props) {
     const onSlideChange = (swiper) => {
         setData("thumbnail", imageLinks[swiper && swiper.activeIndex]);
     };
+    
     const setSubs = (e) => {
         setData("subscription", e);
         setRepeat(true);
@@ -144,10 +148,17 @@ export default function Wishlist(props) {
         setIsEditable(false);
     }; 
 
+    const getAIImage = (e) =>{ 
+        setRewardImage(e.uuid+'/-/text_align/left/center/-/font/10/fff/-/text/80px8p/8p,100p/Made%20with%20AI%20/-/format/jpeg/-/preview/');
+        setIsAiImage(e.url);
+        setData("ai_generated", 1);
+    }
 
     const getrewardFile = async (data) => {
         let ss = data?.uuid;
         setRewardImage(ss);
+        setIsAiImage(false);
+        setData("ai_generated", 0);
     };
 
 
@@ -243,6 +254,7 @@ export default function Wishlist(props) {
         }
     };
 
+
     const AddItem = () => {
     return <div className=" flex items-center">
         <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]" >
@@ -258,11 +270,11 @@ export default function Wishlist(props) {
     return (
         <Popup 
             modalclassName="pinkmodal full"
-            size="md"
+            size="lg"
             action={close}
             classes={`${editpop ? "editpop" : "w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"}`}
             text={customtext || <AddItem /> } >
-            <div className="editprofileModal  wishlistModal ">
+            <div className="editprofileModal  wishlistModal max-h-[90vh] overflow-auto customScrollbar ">
                 <div className="editprofileModalInner">
                             <h2 className='p-4 text-pink text-start font-GillSans uppercase text-large black-stroke font-semibold mb-1 pe-5'>{editpop ? " Edit Wish" : "Add A Wish"}</h2>
                             <div className="wishinfo border-top pt-0">
@@ -526,12 +538,21 @@ export default function Wishlist(props) {
                                         {item && item.reward_url ? <div className="default-wish-img border mb-2">
                                             <img src={item && item.reward_url}className="img-fluid"/>
                                         </div> : '' }
+                                        {isAiImage? <div className="default-wish-img border mb-2">
+                                            <img src={isAiImage}className="img-fluid"/>
+                                        </div> : '' }
                                         <GlobalUploader
                                             type="minimal"
                                             ref={uploaderRef1}
                                             sendFile={getrewardFile}
                                             options={st.rewards}
                                         />
+                                        <div className="flex justify-center" >
+                                            <div>
+                                                <h5 className="text-center text-gray-400 text-lg py-3" >Or</h5>
+                                                <ImageGenerationWithAI update={getAIImage} />
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* <div className="twitter-an mt-3 pt-2">
@@ -560,32 +581,21 @@ export default function Wishlist(props) {
                                                 <p> Organize your wishes to help gifters find what they're looking for while on your wishlist.</p>
 
                                                 <div className="catslists">
-                                                    {categories && categories.length
-                                                        ? categories.map(
-                                                              (c, i) => {
-                                                                const filteritem = real_category && real_category.filter(item => item?.category == c?.category );
-                                                                const isCategory = filteritem && filteritem[0] ? true : null;
-                                                                  return (
-                                                                      <>
-                                                                          <div className="repeatpurchase mb-2 text-start">
-                                                                              <label
-                                                                                  className="text-capitalize"
-                                                                                  htmlFor={"categories"+i}>  
-                                                                                  <input
-                                                                                    type="checkbox"
-                                                                                    id={"categories" +i}
-                                                                                    value={c.id}
-                                                                                    name="category"
-                                                                                    onChange={catValue}
-                                                                                    checked={isCategory}
-                                                                                  />
-                                                                                  {c.category}
-                                                                              </label>
-                                                                          </div>
-                                                                      </>
-                                                                  );
-                                                              }
-                                                          )
+                                                    {categories && categories.length ? categories.map((c, i) => {
+                                                        const filteritem = real_category && real_category.filter(item => item?.category == c?.category );
+                                                        const isCategory = filteritem && filteritem[0] ? true : null;
+                                                            return (
+                                                                <>
+                                                                    <div className="repeatpurchase mb-2 text-start">
+                                                                        <label
+                                                                            className="text-capitalize"
+                                                                            htmlFor={"categories"+i}>  
+                                                                            <input type="checkbox" id={"categories" +i}value={c.id}name="category" onChange={catValue}checked={isCategory}/>
+                                                                            {c.category}
+                                                                        </label>
+                                                                    </div>
+                                                                </>
+                                                            )})
                                                         : ""}
                                                 </div>
 
