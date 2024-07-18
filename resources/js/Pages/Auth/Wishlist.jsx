@@ -38,7 +38,7 @@ export default function Wishlist(props) {
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
     const [defaultKey, setDefaultKey] = useState(item && item.subscription !== null ? +item.subscription : null);
-  
+
     const [close, setClose] = useState();
     const { formatMultiPrice } = PriceFormat();
     const [repeat, setRepeat] = useState(true);
@@ -89,7 +89,7 @@ export default function Wishlist(props) {
                 fetch_categories();
                 inputRef.current.value = '';
             } else {
-                errorAlert(res.data.msg || "Something went wrong.");
+             errorAlert(res.data.msg || "Something went wrong.");
             }
         }).catch((err) => {
             setAdding(false);
@@ -109,7 +109,7 @@ export default function Wishlist(props) {
         category: item && item.category ? item.category : 0,
         ai_generated: isAiImage ? 1 : 0,
     });
- 
+
     const [period, setPeriod] = useState(
         data.subscription_period || (item && item.subscription_period)
     );
@@ -117,7 +117,7 @@ export default function Wishlist(props) {
     const onSlideChange = (swiper) => {
         setData("thumbnail", imageLinks[swiper && swiper.activeIndex]);
     };
-    
+
     const setSubs = (e) => {
         setData("subscription", e);
         setRepeat(true);
@@ -134,21 +134,21 @@ export default function Wishlist(props) {
             setCheckboxes(checkboxes.filter((item) => item !== value));
         }
     };
-    
+
     const [isEditable, setIsEditable ] = useState(false);
     const getFileUID = async (data) => {
         let ss = data?.uuid;
         setThumbnail(ss);
         setIsEditable(true);
-    }; 
+    };
 
     const wishImageEdited = async (d,uuid) => {
         const url = `${uuid}/${d.cdnUrlModifiers}-/preview/`
         setThumbnail(url);
         setIsEditable(false);
-    }; 
+    };
 
-    const getAIImage = (e) =>{ 
+    const getAIImage = (e) =>{
         setRewardImage(e.uuid+'/-/text_align/left/center/-/font/10/fff/-/text/80px8p/8p,100p/Made%20with%20AI%20/-/format/jpeg/-/preview/');
         setIsAiImage(e.url);
         setData("ai_generated", 1);
@@ -237,7 +237,7 @@ export default function Wishlist(props) {
                         setClose(false);
                         resetUploader();
                         setTimeout(() => {
-                            setClose(); 
+                            setClose();
                         }, 100);
                         fetchingcats();
                     }
@@ -268,7 +268,7 @@ export default function Wishlist(props) {
     }
 
     return (
-        <Popup 
+        <Popup
             modalclassName="pinkmodal full"
             size="lg"
             action={close}
@@ -278,7 +278,7 @@ export default function Wishlist(props) {
                 <div className="editprofileModalInner">
                             <h2 className='p-4 text-pink text-start font-GillSans uppercase text-large black-stroke font-semibold mb-1 pe-5'>{editpop ? " Edit Wish" : "Add A Wish"}</h2>
                             <div className="wishinfo border-top pt-0">
-                                <p className="text-danger mb-4 pt-3" >When adding items please ensure they are specific i.e Holiday Clothes or New Gym Equipment. Items that are non specific will be rejected and removed. Our AI blocks adult content but any overly suggestive images will also be rejected. Please reach out to support for further clarification</p>
+                                <p className="text-danger mb-4 pt-3" >When adding items please ensure they are specific i.e Holiday Clothes or New Gym Equipment. Items that are non specific will be rejected and removed. Our AI blocks adult content but any overly suggestive images will also be rejected. Please reach out to support for further clarification.</p>
                                 <form onSubmit={createWishList}>
                                     <ul className="ps-0">
                                         <li className="mb-4">
@@ -299,7 +299,7 @@ export default function Wishlist(props) {
                                         </li>
                                         <li className="mb-4">
                                             <label className="mb-2 text-start d-block">
-                                                Price 
+                                                Price
                                             </label>
                                             <div className="currency-wrapper position-relative">
                                                 <span className="currency-tag">
@@ -336,7 +336,7 @@ export default function Wishlist(props) {
                                                 onChange={(e) => setData( "item_url",e.target.value )}
                                             />
                                         </li>
-                                            
+
                                         <li className="mb-4">
                                             <label className="mb-2 text-start d-block">
                                                 Choose Image or Upload
@@ -572,7 +572,7 @@ export default function Wishlist(props) {
                                                 Enable auto tweet for this item.
                                             </p>
                                         </div> */}
-                                        
+
                                     <div className="publish text-start">
                                             <>
                                                 <strong>
@@ -589,7 +589,7 @@ export default function Wishlist(props) {
                                                                     <div className="repeatpurchase mb-2 text-start">
                                                                         <label
                                                                             className="text-capitalize"
-                                                                            htmlFor={"categories"+i}>  
+                                                                            htmlFor={"categories"+i}>
                                                                             <input type="checkbox" id={"categories" +i}value={c.id}name="category" onChange={catValue}checked={isCategory}/>
                                                                             {c.category}
                                                                         </label>
@@ -634,7 +634,7 @@ export default function Wishlist(props) {
                                                 )}
                                             </>
                                     </div>
-                                    
+
                                 </form>
                             </div>
                 </div>

@@ -876,9 +876,9 @@ select#country{width:100%;}
   .filter-select{padding:11px 15px;font-size:15px;padding-right:30px !important;}
   .howWorkTab ul{flex-wrap:nowrap !important;display:flex !important;}
 }
-
 .blur{backdrop-filter:blur(2px); transition: 0.5s;}
 .addop{transition:0.5s ease;}
 .addop:hover{transform:scale(1.05);transition:0.5s ease;}
 .menutoggle .menu{left:-100%;transition:0.4s;}
 .menutoggle.shows .menu{transition:0.4s;left:0%;}
+.otp-input{line-height:32px;font-family:sans-serif;}
