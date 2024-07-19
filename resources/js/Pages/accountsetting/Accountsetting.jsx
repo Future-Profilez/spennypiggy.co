@@ -14,6 +14,7 @@ import { useAlerts } from '@/Components/Alerts';
 import ChangeVat from '../account/ChangeVat';
 import DeleteStripeAccount from '../Profile/DeleteStripeAccount';
 import SiteSubscription from '../Profile/SiteSubscription';
+import TFA from '../Auth/TFA';
 
 export default function Accountsetting(props) {
     const { successAlert, errorAlert } = useAlerts();
@@ -151,6 +152,14 @@ export default function Accountsetting(props) {
                                 </div>
                             </li> 
  
+                            <li>
+                                <TFA text={<>
+                                    <div className='notification uppercase'>
+                                        TWO FACTOR AUTHENTICATION
+                                    </div>
+                                </>} />
+                            </li>
+
                             <li>
                                 <Popup space='4' modalclassName="pinkmodal" 
                                 text={<>DELETE ACCOUNT  </>} >
