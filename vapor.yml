@@ -5,6 +5,7 @@ environments:
     memory: 2048
     queue-memory: 1024
     cli-memory: 512
+    timeout: 30
     runtime: "php-8.2:al2"
     domain: dev.spennypiggy.co
     database: spennypiggy-db-dev

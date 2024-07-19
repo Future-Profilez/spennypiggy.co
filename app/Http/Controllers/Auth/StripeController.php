@@ -871,7 +871,10 @@ class StripeController extends Controller
 
         if(Auth::check()){
             if($creator->id == Auth::id()){
-                return redirect()->back()->with('error', "You can't pay yourself!");
+                return response()->json([
+                    'status' => false,
+                    'msg' => "You can't pay yourself!"
+                ]);
             }
         }
 
@@ -941,7 +944,10 @@ class StripeController extends Controller
                     "default_price_data" => ["currency" => strtolower($creator->default_currency), "unit_amount_decimal" => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100],
                 ]);
             } catch (Exception $e) {
-                return redirect()->back()->with('error', $e->getMessage());
+                return response()->json([
+                    'status' => false,
+                    'msg' => $e->getMessage()
+                ]);
             }
 
             $pay = TipGoalsPayment::create([
@@ -973,10 +979,9 @@ class StripeController extends Controller
                 'payment_intent_data' => [
                     'transfer_data' => [
                         'destination' => $creator->account_id, // Creator's connected account ID
-                        'amount' => Helpers::priceFormat($creator->default_currency, $price, $currency) * 100,
                     ],
-                    // 'application_fee_amount' => $tax * 100,
-                    // 'on_behalf_of'  => $creator->account_id,
+                    'application_fee_amount' => $tax * 100,
+                    'on_behalf_of'  => $creator->account_id,
                     'description' => "Supporter Membership Payment."
                 ],
                 'customer_email' =>  $request->email,
@@ -990,9 +995,15 @@ class StripeController extends Controller
                     'session_id' =>  $session->id
                 ]);
 
-                return Inertia::location($session->url);
+                return response()->json([
+                    'status' => true,
+                    'url' => $session->url
+                ]);
             } catch (Exception $e) {
-                return back()->with('error',$e->getMessage());
+                return response()->json([
+                    'status' => false,
+                    'msg' => $e->getMessage()
+                ]);
             }
         }
 
