@@ -51,6 +51,9 @@ export default function Login({ status, canResetPassword }) {
            if (resp.data.status) {
                if (resp.data.is_2fa) {
                    setOpen("open");
+                   setTimeout(() => {
+                    setOpen(false);
+                   },1000);
                 } else { 
                     submit();
                 }
@@ -135,8 +138,7 @@ export default function Login({ status, canResetPassword }) {
                                 <LoaderButton
                                     disabled={loading}
                                     className="btn-pink lg2 lg w-80 mb-4 mb-md-0 max-width login"
-                                    spinnerClassName="fill-red-600"
-                                >
+                                    spinnerClassName="fill-red-600" >
                                     {loading ? "Wait" : "Log in"}
                                 </LoaderButton>
                             </div>

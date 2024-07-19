@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import { IoPhonePortrait } from "react-icons/io5";
 
 export default function TFA() {
+
     const { auth } = usePage().props;
     const [open, setOpen] = useState(false);
     const [step, setStep] = useState(1);
@@ -36,11 +37,10 @@ export default function TFA() {
     };
 
     const [qr, setQr] = useState(null);
-
     const [backupCodes, setBackupCodes] = useState([]);
-     
 
     const getQr = async () => {
+        setStep(2);
         axios.get(`/show-2fa-qr`).then((resp) => {
             if (resp.data.status){
                 setQr(resp.data.qr_code);
@@ -50,12 +50,6 @@ export default function TFA() {
             console.error("error", _err);
         });
     };
-
-    useEffect(() => {
-        if(auth.user.is_2fa === 0){
-            getQr();
-        }
-    }, []);
 
     const [verifying, setVerifying] = useState(false);
     const verify = async () => {
@@ -82,6 +76,8 @@ export default function TFA() {
          if (resp.data.status) {
             successAlert(resp.data.msg);
             setIsTFA(0);
+            setBackupCodes([]);
+            setStep(1);
             setOpen(false);
          } else {
             errorAlert(resp.data.msg);
@@ -97,8 +93,8 @@ export default function TFA() {
         const codesString = codes.join("\n\n");
         navigator?.clipboard.writeText(codesString);
         successAlert("Backup code copied to clipboard.");
-        setOpen(false);
         setIsTFA(1);
+        setOpen('close');
     }
 
 
@@ -115,7 +111,7 @@ export default function TFA() {
                                     <p className="text-gray-700 mb-4"> Please use the following backup codes to sign in to your account if you lose access to your authenticator app or phone.</p>
                                     <p className="text-gray-700 font-bold mb-4 ">Please take a screenshot or copy these code and store them in a safe place. These are one time generated.</p>
                                     <div className="codes bg-gray-100 p-4 rounded-xl relative">
-                                        {backupCodes && backupCodes.mpa((code, index) => (
+                                        {backupCodes && backupCodes.map((code, index) => (
                                             <p key={index} className="mb-2 text-lg">{code}</p>
                                         ))}
                                         <button className="absolute top-2 right-3 text-[14px] bg-gray-200 px-3 py-1 rounded-lg" onClick={()=>copyCodes(backupCodes)} >Copy</button>
@@ -150,7 +146,8 @@ export default function TFA() {
                                                     security code from your autheticator app.
                                                 </li>
                                             </ul>
-                                            <button onClick={() => setStep(2)} className="border-0 pinkbg rounded-2xl px-3 py-2 text-lg text-white m-auto table w-full mt-4 " > Next</button>
+                                            <button onClick={getQr} 
+                                            className="border-0 pinkbg rounded-2xl px-3 py-2 text-lg text-white m-auto table w-full mt-4 " > Next</button>
                                         </div>
 
                                         <div className={`step1 ${step === 2 ? "visible" : "hidden"}`}>

@@ -2,6 +2,9 @@ import React, { useRef, useState } from 'react';
 import { useForm, Link, usePage } from "@inertiajs/react";
 import PriceFormat from '@/includes/PriceFormat';
 import {piggynose, piggyface, tipheading, leftleg, rightleg} from '@/includes/Icons';
+import { useEffect } from 'react';
+import axios from 'axios';
+import { useAlerts } from '@/Components/Alerts';
 
 export default function TipInner({classes}) {
 
@@ -13,7 +16,10 @@ export default function TipInner({classes}) {
   const [amount, setAmount] = useState(defaultAmount);
   const [tipQuantity, setTipQuantity] = useState(1);
   const [coinsQuantity, setCoinsQuanitity] = useState(1)
+  const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
+
+  
   const incresevalue = () =>{ 
       const c = parseInt(tipQuantity+1);
       setAmount(defaultAmount*c);
@@ -55,7 +61,31 @@ export default function TipInner({classes}) {
     name: auth && auth.user?.name || '',
     message: '', 
     anonymous: 0,
+    amount: amount
   }); 
+
+  useEffect(()=>{
+    setData("amount", amount);
+   },[amount]);
+
+   const [loading, setLoading] = useState(false);
+  const send = (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const resp = axios.post(`tip-jar/pay/${user.uuid}`, data);
+    resp.then((res) => {
+      console.log("res",res)
+      if(res.data.status){
+        window.location.href = res.data.url
+      } else {
+        errorAlert(res.data.msg);
+      }
+      setLoading(false);
+    }).catch((err) => {
+      console.log("err", err)
+      setLoading(false);
+    });
+  }
   
   return <div className='tip-wrapper'>
       <div className='piggyface' dangerouslySetInnerHTML={{ __html: piggyface }} />
@@ -147,11 +177,11 @@ export default function TipInner({classes}) {
                 </label>
                 <p className="text-muted text-small mt-1 mb-3" >Your personal email and name will be private.</p>
             </div>
-            <Link className={`inline-flex items-center px-4 border shadow-black
+            <button onClick={send} className={`inline-flex items-center px-4 border shadow-black
                rounded-[30px] btn-pink md justify-content-center  border-0
               ease-in-out duration-150 flex button text-center w-100  
-              font-CeraGR mx-auto ${checkRef.current && checkRef.current.checked ? '' :'disabled'}`}  href={`tip-jar/pay/${user.uuid}`} 
-              method="post" data={{...data, amount:amount}} > {processing ? "Processing" : 'Support Me'} </Link>
+              font-CeraGR mx-auto ${checkRef.current && checkRef.current.checked ? '' :'disabled'}`}  
+               > {processing ? "Processing" : 'Support Me'} </button>
             <div className='securestripe text-center mt-3' >
               🔒 Secured via <b>Stripe</b>
             </div>

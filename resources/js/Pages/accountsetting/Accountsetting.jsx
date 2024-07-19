@@ -156,11 +156,6 @@ export default function Accountsetting(props) {
                                 <TFA text={<>
                                     <div className='notification uppercase'>
                                         TWO FACTOR AUTHENTICATION
-                                        <label className="toggle-switch">
-                                            <input id='showbankearning' checked={showEarning}
-                                            type="checkbox" onChange={swicthEarning}  />
-                                            <span for='showbankearning' className="slider"></span>
-                                        </label>
                                     </div>
                                 </>} />
                             </li>

@@ -14,6 +14,8 @@ export default function EnterOTP({user, action}) {
    useEffect(() => {
       if(action === 'open'){
          setOpen(true);
+      } else { 
+         setOpen();
       }
    }, [action]);
    const { successAlert, errorAlert, errorsHandling } = useAlerts();
