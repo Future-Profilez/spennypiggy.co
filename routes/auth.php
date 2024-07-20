@@ -36,13 +36,8 @@ use App\Models\WishCategory;
 use App\StripeControl;
 use App\Uploadcare;
 use Illuminate\Support\Facades\Http;
-
-// Route::get('/frd', function () {
-//     print_r('ffff');
-//     die;
-// });
-
-
+use App\SeoMeta;
+use Illuminate\Foundation\Application;
 
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
@@ -53,7 +48,11 @@ Route::middleware('guest')->group(function () {
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
-    Route::post('login-user', [AuthenticatedSessionController::class, 'store'])->name('login-user')->middleware('mustHaveToVerify');
+    Route::match(['get','post'],'verify/login', [AuthenticatedSessionController::class, 'store'])->name('login-user')->middleware('mustHaveToVerify');
+
+    Route::post('verify-2fa', [AuthenticatedSessionController::class, 'verify2FA'])->name('verify2FA')->middleware('mustHaveToVerify');
+
+    Route::post('/verify-user', [AuthenticatedSessionController::class, 'verifyUser'])->name('verifyUser');
 
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
         ->name('password.email');
@@ -70,6 +69,8 @@ Route::middleware('guest')->group(function () {
         ->name('password.store');
 
     Route::get('verify-token/{token}', [AuthenticatedSessionController::class, 'authRedirects']);
+
+    Route::get('update-2fa-key', [ProfileController::class, 'update2FaKey']);
 });
 
 
@@ -248,6 +249,10 @@ Route::middleware('auth')->group(function () {
     Route::get('create-applicant', [TestController::class, 'createApplicant']);
     Route::get('generate-verification-link', [TestController::class, 'generateVerificationLink']);
 
+    Route::get('generate-backup-code', [AuthenticatedSessionController::class, 'generateBackupCode']);
+    Route::get('show-2fa-qr', [ProfileController::class, 'show2faQR']);
+    Route::post('switch-2fa', [ProfileController::class, 'update2faStatus']);
+    Route::post('verification-2fa', [ProfileController::class, 'verification2FA']);
 });
 
 Route::post('/report-content/', [ProfileController::class,'reportContent'])->name('report-content');

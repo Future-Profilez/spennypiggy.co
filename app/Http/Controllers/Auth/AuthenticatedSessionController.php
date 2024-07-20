@@ -22,6 +22,7 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -82,6 +83,35 @@ class AuthenticatedSessionController extends Controller
             return Inertia::location("https://uk.spennypiggy.co/verify-token/{$auth->uuid}");
         }
         return redirect(route("user.show", ['username' => $user->username]))->with("success", "Logged in successfully.");
+    }
+
+
+    public function verifyUser(Request $request){
+
+        $user = User::where('email',$request->email)->first();
+
+        if(empty($user)){
+            return response()->json([
+                'status' => false,
+                'msg' => "No account exist with this email."
+            ]);
+        }
+
+        $is_2fa = false;
+        if($user->is_2fa){
+            if(!Hash::check($request->password, $user->password)){
+                return response()->json([
+                    'status' => false,
+                    'msg' => "Either email or password is wrong."
+                ]);
+            }
+            $is_2fa = true;
+        }
+
+        return response()->json([
+            'status' => true,
+            'is_2fa' => $is_2fa
+        ]);
     }
 
     /**
