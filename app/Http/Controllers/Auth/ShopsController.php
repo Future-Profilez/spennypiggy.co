@@ -632,7 +632,7 @@ class ShopsController extends Controller
                 'currency' => $shop->user->default_currency,
                 'shop_id' => $shop->id,
                 'user_id' => (Auth::check()) ? Auth::id() : (!empty($logged_out_user) ? $logged_out_user->id : null),
-                'varient_id' => $varient_id ?? null,
+                'varient_id' => $varient_id != "no_varient" ? $varient_id : null,
                 'name' => request()->query('from') ?? null,
                 'email' => request()->query('email'),
                 'message' => $message ?? null,

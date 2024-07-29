@@ -982,7 +982,7 @@ class StripeController extends Controller
                         'destination' => $creator->account_id, // Creator's connected account ID
                     ],
                     'application_fee_amount' => $tax * 100,
-                    'on_behalf_of'  => $creator->account_id,
+                    // 'on_behalf_of'  => $creator->account_id,
                     'description' => "Supporter Membership Payment."
                 ],
                 'customer_email' =>  $request->email,
