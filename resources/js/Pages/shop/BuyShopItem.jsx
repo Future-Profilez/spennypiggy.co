@@ -73,6 +73,10 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
    const [quantity, setQuantity] = useState(1);
    const [loading, setLoading] = useState(false);
    const buyItem = () => {
+      if(email === '' || name === ''){
+         errorAlert('Please enter your name and email');
+         return false;
+      }
       if(shop.type === 'physical'){
          axios.post(`/shop/buy/${s.uuid}/${selectedVarient}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}&country=${country}`, {
             "shipping_info" : JSON.stringify(shipping_info)
@@ -86,10 +90,10 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
           }).catch(err => {
               setLoading(false);
               errorsHandling(err)
-          });
+          }); 
       } else {
          setLoading(true);
-         axios.get(`/shop/buy/${s.uuid}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}`).then(res => {
+         axios.get(`/shop/buy/${s.uuid}/no_varient?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}`).then(res => {
             if(res.data.url){
                window.location.href = res.data.url;
             } else {
