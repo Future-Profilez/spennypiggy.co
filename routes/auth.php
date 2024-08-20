@@ -48,7 +48,7 @@ Route::middleware('guest')->group(function () {
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
-    Route::match(['get','post'],'verify/login', [AuthenticatedSessionController::class, 'store'])->name('login-user')->middleware('mustHaveToVerify');
+    Route::match(['get', 'post'], 'verify/login', [AuthenticatedSessionController::class, 'store'])->name('login-user')->middleware('mustHaveToVerify');
 
     Route::post('verify-2fa', [AuthenticatedSessionController::class, 'verify2FA'])->name('verify2FA')->middleware('mustHaveToVerify');
 
@@ -122,7 +122,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('account', function () {
             $auto_tweet = Auth::user()->auto_tweet == 1 ? true : false;
-            return Inertia::render('accountsetting/Accountsetting',[
+            return Inertia::render('accountsetting/Accountsetting', [
                 'auto_tweet' => $auto_tweet
             ]);
         })->name("account");
@@ -197,7 +197,7 @@ Route::middleware('auth')->group(function () {
             Route::get('remove/{uuid}', [BillsController::class, 'removeBill'])->name('remove');
         });
 
-        Route::match(['get', 'delete'],'delete-stripe-account', [StripeController::class, 'deleteStripeAccount'])->name('deleteStripeAccount');
+        Route::match(['get', 'delete'], 'delete-stripe-account', [StripeController::class, 'deleteStripeAccount'])->name('deleteStripeAccount');
 
         Route::get('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->name("mandatory.checkout");
         Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleMandatorySubscription'])->name('mandatory.handle');
@@ -208,12 +208,10 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/dalle-image', [ProfileController::class, 'getImageGenerateAI'])->name('dalle.image');
         Route::post('/upload-dalle-image', [ProfileController::class, 'uploadDalleImage'])->name('upload.dalle.image');
-
     });
 
     Route::get('/earnings', function () {
         return Inertia::render('earnings/Earnings');
-
     })->name('earnings-page');
     Route::get('profile-steps-status/', [ProfileController::class, 'profileStepsStatus'])->name("profle-steps-status");
 
@@ -234,7 +232,6 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/shop', function () {
         return Inertia::render('shop/ShopPage');
-
     })->name('shop');
 
     Route::prefix('shop')->group(function () {
@@ -255,16 +252,16 @@ Route::middleware('auth')->group(function () {
     Route::post('verification-2fa', [ProfileController::class, 'verification2FA']);
 });
 
-Route::post('/report-content/', [ProfileController::class,'reportContent'])->name('report-content');
+Route::post('/report-content/', [ProfileController::class, 'reportContent'])->name('report-content');
 
 Route::prefix('shop')->group(function () {
-    Route::get('/list/{username}', [ShopsController::class,'shopList'])->name('shop-list');
-    Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class,'singleShopList'])->name('single-shop-list');
-    Route::match(['get', 'post'],'/buy/{uuid}/{varient_id}', [ShopsController::class,'buyShopItem'])->name('buy-shop-item');
-    Route::post('/answer-to-payment/{payment_id}', [ShopsController::class,'answerPayment'])->name('answerPayment');
-    Route::get('/success-payment/{uuid}', [ShopsController::class,'successPayment'])->name('shop.success-payment');
-    Route::get('/cancel-payment/{uuid}', [ShopsController::class,'cancelPayment'])->name('shop.cancel-payment');
-    Route::get('/shipping-price/{shop_id}', [ShopsController::class,'shippingPrice'])->name('shop.shipping-price');
+    Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
+    Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class, 'singleShopList'])->name('single-shop-list');
+    Route::match(['get', 'post'], '/buy/{uuid}/{varient_id}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item');
+    Route::post('/answer-to-payment/{payment_id}', [ShopsController::class, 'answerPayment'])->name('answerPayment');
+    Route::get('/success-payment/{uuid}', [ShopsController::class, 'successPayment'])->name('shop.success-payment');
+    Route::get('/cancel-payment/{uuid}', [ShopsController::class, 'cancelPayment'])->name('shop.cancel-payment');
+    Route::get('/shipping-price/{shop_id}', [ShopsController::class, 'shippingPrice'])->name('shop.shipping-price');
 });
 
 Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');
@@ -284,7 +281,7 @@ Route::get('/redirecting', function () {
 
 Route::get('my-intro/{id}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
 
-Route::get('discover',function (){
+Route::get('discover', function () {
     return Inertia::render('discover/Discover');
 })->name("discover");
 Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class, 'discover_all_wishes'])->name('discover_wish');
@@ -374,18 +371,18 @@ Route::get('/test/test', function () {
 })->name("test");
 
 Route::get('/problem-solving', function () {
-    $nums = [3,4,2,5];
+    $nums = [3, 4, 2, 5];
     $a = [];
-            foreach($nums as $key => $value){
-                $multiple = 1;
-                foreach($nums as $k => $v){
-                    if($k != $key){
-                        $multiple *= $v;
-                    }
-                }
-                array_push($a,$multiple);
+    foreach ($nums as $key => $value) {
+        $multiple = 1;
+        foreach ($nums as $k => $v) {
+            if ($k != $key) {
+                $multiple *= $v;
             }
-            return $a;
+        }
+        array_push($a, $multiple);
+    }
+    return $a;
 })->name("test");
 
 Route::get('twitter-token/', [TwitterController::class, 'twitterAuthUrl']);
@@ -415,8 +412,8 @@ Route::prefix("wish")->name("wish.")->group(function () {
 });
 
 Route::get('payment/thankyou/{username}', function ($username) {
-    $owner = User::where('username',$username)->first();
-    return Inertia::render('Profile/Thankyou',[
+    $owner = User::where('username', $username)->first();
+    return Inertia::render('Profile/Thankyou', [
         'owner' => $owner
     ]);
 })->name("thank-you");
@@ -434,7 +431,6 @@ Route::prefix("bill")->name("bill.")->group(function () {
 Route::get('image/dalle', [TestController::class, 'testAiImage'])->name("image-dalle");
 
 
-Route::match(["get", "post"],'/test-kyc-webhook',[TestController::class,'reviewWebhook'])->name("test-kyc")->withoutMiddleware(VerifyCsrfToken::class);
+Route::match(["get", "post"], '/test-kyc-webhook', [TestController::class, 'reviewWebhook'])->name("test-kyc")->withoutMiddleware(VerifyCsrfToken::class);
 
-
-
+Route::get('/stripe/manual-payout', [TestController::class, 'manualPayout'])->name('stripe-payout');
