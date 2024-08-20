@@ -160,7 +160,7 @@ export default function AddItem(props) {
 
         const fetchAddedCategories = async (signal) => {
             if(fetchingCats){
-                return false
+                return false;
             }
             setFetchingCats(true);
             axios.get(`/user_shop_category/${auth.user.username || user.username}`,{signal}) .then((res) =>{
@@ -356,9 +356,12 @@ export default function AddItem(props) {
             };
             axios.post(`/shop/add`,data) .then((res) =>{
                 if (res.data.status) {
-                    successAlert(res.data.msg || "Item Added !!");
                     resetUploader();
                     setOpen(false);
+                    setTimeout(()=>{
+                        successAlert(res.data.msg || "Item Added !!");
+                        setOpen();
+                    },[100]);
                     update && update();
                 } else {
                     errorAlert(
@@ -400,9 +403,11 @@ export default function AddItem(props) {
                 .post(`/shop/update/${item.uuid}`, data)
                 .then((res) => {
                     if (res.data.status) {
-                        successAlert(res.data.msg || "Item Added !!");
                         resetUploader();
-                        setOpen(false);
+                        setTimeout(()=>{
+                            successAlert(res.data.msg || "Item Added !!");
+                            setOpen();
+                        },[100]);
                         update && update();
                     } else {
                         errorAlert(
@@ -447,8 +452,6 @@ export default function AddItem(props) {
             setVariants(newVariants);
             console.log('Product variants:', variants);
         };
-        
-
         return (
             <Popup
             modalclass="addShopItem modal full"
@@ -622,35 +625,50 @@ export default function AddItem(props) {
                                         <div
                                             className={`uploader mb-4 mt-2 overflow-hidden`}
                                         >
-                                            {item ? (
-                                                <>
-                                                    {item &&
-                                                    item.reward_file_type ==
-                                                        "image" ? (
-                                                        <img
-                                                            alt="image-profile"
-                                                            className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4"
-                                                            src={
-                                                                item &&
-                                                                item.reward_file_url
-                                                            }
-                                                        />
-                                                    ) : (
-                                                        <video
-                                                            controls
-                                                            playsInline
-                                                            className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4"
-                                                            src={
-                                                                item &&
-                                                                item.reward_file_url
-                                                            }
-                                                        />
-                                                    )}
-                                                </>
-                                            ) : (
-                                                ""
-                                            )}
+                                            {/* image */}
+                                            {item && item.reward_file_type == "image" ? (
+                                                <img
+                                                    alt="image-profile"
+                                                    className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4"
+                                                    src={
+                                                        item &&
+                                                        item.reward_file_url
+                                                    }
+                                                />
+                                            ) : '' }
 
+                                            {/* video */}
+                                            {item && item.reward_file_type =="video" ? 
+                                                <video
+                                                    controls
+                                                    playsInline
+                                                    className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4"
+                                                    src={
+                                                        item &&
+                                                        item.reward_file_url
+                                                    }
+                                                /> : ''
+                                            }
+
+                                            {/* audio */}
+                                            {item && item.reward_file_type =="audio" ? 
+                                                    <audio
+                                                        controls
+                                                        playsInline
+                                                        className=" mb-4 w-full object-cover h-[50px] rounded-4"
+                                                        src={
+                                                            item &&
+                                                            item.reward_file_url
+                                                        }
+                                                    /> : ''
+                                            }
+                                            {/* video */}
+                                            {item && item.reward_file_type =="application" ? 
+                                                <iframe
+                                                    className=" mb-4 w-full  max-h-[500px] object-cover h-full rounded-4"
+                                                    src={item &&item.reward_file_url}
+                                                /> : ''
+                                            }
                                             
                                             {IsAiImage ? 
                                                 <img
@@ -953,11 +971,12 @@ export default function AddItem(props) {
 
     return (
         <>
-            {/* <button onClick={(e)=>setOpen(true)} className={classes ? classes : 'w-full shop-start-box px-6 py-6 md:px-8 md:py-12 text-center bg-white rounded-[20px]'} >
+        {/*
+        <button onClick={(e)=>setOpen(true)} className={classes ? classes : 'w-full shop-start-box px-6 py-6 md:px-8 md:py-12 text-center bg-white rounded-[20px]'} >
             <h2 className='md:text-[19px]' >{title}</h2>
-         </button> */}
-
-            <AddForm classes="w-full shop-start-box px-6 py-6 md:px-8 md:py-12 text-center bg-white rounded-[20px]" />
+        </button> 
+        */} 
+        <AddForm classes="w-full shop-start-box px-6 py-6 md:px-8 md:py-12 text-center bg-white rounded-[20px]" />
         </>
     );
 }
