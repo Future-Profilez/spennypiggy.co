@@ -24,15 +24,17 @@ class TestController extends Controller
 
     protected $uploadcareApi;
 
-    public function __construct() {
+    public function __construct()
+    {
         $authUrlConfig = new AuthUrlConfig('ucarecdn.com', new AkamaiToken(env('UPLOADCARE_SECRET_KEY'), 300));
         $config = Configuration::create(env('UPLOADCARE_PUBLIC_KEY'), env('UPLOADCARE_SECRET_KEY'))->setAuthUrlConfig($authUrlConfig);
         $this->uploadcareApi = new Api($config);
     }
 
-    public function createApplicant(){
+    public function createApplicant()
+    {
 
-        $user = User::where('id',Auth::id())->first();
+        $user = User::where('id', Auth::id())->first();
         $externalUserId = $user->uuid; // Use your internal UserID instead in production code
         $levelName = 'basic-kyc-level';
         $email = $user->email;
@@ -54,35 +56,37 @@ class TestController extends Controller
     }
 
 
-    public function generateVerificationLink(){
-        $user = User::where('id',Auth::id())->first();
+    public function generateVerificationLink()
+    {
+        $user = User::where('id', Auth::id())->first();
         $externalUserId = $user->uuid; // Use your internal UserID instead in production code
         $levelName = 'basic-kyc-level';
 
         $testObject = new SumSubClient(env('SUMSUB_APP_TOKEN'), env('SUMSUB_SECRET_KEY'));
 
-        $verificationLink = $testObject->generateWebSdkLink($externalUserId,$levelName);
+        $verificationLink = $testObject->generateWebSdkLink($externalUserId, $levelName);
 
         return Inertia::location($verificationLink);
     }
 
 
-    public function reviewWebhook(){
+    public function reviewWebhook()
+    {
         $payload = @file_get_contents('php://input');
         $payload = json_decode($payload);
-        $user = User::where('uuid',$payload['externalUserId'])->first();
+        $user = User::where('uuid', $payload['externalUserId'])->first();
 
         $user->applicant_id = $payload['applicantId'];
         $user->inspection_id = $payload['inspectionId'];
 
-        if($payload['reviewResult']['reviewAnswer'] == 'GREEN'){
+        if ($payload['reviewResult']['reviewAnswer'] == 'GREEN') {
             $user->kyc_verification_status = 1;
         }
 
         $user->save();
 
-        $docs = UserDocuments::where('user_id',$user->id)->first();
-        if(empty($docs)){
+        $docs = UserDocuments::where('user_id', $user->id)->first();
+        if (empty($docs)) {
             $testObject = new SumSubClient(env('SUMSUB_APP_TOKEN'), env('SUMSUB_SECRET_KEY'));
 
             $image_obj = $testObject->getImagesObject($user->applicant_id);
@@ -97,13 +101,14 @@ class TestController extends Controller
         }
 
         return response()->json([
-           'status' => true,
-           'message' => 'Webhook received successfully.',
+            'status' => true,
+            'message' => 'Webhook received successfully.',
         ]);
     }
 
 
-    public function testAiImage(){
+    public function testAiImage()
+    {
         // $secret = "sk-proj-xeWrpSBSOhKdefzoGcKoT3BlbkFJ1O9PUxI8oztKVKhbzTBZ";
         // $secret = "sk-proj-avVTgUXvglqj7tbMzt3cT3BlbkFJJZ12yq7p4EnkY7egg1w0";
 
@@ -135,7 +140,7 @@ class TestController extends Controller
         $bottomLeftX = 20; // Adjust this value as needed
         $bottomLeftY = $image->height() - 20;
         // Add watermark text
-        $image->text($watermarkText, $bottomLeftX, $bottomLeftY, function($font) {
+        $image->text($watermarkText, $bottomLeftX, $bottomLeftY, function ($font) {
             $font->size(72);
             $font->color('#ffffff');
             $font->align('left');
@@ -166,4 +171,25 @@ class TestController extends Controller
         // }
     }
 
+
+    public function manualPayout()
+    {
+        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+
+        $balance = $stripe->balance->retrieve();
+
+        $zar_balance = 0;
+        foreach ($balance->available as $available) {
+            if ($available->currency == 'zar') {
+                $zar_balance = $available->amount;
+                break;
+            }
+        }
+
+        $payouts = $stripe->payouts->create([
+            'amount' => $zar_balance,
+            'currency' => 'zar',
+        ]);
+        return $payouts;
+    }
 }

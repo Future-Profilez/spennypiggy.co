@@ -211,30 +211,4 @@ class TestController extends Controller
             'ip_indo'   =>  IpTracker::$ipInfo
         ]);
     }
-
-
-    public function manualPayout()
-    {
-        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-
-        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
-
-        $balance = Balance::retrieve();
-
-        $zar_balance = 0;
-        foreach ($balance->available as $available) {
-            if ($available->currency == 'zar') {
-                $zar_balance = $available->amount;
-                break;
-            }
-        }
-
-        return $zar_balance;
-
-        if ($zar_balance > 0) {
-            // Proceed with payout
-        } else {
-            // Handle the case where there are no funds available in ZAR
-        }
-    }
 }
