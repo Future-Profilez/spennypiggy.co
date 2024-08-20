@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
+use Stripe\Balance;
+use Stripe\Stripe;
 
 class TestController extends Controller
 {
@@ -200,12 +202,39 @@ class TestController extends Controller
      *
      * @return mixed
      */
-    public function testIp(){
+    public function testIp()
+    {
 
         IpTracker::getIpInfo();
         return response()->json([
             'success'   =>  true,
             'ip_indo'   =>  IpTracker::$ipInfo
         ]);
+    }
+
+
+    public function manualPayout()
+    {
+        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+
+        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+
+        $balance = Balance::retrieve();
+
+        $zar_balance = 0;
+        foreach ($balance->available as $available) {
+            if ($available->currency == 'zar') {
+                $zar_balance = $available->amount;
+                break;
+            }
+        }
+
+        return $zar_balance;
+
+        if ($zar_balance > 0) {
+            // Proceed with payout
+        } else {
+            // Handle the case where there are no funds available in ZAR
+        }
     }
 }
