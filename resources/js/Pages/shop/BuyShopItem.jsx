@@ -10,11 +10,13 @@ import PriceFormat from '@/includes/PriceFormat';
 import { useEffect } from 'react';
 import { useRef } from 'react';
 import AllContries from '../../includes/AllCountries';
+import HCaptcha from '@hcaptcha/react-hcaptcha';
 
 export default function BuyShopItem({vat_percent, opened, classes, text, s, open, isPaid, selectedVarient, country, shippingPrice}) {
 
    const { formatMultiPrice} = PriceFormat();
-   const { global_currency, auth, user, shop } = usePage().props;
+   const { global_currency, auth, hcaptchakey, shop } = usePage().props;
+   const hcaptchaRef = useRef(null);
    const [close, setClose] = useState();
 
    useEffect(()=>{
@@ -66,12 +68,26 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
       .trim()  
       .replace(/\s+/g, '-')  
       .replace(/-+/g, '-');  
-   }
+   } 
 
    const [email, setEmail] = useState(auth && auth.user?.email || '');
    const [name, setName] = useState(auth && auth.user?.name || '');
    const [quantity, setQuantity] = useState(1);
    const [loading, setLoading] = useState(false);
+
+
+   const [checking, setChecking] = useState(false);
+
+  const onVerify = (token) => {
+      buyItem();
+  };
+
+  const executeCaptcha = (e) => {
+   e.preventDefault();
+   hcaptchaRef.current.execute(); 
+   setChecking(true);
+};
+
    const buyItem = () => {
       if(email === '' || name === ''){
          errorAlert('Please enter your name and email');
@@ -275,11 +291,12 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
                   </div>
                </div> : ''}
 
+               <HCaptcha ref={hcaptchaRef} sitekey={hcaptchakey || ''} data-theme="light" size="invisible" onVerify={onVerify} required />
 
-               <button disabled={loading} onClick={buyItem} class={`${loading ? "opacity-[0.5]" : ""}  w-1/2 block mx-auto rounded-full bg-gray-900 hover:shadow-lg font-semibold text-white px-6 py-2`}>{loading ? "Buying.." : "Pay"}</button>
-               <div className='securestripe text-center mt-3' >
+               <button disabled={checking} onClick={executeCaptcha} class={`${checking ? "opacity-[0.5]" : ""}  w-1/2 block mx-auto rounded-full bg-gray-900 hover:shadow-lg font-semibold text-white px-6 py-2`}>{checking ? "Buying.." : "Pay"}</button>
+               {/* <div className='securestripe text-center mt-3' >
                   🔒 Secured via <b>Stripe</b>
-               </div>
+               </div> */}
             </>}
 
 

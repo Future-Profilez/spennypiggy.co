@@ -182,9 +182,9 @@ export default function TipInner({classes}) {
               ease-in-out duration-150 flex button text-center w-100  
               font-CeraGR mx-auto ${checkRef.current && checkRef.current.checked ? '' :'disabled'}`}  
                > {processing ? "Processing" : 'Support Me'} </button>
-            <div className='securestripe text-center mt-3' >
+            {/* <div className='securestripe text-center mt-3' >
               🔒 Secured via <b>Stripe</b>
-            </div>
+            </div> */}
           </div>
       </div>
       <></>

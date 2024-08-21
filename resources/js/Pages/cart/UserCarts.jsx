@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import CartItem from "./CartItem";
-import { Link, router } from "@inertiajs/react";
+import { Link, router, usePage } from "@inertiajs/react";
 import PriceFormat from "@/includes/PriceFormat";
 import DeviceID from "@/includes/DeviceID";
 import axios from "axios";
 import { useEffect } from "react";
 import { add_to_cart } from '@/Pages/redux/UserSlice';
+import HCaptcha from '@hcaptcha/react-hcaptcha';
 
 export default function UserCarts(props) {
 
+    const hcaptchaRef = useRef(null);
+    const {hcaptchakey} = usePage().props;
     const deviceid = DeviceID();
     const { auth, removeFromCart } = props;
     const { format, formatMultiPrice } = PriceFormat();
@@ -18,14 +21,24 @@ export default function UserCarts(props) {
     const [message, setMessage] = useState(null);
     const [name, setName] = useState(auth && auth.name || '');
     const [email, setEmail] = useState(auth && auth.email || '');
+   
 
+    const [checking, setChecking] = useState(false);
     const handleSubmit = (e) => {
-        e.preventDefault();
         if (auth && auth.id) {
             window.location.href = `/create-checkout-session/${datas?.user?.id || ''}?message=${message}&from=${name}&email=${email}&anonymous=${keepAnonmyous ? 1 : 0}`;
         } else {
             window.location.href = `/create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}&anonymous=${keepAnonmyous ? 1 : 0}`;
         }
+    };
+    const onVerify = (token) => {
+        handleSubmit();
+    };
+
+    const executeCaptcha = (e) => {
+        e.preventDefault();
+        hcaptchaRef.current.execute(); 
+        setChecking(true);
     };
 
     const [loading, setLoading] = useState(false);
@@ -92,6 +105,8 @@ export default function UserCarts(props) {
         updateTotals(0);
     }, [items]);
 
+
+    console.log("props.hcaptchakey ",hcaptchakey)
     return (
         <div className={`${cartCleared ? "d-none" : ''} px-2`}>
             <div className="my-4 cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
@@ -137,7 +152,7 @@ export default function UserCarts(props) {
                     </div>
 
                     <div className="addMessage">
-                        <form onSubmit={handleSubmit}>
+                        <form onSubmit={executeCaptcha}>
                             <ul className="row">
                                 <li>
                                     <label>Add Message </label>
@@ -238,8 +253,10 @@ export default function UserCarts(props) {
                             </ul>
                             <div className="mt-4 d-flex align-items-center justify-content-between" >
                                 <button type="button" onClick={()=>clearcart(datas?.user?.id)} className={`btn-pink md mt-3 px-4 text-center`} > {loading ? "Wait.." : "Clear" } </button>
-                                <button type="submit" className={`${isChecked ? "":"disabled"} btn-pink md mt-3 text-center`} >Checkout </button>
+                                <button type="submit" className={`${isChecked ? "":"disabled"} btn-pink md mt-3 text-center`} >{checking ? "Wait.." : "Checkout"} </button>
                             </div>
+                            <HCaptcha ref={hcaptchaRef} sitekey={hcaptchakey || ''} data-theme="light" size="invisible" onVerify={onVerify} required />
+
                         </form>
                     </div>
                 </div>

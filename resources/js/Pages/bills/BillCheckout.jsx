@@ -1,16 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import { Toaster } from "react-hot-toast";
 import { useAlerts } from "@/Components/Alerts";
 import PriceFormat from "@/includes/PriceFormat";
 import uploadedimg from '../../../assets/img/uploadedimg.png';
 import Authenticated from "@/Layouts/AuthenticatedLayout";
+import HCaptcha from '@hcaptcha/react-hcaptcha';
 
 export default function BillCheckout(props) {
-
-    const { formatMultiPrice } = PriceFormat();
+    const hcaptchaRef = useRef(null);
+     const { formatMultiPrice } = PriceFormat();
     const { bill, vat_amount} = props;
-    const { user, auth } = usePage().props;
+    const { user, auth, hcaptchakey} = usePage().props;
 
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
     const [email, setEmail] = useState(auth && auth.user && auth.user.email || '');
@@ -33,8 +34,9 @@ export default function BillCheckout(props) {
         }
     }
 
+
+    const [checking, setChecking] = useState(false);
     const handleSubmit = (e) => {
-        e.preventDefault();
         post(route(`bill.checkout`,{
             uuid:bill.uuid,
           }),
@@ -42,22 +44,17 @@ export default function BillCheckout(props) {
             preserveScroll:true
         });
     }
+    const onVerify = (token) => {
+        console.log("token", token);
+        handleSubmit();
+    };
 
-    // const {flash}   = usePage().props;
-    // useEffect(() => {
-    //     if(flash?.error){
-    //         errorAlert(flash.error);
-    //     }
-    //     if(flash?.success){
-    //         successAlert(flash.success);
-    //     }
-    //     if(flash?.warning){
-    //         warningAlert(flash.warning);
-    //     }
-    //     if(flash?.info){
-    //         infoAlert(flash.info);
-    //     }
-    // },[flash]);
+    const executeCaptcha = (e) => {
+        e.preventDefault();
+        hcaptchaRef.current.execute(); 
+        setChecking(true);
+    };
+     
 
     return (
         <>
@@ -128,7 +125,7 @@ export default function BillCheckout(props) {
                                 </div>
                             </div>
                             <div className="addMessage mt-5">
-                                <form onSubmit={handleSubmit}>
+                                <form onSubmit={executeCaptcha}>
                                     <ul className="row">
                                         <li>
                                             <label>Add Message </label>
@@ -208,10 +205,12 @@ export default function BillCheckout(props) {
                                     </ul>
                                     <div className="mt-4 d-flex align-items-center justify-content-center" >
                                         <button type="submit"
-                                            className={`${!data.agree || processing ? "disabled" : ""} btn-pink md px-4 mt-3 text-center`}
-                                            disabled={!data.agree || processing}>
-                                            {processing ? 'Processing...' : 'Pay Now'}
+                                            className={`${!data.agree || processing || checking ? "disabled" : ""} btn-pink md px-4 mt-3 text-center`}
+                                            disabled={!data.agree || processing || checking}>
+                                            {processing || checking ? 'Processing...' : 'Pay Now'}
                                         </button> 
+                                        <HCaptcha ref={hcaptchaRef} sitekey={hcaptchakey || ''} data-theme="light" size="invisible" onVerify={onVerify} required />
+
                                     </div>
                                 </form>
                             </div>

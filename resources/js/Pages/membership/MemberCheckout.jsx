@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import { Toaster } from "react-hot-toast";
 import Membership from "./Membership";
 import { useAlerts } from "@/Components/Alerts";
 import PriceFormat from "@/includes/PriceFormat";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
- 
-export default function SubCheckout(props) {
+import HCaptcha from '@hcaptcha/react-hcaptcha';
 
+export default function SubCheckout(props) {
+    const hcaptchaRef = useRef(null);
+    const {hcaptchakey} = usePage().props;
     const { user, auth, membership, vat_amount } = props;
     const { formatMultiPrice } = PriceFormat();
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
@@ -31,6 +33,7 @@ export default function SubCheckout(props) {
         }
     }
 
+    const [checking, setChecking] = useState(false);
     const handleSubmit = (e) => {
         e.preventDefault();
         post(route(`membership.checkout`,{
@@ -41,6 +44,16 @@ export default function SubCheckout(props) {
             preserveScroll:true
         });
     }
+
+    const onVerify = (token) => {
+        handleSubmit();
+    };
+
+    const executeCaptcha = (e) => {
+        e.preventDefault();
+        hcaptchaRef.current.execute(); 
+        setChecking(true);
+    };
 
     const {flash}   = usePage().props;
     useEffect(() => {
@@ -105,7 +118,7 @@ export default function SubCheckout(props) {
                             </div>
                         </div>
                         <div className="addMessage mt-5">
-                            <form onSubmit={handleSubmit}>
+                            <form onSubmit={executeCaptcha}>
                                 <ul className="row">
                                     <li>
                                         <label>Add Message </label>
@@ -184,10 +197,11 @@ export default function SubCheckout(props) {
                                 </ul>
                                 <div className="mt-4 d-flex align-items-center justify-content-center" >
                                     <button type="submit"
-                                        className={`${!data.agree || processing ? "disabled" : ""} btn-pink md px-4 mt-3 text-center`}
-                                        disabled={!data.agree || processing}>
-                                        {processing ? 'Processing...' : 'Join Now'}
+                                        className={`${!data.agree || processing || checking ? "disabled" : ""} btn-pink md px-4 mt-3 text-center`}
+                                        disabled={!data.agree || processing || checking}>
+                                        {processing || checking ? 'Processing...' : 'Join Now'}
                                     </button> 
+                                    <HCaptcha ref={hcaptchaRef} sitekey={hcaptchakey || ''} data-theme="light" size="invisible" onVerify={onVerify} required />
                                 </div>
                             </form>
                         </div>

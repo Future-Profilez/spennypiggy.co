@@ -873,6 +873,7 @@ class WishitemController extends Controller
         }
         return Inertia::render('cart/Cart', [
             "carts" => $cart,
+            
         ]);
     }
 

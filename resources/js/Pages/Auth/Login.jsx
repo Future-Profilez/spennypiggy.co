@@ -45,8 +45,6 @@ export default function Login({ status, canResetPassword }) {
 
     const checkTFA = (e) => {
         e.preventDefault();
-        submit();
-        return false;
         setLoading(true)
         axios.post('/verify-user', data).then((resp) => {
            if (resp.data.status) {
