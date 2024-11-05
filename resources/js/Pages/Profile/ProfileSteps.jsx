@@ -48,44 +48,33 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                     <style>{`
                         .check-icon.checked svg path {fill: #139700 !important;}
                     `}</style>
-                    <div
-                        div
-                        className="profileSteps bg-white border border-gray-400 rounded-5 p-4 mb-4 " >
-                        <h2 className="mb-1 text-[20px] font-bold ">
-                            Let’s get you started
-                        </h2>
-                        <p className="text-gray-500 mb-3">Successful creators complete these steps, although not required.
-                        </p>
-                        <ProgressBar now={status && status.total} max={7} />
+                    <div className="profileSteps bg-white border border-gray-400 rounded-5 mb-4  p-3 lg:!p-6" >
+                        <h2 className="mb-1 text-[20px] font-bold ">Let’s get you started</h2>
+                        <p className="text-gray-500 mb-3">Successful creators complete these steps, although not all required.</p>
+                        <ProgressBar now={status && status.total} max={9} />
 
-                        {/* Payments */}
-                        <div className="profile-steps border border-gray-200 rounded-lg d-flex  items-center p-3 mt-3 justify-content-between">
+                        {status && status.payment_connect !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
                             <div className="step-title d-flex max-w-[390px] pe-3">
-                                <div
-                                    className={`check-icon me-2 pt-1 ${
-                                        status && status.payment_connect == 1? "checked": ""}`}>
+                                <div className={`check-icon me-2 pt-1 ${
+                                    status && status.payment_connect == 1? "checked": ""}`}>
                                     <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
                                 </div>
                                 <div>
                                     <h2 className="text-dark font-bold">
-                                        Connect to payments
+                                        Complete KYC 
                                     </h2>
-                                    <p className="text-gray-500 text-[14px]">
-                                        Connect to Stripe to receive payments
+                                    <p className="text-gray-500 text-[14px]"> 
+                                        Complete your KYC verification to receive payments. 
                                     </p>
                                 </div>
                             </div>
                             <div>
-                                {status && status.payment_connect == 1 ? (
-                                    <p className="text-success">Connected</p>
-                                ) : (
-                                    <Link href="/stripe">Connect</Link>
-                                )}{" "}
+                                <Link href="/start-kyc">Verify</Link>
                             </div>
-                        </div>
+                        </div> : ""}
 
                         {/* Intro Video */}
-                        <div className="profile-steps border border-gray-200 rounded-lg d-flex  items-center p-3 mt-3 justify-content-between">
+                        {introStatus !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
                             <div className="step-title d-flex max-w-[390px] pe-3">
                                 <div
                                     className={`check-icon me-2 pt-1 ${
@@ -107,22 +96,15 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                 </div>
                             </div>
                             <div>
-                                {introStatus == 1 ? (
-                                    <p className="text-success">Added</p>
-                                ) : (
-                                    <AddIntro setIntroStatus={setIntroStatus}
-                                        classes="pt-3"
-                                        text="Add"
-                                        uuid={user?.id || null}
-                                        IsloggedIn={IsloggedIn}
-                                    />
-                                )}{" "}
+                                <AddIntro setIntroStatus={setIntroStatus} classes="pt-3"
+                                    text="Add" uuid={user?.id || null} IsloggedIn={IsloggedIn}
+                                />
                             </div>
-                        </div>
+                        </div> : ''}
 
                         {/* auto_tweets */}
-                        <div className="profile-steps border border-gray-200 rounded-lg d-flex  items-center p-3 mt-3 justify-content-between">
-                            <div className="step-title d-flex max-w-[390px] pe-3">
+                        {status && status.auto_tweets !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
+                            <div className="step-title  d-flex max-w-[390px] pe-3">
                                 <div
                                     className={`check-icon me-2 pt-1 ${
                                         status && status.auto_tweets == 1
@@ -143,16 +125,12 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                 </div>
                             </div>
                             <div>
-                                {status && status.auto_tweets == 1 ? (
-                                    <p className="text-success">Linked</p>
-                                ) : (
-                                    <Link href="/account">Link</Link>
-                                )}{" "}
+                                <Link href="/account?page=autotweet whitespace-nowrap">Enable </Link>
                             </div>
-                        </div>
+                        </div> : ''}
 
                         {/* basic_profile */}
-                        <div className="profile-steps border border-gray-200 rounded-lg d-flex  items-center p-3 mt-3 justify-content-between">
+                        {status && status.basic_profile !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
                             <div className="step-title d-flex max-w-[390px] pe-3">
                                 <div
                                     className={`check-icon me-2 pt-1 ${
@@ -173,21 +151,17 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                 </div>
                             </div>
                             <div>
-                                {status && status.basic_profile == 1 ? (
-                                    <p className="text-success">Added</p>
-                                ) : (
-                                    <EditProfile updateProfileSteps={updateProfileSteps}
-                                        user={user}
-                                        classes="updatebtn"
-                                        global_currency={global_currency}
-                                    />
-                                )} 
+                                <EditProfile updateProfileSteps={updateProfileSteps}
+                                    user={user}
+                                    classes="updatebtn"
+                                    global_currency={global_currency}
+                                />
                             </div>
-                        </div>
+                        </div> : ''}
 
 
                         {/* social_links */}
-                        <div className="profile-steps border border-gray-200 rounded-lg d-flex  items-center p-3 mt-3 justify-content-between">
+                        {status && status.social_links !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
                             <div className="step-title d-flex max-w-[390px] pe-3">
                                 <div
                                     className={`check-icon me-2 pt-1 ${ status && status.social_links == 1 ? "checked": "" }`} >
@@ -201,16 +175,12 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                 </div>
                             </div>
                             <div>
-                                {status && status.social_links == 1 ? (
-                                    <p className="text-success">Added</p>
-                                ) : (
-                                    <Social updatedLinks={fetchingLinks}links={sLinks}/>
-                                )} 
+                                <Social updatedLinks={fetchingLinks}links={sLinks}/>
                             </div>
-                        </div>
+                        </div> : ''}
 
                         {/* post_required */}
-                        <div className="profile-steps border border-gray-200 rounded-lg d-flex  items-center p-3 mt-3 justify-content-between">
+                       {status && status.post_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
                             <div className="step-title d-flex max-w-[390px] pe-3">
                                 <div className={`check-icon me-2 pt-1 ${ status && status.post_required == 1 ? "checked" : "" }`} >
                                     <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
@@ -226,16 +196,12 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                 </div>
                             </div>
                             <div>
-                                {status && status.post_required == 1 ? (
-                                    <p className="text-success">Added</p>
-                                ) : (
-                                    <AddPost text="Add Post" classes="editpoststep" />
-                                )}{" "}
+                                <AddPost text="Add Post" classes="editpoststep" />
                             </div>
-                        </div>
+                        </div> : ""}
 
                         {/* vat_setting */}
-                        <div className="profile-steps border border-gray-200 rounded-lg d-flex  items-center p-3 mt-3 justify-content-between">
+                        {status && status.vat_setting !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
                             <div className="step-title d-flex max-w-[390px] pe-3">
                                 <div className={`check-icon me-2 pt-1 ${status && status.vat_setting == 1 ? "checked":""}`}
                                 >
@@ -251,15 +217,11 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                 </div>
                             </div>
                             <div>
-                                {status && status.vat_setting == 1 ? (
-                                    <p className="text-success">Added</p>
-                                ) : (
-                                    <Link href="/account">Add VAT</Link>
-                                )} 
+                                <Link href="/account">Add VAT</Link>
                             </div>
-                        </div>
+                        </div> : ''}
 
-                        <div className="profile-steps border border-gray-200 rounded-lg d-flex  items-center p-3 mt-3 justify-content-between">
+                        {status && status.shop !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
                             <div className="step-title d-flex max-w-[390px] pe-3">
                                 <div className={`check-icon me-2 pt-1 ${status && status.shop == 1 ? "checked":""}`} >
                                     <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
@@ -274,16 +236,12 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                 </div>
                             </div>
                             <div>
-                                {status && status.shop == 1 ? (
-                                    <p className="text-success">Added</p>
-                                ) : (
-                                    <Link href="/shop">Add Digital Goods</Link>
-                                )} 
+                                <Link href="/shop">Add Digital Goods</Link>
                             </div>
-                        </div>
+                        </div> : ''}
 
                         {/* content */}
-                        <div className="profile-steps border border-gray-200 rounded-lg d-flex  items-center p-3 mt-3 justify-content-between">
+                        {status && status.contents !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
                             <div className="step-title d-flex max-w-[390px] pe-3">
                                 <div
                                     className={`check-icon me-2 pt-1 ${status && status.contents == 1 ? "checked": ""}`} >
@@ -298,14 +256,7 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                     </p>
                                 </div>
                             </div>
-                            <div>
-                                {status && status.contents !== 1 ? (
-                                    <p className="text-success">Added</p>
-                                ) : (
-                                    ""
-                                )} 
-                            </div>
-                        </div>
+                        </div> : ""}
                     </div>
                 </>
             ) : (
