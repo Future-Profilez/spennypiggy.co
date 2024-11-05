@@ -67,7 +67,7 @@ export default function AddPost({item, text, classes, isEdit, updateState, title
         axios.post(`${isEdit ? `/post/edit/${item.uuid}` : "/post/save"}`, {...data, 
             image:rewardImage, 
             type: rewardImage ? 'image' : "blog",
-            ai_generated : isAiImage ? 1 : item.ai_generated || 0
+            ai_generated : isAiImage ? 1 : item && item?.ai_generated || 0
          })
         .then((resp) => {
             if(resp.data.status){
