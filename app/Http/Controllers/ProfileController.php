@@ -1012,13 +1012,14 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function getImageGenerateAI(Request $request){
+    public function getImageGenerateAI(Request $request)
+    {
         $request->validate([
             'prompt' => [
                 'required',
                 'string'
             ],
-           'size' => ['required','string'],
+            'size' => ['required', 'string'],
         ]);
 
         $secret = env('DALLE_SECRET_KEY');
@@ -1035,25 +1036,25 @@ class ProfileController extends Controller
             'Authorization' => 'Bearer ' . $secret,
         ])->post('https://api.openai.com/v1/images/generations', $data);
 
-
         $resp = json_decode($response);
 
-        if(!empty($resp->data[0])){
+        if (!empty($resp->data[0])) {
             $url = $resp->data[0];
-
             return response()->json([
                 'status' => true,
                 'image_url' => $url
             ]);
         }
+
         return response()->json([
             'status' => false,
-            'message' => "Please try with a different prompt."
+            'data' => $resp
         ]);
     }
 
 
-    public function uploadDalleImage(Request $request){
+    public function uploadDalleImage(Request $request)
+    {
         $request->validate([
             'url' => [
                 'required'

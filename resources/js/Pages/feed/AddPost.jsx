@@ -110,8 +110,7 @@ export default function AddPost({item, text, classes, isEdit, updateState, title
     text={text ? text : <AddItem />} >
         {/* <form onSubmit={submitPost} > */}
             <div className="flex align-items-center" >
-                <div className={`gift-icon me-2 voilet`} 
-                dangerouslySetInnerHTML={{ __html: piggy }} />  
+                <div className={`gift-icon me-2 voilet`} dangerouslySetInnerHTML={{ __html: piggy }} />  
                 <h2 className="text-xl font-bold text-dark-500" >{title ? title: "Add Post"}</h2>
             </div>
             
@@ -123,13 +122,13 @@ export default function AddPost({item, text, classes, isEdit, updateState, title
                 <p className="text-grey-500 mb-3" >Choose a image file to attached with your post.</p>
 
                 {item && item.image_url ? 
-                <>
-                    <div className="default-wish-img border relative mb-1 ">
-                        <img src={item && item.image_url}
-                        className="img-fluid" />
-                    </div>
-                    <h2 className="w-100 my-2 text-center" >Or</h2>
-                </>
+                    <>
+                        <div className="default-wish-img border relative mb-1 ">
+                            <img src={item && item.image_url}
+                            className="img-fluid" />
+                        </div>
+                        <h2 className="w-100 my-2 text-center" >Or</h2>
+                    </>
                 : ''}
                 {isAiImage ? 
                     <div className="default-wish-img border relative mb-2 ">
@@ -147,26 +146,26 @@ export default function AddPost({item, text, classes, isEdit, updateState, title
                 </div>
             </div>
 
-                    <p className="text-grey-500 mb-1 mt-4" >Choose Audience</p>
-                    <div className="flex align-center justify-content-center flex-wrap" >
-                        <select id="countries" defaultValue={item?.for_module} onChange={handleInput} name="for_module" className="form-input  
-                        text-md w-full focus:ring-green-50 block ">
-                            <option value="membership">Memberships</option>
-                            <option value="subscription">Subscription</option>
-                            <option value="support">Supporters</option>
-                        </select>
-                    </div>
+            <p className="text-grey-500 mb-1 mt-4" >Choose Audience</p>
+            <div className="flex align-center justify-content-center flex-wrap" >
+                <select id="countries" defaultValue={item?.for_module} onChange={handleInput} name="for_module" className="form-input  
+                text-md w-full focus:ring-green-50 block ">
+                    <option value="membership">Memberships</option>
+                    <option value="subscription">Subscription</option>
+                    <option value="support">Supporters</option>
+                </select>
+            </div>
 
-                     <LoaderButton onClick={submitPost}
-                        disabled={loading}
-                        className="flex btn-pink lg mt-4 w-full "
-                        spinnerClassName="fill-red-600">
-                        {isEdit ? 
-                          loading ? "Updating.." :"Update Post" 
-                        : 
-                          loading ? "Posting.." : "Add New Post" 
-                        }
-                    </LoaderButton>
+                <LoaderButton onClick={submitPost}
+                disabled={loading}
+                className="flex btn-pink lg mt-4 w-full "
+                spinnerClassName="fill-red-600">
+                {isEdit ? 
+                    loading ? "Updating.." :"Update Post" 
+                : 
+                    loading ? "Posting.." : "Add New Post" 
+                }
+            </LoaderButton>
 
         {/* </form> */}
         
