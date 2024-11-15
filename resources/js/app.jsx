@@ -13,11 +13,9 @@ import "../assets/fonts/CeraGRMedium.woff2";
 import { Provider } from "react-redux";
 import store from "./Pages/redux/Store";
 
-const appName = import.meta.env.VITE_APP_NAME || "Spenny Piggy";
-
 createInertiaApp({
     title: (title) =>
-        `${title || "Spenny Piggy"} - Financial Gifts, Donations & Memberships`,
+        `${title || "Spenny Piggy"} - Financial Gifts, Exclusive Content & Memberships`,
     resolve: (name) =>
         resolvePageComponent(
             `./Pages/${name}.jsx`,

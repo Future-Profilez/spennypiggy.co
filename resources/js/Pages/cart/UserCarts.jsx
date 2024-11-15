@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import CartItem from "./CartItem";
-import { Link, router } from "@inertiajs/react";
+import { Link, router, usePage } from "@inertiajs/react";
 import PriceFormat from "@/includes/PriceFormat";
 import DeviceID from "@/includes/DeviceID";
 import axios from "axios";
 import { useEffect } from "react";
+import { add_to_cart } from '@/Pages/redux/UserSlice';
+import HCaptcha from '@hcaptcha/react-hcaptcha';
 
 export default function UserCarts(props) {
 
+    const hcaptchaRef = useRef(null);
+    const {hcaptchakey} = usePage().props;
     const deviceid = DeviceID();
     const { auth, removeFromCart } = props;
     const { format, formatMultiPrice } = PriceFormat();
@@ -17,14 +21,24 @@ export default function UserCarts(props) {
     const [message, setMessage] = useState(null);
     const [name, setName] = useState(auth && auth.name || '');
     const [email, setEmail] = useState(auth && auth.email || '');
+   
 
+    const [checking, setChecking] = useState(false);
     const handleSubmit = (e) => {
-        e.preventDefault();
         if (auth && auth.id) {
             window.location.href = `/create-checkout-session/${datas?.user?.id || ''}?message=${message}&from=${name}&email=${email}&anonymous=${keepAnonmyous ? 1 : 0}`;
         } else {
             window.location.href = `/create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}&anonymous=${keepAnonmyous ? 1 : 0}`;
         }
+    };
+    const onVerify = (token) => {
+        handleSubmit();
+    };
+
+    const executeCaptcha = (e) => {
+        e.preventDefault();
+        hcaptchaRef.current.execute(); 
+        setChecking(true);
     };
 
     const [loading, setLoading] = useState(false);
@@ -91,12 +105,14 @@ export default function UserCarts(props) {
         updateTotals(0);
     }, [items]);
 
+
+    console.log("props.hcaptchakey ",hcaptchakey)
     return (
         <div className={`${cartCleared ? "d-none" : ''} px-2`}>
             <div className="my-4 cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
                 <div className="cartMain">
                     <h2 className="pb-1 wishtitle">
-                        Wish Basket for {datas?.user?.name || ""}
+                        Your Basket for {datas?.user?.name || ""}
                         <Link className="text-voilet"
                             href={`/${datas?.user?.username || ""}`} >
                              @{datas?.user?.username || ""}
@@ -105,7 +121,7 @@ export default function UserCarts(props) {
                     <p className="pb-4">
                         You are about to send a payout to
                         <strong> {datas?.user?.name || ""} </strong> to fund their
-                        wishes.
+                        lifestyle.
                     </p>
                     <div className="CartItemBox">
                         {items && items.map((c, i) => {
@@ -136,7 +152,7 @@ export default function UserCarts(props) {
                     </div>
 
                     <div className="addMessage">
-                        <form onSubmit={handleSubmit}>
+                        <form onSubmit={executeCaptcha}>
                             <ul className="row">
                                 <li>
                                     <label>Add Message </label>
@@ -144,11 +160,21 @@ export default function UserCarts(props) {
                                         onChange={(e) =>
                                             setMessage(e.target.value)
                                         }
-                                        placeholder="Write message in under 800 Words..."
+                                        placeholder="Send some words of support..."
                                     ></textarea>
                                 </li>
                                 <li className="w-100 mt-3">
                                     <li className="row">
+                                        <div className="col-md-12 mb-4">
+                                            <label className="d-block text-start">Email </label>
+                                            <p className="text-small text-muted mb-1">Your e-mail remains private.</p>
+                                            <input required className={`${auth && auth.email ? 'disabled' : ''} form-input w-100 rounded`}
+                                                value={auth && auth.email}
+                                                disabled={auth && auth.email ? true : false}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                                type="email" placeholder="Enter Your Email..."
+                                            />
+                                        </div>
                                         <div className="col-md-12 mb-4">
                                             <label className="d-block text-start">
                                                 From
@@ -160,16 +186,6 @@ export default function UserCarts(props) {
                                                 } value={name}
                                                 type="text"
                                                 placeholder="Enter Your Name..."
-                                            />
-                                        </div>
-                                        <div className="col-md-12 mb-4">
-                                            <label className="d-block text-start">Email </label>
-                                            <p className="text-small text-muted mb-1">Your e-mail remains private. It is used for the creator to reply to your gift with a message via Spenny Piggy</p>
-                                            <input required className={`${auth && auth.email ? 'disabled' : ''} form-input w-100 rounded`}
-                                                value={auth && auth.email}
-                                                disabled={auth && auth.email ? true : false}
-                                                onChange={(e) => setEmail(e.target.value)}
-                                                type="email" placeholder="Enter Your Email..."
                                             />
                                         </div>
                                     </li>
@@ -199,26 +215,16 @@ export default function UserCarts(props) {
                                             name="agreeterm"
                                             className="me-2"
                                             value="agreeterm" ></input>
-                                        I agree to the <Link target='_blank' className="text-voilet" href={route("terms-and-conditions")} >Terms of Service</Link> and <a className="text-voilet" target='_blank' href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>  and the following statements:
+                                       I understand I am paying the creator directly and I agree to the <Link target='_blank' className="text-voilet" href={route("terms-and-conditions")} >Terms of Service</Link> and <a className="text-voilet" target='_blank' href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>  and the following statements:
                                     </label>
                                     <div className="tearmlist ps-3">
                                         <ul className="ps-0">
-                                            <li>
-                                                I am making a non-refundable
-                                                cash gift donation.
-                                            </li>
-                                            <li>
-                                                I expect no product or service
-                                                in return from the gift
-                                                recipient.
-                                            </li>
-                                            <li>
-                                                This payment is a donation
-                                                intended for the gift recipient.
-                                            </li>
+                                            <li> For Memberships and subscriptions, I understand I am making a non-refundable purchase that provides access to exclusive posts. This payment will be automatically taken on a daily, weekly, monthly or yearly basis depending on the subscription type. Can be cancelled anytime.</li>
+                                            <li> I understand that for wishes or support payments I am making a non-refundable gift of support and understand in exchange i will recieve a supporter membership or exclusive content reward. </li>
+                                            <li>I understand that all Profile shop purchases are non refundable and I have taken all necessary steps to understand what I am purchasing</li>
                                             <li>
                                                 I have taken the necessary steps
-                                                to confirm the wishlist owner is
+                                                to confirm the account owner is
                                                 authentic and I understand that
                                                 Spenny Piggy will not be held
                                                 responsible for any issues
@@ -247,8 +253,10 @@ export default function UserCarts(props) {
                             </ul>
                             <div className="mt-4 d-flex align-items-center justify-content-between" >
                                 <button type="button" onClick={()=>clearcart(datas?.user?.id)} className={`btn-pink md mt-3 px-4 text-center`} > {loading ? "Wait.." : "Clear" } </button>
-                                <button type="submit" className={`${isChecked ? "":"disabled"} btn-pink md mt-3 text-center`} >Checkout </button>
+                                <button type="submit" className={`${isChecked ? "":"disabled"} btn-pink md mt-3 text-center`} >{checking ? "Wait.." : "Checkout"} </button>
                             </div>
+                            <HCaptcha ref={hcaptchaRef} sitekey={hcaptchakey || ''} data-theme="light" size="invisible" onVerify={onVerify} required />
+
                         </form>
                     </div>
                 </div>

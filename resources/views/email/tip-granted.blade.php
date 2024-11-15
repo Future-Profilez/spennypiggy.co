@@ -2,7 +2,7 @@
 @section('content')
     <tr>
         <td align="center" style="padding:10px 10px 20px 10px;"><a href="https://uk.spennypiggy.co/https://spennypiggy.cohttps://spennypiggy.co"><img alt="image"
-                    width="119" src="https://whoyouinto.com/emails/user/logo.png" style="border:none"></a></td>
+                    width="119" src="https://d36ape3u423eoo.cloudfront.net/1374cecd-53d6-4089-a20a-5b8812ee3d4d/build/assets/logo-164abf9b.png" style="border:none"></a></td>
     </tr>
     <tr>
         <td align="center" style="padding:10px 10px 20px 10px;">
@@ -25,7 +25,7 @@
 
                     <td
                         style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                        Thank’s for topping up {{ $tip->tipGoal->user->name }}'s Tip Jar with {{ $symbol }}{{ $amount }}! You’ve just made their day a little brighter 😍🎁
+                        Thank’s for topping up {{ $tip->creator->name }}'s Tip Jar with {{ $symbol }}{{ $amount }}! You’ve just made their day a little brighter 😍🎁
                     </td>
                 </tr>
                 <tr>

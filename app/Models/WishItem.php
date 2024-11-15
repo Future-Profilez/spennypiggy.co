@@ -25,6 +25,7 @@ class WishItem extends Model
         "item_url",
         "thumbnail",
         'reward',
+        'ai_generated',
         "subscription",
         "subscription_period",
         "repeat_purchase",
@@ -32,17 +33,23 @@ class WishItem extends Model
         'is_pin',
         "fullfill_amount",
         'tax_amount',
+        "twitter_response",
         'delete_reason',
-        'deleted_at',
         'edited_reason',
         'edited_status',
-        'is_approved',
+        'deleted_at',
+        'is_approved'
     ];
 
     protected $appends = [
         "perma_link",
         'is_cart',
-        'reward_url'
+        'reward_url',
+        'real_category'
+    ];
+
+    protected $casts = [
+        "twitter_response" => "array",
     ];
 
     public static function boot()
@@ -83,9 +90,9 @@ class WishItem extends Model
             // $fontsize = $textWm['fontsize'];
             // $check = "-/preview/-/text_align/left/center/-/font/$fontsize/fff/-/text/80px8p/8p,100p/$wm/";
             // $url = Uploadcare::getUrl($this->thumbnail, $this->type, $watermark, $check);
-            $url = "https://ucarecdn.com/" . $this->thumbnail . "/";
+            $url = "https://ucarecdn.com/" . $this->thumbnail . "/-/format/jpeg/";
         } else {
-            $url = "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/";
+            $url = "https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/";
         }
 
         return $url;
@@ -95,9 +102,7 @@ class WishItem extends Model
     {
         $url = false;
         if (!empty($this->reward)) {
-            $url = "https://ucarecdn.com/" . $this->reward . "/";
-        } else {
-            $url = "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/";
+            $url = "https://ucarecdn.com/" . $this->reward . "/-/format/jpeg/";
         }
 
         return $url;
@@ -111,6 +116,16 @@ class WishItem extends Model
     public function wishCategories()
     {
         return $this->hasMany(WishCategory::class);
+    }
+
+    public function getRealCategoryAttribute()
+    {
+        $arr = [];
+        foreach ($this->wishCategories as $category) {
+            $arr[] = $category->category;
+        }
+
+        return $arr;
     }
 
     public function getIsCartAttribute()

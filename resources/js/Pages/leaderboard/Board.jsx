@@ -8,7 +8,9 @@ import LargestGifts from "./LargestGifts";
 import { crown } from "@/includes/Icons";
 
 export default function Board(props) {
-    const { auth, data } = props;
+    const { auth, data, is_daily } = props;
+
+    console.log(props);
 
     const [positions, setPositions] = useState([]);
     const [ranks, setRanks] = useState([]);
@@ -25,7 +27,7 @@ export default function Board(props) {
         filterPositions(data);
     }, [data]);
 
-    const [period, setPeriod] = useState("monthly");
+    const [period, setPeriod] = useState("all");
     const [loading, setLoading] = useState(false);
     const switchTime = (e) => {
         setPeriod(e);
@@ -70,17 +72,37 @@ export default function Board(props) {
         return (
             <>
                 {p && p.username ? (
-                    <Link href={p && p.username} className={`position-${position} position text-center rounded-lg shadow-pink bg-white`} >
+                    <Link
+                        href={p && p.username}
+                        className={`position-${position} position text-center rounded-lg shadow-pink bg-white`}
+                    >
                         <div className="profile p-3 pb-0">
                             <div className="position-relative">
-                                    {position == 1 ? <div className="crown-wings" dangerouslySetInnerHTML={{ __html: crown }} /> : ''}
+                                {position == 1 ? (
+                                    <div
+                                        className="crown-wings"
+                                        dangerouslySetInnerHTML={{
+                                            __html: crown,
+                                        }}
+                                    />
+                                ) : (
+                                    ""
+                                )}
                                 <div className="profile-image ">
-                                    <img src={(p && p.avatar) || userphoto} className="img-fluid" alt="image" />
+                                    <img
+                                        src={(p && p.avatar) || userphoto}
+                                        className="img-fluid"
+                                        alt="image"
+                                    />
                                 </div>
                             </div>
                             <div className="profile-content">
-                                <h2 className="font-bold text-large pt-2">{(p && p.name) || "Anonymous"}</h2>
-                                <p className="toppercentage text-center">{p && p.top}% </p>
+                                <h2 className="font-bold text-large pt-2">
+                                    {(p && p.name) || "Anonymous"}
+                                </h2>
+                                <p className="toppercentage text-center">
+                                    {p && p.top}%{" "}
+                                </p>
                             </div>
                             <div className={`rank-position `}>
                                 <h2 className="font-GillSans">{position}</h2>
@@ -88,13 +110,28 @@ export default function Board(props) {
                         </div>
                     </Link>
                 ) : (
-                    <div className={`position-${position} position text-center rounded-lg shadow-pink bg-white`} >
+                    <div
+                        className={`position-${position} position text-center rounded-lg shadow-pink bg-white`}
+                    >
                         <div className="profile p-3 pb-0">
                             <div className=" position-relative">
-                                    {position == 1 ? <div  className="crown-wings" dangerouslySetInnerHTML={{ __html: crown }} /> : ''}
-                                    <div className="profile-image ">
-                                        <img src={(p && p.avatar) || userphoto} className="img-fluid" alt="image" />
-                                    </div>
+                                {position == 1 ? (
+                                    <div
+                                        className="crown-wings"
+                                        dangerouslySetInnerHTML={{
+                                            __html: crown,
+                                        }}
+                                    />
+                                ) : (
+                                    ""
+                                )}
+                                <div className="profile-image ">
+                                    <img
+                                        src={(p && p.avatar) || userphoto}
+                                        className="img-fluid"
+                                        alt="image"
+                                    />
+                                </div>
                             </div>
                             <div className="profile-content">
                                 <h2 className="font-bold text-large pt-2">
@@ -116,30 +153,63 @@ export default function Board(props) {
 
     return (
         <Authenticated auth={auth && auth.user}>
-            <Head title={"Cart"} />
-            <div className="blackbg">
-                <div className="containerbox pb-5 ">
+            <Head title={"Leaderboard"} />
+            <div className="blackbg pt-4">
+                <div className="containerbox pb-5 pt-2 ">
                     <div className="row">
                         <div className="col-lg-8 mb-4">
                             <div className="pe-md-4">
                                 <div className="pt-4 pt-md-0 d-block d-md-flex align-items-center justify-content-between mb-4 pb-4">
-                                    <h2 className="text-bl font-GillSans  text-start text-2xl uppercase text-white ">
+                                    <h1 className="text-bl font-GillSans text-start text-2xl uppercase text-white ">
                                         Leaderboard
-                                    </h2>
+                                    </h1>
                                     <div className="changePeriod">
                                         <button
-                                            className={period == "monthly" ? "active":""}
-                                            onClick={() => switchTime("monthly")} >
-                                            Monthly
-                                        </button>
-                                        <button className={period == "weekly" ? "active":""} onClick={() => switchTime("weekly")}>
-                                            Weekly
+                                            className={
+                                                period == "all" ? "active" : ""
+                                            }
+                                            onClick={() => switchTime("all")}
+                                        >
+                                            All Time
                                         </button>
                                         <button
-                                            className={period == "daily"? "active": ""}
-                                            onClick={() => switchTime("daily")}>
-                                            Daily
+                                            className={
+                                                period == "monthly"
+                                                    ? "active"
+                                                    : ""
+                                            }
+                                            onClick={() =>
+                                                switchTime("monthly")
+                                            }
+                                        >
+                                            Monthly
                                         </button>
+                                        <button
+                                            className={
+                                                period == "weekly"
+                                                    ? "active"
+                                                    : ""
+                                            }
+                                            onClick={() => switchTime("weekly")}
+                                        >
+                                            Weekly
+                                        </button>
+                                        {is_daily == 1 ? (
+                                            <button
+                                                className={
+                                                    period == "daily"
+                                                        ? "active"
+                                                        : ""
+                                                }
+                                                onClick={() =>
+                                                    switchTime("daily")
+                                                }
+                                            >
+                                                Daily
+                                            </button>
+                                        ) : (
+                                            ""
+                                        )}
                                     </div>
                                 </div>
                                 <div

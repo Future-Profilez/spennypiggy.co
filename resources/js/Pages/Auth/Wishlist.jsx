@@ -3,82 +3,115 @@ import "swiper/css/pagination";
 import "swiper/css/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import LoaderButton from "@/Components/LoaderButton";
-import { useForm, usePage, router } from "@inertiajs/react";
+import { useForm, usePage } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
 import GlobalUploader from "@/uploadcare/Uploader";
 import st from "../../../css/uploader.module.css";
-import Tab from "react-bootstrap/Tab";
-import Tabs from "react-bootstrap/Tabs";
 import Accordion from "react-bootstrap/Accordion";
 import uploadedimg from "../../../assets/img/uploadedimg.png";
 import Popup from "@/Components/Popup";
 import { Pagination, Navigation } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import PriceFormat from "@/includes/PriceFormat";
+import axios from "axios";
+import UploadcareEditor from "@/uploadcare/UploadcareEditor";
+import { FaRegHeart } from "react-icons/fa";
+import ImageGenerationWithAI from "@/Components/ImageGenerationWithAI";
+
+const imageLinks = [
+    "901c0a0e-e5de-4d7a-8ac3-de11a4632542",
+    "ca1392cd-d81e-4e00-b106-55fcba62bc84",
+    "467f7ad0-e397-45fe-be22-a6e8e8afe9fa",
+    "897b3ec3-63f8-42c0-83b3-a3a9a1b90b7c",
+    "be9060ab-1a76-452f-b805-1c71d9af4fb7", // first
+    "01bbc3bd-7e79-4dc0-817c-2c260da43c20",
+    "f0c45dc9-cc56-4955-a406-7527004a1373",
+    "4c42426a-1396-49e2-8b46-2381a2ae5d7b",
+];
 
 export default function Wishlist(props) {
     const { global_currency, auth } = usePage().props;
     const {
-        categories,
         fetchingcats,
-        updateCategory,
+        fetchcategories,
         currency,
         item,
         editpop,
         openPop,
         setuped,
+        customtext,
     } = props;
+    const defaultCurrency =
+        (auth && auth.user && auth.user.default_currency) || "GBP";
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
     const [defaultKey, setDefaultKey] = useState(
         item && item.subscription !== null ? +item.subscription : null
     );
-    const [clear, setClear] = useState();
+
     const [close, setClose] = useState();
     const { formatMultiPrice } = PriceFormat();
+    const [repeat, setRepeat] = useState(true);
+    const [thumbnail, setThumbnail] = useState("");
+    const [adding, setAdding] = useState(false);
+    const [rewardImage, setRewardImage] = useState("");
+    const [isAiImage, setIsAiImage] = useState();
+
     useEffect(() => {
         setClose(openPop);
     }, [openPop]);
 
-    const [repeat, setRepeat] = useState(true);
-    const [thumbnail, setThumbnail] = useState("");
-    const [adding, setAdding] = useState(false);
-    const [rewardImage, setRewardImage] = useState('');
+    const uploaderRef = useRef();
+    const uploaderRef1 = useRef();
+    const resetUploader = () => {
+        if (uploaderRef.current) {
+            uploaderRef.current.reset();
+        }
+        if (uploaderRef1.current) {
+            uploaderRef1.current.reset();
+        }
+    };
+
+    const [categories, setcategories] = useState([]);
+    const fetch_categories = async () => {
+        const controller = new AbortController();
+        const { signal } = controller;
+        axios
+            .get(`/user_category/${auth && auth.user && auth.user.username}`, {
+                signal,
+            })
+            .then((resp) => {
+                setcategories(resp.data.categories);
+            })
+            .catch((_err) => {
+                console.error("error", _err);
+            });
+    };
+
+    useEffect(() => {
+        fetch_categories();
+    }, []);
 
     const AddCategory = async () => {
         const value = inputRef.current.value;
         setAdding(true);
-        router.post(
-            "save-category",
-            { category: value },
-            {
-                preserveScroll: true,
-                onSuccess: (resp) => {
+        axios
+            .post("save-category", { category: value })
+            .then((res) => {
+                setAdding(false);
+                if (res.data.status) {
+                    successAlert(res.data.msg || "Added");
+                    fetch_categories();
                     inputRef.current.value = "";
-                    if (resp.props.flash?.success) {
-                        successAlert(resp.props.flash?.success || "Added");
-                    }
-                    if (resp.props.flash?.error) {
-                        errorAlert(resp.props.flash?.error);
-                    }
-                    setAdding(false);
-                    updateCategory();
-                },
-                onError: (_err) => {
-                    console.table("error", _err);
-                    setAdding(false);
-                    errorAlert(_err?.category);
-                },
-            }
-        );
+                } else {
+                    errorAlert(res.data.msg || "Something went wrong.");
+                }
+            })
+            .catch((err) => {
+                setAdding(false);
+                errorsHandling(err);
+            });
     };
-
-    const imageLinks = [
-        "be9060ab-1a76-452f-b805-1c71d9af4fb7",
-        "01bbc3bd-7e79-4dc0-817c-2c260da43c20",
-        "f0c45dc9-cc56-4955-a406-7527004a1373",
-        "4c42426a-1396-49e2-8b46-2381a2ae5d7b",
-    ];
 
     const { data, setData, post, processing, errors, reset } = useForm({
         wishname: item && item.wishname ? item.wishname : "",
@@ -92,7 +125,9 @@ export default function Wishlist(props) {
         repeat_purchase:
             item && item.repeat_purchase ? item.repeat_purchase : 1,
         category: item && item.category ? item.category : 0,
+        ai_generated: isAiImage ? 1 : 0,
     });
+
     const [period, setPeriod] = useState(
         data.subscription_period || (item && item.subscription_period)
     );
@@ -100,39 +135,64 @@ export default function Wishlist(props) {
     const onSlideChange = (swiper) => {
         setData("thumbnail", imageLinks[swiper && swiper.activeIndex]);
     };
+
     const setSubs = (e) => {
         setData("subscription", e);
         setRepeat(true);
     };
 
     const [checkboxes, setCheckboxes] = useState([]);
+    const [real_category, setreal_category] = useState(
+        item && item.real_category
+    );
     const catValue = (event) => {
         const { value, checked } = event.target;
         if (checked) {
             setCheckboxes([...checkboxes, value]);
         } else {
+            setreal_category(checkboxes.filter((item) => item !== value));
             setCheckboxes(checkboxes.filter((item) => item !== value));
         }
     };
 
+    const [isEditable, setIsEditable] = useState(false);
     const getFileUID = async (data) => {
         let ss = data?.uuid;
         setThumbnail(ss);
+        setIsEditable(true);
+    };
+
+    const wishImageEdited = async (d, uuid) => {
+        const url = `${uuid}/${d.cdnUrlModifiers}-/preview/`;
+        setThumbnail(url);
+        setIsEditable(false);
+    };
+
+    const getAIImage = (e) => {
+        setRewardImage(
+            e.uuid +
+                "/-/text_align/left/center/-/font/10/fff/-/text/80px8p/8p,100p/Made%20with%20AI%20/-/format/jpeg/-/preview/"
+        );
+        setIsAiImage(e.url);
+        setData("ai_generated", 1);
     };
 
     const getrewardFile = async (data) => {
         let ss = data?.uuid;
         setRewardImage(ss);
+        setIsAiImage(false);
+        setData("ai_generated", 0);
     };
+
     useEffect(() => {
         setData("reward_file", rewardImage);
     }, [rewardImage]);
-
 
     const rpValue = (e) => {
         setRepeat(e.target.checked);
         setData("repeat_purchase", e.target.checked ? 1 : 0);
     };
+
     const spValue = (e) => {
         setData("subscription_period", e.target.value);
         setPeriod(e.target.value);
@@ -160,23 +220,32 @@ export default function Wishlist(props) {
             errorAlert("Please choose a category for this item.");
             return false;
         }
+        if ((!editpop && data && data.reward_file == "") || null || undefined) {
+            errorAlert("Please choose a exclusive reward for this wish item.");
+            return false;
+        }
         if (editpop) {
             post(route(`update_wish_item`, [item && item.uuid]), {
                 preserveScroll: true,
                 onSuccess: (resp) => {
-                    if (resp.props.flash?.success) {
-                        successAlert(resp.props.flash?.success || "Updated successfully.");
+                    if (resp.props.flash?.success !== null) {
+                        successAlert(
+                            resp.props.flash?.success || "Updated successfully."
+                        );
+                        reset();
+                        setClose(false);
+                        setTimeout(() => {
+                            setClose();
+                        }, 100);
+                        fetchingcats();
+                        resetUploader();
+                        fetchcategories && fetchcategories();
                     }
                     if (resp.props.flash?.error) {
-                        errorAlert(resp.props.flash?.error || "Something went wrong.");
+                        errorAlert(
+                            resp.props.flash?.error || "Something went wrong."
+                        );
                     }
-                    reset();
-                    setClose(false);
-                    setClear(new Date());
-                    setTimeout(() => {
-                        setClose();
-                    }, 100);
-                    fetchingcats();
                 },
                 onError: (_err) => {
                     console.error(_err);
@@ -188,19 +257,24 @@ export default function Wishlist(props) {
             post(route("save_wish_item"), {
                 preserveScroll: true,
                 onSuccess: (resp) => {
-                    reset();
-                    if (resp.props.flash?.success) {
-                        successAlert(resp.props.flash?.success ||"Wish added successfully.");
+                    if (resp.props.flash?.success !== null) {
+                        successAlert(
+                            resp.props.flash?.success ||
+                                "Wish added successfully."
+                        );
+                        reset();
+                        setClose(false);
+                        resetUploader();
+                        setTimeout(() => {
+                            setClose();
+                        }, 100);
+                        fetchingcats();
                     }
                     if (resp.props.flash?.error) {
-                        errorAlert(resp.props.flash?.error || "Something went wrong.");
+                        errorAlert(
+                            resp.props.flash?.error || "Something went wrong."
+                        );
                     }
-                    setClose(false);
-                    setClear(new Date());
-                    setTimeout(() => {
-                        setClose(); 
-                    }, 100);
-                    fetchingcats();
                 },
                 onError: (_err) => {
                     console.error(_err);
@@ -211,296 +285,298 @@ export default function Wishlist(props) {
         }
     };
 
-    const defaultCurrency = (auth && auth.user && auth.user.default_currency) || "GBP";
+    const AddItem = () => {
+        return (
+            <div className=" flex items-center">
+                <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                    <FaRegHeart color="var(--pink)" size="1.5rem" />
+                </div>
+                <div className="ps-3 text-start">
+                    <h2 className="text-md">Add Wish Item</h2>
+                    <p className="text-sm font-normal">
+                        Let fans fund your lifestyle for a reward.
+                    </p>
+                </div>
+            </div>
+        );
+    };
 
     return (
         <Popup
-            modalclass="pinkmodal full"
-            size="md"
+            modalclassName="pinkmodal full"
+            size="lg"
             action={close}
-            classes={`${editpop ? "editpop" : "dropdown-item text-start p-0"}`}
-            text={`${editpop ? "" : " Add wish"}`}
+            classes={`${
+                editpop
+                    ? "editpop"
+                    : "w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
+            }`}
+            text={customtext || <AddItem />}
         >
-            <div className="editprofileModal  wishlistModal ">
+            <div className="editprofileModal  wishlistModal max-h-[90vh] overflow-auto customScrollbar ">
                 <div className="editprofileModalInner">
-                    <h2 className="font-GillSans pt-4 px-3">Add A Wish </h2>
-                    <Tabs
-                        defaultActiveKey="1"
-                        id="uncontrolled-tab-example"
-                        className="mb-3"
-                    >
-                        <Tab eventKey="1" title="Custom">
-                            <div className="wishinfo">
-                                <form onSubmit={createWishList}>
-                                    <ul className="ps-0">
-                                        <li className="mb-4">
-                                            <label className="mb-2 text-start d-block">
-                                                Wish Name
-                                            </label>
-                                            <input
-                                                id="wishname"
-                                                name="wishname"
-                                                type="text"
-                                                placeholder="Eg. Buy me a coffee"
-                                                value={data.wishname}
-                                                className="form-input px-2 py-2 border w-full rounded-md"
-                                                autoComplete="name"
-                                                onChange={(e) =>
-                                                    setData(
-                                                        "wishname",
-                                                        e.target.value
-                                                    )
-                                                }
-                                                required
-                                            />
-                                        </li>
-                                        <li className="mb-4">
-                                            <label className="mb-2 text-start d-block">
-                                                Price{" "}
-                                            </label>
-                                            <div className="currency-wrapper position-relative">
-                                                <span className="currency-tag">
-                                                    {defaultCurrency}
-                                                </span>
-                                                <input
-                                                    id="price"
-                                                    type="number"
-                                                    name="price"
-                                                    placeholder="Eg. 50"
-                                                    value={
-                                                        data.price ||
-                                                        (item && item.price)
-                                                    }
-                                                    step={`0.01`}
-                                                    className="form-input px-2 py-2 border w-full rounded-md"
-                                                    autoComplete="price"
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            "price",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                />
-                                            </div>
-                                            <p className="mt-1">
-                                                The wish item amount is set to{" "}
-                                                {formatMultiPrice(
-                                                    data.price,
-                                                    defaultCurrency
-                                                )}
-                                                .
-                                            </p>
-                                        </li>
-                                        <li className="mb-4">
-                                            <label className="mb-2 text-start d-block">
-                                                URL (Optional)
-                                            </label>
-                                            <input
-                                                id="item_url"
-                                                type="text"
-                                                placeholder="URL"
-                                                name="item_url"
-                                                value={
-                                                    data.item_url ||
-                                                    (item && item.item_url)
-                                                }
-                                                className="form-input px-2 py-2 border w-full rounded-md"
-                                                autoComplete="item_url"
-                                                onChange={(e) =>
-                                                    setData(
-                                                        "item_url",
-                                                        e.target.value
-                                                    )
-                                                }
-                                            />
-                                        </li>
-                                            
-                                        <li className="mb-4">
-                                            <label className="mb-2 text-start d-block">
-                                                Choose Image or Upload
-                                            </label>
+                    <h2 className="p-4 text-pink text-start font-GillSans uppercase text-large black-stroke font-semibold mb-1 pe-5">
+                        {editpop ? " Edit Wish" : "Add A Wish"}
+                    </h2>
+                    <div className="wishinfo border-top pt-0">
+                        <p className="text-danger mb-4 pt-3">
+                            When adding items please ensure they are specific
+                            i.e Holiday Clothes or New Gym Equipment. Items that
+                            are non specific will be rejected and removed. Our
+                            AI blocks adult content but any overly suggestive
+                            images will also be rejected. Please reach out to
+                            support for further clarification.
+                        </p>
+                        <form onSubmit={createWishList}>
+                            <ul className="ps-0">
+                                <li className="mb-4">
+                                    <label className="mb-2 text-start d-block">
+                                        Wish Name
+                                    </label>
+                                    <input
+                                        id="wishname"
+                                        name="wishname"
+                                        type="text"
+                                        placeholder="Eg. Buy me a coffee"
+                                        value={data.wishname}
+                                        className="form-input px-2 py-2 border w-full rounded-md"
+                                        autoComplete="name"
+                                        onChange={(e) =>
+                                            setData("wishname", e.target.value)
+                                        }
+                                        required
+                                    />
+                                </li>
+                                <li className="mb-4">
+                                    <label className="mb-2 text-start d-block">
+                                        Price
+                                    </label>
+                                    <div className="currency-wrapper position-relative">
+                                        <span className="currency-tag">
+                                            {defaultCurrency}
+                                        </span>
+                                        <input
+                                            id="price"
+                                            type="number"
+                                            name="price"
+                                            placeholder="Eg. 50"
+                                            value={
+                                                data.price ||
+                                                (item && item.price)
+                                            }
+                                            step={`0.01`}
+                                            className="form-input px-2 py-2 border w-full rounded-md"
+                                            autoComplete="price"
+                                            onChange={(e) =>
+                                                setData("price", e.target.value)
+                                            }
+                                        />
+                                    </div>
+                                    <p className="mt-1">
+                                        The wish item amount is set to{" "}
+                                        {formatMultiPrice(
+                                            data.price,
+                                            defaultCurrency
+                                        )}
+                                        .
+                                    </p>
+                                </li>
+                                <li className="mb-4">
+                                    <label className="mb-2 text-start d-block">
+                                        URL (Optional)
+                                    </label>
+                                    <input
+                                        id="item_url"
+                                        type="text"
+                                        placeholder="URL"
+                                        name="item_url"
+                                        value={
+                                            data.item_url ||
+                                            (item && item.item_url)
+                                        }
+                                        className="form-input px-2 py-2 border w-full rounded-md"
+                                        autoComplete="item_url"
+                                        onChange={(e) =>
+                                            setData("item_url", e.target.value)
+                                        }
+                                    />
+                                </li>
 
-                                            {item && item.perma_link ? (
-                                                <div className="default-wish-img mb-1">
-                                                    <img
-                                                        src={
-                                                            (item &&
-                                                                item.perma_link) ||
-                                                            uploadedimg
-                                                        }
-                                                        className="img-fluid"
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <Swiper
-                                                    spaceBetween={0}
-                                                    pagination={{
-                                                        clickable: true,
-                                                    }}
-                                                    navigation={true}
-                                                    onSlideChange={
-                                                        onSlideChange
-                                                    }
-                                                    modules={[
-                                                        Pagination,
-                                                        Navigation,
-                                                    ]}
-                                                    slidesPerView={1}
-                                                >
-                                                    {imageLinks &&
-                                                        imageLinks.map(
-                                                            (image) => {
-                                                                return (
-                                                                    <SwiperSlide
-                                                                        key={`swiper-item-${image}`}
-                                                                    >
-                                                                        <div className="default-wish-img mb-1">
-                                                                            <img
-                                                                                src={`https://ucarecdn.com/${image}/`}
-                                                                                className="img-fluid"
-                                                                            />
-                                                                        </div>
-                                                                    </SwiperSlide>
-                                                                );
-                                                            }
-                                                        )}
-                                                </Swiper>
-                                            )}
+                                <li className="mb-4">
+                                    <label className="mb-2 text-start d-block">
+                                        Choose Image or Upload
+                                    </label>
 
-                                            <h4 className="mt-2 mb-2 w-100 text-center">
-                                                OR
-                                            </h4>
-                                            <GlobalUploader
-                                                type="minimal"
-                                                clear={clear}
-                                                sendFile={getFileUID}
-                                                options={st.wishitemUploader}
+                                    {item && item.perma_link ? (
+                                        <div className="default-wish-img mb-1">
+                                            <img
+                                                src={
+                                                    (item && item.perma_link) ||
+                                                    uploadedimg
+                                                }
+                                                className="img-fluid"
                                             />
-                                        </li>
-                                    </ul>
-
-                                    <div className="wishlistAccordian mt-3">
-                                        <Accordion
-                                            defaultActiveKey={defaultKey}
+                                        </div>
+                                    ) : (
+                                        <Swiper
+                                            spaceBetween={0}
+                                            pagination={{
+                                                clickable: true,
+                                            }}
+                                            navigation={true}
+                                            onSlideChange={onSlideChange}
+                                            modules={[Pagination, Navigation]}
+                                            slidesPerView={1}
                                         >
-                                            <Accordion.Item eventKey={0}>
-                                                <Accordion.Header
-                                                    onClick={(e) => setSubs(0)}
-                                                >
-                                                    <span className="activedote"></span>{" "}
-                                                    Single Wish
-                                                </Accordion.Header>
-                                                <Accordion.Body>
-                                                    <div className="singlewishbox">
-                                                        <div className="repeatpurchase text-start">
-                                                            <label htmlFor="allow">
-                                                                <input
-                                                                    checked={
-                                                                        repeat
-                                                                    }
-                                                                    type="checkbox"
-                                                                    id="allow"
-                                                                    name="repeat_purchase"
-                                                                    onChange={
-                                                                        rpValue
-                                                                    }
+                                            {imageLinks &&
+                                                imageLinks.map((image) => {
+                                                    return (
+                                                        <SwiperSlide
+                                                            key={`swiper-item-${image}`}
+                                                        >
+                                                            <div className="default-wish-img mb-1">
+                                                                <img
+                                                                    src={`https://ucarecdn.com/${image}/`}
+                                                                    className="img-fluid"
                                                                 />
-                                                                Allow Repeat
-                                                                Purchases
-                                                            </label>
-                                                        </div>
-                                                        <p className="text-start">
-                                                            Check if you want
-                                                            repeat purchases of
-                                                            this gift. If
-                                                            unchecked, the item
-                                                            will automatically
-                                                            delete from your
-                                                            wishlist after the
-                                                            first purchase.
-                                                        </p>
-                                                    </div>
-                                                </Accordion.Body>
-                                            </Accordion.Item>
-                                            <Accordion.Item eventKey={1}>
-                                                <Accordion.Header
-                                                    onClick={(e) => setSubs(1)}
-                                                >
-                                                    <span className="activedote"></span>{" "}
-                                                    Subscription
-                                                </Accordion.Header>
-                                                <Accordion.Body>
-                                                    <div className="singlewishbox rounded ">
-                                                        <strong className="mb-2 text-start d-block ">
-                                                            Allows gifter to
-                                                            purchase this item
-                                                            on a recurring
-                                                            basis.
-                                                        </strong>
-                                                        <div className="repeatpurchase text-start">
-                                                            <label htmlFor="daily">
-                                                                <input
-                                                                    checked={
-                                                                        period ==
-                                                                        "daily"
-                                                                    }
-                                                                    type="radio"
-                                                                    id="daily"
-                                                                    value={
-                                                                        "daily"
-                                                                    }
-                                                                    name="subscription_period"
-                                                                    onChange={
-                                                                        spValue
-                                                                    }
-                                                                />
-                                                                Daily
-                                                            </label>
-                                                        </div>
-                                                        <div className="repeatpurchase mt-2 text-start">
-                                                            <label htmlFor="weekly">
-                                                                <input
-                                                                    checked={
-                                                                        period ==
-                                                                        "weekly"
-                                                                    }
-                                                                    type="radio"
-                                                                    id="weekly"
-                                                                    value={
-                                                                        "weekly"
-                                                                    }
-                                                                    name="subscription_period"
-                                                                    onChange={
-                                                                        spValue
-                                                                    }
-                                                                />{" "}
-                                                                Weekly
-                                                            </label>
-                                                        </div>
-                                                        <div className="repeatpurchase mt-2 text-start">
-                                                            <label htmlFor="monthly">
-                                                                <input
-                                                                    checked={
-                                                                        period ==
-                                                                        "monthly"
-                                                                    }
-                                                                    type="radio"
-                                                                    id="monthly"
-                                                                    value={
-                                                                        "monthly"
-                                                                    }
-                                                                    name="subscription_period"
-                                                                    onChange={
-                                                                        spValue
-                                                                    }
-                                                                />
-                                                                Monthly
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                </Accordion.Body>
-                                            </Accordion.Item>
-                                            <Accordion.Item eventKey={2}>
+                                                            </div>
+                                                        </SwiperSlide>
+                                                    );
+                                                })}
+                                        </Swiper>
+                                    )}
+                                    <h4 className="mt-2 mb-2 w-100 text-center">
+                                        {" "}
+                                        OR{" "}
+                                    </h4>
+
+                                    <div
+                                        className={`${
+                                            !isEditable ? "" : "d-none"
+                                        } editable`}
+                                    >
+                                        <GlobalUploader
+                                            type="minimal"
+                                            ref={uploaderRef}
+                                            sendFile={getFileUID}
+                                            options={st.wishitemUploader}
+                                        />
+                                    </div>
+
+                                    <div
+                                        className={`${
+                                            isEditable ? "" : "d-none"
+                                        } editable`}
+                                    >
+                                        <UploadcareEditor
+                                            uuid={thumbnail}
+                                            updateFile={wishImageEdited}
+                                        />
+                                    </div>
+                                </li>
+                            </ul>
+
+                            <div className="wishlistAccordian mt-3">
+                                <Accordion defaultActiveKey={defaultKey}>
+                                    <Accordion.Item eventKey={0}>
+                                        <Accordion.Header
+                                            onClick={(e) => setSubs(0)}
+                                        >
+                                            <span className="activedote"></span>{" "}
+                                            Single Wish
+                                        </Accordion.Header>
+                                        <Accordion.Body>
+                                            <div className="singlewishbox">
+                                                <div className="repeatpurchase text-start">
+                                                    <label htmlFor="allow">
+                                                        <input
+                                                            checked={repeat}
+                                                            type="checkbox"
+                                                            id="allow"
+                                                            name="repeat_purchase"
+                                                            onChange={rpValue}
+                                                        />
+                                                        Allow Repeat Purchases
+                                                    </label>
+                                                </div>
+                                                <p className="text-start">
+                                                    Check if you want repeat
+                                                    purchases of this gift. If
+                                                    unchecked, the item will
+                                                    automatically delete from
+                                                    your wishlist after the
+                                                    first purchase.
+                                                </p>
+                                            </div>
+                                        </Accordion.Body>
+                                    </Accordion.Item>
+                                    <Accordion.Item eventKey={1}>
+                                        <Accordion.Header
+                                            onClick={(e) => setSubs(1)}
+                                        >
+                                            <span className="activedote"></span>{" "}
+                                            Subscription
+                                        </Accordion.Header>
+                                        <Accordion.Body>
+                                            <div className="singlewishbox rounded ">
+                                                <strong className="mb-2 text-start d-block ">
+                                                    {" "}
+                                                    Allows gifter to purchase
+                                                    this item on a recurring
+                                                    basis.{" "}
+                                                </strong>
+                                                <div className="repeatpurchase text-start">
+                                                    <label htmlFor="daily">
+                                                        <input
+                                                            checked={
+                                                                period ==
+                                                                "daily"
+                                                            }
+                                                            type="radio"
+                                                            id="daily"
+                                                            value={"daily"}
+                                                            name="subscription_period"
+                                                            onChange={spValue}
+                                                        />
+                                                        Daily
+                                                    </label>
+                                                </div>
+                                                <div className="repeatpurchase mt-2 text-start">
+                                                    <label htmlFor="weekly">
+                                                        <input
+                                                            checked={
+                                                                period ==
+                                                                "weekly"
+                                                            }
+                                                            type="radio"
+                                                            id="weekly"
+                                                            value={"weekly"}
+                                                            name="subscription_period"
+                                                            onChange={spValue}
+                                                        />{" "}
+                                                        Weekly
+                                                    </label>
+                                                </div>
+                                                <div className="repeatpurchase mt-2 text-start">
+                                                    <label htmlFor="monthly">
+                                                        <input
+                                                            checked={
+                                                                period ==
+                                                                "monthly"
+                                                            }
+                                                            type="radio"
+                                                            id="monthly"
+                                                            value={"monthly"}
+                                                            name="subscription_period"
+                                                            onChange={spValue}
+                                                        />
+                                                        Monthly
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </Accordion.Body>
+                                    </Accordion.Item>
+                                    {/* <Accordion.Item eventKey={2}>
                                                 <Accordion.Header
                                                     onClick={(e) => setSubs(2)}
                                                 >
@@ -514,27 +590,65 @@ export default function Wishlist(props) {
                                                         wish item.
                                                     </p>
                                                 </Accordion.Body>
-                                            </Accordion.Item>
-                                        </Accordion>
-                                    </div>
+                                            </Accordion.Item> */}
+                                </Accordion>
+                            </div>
 
-                                    <div className="pt-4 pb-3"  >
-                                        <strong className="text-start d-block">Exclusive Reward *</strong>
-                                        <p className="text-small mb-3" >Choose an exclusive picture as an reward for gifter.</p>
-
-                                       {item && item.reward_url? <div className="default-wish-img border mb-2">
-                                            <img src={item && item.reward_url}className="img-fluid"/>
-                                        </div> : '' }
-
-                                        <GlobalUploader
-                                            type="minimal"
-                                            clear={clear}
-                                            sendFile={getrewardFile}
-                                            options={st.rewards}
+                            <div className="pt-4 pb-3">
+                                <strong className="text-start d-block">
+                                    Exclusive Reward or Art commission *
+                                </strong>
+                                <p className="text-small mb-3">
+                                    Create an exclusive image as a reward “think
+                                    a custom photoshoot” or add an exclusive art
+                                    commission “Unique drawing or painting
+                                </p>
+                                <p className="text-small mb-3">
+                                    Rewards must be your own content, not stock
+                                    imagery or content that you don’t have the
+                                    ownership rights to. Wishes will be rejected
+                                    if the reward is not sufficiently classed as
+                                    unique content
+                                </p>
+                                {item && item.reward_url ? (
+                                    <div className="default-wish-img border mb-2">
+                                        <img
+                                            src={item && item.reward_url}
+                                            className="img-fluid"
                                         />
                                     </div>
+                                ) : (
+                                    ""
+                                )}
+                                {isAiImage ? (
+                                    <div className="default-wish-img border mb-2">
+                                        <img
+                                            src={isAiImage}
+                                            className="img-fluid"
+                                        />
+                                    </div>
+                                ) : (
+                                    ""
+                                )}
+                                <GlobalUploader
+                                    type="minimal"
+                                    ref={uploaderRef1}
+                                    sendFile={getrewardFile}
+                                    options={st.rewards}
+                                />
+                                <div className="flex justify-center">
+                                    <div>
+                                        <h5 className="text-center text-gray-400 text-lg py-3">
+                                            Or
+                                        </h5>
+                                        <ImageGenerationWithAI
+                                            update={getAIImage}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
 
-                                    {/* <div className="twitter-an mt-3 pt-2">
+                            {/* <div className="twitter-an mt-3 pt-2">
                                             <div className="repeatpurchase mt-1 mb-2 text-start">
                                                 <label
                                                     className="text-capitalize" htmlFor={"twitter-announcement"}>
@@ -546,127 +660,115 @@ export default function Wishlist(props) {
                                                     />
                                                     Auto Tweet
                                                 </label>
-
                                             </div>
                                                 <p className="text-small text-muted" >
                                                 Enable auto tweet for this item.
                                             </p>
                                         </div> */}
-                                    <div className="publish text-start">
-                                        {editpop ? (
-                                            <LoaderButton
-                                                disabled={processing}
-                                                type="submit"
-                                                className="flex w-100 btn-pink lg mx-auto"
-                                                spinnerClassName="fill-red-600">{processing ? "Updating..":"Update Wish"}
-                                            </LoaderButton>
-                                        ) : (
-                                            <>
-                                                <strong>
-                                                    Categorize this wish *
-                                                </strong>
-                                                <p>
-                                                    {" "}
-                                                    Organize your wishes to help
-                                                    gifters find what they're
-                                                    looking for while on your
-                                                    wishlist.{" "}
-                                                </p>
 
-                                                <div className="catslists">
-                                                    {categories &&
-                                                    categories.length
-                                                        ? categories.map(
-                                                              (c, i) => {
-                                                                  return (
-                                                                      <>
-                                                                          <div className="repeatpurchase mb-2 text-start">
-                                                                              <label
-                                                                                  className="text-capitalize"
-                                                                                  htmlFor={
-                                                                                      "categories" +
-                                                                                      i
-                                                                                  }
-                                                                              >
-                                                                                  <input
-                                                                                      type="checkbox"
-                                                                                      id={
-                                                                                          "categories" +
-                                                                                          i
-                                                                                      }
-                                                                                      value={
-                                                                                          c.id
-                                                                                      }
-                                                                                      name="category"
-                                                                                      onChange={
-                                                                                          catValue
-                                                                                      }
-                                                                                  />
-                                                                                  {
-                                                                                      c.category
-                                                                                  }
-                                                                              </label>
-                                                                          </div>
-                                                                      </>
-                                                                  );
-                                                              }
-                                                          )
-                                                        : ""}
-                                                </div>
+                            <div className="publish text-start">
+                                <>
+                                    <strong>Categorize this wish *</strong>
+                                    <p>
+                                        {" "}
+                                        Organize your wishes to help gifters
+                                        find what they're looking for while on
+                                        your wishlist.
+                                    </p>
 
-                                                <div className="cate-items mb-3 mt-4 d-flex ">
-                                                    <input
-                                                        id="cats"
-                                                        type="text"
-                                                        ref={inputRef}
-                                                        className="form-input px-2 py-2 border w-full rounded-md"
-                                                    />
-                                                    <div
-                                                        className="p-2 border cursor-pointer"
-                                                        onClick={AddCategory}
-                                                    >
-                                                        {adding
-                                                            ? "Adding.."
-                                                            : "Add"}
-                                                    </div>
-                                                </div>
-
-                                                <LoaderButton
-                                                    disabled={processing}
-                                                    type="submit"
-                                                    className="flex w-100 btn-pink lg mx-auto"
-                                                    spinnerClassName="fill-red-600"
-                                                >
-                                                    {processing
-                                                        ? "Processing"
-                                                        : "Add Wish"}
-                                                </LoaderButton>
-
-                                                {/* <AdultScan
-                                                fileuid={msgMedia && msgMedia.uuid}
-                                                onScan={saythankyou} content={<>
-                                                <LoaderButton
-                                                    disabled={loading}
-                                                    className="flex px-4  mb-3 btn-pink sm mx-auto"
-                                                    spinnerClassName="fill-red-600" >
-                                                    {loading ? "Sending..." : "Say Thanks"}
-                                                </LoaderButton>
-                                            </>} /> */}
-                                            </>
-                                        )}
+                                    <div className="catslists">
+                                        {categories && categories.length
+                                            ? categories.map((c, i) => {
+                                                  const filteritem =
+                                                      real_category &&
+                                                      real_category.filter(
+                                                          (item) =>
+                                                              item?.category ==
+                                                              c?.category
+                                                      );
+                                                  const isCategory =
+                                                      filteritem &&
+                                                      filteritem[0]
+                                                          ? true
+                                                          : null;
+                                                  return (
+                                                      <>
+                                                          <div className="repeatpurchase mb-2 text-start">
+                                                              <label
+                                                                  className="text-capitalize"
+                                                                  htmlFor={
+                                                                      "categories" +
+                                                                      i
+                                                                  }
+                                                              >
+                                                                  <input
+                                                                      type="checkbox"
+                                                                      id={
+                                                                          "categories" +
+                                                                          i
+                                                                      }
+                                                                      value={
+                                                                          c.id
+                                                                      }
+                                                                      name="category"
+                                                                      onChange={
+                                                                          catValue
+                                                                      }
+                                                                      checked={
+                                                                          isCategory
+                                                                      }
+                                                                  />
+                                                                  {c.category}
+                                                              </label>
+                                                          </div>
+                                                      </>
+                                                  );
+                                              })
+                                            : ""}
                                     </div>
 
-                                   
+                                    <div className="cate-items mb-3 mt-4 d-flex ">
+                                        <input
+                                            id="cats"
+                                            type="text"
+                                            ref={inputRef}
+                                            className="form-input px-2 py-2 border w-full rounded-md"
+                                        />
+                                        <div
+                                            className="p-2 border cursor-pointer"
+                                            onClick={AddCategory}
+                                        >
+                                            {adding ? "Adding.." : "Add"}
+                                        </div>
+                                    </div>
 
-                                    
-                                </form>
+                                    {editpop ? (
+                                        <LoaderButton
+                                            disabled={processing}
+                                            type="submit"
+                                            className="flex w-100 btn-pink lg mx-auto"
+                                            spinnerClassName="fill-red-600"
+                                        >
+                                            {processing
+                                                ? "Updating.."
+                                                : "Update Wish"}
+                                        </LoaderButton>
+                                    ) : (
+                                        <LoaderButton
+                                            disabled={processing}
+                                            type="submit"
+                                            className="flex w-100 btn-pink lg mx-auto"
+                                            spinnerClassName="fill-red-600"
+                                        >
+                                            {processing
+                                                ? "Processing"
+                                                : "Add Wish"}
+                                        </LoaderButton>
+                                    )}
+                                </>
                             </div>
-                        </Tab>
-                        {/* <Tab eventKey="2" title="Prefill with URL">
-                                    Tab content for Profile
-                                </Tab>
-                            */}
-                    </Tabs>
+                        </form>
+                    </div>
                 </div>
             </div>
         </Popup>

@@ -73,7 +73,7 @@ export default function IntroVideos(props) {
                 <Switch />
             <div className='d-flex align-items-center' >
               <div className='filter-select-wrap' >
-                  <select onChange={(e)=> setgender(e.target.value)} id="types" class="me-2 filter-select bg-gray-50 border border-gray-300 text-gray-900 
+                  <select onChange={(e)=> setgender(e.target.value)} id="types" className="me-2 filter-select bg-gray-50 border border-gray-300 text-gray-900 
                   text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 
                   block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 
                   dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">

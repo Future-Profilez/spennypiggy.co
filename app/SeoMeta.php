@@ -15,7 +15,7 @@ class SeoMeta   {
      * @var arrya
      */
     protected static $tags = [
-        'title' => 'Spennypiggy | Spenny Piggy - Financial Gifts, Donations & Memberships'
+        'title' => 'Spennypiggy | Financial Gifts, Exclusive Content & Memberships'
     ];
 
     /**

@@ -4,25 +4,53 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Verify2FARequest;
+use App\Jobs\SendContractMail;
 use App\Models\AuthRedirect;
+use App\Models\BillPayment;
+use App\Models\FanContract;
+use App\Models\MembershipPayment;
+use App\Models\Notification;
 use App\Models\SocialLinks;
+use App\Models\StripePaymentDetail;
+use App\Models\TipGoalsPayment;
+use App\Models\TwitterToken;
 use App\Models\User;
+use App\Models\UserBackupCode;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
 use App\Models\WishItem;
+use App\Models\WishItemSubscription;
 use App\Providers\RouteServiceProvider;
 use App\SeoMeta;
+use App\TwitterAuthService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
+use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf;
+use PragmaRX\Google2FALaravel\Google2FA;
+use PragmaRX\Recovery\Recovery;
+use Ramsey\Uuid\Uuid;
+use Uploadcare\Configuration;
+use Uploadcare\Uploader\Uploader;
 
 class AuthenticatedSessionController extends Controller
 {
+
+    protected $google2FA;
+
+    public function __construct(Google2FA $google2FA)
+    {
+        $this->google2FA = $google2FA;
+    }
+
     /**
      * Display the login view.
      */
@@ -78,6 +106,36 @@ class AuthenticatedSessionController extends Controller
         return redirect(route("user.show", ['username' => $user->username]))->with("success", "Logged in successfully.");
     }
 
+
+    public function verifyUser(Request $request)
+    {
+
+        $user = User::where('email', $request->email)->first();
+
+        if (empty($user)) {
+            return response()->json([
+                'status' => false,
+                'msg' => "No account exist with this email."
+            ]);
+        }
+
+        $is_2fa = false;
+        if ($user->is_2fa) {
+            if (!Hash::check($request->password, $user->password)) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => "Either email or password is wrong."
+                ]);
+            }
+            $is_2fa = true;
+        }
+
+        return response()->json([
+            'status' => true,
+            'is_2fa' => $is_2fa
+        ]);
+    }
+
     /**
      * Destroy an authenticated session.
      */
@@ -100,9 +158,45 @@ class AuthenticatedSessionController extends Controller
         $user = User::where('username', $username)->where(function ($q) {
             $q->whereNot('country', 'GB')->orWhereNull('country');
         })->first();
+
         if (!$user) {
             return Inertia::render('NotFound');
         }
+
+        if (!empty($user)) {
+            if ((Auth::check() && Auth::id() != $user->id && $user->suspended_account == 1) || (!Auth::check() && $user->suspended_account == 1)) {
+                return Inertia::render('NotFound');
+            }
+        }
+
+        $arr = [];
+        $support_count = TipGoalsPayment::where('creator_id', $user->id)->where('status', 'paid')->get();
+        foreach ($support_count as $key => $value) {
+            if (!empty($value->user_id)) {
+                $arr[$key] = $value->user_id;
+            } else {
+                $u = User::where('email', $value->guest_email)->first();
+                if (!empty($u)) {
+                    $arr[$key] = $u->id;
+                } else {
+                    $arr[$key] = $value->guest_email;
+                }
+            }
+        }
+
+        $wish_count = StripePaymentDetail::where('owner_id', $user->id)->where('payment_status', 'paid')->get();
+
+        foreach ($wish_count as $key => $value) {
+            if (!empty($value->user_id)) {
+                $arr[] = $value->user_id;
+            } else {
+                $arr[] = $value->name;
+            }
+        }
+        $arr = array_unique($arr);
+        $supporters = count($arr);
+        $notification_count = Notification::where('notifiable_id', $user->id)->where('is_read', 0)->count();
+
         if (!empty(request()->query('item'))) {
             $itemdid = request()->query('item');
         } else {
@@ -112,7 +206,7 @@ class AuthenticatedSessionController extends Controller
         $userName = str_replace(' ', '%20', $userfield);
         $image = "https://ucarecdn.com/8dfae4ba-cd77-406f-8b70-7cf360b4c18c/-/preview/900x900/-/text_align/center/center/-/font/14/000000/-/text/100px30p/100p,100p/spennypiggy.co~s" . $user->username . "/-/text_align/center/center/-/font/19/e6ea82/-/text/100px78p/100p,100p/" . $userName . "/";
 
-        SeoMeta::addTag('title', "{$user->name} - Spenny Piggy - Financial Gifts, Donations & Memberships");
+        SeoMeta::addTag('title', "{$user->name} - Spenny Piggy - Financial Gifts, Exclusive Content & Memberships");
         SeoMeta::addTag('meta', ['property' => 'twitter:title', 'content' => 'Financial Gifts,Donations & Memberships']);
         SeoMeta::addTag('meta', ['property' => 'twitter:card', 'content' => 'summary_large_image']);
         SeoMeta::addTag('meta', ['property' => 'twitter:description', 'content' => 'Send tributes,adopt bills & more. Safe for Spicy Creators who receive 100% payouts!']);
@@ -127,6 +221,8 @@ class AuthenticatedSessionController extends Controller
             "username" => $username,
             "user" => $user,
             "itemid" => $itemdid,
+            'supporters' => $supporters,
+            'notification_count' => $notification_count
         ]);
     }
 
@@ -191,15 +287,19 @@ class AuthenticatedSessionController extends Controller
         })->firstWhere('username', $username);
 
         if ($user) {
-            $items = $user->wishItems()
+            $query = $user->wishItems()
                 ->when($category_id, function ($query) use ($category_id) {
                     // If $categoryID is specified, filter by the specific category
                     $query->whereHas('wishCategories', function ($query) use ($category_id) {
                         $query->where('user_category_id', $category_id);
                     });
-                })
-                // ->orderBy('is_pin', 'DESC')
-                ->orderBy('sort', 'ASC')
+                });
+
+            if ((Auth::check() && $user->id != Auth::id()) || !(Auth::check())) {
+                $query->where('is_approved', 1);
+            }
+            // ->orderBy('is_pin', 'DESC')
+            $items = $query->orderBy('sort', 'ASC')
                 ->latest()
                 ->get();
 
@@ -251,8 +351,13 @@ class AuthenticatedSessionController extends Controller
         })->firstWhere('username', $username);
 
         if ($user) {
-            $membership = $user->memberships()
-                ->latest()
+            $query = $user->memberships();
+
+            if ((Auth::check() && $user->id != Auth::id()) || !(Auth::check())) {
+                $query->where('approved', 1);
+            }
+
+            $membership = $query->latest()
                 ->get();
 
 
@@ -268,6 +373,105 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
+    public function user_posts($username)
+    {
+        $user = User::where(function ($q) {
+            $q->whereNot('country', 'GB')->orWhereNull('country');
+        })->firstWhere('username', $username);
+
+        if ($user) {
+            $query = $user->posts();
+
+            if ((Auth::check() && $user->id != Auth::id()) || !(Auth::check())) {
+                $query->where('approved', 1);
+            }
+
+            $post = $query->latest()
+                ->get();
+
+
+            $post->map(function ($p) use ($user) {
+
+                if ($user->id == Auth::id()) {
+                    $p->is_lock = 0;
+                } elseif ($p->type == 'image') {
+                    if (Auth::check()) {
+                        $u = User::where('id', Auth::id())->first();
+
+                        $tip = [];
+                        if ($p->for_module == 'support') {
+                            $tip = TipGoalsPayment::where('creator_id', $user->id)
+                                ->where(function ($q) use ($u) {
+                                    $q->where('user_id', $u->id)->orWhere('guest_email', $u->email);
+                                })->first();
+                        }
+
+                        $mem = [];
+                        $lifetime = [];
+                        if ($p->for_module == 'membership') {
+                            $mem = MembershipPayment::where('recurring_type', '!=', 'lifetime')->where(function ($que) {
+                                $que->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now());
+                            })->whereHas('membership', function ($q) use ($user) {
+                                $q->where('user_id', $user->id);
+                            })->where(function ($q) use ($u) {
+                                $q->where('user_id', $u->id)->orWhere('guest_email', $u->email);
+                            })->first();
+
+                            $lifetime = MembershipPayment::where('recurring_type', 'lifetime')->whereHas('membership', function ($q) use ($user) {
+                                $q->where('user_id', $user->id);
+                            })->where(function ($q) use ($u) {
+                                $q->where('user_id', $u->id)->orWhere('guest_email', $u->email);
+                            })->first();
+                        }
+
+                        $subs = [];
+                        $bills = [];
+                        if ($p->for_module == 'subscription') {
+                            $subs = WishItemSubscription::where('recurring_for', 'continue')->where(function ($que) {
+                                $que->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now());
+                            })->whereHas('wish_item', function ($q) use ($user) {
+                                $q->where('user_id', $user->id);
+                            })->where(function ($q) use ($u) {
+                                $q->where('user_id', $u->id)->orWhere('guest_email', $u->email);
+                            })->first();
+
+                            $bills = BillPayment::where(function ($que) {
+                                $que->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now());
+                            })->whereHas('bill', function ($q) use ($user) {
+                                $q->where('user_id', $user->id);
+                            })->where(function ($q) use ($u) {
+                                $q->where('user_id', $u->id)->orWhere('guest_email', $u->email);
+                            })->first();
+                        }
+
+                        if ((!empty($tip) && $p->for_module == 'support') || ((!empty($mem) || !empty($lifetime)) && $p->for_module == 'membership') || ((!empty($subs) || !empty($bills)) && $p->for_module == 'subscription')) {
+                            $p->is_lock = 0;
+                        } else {
+                            $p->is_lock = 1;
+                        }
+                    } else {
+                        $p->is_lock = 1;
+                    }
+                } else {
+                    $p->is_lock = 0;
+                }
+
+                return $p;
+            });
+
+            return response()->json([
+                'success'   => true,
+                'posts' => $post
+            ]);
+        }
+
+        return response()->json([
+            'success'   => false,
+            'items'     => [],
+            'message'   =>  'User not found'
+        ]);
+    }
+
 
     public function user_bills($username)
     {
@@ -276,8 +480,13 @@ class AuthenticatedSessionController extends Controller
         })->firstWhere('username', $username);
 
         if ($user) {
-            $bills = $user->bills()
-                ->latest()
+            $query = $user->bills();
+
+            if ((Auth::check() && $user->id != Auth::id()) || !(Auth::check())) {
+                $query->where('approved', 1);
+            }
+
+            $bills = $query->latest()
                 ->get();
 
 
@@ -306,8 +515,8 @@ class AuthenticatedSessionController extends Controller
                 if (!empty($slinks)) {
                     $sociallinks = [
                         [
-                            'social' => 'whoyouinto',
-                            'url'    => $slinks->whoyouinto ?? null,
+                            'social' => 'facebook',
+                            'url'    => $slinks->facebook ?? null,
                         ],
                         [
                             'social' => 'twitter',
@@ -322,24 +531,16 @@ class AuthenticatedSessionController extends Controller
                             'url'    => $slinks->reddit ?? null,
                         ],
                         [
-                            'social' => 'discord',
-                            'url'    => $slinks->discord ?? null,
+                            'social' => 'youtube',
+                            'url'    => $slinks->youtube ?? null,
                         ],
                         [
-                            'social' => 'onlyfans',
-                            'url'    => $slinks->onlyfans ?? null,
+                            'social' => 'tumblr',
+                            'url'    => $slinks->tumblr ?? null,
                         ],
                         [
-                            'social' => 'loyalfans',
-                            'url'    => $slinks->loyalfans ?? null,
-                        ],
-                        [
-                            'social' => 'fansly',
-                            'url'    => $slinks->fansly ?? null,
-                        ],
-                        [
-                            'social' => 'manyvids',
-                            'url'    => $slinks->manyvids ?? null,
+                            'social' => 'twitch',
+                            'url'    => $slinks->twitch ?? null,
                         ],
                         [
                             'social' => 'other',
@@ -386,26 +587,27 @@ class AuthenticatedSessionController extends Controller
         }
     }
 
-    public function unlinkTwitter(){
-        $user = User::where('id',Auth::id())->first();
+    public function unlinkTwitter()
+    {
+        $user = User::where('id', Auth::id())->first();
 
-        if(!empty($user->twitter_token)){
-        //     $req = TwitterAuthService::revokeToken($user->twitter_token);
-        //     return response()->json($req);
+        if (!empty($user->twitter_token)) {
+            //     $req = TwitterAuthService::revokeToken($user->twitter_token);
+            //     return response()->json($req);
             // if($req->successful()){
-                $user->twitter_token->delete();
+            $user->twitter_token->delete();
 
-                return back()->with('success','Twitter unlinked successfully.');
+            return back()->with('success', 'Twitter unlinked successfully.');
             // }
 
             // return back()->with('error','Something Went Wrong.');
         }
 
-        return back()->with('error','No linked twitter account found.');
+        return back()->with('error', 'No linked twitter account found.');
     }
 
 
-     /**
+    /**
      * Handle Redirect from cross domain
      *
      */
@@ -450,5 +652,201 @@ class AuthenticatedSessionController extends Controller
         ]);
         $token->delete();
         return to_route('user.show', ['username' => $user->username])->with('success', 'Welcome back. Login successfull.');
+    }
+
+
+    public function updateVat($percent)
+    {
+        $user = User::where('id', Auth::id())->first();
+
+        $user->vat_amount_percentage = $percent;
+        $user->save();
+
+        return response()->json([
+            'success'   => true,
+            'message'   =>  'Vat updated successfully'
+        ]);
+    }
+
+
+
+    /**
+     * Verify 2FA OTP
+     *
+     * @param \App\Http\Requests\Verify2FARequest $verify2faRequest
+     * @return \Illuminate\Http\Response JSON
+     */
+    public function verify2FA(Request $request)
+    {
+        $email = $request->query('email');
+        $password = $request->query('password');
+
+        $user = User::where('email', $email)->first();
+
+        $otp = $request->query('otp');
+        $backup_code = $request->query('backup_code');
+
+
+
+        if (!empty($otp)) {
+            $valid = $this->google2FA->verifyKey($user->tfa_key, $otp);
+        }
+
+        if (!empty($backup_code)) {
+            $valid = false;
+            $backup = UserBackupCode::where('user_id', $user->id)->get();
+            foreach ($backup as $key => $value) {
+                $code = decrypt($value->code);
+                if ($code == $backup_code) {
+                    $valid = true;
+                    $value->delete();
+                }
+            }
+        }
+
+        if ($valid) {
+            // $request->authenticate();
+            $credentials = [
+                'email' => $email,
+                'password' => $password,
+            ];
+            if (Auth::attempt($credentials)) {
+
+                $request->session()->regenerate();
+                $user = Auth::user();
+
+                if ($request->getHttpHost() == "uk.spennypiggy.co" and $user->country != "GB") {
+                    // return Inertia::location("https://spennypiggy.com/{$user->username}");
+                    $auth = AuthRedirect::create([
+                        "user_id"   =>  $user->id,
+                        'country'   =>  $user->country,
+                        'origin'    =>  $request->getHttpHost(),
+                        'target'    =>  'spennypiggy.co',
+                    ]);
+
+                    Auth::logout();
+                    return Inertia::location("https://spennypiggy.co/verify-token/{$auth->uuid}");
+                } else if (!in_array($request->getHttpHost(), ['::1', 'localhost:8000', '127.0.0.1:8000']) and $request->getHttpHost() == 'spennypiggy.co' and $user->country == 'GB') {
+                    // return Inertia::location("https://uk.spennypiggy.com/{$user->username}");
+                    $auth = AuthRedirect::create([
+                        "user_id"   =>  $user->id,
+                        'country'   =>  $user->country,
+                        'origin'    =>  $request->getHttpHost(),
+                        'target'    =>  'uk.spennypiggy.co',
+                    ]);
+
+                    Auth::logout();
+                    return Inertia::location("https://uk.spennypiggy.co/verify-token/{$auth->uuid}");
+                }
+                return redirect(route("user.show", ['username' => $user->username]))->with("success", "Logged in successfully.");
+            } else {
+                return back()->with("error", "Unable to login.");
+            }
+        } else {
+            if (!empty($otp)) {
+                $text = 'OTP';
+            } else {
+                $text = 'Backup Code';
+            }
+            return back()->with("error", "$text is invalid.");
+        }
+    }
+
+
+    /**
+     * Generating the backup codes for 2fa
+     *
+     * @return \Illuminate\Http\Response json
+     */
+    public function generateBackupCode()
+    {
+        $user = User::findOrFail(Auth::id());
+
+        $recovery = new Recovery();
+        $codes = $recovery->setCount(5)->toCollection();
+        UserBackupCode::where('user_id', $user->id)->delete();
+        foreach ($codes as $key => $value) {
+            $backup = new UserBackupCode();
+            $backup->user_id = $user->id;
+            $backup->code = encrypt($value);
+            $backup->save();
+        }
+        return response()->json([
+            'status' => true,
+            'tfa'  => true,
+            'msg' => 'Open your authenticator app to get security code.',
+            'qr' => request()->query('type') == 1 ? $this->twofQR($user->id) : null,
+            'backup_codes' => $codes ?? null
+        ], 200);
+    }
+
+
+    /**
+     * Sign Contract
+     *
+     * @param Request $request
+     * @return JSON
+     */
+    public function signContract(Request $request)
+    {
+        // $request->validate([
+        //     'sign' => [
+        //         'required',
+        //         'regex:/data:image\/\w+;base64,/i'
+        //     ],
+        //     'name' => [
+        //         'sometimes',
+        //         'required',
+        //         'string',
+        //         'min:5'
+        //     ]
+        // ], [
+        //     'sign.required' => 'Please sign on the contract.',
+        //     'sign.rejex' => 'Signature is not in a valid format.',
+        //     'name.required' => 'Please enter your real name.',
+        // ]);
+
+        $name = $request->query('name');
+
+        $sign = $request->query('sign');
+
+        $user = User::where('id', Auth::guard('sanctum')->id())->first();
+
+        $contract = new FanContract();
+        $contract->user_id = $user->id;
+        $contract->name = $name ?? $user->name;
+        $contract->sign = $sign;
+        $contract->save();
+
+        $pdf = LaravelMpdf::loadView('pdf.creator-contract', [
+            'contract' => $contract
+        ]);
+
+        $pdfContent = $pdf->output();
+
+        // $tempPdfPath = storage_path("app/" . Uuid::uuid4() . ".pdf");
+        // $pdf->save($tempPdfPath);
+
+        // Upload the PDF to Uploadcare
+        $configuration = Configuration::create((string) $_ENV['UPLOADCARE_PUBLIC_KEY'], (string) $_ENV['UPLOADCARE_SECRET_KEY']);
+        $uploader = new Uploader($configuration);
+
+        // $fileInfo = $uploader->fromPath($tempPdfPath, null, null);
+        $fileInfo = $uploader->fromContent($pdfContent, 'application/pdf', Uuid::uuid4() . ".pdf");
+
+        $contract->document = $fileInfo->getUuid();
+        $contract->status = 1;
+        $contract->save();
+        $contract->refresh();
+
+        SendContractMail::dispatch($contract, 'creator', $contract->url);
+        // unlink($tempPdfPath);
+
+        return to_route('user.show', ['username' => $contract->user->username])->with('success', 'Thank you for signing the contract.');
+        // return response()->json([
+        //     'status' => true,
+        //     'msg'    => 'Thank you for signing the contract.',
+        //     'contract' => $contract->url
+        // ]);
     }
 }

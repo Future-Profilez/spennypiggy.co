@@ -8,7 +8,7 @@
      <td>
         <table width="100%" cellspacing="0" cellpadding="0" border="0" >
            <tr>
-              <td align="center" style="padding:10px 10px 20px 10px;"><a href="https://whoyouinto.com"><img alt="image" width="119" src="https://whoyouinto.com/emails/welcome/logo.png" style="border:none"></a></td>
+              <td align="center" style="padding:10px 10px 20px 10px;"><a href="https://whoyouinto.com"><img alt="image" width="119" src="https://d36ape3u423eoo.cloudfront.net/1374cecd-53d6-4089-a20a-5b8812ee3d4d/build/assets/logo-164abf9b.png" style="border:none"></a></td>
            </tr>
         </table>
      </td>
@@ -39,10 +39,10 @@
 
             <tr>
               <td style="padding:0 0 10px 0; text-align: center;">
-                 <a target="_blank" href="spennypiggy.co" style="border-radius:30px;padding:13px 30px 13px 30px; width: 100%; 
-                 border:none;background-color: #F94F97; 
+                 <a target="_blank" href="spennypiggy.co" style="border-radius:30px;padding:13px 30px 13px 30px; width: 100%;
+                 border:none;background-color: #F94F97;
                  font-family: Arial; font-weight: bold;  text-decoration: none;
-                 font-size: 16px; text-align: center; 
+                 font-size: 16px; text-align: center;
                  color:#ffffff; cursor: pointer;">My Wishlist</a>
               </td>
            </tr>

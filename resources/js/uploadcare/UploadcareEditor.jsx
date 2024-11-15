@@ -1,12 +1,13 @@
 import React, { useEffect } from 'react';
 import * as LR from 'https://cdn.jsdelivr.net/npm/@uploadcare/blocks@0.25.0/web/lr-cloud-image-editor.min.js';
 
-export default function UploadcareEditor({uuid, updateFile}){
+export default function UploadcareEditor({uuid, updateFile, setIsEditable}){
 
   useEffect(() => {
     LR.registerBlocks(LR);
     const callback = (text) => (event) => {
-      updateFile && updateFile(event.detail)
+      updateFile && updateFile(event.detail, uuid);
+      setIsEditable && setIsEditable(false);
     };
     const instance = document.querySelector('#my-editor');
     instance && instance.addEventListener('apply', callback('Apply'));
@@ -29,7 +30,7 @@ export default function UploadcareEditor({uuid, updateFile}){
         `}
       </style>
 
-      {uuid ? <div className='image-editor' >
+      {uuid ? <div className='image-editor border rounded-4 overflow-hidden' >
         <lr-config  
         ctx-name="my-editor"
         ></lr-config>

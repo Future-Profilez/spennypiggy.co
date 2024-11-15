@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Ramsey\Uuid\Uuid;
 
 class Bills extends Model
 {
-    use HasFactory;
+    use HasFactory,SoftDeletes;
 
     protected $table = 'bills';
 
@@ -25,6 +26,10 @@ class Bills extends Model
         'status'
     ];
 
+    protected $appends = [
+        'perma_link'
+    ];
+
     public static function boot()
     {
         parent::boot();
@@ -39,11 +44,15 @@ class Bills extends Model
     {
         $url = false;
         if (!empty($this->thumbnail)) {
-            $url = "https://ucarecdn.com/" . $this->thumbnail . "/";
+            $url = "https://ucarecdn.com/" . $this->thumbnail . "/-/format/jpeg/";
         } else {
-            $url = "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/";
+            $url = "https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/";
         }
 
         return $url;
+    }
+
+    public function payments(){
+        return $this->hasMany(BillPayment::class);
     }
 }

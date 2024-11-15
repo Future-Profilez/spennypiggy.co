@@ -1,4 +1,6 @@
 import React from 'react';
+import { useEffect } from 'react';
+import { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 
 const slideAnimation = keyframes`
@@ -22,40 +24,29 @@ const ScrollingContent = styled.div`
   margin-right: 2rem; 
 `;
 
-const LiveBar = () => {
+const LiveBar = (props) => {
+
+  const [counts, setCounts] = useState();
+
+  useEffect(()=>{
+   const reps = props.reps || 10;
+   let arr = [];
+   for(let i=0; i<reps; i++){
+    arr.push(i)
+   }  
+   setCounts(arr);
+  },[]);
+
+
   return <>
-    <style>{`
-        .livebar p{font-size:18px;text-transform:uppercase;}
-        .barouter {
-          width:100%;
-          overflow:hidden;
-        }
-        @media(max-width:575px){
-          .livebar p{font-size:15px;}
-        }
-    `}</style>
-    <div className='pb-2 pb-md-0 blackbg barouter' >
-    <LiveBarWrapper className="livebar mintbg py-3 pb-2 px-2">
+     
+    <div data-aos="fade-up" className={props.classes} >
+    <LiveBarWrapper className={`livebar ${props.color ? props.color : "mintbg"} py-3 pb-3 px-2`}>
       <ScrollingContainer>
         <ScrollingContent>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
-          <p className="mb-0 mx-3 font-GillSans text-uppercase">🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨</p>
+          {counts && counts.map((i)=>{
+            return <p className="mb-0 mx-4 font-GillSans text-uppercase">{props.text}</p>
+          })}
         </ScrollingContent>
       </ScrollingContainer>
     </LiveBarWrapper>

@@ -11,11 +11,13 @@ export default function Discover(props) {
   const {auth} = props;
   return (
     <Authenticated auth={auth?.user || ''} >
-        <Head title={"How it works"} />
+        <Head title={"Seek & Search"} />
         <div className='pt-20 howitmain whbg'>
             <div className='containerbox'>
-                <h2 className='headingMd text-shadow-black text-center mb-1'>Seek & Search </h2>
-                <p className='text-center text-large'>Search through all wishes and creators to make their dreams come true!</p>
+                <div className='m-auto px-3' >
+                    <h1 className='headingMd text-shadow-black text-center mb-1'>Seek & Search </h1>
+                    <p className='text-center text-large'>Search through all wishes and creators to make their dreams come true!</p>
+                </div> 
                 <div className='howWorkTab mt-12 pb-12 mx-auto'>
                     <Tabs defaultActiveKey="1" id="uncontrolled-tab-example" className="mb-3">
                         <Tab eventKey="1" title="Wishes" className='px-0'>

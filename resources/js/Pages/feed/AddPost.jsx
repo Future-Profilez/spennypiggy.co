@@ -1,0 +1,174 @@
+import React, { useEffect } from "react";
+import { useState } from "react";
+import Popup from "@/Components/Popup";
+import { piggy } from '@/includes/Icons';
+import st from "../../../css/uploader.module.css";
+import GlobalUploader from "@/uploadcare/Uploader";
+import LoaderButton from "@/Components/LoaderButton";
+import axios from "axios";
+import { toast } from 'react-hot-toast';
+import { useAlerts } from "@/Components/Alerts";
+import { useRef } from "react";
+import { FaPenNib } from "react-icons/fa6";
+import ImageGenerationWithAI from "@/Components/ImageGenerationWithAI";
+
+export default function AddPost({item, text, classes, isEdit, updateState, title}) {
+
+    const [ close, setClose ] = useState();
+    const { errorsHandling } = useAlerts();
+    const [filetype, setfiletype] =  useState('image');
+    const [rewardImage, setRewardImage] = useState(item?.image || '');
+    const [isAiImage, setIsAiImage] = useState();
+    const getAIImage = (e) =>{ 
+        setRewardImage(e.uuid+'/-/text_align/left/center/-/font/10/fff/-/text/80px8p/8p,100p/Made%20with%20AI%20/-/format/jpeg/-/preview/');
+        setIsAiImage(e.url);
+    }
+    const uploaderRef = useRef();
+    const resetUploader = () => {
+        if (uploaderRef.current) {
+            uploaderRef.current.reset();
+        }
+    };
+
+    const getfile = async (data) => {
+        setRewardImage(data?.uuid);
+        setfiletype(data && data.contentInfo && data.contentInfo.mime && data.contentInfo.mime.type);
+        setIsAiImage(false)
+    };
+
+    const [data, setData] = useState({
+        for_module: "membership",
+        title: "",
+        content: ""
+    });
+
+    useEffect(()=>{
+        if(item){
+            setData({
+                for_module: item?.for_module || "membership",
+                title: item?.title || "",
+                content: item?.content || ""
+            });
+        }
+    },[item]);
+
+    const handleInput = (e) => {
+        setData({ ...data, [e.target.name]: e.target.value });
+    }
+    
+    const [loading, setLoading] = useState(false);
+    const submitPost = (e) => { 
+        e && e.preventDefault();
+        if(rewardImage == '' || rewardImage == null){
+            toast.error("Please choose a media image for this post.");
+            return false
+        }
+        setLoading(true);
+        axios.post(`${isEdit ? `/post/edit/${item.uuid}` : "/post/save"}`, {...data, 
+            image:rewardImage, 
+            type: rewardImage ? 'image' : "blog",
+            ai_generated : isAiImage ? 1 : item && item?.ai_generated || 0
+         })
+        .then((resp) => {
+            if(resp.data.status){
+                setRewardImage();
+                setData({
+                    for_module: "membership",
+                    title: "",
+                    content:""
+                });
+                updateState && updateState(new Date());
+                toast.success(resp.data.msg);
+                setClose(false);
+                setTimeout(()=>{
+                    setClose();
+                },100);
+                resetUploader();
+            } else {
+                toast.error(resp.data.msg);
+            }
+            setLoading(false);
+        }).catch((_err) => {
+            setLoading(false);
+            errorsHandling(_err);
+        });
+    }
+    const AddItem = () => {
+        return <div className=" flex items-center">
+            <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]" >
+                <FaPenNib color="var(--pink)"  size="1.5rem" />
+            </div>
+            <div className="ps-3 text-start">
+                <h2 className="text-md">Post Something</h2>
+                <p className="text-sm font-normal">Add an image, update or blog post</p>
+            </div>
+        </div>
+    }
+    return (
+    <Popup modalclass='' space="4" size='md' action={close} 
+    classes={` w-full addop bg-white rounded-xl py-2 px-3 ${classes}`} 
+    text={text ? text : <AddItem />} >
+        {/* <form onSubmit={submitPost} > */}
+            <div className="flex align-items-center" >
+                <div className={`gift-icon me-2 voilet`} dangerouslySetInnerHTML={{ __html: piggy }} />  
+                <h2 className="text-xl font-bold text-dark-500" >{title ? title: "Add Post"}</h2>
+            </div>
+            
+            <input onChange={handleInput} defaultValue={item?.title || ''} name="title" placeholder="Enter Title ..."
+             className="text-normal form-input border px-3 py-3 text-dark rounded-4 mt-4 text-post-content form-control"/>   
+            <textarea onChange={handleInput} defaultValue={item?.content || ''}  name="content" placeholder="Say Something..." className="text-lg border form-input h-[150px] mt-4 text-post-content form-control" ></textarea>   
+            <div className="chhoseimage mt-4" >
+                <p className="font-bold text-lg text-dark-500 mb-1" >Choose Media</p>
+                <p className="text-grey-500 mb-3" >Choose a image file to attached with your post.</p>
+
+                {item && item.image_url ? 
+                    <>
+                        <div className="default-wish-img border relative mb-1 ">
+                            <img src={item && item.image_url}
+                            className="img-fluid" />
+                        </div>
+                        <h2 className="w-100 my-2 text-center" >Or</h2>
+                    </>
+                : ''}
+                {isAiImage ? 
+                    <div className="default-wish-img border relative mb-2 ">
+                        <img src={isAiImage}
+                        className="img-fluid" />
+                    </div> 
+                : ""}
+
+                <GlobalUploader ref={uploaderRef} view={false} type="minimal" sendFile={getfile} options={st.post} />
+                <div className="flex justify-center" >
+                    <div>
+                        <h2 className="text-center text-gray-400 py-3" >Or</h2>
+                        <ImageGenerationWithAI update={getAIImage} />
+                    </div>
+                </div>
+            </div>
+
+            <p className="text-grey-500 mb-1 mt-4" >Choose Audience</p>
+            <div className="flex align-center justify-content-center flex-wrap" >
+                <select id="countries" defaultValue={item?.for_module} onChange={handleInput} name="for_module" className="form-input  
+                text-md w-full focus:ring-green-50 block ">
+                    <option value="membership">Memberships</option>
+                    <option value="subscription">Subscription</option>
+                    <option value="support">Supporters</option>
+                </select>
+            </div>
+
+                <LoaderButton onClick={submitPost}
+                disabled={loading}
+                className="flex btn-pink lg mt-4 w-full "
+                spinnerClassName="fill-red-600">
+                {isEdit ? 
+                    loading ? "Updating.." :"Update Post" 
+                : 
+                    loading ? "Posting.." : "Add New Post" 
+                }
+            </LoaderButton>
+
+        {/* </form> */}
+        
+    </Popup>
+    );
+}

@@ -1,11 +1,10 @@
 import React from "react";
-import footlogo from "../../assets/img/footlogo.png";
+import footlogo from "../../assets/img/logo.png";
 import { Link, usePage } from "@inertiajs/react";
 import { Helmet } from "react-helmet";
 import { useEffect } from "react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
-import axios from "axios";
-const ContentPrefrences = React.lazy(() => import("./ContentPrefrences"));
+// import spennypiggy from "../../assets/img/logo.png";
 
 export default function Footer(props) {
     
@@ -117,31 +116,6 @@ export default function Footer(props) {
         confgureGtag();
     }, []);
 
-    
-    // useEffect(()=>{
-    //     const fetchLocationData = async () => {
-    //         try {
-    //             await axios.get(`https://ipapi.co/json/`).then((resp)=>{
-    //                 if(ziggy && ziggy.url === 'https://spennypiggy.co'){
-    //                     if(resp.data && resp.data.country_code == 'GB'){
-    //                         window.location = ('/redirecting');
-    //                     }
-    //                 }
-    //                 if(ziggy && ziggy.url === 'https://uk.spennypiggy.co'){
-    //                     if(resp.data && resp.data.country_code !== 'GB'){
-    //                         window.location = ('/redirecting');
-    //                     }
-    //                 }
-    //             }).catch((err)=>{
-    //                 console.error("api err", err)
-    //             });
-    //         } catch (error) {
-    //             console.error('Error fetching data:', error);
-    //         }
-    //     };
-    //     fetchLocationData();
-    // }, []);
-
     return (
         <>
             <Helmet>
@@ -152,8 +126,8 @@ export default function Footer(props) {
 
                 <div id="footer" className="footer">
                     <div className="containerbox">
-                        <div className="footlogo m-auto d-table">
-                            <LazyLoadImage
+                        <div className="footlogo py-2 m-auto d-table">
+                            <LazyLoadImage className="rounded-4 p-3 blackbg "
                                 alt={"image"}
                                 height={"auto"}
                                 src={footlogo}
@@ -183,13 +157,13 @@ export default function Footer(props) {
                                         <Link href={route("how-it-works")}> How it works </Link>
                                     </li>
                                     <li>
-                                        <a href="https://blog.spennypiggy.co"> Blog </a>
+                                        <a href="https://blog.spennypiggy.co"> Blog</a>
                                     </li>
                                     <li>
-                                        <Link href={route("terms-and-conditions")}> Terms </Link>
+                                        <a target="_blank" href="https://ucarecdn.com/90485216-9757-4fb8-8002-d45c7ced6c46/"> Terms </a>
                                     </li>
                                     <li>
-                                        <Link href={route("promotion-terms")}> Promotion Terms </Link>
+                                        <Link href={route("promotion-terms")}> Promotion Terms</Link>
                                     </li>
                                     <li>
                                         {/* <ContentPrefrences classes="m-auto d-table" />{" "} */}
@@ -199,7 +173,6 @@ export default function Footer(props) {
                             </div>
                         </div>
 
-                        
                     </div>
                     <div className="copyright">
                         Copyright &copy; {(new Date().getFullYear())} Spenny Piggy

@@ -57,8 +57,8 @@ return [
         ],
         'shortcuts' => [
             [
-                'name' => 'Spenny Piggy - Financial Gifts, Donations & Memberships - Spenny Piggy',
-                'description' => 'Send tributes, adopt bills & more. Safe for Spicy Creators who receive 100% payouts!',
+                'name' => 'Spenny Piggy - Financial Gifts, Exclusive Content & Memberships - Spenny Piggy',
+                'description' => 'Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!',
                 'url' => '/',
                 'icons' => [
                     "src" => "/favicon-32x32.png",

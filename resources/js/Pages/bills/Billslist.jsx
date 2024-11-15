@@ -39,7 +39,7 @@ export default function Billslist({IsloggedIn, billupdate}) {
         {lists && lists.length ? 
             <div className={`bills_lists row`} >
                 {lists && lists.map((b, i)=>{
-                    return <Bill IsloggedIn={IsloggedIn}
+                    return <Bill fetchBills={fetchBills} IsloggedIn={IsloggedIn}
                     key={`wish-item-${i}`}
                     classes="col-xl-3 col-lg-3 col-md-4 col-6"
                     itm={b} />

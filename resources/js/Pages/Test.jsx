@@ -3,6 +3,9 @@ import { useRef } from "react";
 import { useEffect } from "react";
 import AddBills from "./bills/AddBills";
 import Billslist from "./bills/Billslist";
+import AddPost from "./feed/AddPost";
+import Post from "./feed/Post";
+import FeedList from "./feed/FeedList";
 export default function Test() {
     const file = {
         uuid: "5360fd62-eb19-4ac8-91b8-528c08a2e79b",
@@ -52,14 +55,21 @@ export default function Test() {
 
     const post = () => {
         axios
-            .post(`/bill/save`, {
-                name: "Bijli bill",
-                price: 50.0,
-                thumbnail: file,
+            .post(`/shop/add`, {
+                type: "digital",
+                name: "Testing",
+                description: "Testing Purpose",
+                price: 35,
+                image: "5360fd62-eb19-4ac8-91b8-528c08a2e79b",
+                success_page_type: "confirmation",
+                success_page_value: "Thank you",
+                reward_file: file,
+                ask_question: "How are you?",
+                slot_limitation: 20,
+                // special_member_price: "",
+                quantity_allow: 0,
             })
-            .then((resp) => {
-                console.log("resp", resp);
-            })
+            .then((resp) => {})
             .catch((_err) => {
                 console.error("error", _err);
             });
@@ -67,7 +77,7 @@ export default function Test() {
 
     const get = () => {
         axios
-            .get(`/earnings/month`)
+            .get(`/comments/6a3e2f8d-80c0-4130-bdea-c9c8c1236077`)
             .then((resp) => {
                 console.log("resp", resp);
             })
@@ -87,36 +97,8 @@ export default function Test() {
         <div className="text-white">
             <button onClick={get}>Test Get Request</button>
             <button onClick={post}>Test Post Request</button>
-
-            <button>
-                {" "}
-                <AddBills />
-            </button>
-
-            <p>
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. Atque
-                rem velit ipsam dolorem aspernatur assumenda fuga magnam est
-                ducimus neque a officia, alias dicta deserunt asperiores
-                explicabo distinctio, aut doloribus.
-            </p>
-            <p>
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. Atque
-                rem velit ipsam dolorem aspernatur assumenda fuga magnam est
-                ducimus neque a officia, alias dicta deserunt asperiores
-                explicabo distinctio, aut doloribus.
-            </p>
-            <button
-                ref={qrcode}
-                className="box p-5 text-dark rounded w-25 mx-5 my-5"
-            >
-                QR CODE
-            </button>
-            <p>
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. Atque
-                rem velit ipsam dolorem aspernatur assumenda fuga magnam est
-                ducimus neque a officia, alias dicta deserunt asperiores
-                explicabo distinctio, aut doloribus.
-            </p>
+            <AddPost />
+            <FeedList />
         </div>
     );
 }

@@ -1,206 +1,131 @@
 import React from 'react'
-import image1 from "../../../assets/features/1.png";
-import image2 from "../../../assets/features/2.png";
-import image3 from "../../../assets/features/3.png";
-import image4 from "../../../assets/features/4.png";
-import image5 from "../../../assets/features/5.png";
-import image6 from "../../../assets/features/6.png";
-import image7 from "../../../assets/features/7.png";
-import image8 from "../../../assets/features/8.png";
-import image9 from "../../../assets/features/9.png";
-import image10 from "../../../assets/features/10.png";
-import image11 from "../../../assets/features/11.png";
-import icon1 from "../../../assets/features/icon1.png";
-import icon2 from "../../../assets/features/icon2.png";
-import icon3 from "../../../assets/features/icon3.png";
-
-import image12 from "../../../assets/features/12.png";
-
 import { LazyLoadImage } from 'react-lazy-load-image-component';
+import image1 from '../../../assets/fea/1.png';
+import image2 from '../../../assets/fea/2.png';
+import image3 from '../../../assets/fea/3.png';
+import image4 from '../../../assets/fea/4.png';
+import image5 from '../../../assets/fea/5.png';
+import image6 from '../../../assets/fea/6.png';
+import image7 from '../../../assets/fea/7.png';
+import image8 from '../../../assets/fea/8.png';
+import image9 from '../../../assets/fea/9.png';
+import image11 from '../../../assets/fea/11.png';
+import image12 from '../../../assets/fea/12.png';
+import image13 from '../../../assets/fea/13.png';
+import cc from '../../../assets/fea/cc.png';
 
 export default function WhyLove() {
 
    const features = [
       {
-         icon:image1,
-         title :"100% payout",
-         heading: "Currency conversion may reduce the amount. (UK / US 100% guaranteed!)",
-      },
-      {
          icon:image2,
-         title :"Profile Tip Jar ",
-         heading: "For collecting those coins in record time!",
+         title :"Posts",
+         heading: "Share your creative journey with blog posts, videos and audio clips.",
       },
       {
          icon:image3,
-         title :"Video Thank You’s",
-         heading: "Send a truly custom message your fans will cherish forever!",
+         title :"rewards",
+         heading: "Let Supporters unlock exclusive posts, member-only products and more.",
       },
       {
          icon:image4,
-         title :"⁠Reimburse - ments⁠",
-         heading: "Not just wishes! Get those Bills paid too!",
+         title :"⁠Commissions & Service",
+         heading: "Let Supporters buy unique work or pay for direct access to you.",
       },
       {
          icon:image5,
-         title :"⁠Member - ships ",
-         heading: "Four tier options for your most deserving fans.",
+         title :"Membership tiers",
+         heading: "Let fans support you monthly with Spenny Piggy Memberships.",
       },
       {
          icon:image6,
-         title :"Data Heaven ",
-         heading: "Useful insights to adapt your page.",
+         title :"Supporter-only content ",
+         heading: "Make exclusive content available to supporters or members.",
       },
       {
          icon:image7,
-         title :"Intro video ",
-         heading: "Showcase a profile introduction video, making your page as unique as you are!",
+         title :"The Leaderboard",
+         heading: "Showcase your supporters contributions directly on your page and site wide.",
       },
       {
          icon:image8,
-         title :"The Leaderboard  ",
-         heading: "Showcase your fans support directly on your page and site wide.",
+         title :"Profile Intro Video  ",
+         heading: "Showcase a profile introduction video, making your page as unique as you are!",
       },
       {
          icon:image9,
-         title :"Referrals  ",
-         heading: "Secure an extra 5% of other creators donations for life!",
+         title :"Monthly Bills",
+         heading: "Make exclusive content available to supporters or members.",
       },
       {
-         icon:image10,
-         title :"Seek & Search ",
-         heading: "For fans to discover wishes and new creators to support!",
-      },
+         hide:true,
+         icon:cc,
+         title :"Plus much more In the works! 🤩.",
+         heading: "",
+      } 
+   ];
+
+
+   const premium = [
       {
          icon:image11,
-         title :"Fraud protection  ",
-         heading: "Your earnings are secure with us; we've got your back.",
+         title :"Link Share Payments",
+         heading: "Upload some content, set your price, share the link and get paid! Easy as that!",
       },
       {
          icon:image12,
-         title :"Remain Anonymous  ",
-         heading: "Privacy for both fans and creators – because discretion matters.",
+         title :"Profile Customization",
+         heading: "Looking to make your page as unique as you are? Then change some colours, the background or some other aspects to truly stand out. ",
       },
+      {
+         icon:image13,
+         title :"Notify Alerts ",
+         heading: "Increase your earnings with each new wish you upload! Now all your previous gifters will receive an e-mail letting them know to check out your page again.",
+      }
    ];
 
   return (
-   <div className="whylove whbg">
+   <>
+   <div id='features' className="whylove bluebg">
       <div className="containerbox">
-         <div className="whylovebox">
-            <h2 className="headingMd text-shadow-black text-mint text-center w-full mb-4">
-                  Why we love <br /> Spenny piggy
-            </h2>
-            {features && features.map((item, i)=>{
-               return <div className="loveboxes px-4 mt-4  mb-4">
-                     <div className='featureicon' >
-                        <LazyLoadImage
-                        alt={"image"}
-                        height={70} useIntersectionObserver={true} effect="blur"
-                        src={item.icon}
-                        width={70} />
-                        {/* {{URL::asset('/features/${i+1}.png')}} */}
-                     </div>
-                     <h3 className="headingSm text-shadow-black text-mint">{item.title}</h3>
-                     <p className="text-dark">{item.heading}</p>
-               </div>
-            })}
-
-
-
-            <div className='row mt-4 w-100 mb-4 mb-md-0' >
-               <div className='col-xl-4 col-sm-6' >
-                  <div className="box rounded-md infobox shadow-voilet mt-4 text-center">
-                        <div className='new-icon mt-2' >
+            <h2 className='headingSm shadow-none text-white stroke-none mb-4 text-center mb-6 max-width-1000 m-auto d-table' >Features that you need</h2>
+            <div className="whylovebox">
+               {features && features.map((item, i)=>{
+                  return <div data-aos="flip-down" className={` ${item.hide ? "d-lg-none" : ''}  ${item.hide ? "w-100" : ''}  loveboxes px-4 mt-4  mb-4`}>
+                        <div className='featureicon' >
                            <LazyLoadImage
-                           alt={"image"} 
-                           height={70} useIntersectionObserver={true} 
-                           effect="blur" 
-                           src={icon1}
+                           alt={"image"}
+                           height={70} useIntersectionObserver={true} effect="blur"
+                           src={item.icon}
                            width={70} />
                         </div>
-                        <h3 className="headingSm text-shadow-black text-mint mt-3">by fans</h3>
-                        <p className="text-dark">Paid for by fans</p>
+                        <h3 className="headingSm mt-2 mb-1 text-shadow-none text-white">{item.title}</h3>
+                        <p className="text-white">{item.heading}</p>
                   </div>
-               </div>
-
-               <div className='col-xl-4 col-sm-6' >
-                  <div className="box rounded-md infobox shadow-voilet mt-4 text-center">
-                        <div className='new-icon mt-2' >
-                           <LazyLoadImage
-                           alt={"image"} 
-                           height={70} useIntersectionObserver={true} 
-                           effect="blur" 
-                           src={icon2}
-                           width={70} />
-                        </div>
-                        <h3 className="headingSm text-shadow-black text-mint mt-3">Fees</h3>
-                        <p className="text-dark">From only 8% Fees! Creators keep 100%*🥳</p>
-                  </div>
-               </div>
-               
-               <div className='col-xl-4' >
-                  <div className="box rounded-md infobox shadow-voilet mt-4 text-center">
-                        <div className='new-icon mt-2' >
-                           <LazyLoadImage
-                           alt={"image"} 
-                           height={70} useIntersectionObserver={true} 
-                           effect="blur" 
-                           src={icon3}
-                           width={70} />
-                        </div>
-                        <h3 className="headingSm text-shadow-black text-mint mt-3">Conversion</h3>
-                        <p className="text-dark">Currency conversions will affect some creators. UK and US always receive 100%</p>
-                  </div>
-               </div>
-               
+               })}
             </div>
-
-
-            {/* <div className="loveboxes px-4">
-                  <LazyLoadImage
-                  alt={"image"}
-                  height={"auto"} useIntersectionObserver={true} effect="blur"
-                  src={payoutimg}
-                  width={"auto"} />
-                  <h3 className="headingSm text-shadow-black text-mint">
-                     100% payout
-                  </h3>
-                  <p className="text-wh">
-                  Non UK creators may receive a reduced or increased payout due to currency conversions.
-                  </p>
-            </div>
-
-            <div className="loveboxes px-4">
-                  <LazyLoadImage
-                  alt={"image"} useIntersectionObserver={true} effect="blur"
-                  height={"auto"}
-                  src={fraudprotecicon}
-                  width={"auto"} />
-                  <h3 className="headingSm text-shadow-black text-mint">
-                     Fraud <br /> protection
-                  </h3>
-                  <p className="text-wh">
-                     Your earnings are secure with us; we've got
-                     your back.
-                  </p>
-            </div>
-
-            <div className="loveboxes px-4">
-                  <LazyLoadImage
-                  alt={"image"}
-                  height={"auto"} useIntersectionObserver={true} effect="blur"
-                  src={twowayicon}
-                  width={"auto"} />
-                  <h3 className="headingSm text-shadow-black text-mint">
-                     Two way <br /> anonymity
-                  </h3>
-                  <p className="text-wh">
-                     Privacy for both fans and creators - because
-                     discretion matters.
-                  </p>
-            </div> */}
-         </div>
       </div>
    </div>
+   <div className="whylove yellowbg border-black border-bottom-0 border-end-0 border-start-0">
+      <div className="containerbox">
+            <h2 className='headingSm shadow-none text-dark stroke-none mb-4 text-center mb-6 max-width-1000 m-auto d-table' >Premium Only Features </h2>
+            <div className="whylovebox pre d-block d-lg-flex">
+               {premium && premium.map((item, i)=>{
+                  return <div className={`loveboxes px-4 mt-4  mb-4`}  data-aos="flip-down">
+                        <div className='featureicon' >
+                           <LazyLoadImage
+                           alt={"image"}
+                           height={70} useIntersectionObserver={true} effect="blur"
+                           src={item.icon}
+                           width={70} />
+                        </div>
+                        <h3 className="headingSm mt-2 mb-1 text-shadow-none text-dark">{item.title}</h3>
+                        <p className="text-dark">{item.heading}</p>
+                  </div>
+               })}
+            </div>
+      </div>
+   </div>
+   </>
   )
 }

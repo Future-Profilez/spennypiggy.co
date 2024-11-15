@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useState } from 'react';
 import PriceFormat from '@/includes/PriceFormat';
 import { Link } from "@inertiajs/react";
 import dummy from '../../../assets/img/uploadedimg.png';
+import EditMembership from './EditMembership';
+import DropdownButton from 'react-bootstrap/DropdownButton';
+import RemoveMembership from './RemoveMembership';
 
 const rewards_lists = [
   {
@@ -47,7 +50,7 @@ const rewards_lists = [
   },
 ];
 
-export default function Membership({item, hidebtn, IsloggedIn}) {
+export default function Membership({item, hidebtn, IsloggedIn, fetch_membership}) {
 
   const { formatMultiPrice } = PriceFormat();
 
@@ -57,13 +60,17 @@ export default function Membership({item, hidebtn, IsloggedIn}) {
     return item && item[0] && item[0].title;
   }
 
-  const paynow = () => { 
-
-  }
+  useEffect(()=>{
+    setrewards(JSON.parse(item && item.rewards));
+  },[item]);
+ 
   
   return (
     <>
-      <div className='membership-box shadow-voilet p-2 box overflow-hidden rounded-lg' >
+      <div className=' position-relative membership-box shadow-voilet p-2 box overflow-hidden rounded-lg' >
+
+      {IsloggedIn && item && item.approved === 0 ?  <div className='approvalmessge membership m-3 rounded-3 p-3 py-2 mb-2 ' >Membership waiting for approval. Currently only you can see this membership.</div> : ''}
+
         <div className='membership-head' >
           <div className='m-imag rounded-lg ' >
             <img src={item && item.perma_link || dummy } alt='image' className='img-fluid w-100' />
@@ -72,28 +79,48 @@ export default function Membership({item, hidebtn, IsloggedIn}) {
               <h3 className='text-large text-center text-white text-uppercase' >{item && item.level}</h3>
               <h2 className=' text-center text-white ' ><b>{formatMultiPrice(item && item.price, item && item.currency)}</b> per month</h2>
           </div>
+            {IsloggedIn ? <DropdownButton
+              className='edit-post pe-0 absolute top-5 m-1 right-3 z-1 ' id="dropdown-basic-button"
+              title={
+              <div className='dots' >
+              <span className='bg-dark' ></span>
+              <span className='bg-dark' ></span>
+              <span className='bg-dark' ></span>
+            </div>}>
+                <RemoveMembership classes={`px-[18px] py-2 text-start w-full`} updateItems={fetch_membership} uuid={item.uuid} text="Remove" />
+            </DropdownButton> : ''} 
         </div>
 
-        <ul className='lists_rewards mt-4 px-3' >
+
+
+
+      <div className='p-2 pt-0' >
+        <ul className='lists_rewards mt-3' >
+          <li  className='d-flex ' >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7.95801 14.9993L3.20801 10.2493L4.39551 9.06185L7.95801 12.6243L15.6038 4.97852L16.7913 6.16602L7.95801 14.9993Z" fill="#F94F97"/>
+            </svg> 
+            <p className='ps-2'>Access to Member only posts</p>
+          </li>
           {rewards && rewards.map((r, i)=>{
-            return <li key={`reward-${i}`} className='d-flex flex-wrap' >
+            return <li key={`reward-${i}`} className='d-flex ' >
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M7.95801 14.9993L3.20801 10.2493L4.39551 9.06185L7.95801 12.6243L15.6038 4.97852L16.7913 6.16602L7.95801 14.9993Z" fill="#F94F97"/>
                 </svg> 
-                &nbsp;  {getRewardTitle(r)}
+                <p className='ps-2'>{getRewardTitle(r)}</p>
               </li>
           })}
         </ul>
-
-        <div className='px-3 pt-3' >
           {hidebtn ? '' : 
           !IsloggedIn ? 
-            <Link className='btn-pink sm mb-3 ' method='get'
+            <Link className='btn-pink sm mt-3 ' method='get'
                 href={route('membership.checkout',{uuid: item.uuid})}>Join Now
             </Link> 
             : ''
           }
-        </div>
+          {IsloggedIn ? <EditMembership fetch_membership={fetch_membership} item={item} /> : ''}
+      </div>
+
 
       </div>
     </>

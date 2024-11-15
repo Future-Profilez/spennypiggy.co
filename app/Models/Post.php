@@ -1,0 +1,90 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
+use Ramsey\Uuid\Uuid;
+
+class Post extends Model
+{
+    use HasFactory,SoftDeletes;
+
+    protected $fillable = [
+        'uuid',
+        'user_id',
+        'type',
+        'for_module',
+        'title',
+        'content',
+        'image',
+        'ai_generated',
+    ];
+
+    protected $hidden = [
+        'id',
+        'user_id',
+    ];
+
+    protected $appends = [
+        'image_url',
+        'likes_count',
+        'liked',
+        'comments_count'
+    ];
+
+    public static function boot()
+    {
+        parent::boot();
+        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
+    }
+
+    public function user(){
+        return $this->belongsTo(User::class,'user_id');
+    }
+
+    public function getImageUrlAttribute()
+    {
+        $url = false;
+        if (!empty($this->image)) {
+            $url = "https://ucarecdn.com/" . $this->image . '/-/format/jpeg/';
+        }
+        return $url;
+    }
+
+    public function likes(){
+        return $this->hasMany(PostLike::class,'post_id');
+    }
+
+    public function getLikesCountAttribute(){
+        return $this->likes()->where('status',1)->count();
+    }
+
+    public function comments(){
+        return $this->hasMany(PostComment::class,'post_id');
+
+    }
+
+    public function getCommentsCountAttribute(){
+        $count = $this->comments()->count();
+        foreach ($this->comments as $key => $value) {
+            $count += $value->replies()->count();
+        }
+        return $count;
+    }
+
+    public function getLikedAttribute(){
+        $like = null;
+        if (Auth::check()) {
+            $like = PostLike::where('post_id',$this->id)->where('user_id',Auth::id())->where('status',1)->first();
+        }
+
+        if(!empty($like)){
+            return true;
+        }
+
+        return false;
+    }
+}

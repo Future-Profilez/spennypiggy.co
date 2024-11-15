@@ -34,11 +34,15 @@ class Membership extends Model
         static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 
+    public function payments(){
+        return $this->hasMany(MembershipPayment::class);
+    }
+
     public function getPermaLinkAttribute()
     {
         $url = false;
         if (!empty($this->thumbnail)) {
-            $url = "https://ucarecdn.com/" . $this->thumbnail . "/";
+            $url = "https://ucarecdn.com/" . $this->thumbnail . "/-/format/jpeg/";
         } else {
             if($this->level == 'bronze'){
                 $url = "https://ucarecdn.com/70d610ae-b6b0-4f5a-a144-2d49765c4140/";

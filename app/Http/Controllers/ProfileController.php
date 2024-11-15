@@ -4,13 +4,38 @@ namespace App\Http\Controllers;
 
 use App\Helpers;
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Jobs\CheckProfilePhotosAdult;
 use App\Jobs\SendIntroMailAdmin;
+use App\Models\BillPayment;
+use App\Models\Bills;
+use App\Models\Logs;
+use App\Models\Membership;
 use App\Models\MembershipPayment;
+use App\Models\MonthlyCharge;
+use App\Models\Notification;
+use App\Models\Post;
+use App\Models\PostComment;
+use App\Models\PostCommentReplies;
+use App\Models\PostLike;
+use App\Models\Shop;
+use App\Models\ShopCategory;
+use App\Models\ShopPayment;
+use App\Models\ShopShippingInfo;
+use App\Models\ShopVarients;
+use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
+use App\Models\TipGoal;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
+use App\Models\UserCart;
+use App\Models\UserCategory;
+use App\Models\UserDocuments;
 use App\Models\UserIntro;
+use App\Models\UserShopCategories;
+use App\Models\WishCategory;
+use App\Models\WishItem;
 use App\Models\WishItemSubscription;
+use App\StripeControl;
 use Carbon\Carbon;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -21,9 +46,24 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use PhpParser\Node\Expr\Print_;
+use Uploadcare\Api;
+use Uploadcare\AuthUrl\AuthUrlConfig;
+use Uploadcare\AuthUrl\Token\AkamaiToken;
+use Uploadcare\Configuration;
+use Image;
 
 class ProfileController extends Controller
 {
+
+    protected $uploadcareApi;
+
+    public function __construct() {
+        $authUrlConfig = new AuthUrlConfig('ucarecdn.com', new AkamaiToken(env('UPLOADCARE_SECRET_KEY'), 300));
+        $config = Configuration::create(env('UPLOADCARE_PUBLIC_KEY'), env('UPLOADCARE_SECRET_KEY'))->setAuthUrlConfig($authUrlConfig);
+        $this->uploadcareApi = new Api($config);
+    }
+
     /**
      * Display the user's profile form.
      */
@@ -64,13 +104,13 @@ class ProfileController extends Controller
         })->first();
         $currency = strtolower($request->cookie("currency", "GBP"));
 
-        if($request->min_surprise_amount < 5){
-            return redirect()->back()->with("error", "Please set the minimum amount greater than 5.");
-        }
+        // if($request->min_surprise_amount < 5){
+        //     return redirect()->back()->with("error", "Please set the minimum amount greater than 5.");
+        // }
 
         $checkdata = Helpers::checkBlockData($request);
         if ($checkdata == 1) {
-            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive,
+            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         } else {
             $request->validate([
@@ -89,15 +129,25 @@ class ProfileController extends Controller
 
             if(!empty($avatar)){
                 $user->avatar = $avatar['uuid'] ?? null;
+                $user->avatar_approved = 0;
                 $user->avatar_cdn_modifier = $avatar['cdnUrlModifiers'] ?? null;
             }
             if(!empty($cover)){
                 $user->cover = $cover['uuid'] ?? null;
+                $user->cover_approved = 0;
                 $user->cover_cdn_modifier = $cover['cdnUrlModifiers'] ?? null;
             }
 
             $user->save();
             $user->refresh();
+
+            if(!empty($request->bio)){
+                $logs = Logs::where('edited_about_me_id',$user->id)->where('status','pending')->first();
+                if(!empty($logs)){
+                    $logs->status = 'updated';
+                    $logs->save();
+                }
+            }
 
             return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
         }
@@ -114,6 +164,156 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+
+        $bills = BillPayment::where('user_id',$user->id)->where('status','paid')->get();
+
+        if(!empty($bills)){
+            foreach($bills as $bill){
+                StripeControl::cancelSubscription($bill->stripe_id);
+            }
+        }
+
+        $members = MembershipPayment::where('user_id',$user->id)->where('status','paid')->get();
+
+        if(!empty($members)){
+            foreach($members as $member){
+                StripeControl::cancelSubscription($member->stripe_id);
+            }
+        }
+
+        $wishSubs = WishItemSubscription::where('user_id',$user->id)->where('status','paid')->get();
+
+        if(!empty($wishSubs)){
+            foreach($wishSubs as $sub){
+                StripeControl::cancelSubscription($sub->stripe_id);
+            }
+        }
+
+        $monthlyCharges = MonthlyCharge::where('user_id',$user->id)->where('status','paid')->get();
+
+        if(!empty($monthlyCharges)){
+            foreach($monthlyCharges as $charge){
+                StripeControl::cancelSubscription($charge->stripe_id);
+            }
+        }
+
+        BillPayment::whereHas('bill',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhere('user_id',$user->id)->delete();
+
+        Bills::where('user_id',$user->id)->delete();
+
+        Logs::whereHas('removeWish',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('removePost',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('removeShop',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('editedShop',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('editedPost',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('editedAboutMe',function($q)use($user){
+            $q->where('id',$user->id);
+        })->orWhereHas('editedUserCategory',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('removeBill',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('editedBill',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('removeMembership',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('editedMembership',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('editedWish',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhereHas('suspendedUser',function($q)use($user){
+            $q->where('id',$user->id);
+        })->orWhereHas('deletedUser',function($q)use($user){
+            $q->where('id',$user->id);
+        })->delete();
+
+        MembershipPayment::where('user_id',$user->id)->orWhereHas('membership',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->delete();
+
+        Membership::where('user_id',$user->id)->delete();
+
+        MonthlyCharge::where('user_id',$user->id)->delete();
+
+        Notification::where('user_id',$user->id)->orWhere('notifiable_id',$user->id)->delete();
+
+        PostLike::whereHas('post',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->orWhere('user_id',$user->id)->delete();
+
+        PostCommentReplies::whereHas('post_comment',function($q)use($user){
+            $q->where('user_id',$user->id)->whereHas('post',function($que)use($user){
+                $que->where('user_id',$user->id);
+            });
+        })->orWhere('user_id',$user->id)->delete();
+
+        PostComment::whereHas('post',function($que)use($user){
+            $que->where('user_id',$user->id);
+        })->orWhere('user_id',$user->id)->delete();
+
+        Post::where('user_id',$user->id)->delete();
+
+        ShopVarients::whereHas('shop',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->delete();
+
+        ShopShippingInfo::whereHas('shop',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->delete();
+
+        ShopPayment::where('user_id',$user->id)->orWhereHas('shop',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->delete();
+
+        ShopCategory::whereHas('shop',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->delete();
+
+        Shop::where('user_id',$user->id)->delete();
+
+        StripePaymentItems::whereHas('payment',function($q)use($user){
+            $q->where('user_id',$user->id)->orWhere('owner_id',$user->id);
+        })->delete();
+
+        StripePaymentDetail::where('user_id',$user->id)->orWhere('owner_id',$user->id)->delete();
+
+        TipGoal::where('user_id',$user->id)->delete();
+
+        TipGoalsPayment::where('user_id',$user->id)->orWhere('creator_id',$user->id)->delete();
+
+        UserCart::where('user_id',$user->id)->orWhere('owner_id',$user->id)->delete();
+
+        UserCategory::where('user_id',$user->id)->delete();
+
+        // UserDocuments::where('user_id',$user->id)->delete();
+
+        UserIntro::where('user_id',$user->id)->delete();
+
+        UserShopCategories::where('user_id',$user->id)->delete();
+
+        WishCategory::whereHas('wish',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->delete();
+
+        WishItemSubscription::where('user_id',$user->id)->orWhereHas('wish_item',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->delete();
+
+        WishItem::where('user_id',$user->id)->delete();
+
+
+        if(!empty($user->account_id)){
+            StripeControl::deleteAccount($user->account_id);
+            $user->account_id = NULL;
+            $user->stripe_details_submitted = 0;
+        }
+        $user->save();
 
         Auth::logout();
 
@@ -170,7 +370,17 @@ class ProfileController extends Controller
         ])->get("https://api.uploadcare.com/files/". $uuid ."/?include=appdata");
 
         $data = $response->json();
-        $tags = $data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'];
+        $tags = [];
+        if (isset($data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'])) {
+            $tags = $data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'];
+        }
+
+        if(empty($tags)){
+            return response()->json([
+                'status' => true,
+                'msg' => 'Success.'
+            ]);
+        }
 
         foreach ($tags as $key => $tag) {
             $name = explode(" ", $tag['Name']);
@@ -411,11 +621,11 @@ class ProfileController extends Controller
         foreach ($user_tips as $key => $value) {
             $trackData[$key] = [
                 'owner' => [
-                    'name' => $value->tipGoal->user->name,
-                    'avatar' => $value->tipGoal->user->avatar_url,
-                    'cover' => $value->tipGoal->user->cover_url,
-                    'username' => $value->tipGoal->user->username,
-                    'stripe_details_submitted' => $value->tipGoal->user->stripe_details_submitted
+                    'name' => $value->creator->name,
+                    'avatar' => $value->creator->avatar_url,
+                    'cover' => $value->creator->cover_url,
+                    'username' => $value->creator->username,
+                    'stripe_details_submitted' => $value->creator->stripe_details_submitted
                 ],
                 'amount' => $value->amount,
                 'tax' => $value->tax,
@@ -532,6 +742,340 @@ class ProfileController extends Controller
             "current_page" => $wishes->currentPage() ?? null,
             "total" => $wishes->total() ?? null,
             "per_page" => $wishes->perPage() ?? null,
+        ]);
+    }
+
+    public function gifterAccessPosts($username){
+        $user = User::where('username', $username)->first();
+
+        $data = [];
+        $subscription = WishItem::where('subscription',1)->whereHas('wishItemsSubscription',function($qu)use($user){
+            $qu->where('recurring_for','continue')->where(function($que){
+                $que->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now());
+            })->where(function($q) use($user){
+                $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
+            });
+        })->pluck('user_id');
+
+        $bills = Bills::whereHas('payments',function($qu)use($user){
+            $qu->where(function($que){
+                $que->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now());
+            })->where(function($q) use($user){
+                $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
+            });
+        })->pluck('user_id');
+
+        $mem = Membership::whereHas('payments',function($q) use($user){
+            $q->where('recurring_type','!=','lifetime')->where(function($que){
+                $que->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now());
+            })->where(function($q) use($user){
+                $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
+            });
+        })->pluck('user_id');
+
+        $lifetime = Membership::whereHas('payments',function($q) use($user){
+            $q->where(function($que){
+                $que->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now());
+            })->where(function($q) use($user){
+                $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
+            });
+        })->pluck('user_id');
+
+
+        $tip = TipGoalsPayment::where(function($q) use($user){
+            $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
+        })->pluck('creator_id');
+
+        $posts = Post::whereNotNull('image')->with('user')->where(function($query)use($tip,$lifetime,$mem,$subscription,$bills){
+            $query->where(function($qu) use($tip){
+                $qu->whereIn('user_id',$tip)->where('for_module','support');
+            })->orWhere(function($qu) use($lifetime,$mem){
+                $qu->where(function($q)use($lifetime,$mem){
+                    $q->whereIn('user_id',$lifetime)->orWhereIn('user_id',$mem);
+                })->where('for_module','membership');
+            })->orWhere(function($qu) use($subscription,$bills){
+                $qu->where(function($q)use($subscription,$bills){
+                    $q->whereIn('user_id',$subscription)->orWhereIn('user_id',$bills);
+                })->where('for_module','subscription');
+            });
+        })->where('approved',1)->orderBy('created_at','DESC')->paginate(40);
+
+        $posts->map(function($q){
+            $q->is_lock = 0;
+            return $q;
+        });
+
+        return response()->json([
+            'status' => true,
+            'posts' => $posts,
+            "last_page" => $posts->lastPage() ?? null,
+            "current_page" => $posts->currentPage() ?? null,
+            "total" => $posts->total() ?? null,
+            "per_page" => $posts->perPage() ?? null,
+        ]);
+    }
+
+    public function gifterMedia($username){
+        $user = User::where('username', $username)->first();
+
+        $categorizedPayments = [];
+
+        $payment = StripePaymentItems::whereHas('wish',function($q){
+            $q->whereNotNull('reward');
+        })->whereHas('payment',function($q)use($user){
+            $q->where('user_id',$user->id);
+        })->get();
+
+
+        foreach ($payment as $key => $value) {
+            $ownerId = $value->payment->owner_id;
+
+
+            if (array_key_exists($ownerId, $categorizedPayments)) {
+
+                $categorizedPayments[$ownerId]['reward'][] = $value->wish->reward_url;
+                $categorizedPayments[$ownerId]['count'] += 1;
+            } else {
+
+                $categorizedPayments[$ownerId]['username'] = $value->payment->owner->username;
+                $categorizedPayments[$ownerId]['name'] = $value->payment->owner->name;
+                $categorizedPayments[$ownerId]['count'] = 1;
+                $categorizedPayments[$ownerId]['reward'] = [$value->wish->reward_url];
+            }
+        }
+
+        $categorizedPayments = array_values($categorizedPayments);
+
+        return response()->json([
+            'status' => true,
+            'medias' => $categorizedPayments,
+        ]);
+    }
+
+
+    public function gifterSubscription($username){
+        $user = User::where('username', $username)->first();
+
+        $user_subs = WishItemSubscription::where(function($q) use($user){
+            $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
+        })->with(['wish_item', 'wish_item.user'])->where('status','paid')->paginate(30);
+
+        $trackData = [];
+        foreach ($user_subs as $key => $value) {
+            $trackData[$key] = [
+                'owner' => [
+                    'name' => $value->wish_item->user->name,
+                    'avatar' => $value->wish_item->user->avatar_url,
+                    'cover' => $value->wish_item->user->cover_url,
+                    'username' => $value->wish_item->user->username,
+                    'stripe_details_submitted' => $value->wish_item->user->stripe_details_submitted
+                ],
+                'amount' => $value->amount,
+                'tax' => $value->tax,
+                'currency' => $value->currency,
+                'created_at' => Carbon::parse($value->created_at)->format('Y-m-d H:i:s'),
+                'anonymous' => $value->anonymous
+            ];
+
+
+            if(!empty($value->wish_item)){
+                $trackData[$key]['wish_item'] = [
+                    'name' => $value->wish_item->wishname,
+                    'perma_link' => $value->wish_item->perma_link,
+                ];
+                $trackData[$key]['media_url'] = $value->recurring_for == 'onetime' ? $value->wish_item->reward_url : false;
+            }
+
+        }
+
+        return response()->json([
+            'status' => true,
+            'subscriptions' => $trackData,
+            "last_page" => $user_subs->lastPage() ?? null,
+            "current_page" => $user_subs->currentPage() ?? null,
+            "total" => $user_subs->total() ?? null,
+            "per_page" => $user_subs->perPage() ?? null,
+        ]);
+    }
+
+
+    public function profileStepsStatus(){
+        $user = User::where('id', Auth::id())->first();
+
+        $memPost = Post::where('user_id',$user->id)->where('for_module','membership')->first();
+        $subPost = Post::where('user_id',$user->id)->where('for_module','subscription')->first();
+        $supPost = Post::where('user_id',$user->id)->where('for_module','support')->first();
+
+        $total = 0;
+
+        $basic_profile = empty($user->avatar) || empty($user->bio) || empty($user->cover) ? 0 : 1;
+        if($basic_profile){
+            $total += 1;
+        }
+
+        $social_links = empty($user->social_links) ? 0 : 1;
+        if($social_links){
+            $total += 1;
+        }
+        $userIntro = UserIntro::where('user_id',$user->id)->first();
+        $intro = !empty($userIntro) ? 1 : 0;
+        if($intro){
+            $total += 1;
+        }
+        $post_required = !empty($memPost) && !empty($subPost) && !empty($supPost) ? 1 : 0;
+        if($post_required){
+            $total += 1;
+        }
+        $vat_setting = !empty($user->vat_amount_percentage) ? 1 : 0;
+        if($vat_setting){
+            $total += 1;
+        }
+        $payment_connect = $user->stripe_details_submitted ? 1 : 0;
+        if($payment_connect){
+            $total += 1;
+        }
+        $shop = !empty($user->shop) ? 1 : 0;
+        if($shop){
+            $total += 1;
+        }
+        $contents = !empty($user->wishItems) && !empty($user->memberships) && !empty($user->bills) ? 1 : 0;
+        if($contents){
+            $total += 1;
+        }
+        $auto_tweets = $user->auto_tweet;
+        if($auto_tweets){
+            $total += 1;
+        }
+
+        return response()->json([
+            'status' => true,
+            'basic_profile' => $basic_profile,
+            'intro' => $intro,
+            'post_required' => $post_required,
+            'vat_setting' => $vat_setting,
+            'payment_connect' => $payment_connect,
+            'contents' => $contents,
+            'auto_tweets' => $auto_tweets,
+            'shop' => $shop,
+            'social_links' => $social_links,
+            'total' => $total,
+        ]);
+    }
+
+
+    /**
+     * Get the list of notifications
+     *
+     * @return JsonResponse
+    */
+    public function getNotifications(){
+        $user = User::where('id', Auth::id())->first();
+
+        $notifications = Notification::where('notifiable_id',$user->id)->with('user')->orderBy('created_at','DESC')->paginate(30);
+
+        return response()->json([
+            'status' => true,
+            'notifications' => $notifications->items(),
+            "last_page" => $notifications->lastPage() ?? null,
+            "current_page" => $notifications->currentPage() ?? null,
+            "total" => $notifications->total() ?? null,
+            "per_page" => $notifications->perPage() ?? null,
+        ]);
+    }
+
+    public function markRead(){
+        $user = User::where('id', Auth::id())->first();
+
+        Notification::where('notifiable_id',$user->id)->where('is_read',0)->update(['is_read' => 1]);
+
+        return response()->json([
+           'status' => true,
+           'message' => "Notifications marked as read."
+        ]);
+    }
+
+
+
+    public function piggyBankSetting(){
+        $user = User::where('id', Auth::id())->first();
+
+        if($user->show_piggy_bank == 0){
+            $user->show_piggy_bank = 1;
+        }
+        else{
+            $user->show_piggy_bank = 0;
+        }
+        $user->save();
+        return response()->json([
+           'status' => true,
+           'message' => 'Piggy Bank Settings Updated.'
+        ]);
+    }
+
+    public function getImageGenerateAI(Request $request)
+    {
+        $request->validate([
+            'prompt' => [
+                'required',
+                'string'
+            ],
+            'size' => ['required', 'string'],
+        ]);
+
+        $secret = env('DALLE_SECRET_KEY');
+
+        $data = [
+            'model' => 'dall-e-3',
+            'prompt' => $request->prompt,
+            'n' => 1,
+            'size' => $request->size,
+        ];
+
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $secret,
+        ])->post('https://api.openai.com/v1/images/generations', $data);
+
+        $resp = json_decode($response);
+
+        if (!empty($resp->data[0])) {
+            $url = $resp->data[0];
+            return response()->json([
+                'status' => true,
+                'image_url' => $url
+            ]);
+        }
+
+        return response()->json([
+            'status' => false,
+            'data' => $resp
+        ]);
+    }
+
+
+    public function uploadDalleImage(Request $request)
+    {
+        $request->validate([
+            'url' => [
+                'required'
+            ]
+        ]);
+
+        $imageContent = file_get_contents($request->url);
+
+        // Create image from content
+        $image = Image::make($imageContent);
+
+        // Encode the image to a string
+        $encodedImage = (string) $image->encode();
+
+        // Upload to Uploadcare
+        $uploader = $this->uploadcareApi->uploader();
+        $response = $uploader->fromContent($encodedImage, 'image/jpeg');
+
+        return response()->json([
+            'status' => true,
+            'uuid' => $response->getUuid()
         ]);
     }
 }

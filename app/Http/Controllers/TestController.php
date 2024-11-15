@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
+use Stripe\Balance;
+use Stripe\Stripe;
 
 class TestController extends Controller
 {
@@ -200,7 +202,8 @@ class TestController extends Controller
      *
      * @return mixed
      */
-    public function testIp(){
+    public function testIp()
+    {
 
         IpTracker::getIpInfo();
         return response()->json([

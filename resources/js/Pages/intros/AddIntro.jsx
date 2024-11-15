@@ -7,10 +7,10 @@ import { useAlerts } from '@/Components/Alerts';
 import axios from 'axios';
 import LoaderButton from '@/Components/LoaderButton';
 import { useEffect } from 'react';
-import { LazyLoadImage } from 'react-lazy-load-image-component';
-import { useMemo } from 'react';
+import wishlistbannerimg from "../../../assets/img/wishlistbannerimg.jpg";
+import { useRef } from 'react';
 
-export default function AddIntro({IsloggedIn, uuid}){
+export default function AddIntro({IsloggedIn, uuid, text, classes, setIntroStatus}){
 
   const [open, setOpen] = useState(false);
   const [loading,setloading] = useState(false);
@@ -21,6 +21,13 @@ export default function AddIntro({IsloggedIn, uuid}){
   const getFileUID = async (data) => {
     setMsgMedia(data);
   }; 
+
+  const uploaderRef = useRef();
+  const resetUploader = () => {
+      if (uploaderRef.current) {
+          uploaderRef.current.reset();
+      }
+  };
 
   const [introVideo, setIntroVideo] = useState(null);
   const [videoLoading, setVideoLoading] = useState(false);
@@ -58,8 +65,9 @@ export default function AddIntro({IsloggedIn, uuid}){
           setTimeout(()=>{
             setClose();
           },1000);
-          setClear(new Date());
+          resetUploader();
           setOpen(false);
+          setIntroStatus && setIntroStatus(1)
       } else {
           errorAlert(resp.data.msg);
       }
@@ -95,7 +103,7 @@ export default function AddIntro({IsloggedIn, uuid}){
         <div className='isintro cursor-pointer shadow-voilet'>
           <img
           alt={"image"} useIntersectionObserver={true} effect="blur"
-          height={350} src={ introVideo &&  introVideo.poster_url} className='' width={400} />
+          height={350} src={ introVideo && introVideo.poster_url || wishlistbannerimg} className='' width={400} />
           <div className='cursor-pointer playicon' >
             <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="32" cy="32" r="32" fill="#F94F97"/>
@@ -104,7 +112,8 @@ export default function AddIntro({IsloggedIn, uuid}){
           </div>
         </div>
         {IsloggedIn && introVideo && introVideo.approved !== 1 ? <div className='mt-4 alert alert-warning  rounded p-2' >Profile intro video is waiting for approval. Currently only you can see this intro.</div> : ''}
-        </>} > 
+        </>} 
+        > 
           <div className='video-payer-pop' >
             <video playsInline='false' autoPlay src={introVideo && introVideo?.perma_link || ''} controls controlsList='nodownload' />
           </div>
@@ -113,7 +122,7 @@ export default function AddIntro({IsloggedIn, uuid}){
   }
 
   return (
-    <div className={`mb-4 ${videoLoading ? 'd-none' : '' } `}>
+    <div className={`pb-4 ${videoLoading ? 'd-none' : '' } `}>
       {introVideo ? 
         <div className='position-relative'>
           <ProfileIntro /> 
@@ -122,24 +131,25 @@ export default function AddIntro({IsloggedIn, uuid}){
         : 
         <>
         { IsloggedIn ? 
-              <Popup modalclassName="pinkmodal sendSurprize-modal shadow-pink" space="4" size="md" action={close} classes={`w-100`}
-                text={ 
+              <Popup modalclassName="pinkmodal sendSurprize-modal shadow-pink" space="4" size="md" action={close} classes={`${classes} w-100`}
+                text={text ? text : 
                   <div className='cursor-pointer box shadow-voilet rounded-lg p-3 py-4 d-flex align-items-center justify-content-center' >
                     <div>
                         <div className='svg-icon m-auto d-table' >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="50px" height="50px" viewBox="0 0 24 24" class="stroke-green-400 fill-none group-hover:fill-green-800 group-active:stroke-green-200 group-active:fill-green-600 group-active:duration-0 duration-300"> <path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" stroke-width="1.5" ></path> <path d="M8 12H16" stroke-width="1.5"></path> <path d="M12 16V8" stroke-width="1.5"></path> </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="50px" height="50px" viewBox="0 0 24 24" className="stroke-green-400 fill-none group-hover:fill-green-800 group-active:stroke-green-200 group-active:fill-green-600 group-active:duration-0 duration-300"> <path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" stroke-width="1.5" ></path> <path d="M8 12H16" stroke-width="1.5"></path> <path d="M12 16V8" stroke-width="1.5"></path> </svg>
                         </div>
                         <p className='w-100 text-center mt-2' >Add Intro</p>
                     </div>
                   </div> 
-                } >  
+                } 
+              >  
               <div className='wrap' >
                 <h2 className="text-uppercase font-GillSans pb-1 font-large">Add Intro Video</h2>
                 <p className='text-muted mb-3' >Add a 15 to 30 sec video to introduce yourself.</p>
                 <p className='text-danger mb-4' >All videos are reviewed against our terms before being accepted or rejected.</p>
                 <div className='my-3' >
                   <GlobalUploader view={true}
-                    clear={clear} type='minimal'
+                    ref={uploaderRef} type='minimal'
                     sendFile={getFileUID}
                     options={st.profileVideo}
                   />  

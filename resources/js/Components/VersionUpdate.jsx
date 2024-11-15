@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react"
 export default function VersionUpdate(){
    const [isUpdateAvailable, setisUpdateAvailable] = useState(false);
-
    const newVersion = '1.0.2';
-
    const updateApp = () => {
       if('caches' in window){
          caches.keys().then((names) => {
@@ -15,7 +13,6 @@ export default function VersionUpdate(){
          window.location.reload(true);
       }
    }
-
    useEffect(()=> {
       const v = typeof window !== 'undefined' ? localStorage.getItem('version') : null;
       if(v === undefined || v == '' || v != newVersion){

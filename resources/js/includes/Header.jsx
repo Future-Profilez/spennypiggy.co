@@ -1,6 +1,6 @@
 import React from "react";
-import { Link, Head, router } from "@inertiajs/react";
-import spennypiggy from "../../assets/img/spenny-piggy.png";
+import { Link, usePage, router } from "@inertiajs/react";
+import spennypiggy from "../../assets/img/logo.png";
 import { useState } from "react";
 import { useEffect } from "react";
 import DeviceID from "./DeviceID";
@@ -10,9 +10,25 @@ import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 import { add_to_cart } from "../Pages/redux/UserSlice";
 import ChangeCurrency from "@/Components/ChangeCurrency";
-import { usePage } from "@inertiajs/react";
+import Notifications from "./Notifications";
+import { IoSettingsOutline } from "react-icons/io5";
+import { FaHeart, FaRegStar, FaUserAlt } from "react-icons/fa";
+import { SlCalculator, SlCalender } from "react-icons/sl";
+import { FaBasketShopping, FaHouseChimneyUser } from "react-icons/fa6";
+import { GiInjustice, GiTwoCoins } from "react-icons/gi";
+import { IoIosUnlock } from "react-icons/io";
+import { MdOutlinePrivacyTip, MdOutlineSupportAgent } from "react-icons/md";
+import { TbSettingsCog } from "react-icons/tb";
+import { ImBlog } from "react-icons/im";
+import { BsCookie } from "react-icons/bs";
+import { CiDiscount1 } from "react-icons/ci";
+import { LuBookMinus } from "react-icons/lu";
+import { MdClose } from "react-icons/md";
+import { AiOutlineLogout } from "react-icons/ai";
+import { RiPagesLine } from "react-icons/ri";
 
 export default function Header() {
+
     const { global_currency, auth } = usePage().props;
     const deviceid = DeviceID();
     const [isActive, setActive] = useState(false);
@@ -21,35 +37,30 @@ export default function Header() {
         setActive(!isActive);
         setTimeout(()=>{
             setShows(!isActive);
-        },300)
+        },300);
     };
+
     const cart = useSelector((state) => state.data.cart.cart);
     const [count, setCount] = useState();
     const dispatch = useDispatch();
-
     async function fetchCounter() {
-        axios
-            .get(`counter/${deviceid}`)
-            .then((resp) => {
-                setCount(resp.data.counter);
-                dispatch(add_to_cart(resp.data.counter));
-            })
-            .catch((_err) => {
-                console.error("error", _err);
-            });
+        axios.get(`/counter/${deviceid}`).then((resp) => {
+            setCount(resp.data.counter);
+            dispatch(add_to_cart(resp.data.counter));
+        }).catch((_err) => {
+            console.error("error", _err);
+        });
     }
-
     useEffect(() => {
         fetchCounter();
     }, [cart]);
 
-
     return (
         <>
-            <div className="blackbg headermain py-8">
+            <div className="blackbg headermain py-6 ">
                 <div className="containerbox">
-                    <div className="header flex w-full items-center content-center justify-between pinkbg border-mint shadow-mint">
-                        {auth?.user?.username ? (
+                    <div className="header flex w-full items-center  justify-between ">
+                        {/* {auth?.user?.username ? (
                             <Link
                                 href={`/${auth?.user?.username || ""}`}
                                 className="headtitle text-wh font-GillSans d-none d-lg-flex" >
@@ -61,7 +72,16 @@ export default function Header() {
                                 className="headtitle text-wh font-GillSans d-none d-lg-flex" >
                                 Sign Up
                             </Link>
-                        )}
+                        )} */} 
+                        <div className="d-none d-md-flex  leftspaces items-center justify-content-start" >
+                            <div className="  menu-toggle cursor-pointer cartLink position-relative" onClick={toggleClass} >
+                                <svg width="49" height="48" viewBox="0 0 49 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M8.42188 36.75H40.5781M8.42188 24.75H40.5781M8.42188 12.75H40.5781" stroke="#05EFB8" stroke-width="2.625" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <Link className="d-none d-md-block ms-3 text-[30px]"  href={"/leaderboard"} >🌟</Link>
+                        </div>
+
                         <div className="spennylogo">
                             <Link href={route("home")}>
                                 <LazyLoadImage
@@ -75,8 +95,18 @@ export default function Header() {
                             </Link>
                         </div>
 
-                        <div className="cartLogin">
-                            <Link href={route("discover")} className="me-3 discover-icon">
+                        <div className="leftspaces cartLogin">
+                            {auth && auth.user && auth.user.stripe_details_submitted == "1" ? ( "" ) : 
+                                router.page && router.page && router.page.component == "Dashboard" ? (
+                                <ChangeCurrency
+                                    defaultvalue={global_currency}
+                                    changer={true}
+                                />) 
+                            : ""}
+
+                            {auth && auth.user ? <Notifications /> : ""}
+
+                            <Link href={route("discover")} className="me-3 ms-1 discover-icon">
                                 <svg
                                     width="36"
                                     height="36"
@@ -85,7 +115,6 @@ export default function Header() {
                                     xmlns="http://www.w3.org/2000/svg"
                                 >
                                     <g clip-path="url(#clip0_1439_828)">
-                                        {" "}
                                         <path
                                             fill-rule="evenodd"
                                             clip-rule="evenodd"
@@ -106,23 +135,10 @@ export default function Header() {
                                     </defs>{" "}
                                 </svg>
                             </Link>
-
-                            {auth && auth.user && auth.user.stripe_details_submitted == "1" ? ( "" ) 
-                            : 
-                            router.page && router.page && router.page.component == "Dashboard" ? (
-                                <ChangeCurrency
-                                    defaultvalue={global_currency}
-                                    changer={true}
-                                />
-                            ) : (
-                                ""
-                            )
-                            }
                             <Link
                                 href={route("cart")}
                                 as="button"
-                                className="cartLink d-flex me-3 position-relative"
-                            >
+                                className="cartLink d-flex me-3 position-relative" >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     width="36"
@@ -135,322 +151,299 @@ export default function Header() {
                                         fill="#3CFCCF"
                                     />
                                 </svg>
-                                {count ? (
+                                {count ? 
                                     <span className="site-counter d-block">
                                         {cart}
                                     </span>
-                                ) : (
-                                    ""
-                                )}
+                                : "" }
                             </Link>
 
-                            {auth?.user?.username || false ? (
-                                // <Link method="get" href={route('logout')} as="button" className='btn-mint mx-3  d-none d-xl-flex'>Logout</Link>
-                                ""
-                            ) : (
-                                <Link href={route("login")} className="btn-mint mx-3  d-none d-xl-flex"> Login </Link>
-                            )}
-
-                            <div className="menu-toggle cursor-pointer cartLink position-relative" onClick={toggleClass} >
-                                <svg
-                                    width="58"
-                                    height="59"
-                                    viewBox="0 0 58 59"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <g filter="url(#filter0_d_467_5581)">
-                                        <rect
-                                            y="0.5"
-                                            width="55"
-                                            height="55"
-                                            rx="11"
-                                            fill="#F94F97"
-                                        />
-                                        <rect
-                                            x="0.55"
-                                            y="1.05"
-                                            width="53.9"
-                                            height="53.9"
-                                            rx="10.45"
-                                            stroke="#E6EA7B"
-                                            strokeWidth="1.1"
-                                        />
-                                    </g>
-                                    <path
-                                        d="M17.8125 35.4375H36.1875M17.8125 28.4375H36.1875M17.8125 21.4375H36.1875"
-                                        stroke="#E6EA7B"
-                                        strokeWidth="2.625"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                    <defs>
-                                        <filter
-                                            id="filter0_d_467_5581"
-                                            x="0"
-                                            y="0.5"
-                                            width="58"
-                                            height="58"
-                                            filterUnits="userSpaceOnUse"
-                                            colorInterpolationFilters="sRGB"
-                                        >
-                                            <feFlood
-                                                floodOpacity="0"
-                                                result="BackgroundImageFix"
-                                            />
-                                            <feColorMatrix
-                                                in="SourceAlpha"
-                                                type="matrix"
-                                                values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-                                                result="hardAlpha"
-                                            />
-                                            <feOffset dx="3" dy="3" />
-                                            <feComposite
-                                                in2="hardAlpha"
-                                                operator="out"
-                                            />
-                                            <feColorMatrix
-                                                type="matrix"
-                                                values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0"
-                                            />
-                                            <feBlend
-                                                mode="normal"
-                                                in2="BackgroundImageFix"
-                                                result="effect1_dropShadow_467_5581"
-                                            />
-                                            <feBlend
-                                                mode="normal"
-                                                in="SourceGraphic"
-                                                in2="effect1_dropShadow_467_5581"
-                                                result="shape"
-                                            />
-                                        </filter>
-                                    </defs>
+                            {auth?.user?.username || false ? "" : 
+                                <Link href={route("login")} className="btn-pink sm text-uppercase bg-none px-4 mx-3 d-none d-xl-flex"> Login </Link>
+                            }
+                            <div className="d-block d-md-none menu-toggle cursor-pointer cartLink position-relative" onClick={toggleClass} >
+                                <svg width="49" height="48" viewBox="0 0 49 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M8.42188 36.75H40.5781M8.42188 24.75H40.5781M8.42188 12.75H40.5781" stroke="#05EFB8" stroke-width="2.625" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>
                             </div>
+                           
                         </div>
                     </div>
                 </div>
             </div>
 
             <div className={`MegaMenu ${isActive ? "Open" : null}`}>
-                <div className="closemega cursor-pointer"
-                    onClick={toggleClass} >
-                    <svg
-                        width="58"
-                        height="58"
-                        viewBox="0 0 58 58"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <g filter="url(#filter0_d_746_858)">
-                            <rect
-                                width="55"
-                                height="55"
-                                rx="11"
-                                fill="#F94F97"
-                            />
-                            <rect
-                                x="0.55"
-                                y="0.55"
-                                width="53.9"
-                                height="53.9"
-                                rx="10.45"
-                                stroke="#E6EA7B"
-                                strokeWidth="1.1"
-                            />
-                        </g>
-                        <path
-                            d="M17.8125 34.9375L36.5 20.9375M27 27.9375H27.1562M17.8125 20.9375L36 34.9375"
-                            stroke="#E6EA7B"
-                            strokeWidth="2.625"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        />
-                        <defs>
-                            <filter
-                                id="filter0_d_746_858"
-                                x="0"
-                                y="0"
-                                width="58"
-                                height="58"
-                                filterUnits="userSpaceOnUse"
-                                colorInterpolationFilters="sRGB"
-                            >
-                                <feFlood
-                                    floodOpacity="0"
-                                    result="BackgroundImageFix"
-                                />
-                                <feColorMatrix
-                                    in="SourceAlpha"
-                                    type="matrix"
-                                    values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-                                    result="hardAlpha"
-                                />
-                                <feOffset dx="3" dy="3" />
-                                <feComposite
-                                    in2="hardAlpha"
-                                    operator="out"
-                                />
-                                <feColorMatrix
-                                    type="matrix"
-                                    values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0"
-                                />
-                                <feBlend
-                                    mode="normal"
-                                    in2="BackgroundImageFix"
-                                    result="effect1_dropShadow_746_858"
-                                />
-                                <feBlend
-                                    mode="normal"
-                                    in="SourceGraphic"
-                                    in2="effect1_dropShadow_746_858"
-                                    result="shape"
-                                />
-                            </filter>
-                        </defs>
-                    </svg>
-                </div>
-                <div className={`${shows ? 'shows' : ''} menuList`}>
-                    <ul className="menuslists" >
-                        {auth?.user?.username || false ? (
-                            <>
-                                <li>
-                                    <Link
-                                        onClick={toggleClass}
-                                        href={"/account"}
-                                    >
-                                        My Account
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link
-                                        onClick={toggleClass}
-                                        href={`/${
-                                            (auth &&
-                                                auth?.user?.username) ||
-                                            ""
-                                        }`}
-                                    >
-                                        My Wishlist
-                                    </Link>
-                                </li>
-                                <li>
-                                    <a target="_blank" 
-                                    onClick={toggleClass} 
-                                    href="https://billing.stripe.com/p/login/28o3cgbav9kzbYccMM" >
-                                    Subscription Billing
-                                    </a>
-                                </li> 
+                <div class={`${shows ? 'shows' : 'unshow'} menutoggle min-h-screen text-gray-800`}>
+                    <div className={`${shows ? 'showsblur opacity-[1] max-w-[5000px] '  : 'unshowblur opacity-[0] max-w-[1px]'} blur bg-[#0005] min-h-screen w-full min-w-screen fixed top-0 left-0`} onClick={toggleClass} ></div>
+                    <div class="fixed menu p-2 z-10 top-0 left-0 pinkbg max-h-screen overflow-auto w-full max-w-[320px] h-full border-r">
+                        <button onClick={toggleClass} className="absolute top-3 right-4"><MdClose color="#fff" size={'2rem'} /></button> 
+                       <div class="overflow-y-auto overflow-x-hidden flex-grow">
+                       <ul class=" flex flex-col pt-8 space-y-1">
+                    {auth?.user?.username || false ? 
+                    <>
 
-                                { auth && auth.user && auth.user.stripe_details_submitted == "1" ? 
-                                    <li>
-                                        <Link onClick={toggleClass} href={'/membership-dashboard'}> Membership Dashboard  </Link>
-                                    </li>
-                                : ''}
-
-                                <li>
-                                    <Link
-                                        onClick={toggleClass}
-                                        href={`/wish-tracker`}>
-                                        Wish Tracker
-                                    </Link>
-                                </li>
-                            </>
-                        ) : (
-                            <>
-                                <li>
-                                    <a target="_blank" 
-                                    onClick={toggleClass} 
-                                    href="https://billing.stripe.com/p/login/28o3cgbav9kzbYccMM" >
-                                    Subscription Billing
-                                    </a>
-                                </li> 
-
-                                <li>
-                                    <Link
-                                        onClick={toggleClass}
-                                        href={route("register")}
-                                    >
-                                        Sign Up
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link
-                                        onClick={toggleClass}
-                                        href={route("login")}
-                                    >
-                                        Login
-                                    </Link>
-                                </li>
-                            </>
-                        )}
-                        <li><Link onClick={toggleClass} href={route("leaderboard")} >Leaderboard</Link></li>
                         <li>
-                            <Link
-                                onClick={toggleClass}
-                                href={route("how-it-works")}
-                            >
-                                How it works
+                            <Link onClick={toggleClass}
+                            href={"/account"}class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                            <span class="inline-flex justify-center items-center ml-4">
+                            <IoSettingsOutline  color="#fff" size={'1.2rem'} />
+                            </span>
+                            <span class="ml-2 text-[17px] tracking-wide truncate text-white">My Account</span>
+                            </Link>
+                        </li>                        
+                        <li>
+                            <Link onClick={toggleClass}
+                            href={`/${
+                                (auth &&
+                                    auth?.user?.username) ||
+                                ""
+                            }`}
+                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                            <span class="inline-flex justify-center items-center ml-4">
+                            <FaHeart
+                             color="#fff" size={'1.2rem'} />
+                            </span>
+                            <span class="ml-2 text-[17px] tracking-wide truncate text-white">My Wishlist</span>
                             </Link>
                         </li>
                         <li>
-                            <a
-                                onClick={toggleClass}
-                                target="_blank"
-                                href="https://intercom.help/spenny-piggy"
-                            >
-                                FAQ's
+                            <a 
+                            href="https://billing.stripe.com/p/login/28o3cgbav9kzbYccMM" 
+                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                            <span class="inline-flex justify-center items-center ml-4">
+                            <SlCalender
+                             color="#fff" size={'1.2rem'} />
+                            </span>
+                            <span class="ml-2 text-[17px] 
+                            tracking-wide truncate text-white">Subscription Billing</span>
                             </a>
                         </li>
-                        <li>
-                            <a
-                                onClick={toggleClass}
-                                href="https://blog.spennypiggy.co"
-                            >
-                                Blog
-                            </a>
-                        </li>
-                        <li>
-                            <div
-                                onClick={toggleClass}
-                                className="livechat link" >
-                                Need help ?
-                            </div>
-                        </li>
-                        {auth && auth?.user?.username ? (
-                            <li className="d-block">
-                                <Link
-                                    onClick={toggleClass}
-                                    method="get"
-                                    href={route("logout")} >
-                                    Logout
+
+                        { auth && auth.user && auth.user.stripe_details_submitted == "1" ?
+                            <>
+                            <li>
+                                <Link onClick={toggleClass}
+                                href={`/shop`}
+                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                                <span class="inline-flex justify-center items-center ml-4">
+                                <FaBasketShopping
+                                 color="#fff" size={'1.2rem'} />
+                                </span>
+                                <span class="ml-2 text-[17px]
+                                tracking-wide truncate text-white">Shop</span>
                                 </Link>
                             </li>
-                        ) : (
-                            ""
-                        )}
-                    </ul>
+                            <li>
+                                <Link onClick={toggleClass}
+                                href={`/earnings`}
+                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                                <span class="inline-flex justify-center items-center ml-4">
+                                <GiTwoCoins
+                                 color="#fff" size={'1.2rem'} />
+                                </span>
+                                <span class="ml-2 text-[17px]
+                                tracking-wide truncate text-white">Earnings</span>
+                                </Link>
+                            </li>
+                            <li>
+                                <Link onClick={toggleClass}
+                                href={`/membership-dashboard`}
+                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                                <span class="inline-flex justify-center items-center ml-4">
+                                <FaHouseChimneyUser
+                                 color="#fff" size={'1.2rem'} />
+                                </span>
+                                <span class="ml-2 text-[17px]
+                                tracking-wide truncate text-white">Membership Dashboard</span>
+                                </Link>
+                            </li>
+                            </>
+                        : ''}
 
-                    <div className="bottom-links" >
-                        <ul>
+                        <li>
+                            <Link onClick={toggleClass}
+                            href={`/wish-tracker`}
+                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                            <span class="inline-flex justify-center items-center ml-4">
+                            <SlCalculator 
+                             color="#fff" size={'1.2rem'} />
+                            </span>
+                            <span class="ml-2 text-[17px]
+                            tracking-wide truncate text-white">Wish tracker</span>
+                            </Link>
+                        </li>
+                    </> 
+                    :
+
+                    <>
+                        <li>
+                            <a 
+                            href="https://billing.stripe.com/p/login/28o3cgbav9kzbYccMM" 
+                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                            <span class="inline-flex justify-center items-center ml-4">
+                            <SlCalender
+                             color="#fff" size={'1.2rem'} />
+                            </span>
+                            <span class="ml-2 text-[17px] 
+                            tracking-wide truncate text-white">Subscription Billing</span>
+                            </a>
+                        </li>
+
+                        <li>
+                                <Link onClick={toggleClass}
+                                href={route("register")}
+                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                                <span class="inline-flex justify-center items-center ml-4">
+                                <FaUserAlt
+                                 color="#fff" size={'1.2rem'} />
+                                </span>
+                                <span class="ml-2 text-[17px]
+                                tracking-wide truncate text-white">Sign Up</span>
+                                </Link>
+                        </li>
+
+                        <li>
+                            <Link onClick={toggleClass}
+                            href={route("login")}
+                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                            <span class="inline-flex justify-center items-center ml-4">
+                            <IoIosUnlock
+                             color="#fff" size={'1.2rem'} />
+                            </span>
+                            <span class="ml-2 text-[17px]
+                            tracking-wide truncate text-white">Login</span>
+                            </Link>
+                        </li>
+
+                        <li>
+                            <Link onClick={toggleClass}
+                            href={route("leaderboard")}
+                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                            <span class="inline-flex justify-center items-center ml-4">
+                            <FaRegStar 
+                             color="#fff" size={'1.2rem'} />
+                            </span>
+                            <span class="ml-2 text-[17px]
+                            tracking-wide truncate text-white">Leaderboard</span>
+                            </Link>
+                        </li>
+                        <li>
+                            <Link onClick={toggleClass}
+                            href={route("how-it-works")}
+                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                            <span class="inline-flex justify-center items-center ml-4">
+                            <TbSettingsCog 
+                             color="#fff" size={'1.2rem'} />
+                            </span>
+                            <span class="ml-2 text-[17px]
+                            tracking-wide truncate text-white"> How it works</span>
+                            </Link>
+                        </li>
+                       
+                        <li>
+                            <Link onClick={toggleClass}
+                            href="https://blog.spennypiggy.co"
+                            class="livechat relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                            <span class="inline-flex justify-center items-center ml-4">
+                            <MdOutlineSupportAgent
+                             color="#fff" size={'1.2rem'} />
+                            </span>
+                            <span class="ml-2 text-[17px]
+                            tracking-wide truncate text-white">Need help ?</span>
+                            </Link>
+                        </li>
+                    </>
+                    }
+                        <div className="bg-[#ff87b8] h-[1px] w-full max-w-[85%] m-auto mt-3" ></div>
+                                <ul className="pt-3 text-white ">
                                 <li>
-                                    <a target="_blank" href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>
+                                    <Link onClick={toggleClass}
+                                    href="https://blog.spennypiggy.co"
+                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                                    <span class="inline-flex justify-center items-center ml-4">
+                                    <ImBlog 
+                                    color="#fff" size={'1.2rem'} />
+                                    </span>
+                                    <span class="ml-2 text-[17px]
+                                    tracking-wide truncate text-white">Blog</span>
+                                    </Link>
                                 </li>
                                 <li>
-                                    <a target="_blank" href="https://app.termly.io/document/cookie-policy/45944c26-6e99-4065-833a-8fa224fb8e20"> Cookie Policy </a>
+                                    <a onClick={toggleClass}
+                                    target="_blank" href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
+                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                                    <span class="inline-flex justify-center items-center ml-4">
+                                        <MdOutlinePrivacyTip
+                                    color="#fff" size={'1.2rem'} />
+                                    </span>
+                                    <span class="ml-2 text-[17px]
+                                    tracking-wide truncate text-white">Privacy Policy</span>
+                                    </a>
                                 </li>
                                 <li>
-                                    <a target="_blank" href="https://app.termly.io/document/acceptable-use/458f5fac-0c41-406f-a02f-b50adff1ec9c" > Acceptable Use Policy </a>
+                                    <a onClick={toggleClass}
+                                    target="_blank" href="https://app.termly.io/document/cookie-policy/45944c26-6e99-4065-833a-8fa224fb8e20"
+                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                                    <span class="inline-flex justify-center items-center ml-4">
+                                        <BsCookie 
+                                    color="#fff" size={'1.2rem'} />
+                                    </span>
+                                    <span class="ml-2 text-[17px]
+                                    tracking-wide truncate text-white">Cookies Policy</span>
+                                    </a>
+                                </li>
+                    
+                                <li>
+                                    <a onClick={toggleClass}
+                                    target="_blank" href="https://app.termly.io/document/acceptable-use/458f5fac-0c41-406f-a02f-b50adff1ec9c"
+                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                                    <span class="inline-flex justify-center items-center ml-4">
+                                        <LuBookMinus  
+                                    color="#fff" size={'1.2rem'} />
+                                    </span>
+                                    <span class="ml-2 text-[17px]
+                                    tracking-wide truncate text-white">Acceptable Use Policy</span>
+                                    </a>
                                 </li>
                                 <li>
-                                    <Link href={route("terms-and-conditions")}> Terms </Link>
+                                    <Link onClick={toggleClass}
+                                    target="_blank" href={route("terms-and-conditions")}
+                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                                    <span class="inline-flex justify-center items-center ml-4">
+                                        <GiInjustice  
+                                    color="#fff" size={'1.2rem'} />
+                                    </span>
+                                    <span class="ml-2 text-[17px]
+                                    tracking-wide truncate text-white">Terms</span>
+                                    </Link>
                                 </li>
                                 <li>
-                                    <Link href={route("promotion-terms")}> Promotion Terms </Link>
+                                    <Link onClick={toggleClass}
+                                        target="_blank" href={route("promotion-terms")}
+                                        class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                                        <span class="inline-flex justify-center items-center ml-4"><CiDiscount1   color="#fff" size={'1.4rem'} /></span>
+                                        <span class="ml-2 text-[17px] tracking-wide truncate text-white">Promotion Terms</span>
+                                    </Link>
                                 </li>
+
+                                {auth && auth?.user?.username ? (
+                                    <li className="d-block">
+                                        <Link onClick={toggleClass}
+                                        method="get" href={route("logout")}
+                                        class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6">
+                                        <span class="inline-flex justify-center items-center ml-4"><AiOutlineLogout   color="#fff" size={'1.4rem'} /></span>
+                                        <span class="ml-2 text-[17px] tracking-wide truncate text-white">Logout</span>
+                                    </Link>
+                                    </li>
+                                ) : (
+                                    ""
+                                )}
+
                         </ul>
+                </ul>
+                        </div>
                     </div>
+                    
                 </div>
             </div>
         </>

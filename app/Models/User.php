@@ -12,6 +12,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
 
 class User extends Authenticatable
 {
@@ -26,14 +27,17 @@ class User extends Authenticatable
 
     protected $fillable = [
         'uuid',
+        '2fa_key',
         'name',
         'email',
+        'role',
         'username',
-        'password',
+        'country',
         'gender',
+        'password',
         'uuid',
         'deleted_at',
-        'suspended_account',
+        'creator_category'
     ];
 
     public static function boot()
@@ -63,7 +67,8 @@ class User extends Authenticatable
     protected $appends = [
         'avatar_url',
         'cover_url',
-        'twitter_username'
+        'twitter_username',
+        'monthly_charge_enabled'
     ];
 
     /**
@@ -82,14 +87,24 @@ class User extends Authenticatable
     {
         $url = false;
         if (!empty($this->avatar)) {
-
-            if(empty($this->avatar_cdn_modifier)){
-                $url = "https://ucarecdn.com/" . $this->avatar . '/';
+            if($this->avatar_approved == 0){
+                if(Auth::check() && Auth::id() == $this->id){
+                    if(empty($this->avatar_cdn_modifier)){
+                        $url = "https://ucarecdn.com/" . $this->avatar . '/-/format/jpeg/';
+                    }
+                    else{
+                        $url = "https://ucarecdn.com/" . $this->avatar . '/' . $this->avatar_cdn_modifier . '-/preview/';
+                    }
+                }
             }
             else{
-                $url = "https://ucarecdn.com/" . $this->avatar . '/' . $this->avatar_cdn_modifier . '-/preview/';
+                if(empty($this->avatar_cdn_modifier)){
+                    $url = "https://ucarecdn.com/" . $this->avatar . '/-/format/jpeg/';
+                }
+                else{
+                    $url = "https://ucarecdn.com/" . $this->avatar . '/' . $this->avatar_cdn_modifier . '-/preview/';
+                }
             }
-
         }
         return $url;
     }
@@ -99,11 +114,23 @@ class User extends Authenticatable
     {
         $url = false;
         if (!empty($this->cover)) {
-            if(empty($this->cover_cdn_modifier)){
-                $url = "https://ucarecdn.com/" . $this->cover . '/';
+            if($this->cover_approved == 0){
+                if(Auth::check() && Auth::id() == $this->id){
+                    if(empty($this->cover_cdn_modifier)){
+                        $url = "https://ucarecdn.com/" . $this->cover . '/';
+                    }
+                    else{
+                        $url = "https://ucarecdn.com/" . $this->cover . '/' . $this->cover_cdn_modifier . '-/preview/';
+                    }
+                }
             }
             else{
-                $url = "https://ucarecdn.com/" . $this->cover . '/' . $this->cover_cdn_modifier . '-/preview/';
+                if(empty($this->cover_cdn_modifier)){
+                    $url = "https://ucarecdn.com/" . $this->cover . '/';
+                }
+                else{
+                    $url = "https://ucarecdn.com/" . $this->cover . '/' . $this->cover_cdn_modifier . '-/preview/';
+                }
             }
         }
         return $url;
@@ -125,6 +152,11 @@ class User extends Authenticatable
         return $this->hasMany(UserCategory::class, 'user_id');
     }
 
+    public function user_shop_categories()
+    {
+        return $this->hasMany(UserShopCategories::class, 'user_id');
+    }
+
     public function paymentitems()
     {
         return $this->hasManyThrough(
@@ -139,13 +171,26 @@ class User extends Authenticatable
 
     public function tip_goal_payment()
     {
-        return $this->hasManyThrough(TipGoalsPayment::class, TipGoal::class, 'user_id', 'tip_goal_id', 'id', 'id');
+        return $this->hasMany(TipGoalsPayment::class, 'creator_id');
     }
+
 
     public function subscriptions()
     {
         return $this->hasManyThrough(WishItemSubscription::class, WishItem::class, 'user_id', 'wish_item_id', 'id', 'id');
     }
+
+
+    public function membership_payments()
+    {
+        return $this->hasManyThrough(MembershipPayment::class, Membership::class, 'user_id', 'membership_id', 'id', 'id');
+    }
+
+    public function bill_payments()
+    {
+        return $this->hasManyThrough(BillPayment::class, Bills::class, 'user_id', 'bills_id', 'id', 'id');
+    }
+
     public function twitter_token()
     {
         return $this->hasOne(TwitterToken::class)->latestOfMany();
@@ -161,16 +206,46 @@ class User extends Authenticatable
         return $this->hasOne(SocialLinks::class, 'user_id');
     }
 
+
     public function memberships(){
         return $this->hasMany(Membership::class, 'user_id');
+    }
+
+    public function posts(){
+        return $this->hasMany(Post::class, 'user_id');
     }
 
     public function bills(){
         return $this->hasMany(Bills::class, 'user_id');
     }
 
-
     public function getDefaultCurrencyAttribute($value){
         return strtoupper($value);
+    }
+
+    public function getMonthlyChargeEnabledAttribute(){
+        if(Auth::check() && $this->id == Auth::id()){
+            $charge = MonthlyCharge::where('user_id',$this->id)->where('status','paid')->first();
+
+            if(!empty($charge)){
+                return true;
+            }
+            return false;
+        }
+        return false;
+    }
+
+
+    public function intro(){
+        return $this->hasOne(UserIntro::class,'user_id');
+    }
+
+    public function shop(){
+        return $this->hasMany(Shop::class,'user_id');
+    }
+
+    public function shop_payments()
+    {
+        return $this->hasManyThrough(ShopPayment::class, Shop::class, 'user_id', 'shop_id', 'id', 'id');
     }
 }

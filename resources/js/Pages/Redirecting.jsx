@@ -1,6 +1,6 @@
 import React from 'react'
 import axios from 'axios'
-import { router, usePage } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { useEffect } from 'react';
 
@@ -17,7 +17,7 @@ export default function Redirecting() {
                     if(resp.data && resp.data.country_code == 'GB'){
                         setUrl('https://uk.spennypiggy.co');
                         setTimeout(()=>{
-                          window.location = `https://uk.spennypiggy.co`;
+                          window.location = `https://uk.spennypiggy.co/register`;
                         },3000);
                     }
                 }
@@ -25,7 +25,7 @@ export default function Redirecting() {
                     if(resp.data && resp.data.country_code !== 'GB'){
                         setUrl('https://spennypiggy.co');
                         setTimeout(()=>{
-                          window.location = `https://spennypiggy.co`;
+                          window.location = `https://spennypiggy.co/register`;
                         },3000);
                     }
                 }
@@ -68,7 +68,8 @@ export default function Redirecting() {
         <div className="loader-item">
           <div className="loader loader-3"></div>
         </div>
-        {url ? <h2 className='redirection-text mt-3 text-large' >Redirecting to {url} </h2> : ''}
+        {!url ? <h2 className='redirection-text text-center m-auto px-4  border-0 table mt-3 text-large' >Redirecting to {url} </h2> : ''}
+      
       </div>
     </div>
     </>

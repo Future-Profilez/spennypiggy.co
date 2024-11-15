@@ -13,12 +13,16 @@ class RenewMail extends Mailable
 {
     use Queueable, SerializesModels;
     public $data;
+    public $type;
+    public $module;
     /**
      * Create a new message instance.
      */
-    public function __construct($data)
+    public function __construct($data,$type,$module)
     {
         $this->data = $data;
+        $this->type = $type;
+        $this->module = $module;
     }
 
     /**
@@ -29,7 +33,12 @@ class RenewMail extends Mailable
     public function build()
     {
         try {
-            $subject = 'Subscription Renew.';
+            if($this->module == 'bill' || $this->module == 'membership' || $this->module == 'site'){
+                $subject = "Subscription for $this->module " . $this->type . ".";
+            }
+            else{
+                $subject = 'Subscription ' . $this->type . ".";
+            }
             return $this->view('email.subscription-renew')
                 ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
                 ->subject($subject);

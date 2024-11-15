@@ -4,18 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Ramsey\Uuid\Uuid;
 
-class TipGoalsPayment extends Model
+class  TipGoalsPayment extends Model
 {
-    use HasFactory;
+    use HasFactory,SoftDeletes;
 
     protected $fillable = [
         'uuid',
         'session_id',
         'tip_goal_id',
         'user_id',
+        'creator_id',
         'guest_name',
         'guest_email',
         'currency',
@@ -23,6 +25,7 @@ class TipGoalsPayment extends Model
         'tax',
         'message',
         'anonymous',
+        'twitter_response',
         'status',
     ];
 
@@ -31,6 +34,7 @@ class TipGoalsPayment extends Model
         'user_id',
         'tip_goal_id',
         'session_id',
+        'currency',
         'created_at',
         'updated_at',
     ];
@@ -57,11 +61,14 @@ class TipGoalsPayment extends Model
         return $this->belongsTo(TipGoal::class, 'tip_goal_id');
     }
 
+    public function creator(){
+        return $this->belongsTo(User::class, 'creator_id');
+    }
 
     public function getSenderAttribute()
     {
         $sender = false;
-        if (Auth::check()) {
+        if (Auth::check() && !empty($this->tipGoal->user_id)) {
             $sender = $this->tipGoal->user_id == Auth::id() ? false : true;
         }
         return $sender;

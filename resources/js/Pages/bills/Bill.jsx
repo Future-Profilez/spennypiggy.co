@@ -7,13 +7,14 @@ import { Link } from "@inertiajs/react";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import AddBills from './AddBills';
+const AddBills = React.lazy(() => import('./AddBills'));
+import DropdownButton from 'react-bootstrap/DropdownButton';
+import RemoveBill from './RemoveBill';
 
 export default function Bill(props) {
    
   const { format, formatMultiPrice } = PriceFormat();
-  const { currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped, classes, showall, key } = props;
-
+  const { itm, itemid, IsloggedIn, classes, key, fetchBills  } = props;
   const { attributes, listeners, isDragging, index, over, setNodeRef, transform, transition } = useSortable({ id: itm && itm.id });
   const style = { 
     transform: CSS.Translate.toString(transform)
@@ -42,49 +43,61 @@ export default function Bill(props) {
     return r.toFixed(1);
   }
 
-  return <div key={key} style={IsloggedIn ? style : stylenone}  className={`billbox wish-item-box ${classes} ${isDragging ? 'dragging' : ''}`}> 
+  return <>
+    <div key={key} style={IsloggedIn ? style : stylenone}  className={` position-relative billbox wish-item-box ${classes} ${isDragging ? 'dragging' : ''}`}> 
+      
+      
       <div  className='wishlistcntbox  mb-3 mb-sm-4 whbg relative'>
-        <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
-          <LazyLoadImage
-          alt={"image"} useIntersectionObserver={true} effect="blur"
-          height={193}
-          src={itm?.perma_link ? itm?.perma_link : uploadedimg} className=''
-          width={243} />
-        </div>
+            {IsloggedIn && itm && itm.approved === 0 ?  
+              <div className='approvalmessge membership m-3 rounded-3 p-3 py-2 mb-2 ' >
+                Bill item waiting for approval. Currently only you can see this bill.</div> 
+            : ''}
+              
+            <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
+              <LazyLoadImage
+              alt={"image"} useIntersectionObserver={true} effect="blur"
+              height={193}
+              src={itm?.perma_link ? itm?.perma_link : uploadedimg} className=''
+              width={243} />
 
-        <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
-          <div>
-            <h4 className={`fon-bold text-dark el2`} >{itm.name}</h4>
-            <h5 className='font-CeraGRBold text-dark titleprice'>{formatMultiPrice(itm.price, itm?.currency || 'GBP')}
-                <button className='tooltipbtn' >?<p>*just not including service fee.</p></button>
-            </h5>
-          </div>
-          <div className='subscribletag' > Subscribable </div>  
-        </div>
-        {IsloggedIn ?
-        <>
-          {/* <div className='movesvg' ref={setNodeRef} {...listeners} {...attributes} >
-            <svg fill="#000000" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="m15.46 7-3.2-2.19-.71 1 2.29 1.57H8.62V2.16l1.57 2.29 1-.71L9 .54a1.25 1.25 0 0 0-2 0l-2.22 3.2 1 .71 1.59-2.29v5.22H2.16l2.29-1.57-.71-1L.54 7a1.25 1.25 0 0 0 0 2l3.2 2.19.71-1-2.29-1.57h5.21v5.22l-1.56-2.29-1 .71L7 15.46a1.25 1.25 0 0 0 2.06 0l2.19-3.2-1-.71-1.63 2.29V8.62h5.22l-2.29 1.57.71 1L15.46 9a1.25 1.25 0 0 0 0-2z"></path></g></svg>
-          </div>
-         <Wishlist currency={currency} setuped={setuped} openPop={open} item={itm} editpop={true} fetchingcats={fetchingcats} categories={categories} />
-         */}
-         {/* <div className='p-sm-4 p-3 pt-0' >
-            <AddBills classes="btn-pink px-2 w-100 sm" text="Update Bill"
-            item={itm} isEdit={true} />
-          </div> */}
-        </>
-          : 
-          <div className='p-sm-4 p-3 pt-0' >
-             <Link method='get'
+              {IsloggedIn ? 
+                <DropdownButton
+                className='edit-post pe-0 absolute top-5 m-1 right-3 z-1 ' id="dropdown-basic-button"
+                title={
+                <div className='dots' >
+                <span className='bg-dark' ></span>
+                <span className='bg-dark' ></span>
+                <span className='bg-dark' ></span>
+                </div>}>
+                        <RemoveBill classes={`px-[18px] py-2 text-start w-full`} updateItems={fetchBills} uuid={itm.uuid} text="Remove Bill" />
+                </DropdownButton> 
+              : ''} 
+
+            </div>
+
+            <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
+              <div>
+                <h4 className={`fon-bold text-dark el1 `} >{itm.name}</h4>
+                <h5 className='font-CeraGRBold text-dark titleprice'>{formatMultiPrice(itm.price, itm?.currency || 'GBP')}
+                    <button className='tooltipbtn' >?<p>*just not including service fee.</p></button>
+                </h5>
+              </div>
+              <div className='subscribletag text-capitalize text-small' >  {itm && itm.period || "Monthly"} Subscribable  </div>  
+            <p className='text-start text-xs mt-3' >Pay bill and gain access to member only posts</p>
+            </div>
+
+            <div className='p-sm-3 p-3 pt-0 pt-sm-0' >
+              {IsloggedIn ?
+                  <AddBills fetchBills={props.fetchBills} classes="btn-pink px-2 sm text-center w-100" text="Update Bill"
+                  item={itm} isEdit={true} />
+                :
+              <Link method='get' 
                 href={route('bill.checkout',{uuid: itm.uuid})}
-                className='btn-pink sm text-center' >Pay Bill</Link>
-          </div>
-        } 
-        {/* <div className='p-sm-4 p-3 pt-0' >
-             <Link method='get'
-                href={route('membership.checkout',{uuid: itm.uuid})}
-                className='btn-pink sm text-center' >Pay Bill</Link>
-          </div> */}
+                className='btn-pink px-2 sm text-center' >Pay Bill</Link>
+              } 
+            </div>
+        
       </div>
     </div>
+  </>
 }

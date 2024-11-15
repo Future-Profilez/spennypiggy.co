@@ -20,7 +20,7 @@ class SocialLinksController extends Controller
         try {
             $checkdata = Helpers::checkBlockData($request);
             if ($checkdata == 1) {
-                return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. Paypig, Findom, Worship, Unlock, Unblock, Receive,
+                return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
             } else {
                 $sociallinks = SocialLinks::where('user_id', Auth::id())->first();
@@ -29,6 +29,10 @@ class SocialLinksController extends Controller
                         'whoyouinto' => $request->whoyouinto ?? '',
                         'twitter' => $request->twitter ?? $sociallinks->twitter,
                         'instagram' => $request->instagram ?? $sociallinks->instagram,
+                        'facebook' => $request->facebook ?? $sociallinks->facebook,
+                        'youtube' => $request->youtube ?? $sociallinks->youtube,
+                        'twitch' => $request->twitch ?? $sociallinks->twitch,
+                        'tumblr' => $request->tumblr ?? $sociallinks->tumblr,
                         'reddit' => $request->reddit ?? $sociallinks->reddit,
                         'discord' => $request->discord ?? $sociallinks->discord,
                         'onlyfans' => $request->onlyfans ?? $sociallinks->onlyfans,
@@ -38,7 +42,7 @@ class SocialLinksController extends Controller
                         'other' => $request->other ?? $sociallinks->other,
                         'updated_at' => Carbon::now(),
                     ]);
-                    return redirect(route("user.show", ["username" => $user->username]))->with('success', "social links updated successfully.");
+                    return redirect(route("user.show", ["username" => $user->username]))->with('success', "Social links updated successfully.");
                 } else {
                     $links =  SocialLinks::create([
                         'uuid' => Uuid::uuid4(),
@@ -46,6 +50,10 @@ class SocialLinksController extends Controller
                         'whoyouinto' => $request->whoyouinto ?? null,
                         'twitter' => $request->twitter ?? null,
                         'instagram' => $request->instagram ?? null,
+                        'facebook' => $request->facebook ?? null,
+                        'youtube' => $request->youtube ?? null,
+                        'twitch' => $request->twitch ?? null,
+                        'tumblr' => $request->tumblr ?? null,
                         'reddit' => $request->reddit ?? null,
                         'discord' => $request->discord ?? null,
                         'onlyfans' => $request->onlyfans ?? null,
@@ -56,9 +64,7 @@ class SocialLinksController extends Controller
                         'created_at' => Carbon::now(),
                         'updated_at' => Carbon::now(),
                     ]);
-                    return redirect(route("user.show", ["username" => $user->username]))->with('success', "social links added successfully.");
-               
-                    // return ->with('success', "social links added successfully.");
+                    return redirect(route("user.show", ["username" => $user->username]))->with('success', "Social links added successfully.");
                 }
             }
         } catch (\Throwable $th) {

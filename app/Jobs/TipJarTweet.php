@@ -34,7 +34,7 @@ class TipJarTweet implements ShouldQueue
         $user = User::find($this->tip_pay->tipGoal->user_id);
         if(!empty($user->twitter_token->token)) {
             $payload    =   [
-                'name' => $this->tip_pay->guest_name,
+                'name' => $this->tip_pay->guest_name ?? "Someone",
                 'amount' => Helpers::getCurrency($this->tip_pay->currency) . $this->tip_pay->amount,
                 "user_link" =>  route("user.show", ["username" => $user->username, "_t" => time()])
                 // "user_link" =>  "https://uk.spennypiggy.co/jacksgifts?_t=".time()

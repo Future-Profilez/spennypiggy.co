@@ -18,12 +18,15 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
    const { formatMultiPrice } = PriceFormat();
    const { successAlert, errorAlert, errorsHandling } = useAlerts();
    const { data, setData, post,get, processing, errors, reset } = useForm({
-      name: '',
+      name: 'My Piggy Bank',
       target: '',
-      default_price: '',
       description: '',
-      duration: 0
    }); 
+
+   const [aprice, setaprice] = useState('');
+   useEffect(()=>{
+      setData("target", aprice );
+   },[aprice]);
 
    useEffect(()=>{
       setGoal(activegoal);
@@ -38,11 +41,11 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
    const addgoal = (e) => {
       e.preventDefault();
       if(stripe_enabled == 1){
-         // return true;
       } else {
          errorAlert("You can not add goal without adding your stripe account.");
          return false;
       }
+
       post(route(`add-goal`, data ), {
             preserveScroll: true,
             onSuccess: (resp) => {
@@ -92,7 +95,7 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
         <Popup
             modalclassName="pinkmodal sendSurprize-modal shadow-pink"
             space="4" size="md"
-            action={close} classes={`btn-pink mt-3 lg px-4 my-2 w-100`}
+            action={close} classes={`btn-pink  text-xs lg px-4 my-2 w-100`}
             text={goal ? `My Goal` : `Add Goal`} >
             {goal ? 
                <div className="updategoal py-2" >
@@ -114,36 +117,19 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
                : 
                <div className="addgoal" >
                   <h2 className="text-uppercase font-GillSans pb-4 font-large">
-                     Add Goal
+                  Add Piggy Bank Goal
                   </h2>
-                  <div className="form-field mb-4">
-                     <label className="d-block text-start mb-2">Goal Title</label>
-                     <input
-                        className="form-input w-100 rounded"
-                        onChange={(e) => setData('name', e.target.value)}
-                        type="text" placeholder="Enter title.. "
-                     />
-                  </div>
                   <div className="form-field mb-4">
                      <label className="d-block text-start mb-2">Target Amount</label>
                      <div className="position-relative  currency-wrapper" >
                         <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
                         <input className="form-input w-100 rounded"
-                           onChange={(e) => setData('target', e.target.value)}
+                           onChange={(e)=>setaprice(e.target.value)}
                            type="number" placeholder="Enter amount.. " />
-                           <p className="mt-1">The wish item amount is set to {formatMultiPrice(data.price, global_currency)}.</p>
                      </div>
+                           <p className="mt-1">The wish item amount is set to {formatMultiPrice(aprice, defaultCurrency)}.</p>
                   </div>
-                  <div className="form-field mb-4">
-                     <label className="d-block text-start mb-2">Minimum amount to pay</label>
-                     <div className="position-relative currency-wrapper " >
-                        <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
-                        <input className="form-input w-100 rounded"
-                           onChange={(e) => setData('default_price', e.target.value)}
-                           type="number" placeholder="Enter minimum amount to pay.. "
-                        />
-                     </div>
-                  </div>
+                 
                   <div className="form-field mb-4">
                         <label className="d-block text-start mb-2">Goal Description</label>
                         <textarea placeholder="Description..."
@@ -151,27 +137,7 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
                         onChange={(e) => setData('description',e.target.value)}
                         type="text" />
                   </div>
-                  <p className="font-bold mb-2 " >Goal Duration</p>
-                  <div className="time-periods mb-4 ">
-                     <div className="repeatpurchase mb-2 text-start">
-                        <label className="cursor-pointer text-capitalize" htmlFor={'time-0'}>
-                           <input className="cursor-pointer" checked={duration == 0} type="radio" id={"time-0"} value={0} name="category" onChange={addDuration} />
-                           Open until achieved
-                        </label>
-                     </div>
-                     <div className="repeatpurchase mb-2 text-start">
-                        <label className="cursor-pointer text-capitalize" htmlFor={'time-1'}>
-                           <input className="cursor-pointer" checked={duration == 1} type="radio" id={"time-1"} value={1} name="category" onChange={addDuration} />
-                           For 30 days
-                        </label>
-                     </div>
-                     <div className="repeatpurchase mb-2 text-start">
-                        <label className="cursor-pointer text-capitalize" htmlFor={'time-2'}>
-                           <input className="cursor-pointer" checked={duration == 2} type="radio" id={"time-2"} value={2} name="category" onChange={addDuration} />
-                           Until mark as compeleted
-                        </label>
-                     </div>
-                  </div>
+                  
                   <LoaderButton onClick={addgoal} disabled={processing}
                      type='submit' className="flex w-100 btn-pink lg mx-auto"
                      spinnerClassName="fill-red-600" >
