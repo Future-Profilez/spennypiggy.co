@@ -279,7 +279,7 @@ export default function Wishlist(props) {
                 onError: (_err) => {
                     console.error(_err);
                     errorsHandling(_err);
-                    errorAlert(resp.props.flash?.success || "Added");
+                    // errorAlert(resp.props.flash?.success || "Added");
                 },
             });
         }

@@ -51,7 +51,6 @@ use Stripe\StripeClient;
 
 class WishitemController extends Controller
 {
-
     public function saveWishItem(Request $request): RedirectResponse
     {
         $request->validate([
@@ -227,13 +226,11 @@ class WishitemController extends Controller
 
         // $price = round($request->price, 2, PHP_ROUND_HALF_UP);
 
-        if($request->susbcription == 0){
+        if ($request->susbcription == 0) {
             $tax_percent = config('app.single_tax');
-        }
-        elseif($request->subscription == 1){
+        } elseif ($request->subscription == 1) {
             $tax_percent = config('app.subs_tax');
-        }
-        elseif($request->subscription == 2){
+        } elseif ($request->subscription == 2) {
             $tax_percent = config('app.crowd_tax');
         }
 
@@ -271,7 +268,7 @@ class WishitemController extends Controller
         if (in_array($request->subscription, [0, 1])) {
 
             $productPayload = [
-                "name"  =>  $wish->wishname."(Custom Content Purchase)",
+                "name"  =>  $wish->wishname . "(Custom Content Purchase)",
                 "images" => [$wish->perma_link],
                 "default_price_data"    =>  [
                     "currency"  =>  $user->default_currency,
@@ -306,7 +303,6 @@ class WishitemController extends Controller
         return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added, your upload will be approved shortly.");
     }
 
-
     public function updateWishItem(Request $request, $uuid = null)
     {
         $wish = WishItem::where('uuid', $uuid)->first();
@@ -318,13 +314,11 @@ class WishitemController extends Controller
 
         $old_price = $wish->price;
         if (!empty($request->price)) {
-            if($request->susbcription == 0){
+            if ($request->susbcription == 0) {
                 $tax_percent = config('app.single_tax');
-            }
-            elseif($request->subscription == 1){
+            } elseif ($request->subscription == 1) {
                 $tax_percent = config('app.subs_tax');
-            }
-            elseif($request->subscription == 2){
+            } elseif ($request->subscription == 2) {
                 $tax_percent = config('app.crowd_tax');
             }
             $taxamount = $request->price * $tax_percent / 100;
@@ -373,7 +367,7 @@ class WishitemController extends Controller
             if (in_array($request->subscription, [0, 1])) {
 
                 $productPayload = [
-                    "name"  =>  $wish->wishname."(Custom Content Purchase)",
+                    "name"  =>  $wish->wishname . "(Custom Content Purchase)",
                     "images" => [$wish->perma_link],
                     "default_price_data"    =>  [
                         "currency"  =>  $user->default_currency,
@@ -392,14 +386,14 @@ class WishitemController extends Controller
                 try {
                     $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
-                    if($old_price == $wish->price){
-                        $stripe_client = $stripe->products->update($wish->stripe_product_id,[
-                            'name' => !empty($request->wishname) ? $request->wishname."(Custom Content Purchase)" : $wish->wishname."(Custom Content Purchase)",
+                    if ($old_price == $wish->price) {
+                        $stripe_client = $stripe->products->update($wish->stripe_product_id, [
+                            'name' => !empty($request->wishname) ? $request->wishname . "(Custom Content Purchase)" : $wish->wishname . "(Custom Content Purchase)",
                             'images' => [$wish->perma_link],
                             "default_price" => $wish->price_id,
                             // "url" => $request->item_url ?? null
                         ]);
-                    }else{
+                    } else {
                         $stripe_client = StripeControl::createProduct($productPayload);
                         $wish->price_id = $stripe_client->default_price;
                     }
@@ -408,13 +402,12 @@ class WishitemController extends Controller
                     $wish->is_approved = 0;
                     $wish->save();
 
-                    $logs = Logs::where('edited_wish_id',$wish->id)->where('status','pending')->first();
-                    if(!empty($logs)){
+                    $logs = Logs::where('edited_wish_id', $wish->id)->where('status', 'pending')->first();
+                    if (!empty($logs)) {
                         $logs->status = 'updated';
                         $logs->save();
                     }
-                }
-                catch (Exception $e) {
+                } catch (Exception $e) {
                     $wish->delete();
                     return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
                 }
@@ -425,29 +418,29 @@ class WishitemController extends Controller
         }
     }
 
+    public function deleteWishItem($uuid)
+    {
+        $wishitem = WishItem::where('uuid', $uuid)->first();
 
-    public function deleteWishItem($uuid){
-        $wishitem = WishItem::where('uuid',$uuid)->first();
-
-        if(!$wishitem){
+        if (!$wishitem) {
             return response()->json([
                 'status' => false,
                 'msg' => "Wishitem not found."
             ]);
         }
 
-       WishCategory::where('wish_item_id', $wishitem->id)->delete();
+        WishCategory::where('wish_item_id', $wishitem->id)->delete();
 
         UserCart::where('wish_item_id', $wishitem->id)->delete();
 
         $si = StripePaymentItems::where('wish_item_id', $wishitem->id)->get();
 
         foreach ($si as $key => $value) {
-            StripePaymentDetail::where('id',$value->stripe_payment_detail_id)->delete();
+            StripePaymentDetail::where('id', $value->stripe_payment_detail_id)->delete();
             $value->delete();
         }
 
-        WishItemSubscription::where('wish_item_id',$wishitem->id)->delete();
+        WishItemSubscription::where('wish_item_id', $wishitem->id)->delete();
 
         $wishitem->delete();
 
@@ -456,7 +449,6 @@ class WishitemController extends Controller
             'msg' => "Wishitem removed successfully."
         ]);
     }
-
 
     public function saveUserCategory(Request $request)
     {
@@ -497,55 +489,49 @@ class WishitemController extends Controller
         ]);;
     }
 
-
-    public function discover_all_wishes($order,$type,$price) {
+    public function discover_all_wishes($order, $type, $price)
+    {
 
         $tag = false;
 
-        if(!empty(request()->query('tag'))){
-            $tag = str_replace('-',' ',request()->query('tag'));
+        if (!empty(request()->query('tag'))) {
+            $tag = str_replace('-', ' ', request()->query('tag'));
         }
 
         $query = WishItem::where('deleted_at', null)
-        ->where('is_approved',1)
-        ->with(['user'])
-        ->whereHas('user',function($q)use($tag){
-            $q->where(function($s){
-                $s->whereNot('country', 'GB')->orWhereNull('country');
+            ->where('is_approved', 1)
+            ->with(['user'])
+            ->whereHas('user', function ($q) use ($tag) {
+                $q->where(function ($s) {
+                    $s->whereNot('country', 'GB')->orWhereNull('country');
+                });
+                if (!empty($tag)) {
+                    $q->whereJsonContains('creator_category', $tag);
+                }
             });
-            if(!empty($tag)){
-                $q->whereJsonContains('creator_category',$tag);
-            }
-        });
 
-        if($order == 'new'){
+        if ($order == 'new') {
             $query->latest();
         }
 
-        if($price == '5to10'){
-            $query->whereBetween('price',[4.99,9.99]);
-        }
-        elseif($price == '10to30'){
-            $query->whereBetween('price',[9.99,29.99]);
-        }
-        elseif($price == '30to50'){
-            $query->whereBetween('price',[29.99,49.99]);
-        }
-        elseif($price == '50to100'){
-            $query->whereBetween('price',[49.99,99.99]);
-        }
-        elseif($price == '100plus'){
-            $query->where('price','>',99.99);
+        if ($price == '5to10') {
+            $query->whereBetween('price', [4.99, 9.99]);
+        } elseif ($price == '10to30') {
+            $query->whereBetween('price', [9.99, 29.99]);
+        } elseif ($price == '30to50') {
+            $query->whereBetween('price', [29.99, 49.99]);
+        } elseif ($price == '50to100') {
+            $query->whereBetween('price', [49.99, 99.99]);
+        } elseif ($price == '100plus') {
+            $query->where('price', '>', 99.99);
         }
 
-        if($type == 'subscription'){
-            $query->where('subscription',1);
-        }
-        elseif($type == 'crowdfund'){
-            $query->where('subscription',2);
-        }
-        elseif($type == 'single'){
-            $query->where('subscription',0);
+        if ($type == 'subscription') {
+            $query->where('subscription', 1);
+        } elseif ($type == 'crowdfund') {
+            $query->where('subscription', 2);
+        } elseif ($type == 'single') {
+            $query->where('subscription', 0);
         }
 
         $wishes = $query->paginate(30);
@@ -560,22 +546,22 @@ class WishitemController extends Controller
         ]);
     }
 
-
-    public function discover_all_creators($order,$gender) {
+    public function discover_all_creators($order, $gender)
+    {
 
         $query = UserIntro::where('deleted_at', null)
-                ->with(['user'])
-                ->whereHas('user',function($q) use($gender){
-                    $q->where(function($s){
-                        $s->whereNot('country', 'GB')->orWhereNull('country');
-                    });
-
-                    if($gender != 'all'){
-                        $q->where('gender',$gender);
-                    }
+            ->with(['user'])
+            ->whereHas('user', function ($q) use ($gender) {
+                $q->where(function ($s) {
+                    $s->whereNot('country', 'GB')->orWhereNull('country');
                 });
 
-        if($order == 'new'){
+                if ($gender != 'all') {
+                    $q->where('gender', $gender);
+                }
+            });
+
+        if ($order == 'new') {
             $query->latest();
         }
 
@@ -590,21 +576,21 @@ class WishitemController extends Controller
         ]);
     }
 
-    public function all_creators_categories() {
+    public function all_creators_categories()
+    {
         $categories = User::whereNotNull('creator_category')
-                       ->pluck('creator_category')
-                       ->map(function ($item) {
-                           return json_decode($item, true);
-                       })
-                       ->flatten()
-                       ->unique()
-                       ->values();
+            ->pluck('creator_category')
+            ->map(function ($item) {
+                return json_decode($item, true);
+            })
+            ->flatten()
+            ->unique()
+            ->values();
         return response()->json([
             'success' => true,
             'categories' => $categories,
         ]);
     }
-
 
     public function wishItems(Request $request): RedirectResponse
     {
@@ -615,7 +601,6 @@ class WishitemController extends Controller
         ]);
         return back()->with('success', 'Category Saved.');
     }
-
 
     public function categoryItems($category, $user_id)
     {
@@ -636,7 +621,6 @@ class WishitemController extends Controller
         return redirect(route('user.show', ['username', $user->username, 'filter' => true]));
         // return response()->json(["items" => $items])->header('Content-Type', 'application/json');
     }
-
 
     public function addToCart($uuid, $device_id, $sub, $amount = null)
     {
@@ -685,7 +669,7 @@ class WishitemController extends Controller
 
                 $price = Helpers::priceFormat($currency, $amount, $cart->owner->default_currency);
                 $fullfillamount = $price;
-                $tax =  round(($price *config('app.crowd_tax',10) / 100), 2, PHP_ROUND_HALF_UP);
+                $tax =  round(($price * config('app.crowd_tax', 10) / 100), 2, PHP_ROUND_HALF_UP);
                 $createpriceid = $price + $tax;
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripe_client = $stripe->products->create([
@@ -713,7 +697,7 @@ class WishitemController extends Controller
             if ($wishitem->subscription == 2) {
                 $price = Helpers::priceFormat($currency, $amount, $wishitem->user->default_currency);
                 $fullfillamount = $price;
-                $tax = round(($price *config('app.crowd_tax',10) / 100), 2, PHP_ROUND_HALF_UP);
+                $tax = round(($price * config('app.crowd_tax', 10) / 100), 2, PHP_ROUND_HALF_UP);
                 $createpriceid = $price + $tax;
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripe_client = $stripe->products->create([
@@ -873,7 +857,7 @@ class WishitemController extends Controller
         }
         return Inertia::render('cart/Cart', [
             "carts" => $cart,
-            
+
         ]);
     }
 
@@ -978,8 +962,8 @@ class WishitemController extends Controller
         $owner = User::where('id', $request->owner_id)->first();
         $price = Helpers::priceFormat($currency, $request->amount, $owner->default_currency);
         $min_amount = $owner->min_surprise_amount < 5 ? 5 : $owner->min_surprise_amount;
-        $user_amount = Helpers::priceFormat($owner->default_currency,$min_amount,$currency);
-        if($price < $min_amount){
+        $user_amount = Helpers::priceFormat($owner->default_currency, $min_amount, $currency);
+        if ($price < $min_amount) {
             return redirect()->back()->with("error", "Enter minimum $user_amount amount.");
         }
 
@@ -992,7 +976,7 @@ class WishitemController extends Controller
         }
 
         // $price = round($request->amount, 2, PHP_ROUND_HALF_UP);
-        $tax = round(($price * config('app.suprise_tax',10) / 100), 2, PHP_ROUND_HALF_UP);
+        $tax = round(($price * config('app.suprise_tax', 10) / 100), 2, PHP_ROUND_HALF_UP);
 
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
         $stripe_client = $stripe->products->create([
@@ -1085,10 +1069,10 @@ class WishitemController extends Controller
         $tracks = StripePaymentItems::whereHas('payment', function ($query) use ($user) {
             $query->where('user_id', $user->id)->orWhere('owner_id', $user->id);
         })->with(['wish'])->orderBy('created_at', 'DESC')->get();
-        $creator_subs = WishItemSubscription::where('recurring_for','continue')->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now())->whereHas('wish_item', function ($q) use ($user) {
+        $creator_subs = WishItemSubscription::where('recurring_for', 'continue')->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now())->whereHas('wish_item', function ($q) use ($user) {
             $q->where('user_id', $user->id);
-        })->with(['user', 'wish_item'])->whereIn('status',['paid','cancelled'])->orderBy('updated_at', 'DESC')->get();
-        $user_subs = WishItemSubscription::where('recurring_for','continue')->where('user_id', Auth::id())->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now())->with(['wish_item', 'wish_item.user'])->whereIn('status',['paid','cancelled'])->get();
+        })->with(['user', 'wish_item'])->whereIn('status', ['paid', 'cancelled'])->orderBy('updated_at', 'DESC')->get();
+        $user_subs = WishItemSubscription::where('recurring_for', 'continue')->where('user_id', Auth::id())->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now())->with(['wish_item', 'wish_item.user'])->whereIn('status', ['paid', 'cancelled'])->get();
 
         $trackData = $tracks->map(function ($q) {
 
@@ -1128,7 +1112,6 @@ class WishitemController extends Controller
             "message" => 'Message sent !!',
         ]);
     }
-
 
     public function readStatus($payment_id, $type)
     {
@@ -1171,8 +1154,6 @@ class WishitemController extends Controller
         return Inertia::render('tracker/Wishtracker');
     }
 
-
-
     public function userSubscribed()
     {
         $subs = Subscription::where('user_id', Auth::id())->get();
@@ -1210,7 +1191,6 @@ class WishitemController extends Controller
         return Inertia::render('tracker/Wishtracker');
     }
 
-
     public function pinItem($wish_id)
     {
         $item = WishItem::where('id', $wish_id)->first();
@@ -1232,7 +1212,6 @@ class WishitemController extends Controller
             ]);
         }
     }
-
 
     /**
      * Add a new tip jar goal
@@ -1330,7 +1309,6 @@ class WishitemController extends Controller
         ]);
     }
 
-
     /**
      * List a tip jar goal
      *
@@ -1339,43 +1317,42 @@ class WishitemController extends Controller
      */
     public function listGoal($uuid)
     {
-        $user = User::where('uuid',$uuid)->first();
+        $user = User::where('uuid', $uuid)->first();
         // TipGoal::where('status', 1)->where('completed', 0)->where('completed_at', '<', Carbon::now())->update(['completed' => 1]);
 
         // $goal = TipGoal::whereHas('user', function ($q) use ($uuid) {
         //     $q->where('uuid', $uuid);
         // })->where('completed', 0)->first();
         $arr = [];
-        $bill_payment = BillPayment::whereHas('bill',function($q) use($user){
-            $q->where('user_id',$user->id);
-        })->sum('amount');
-
-        $mem_payment = MembershipPayment::whereHas('membership',function($q) use($user){
-            $q->where('user_id',$user->id);
-        })->sum('amount');
-
-        $wish_payment = StripePaymentItems::whereHas('wish',function($q) use($user){
+        $bill_payment = BillPayment::whereHas('bill', function ($q) use ($user) {
             $q->where('user_id', $user->id);
         })->sum('amount');
 
-        $sub_payment = WishItemSubscription::whereHas('wish_item',function($q) use($user){
+        $mem_payment = MembershipPayment::whereHas('membership', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->sum('amount');
+
+        $wish_payment = StripePaymentItems::whereHas('wish', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->sum('amount');
+
+        $sub_payment = WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
             $q->where('user_id', $user->id);
         })->sum('amount');
 
         $total_earnings = $bill_payment + $mem_payment + $wish_payment + $sub_payment;
 
-        if($total_earnings < 100){
+        if ($total_earnings < 100) {
             $target = 100;
-        }elseif($total_earnings < 1000){
+        } elseif ($total_earnings < 1000) {
             $target = 1000;
-        }elseif($total_earnings < 10000){
+        } elseif ($total_earnings < 10000) {
             $target = 10000;
-        }elseif($total_earnings < 100000){
+        } elseif ($total_earnings < 100000) {
             $target = 100000;
-        }
-        elseif($total_earnings < 1000000){
+        } elseif ($total_earnings < 1000000) {
             $target = 1000000;
-        }else{
+        } else {
             $target = 10000000;
         }
 
@@ -1387,7 +1364,6 @@ class WishitemController extends Controller
             'goal' => $arr,
         ]);
     }
-
 
     /**
      * Mark as completed the tip jar goal
@@ -1407,8 +1383,6 @@ class WishitemController extends Controller
         return back()->with('success', 'Goal marked as completed.');
     }
 
-
-
     /**
      * All tip jar goals of a creator
      *
@@ -1425,21 +1399,20 @@ class WishitemController extends Controller
         ]);
     }
 
-
-
-     /**
+    /**
      * User tips send or get
      *
      * @return mixed
      */
-    public function userTips(){
+    public function userTips()
+    {
         $user = Auth::user();
 
-        $user_tips = TipGoalsPayment::whereHas('tipGoal',function($q) use($user){
-            $q->where('user_id',$user->id);
-        })->with('tipGoal')->orWhere('user_id',$user->id)->get();
+        $user_tips = TipGoalsPayment::whereHas('tipGoal', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->with('tipGoal')->orWhere('user_id', $user->id)->get();
 
-        $tips = $user_tips->map(function($q){
+        $tips = $user_tips->map(function ($q) {
             $q->owner = $q->tipGoal->user;
             return $q;
         });
@@ -1450,7 +1423,6 @@ class WishitemController extends Controller
         ]);
     }
 
-
     /**
      * Enable disable the auto tweet
      *
@@ -1459,57 +1431,51 @@ class WishitemController extends Controller
     public function enableAutoTweet()
     {
 
-        $user = User::where('id',Auth::id())->first();
+        $user = User::where('id', Auth::id())->first();
 
-        if($user->auto_tweet == 1){
+        if ($user->auto_tweet == 1) {
             $user->auto_tweet = 0;
-        }else{
+        } else {
             $user->auto_tweet = 1;
         }
 
         $user->save();
 
-        if($user->auto_tweet == 1){
-            return back()->with('success',"Auto tweet for gift is Enabled.");
-        }
-        else{
-            return back()->with('success',"Auto tweet for gift is Disabled.");
+        if ($user->auto_tweet == 1) {
+            return back()->with('success', "Auto tweet for gift is Enabled.");
+        } else {
+            return back()->with('success', "Auto tweet for gift is Disabled.");
         }
     }
-
 
     /**
      * Share the purchasing on twitter
      *
      * @return mixed
      */
-    public function shareOnTwitter($uuid,$type)
+    public function shareOnTwitter($uuid, $type)
     {
         $user = Auth::user();
-        if($user->auto_tweet == 0){
+        if ($user->auto_tweet == 0) {
             return response()->json([
                 'status' => false,
                 'msg' => "Please first enable the auto tweets."
             ]);
         }
 
-        if($type == 'wish-add'){
+        if ($type == 'wish-add') {
             $pay = StripePaymentItems::whereUuid($uuid)->first();
-            if(empty($pay->wish_item_id)){
+            if (empty($pay->wish_item_id)) {
                 SurpriseTweet::dispatch($pay);
-            }
-            elseif($pay->wish->subscription == 2){
+            } elseif ($pay->wish->subscription == 2) {
                 CrowdfundTweet::dispatch($pay);
-            }
-            else{
+            } else {
                 CheckoutTweet::dispatch($pay);
             }
-        }
-        elseif($type == 'subscription'){
+        } elseif ($type == 'subscription') {
             $pay = WishItemSubscription::whereUuid($uuid)->first();
             SubscribeAutoTweet::dispatch($pay);
-        }
-        elseif($type == 'tip-jar'){
+        } elseif ($type == 'tip-jar') {
             $pay = TipGoalsPayment::whereUuid($uuid)->first();
             TipJarTweet::dispatch($pay);
         }
@@ -1519,8 +1485,9 @@ class WishitemController extends Controller
         ]);
     }
 
-    public function editWishCategory(Request $request,$id){
-        $category = UserCategory::where('id',$id)->first();
+    public function editWishCategory(Request $request, $id)
+    {
+        $category = UserCategory::where('id', $id)->first();
 
         $category->category = $request->name;
         $category->save();
@@ -1531,16 +1498,16 @@ class WishitemController extends Controller
         ]);
     }
 
-
-    public function deleteCategory($id){
-        $wish_cat = WishCategory::where('user_category_id',$id)->get();
+    public function deleteCategory($id)
+    {
+        $wish_cat = WishCategory::where('user_category_id', $id)->get();
 
         foreach ($wish_cat as $key => $value) {
             $value->user_category_id = NULL;
             $value->save();
         }
 
-        UserCategory::where('id',$id)->delete();
+        UserCategory::where('id', $id)->delete();
 
         return response()->json([
             'status' => true,
@@ -1548,14 +1515,14 @@ class WishitemController extends Controller
         ]);
     }
 
-
-    public function billTracker(){
+    public function billTracker()
+    {
         $user = Auth::user();
-        $bill_payments = BillPayment::whereHas('bill',function($q) use($user){
-            $q->where('user_id',$user->id);
+        $bill_payments = BillPayment::whereHas('bill', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
         })->with('bill')->latest()->get();
 
-        $bill_payments->map(function($q){
+        $bill_payments->map(function ($q) {
             $q->user_data = [
                 'name' => $q->user->name,
                 'avatar' => $q->user->avatar_url,

@@ -47,10 +47,10 @@ export default function Dashboard(props) {
     const pageId = parsePageId(window.location.pathname);
 
 
-     
+
     const w = useWidthCount();
     const{auth,user,username,global_currency,itemid}= props;
-    
+
     const [tab, setTab] = useState(0);
     // useEffect(() => {
     //     if(pageId == 'shop'){
@@ -101,7 +101,7 @@ export default function Dashboard(props) {
             });
         // }
     };
-    
+
     useEffect(() => {
         const controller = new AbortController();
         const { signal } = controller;
@@ -248,12 +248,12 @@ export default function Dashboard(props) {
             }, 100);
         }
     }
-    
+
     const [isUpdated, setIsUpdated] = useState();
-    const updateState = (e) => { 
+    const updateState = (e) => {
         setIsUpdated(e);
     }
- 
+
     // const Toggle = () => {
     //     return  <>
     //         {IsloggedIn ? (
@@ -265,17 +265,17 @@ export default function Dashboard(props) {
     //                     dangerouslySetInnerHTML={{__html:addicon}}
     //                 ></Dropdown.Toggle>
     //                 <Dropdown.Menu>
-    //                     { auth.user && auth.user.stripe_details_submitted == 1 ? 
+    //                     { auth.user && auth.user.stripe_details_submitted == 1 ?
     //                         <>
     //                             <Suspense fallback={"Add Wishlist"}>
-    //                                 <Wishlist  
+    //                                 <Wishlist
     //                                     fetchcategories={fetch_categories}
-    //                                     currency={global_currency} 
+    //                                     currency={global_currency}
     //                                     setuped={auth.user &&auth.user.stripe_details_submitted == 1? true : false}
     //                                     fetchingcats={fetchingcats}
-    //                                     categories={categories} 
+    //                                     categories={categories}
     //                                 />
-    //                             </Suspense> 
+    //                             </Suspense>
     //                             <Suspense fallback={"Add Membership"}>
     //                                 <AddMembership updateState={updateState} />
     //                             </Suspense>
@@ -314,18 +314,18 @@ export default function Dashboard(props) {
         return  <>
             {IsloggedIn ? <>
                 <div onClick={()=>setShowAdd(true)} className="addoption-action cursor-pointer px-3" dangerouslySetInnerHTML={{__html:addicon}} ></div>
-                {showAdd ? 
+                {showAdd ?
                     <div className="bg-[#0001] rounded-xl position-fixed shadow-lg z-[99999999999999999999] flex justify-center items-center
                      top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full">
                         <div className="w-full max-w-[550px] px-3">
                             <Suspense fallback={"Loading.."}>
                                 <div className="bg-gray-100 w-full p-6 md:p-10 rounded-3xl shadow-lg z-10 w-full ">
                                     <h2 className="font-bold text-black  text-xl md:text-2xl mb-4 text-center m-auto ">Add Item to fund your lifestyle.</h2>
-                                    {auth.user && auth.user.stripe_details_submitted == 1 ? 
+                                    {auth.user && auth.user.stripe_details_submitted == 1 ?
                                         <>
-                                            <Wishlist  
+                                            <Wishlist
                                             fetchcategories={fetch_categories}
-                                            currency={global_currency} 
+                                            currency={global_currency}
                                             setuped={auth.user &&auth.user.stripe_details_submitted == 1 ? true : false}
                                             fetchingcats={fetchingcats}
                                             categories={categories} />
@@ -346,7 +346,7 @@ export default function Dashboard(props) {
             }
         </>
     }
-    
+
     return (
         <>
             <Guest auth={auth.user} user={user}>
@@ -366,7 +366,7 @@ export default function Dashboard(props) {
                             width={1200}
                         />
 
-                        {IsloggedIn && auth && auth?.user.cover_url && auth?.user?.cover_approved == 0 ? 
+                        {IsloggedIn && auth && auth?.user.cover_url && auth?.user?.cover_approved == 0 ?
                             <div className="absolute right-5 top-3 mx-auto">
                                 <button className='tooltipbtn' >
                                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -374,7 +374,7 @@ export default function Dashboard(props) {
                                     </svg>
                                     <p>Cover image is waiting for approval. Currently only you can see this.</p>
                                 </button>
-                            </div> 
+                            </div>
                         : ""}
 
                         </div>
@@ -382,16 +382,16 @@ export default function Dashboard(props) {
                         <Userprofile IsloggedIn={IsloggedIn} />
 
                         {user && user?.role == 1 && IsloggedIn ? <div className="alert bg-info">
-                            In order to comply with Stripe it is required that you post content for memberships, 
-                            Bills and subscriptions regularly. Accounts not doing so will be suspended. 
+                            In order to comply with Stripe it is required that you post content for memberships,
+                            Bills and subscriptions regularly. Accounts not doing so will be suspended.
                             Please reach out to support for more information.</div>
-                        : ''}                        
-                        
+                        : ''}
+
                         {user && user.role == 1 ? (
                             <div className="wishManage sticky top-8">
                                 <div className="userManageRt mt-4">
                                     <div className={`tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`} >
-                                       
+
                                         <div className="inlinetab">
                                                 <div className="newnav-tabs d-flex items-center justify-between mb-4 ">
                                                     <Tabs activeTab={tab}
@@ -407,13 +407,13 @@ export default function Dashboard(props) {
                                                     {IsloggedIn ? <Toggle /> : ''}
                                                 </div>
                                                 <div className="tabs-containers min-height" >
-                                                    {tab == '0' ? 
+                                                    {tab == '0' ?
                                                         <Suspense fallback={<LoadingScreen />} >
                                                             <div className="row about-sec align-self-start">
                                                                 <div className="col-md-6  h-auto">
                                                                     <div className="about-sticky" >
 
-                                                                        {user && goal && user?.stripe_details_submitted == 1 ? 
+                                                                        {user && goal && user?.stripe_details_submitted == 1 ?
                                                                         <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ""}
 
                                                                         <div className="box p-2 p-md-4 shadow-voilet rounded-lg mb-4">
@@ -423,17 +423,16 @@ export default function Dashboard(props) {
                                                                             </p>
 
                                                                             <SocialLinks links={sLinks} />
-                                                                            
+
                                                                             {IsloggedIn ? (
                                                                                 <div className="userProfileDate pt-0 pt-md-3">
-
-                                                                                    {auth.user && auth.user.role == 1 && <> 
+                                                                                    {auth.user && auth.user.role == 1 && <>
                                                                                         {auth.user && auth.user.monthly_charge_enabled ? '' : <SiteSubscription user={auth.user} /> }
                                                                                     </>
-                                                                                    || ''} 
+                                                                                    || ''}
 
                                                                                     {auth.user && auth.user.role == 1 && auth.user.monthly_charge_enabled &&
-                                                                                    <> 
+                                                                                    <>
                                                                                     {auth.user && auth.user.stripe_details_submitted == 1  ? (
                                                                                             <PaymentDashboard classes="btn-pink lg w-100 mt-3" text="Payment Dashboard" />
                                                                                         ) : (
@@ -445,7 +444,7 @@ export default function Dashboard(props) {
                                                                                         )}
                                                                                     </> || ''}
 
-                                                                                    {/* {auth.user && auth.user.stripe_details_submitted == 1 ? 
+                                                                                    {/* {auth.user && auth.user.stripe_details_submitted == 1 ?
                                                                                         <AddGoal
                                                                                         stripe_enabled={auth.user && auth.user.stripe_details_submitted}
                                                                                         fetch_goal={fetch_goal}
@@ -480,19 +479,19 @@ export default function Dashboard(props) {
                                                                     {tab == "0" ? <>
                                                                         {user && user.stripe_details_submitted == 1 && w > 767 ? <TipInner classes={`mb-4`} /> : ''}
                                                                         <FeedList isUpdated={isUpdated}
-                                                                            user={user} 
-                                                                            IsloggedIn={IsloggedIn} 
+                                                                            user={user}
+                                                                            IsloggedIn={IsloggedIn}
                                                                         />
                                                                     </> : ''}
                                                                 </div>
-                                                            </div> 
+                                                            </div>
                                                         </Suspense>
                                                     : ''}
 
-                                                    {tab == '1' ? 
+                                                    {tab == '1' ?
                                                      <Suspense fallback={<LoadingScreen />} >
                                                         <div className="wishes-items ">
-                                                            {categories && categories.length ? 
+                                                            {categories && categories.length ?
                                                             <>
                                                             <div className="new-wish-cats d-flex mb-2" >
                                                                 <div onClick={()=>showCategory('')} className={`${selectedCat == '' ? 'active' : ''} me-2  mb-2  wish-tags cursor-pointer`} >All</div>
@@ -501,8 +500,8 @@ export default function Dashboard(props) {
                                                                     <div onClick={()=>showCategory(c.id)} className={`${selectedCat == c.id ? 'active' : ''} me-2  mb-2  wish-tags cursor-pointer`} key={`cats-${i}`} >{c.category}</div>
                                                                     </>;
                                                                 })}
-                                                                {IsloggedIn ? <EditCategories fetch_categories={fetch_categories} username={auth && auth?.user?.username || null} /> : ''} 
-                                                            </div> 
+                                                                {IsloggedIn ? <EditCategories fetch_categories={fetch_categories} username={auth && auth?.user?.username || null} /> : ''}
+                                                            </div>
                                                             </>
                                                             : ''}
 
@@ -594,55 +593,55 @@ export default function Dashboard(props) {
                                                                         )}
                                                                     </>
                                                                 ) : (
-                                                                    <PaymentUnActivated 
-                                                                    heading={`WishList not activated yet. `} 
-                                                                    subheading={`Until they activate their wishlist, this user won't be able to receive gifts.`} /> 
+                                                                    <PaymentUnActivated
+                                                                    heading={`WishList not activated yet. `}
+                                                                    subheading={`Until they activate their wishlist, this user won't be able to receive gifts.`} />
                                                                 )}
                                                             </div>
                                                         </div>
                                                      </Suspense>
                                                     : ''}
 
-                                                    {tab == '2' ? 
+                                                    {tab == '2' ?
                                                         <Suspense fallback={<LoadingScreen />}>
                                                             <FeedList isUpdated={isUpdated} user={user}  IsloggedIn={IsloggedIn} />
                                                         </Suspense>
                                                     : ''}
 
-                                                    {tab == '3' ? 
+                                                    {tab == '3' ?
                                                         <Suspense
                                                             fallback={<LoadingScreen />} >
                                                                 {IsloggedIn || user?.stripe_details_submitted == 1 ? (
-                                                                    <MembershipsLists  isUpdated={isUpdated} 
+                                                                    <MembershipsLists  isUpdated={isUpdated}
                                                                     IsloggedIn={IsloggedIn}
                                                                     username={user?.username || auth?.user ?.username}
                                                                     />
                                                                 ) : (
-                                                                    <PaymentUnActivated 
-                                                                    heading={`Memberships not activated yet. `} 
-                                                                    subheading={`Until they activate their Memberships, this user won't be able to receive gifts.`} /> 
+                                                                    <PaymentUnActivated
+                                                                    heading={`Memberships not activated yet. `}
+                                                                    subheading={`Until they activate their Memberships, this user won't be able to receive gifts.`} />
                                                                 )}
                                                         </Suspense>
                                                     : ''}
 
-                                                    {tab == '4' ? 
+                                                    {tab == '4' ?
                                                         <Suspense fallback={<LoadingScreen />} >
                                                             {IsloggedIn || user?.stripe_details_submitted == 1 ? (
                                                                 <Billslist billupdate={billupdated} IsloggedIn={IsloggedIn} />
                                                             ) : (
-                                                                <PaymentUnActivated  heading={`Bills not activated yet. `} 
-                                                                subheading={`Until they activate their bills, this user won't be able to receive gifts.`} /> 
+                                                                <PaymentUnActivated  heading={`Bills not activated yet. `}
+                                                                subheading={`Until they activate their bills, this user won't be able to receive gifts.`} />
                                                             )}
                                                         </Suspense>
                                                     : "" }
 
-                                                    {tab == '5' ? 
+                                                    {tab == '5' ?
                                                         <Suspense fallback={<LoadingScreen />} >
                                                             {IsloggedIn || user?.stripe_details_submitted == 1 ? (
                                                                  <ProfileProductLists  profileuser={user} />
                                                             ) : (
-                                                                <PaymentUnActivated  heading={`Bills not activated yet. `} 
-                                                                subheading={`Until they activate their bills, this user won't be able to receive gifts.`} /> 
+                                                                <PaymentUnActivated  heading={`Bills not activated yet. `}
+                                                                subheading={`Until they activate their bills, this user won't be able to receive gifts.`} />
                                                             )}
                                                         </Suspense>
                                                     : "" }
@@ -652,8 +651,8 @@ export default function Dashboard(props) {
                                 </div>
                             </div>
                         ) : <>
-                            <Gifter 
-                            fetchingLinks={fetchingLinks} 
+                            <Gifter
+                            fetchingLinks={fetchingLinks}
                             sLinks={sLinks}
                             IsloggedIn={IsloggedIn} />
                         </>
