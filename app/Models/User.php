@@ -226,7 +226,6 @@ class User extends Authenticatable
     public function getMonthlyChargeEnabledAttribute(){
         if(Auth::check() && $this->id == Auth::id()){
             $charge = MonthlyCharge::where('user_id',$this->id)->where('status','paid')->first();
-
             if(!empty($charge)){
                 return true;
             }
