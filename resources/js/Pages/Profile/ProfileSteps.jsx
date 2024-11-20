@@ -53,7 +53,7 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                         <p className="text-gray-500 mb-3">Successful creators complete these steps, although not all required.</p>
                         <ProgressBar now={status && status.total} max={9} />
 
-                        {status && status.payment_connect !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
+                        {/* {status && status.payment_connect !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
                             <div className="step-title d-flex max-w-[390px] pe-3">
                                 <div className={`check-icon me-2 pt-1 ${
                                     status && status.payment_connect == 1? "checked": ""}`}>
@@ -71,7 +71,7 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                             <div>
                                 <Link href="/start-kyc">Verify</Link>
                             </div>
-                        </div> : ""}
+                        </div> : ""} */}
 
                         {/* Intro Video */}
                         {introStatus !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
