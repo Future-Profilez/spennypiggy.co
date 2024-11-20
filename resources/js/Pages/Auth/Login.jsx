@@ -84,7 +84,7 @@ export default function Login({ status, canResetPassword }) {
                         <span className="mintbg"></span>
                         <span className="bluebg"></span>
                     </div>
-                    <form onSubmit={submit} >
+                    <form onSubmit={checkTFA} >
                         <div className='login-step1'>
                             <ul>
                                 <li className="formfield">
