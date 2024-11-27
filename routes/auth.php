@@ -356,7 +356,7 @@ Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts
 
 Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
     Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay");
-    Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
+    Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
     Route::get('/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');
 });
 
