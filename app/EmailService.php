@@ -225,7 +225,7 @@ class EmailService
     public static function sendTipJarSubscribedMail($data,$symbol)
     {
         try {
-            Mail::to($data->tipGoal->user->email)->send(new TipJarMail($data,$symbol));
+            Mail::to($data->creator->email)->send(new TipJarMail($data,$symbol));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }

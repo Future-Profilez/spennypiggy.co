@@ -84,11 +84,11 @@ class StripeController extends Controller
     {
         $user = User::find(Auth::id());
 
-        $sub_post = Post::where('user_id',$user->id)->where('for_module','subscription')->first();
-        $mem_post = Post::where('user_id',$user->id)->where('for_module','membership')->first();
-        $support_post = Post::where('user_id',$user->id)->where('for_module','support')->first();
+        $sub_post = Post::where('user_id', $user->id)->where('for_module', 'subscription')->first();
+        $mem_post = Post::where('user_id', $user->id)->where('for_module', 'membership')->first();
+        $support_post = Post::where('user_id', $user->id)->where('for_module', 'support')->first();
 
-        if(empty($sub_post) || empty($mem_post) || empty($support_post)){
+        if (empty($sub_post) || empty($mem_post) || empty($support_post)) {
             return redirect(route("user.show", ["username" => $user->username]))->with("error", "Before connecting your stripe account, it's necessary to add one image post for your subscribers, members and supporters! So 3 in total.");
         }
 
@@ -572,8 +572,8 @@ class StripeController extends Controller
 
         $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
 
-        if($reccure == 'continue'){
-            if(!empty($wish->user->vat_amount_percentage)){
+        if ($reccure == 'continue') {
+            if (!empty($wish->user->vat_amount_percentage)) {
                 $vat_percentage_amount = ($price + $tax) * $wish->user->vat_amount_percentage / 100;
             }
         }
@@ -613,7 +613,7 @@ class StripeController extends Controller
             ]);
 
             $tranfering_amount = Helpers::priceFormat($wish->currency, $price, $currency) * 100;
-            if($reccure == 'continue'){
+            if ($reccure == 'continue') {
                 $price += $vat_percentage_amount;
             }
             $amount_per = round(($price / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
@@ -624,21 +624,21 @@ class StripeController extends Controller
             //     ];
             // } else {
 
-                $amount = $price + $tax;
-                $unit_amount = Helpers::priceFormat($wish->currency, $amount, $currency) * 100;
-                $tax =   Helpers::priceFormat($wish->currency, $tax, $currency);
-                $items  =   [
-                    'quantity'      =>  1,
-                    'price_data'    =>   [
-                        'currency'  =>  $currency,
-                        'product'   =>  $wish->stripe_product_id,
-                        'unit_amount_decimal'   =>  $unit_amount,
-                        'recurring' =>  [
-                            'interval'  =>  StripeControl::$periods[$wish->subscription_period],
-                            'interval_count'    =>  1
-                        ]
+            $amount = $price + $tax;
+            $unit_amount = Helpers::priceFormat($wish->currency, $amount, $currency) * 100;
+            $tax =   Helpers::priceFormat($wish->currency, $tax, $currency);
+            $items  =   [
+                'quantity'      =>  1,
+                'price_data'    =>   [
+                    'currency'  =>  $currency,
+                    'product'   =>  $wish->stripe_product_id,
+                    'unit_amount_decimal'   =>  $unit_amount,
+                    'recurring' =>  [
+                        'interval'  =>  StripeControl::$periods[$wish->subscription_period],
+                        'interval_count'    =>  1
                     ]
-                ];
+                ]
+            ];
             // }
             $payload = [
                 "mode"  =>  'subscription',
@@ -731,15 +731,14 @@ class StripeController extends Controller
                     SubscribeAutoTweet::dispatch($sub);
                 }
 
-                if($sub->anonymous == 1){
+                if ($sub->anonymous == 1) {
                     $username = "Anonymous user";
-                }
-                else{
+                } else {
                     $username = $sub->guest_name ?? "Anonymous user";
                 }
 
                 $message = $username . " just subscribed to your subscription wish " . $sub->wish_item->name;
-                NotificationSave::dispatch($message,$sub->wish_item->user,$sub->user,'Wish Subscription');
+                NotificationSave::dispatch($message, $sub->wish_item->user, $sub->user, 'Wish Subscription');
 
                 return to_route('thank-you', ['username' => $sub->wish_item->user->username])->with('success', "Subscription Success! If you have paid for onetime subscription, it will be automatically cancelled after 24 hours.");
             }
@@ -826,18 +825,17 @@ class StripeController extends Controller
                 $newSubs->updated_at = Carbon::now();
                 $newSubs->save();
 
-                SendRenewMail::dispatch($array,'renew','main');
-            }elseif ($event->type == "customer.subscription.deleted" && !empty($subs)) {
+                SendRenewMail::dispatch($array, 'renew', 'main');
+            } elseif ($event->type == "customer.subscription.deleted" && !empty($subs)) {
                 $subs->status = 'cancelled';
                 $subs->save();
 
-                SendRenewMail::dispatch($array,'cancelled','main');
-            }
-            elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
+                SendRenewMail::dispatch($array, 'cancelled', 'main');
+            } elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
                 $subs->status = 'failed';
                 $subs->save();
 
-                SendRenewMail::dispatch($array,'failed','main');
+                SendRenewMail::dispatch($array, 'failed', 'main');
             }
 
             if (!empty($subs)) {
@@ -867,10 +865,10 @@ class StripeController extends Controller
     public function tipToJar(Request $request, $creator_uid)
     {
 
-        $creator = User::where('uuid',$creator_uid)->first();
+        $creator = User::where('uuid', $creator_uid)->first();
 
-        if(Auth::check()){
-            if($creator->id == Auth::id()){
+        if (Auth::check()) {
+            if ($creator->id == Auth::id()) {
                 return response()->json([
                     'status' => false,
                     'msg' => "You can't pay yourself!"
@@ -878,7 +876,7 @@ class StripeController extends Controller
             }
         }
 
-        $goal = TipGoal::where('user_id',$creator->id)->where('completed', 0)->latest()->first();
+        $goal = TipGoal::where('user_id', $creator->id)->where('completed', 0)->latest()->first();
 
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         // if (!$goal) {
@@ -934,7 +932,7 @@ class StripeController extends Controller
             //     return redirect()->back()->with("error", "Enter minimum $user_amount amount.");
             // }
 
-            $tax = round(($price * config('app.jar_tax',10) / 100), 2, PHP_ROUND_HALF_UP);
+            $tax = round(($price * config('app.jar_tax', 10) / 100), 2, PHP_ROUND_HALF_UP);
 
             try {
 
@@ -1033,42 +1031,40 @@ class StripeController extends Controller
             $session = StripeControl::getCheckoutSession($tip_pay->session_id);
             $tip_pay->status = $session->payment_status;
             if ($session->payment_status == 'paid') {
+                $ownerCurrency = Currency::where('iso', strtoupper($tip_pay->currency))->first();
+                $userCurrency = Currency::where('iso', strtoupper($currency))->first();
+                $userAmount = Helpers::priceFormat($tip_pay->currency, ($tip_pay->amount + $tip_pay->tax), $currency);
 
-                $ownerCurrency = Currency::where('iso',strtoupper($tip_pay->currency))->first();
-                $userCurrency = Currency::where('iso',strtoupper($currency))->first();
-                $userAmount = Helpers::priceFormat($tip_pay->currency, ($tip_pay->amount+$tip_pay->tax), $currency);
-
-                TipJarPurchased::dispatch($tip_pay,$ownerCurrency->symbol);
-                TipJarMailToUser::dispatch($tip_pay,$userCurrency->symbol,$userAmount);
+                TipJarPurchased::dispatch($tip_pay, $ownerCurrency->symbol);
+                TipJarMailToUser::dispatch($tip_pay, $userCurrency->symbol, $userAmount);
                 $tip_pay->save();
 
-                if(!empty($tip_pay->tipGoal)){
+                if (!empty($tip_pay->tipGoal)) {
 
-                    if(!empty($tip_pay->tipGoal)){
+                    if (!empty($tip_pay->tipGoal)) {
                         $tip_pay->tipGoal->fullfilled += $tip_pay->amount;
                         $tip_pay->tipGoal->save();
 
 
-                        if($tip_pay->tipGoal->user->auto_tweet == 1){
+                        if ($tip_pay->tipGoal->user->auto_tweet == 1) {
                             TipJarTweet::dispatch($tip_pay);
                         }
                     }
 
 
-                    if($tip_pay->tipGoal->user->auto_tweet == 1){
+                    if ($tip_pay->tipGoal->user->auto_tweet == 1) {
                         TipJarTweet::dispatch($tip_pay);
                     }
                 }
 
-                if($tip_pay->anonymous == 1){
+                if ($tip_pay->anonymous == 1) {
                     $username = "Anonymous user";
-                }
-                else{
+                } else {
                     $username = $tip_pay->guest_name ?? "Anonymous user";
                 }
 
                 $message = $username . " just granted some coins to your piggy bank";
-                NotificationSave::dispatch($message,$tip_pay->creator,$tip_pay->user,'Piggy Bank');
+                NotificationSave::dispatch($message, $tip_pay->creator, $tip_pay->user, 'Piggy Bank');
 
                 return to_route('user.show', ['username' => $tip_pay->creator->username])->with('success', "Thank you for your support!");
             }
@@ -1094,9 +1090,9 @@ class StripeController extends Controller
      */
     public function deleteStripeAccount()
     {
-        $user = User::where('id',Auth::id())->first();
+        $user = User::where('id', Auth::id())->first();
 
-        if($user->account_id){
+        if ($user->account_id) {
             StripeControl::deleteAccount($user->account_id);
             $user->account_id = NULL;
             $user->stripe_details_submitted = 0;
@@ -1122,81 +1118,81 @@ class StripeController extends Controller
         $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
 
         // if ($request->isMethod("POST")) {
-            // $request->validate([
-            //     'name' => [
-            //         'nullable',
-            //         'sometimes',
-            //         'string',
-            //         'max:50'
-            //     ],
-            //     'email' =>  [
-            //         'required',
-            //         'email:dns'
-            //     ],
-            //     'message' =>  [
-            //         'sometimes',
-            //         'nullable',
-            //         'string',
-            //         'max:800'
-            //     ]
-            // ]);
-            $user = User::where('id',Auth::id())->first();
-            $sub = MonthlyCharge::create([
-                'user_id'       =>  $user->id,
-                'name'    =>  $user->name ?? NULL,
-                'email'   =>  $user->email,
-                'currency'      =>  "GBP",
-                'amount'        =>  $price,
-                'tax'   =>  $tax,
+        // $request->validate([
+        //     'name' => [
+        //         'nullable',
+        //         'sometimes',
+        //         'string',
+        //         'max:50'
+        //     ],
+        //     'email' =>  [
+        //         'required',
+        //         'email:dns'
+        //     ],
+        //     'message' =>  [
+        //         'sometimes',
+        //         'nullable',
+        //         'string',
+        //         'max:800'
+        //     ]
+        // ]);
+        $user = User::where('id', Auth::id())->first();
+        $sub = MonthlyCharge::create([
+            'user_id'       =>  $user->id,
+            'name'    =>  $user->name ?? NULL,
+            'email'   =>  $user->email,
+            'currency'      =>  "GBP",
+            'amount'        =>  $price,
+            'tax'   =>  $tax,
+        ]);
+
+        $amount = $price + $tax;
+        $unit_amount = Helpers::priceFormat("GBP", $amount, $currency) * 100;
+        $items  =   [
+            'quantity'      =>  1,
+            'price_data'    =>   [
+                'currency'  =>  $currency,
+                'product'   =>  env("SUBSCRIPTION_4_PRODUCT_ID"),
+                'unit_amount_decimal'   =>  $unit_amount,
+                'recurring' =>  [
+                    'interval'  =>  StripeControl::$periods["monthly"],
+                    'interval_count'    =>  1
+                ]
+            ]
+        ];
+        // }
+        $payload = [
+            "mode"  =>  'subscription',
+            "currency"  =>  strtolower($request->cookie("currency", "GBP")),
+            'line_items' =>  [$items],
+            'subscription_data' =>  [
+                // 'application_fee_percent'   =>  100,
+                // 'transfer_data' => [
+                //     'destination' => "acct_1OOc6oCmFHIIsmOr", // Creator's connected account ID
+                // ],
+                // 'on_behalf_of'  => "acct_1OOc6oCmFHIIsmOr",
+                'description'   => "Subscription for using site through stripe."
+            ],
+            'customer_email'    =>  $user->email,
+            'success_url'       =>  route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
+            'cancel_url'       =>  route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
+        ];
+
+        try {
+            $session = StripeControl::createCheckoutSession($payload);
+            $sub->update([
+                'session_id' =>  $session->id
             ]);
 
-            $amount = $price + $tax;
-            $unit_amount = Helpers::priceFormat("GBP", $amount, $currency) * 100;
-            $items  =   [
-                'quantity'      =>  1,
-                'price_data'    =>   [
-                    'currency'  =>  $currency,
-                    'product'   =>  env("SUBSCRIPTION_4_PRODUCT_ID"),
-                    'unit_amount_decimal'   =>  $unit_amount,
-                    'recurring' =>  [
-                        'interval'  =>  StripeControl::$periods["monthly"],
-                        'interval_count'    =>  1
-                    ]
-                ]
-            ];
-            // }
-            $payload = [
-                "mode"  =>  'subscription',
-                "currency"  =>  strtolower($request->cookie("currency", "GBP")),
-                'line_items' =>  [$items],
-                'subscription_data' =>  [
-                    // 'application_fee_percent'   =>  100,
-                    // 'transfer_data' => [
-                    //     'destination' => "acct_1OOc6oCmFHIIsmOr", // Creator's connected account ID
-                    // ],
-                    // 'on_behalf_of'  => "acct_1OOc6oCmFHIIsmOr",
-                    'description'   => "Subscription for using site through stripe."
-                ],
-                'customer_email'    =>  $user->email,
-                'success_url'       =>  route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
-                'cancel_url'       =>  route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
-            ];
-
-            try {
-                $session = StripeControl::createCheckoutSession($payload);
-                $sub->update([
-                    'session_id' =>  $session->id
-                ]);
-
-                return Inertia::location($session->url);
-            } catch (Exception $e) {
-                $sub->delete();
-                return back()->with('error', $e->getMessage());
-            }
-            // return response()->json([
-            //     'success'   => true,
-            //     'session'   => $session
-            // ]);
+            return Inertia::location($session->url);
+        } catch (Exception $e) {
+            $sub->delete();
+            return back()->with('error', $e->getMessage());
+        }
+        // return response()->json([
+        //     'success'   => true,
+        //     'session'   => $session
+        // ]);
 
 
         // }
@@ -1306,21 +1302,18 @@ class StripeController extends Controller
                 $newSubs->updated_at = $subs->updated_at;
                 $newSubs->save();
 
-                SendRenewMail::dispatch($array,'renew','site');
-            }
-            elseif ($event->type == "customer.subscription.deleted" && !empty($subs)) {
+                SendRenewMail::dispatch($array, 'renew', 'site');
+            } elseif ($event->type == "customer.subscription.deleted" && !empty($subs)) {
                 $subs->status = 'cancelled';
                 $subs->save();
 
-                SendRenewMail::dispatch($array,'cancelled','site');
-            }
-            elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
+                SendRenewMail::dispatch($array, 'cancelled', 'site');
+            } elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
                 $subs->status = 'failed';
                 $subs->save();
 
-                SendRenewMail::dispatch($array,'failed','site');
+                SendRenewMail::dispatch($array, 'failed', 'site');
             }
-
         }
 
         return true;
