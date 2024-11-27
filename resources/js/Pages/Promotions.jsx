@@ -8,7 +8,7 @@ export default function Promotions(props) {
             <Head title={'Promotions Terms'}  />
             <div className="wishlistPage blackbg pt-8 pb-14 ">
                 <div className="containerbox static-page p-3">
-                <h1>110% First Month Payment Campaign</h1>
+                <h1>£1000 Giveaway Campaign</h1>
                 <p>
                 Spenny Piggy is running a campaign to build brand awareness for anyone to win a
                 £1,000 gift. Running from Tuesday 26th November to December 31 st 2024. Only
