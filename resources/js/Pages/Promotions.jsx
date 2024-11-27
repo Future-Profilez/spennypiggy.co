@@ -1,6 +1,6 @@
 import { Head } from "@inertiajs/react";
 import Guest from "@/Layouts/GuestLayout";
- 
+
 export default function Promotions(props) {
     const { auth, user } = props;
     return (
@@ -10,45 +10,41 @@ export default function Promotions(props) {
                 <div className="containerbox static-page p-3">
                 <h1>110% First Month Payment Campaign</h1>
                 <p>
-                  Spenny Piggy is running a campaign to encourage creators to sign up and
-                  receive a 10% payment bonus after 30 days on the platform based on each
-                  individual creator’s earnings. Running from December 10th to January 30th,
-                  2024. Only creators who sign up during this time frame will be eligible.
+                Spenny Piggy is running a campaign to build brand awareness for anyone to win a
+                £1,000 gift. Running from Tuesday 26th November to December 31 st 2024. Only
+                users that meet all the eligibility criteria during this time frame will be eligible.
                 </p>
                 <p>
-                  Subject to these terms and conditions, creators who sign up from December
-                  10th, 2023, to January 30th, 2024 will be eligible for an additional 10% payment.
-                  Paid automatically or upon request from the creator after 30 days have
-                  elapsed.
+                Subject to these terms and conditions, any user with an Instagram or X account who
+                share, like, follow and tag two creators from Tuesday 26th November to December
+                31 st 2024 will be entered into a draw to win the £1,000 gift. Paid 30 days after the
+                winner has been selected at random.
                 </p>
+
                 <p>
-                  This campaign is STRICTLY LIMITED to the above dates and to qualify for
-                  this, creators must have been using the application for a minimum of 30 days.
+                This campaign is STRICTLY LIMITED to the above dates and to qualify for this,
+                users must on either Instagram or X:
                 </p>
                 <ul>
-                  <li>Sign up to Spenny Piggy as a creator.</li>
-                  <li>Show a complete profile.</li>
-                  <li>
-                    Complete the above entry requirements by midnight on 30th January 2024
-                    (the ‘Campaign End Date').
-                  </li>
-                  <li>Not be in breach of the acceptable use policy or the platform terms.</li>
+                  <li>Follow Spenny Piggy</li>
+                  <li>- Share the post (which must remain for 30 days after the campaign has ended)</li>
+                  <li>- Like the post</li>
+                  <li>- Tag two creators</li>
                 </ul>
                 <p>
-                  Your credit payment will be paid either automatically or after informing
-                  Spenny Piggy that your payment is now due. Payment will be confirmed via
-                  email and sent directly to the creator's Stripe Balance.
+                Your £1,000 will be paid to the winner via bank transfer only. Payment will be
+                confirmed via email and sent directly to the users chosen bank account.
                 </p>
-                <p>
-                  For the avoidance of doubt. Each creator is only eligible for a one-off credit
-                  payment as per clauses 1, 2, 3, and 4.
+
+                <p>For the avoidance of doubt. Spenny Piggy is not responsible for any bank charges or
+                conversion costs and there is only a single winner.
                 </p>
                 <p>Spenny Piggy reserves the right to remove or change this campaign at any time.</p>
-                <p>
-                  This campaign is in no way sponsored, endorsed, administered by, or
-                  associated with any third party or any associated social media platforms or presence.
+                <p>This campaign is in no way sponsored, endorsed, administered by, or associated
+                with any third party or any associated social media platforms or presence.
                 </p>
-                <p>Promoter: Social Vortex Limited, ‘DBA’ Spenny Piggy, 55 Colmore Row, Birmingham, B3 2AA.</p>
+                <p>Promoter: Social Vortex Limited, ‘DBA’ Spenny Piggy, 55 Colmore Row, Birmingham,
+                B3 2AA.</p>
                 </div>
             </div>
         </Guest>

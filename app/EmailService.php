@@ -6,6 +6,9 @@ use App\Mail\Checkout;
 use App\Mail\CheckoutToUser;
 use App\Mail\ForgotPassEmail;
 use App\Mail\MemberMail;
+use App\Mail\MonthlySubscriptionSuccessMail;
+use App\Mail\MonthlySubscriptionFailedMail;
+use App\Jobs\MonthlySubscriptionFailedJobs;
 use App\Mail\RenewMail;
 use App\Mail\SendAdminIntroMail;
 use App\Mail\SendAvatarRestrictionMail;
@@ -25,6 +28,7 @@ use App\Mail\Welcome;
 use App\Mail\Wishlist;
 use App\Models\AppService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Symfony\Component\Mailer\Exception\TransportException;
@@ -58,7 +62,7 @@ class EmailService
         }
     }
 
-    public static function checkOutUser($data, $anon, $surprise, $message, $anonname,$symbol)
+    public static function checkOutUser($data, $anon, $surprise, $message, $anonname, $symbol)
     {
         try {
             $emailData = [
@@ -71,13 +75,13 @@ class EmailService
             ];
 
             Mail::to($emailData['to'])
-                ->send(new Checkout($data, $anon, $surprise, $message, $anonname,$symbol));
+                ->send(new Checkout($data, $anon, $surprise, $message, $anonname, $symbol));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }
 
-    public static function shopBuyed($data, $anon,$symbol)
+    public static function shopBuyed($data, $anon, $symbol)
     {
         try {
             $emailData = [
@@ -90,13 +94,13 @@ class EmailService
             ];
 
             Mail::to($emailData['to'])
-                ->send(new ShopBuyedMail($data, $anon,$symbol));
+                ->send(new ShopBuyedMail($data, $anon, $symbol));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }
 
-    public static function checkOutToUser($data,$curr)
+    public static function checkOutToUser($data, $curr)
     {
         try {
             $emailData = [
@@ -108,13 +112,13 @@ class EmailService
                 'uuid' => $data->user->uuid,
             ];
             Mail::to($emailData['to'])
-                ->send(new CheckoutToUser($data,$curr));
+                ->send(new CheckoutToUser($data, $curr));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }
 
-    public static function shopBuyedUser($data,$url,$curr)
+    public static function shopBuyedUser($data, $url, $curr)
     {
         try {
             $emailData = [
@@ -126,7 +130,7 @@ class EmailService
                 'uuid' => $data->user->uuid,
             ];
             Mail::to($emailData['to'])
-                ->send(new ShopBuyedMailUser($data,$url,$curr));
+                ->send(new ShopBuyedMailUser($data, $url, $curr));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
@@ -148,6 +152,28 @@ class EmailService
 
             Mail::to($data['to'])
                 ->send(new SubscriptionMail($value));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+    // monthly subscribed send mail
+    public static function sendMonthlySubscribedMail($sub)
+    {
+        try {
+            Log::info("come in sendMonthlySubscribedMail function try -".$sub->user->email);
+            Mail::to($sub->user->email)
+                ->send(new MonthlySubscriptionSuccessMail($sub));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+    // monthly subscribed failed mail
+    public static function monthlySubscribedFailedMail($sub)
+    {
+        try {
+            Mail::to($sub->user->email)->send(new MonthlySubscriptionFailedMail($sub));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
@@ -191,11 +217,11 @@ class EmailService
         }
     }
 
-    public static function sendRenewMail($data,$type,$module)
+    public static function sendRenewMail($data, $type, $module)
     {
         try {
 
-            Mail::to($data['email'])->send(new RenewMail($data,$type,$module));
+            Mail::to($data['email'])->send(new RenewMail($data, $type, $module));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
@@ -222,19 +248,19 @@ class EmailService
         }
     }
 
-    public static function sendTipJarSubscribedMail($data,$symbol)
+    public static function sendTipJarSubscribedMail($data, $symbol)
     {
         try {
-            Mail::to($data->creator->email)->send(new TipJarMail($data,$symbol));
+            Mail::to($data->creator->email)->send(new TipJarMail($data, $symbol));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }
 
-    public static function sendTipJarToUser($data,$symbol,$amount)
+    public static function sendTipJarToUser($data, $symbol, $amount)
     {
         try {
-            Mail::to($data->guest_email)->send(new SendTipJarMailToUser($data,$symbol,$amount));
+            Mail::to($data->guest_email)->send(new SendTipJarMailToUser($data, $symbol, $amount));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }

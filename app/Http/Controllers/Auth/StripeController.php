@@ -7,6 +7,9 @@ use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\CheckoutMailToUser;
 use App\Jobs\CheckoutUser;
+use App\Jobs\MonthlySubscribedJob;
+use App\Jobs\MonthlySubscribedJobs;
+use App\Jobs\MonthlySubscriptionFailedJobs;
 use App\Jobs\NotificationSave;
 use App\Jobs\SendRenewMail;
 use App\Jobs\SubscribeAutoTweet;
@@ -1226,12 +1229,13 @@ class StripeController extends Controller
                 $sub->upcoming_payment = Carbon::now()->addMonth();
                 $sub->save();
 
-                // SubscribedMail::dispatch($sub);
+                MonthlySubscribedJob::dispatch($sub);
 
                 return to_route('user.show', ['username' => $sub->user->username])->with('success', "Subscription Success!");
             }
 
-            SubscriptionFailed::dispatch($sub);
+            MonthlySubscriptionFailedJobs::dispatch($sub);
+            // SubscriptionFailed::dispatch($sub);
 
             $sub->save();
             return to_route('user.show', ['username' => $sub->user->username])->with('warning', "Subscription is in {$session->payment_status} status.");
