@@ -28,10 +28,11 @@ class MonthlyCharge extends Model
     public static function boot()
     {
         parent::boot();
-        static::creating(fn ($s) =>  $s->uuid = Uuid::uuid4());
+        static::creating(fn($s) =>  $s->uuid = Uuid::uuid4());
     }
 
-    public function user(){
-        return $this->belongsTo(User::class,'user_id');
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

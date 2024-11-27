@@ -23,7 +23,7 @@ export default function Accountsetting(props) {
     console.log("props", props)
     const [emailEnabled, setSetEnabled] = useState(auth && auth.user && auth.user.notification_send == 1 ? true : false )
     const [showEarning, setShowEarning] = useState(auth && auth.user && auth.user.show_piggy_bank == 1 ? true : false );
-    const swicthEarning  = () =>{ 
+    const swicthEarning  = () =>{
         setShowEarning(!showEarning);
         axios.get(`piggy-bank-setting`).then((resp) => {
             successAlert(resp.data.message);
@@ -33,14 +33,14 @@ export default function Accountsetting(props) {
     }
 
     const [passClose, setSassClose] = useState(null);
-    const passwordUpdated = () => { 
+    const passwordUpdated = () => {
         setSassClose(false);
         setTimeout(() => {
             setSassClose();
         }, 100);
     }
 
-    const updatevat = (e) => { 
+    const updatevat = (e) => {
         setSassClose(false);
         setTimeout(() => {
             setSassClose();
@@ -48,7 +48,7 @@ export default function Accountsetting(props) {
         setvatpercent(e)
     }
 
-    const switchNotification  = () =>{ 
+    const switchNotification  = () =>{
         setSetEnabled(!emailEnabled);
         axios.get(`notification-switch`).then((resp) => {
             successAlert(resp.data.msg);
@@ -57,7 +57,7 @@ export default function Accountsetting(props) {
         });
     }
 
-    
+
     const [vatpercent, setvatpercent] = useState(auth && auth?.user?.vat_amount_percentage|| '')
 
     return (
@@ -73,26 +73,26 @@ export default function Accountsetting(props) {
                         <ul>
 
 
-                            {auth && auth?.user?.role == 1 ? 
+                            {auth && auth?.user?.role == 1 ?
                                 <>
-                                {auth.user && auth.user.monthly_charge_enabled ? 
+                                {auth.user && auth.user.monthly_charge_enabled ?
                                     <li>
-                                        {auth && auth.user && auth.user.stripe_details_submitted == 1 ? 
+                                        {auth && auth.user && auth.user.stripe_details_submitted == 1 ?
                                             <PaymentDashboard classes='w-100 text-black rounded-3  border-0 paymentbutton' text={<>PAYMENT DASHBOARD <span className='text-mint text-sm'>Linked</span></>} />
-                                            : 
+                                            :
                                             <Link href={route("stripe")} >LINK STRIPE <span className='text-voilet'>Link</span></Link>
                                         }
-                                    </li> 
-                                 :  
+                                    </li>
+                                 :
                                     <li>
                                         <Link href={'/stripe-subscription'} >Activate Subscription  <span className='text-voilet'>Activate</span></Link>
-                                    </li> 
+                                    </li>
                                   }
                                 </>
                             : ''}
-                           
+
                             <li>
-                                <Popup space='4' modalclassName="pinkmodal" 
+                                <Popup space='4' modalclassName="pinkmodal"
                                 text={<>EMAIL <span className='text-gray'>{auth && auth.user && auth.user.email}</span></>} >
                                     <UpdateProfileInformation />
                                 </Popup >
@@ -113,9 +113,9 @@ export default function Accountsetting(props) {
                                     <ChangeVat defaultvalue={vatpercent} updatevat={updatevat} />
                                 </Popup>
                             </li>
- 
+
                             <li>
-                                <Popup action={passClose} space='4' modalclassName="pinkmodal" 
+                                <Popup action={passClose} space='4' modalclassName="pinkmodal"
                                 text={
                                 <>
                                     { auth && auth.user && auth.user.twitter_username ? `AUTO TWEET` : 'SET UP AUTO TWEET'}
@@ -124,7 +124,7 @@ export default function Accountsetting(props) {
                                         { auth && auth.user && auth.user.twitter_username ? `@${auth.user.twitter_username}` : ''}
                                     </div>
                                 </> } >
-                                    <LinkTwitter auto_tweet={auto_tweet}  
+                                    <LinkTwitter auto_tweet={auto_tweet}
                                     auth={auth}
                                     username={auth && auth.user && auth.user.twitter_username || false}  />
                                 </Popup>
@@ -139,7 +139,7 @@ export default function Accountsetting(props) {
                                         <span for='notification_handle' className="slider"></span>
                                     </label>
                                 </div>
-                            </li> 
+                            </li>
 
                             <li>
                                 <div className='notification uppercase'>
@@ -150,33 +150,33 @@ export default function Accountsetting(props) {
                                         <span for='showbankearning' className="slider"></span>
                                     </label>
                                 </div>
-                            </li> 
- 
-                            <li>
+                            </li>
+
+                            {/* <li>
                                 <TFA text={<>
                                     <div className='notification uppercase'>
                                         TWO FACTOR AUTHENTICATION
                                     </div>
                                 </>} />
-                            </li>
+                            </li> */}
 
                             <li>
-                                <Popup space='4' modalclassName="pinkmodal" 
+                                <Popup space='4' modalclassName="pinkmodal"
                                 text={<>DELETE ACCOUNT  </>} >
                                     <DeleteUserForm />
                                 </Popup >
                             </li>
 
 
-                            {/* {auth && auth?.user?.stripe_details_submitted == 1 ? 
+                            {/* {auth && auth?.user?.stripe_details_submitted == 1 ?
                              <li>
-                                <Popup space='4' modalclassName="pinkmodal" 
+                                <Popup space='4' modalclassName="pinkmodal"
                                 text={<>DELETE STRIPE ACCOUNT  </>} >
                                     <DeleteStripeAccount />
                                 </Popup >
                             </li>  : ''
                             } */}
-                            
+
                         </ul>
                     </div>
                 </div>
