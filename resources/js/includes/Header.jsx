@@ -38,7 +38,7 @@ export default function Header() {
         setTimeout(()=>{
             setShows(!isActive);
         },300);
-    };
+    }; 
 
     const cart = useSelector((state) => state.data.cart.cart);
     const [count, setCount] = useState();
@@ -96,13 +96,12 @@ export default function Header() {
                         </div>
 
                         <div className="leftspaces cartLogin">
-                            {auth && auth.user && auth.user.stripe_details_submitted == "1" ? ( "" ) : 
-                                router.page && router.page && router.page.component == "Dashboard" ? (
+                            {/* {auth && auth.user && auth.user.stripe_details_submitted == "1" ? ( "" ) : 
+                                router.page && router.page && router.page.component == "Dashboard" ? ( */}
                                 <ChangeCurrency
                                     defaultvalue={global_currency}
                                     changer={true}
-                                />) 
-                            : ""}
+                                />
 
                             {auth && auth.user ? <Notifications /> : ""}
 
