@@ -30,7 +30,6 @@ export default function Hero({auth}) {
          }
          return false;
        });
- 
        setActiveSection(currentSection || '');
      };
  
@@ -48,7 +47,6 @@ export default function Hero({auth}) {
     }
   };
   
-
   const [showPopup, setShowPopup] = useState(false);
   useEffect(() => {
       const lastShown = localStorage.getItem("popupLastShown");
@@ -59,7 +57,6 @@ export default function Hero({auth}) {
   }, []);
 
   return <>
-
             <Popup action={showPopup} space="4"
             modalclassName="pinkmodal" >
               <div className='p-8'>
