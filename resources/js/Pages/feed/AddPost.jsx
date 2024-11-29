@@ -142,7 +142,7 @@ export default function AddPost({item, text, classes, isEdit, updateState, title
                     <div>
                         <h2 className="text-center text-gray-400 py-3" >Or</h2>
                         <ImageGenerationWithAI update={getAIImage} />
-                    </div>
+                    </div> 
                 </div>
             </div>
 
@@ -156,7 +156,7 @@ export default function AddPost({item, text, classes, isEdit, updateState, title
                 </select>
             </div>
 
-                <LoaderButton onClick={submitPost}
+            <LoaderButton onClick={submitPost}
                 disabled={loading}
                 className="flex btn-pink lg mt-4 w-full "
                 spinnerClassName="fill-red-600">
