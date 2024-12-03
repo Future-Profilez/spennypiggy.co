@@ -8,6 +8,7 @@ import TrustBox from './TrustBox';
 import Scrollspy from 'react-scrollspy';
 import { useState } from 'react';
 import { useEffect } from 'react';
+import Popup from '@/Components/Popup';
  
 
 export default function Hero({auth}) {
@@ -29,7 +30,6 @@ export default function Hero({auth}) {
          }
          return false;
        });
- 
        setActiveSection(currentSection || '');
      };
  
@@ -47,8 +47,27 @@ export default function Hero({auth}) {
     }
   };
   
+  const [showPopup, setShowPopup] = useState(false);
+  useEffect(() => {
+      const lastShown = localStorage.getItem("popupLastShown");
+      if (!lastShown || Date.now() - parseInt(lastShown) > 1000 * 60 * 60 * 24 * 7) {
+          setShowPopup(true);
+          localStorage.setItem("popupLastShown", Date.now());
+      }
+  }, []);
 
   return <>
+            <Popup action={showPopup} space="4"
+            modalclassName="pinkmodal" >
+              <div className='p-8'>
+              <h2 className='text-center font-GillSans text-purple text-[20px] text-uppercase'>For Open banking payments and same day payouts, sign up via <a href='https://uk.spennypiggy.co'  >uk.spennypiggy.co </a> 🤑🚀</h2>
+
+              <div className='flex justify-center'>
+                <a className='btn btn-pink mt-3 w-full max-w-[200px] ' href='https://uk.spennypiggy.co'> Sign Up</a>
+              </div>
+              </div>
+            </Popup>
+
       <div className="d-block d-lg-none landing-bottom-bar">
         <Scrollspy items={sections} currentClassName="active" offset={-50}>
           <li>

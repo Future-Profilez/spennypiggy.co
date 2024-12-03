@@ -36,7 +36,7 @@ export default function Header() {
         setActive(!isActive);
         setTimeout(() => {
             setShows(!isActive);
-        }, 300);
+        },300);
     };
 
     const cart = useSelector((state) => state.data.cart.cart);
@@ -118,20 +118,12 @@ export default function Header() {
                         </div>
 
                         <div className="leftspaces cartLogin">
-                            {auth &&
-                            auth.user &&
-                            auth.user.stripe_details_submitted == "1" ? (
-                                ""
-                            ) : router.page &&
-                              router.page &&
-                              router.page.component == "Dashboard" ? (
+                            {/* {auth && auth.user && auth.user.stripe_details_submitted == "1" ? ( "" ) :
+                                router.page && router.page && router.page.component == "Dashboard" ? ( */}
                                 <ChangeCurrency
                                     defaultvalue={global_currency}
                                     changer={true}
                                 />
-                            ) : (
-                                ""
-                            )}
 
                             {auth && auth.user ? <Notifications /> : ""}
 
