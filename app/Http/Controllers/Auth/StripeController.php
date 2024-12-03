@@ -1214,12 +1214,16 @@ class StripeController extends Controller
     public function handleMandatorySubscription($uuid, $status)
     {
         $sub = MonthlyCharge::whereUuid($uuid)->first();
+        Log::info("sub data - " . $sub);
         if (!$sub) {
             return to_route('home')->with("error", 'Insufficient data!');
         }
         if ($sub->status !== 'initiated') {
             return to_route('home')->with("error", 'Subscription already processed!');
         }
+
+        $email = isset($sub->user) ? $sub->user->email : $sub->email;
+
         try {
             $session = StripeControl::getCheckoutSession($sub->session_id);
             $sub->status = $session->payment_status;
@@ -1229,12 +1233,13 @@ class StripeController extends Controller
                 $sub->upcoming_payment = Carbon::now()->addMonth();
                 $sub->save();
 
-                MonthlySubscribedJob::dispatch($sub);
+                MonthlySubscribedJob::dispatch('prem@futureprofilez.com', $sub, 'success');
 
                 return to_route('user.show', ['username' => $sub->user->username])->with('success', "Subscription Success!");
             }
 
-            MonthlySubscriptionFailedJobs::dispatch($sub);
+            MonthlySubscribedJob::dispatch('prem@futureprofilez.com', $sub, 'failure');
+            // MonthlySubscriptionFailedJobs::dispatch($sub);
             // SubscriptionFailed::dispatch($sub);
 
             $sub->save();

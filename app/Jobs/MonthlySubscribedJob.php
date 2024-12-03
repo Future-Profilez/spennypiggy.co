@@ -3,45 +3,53 @@
 namespace App\Jobs;
 
 use App\EmailService;
+use App\Mail\MonthlySubscriptionFailedMail;
 use App\Mail\MonthlySubscriptionSuccessMail;
-use App\Mail\SubscriptionSuccessMail;
-use App\Models\MonthlyCharge;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Mail;
+use Illuminate\Support\Facades\Mail;
 
 class MonthlySubscribedJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $sub;
+    public $email;
+    public $sub;
+    public $type;
 
     /**
      * Create a new job instance.
-     *
-     * @param MonthlyCharge $subscription
-     * @return void
      */
-    public function __construct(MonthlyCharge $sub)
+    public function __construct($email, $sub, $type)
     {
+        $this->email = $email;
         $this->sub = $sub;
+        $this->type = $type; // 'success' or 'failure'
     }
 
     /**
      * Execute the job.
-     *
-     * @return void
      */
     public function handle()
     {
-        Log::info("come in MonthlySubscribedJobs class handle function");
-        if ((isset($this->sub->user) && $this->sub->user->notification_send == 1) || (empty($this->sub->user))) {
-            Log::info("come in handle function if condition");
-            EmailService::sendMonthlySubscribedMail($this->sub);
+        Log::info("come in handle - " . $this->email);
+        if ($this->type === 'success') {
+            EmailService::sendMonthlySubscribedMail($this->email, $this->sub);
+            // Mail::to($this->email)->send(new MonthlySubscriptionSuccessMail($this->sub));
+        } elseif ($this->type === 'failure') {
+            // Mail::to($this->email)->send(new MonthlySubscriptionFailedMail($this->sub));
+            EmailService::monthlySubscribedFailedMail($this->email, $this->sub);
         }
     }
+    // public function handle(): void
+    // {
+    //     if((isset($this->sub->user) && $this->sub->user->notification_send == 1) || empty($this->sub->user)){
+    //         EmailService::subscriptionFailed($this->sub);
+    //     }
+    // }
 }

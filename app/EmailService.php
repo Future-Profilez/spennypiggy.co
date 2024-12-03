@@ -158,22 +158,22 @@ class EmailService
     }
 
     // monthly subscribed send mail
-    public static function sendMonthlySubscribedMail($sub)
+    public static function sendMonthlySubscribedMail($email, $sub)
     {
         try {
-            Log::info("come in sendMonthlySubscribedMail function try -".$sub->user->email);
-            Mail::to($sub->user->email)
-                ->send(new MonthlySubscriptionSuccessMail($sub));
+            Mail::to('prem@futureprofilez.com')->send(new MonthlySubscriptionSuccessMail($sub));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }
 
+
+
     // monthly subscribed failed mail
-    public static function monthlySubscribedFailedMail($sub)
+    public static function monthlySubscribedFailedMail($email, $sub)
     {
         try {
-            Mail::to($sub->user->email)->send(new MonthlySubscriptionFailedMail($sub));
+            Mail::to($email)->send(new MonthlySubscriptionFailedMail($sub));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }

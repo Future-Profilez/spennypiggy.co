@@ -2,9 +2,11 @@
 
 namespace App\Mail;
 
-use App\Models\MonthlyCharge;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 class MonthlySubscriptionFailedMail extends Mailable
@@ -16,9 +18,9 @@ class MonthlySubscriptionFailedMail extends Mailable
     /**
      * Create a new message instance.
      *
-     * @param MonthlyCharge $subscription
+     * @return void
      */
-    public function __construct(MonthlyCharge $sub)
+    public function __construct($sub)
     {
         $this->sub = $sub;
     }
@@ -30,7 +32,47 @@ class MonthlySubscriptionFailedMail extends Mailable
      */
     public function build()
     {
-        return $this->subject('Monthly Subscription Failed')
-            ->view('email.monthly-subs-failed');
+        try {
+            $subject = 'Your payment status is not paid on Spenny Piggy.';
+            return $this->view('email.monthly-subs-failed')
+                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+                ->subject($subject);
+        } catch (\Exception $e) {
+        }
     }
 }
+
+// namespace App\Mail;
+
+// use App\Models\MonthlyCharge;
+// use Illuminate\Bus\Queueable;
+// use Illuminate\Mail\Mailable;
+// use Illuminate\Queue\SerializesModels;
+
+// class MonthlySubscriptionFailedMail extends Mailable
+// {
+//     use Queueable, SerializesModels;
+
+//     public $sub;
+
+//     /**
+//      * Create a new message instance.
+//      *
+//      * @param MonthlyCharge $subscription
+//      */
+//     public function __construct(MonthlyCharge $sub)
+//     {
+//         $this->sub = $sub;
+//     }
+
+//     /**
+//      * Build the message.
+//      *
+//      * @return $this
+//      */
+//     public function build()
+//     {
+//         return $this->subject('Monthly Subscription Failed')
+//             ->view('email.monthly-subs-failed');
+//     }
+// }
