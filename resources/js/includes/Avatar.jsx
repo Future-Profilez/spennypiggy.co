@@ -3,7 +3,7 @@ import { Link } from "@inertiajs/react";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import userphoto from "../../assets/img/userphoto.png";
 
-export default function Avatar({ imageSrc, name, username, subhead, url, link }) {
+export default function Avatar({ src, imageSrc, name, username, subhead, url, link }) {
   return (
     <>
       <style>{`
@@ -20,7 +20,7 @@ export default function Avatar({ imageSrc, name, username, subhead, url, link })
           <Link href={url || `/${link || username}`} className="useravatar">
             <div className="avatar">
               <LazyLoadImage
-                src={imageSrc || userphoto}
+                src={imageSrc || src || userphoto}
                 alt="image-avatar"
                 className="img-fluid"
                 useIntersectionObserver={true}
@@ -39,7 +39,7 @@ export default function Avatar({ imageSrc, name, username, subhead, url, link })
         <div className="avatar-wrap">
           <div className="useravatar">
             <div className="avatar">
-              <img src={imageSrc} alt="image-avatar" className="img-fluid" />
+              <img src={imageSrc || src} alt="image-avatar" className="img-fluid" />
             </div>
             <div className="avatar-content">
               <h2>{name}</h2>

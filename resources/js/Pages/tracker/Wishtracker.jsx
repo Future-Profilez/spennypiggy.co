@@ -16,6 +16,7 @@ import { useAlerts } from "@/Components/Alerts";
 import BillsTracker from "./BillsTracker";
 import Tiplisting from "./Tiplisting";
 import TweetNow from "./TweetNow";
+import { TimeFormat } from "@/includes/TimeFormat";
 const defaultsec = "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/";
 
 export default function Wishtracker(props) {
@@ -67,7 +68,8 @@ export default function Wishtracker(props) {
                 sender={n && n.sender}
                 is_read_owner={isOwnerRead}
                 onclick={controlStatus}
-                classes="w-100" >
+                classes="w-100"
+            >
                 <div
                     onClick={handleStatus}
                     className="trackItem cursor-pointer shadow-pink box mb-4"
@@ -127,23 +129,30 @@ export default function Wishtracker(props) {
                                 )}
                             </div>
                             <div className="text-muted rightbar d-flex align-items-center ">
-                                {n && n.sender ? (
-                                    <div className="identity text-danger text-nowrap">
-                                        -
-                                        {formatMultiPrice(
-                                            n.amount * (+n.quantity || 1),
-                                            n.payment.currency
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="identity text-success text-nowrap">
-                                        +
-                                        {formatMultiPrice(
-                                            n.amount * (+n.quantity || 1),
-                                            n.payment.currency
-                                        )}
-                                    </div>
-                                )}
+                                <div>
+                                    {n && n.sender ? (
+                                        <div className="identity text-danger text-nowrap">
+                                            -
+                                            {formatMultiPrice(
+                                                n.amount * (+n.quantity || 1),
+                                                n.payment.currency
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="identity text-success text-nowrap">
+                                            +
+                                            {formatMultiPrice(
+                                                n.amount * (+n.quantity || 1),
+                                                n.payment.currency
+                                            )}
+                                        </div>
+                                    )}
+                                    <p className="text-[13px] text-right">
+                                        <TimeFormat
+                                            dateString={n && n.created_at}
+                                        />
+                                    </p>
+                                </div>
 
                                 <div className="angle-icon">
                                     <svg
@@ -324,9 +333,13 @@ export default function Wishtracker(props) {
                 <button
                     disabled={status !== "paid"}
                     onClick={() => cancel(id)}
-                    className={`${ status !== "paid" ? "disabled" : ""} btn-pink sm w-100 px-2 mt-3`}>
+                    className={`${
+                        status !== "paid" ? "disabled" : ""
+                    } btn-pink sm w-100 px-2 mt-3`}
+                >
                     {loading
-                        ? "Wait.." : manageStatus !== "paid"
+                        ? "Wait.."
+                        : manageStatus !== "paid"
                         ? "Cancelled"
                         : "Cancel Subscription"}
                 </button>
@@ -342,7 +355,8 @@ export default function Wishtracker(props) {
                     <Tabs
                         defaultActiveKey="1"
                         id="tracker-tab"
-                        className="mb-4 " >
+                        className="mb-4 "
+                    >
                         <Tab eventKey="1" title="Wish Tracker">
                             <div className="tracks mt-4 pt-4">
                                 {tracks &&

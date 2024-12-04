@@ -36,7 +36,7 @@ class StripePaymentItems extends Model
     ];
 
     protected $hidden   =   [
-        'created_at',
+        // 'created_at',
         'updated_at',
         'deleted_at'
     ];
@@ -48,7 +48,7 @@ class StripePaymentItems extends Model
 
     public function wish()
     {
-        return $this->belongsTo(WishItem::class, 'wish_item_id');
+        return $this->belongsTo(WishItem::class, 'wish_item_id')->withTrashed();
     }
 
     public function cart()
