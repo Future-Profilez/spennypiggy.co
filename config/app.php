@@ -187,7 +187,7 @@ return [
         'Image' => Intervention\Image\Facades\Image::class,
     ])->toArray(),
 
-    'surprise_tax' => 20,
+    'surprise_tax' => 10,
     'single_tax' => 20,
     'subs_tax' => 20,
     'crowd_tax' => 20,
@@ -195,6 +195,8 @@ return [
     'jar_tax' => 20,
     'bill_tax' => 20,
     'shop_tax' => 20,
+    'administration_fee' => 1,
+
     // 'surprise_tax' => 10,
     // 'single_tax' => 20,
     // 'subs_tax' => 20,

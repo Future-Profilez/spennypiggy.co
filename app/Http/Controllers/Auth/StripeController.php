@@ -937,12 +937,23 @@ class StripeController extends Controller
 
             $tax = round(($price * config('app.jar_tax', 10) / 100), 2, PHP_ROUND_HALF_UP);
 
+            // Fetch tax and administration fee percentage from the configuration
+            $taxPercentage = config('app.jar_tax', 10); // Tax percentage
+            $adminFeePercentage = config('app.administration_fee', 1); // Administration fee percentage
+
+            // Combine tax percentage and admin fee percentage
+            $totalTaxPercentage = $taxPercentage + $adminFeePercentage;
+
+            // Calculate tax amount and total price
+            $taxAmount = round(($price * $totalTaxPercentage / 100), 2, PHP_ROUND_HALF_UP); // Tax based on combined percentage
+            $totalPrice = $price + $taxAmount; // Total price including tax
+
             try {
 
                 $stripe_client = StripeControl::createProduct([
                     'name' => $goal->name ?? 'Support-creator',
                     'images' => ["https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/"],
-                    "default_price_data" => ["currency" => strtolower($creator->default_currency), "unit_amount_decimal" => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100],
+                    "default_price_data" => ["currency" => strtolower($creator->default_currency), "unit_amount_decimal" => round($totalPrice, 2, PHP_ROUND_HALF_UP) * 100],
                 ]);
             } catch (Exception $e) {
                 return response()->json([
@@ -959,7 +970,7 @@ class StripeController extends Controller
                 'guest_email'    =>  $request->email,
                 'currency'      =>  $creator->default_currency,
                 'amount'        =>  $price,
-                'tax'           =>  $tax,
+                'tax'           =>  $taxAmount,
                 'message'  =>  $request->message ?? NULL,
                 'anonymous' => $request->anonymous ?? 0,
                 'product_id' => $stripe_client->id
@@ -974,7 +985,7 @@ class StripeController extends Controller
                         'price_data' => [
                             'currency' => $currency,
                             'product' => $stripe_client->id,
-                            'unit_amount_decimal' => Helpers::priceFormat($creator->default_currency, ($price + $tax), $currency) * 100
+                            'unit_amount_decimal' => Helpers::priceFormat($goal->currency, $totalPrice, $currency) * 100
                         ]
                     ]
                 ],
@@ -982,7 +993,7 @@ class StripeController extends Controller
                     'transfer_data' => [
                         'destination' => $creator->account_id, // Creator's connected account ID
                     ],
-                    'application_fee_amount' => $tax * 100,
+                    'application_fee_amount' => $taxAmount * 100,
                     // 'on_behalf_of'  => $creator->account_id,
                     'description' => "Supporter Membership Payment."
                 ],
