@@ -61,14 +61,18 @@ class BillsController extends Controller
         $price = $request->price;
         // Fetch tax and administration fee from the configuration file
         $singleTax = config('app.single_tax'); // Tax percentage
-        $adminFeePercentage = config('app.administration_fee'); // Admin fee as a percentage
+        // $adminFeeAmount = config('app.administration_fee'); // Admin fee as a amount in gbp
 
-        // Combine tax and admin fee percentages
-        $totalTaxPercentage = $singleTax + $adminFeePercentage;
+        // $adminFee = config('app.administration_fee');
+        // $convertedCurrAmount = Helpers::priceFormat('GBP', $adminFee, strtoupper($user->default_currency));
 
         // Calculate tax and total amount
-        $taxAmount = round(($price * $totalTaxPercentage / 100), 2, PHP_ROUND_HALF_UP);
+        $taxAmount = round(($price * $singleTax / 100), 2, PHP_ROUND_HALF_UP);
+
         $createPriceId = $price + $taxAmount; // Total price including tax and admin fee
+
+        // Combine tax and admin fee percentages
+        // $totalTaxamount = $$taxAmount;
 
         $bill = new Bills();
         $bill->user_id = Auth::id();
@@ -216,7 +220,6 @@ class BillsController extends Controller
         }
     }
 
-
     public function removeBill($uuid)
     {
 
@@ -236,7 +239,6 @@ class BillsController extends Controller
             'msg' => "Bill not found."
         ]);
     }
-
 
     /**
      * Buy creator's membership
@@ -270,6 +272,11 @@ class BillsController extends Controller
             $vat_percentage_amount = ($price + $tax) * $bill->user->vat_amount_percentage / 100;
         }
 
+        $adminFee = config('app.administration_fee');
+        $convertedCurrAmount = Helpers::priceFormat('GBP', $adminFee, strtoupper($currency));
+
+        $totalTax = $bill->tax_amount + $convertedCurrAmount;
+
         if ($request->isMethod("POST")) {
             $request->validate([
                 'name' => [
@@ -297,7 +304,7 @@ class BillsController extends Controller
                 'guest_email'   =>  $request->email,
                 'currency'      =>  $bill->currency,
                 'amount'        =>  $bill->price,
-                'tax'           =>  $bill->tax_amount,
+                'tax'           =>  $totalTax,
                 'recurring_for' =>  $reccure,
                 'recurring_type' => 'monthly',
                 'message'  =>  $request->message ?? NULL,
@@ -308,7 +315,7 @@ class BillsController extends Controller
             $price += $vat_percentage_amount;
             $amount_per = round(($price / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
 
-            $amount = $price + $tax;
+            $amount = $price + $totalTax;
             $unit_amount = Helpers::priceFormat($bill->currency, $amount, $currency) * 100;
             $tax =   Helpers::priceFormat($bill->currency, $tax, $currency);
 

@@ -218,16 +218,19 @@ class StripeController extends Controller
             $lineItems = [];
             $subtotal = 0;
             $taxNew = 0;
+            $adminFee = config('app.administration_fee');
             foreach ($getdata as $dd) {
                 $priceId = $dd->priceid != Null ? $dd->priceid : $dd->wish->price_id;
+                $totalPrice = $priceId + $adminFee + $dd->tax;
 
                 $lineItems[] = [
-                    'price' => $priceId ?? '',
+                    'price' => $totalPrice ?? '',
                     'quantity' => $dd->quantity,
                 ];
 
                 $subtotal += $dd->amount;
                 $taxNew += $dd->tax;
+                $taxNew += $adminFee;
             }
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
@@ -928,25 +931,27 @@ class StripeController extends Controller
             //     return redirect()->back()->with('error', "This tip jar only needs $remaining_amount to complete the goal.");
             // }
 
-            $price = Helpers::priceFormat($currency, $amount, $creator->default_currency);
+            // $price = Helpers::priceFormat($currency, $amount, $creator->default_currency);
             // $min_amount = $goal->default_price < 5 ? 5 : $goal->default_price;
             // $user_amount = Helpers::priceFormat($goal->currency,$min_amount,$currency);
             // if($price < $min_amount){
             //     return redirect()->back()->with("error", "Enter minimum $user_amount amount.");
             // }
 
-            $tax = round(($price * config('app.jar_tax', 10) / 100), 2, PHP_ROUND_HALF_UP);
+            // $tax = round(($price * config('app.jar_tax') / 100), 2, PHP_ROUND_HALF_UP);
 
-            // Fetch tax and administration fee percentage from the configuration
-            $taxPercentage = config('app.jar_tax', 10); // Tax percentage
-            $adminFeePercentage = config('app.administration_fee', 1); // Administration fee percentage
 
             // Combine tax percentage and admin fee percentage
-            $totalTaxPercentage = $taxPercentage + $adminFeePercentage;
+            // $totalTaxPercentage = $taxPercentage + $adminFeePercentage;
+
+            // Fetch tax and administration fee percentage from the configuration
+            $taxPercentage = config('app.jar_tax'); // Tax percentage
+            $adminFeeAmount = config('app.administration_fee', 1); // Administration fee percentage
 
             // Calculate tax amount and total price
-            $taxAmount = round(($price * $totalTaxPercentage / 100), 2, PHP_ROUND_HALF_UP); // Tax based on combined percentage
-            $totalPrice = $price + $taxAmount; // Total price including tax
+            $taxAmount = round(($amount * $taxPercentage / 100), 2, PHP_ROUND_HALF_UP); // Tax based on combined percentage
+            $totalTaxAmount = $taxAmount + $adminFeeAmount;
+            $totalPrice = $amount + $taxAmount + $adminFeeAmount; // Total price including tax
 
             try {
 
@@ -969,8 +974,8 @@ class StripeController extends Controller
                 'guest_name'    =>  $request->name,
                 'guest_email'    =>  $request->email,
                 'currency'      =>  $creator->default_currency,
-                'amount'        =>  $price,
-                'tax'           =>  $taxAmount,
+                'amount'        =>  $amount,
+                'tax'           =>  $totalTaxAmount,
                 'message'  =>  $request->message ?? NULL,
                 'anonymous' => $request->anonymous ?? 0,
                 'product_id' => $stripe_client->id
@@ -993,7 +998,7 @@ class StripeController extends Controller
                     'transfer_data' => [
                         'destination' => $creator->account_id, // Creator's connected account ID
                     ],
-                    'application_fee_amount' => $taxAmount * 100,
+                    'application_fee_amount' => $totalTaxAmount * 100,
                     // 'on_behalf_of'  => $creator->account_id,
                     'description' => "Supporter Membership Payment."
                 ],

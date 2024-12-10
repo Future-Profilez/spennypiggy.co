@@ -81,13 +81,9 @@ class MembershipController extends Controller
 
         // Fetch tax and administration fee percentage from the configuration
         $memberTax = config('app.member_tax'); // Membership tax percentage
-        $adminFeePercentage = config('app.administration_fee'); // Admin fee as a percentage
-
-        // Combine tax percentage and admin fee percentage
-        $totalTaxPercentage = $memberTax + $adminFeePercentage;
 
         $price = $request->month_price;
-        $taxAmount = round(($price * $totalTaxPercentage / 100), 2, PHP_ROUND_HALF_UP); // Tax based on combined percentage
+        $taxAmount = round(($price * $memberTax / 100), 2, PHP_ROUND_HALF_UP); // Tax based on combined percentage
         $totalPrice = $price + $taxAmount; // Total price including tax
 
         $mem = new Membership();
@@ -180,12 +176,15 @@ class MembershipController extends Controller
 
             $price = $request->month_price;
             $taxamount = round(($price * config('app.member_tax') / 100), 2, PHP_ROUND_HALF_UP);
-            $createpriceid = $price + $taxamount;
+            $adminFee = config('app.administration_fee');
+            $convertedCurrAdminAmount = Helpers::priceFormat('GBP', $adminFee, strtoupper($mem->currency));
+            $totalTaxAmount = $taxamount + $convertedCurrAdminAmount;
+            $createpriceid = $price + $taxamount + $convertedCurrAdminAmount;
 
             $mem->user_id = Auth::id();
             $mem->level = $request->level;
             $mem->price = $price;
-            $mem->tax_amount = $taxamount;
+            $mem->tax_amount = $totalTaxAmount;
             if (!empty($request->thumbnail)) {
                 $mem->thumbnail = $request->thumbnail;
             }
@@ -295,6 +294,11 @@ class MembershipController extends Controller
             $vat_percentage_amount = ($price + $tax) * $membership->user->vat_amount_percentage / 100;
         }
 
+         $adminFeeAmount = config('app.administration_fee'); // Admin fee as a percentage
+
+        // Combine tax percentage and admin fee percentage
+        $totalTaxAmount = $tax + $adminFeeAmount;
+
         if ($request->isMethod("POST")) {
             $request->validate([
                 'name' => [
@@ -322,7 +326,7 @@ class MembershipController extends Controller
                 'guest_email'   =>  $request->email,
                 'currency'      =>  $membership->currency,
                 'amount'        =>  $membership->price,
-                'tax'           =>  $membership->tax_amount,
+                'tax'           =>  $totalTaxAmount,
                 'recurring_for' =>  $reccure,
                 'recurring_type' =>  in_array($membership->level, ['bronze', 'silver', 'gold', 'platinum']) ? 'monthly' : 'lifetime',
                 'surprise_message'  =>  $request->message ?? NULL,
@@ -333,7 +337,7 @@ class MembershipController extends Controller
             $price += $vat_percentage_amount;
             $amount_per = round(($price / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
 
-            $amount = $price + $tax;
+            $amount = $price + $totalTaxAmount;
             $unit_amount = Helpers::priceFormat($membership->currency, $amount, $currency) * 100;
             $tax =   Helpers::priceFormat($membership->currency, $tax, $currency);
 
