@@ -195,6 +195,8 @@ return [
     'jar_tax' => 20,
     'bill_tax' => 20,
     'shop_tax' => 20,
+
+
     'administration_fee' => 1,
 
     // 'surprise_tax' => 10,

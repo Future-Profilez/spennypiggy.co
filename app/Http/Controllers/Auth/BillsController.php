@@ -273,9 +273,9 @@ class BillsController extends Controller
         }
 
         $adminFee = config('app.administration_fee');
-        $convertedCurrAmount = Helpers::priceFormat('GBP', $adminFee, strtoupper($currency));
+        // $convertedCurrAmount = Helpers::priceFormat('GBP', $adminFee, strtoupper($currency));
 
-        $totalTax = $bill->tax_amount + $convertedCurrAmount;
+        $totalTax = $bill->tax_amount + $adminFee;
 
         if ($request->isMethod("POST")) {
             $request->validate([

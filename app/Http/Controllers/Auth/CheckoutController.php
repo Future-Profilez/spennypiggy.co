@@ -189,37 +189,35 @@ class CheckoutController extends Controller
                 ]);
                 $payment_data->refresh();
 
-                $symbol = Currency::where('iso',strtoupper($payment_data->payment->currency))->first();
+                $symbol = Currency::where('iso', strtoupper($payment_data->payment->currency))->first();
 
                 $message = $stripeid->message;
                 if (Auth::check()) {
                     if ($dd->wish_item_id == NULL) {
-                        CheckoutUser::dispatch($payment_data, false, $dd, $message,null,$symbol->symbol);
+                        CheckoutUser::dispatch($payment_data, false, $dd, $message, null, $symbol->symbol);
                     } else {
-                        CheckoutUser::dispatch($payment_data, false, false, $message,null,$symbol->symbol);
+                        CheckoutUser::dispatch($payment_data, false, false, $message, null, $symbol->symbol);
                     }
                 } else {
-                    CheckoutUser::dispatch($payment_data, true, false, false, $stripeid->name,$symbol->symbol);
+                    CheckoutUser::dispatch($payment_data, true, false, false, $stripeid->name, $symbol->symbol);
                 }
                 $dd->status = 0;
                 $dd->quantity = 0;
                 $dd->save();
 
-                if($dd->owner->auto_tweet == 1){
-                    if(empty($dd->wish_item_id)){
+                if ($dd->owner->auto_tweet == 1) {
+                    if (empty($dd->wish_item_id)) {
                         SurpriseTweet::dispatch($payment_data);
-                    }
-                    elseif($dd->wish->subscription == 2){
+                    } elseif ($dd->wish->subscription == 2) {
                         CrowdfundTweet::dispatch($payment_data);
-                    }
-                    else{
+                    } else {
                         CheckoutTweet::dispatch($payment_data);
                     }
                 }
             }
             if (Auth::check()) {
-                $curr = Currency::where('iso',strtoupper($currency))->first();
-                CheckoutMailToUser::dispatch($stripeid,$curr->symbol);
+                $curr = Currency::where('iso', strtoupper($currency))->first();
+                CheckoutMailToUser::dispatch($stripeid, $curr->symbol);
             }
 
             return redirect(route('thank-you', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');

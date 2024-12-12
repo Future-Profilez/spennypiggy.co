@@ -616,7 +616,7 @@ class ShopsController extends Controller
 
             $tax = round(($amount * config('app.shop_tax') / 100), 2, PHP_ROUND_HALF_UP);
 
-            $total = $amount + $tax + $shipping_price;
+            $total = $amount + $tax;
 
             if ($shop->vat_applicable == 1 && !empty($shop->user->vat_amount_percentage)) {
                 $vat_percentage_amount = $total * $shop->user->vat_amount_percentage / 100;
@@ -649,6 +649,7 @@ class ShopsController extends Controller
 
             $total += $vat_percentage_amount;
             $total += $adminFee;
+            $total += $shipping_price;
             if ($shop->price > 0) {
 
                 $lineItems[] = [
