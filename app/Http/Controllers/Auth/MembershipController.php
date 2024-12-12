@@ -177,9 +177,9 @@ class MembershipController extends Controller
             $price = $request->month_price;
             $taxamount = round(($price * config('app.member_tax') / 100), 2, PHP_ROUND_HALF_UP);
             $adminFee = config('app.administration_fee');
-            $convertedCurrAdminAmount = Helpers::priceFormat('GBP', $adminFee, strtoupper($mem->currency));
-            $totalTaxAmount = $taxamount + $convertedCurrAdminAmount;
-            $createpriceid = $price + $taxamount + $convertedCurrAdminAmount;
+            // $convertedCurrAdminAmount = Helpers::priceFormat('GBP', $adminFee, strtoupper($mem->currency));
+            $totalTaxAmount = $taxamount + $adminFee;
+            $createpriceid = $price + $taxamount + $adminFee;
 
             $mem->user_id = Auth::id();
             $mem->level = $request->level;
