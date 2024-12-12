@@ -37,7 +37,8 @@ class MembershipController extends Controller
 {
 
 
-    public function membershipLevelSave(Request $request){
+    public function membershipLevelSave(Request $request)
+    {
 
 
         $validator = Validator::make($request->all(), [
@@ -64,76 +65,78 @@ class MembershipController extends Controller
             ]);
         }
 
-            $user = User::where('id',Auth::id())->first();
-            $exist = Membership::where('user_id',$user->id)->pluck('level')->toArray();
+        $user = User::where('id', Auth::id())->first();
+        $exist = Membership::where('user_id', $user->id)->pluck('level')->toArray();
 
 
 
-            if(in_array($request->level,$exist)){
-                return response()->json([
-                    "status" => false,
-                    "msg" => "You already have a level of " . $request->level,
-                ]);
-            }
+        if (in_array($request->level, $exist)) {
+            return response()->json([
+                "status" => false,
+                "msg" => "You already have a level of " . $request->level,
+            ]);
+        }
 
-            $rewards = json_encode($request->rewards);
+        $rewards = json_encode($request->rewards);
 
+        // Fetch tax and administration fee percentage from the configuration
+        $memberTax = config('app.member_tax'); // Membership tax percentage
 
-            $price = $request->month_price;
-            $taxamount = round(($price * config('app.member_tax') / 100), 2, PHP_ROUND_HALF_UP);
-            $createpriceid = $price + $taxamount;
+        $price = $request->month_price;
+        $taxAmount = round(($price * $memberTax / 100), 2, PHP_ROUND_HALF_UP); // Tax based on combined percentage
+        $totalPrice = $price + $taxAmount; // Total price including tax
 
-            $mem = new Membership();
-            $mem->user_id = Auth::id();
-            $mem->level = $request->level;
-            $mem->currency = $user->default_currency;
-            $mem->price = $price;
-            $mem->tax_amount = $taxamount;
-            $mem->thumbnail = $request->thumbnail ?? null;
-            $mem->rewards = $rewards;
+        $mem = new Membership();
+        $mem->user_id = Auth::id();
+        $mem->level = $request->level;
+        $mem->currency = $user->default_currency;
+        $mem->price = $price;
+        $mem->tax_amount = $taxAmount;
+        $mem->thumbnail = $request->thumbnail ?? null;
+        $mem->rewards = $rewards;
 
-            $mem->save();
+        $mem->save();
 
-            $productPayload = [
-                "name"  => $user->username . '_' . $mem->level,
-                "images" => [$mem->perma_link],
-                "default_price_data"    =>  [
-                    "currency"  =>  $user->default_currency,
-                    "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
-                ],
-                "url"   =>  env('APP_URL') . '/' . $user->username
+        $productPayload = [
+            "name"  => $user->username . '_' . $mem->level,
+            "images" => [$mem->perma_link],
+            "default_price_data"    =>  [
+                "currency"  =>  $user->default_currency,
+                "unit_amount_decimal"   => round($totalPrice, 2, PHP_ROUND_HALF_UP) * 100,
+            ],
+            "url"   =>  env('APP_URL') . '/' . $user->username
+        ];
+
+        if ($request->level != 'lifetime') {
+            $productPayload['default_price_data']['recurring']  =   [
+                'interval'  =>  StripeControl::$periods["monthly"],
+                'interval_count'    =>  1
             ];
+        }
 
-            if ($request->level != 'lifetime') {
-                $productPayload['default_price_data']['recurring']  =   [
-                    'interval'  =>  StripeControl::$periods["monthly"],
-                    'interval_count'    =>  1
-                ];
-            }
-
-            try {
-                $product = StripeControl::createProduct($productPayload);
-                $mem->product_id = $product->id;
-                $mem->price_id = $product->default_price;
-                $mem->save();
-
-            } catch (Exception $e) {
-                $mem->delete();
-
-                return response()->json([
-                    'status' => false,
-                    'msg' => "Stripe Error: " . $e->getMessage()
-                ]);
-            }
+        try {
+            $product = StripeControl::createProduct($productPayload);
+            $mem->product_id = $product->id;
+            $mem->price_id = $product->default_price;
+            $mem->save();
+        } catch (Exception $e) {
+            $mem->delete();
 
             return response()->json([
-                'status' => true,
-                'msg' => "Membership added successfully, your upload will be approved shortly."
+                'status' => false,
+                'msg' => "Stripe Error: " . $e->getMessage()
             ]);
+        }
+
+        return response()->json([
+            'status' => true,
+            'msg' => "Membership added successfully, your upload will be approved shortly."
+        ]);
     }
 
 
-    public function updateLevel(Request $request,$uuid){
+    public function updateLevel(Request $request, $uuid)
+    {
         $request->validate(
             [
                 "level" => [
@@ -155,15 +158,13 @@ class MembershipController extends Controller
         if ($checkdata == 1) {
             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
-        }
-        else
-        {
+        } else {
 
-            $user = User::where('id',Auth::id())->first();
+            $user = User::where('id', Auth::id())->first();
 
-            $mem = Membership::where('uuid',$uuid)->first();
+            $mem = Membership::where('uuid', $uuid)->first();
             $old_price = $mem->price;
-            if(empty($mem)){
+            if (empty($mem)) {
                 return response()->json([
                     "status" => false,
                     "msg" => "Membership not found."
@@ -175,13 +176,16 @@ class MembershipController extends Controller
 
             $price = $request->month_price;
             $taxamount = round(($price * config('app.member_tax') / 100), 2, PHP_ROUND_HALF_UP);
-            $createpriceid = $price + $taxamount;
+            $adminFee = config('app.administration_fee');
+            $convertedCurrAdminAmount = Helpers::priceFormat('GBP', $adminFee, strtoupper($mem->currency));
+            $totalTaxAmount = $taxamount + $convertedCurrAdminAmount;
+            $createpriceid = $price + $taxamount + $convertedCurrAdminAmount;
 
             $mem->user_id = Auth::id();
             $mem->level = $request->level;
             $mem->price = $price;
-            $mem->tax_amount = $taxamount;
-            if(!empty($request->thumbnail)){
+            $mem->tax_amount = $totalTaxAmount;
+            if (!empty($request->thumbnail)) {
                 $mem->thumbnail = $request->thumbnail;
             }
             $mem->rewards = $rewards;
@@ -191,14 +195,13 @@ class MembershipController extends Controller
             try {
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
-                if($old_price == $mem->price){
-                    $product = $stripe->products->update($mem->product_id,[
+                if ($old_price == $mem->price) {
+                    $product = $stripe->products->update($mem->product_id, [
                         "name"  => $user->username . '_' . $mem->level,
                         "images" => [$mem->perma_link],
                         "default_price" => $mem->price_id
                     ]);
-                }
-                else{
+                } else {
                     $productPayload = [
                         "name"  => $user->username . '_' . $mem->level,
                         "images" => [$mem->perma_link],
@@ -222,34 +225,34 @@ class MembershipController extends Controller
                 $mem->approved = 0;
                 $mem->save();
 
-                $logs = Logs::where('edited_membership_id',$mem->id)->where('status','pending')->first();
-                if(!empty($logs)){
+                $logs = Logs::where('edited_membership_id', $mem->id)->where('status', 'pending')->first();
+                if (!empty($logs)) {
                     $logs->status = 'updated';
                     $logs->save();
                 }
-
             } catch (Exception $e) {
                 $mem->delete();
                 return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
             }
 
-            return redirect()->back()->with('success','Membership level is added in your profile.');
+            return redirect()->back()->with('success', 'Membership level is added in your profile.');
         }
     }
 
 
-    public function removeLevel($uuid){
+    public function removeLevel($uuid)
+    {
 
         $mem = Membership::whereUuid($uuid)->first();
 
-        if(empty($mem)){
+        if (empty($mem)) {
             return response()->json([
                 "status" => false,
                 "msg" => "Membership not found."
             ]);
         }
 
-        MembershipPayment::where('membership_id',$mem->id)->delete();
+        MembershipPayment::where('membership_id', $mem->id)->delete();
         $mem->delete();
 
         return response()->json([
@@ -267,7 +270,7 @@ class MembershipController extends Controller
      * @param string $reccure Subscription Reccuring - onetime or continue
      * @return mixed
      */
-    public function buyLevel(Request $request, $uuid ,$reccure = 'continue')
+    public function buyLevel(Request $request, $uuid, $reccure = 'continue')
     {
         $membership = Membership::whereUuid($uuid)->with('user')->first();
 
@@ -287,9 +290,14 @@ class MembershipController extends Controller
 
         $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
 
-        if(!empty($membership->user->vat_amount_percentage)){
-            $vat_percentage_amount = ($price+$tax) * $membership->user->vat_amount_percentage / 100;
+        if (!empty($membership->user->vat_amount_percentage)) {
+            $vat_percentage_amount = ($price + $tax) * $membership->user->vat_amount_percentage / 100;
         }
+
+         $adminFeeAmount = config('app.administration_fee'); // Admin fee as a percentage
+
+        // Combine tax percentage and admin fee percentage
+        $totalTaxAmount = $tax + $adminFeeAmount;
 
         if ($request->isMethod("POST")) {
             $request->validate([
@@ -318,7 +326,7 @@ class MembershipController extends Controller
                 'guest_email'   =>  $request->email,
                 'currency'      =>  $membership->currency,
                 'amount'        =>  $membership->price,
-                'tax'           =>  $membership->tax_amount,
+                'tax'           =>  $totalTaxAmount,
                 'recurring_for' =>  $reccure,
                 'recurring_type' =>  in_array($membership->level, ['bronze', 'silver', 'gold', 'platinum']) ? 'monthly' : 'lifetime',
                 'surprise_message'  =>  $request->message ?? NULL,
@@ -329,7 +337,7 @@ class MembershipController extends Controller
             $price += $vat_percentage_amount;
             $amount_per = round(($price / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
 
-            $amount = $price + $tax;
+            $amount = $price + $totalTaxAmount;
             $unit_amount = Helpers::priceFormat($membership->currency, $amount, $currency) * 100;
             $tax =   Helpers::priceFormat($membership->currency, $tax, $currency);
 
@@ -339,17 +347,17 @@ class MembershipController extends Controller
             // if($currency == strtolower($membership->currency)) {
             //     $items['price']  =   $membership->price_id;
             // } else {
-                $items['price_data']    =   [
-                    'currency'  =>  $currency,
-                    'product'   =>  $membership->product_id,
-                    'unit_amount_decimal'   =>  $unit_amount,
+            $items['price_data']    =   [
+                'currency'  =>  $currency,
+                'product'   =>  $membership->product_id,
+                'unit_amount_decimal'   =>  $unit_amount,
+            ];
+            if ($membership->level != 'lifetime') {
+                $items['price_data']['recurring']   =   [
+                    'interval'  =>  StripeControl::$periods['monthly'],
+                    'interval_count'    =>  1
                 ];
-                if($membership->level != 'lifetime') {
-                    $items['price_data']['recurring']   =   [
-                        'interval'  =>  StripeControl::$periods['monthly'],
-                        'interval_count'    =>  1
-                    ];
-                }
+            }
             // }
 
             $payload    =   [
@@ -360,7 +368,7 @@ class MembershipController extends Controller
                 'cancel_url'       =>  route('membership.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
             ];
 
-            if($membership->level == 'lifetime') {
+            if ($membership->level == 'lifetime') {
                 $payload['mode']    =   'payment';
                 $payload['payment_intent_data']     =   [
                     'transfer_data' => [
@@ -480,21 +488,20 @@ class MembershipController extends Controller
                 $mem->upcoming_payment = $current;
                 $mem->save();
 
-                if ($mem->recurring_for == 'onetime' AND $mem->recurring_type == 'monthly') {
+                if ($mem->recurring_for == 'onetime' and $mem->recurring_type == 'monthly') {
                     SubscriptionCancelAtEnd::dispatch($mem);
                 } else {
                     MembershipMail::dispatch($mem);
                 }
 
-                if($mem->anonymous == 1){
+                if ($mem->anonymous == 1) {
                     $username = "Anonymous user";
-                }
-                else{
+                } else {
                     $username = $mem->guest_name ?? "Anonymous user";
                 }
 
                 $message = $username . " just subscribed to your " . $mem->membership->name . " membership";
-                NotificationSave::dispatch($message,$mem->membership->user,$mem->user,'Membership');
+                NotificationSave::dispatch($message, $mem->membership->user, $mem->user, 'Membership');
                 // if ($mem->wish_item->user->auto_tweet == 1) {
                 //     // MakeAutoTweets::dispatch($user);
                 //     SubscribeAutoTweet::dispatch($mem);
@@ -519,21 +526,22 @@ class MembershipController extends Controller
     }
 
 
-    public function membershipDashboard(){
-        $user = User::where('id',Auth::id())->first();
+    public function membershipDashboard()
+    {
+        $user = User::where('id', Auth::id())->first();
 
 
-        $count = MembershipPayment::whereHas('membership',function($q) use($user){
+        $count = MembershipPayment::whereHas('membership', function ($q) use ($user) {
             $q->where('user_id', $user->id);
-        })->where('status','paid')->count();
+        })->where('status', 'paid')->count();
 
-        $per_month = MembershipPayment::whereHas('membership',function($q) use($user){
+        $per_month = MembershipPayment::whereHas('membership', function ($q) use ($user) {
             $q->where('user_id', $user->id);
-        })->whereMonth('created_at',Carbon::now()->month)->where('status','paid')->sum('amount');
+        })->whereMonth('created_at', Carbon::now()->month)->where('status', 'paid')->sum('amount');
 
-        $all_time = MembershipPayment::whereHas('membership',function($q) use($user){
+        $all_time = MembershipPayment::whereHas('membership', function ($q) use ($user) {
             $q->where('user_id', $user->id);
-        })->where('status','paid')->sum('amount');
+        })->where('status', 'paid')->sum('amount');
 
         $arr = [
             'members' => $count,
@@ -549,8 +557,9 @@ class MembershipController extends Controller
     }
 
 
-    public function membershipGraph(){
-        $user = User::where('id',Auth::id())->first();
+    public function membershipGraph()
+    {
+        $user = User::where('id', Auth::id())->first();
 
 
         $currentDate = Carbon::now();
@@ -561,26 +570,25 @@ class MembershipController extends Controller
 
         for ($i = 0; $i <= 4; $i++) {
 
-            if($i != 0){
+            if ($i != 0) {
                 $date = Carbon::now()->subMonth($i);
                 $format_date = $date->format('F Y');
-            }
-            else{
+            } else {
                 $date = $currentDate;
                 $format_date = $currentDate->format('F Y');
             }
 
 
-            $data = MembershipPayment::whereHas('membership',function($q) use($user){
-                $q->where('user_id',$user->id);
+            $data = MembershipPayment::whereHas('membership', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
             })->whereMonth('created_at', $date->month)
-                            ->whereYear('created_at', $date->year)
-                            ->sum('amount');
+                ->whereYear('created_at', $date->year)
+                ->sum('amount');
 
             $result[] = [
-                            'Amount' => $data,
-                            'Time' => $format_date
-                        ];
+                'Amount' => $data,
+                'Time' => $format_date
+            ];
         }
 
         return response()->json([
@@ -657,23 +665,20 @@ class MembershipController extends Controller
                 $newSubs->updated_at = Carbon::now();
                 $newSubs->save();
 
-                SendRenewMail::dispatch($array,'renew','membership');
-            }elseif ($event->type == "customer.subscription.deleted" && !empty($subs)) {
+                SendRenewMail::dispatch($array, 'renew', 'membership');
+            } elseif ($event->type == "customer.subscription.deleted" && !empty($subs)) {
                 $subs->status = 'cancelled';
                 $subs->save();
 
-                SendRenewMail::dispatch($array,'cancelled','membership');
-            }
-            elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
+                SendRenewMail::dispatch($array, 'cancelled', 'membership');
+            } elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
                 $subs->status = 'failed';
                 $subs->save();
 
-                SendRenewMail::dispatch($array,'failed','membership');
+                SendRenewMail::dispatch($array, 'failed', 'membership');
             }
-
         }
 
         return true;
     }
-
 }

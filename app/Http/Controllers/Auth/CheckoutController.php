@@ -55,9 +55,11 @@ class CheckoutController extends Controller
             $lineItems = [];
             $subtotal = 0;
             $taxNew = 0;
+            $adminFee = 0;
             foreach ($getdata as $dd) {
-
-                $amount = $dd->amount + $dd->tax;
+                $adminFee = config('app.administration_fee');
+                $totalAmount = $dd->amount + $dd->tax + $adminFee;
+                $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, $currency) * 100;
 
                 $lineItems[] = [
                     // 'price' => $dd->stripe_product_id ?? '',
@@ -65,12 +67,13 @@ class CheckoutController extends Controller
                     'price_data' => [
                         'currency' => $currency,
                         'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
-                        'unit_amount_decimal' => Helpers::priceFormat($dd->owner->default_currency, $amount, $currency) * 100
+                        'unit_amount_decimal' => $ConvertedAmount
                     ]
                 ];
 
                 $subtotal += $dd->amount * $dd->quantity;
                 $taxNew += $dd->tax * $dd->quantity;
+                $taxNew += $adminFee;
             }
 
             // $transfering_amount = $subtotal - $taxNew;
@@ -85,7 +88,7 @@ class CheckoutController extends Controller
                 'payment_intent_data' => [
                     'transfer_data' => [
                         'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
-                        'amount' => Helpers::priceFormat($dd->owner->default_currency, $subtotal, $currency) * 100,
+                        'amount' => $ConvertedAmount,
                     ],
                     // 'application_fee_amount' => $taxNew,
                     'description' => "Custom Content Purchase."

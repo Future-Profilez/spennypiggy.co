@@ -33,7 +33,8 @@ use function Termwind\render;
 class ShopsController extends Controller
 {
 
-    public function addShopItems(Request $request){
+    public function addShopItems(Request $request)
+    {
         $request->validate(
             [
                 "type" => [
@@ -82,7 +83,7 @@ class ShopsController extends Controller
             ]
         );
 
-        if($request->type == "physical"){
+        if ($request->type == "physical") {
             $request->validate(
                 [
                     "shipping" => [
@@ -111,12 +112,12 @@ class ShopsController extends Controller
         }
 
         $file = [];
-        if(!empty($request->reward_file)){
+        if (!empty($request->reward_file)) {
             $file = $request->reward_file;
             // $file = json_decode($request->reward_file);
         }
 
-        if($request->type != 'physical'){
+        if ($request->type != 'physical') {
             $shop = Shop::create([
                 "user_id" => $user->id,
                 'type' => $request->type,
@@ -136,8 +137,7 @@ class ShopsController extends Controller
                 'quantity_allow' => $request->quantity_allow ?? null,
                 'vat_applicable' => $request->vat_applicable
             ]);
-        }
-        else{
+        } else {
             $shop = Shop::create([
                 "user_id" => $user->id,
                 'type' => $request->type,
@@ -169,7 +169,7 @@ class ShopsController extends Controller
                 $ship->save();
             }
 
-            if(!empty($request->varients)){
+            if (!empty($request->varients)) {
                 $varients = json_decode($request->varients);
                 foreach ($varients as $key => $value) {
                     $var = new ShopVarients();
@@ -180,14 +180,13 @@ class ShopsController extends Controller
                     $var->save();
                 }
             }
-
         }
 
         $shop->refresh();
 
         if (!empty($request->category)) {
             $categories = json_decode($request->category);
-            $cat = UserShopCategories::whereIn('uuid',$categories)->get();
+            $cat = UserShopCategories::whereIn('uuid', $categories)->get();
             foreach ($cat as $key => $value) {
                 $shop_cat = new ShopCategory();
                 $shop_cat->uuid = Uuid::uuid4();
@@ -197,10 +196,11 @@ class ShopsController extends Controller
             }
         }
 
-        $taxamount = round(($request->price * config('app.shop_tax',12) / 100), 2, PHP_ROUND_HALF_UP);
+        $taxamount = round(($request->price * config('app.shop_tax') / 100), 2, PHP_ROUND_HALF_UP);
+
         $createpriceid = $request->price + $taxamount;
 
-        $slug = strtolower(str_replace(" ","-",$shop->name));
+        $slug = strtolower(str_replace(" ", "-", $shop->name));
         $productPayload = [
             "name"  =>  $shop->name,
             "images" => [$shop->perma_link],
@@ -221,7 +221,6 @@ class ShopsController extends Controller
                 'status' => true,
                 'msg' => "Shop Item has been added, your upload will be approved shortly."
             ]);
-
         } catch (Exception $e) {
             $shop->delete();
             return response()->json([
@@ -233,10 +232,11 @@ class ShopsController extends Controller
     }
 
 
-    public function updateShopItems(Request $request,$uuid){
+    public function updateShopItems(Request $request, $uuid)
+    {
         $user = User::find(Auth::id());
 
-        $shop = Shop::where('uuid',$uuid)->first();
+        $shop = Shop::where('uuid', $uuid)->first();
 
         $old_price = $shop->price;
 
@@ -246,15 +246,15 @@ class ShopsController extends Controller
         }
 
         $file = [];
-        if(!empty($request->reward_file)){
+        if (!empty($request->reward_file)) {
             $file = $request->reward_file;
             // $file = json_decode($request->reward_file);
         }
 
-        if(!empty($shop)){
+        if (!empty($shop)) {
 
-            if($request->type != 'physical'){
-                Shop::where('uuid',$uuid)->update([
+            if ($request->type != 'physical') {
+                Shop::where('uuid', $uuid)->update([
                     'type' => $request->type,
                     'name' => $request->name,
                     'description' => $request->description,
@@ -271,9 +271,8 @@ class ShopsController extends Controller
                     'special_member_price' => $request->special_member_price ?? null,
                     'quantity_allow' => $request->quantity_allow ?? 0,
                 ]);
-            }
-            else{
-                Shop::where('uuid',$uuid)->update([
+            } else {
+                Shop::where('uuid', $uuid)->update([
                     "user_id" => $user->id,
                     'type' => $request->type,
                     'name' => $request->name,
@@ -295,7 +294,7 @@ class ShopsController extends Controller
                 ]);
 
                 $shipping = json_decode($request->shipping);
-                ShopShippingInfo::where('shop_id',$shop->id)->delete();
+                ShopShippingInfo::where('shop_id', $shop->id)->delete();
                 foreach ($shipping as $key => $value) {
                     $ship = new ShopShippingInfo();
                     $ship->uuid = Uuid::uuid4();
@@ -305,9 +304,9 @@ class ShopsController extends Controller
                     $ship->save();
                 }
 
-                if(!empty($request->varients)){
+                if (!empty($request->varients)) {
                     $varients = json_decode($request->varients);
-                    ShopVarients::where('shop_id',$shop->id)->delete();
+                    ShopVarients::where('shop_id', $shop->id)->delete();
                     foreach ($varients as $key => $value) {
                         $var = new ShopVarients();
                         $var->uuid = Uuid::uuid4();
@@ -322,10 +321,10 @@ class ShopsController extends Controller
             $shop->refresh();
 
             if (!empty($request->category)) {
-                ShopCategory::where('shop_id',$shop->id)->delete();
+                ShopCategory::where('shop_id', $shop->id)->delete();
 
                 $categories = json_decode($request->category);
-                $cat = UserShopCategories::whereIn('uuid',$categories)->get();
+                $cat = UserShopCategories::whereIn('uuid', $categories)->get();
                 foreach ($cat as $key => $value) {
                     $shop_cat = new ShopCategory();
                     $shop_cat->uuid = Uuid::uuid4();
@@ -335,10 +334,10 @@ class ShopsController extends Controller
                 }
             }
 
-            $taxamount = round(($request->price * config('app.shop_tax',20) / 100), 2, PHP_ROUND_HALF_UP);
+            $taxamount = round(($request->price * config('app.shop_tax', 20) / 100), 2, PHP_ROUND_HALF_UP);
             $createpriceid = $request->price + $taxamount;
 
-            $slug = strtolower(str_replace(" ","_",$shop->name));
+            $slug = strtolower(str_replace(" ", "_", $shop->name));
             $productPayload = [
                 "name"  =>  $shop->name,
                 "images" => [$shop->perma_link],
@@ -352,15 +351,15 @@ class ShopsController extends Controller
             try {
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
-                if($shop->type != 'physical'){
-                    if($old_price == $shop->price){
-                        $stripe_client = $stripe->products->update($shop->stripe_product_id,[
+                if ($shop->type != 'physical') {
+                    if ($old_price == $shop->price) {
+                        $stripe_client = $stripe->products->update($shop->stripe_product_id, [
                             'name' => $request->name ?? $shop->name,
                             'images' => [$shop->perma_link],
                             "default_price" => $shop->price_id,
                             // "url" => $request->item_url ?? null
                         ]);
-                    }else{
+                    } else {
                         $stripe_client = StripeControl::createProduct($productPayload);
                         $shop->price_id = $stripe_client->default_price;
                     }
@@ -370,8 +369,8 @@ class ShopsController extends Controller
                 }
 
 
-                $logs = Logs::where('edited_shop_id',$shop->id)->where('status','pending')->first();
-                if(!empty($logs)){
+                $logs = Logs::where('edited_shop_id', $shop->id)->where('status', 'pending')->first();
+                if (!empty($logs)) {
                     $logs->status = 'updated';
                     $logs->save();
                 }
@@ -393,10 +392,11 @@ class ShopsController extends Controller
         }
     }
 
-    public function deleteShop($uuid){
-        $shop = Shop::where('uuid',$uuid)->first();
+    public function deleteShop($uuid)
+    {
+        $shop = Shop::where('uuid', $uuid)->first();
 
-        if(!$shop){
+        if (!$shop) {
             return response()->json([
                 'status' => false,
                 'msg' => "Shop item not found."
@@ -420,19 +420,20 @@ class ShopsController extends Controller
     }
 
 
-    public function shopList($username){
-        $user = User::where('username',$username)->first();
+    public function shopList($username)
+    {
+        $user = User::where('username', $username)->first();
 
         $shops = [];
-        if(!empty($user)){
-            $query = Shop::where('user_id',$user->id)->with(['user','shop_varients'])->orderBy('created_at','desc');
+        if (!empty($user)) {
+            $query = Shop::where('user_id', $user->id)->with(['user', 'shop_varients'])->orderBy('created_at', 'desc');
 
-            if(Auth::check()){
-                if(Auth::id() != $user->id){
-                    $query->where('approved',1);
+            if (Auth::check()) {
+                if (Auth::id() != $user->id) {
+                    $query->where('approved', 1);
                 }
-            }else{
-                $query->where('approved',1);
+            } else {
+                $query->where('approved', 1);
             }
 
             $shops = $query->get();
@@ -447,50 +448,49 @@ class ShopsController extends Controller
     }
 
 
-    public function singleShopList($slug,$uuid,$session_id = null){
+    public function singleShopList($slug, $uuid, $session_id = null)
+    {
 
-        $shop = Shop::where('uuid',$uuid)->with(['user','shop_varients'])->first();
+        $shop = Shop::where('uuid', $uuid)->with(['user', 'shop_varients'])->first();
 
         $opened = null;
-        if(!empty($session_id)){
-            $payments = ShopPayment::where('session_id',$session_id)->first();
+        if (!empty($session_id)) {
+            $payments = ShopPayment::where('session_id', $session_id)->first();
             $opened = $payments->opened;
             $payments->opened = 1;
             $payments->save();
         }
 
-        if(Auth::check()){
+        if (Auth::check()) {
             $user = User::find(Auth::id());
-            $member = MembershipPayment::where(function($que)use($user){
-                $que->where('user_id',$user->id)->orWhere('guest_email',$user->email);
-            })->whereHas('membership',function($q)use($shop){
-                $q->where('user_id',$shop->user_id);
-            })->where('status','paid')->where('upcoming_payment','>=',Carbon::now())->count();
-            if($member >= 1){
+            $member = MembershipPayment::where(function ($que) use ($user) {
+                $que->where('user_id', $user->id)->orWhere('guest_email', $user->email);
+            })->whereHas('membership', function ($q) use ($shop) {
+                $q->where('user_id', $shop->user_id);
+            })->where('status', 'paid')->where('upcoming_payment', '>=', Carbon::now())->count();
+            if ($member >= 1) {
                 $shop->is_member = 1;
-            }
-            else{
+            } else {
                 $shop->is_member = 0;
             }
-        }else{
+        } else {
             $shop->is_member = 0;
         }
 
-        if($shop->is_member == 1 && !empty($shop->special_member_price)){
+        if ($shop->is_member == 1 && !empty($shop->special_member_price)) {
             $amount = round($shop->special_member_price, 2, PHP_ROUND_HALF_UP);
-        }
-        else{
+        } else {
             $amount = round($shop->price, 2, PHP_ROUND_HALF_UP);
         }
 
-        $tax = round(($amount * config('app.shop_tax',20) / 100), 2, PHP_ROUND_HALF_UP);
+        $tax = round(($amount * config('app.shop_tax', 20) / 100), 2, PHP_ROUND_HALF_UP);
 
         $vat_percentage_amount = 0;
-        if($shop->vat_applicable == 1){
-            $vat_percentage_amount = ($amount+$tax) * $shop->user->vat_amount_percentage / 100;
+        if ($shop->vat_applicable == 1) {
+            $vat_percentage_amount = ($amount + $tax) * $shop->user->vat_amount_percentage / 100;
         }
 
-        return Inertia::render('shop/Item',[
+        return Inertia::render('shop/Item', [
             'shop' => $shop,
             'payment_id' => $session_id,
             'opened' => $opened,
@@ -498,16 +498,17 @@ class ShopsController extends Controller
         ]);
     }
 
-    public function shippingPrice($shop_id){
-        $shop = Shop::where('uuid',$shop_id)->first();
+    public function shippingPrice($shop_id)
+    {
+        $shop = Shop::where('uuid', $shop_id)->first();
         $shipping_price = 0;
-        if($shop->type == 'physical'){
+        if ($shop->type == 'physical') {
             $country = request()->query('country');
-            if(!empty($country)){
-                $shipping = ShopShippingInfo::where('shop_id',$shop->id)->where('country',$country)->first();
+            if (!empty($country)) {
+                $shipping = ShopShippingInfo::where('shop_id', $shop->id)->where('country', $country)->first();
             }
-            if(empty($shipping) || empty($country)){
-                $shipping = ShopShippingInfo::where('shop_id',$shop->id)->where('country','all')->first();
+            if (empty($shipping) || empty($country)) {
+                $shipping = ShopShippingInfo::where('shop_id', $shop->id)->where('country', 'all')->first();
             }
             $shipping_price = !empty($shipping) ? $shipping->shipping_price : 0;
         }
@@ -561,7 +562,7 @@ class ShopsController extends Controller
     }
 
 
-    public function buyShopItem(Request $request,$shop_id,$varient_id)
+    public function buyShopItem(Request $request, $shop_id, $varient_id)
     {
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         try {
@@ -574,11 +575,11 @@ class ShopsController extends Controller
                 }
             }
 
-            $shop = Shop::where('uuid',$shop_id)->first();
+            $shop = Shop::where('uuid', $shop_id)->first();
 
             $shipping_price = 0;
 
-            if($shop->type == 'physical'){
+            if ($shop->type == 'physical') {
                 $request->validate([
                     "shipping_info" => [
                         "required",
@@ -587,48 +588,51 @@ class ShopsController extends Controller
 
                 $shipping_info = $request->shipping_info;
                 $country = $request->query('country');
-                if(!empty($country)){
-                    $shipping = ShopShippingInfo::where('shop_id',$shop->id)->where('country',$country)->first();
+                if (!empty($country)) {
+                    $shipping = ShopShippingInfo::where('shop_id', $shop->id)->where('country', $country)->first();
                 }
-                if(empty($shipping) || empty($country)){
-                    $shipping = ShopShippingInfo::where('shop_id',$shop->id)->where('country','all')->first();
+                if (empty($shipping) || empty($country)) {
+                    $shipping = ShopShippingInfo::where('shop_id', $shop->id)->where('country', 'all')->first();
                 }
                 $shipping_price = !empty($shipping) ? $shipping->shipping_price : 0;
             }
 
-            if(!empty($shop->slot_limitation)){
-                $pay = ShopPayment::where('shop_id',$shop->id)->where('payment_status','paid')->count();
+            if (!empty($shop->slot_limitation)) {
+                $pay = ShopPayment::where('shop_id', $shop->id)->where('payment_status', 'paid')->count();
 
-                if($pay >= $shop->slot_limitation){
+                if ($pay >= $shop->slot_limitation) {
                     return redirect()->back()->with("error", "Slots are full for this shop.");
                 }
             }
 
             $vat_percentage_amount = 0;
 
-            if($varient_id != "no_varient"){
-                $var = ShopVarients::where('id',$varient_id)->first();
+            if ($varient_id != "no_varient") {
+                $var = ShopVarients::where('id', $varient_id)->first();
                 $amount = round($var->price, 2, PHP_ROUND_HALF_UP);
-            }
-            else{
+            } else {
                 $amount = round(request()->query('amount'), 2, PHP_ROUND_HALF_UP);
             }
 
-            $tax = round(($amount * config('app.shop_tax',20) / 100), 2, PHP_ROUND_HALF_UP);
+            $tax = round(($amount * config('app.shop_tax') / 100), 2, PHP_ROUND_HALF_UP);
 
             $total = $amount + $tax + $shipping_price;
 
-            if($shop->vat_applicable == 1){
+            if ($shop->vat_applicable == 1 && !empty($shop->user->vat_amount_percentage)) {
                 $vat_percentage_amount = $total * $shop->user->vat_amount_percentage / 100;
             }
 
-            if(!Auth::check()){
+            $adminFee = config('app.administration_fee');
+
+            $totalTaxAmount = $tax + $adminFee;
+
+            if (!Auth::check()) {
                 $logged_out_user = User::where('email', request()->query('email'))->first();
             }
 
             $shopPaymentDetail = ShopPayment::create([
                 'amount' => $amount,
-                'tax_amount' => $tax,
+                'tax_amount' => $totalTaxAmount,
                 'currency' => $shop->user->default_currency,
                 'shop_id' => $shop->id,
                 'user_id' => (Auth::check()) ? Auth::id() : (!empty($logged_out_user) ? $logged_out_user->id : null),
@@ -644,7 +648,8 @@ class ShopsController extends Controller
             $shopPaymentDetail->refresh();
 
             $total += $vat_percentage_amount;
-            if($shop->price > 0){
+            $total += $adminFee;
+            if ($shop->price > 0) {
 
                 $lineItems[] = [
                     // 'price' => $dd->stripe_product_id ?? '',
@@ -688,34 +693,33 @@ class ShopsController extends Controller
             $shopPaymentDetail->payment_status = 'paid';
             $shopPaymentDetail->save();
 
-            if($shopPaymentDetail->anonymous == 1){
+            if ($shopPaymentDetail->anonymous == 1) {
                 $username = "Anonymous user";
-            }
-            else{
+            } else {
                 $username = $shopPaymentDetail->name ?? "Anonymous user";
             }
 
             $message = $username . " just purchased your shop item " . $shopPaymentDetail->shop->name;
-            NotificationSave::dispatch($message,$shop->user,$shopPaymentDetail->user,'Shop');
+            NotificationSave::dispatch($message, $shop->user, $shopPaymentDetail->user, 'Shop');
 
-            $symbol = Currency::where('iso',strtoupper($shopPaymentDetail->currency))->first();
+            $symbol = Currency::where('iso', strtoupper($shopPaymentDetail->currency))->first();
 
             $message = $shopPaymentDetail->message;
             if ($shopPaymentDetail->anonymous == 0) {
-                ShopBuyed::dispatch($shopPaymentDetail, false,$symbol->symbol);
+                ShopBuyed::dispatch($shopPaymentDetail, false, $symbol->symbol);
             } else {
-                ShopBuyed::dispatch($shopPaymentDetail, true,$symbol->symbol);
+                ShopBuyed::dispatch($shopPaymentDetail, true, $symbol->symbol);
             }
 
-            $curr = Currency::where('iso',strtoupper($currency))->first();
-            ShopBuyedUser::dispatch($shopPaymentDetail,$shop->reward_file_url,$curr->symbol);
+            $curr = Currency::where('iso', strtoupper($currency))->first();
+            ShopBuyedUser::dispatch($shopPaymentDetail, $shop->reward_file_url, $curr->symbol);
 
-            $slug = strtolower(str_replace(" ","-",$shop->name));
+            $slug = strtolower(str_replace(" ", "-", $shop->name));
 
             return response()->json([
                 'status' => true,
                 'msg' => "Payment Successfull",
-                'url' => route('single-shop-list', [$slug,$shop->uuid,$shopPaymentDetail->session_id])
+                'url' => route('single-shop-list', [$slug, $shop->uuid, $shopPaymentDetail->session_id])
             ]);
         } catch (\Throwable $th) {
             // Log::error("Error in createCheckout: " . $th->getMessage());
@@ -729,38 +733,37 @@ class ShopsController extends Controller
         try {
             $stripeid = ShopPayment::where('uuid', $id)->first();
 
-            if($stripeid->anonymous == 1){
+            if ($stripeid->anonymous == 1) {
                 $username = "Anonymous user";
-            }
-            else{
+            } else {
                 $username = $stripeid->name ?? "Anonymous user";
             }
 
             $message = $username . " just purchased your shop item " . $stripeid->shop->name;
-            NotificationSave::dispatch($message,$stripeid->shop->user,$stripeid->user,'Shop');
+            NotificationSave::dispatch($message, $stripeid->shop->user, $stripeid->user, 'Shop');
 
             ShopPayment::where('uuid', $id)->update([
                 'payment_status' => 'paid',
                 'updated_at' => Carbon::now(),
             ]);
 
-            $symbol = Currency::where('iso',strtoupper($stripeid->currency))->first();
+            $symbol = Currency::where('iso', strtoupper($stripeid->currency))->first();
 
             $message = $stripeid->message;
             if ($stripeid->anonymous == 0) {
-                ShopBuyed::dispatch($stripeid, false,$symbol->symbol);
+                ShopBuyed::dispatch($stripeid, false, $symbol->symbol);
             } else {
-                ShopBuyed::dispatch($stripeid, true,$symbol->symbol);
+                ShopBuyed::dispatch($stripeid, true, $symbol->symbol);
             }
 
-            $curr = Currency::where('iso',strtoupper($currency))->first();
-            ShopBuyedUser::dispatch($stripeid,$stripeid->shop->reward_file_url,$curr->symbol);
+            $curr = Currency::where('iso', strtoupper($currency))->first();
+            ShopBuyedUser::dispatch($stripeid, $stripeid->shop->reward_file_url, $curr->symbol);
 
-            $slug = strtolower(str_replace(" ","-",$stripeid->shop->name));
+            $slug = strtolower(str_replace(" ", "-", $stripeid->shop->name));
 
-            return redirect(route('single-shop-list', [$slug,$stripeid->shop->uuid,$stripeid->session_id]))->with('success', 'Payment Successful.');
+            return redirect(route('single-shop-list', [$slug, $stripeid->shop->uuid, $stripeid->session_id]))->with('success', 'Payment Successful.');
         } catch (Exception $e) {
-            return redirect(route('user.show', [$stripeid->shop->user->username]))->with('error',$e->getMessage());
+            return redirect(route('user.show', [$stripeid->shop->user->username]))->with('error', $e->getMessage());
         }
     }
 
@@ -775,28 +778,28 @@ class ShopsController extends Controller
     }
 
 
-    public function deactivateShop($uuid){
-        $shop = Shop::where('uuid',$uuid)->first();
-        if(!empty($shop)){
-            if($shop->status == 1){
+    public function deactivateShop($uuid)
+    {
+        $shop = Shop::where('uuid', $uuid)->first();
+        if (!empty($shop)) {
+            if ($shop->status == 1) {
                 $shop->status = 0;
                 $shop->save();
-                return redirect()->back()->with('success','Shop Deactivated successfully.');
-            }
-            else{
+                return redirect()->back()->with('success', 'Shop Deactivated successfully.');
+            } else {
                 $shop->status = 1;
                 $shop->save();
-                return redirect()->back()->with('success','Shop Activated successfully.');
+                return redirect()->back()->with('success', 'Shop Activated successfully.');
             }
-        }
-        else{
-            return redirect()->back()->with('error','Shop not found.');
+        } else {
+            return redirect()->back()->with('error', 'Shop not found.');
         }
     }
 
 
-    public function answerPayment(Request $request,$payment_id){
-        $payment = ShopPayment::where('session_id',$payment_id)->first();
+    public function answerPayment(Request $request, $payment_id)
+    {
+        $payment = ShopPayment::where('session_id', $payment_id)->first();
 
         $payment->answer = $request->answer;
         $payment->save();
@@ -808,12 +811,13 @@ class ShopsController extends Controller
     }
 
 
-    public function ordersList(){
-        $payments = ShopPayment::whereHas('shop',function($q){
-            $q->where('user_id',Auth::id());
-        })->with(['shop','shop.user'])->where('payment_status','paid')->latest()->get();
+    public function ordersList()
+    {
+        $payments = ShopPayment::whereHas('shop', function ($q) {
+            $q->where('user_id', Auth::id());
+        })->with(['shop', 'shop.user'])->where('payment_status', 'paid')->latest()->get();
 
-        $payments->map(function($q){
+        $payments->map(function ($q) {
             $q->avatar_url = $q->user->avatar_url ?? false;
             $q->username = $q->user->username ?? false;
             return $q;
@@ -821,9 +825,9 @@ class ShopsController extends Controller
 
         $total_claims = $payments->count();
         $all_time = $payments->sum('amount');
-        $day30 = ShopPayment::whereHas('shop',function($q){
-            $q->where('user_id',Auth::id());
-        })->with(['shop','shop.user'])->where('payment_status','paid')->where('created_at','<=',Carbon::now())->where('created_at','>=',Carbon::now()->subDays(30))->sum('amount');
+        $day30 = ShopPayment::whereHas('shop', function ($q) {
+            $q->where('user_id', Auth::id());
+        })->with(['shop', 'shop.user'])->where('payment_status', 'paid')->where('created_at', '<=', Carbon::now())->where('created_at', '>=', Carbon::now()->subDays(30))->sum('amount');
 
         return response()->json([
             'status' => true,
