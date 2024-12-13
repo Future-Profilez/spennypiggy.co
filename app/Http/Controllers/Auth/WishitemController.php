@@ -1051,14 +1051,14 @@ class WishitemController extends Controller
     public function wish_counter($deviceid)
     {
         if (!Auth::check()) {
-            $items = UserCart::where('device_id', $deviceid ?? null)->where('status', 1)->count();
+            $items = UserCart::where('device_id', $deviceid ?? null)->where('country', 'global')->where('status', 1)->count();
             return response()->json([
                 "success" => true,
                 "counter" => $items,
             ]);
         } else {
             $user = Auth::user();
-            $items = UserCart::where('user_id', $user->id ?? null)->where('status', 1)->count();
+            $items = UserCart::where('user_id', $user->id ?? null)->where('country', 'global')->where('status', 1)->count();
             return response()->json([
                 "success" => true,
                 "counter" => $items,
