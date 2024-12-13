@@ -686,6 +686,7 @@ class WishitemController extends Controller
             $cart->amount = $fullfillamount;
             $cart->tax = $tax;
             $cart->priceid = $priceid;
+            $cart->country = 'global';
             $cart->save();
             return response()->json([
                 "success" => true,
@@ -720,6 +721,7 @@ class WishitemController extends Controller
                 'status' => 1,
                 'amount' => $fullfillamount,
                 'tax' => $tax,
+                'country' => 'global',
                 'is_subscribed' => ($sub == false || $sub == 'onetime') ? 0 : 1,
                 'priceid' => $priceid,
             ]);
@@ -733,7 +735,7 @@ class WishitemController extends Controller
 
     public function clearCart($deviceid, $ownerid)
     {
-        $query = UserCart::where('owner_id', $ownerid)->where('status', 1);
+        $query = UserCart::where('country', 'global')->where('owner_id', $ownerid)->where('status', 1);
         if (Auth::check()) {
             $query->where('user_id', Auth::id());
         } else {
@@ -754,31 +756,32 @@ class WishitemController extends Controller
     public function cartItems()
     {
         if (!empty(Auth::id())) {
-            $user = User::where('id', Auth::id())->first();
-            $carts = UserCart::where('user_id', $user->id)->where('status', 1)->get();
-
-            $groupedWishes = [];
-            foreach ($carts as $wish) {
-                $owner_id = $wish->owner_id;
-                if (!isset($groupedWishes[$owner_id])) {
-                    $groupedWishes[$owner_id] = [];
-                }
-
-                $groupedWishes[$owner_id][] = [
-                    'user' => $wish->user->toArray(),
-                    'wish' => $wish->wish ? $wish->wish->toArray() : [],
-                    'owner' => $wish->owner->toArray(),
-                    'url' => $wish->wish ? $wish->wish->perma_link : 'https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/',
-                    'amount' => $wish->amount,
-                    'priceid' => $wish->priceid,
-                    'uuiddata' => $wish->uuid,
-                    'tax' => $wish->tax,
-                    'surprisemessage' => $wish->message ?? '',
-                    'quantity' => $wish->quantity ?? '',
-                ];
-            }
-
+            $user = User::where('id', Auth::id())->where('country', '!=', 'GB')->first();
             $cart = [];
+            if ($user) {
+                $carts = UserCart::where('user_id', $user->id)->where('country', 'global')->where('status', 1)->get();
+
+                $groupedWishes = [];
+                foreach ($carts as $wish) {
+                    $owner_id = $wish->owner_id;
+                    if (!isset($groupedWishes[$owner_id])) {
+                        $groupedWishes[$owner_id] = [];
+                    }
+
+                    $groupedWishes[$owner_id][] = [
+                        'user' => $wish->user->toArray(),
+                        'wish' => $wish->wish ? $wish->wish->toArray() : [],
+                        'owner' => $wish->owner->toArray(),
+                        'url' => $wish->wish ? $wish->wish->perma_link : 'https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/',
+                        'amount' => $wish->amount,
+                        'priceid' => $wish->priceid,
+                        'uuiddata' => $wish->uuid,
+                        'tax' => $wish->tax,
+                        'surprisemessage' => $wish->message ?? '',
+                        'quantity' => $wish->quantity ?? '',
+                    ];
+                }
+            }
             $key = 0;
             foreach ($groupedWishes as $value) {
                 $cart[$key] = [
@@ -863,7 +866,7 @@ class WishitemController extends Controller
 
     public function anonymousCartItems($deviceId)
     {
-        $carts = UserCart::where('device_id', $deviceId)->where('status', 1)->get();
+        $carts = UserCart::where('device_id', $deviceId)->where('country', 'global')->where('status', 1)->get();
         $groupedWishes = [];
         foreach ($carts as $wish) {
             $owner_id = $wish->owner_id;
@@ -1014,7 +1017,7 @@ class WishitemController extends Controller
 
     public function noOfCartItems()
     {
-        $items = UserCart::where('user_id', Auth::id())->where('status', 1)->count();
+        $items = UserCart::where('user_id', Auth::id())->where('country', 'global')->where('status', 1)->count();
         return response()->json([
             "success" => true,
             "counts" => $items,
