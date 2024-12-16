@@ -500,6 +500,7 @@ class WishitemController extends Controller
 
         $query = WishItem::where('deleted_at', null)
             ->where('is_approved', 1)
+            ->where('suspended_account', 0)
             ->with(['user'])
             ->whereHas('user', function ($q) use ($tag) {
                 $q->where(function ($s) {
