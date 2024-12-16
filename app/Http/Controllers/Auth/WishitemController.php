@@ -500,11 +500,11 @@ class WishitemController extends Controller
 
         $query = WishItem::where('deleted_at', null)
             ->where('is_approved', 1)
-            ->where('suspended_account', 0)
             ->with(['user'])
             ->whereHas('user', function ($q) use ($tag) {
                 $q->where(function ($s) {
-                    $s->whereNot('country', 'GB')->orWhereNull('country');
+                    $s->whereNot('country', 'GB')->orWhereNull('country')
+                    ->where('suspended_account', 0);
                 });
                 if (!empty($tag)) {
                     $q->whereJsonContains('creator_category', $tag);
