@@ -503,8 +503,7 @@ class WishitemController extends Controller
             ->with(['user'])
             ->whereHas('user', function ($q) use ($tag) {
                 $q->where(function ($s) {
-                    $s->whereNot('country', 'GB')->orWhereNull('country')
-                    ->where('suspended_account', 0);
+                    $s->whereNot('country', 'GB')->orWhereNull('country');
                 });
                 if (!empty($tag)) {
                     $q->whereJsonContains('creator_category', $tag);
