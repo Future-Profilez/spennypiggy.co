@@ -990,7 +990,7 @@ class StripeController extends Controller
                         'price_data' => [
                             'currency' => $currency,
                             'product' => $stripe_client->id,
-                            'unit_amount_decimal' => Helpers::priceFormat($goal->currency, $totalPrice, $currency) * 100
+                            'unit_amount_decimal' => Helpers::priceFormat($creator->default_currency, $totalPrice, $currency) * 100
                         ]
                     ]
                 ],
