@@ -579,6 +579,7 @@ class WishitemController extends Controller
     public function all_creators_categories()
     {
         $categories = User::whereNotNull('creator_category')
+            ->where('suspended_account', 0)
             ->pluck('creator_category')
             ->map(function ($item) {
                 return json_decode($item, true);
@@ -612,7 +613,7 @@ class WishitemController extends Controller
         $itemId = $query->whereHas('wish', function ($q) use ($user_id) {
             $q->where('user_id', $user_id);
         })->pluck('wish_item_id');
-        $user = User::where('id', $user_id)->where(function ($q) {
+        $user = User::where('id', $user_id)->where('suspended_account', 0)->where(function ($q) {
             $q->whereNot('country', 'GB')->orWhereNull('country');
         })->first();
         $items = Wishitem::whereIn('id', $itemId)->latest()->get();
@@ -635,7 +636,6 @@ class WishitemController extends Controller
                     "msg" => "You are not able to add your item to your cart.",
                 ]);
             }
-
 
             $payment = StripePaymentItems::where('wish_item_id', $wishitem->id)->whereHas('payment', function ($q) {
                 $q->where('user_id', Auth::id());
