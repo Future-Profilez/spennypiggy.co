@@ -23,6 +23,7 @@ class UserCart extends Model
         'priceid',
         'message',
         'is_subscribed',
+        'country',
         "status",
         'deleted_at',
     ];

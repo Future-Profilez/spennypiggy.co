@@ -69,7 +69,7 @@ class WishItem extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id')->where('suspended_account', 0);
     }
 
 

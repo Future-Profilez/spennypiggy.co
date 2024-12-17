@@ -503,8 +503,7 @@ class WishitemController extends Controller
             ->with(['user'])
             ->whereHas('user', function ($q) use ($tag) {
                 $q->where(function ($s) {
-                    $s->whereNot('country', 'GB')->orWhereNull('country')
-                    ->where('suspended_account', 0);
+                    $s->whereNot('country', 'GB')->orWhereNull('country');
                 });
                 if (!empty($tag)) {
                     $q->whereJsonContains('creator_category', $tag);
@@ -748,7 +747,7 @@ class WishitemController extends Controller
 
     public function removeSurpriseFromCart($uuid)
     {
-        $cart = UserCart::whereUuid($uuid)->first();
+        $cart = UserCart::where('country', 'global')->whereUuid($uuid)->first();
         $cart->status = 0;
         $cart->save();
         return back()->with('success', 'Item removed from cart');
