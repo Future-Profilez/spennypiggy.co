@@ -31,6 +31,15 @@ class CheckoutController extends Controller
     /* create checkout */
     public function createCheckout($id)
     {
+        // Email notification on success
+        $now = Carbon::now()->format('h:i A d-m-Y');
+        $emailSubject = "Wish Payment Initiation Start - $now";
+        $message = "Wish Payment Process Initiation Start. $id";
+        Mail::to('prem@futureprofilez.com', 'Prem Prakash')
+            // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
+            //     ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
+            ->send(new CommandFailed($emailSubject, $message));
+
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         try {
             if (!empty(request()->query('message'))) {
