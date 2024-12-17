@@ -951,14 +951,15 @@ class StripeController extends Controller
             // Calculate tax amount and total price
             $taxAmount = round(($amount * $taxPercentage / 100), 2, PHP_ROUND_HALF_UP); // Tax based on combined percentage
             $totalTaxAmount = $taxAmount + $adminFeeAmount;
-            $totalPrice = $amount + $taxAmount + $adminFeeAmount; // Total price including tax
+            $totalPrice = round($amount + $taxAmount + $adminFeeAmount, 2, PHP_ROUND_HALF_UP);
+            $final_price = Helpers::priceFormat($creator->default_currency, $totalPrice, $currency);
 
             try {
 
                 $stripe_client = StripeControl::createProduct([
                     'name' => $goal->name ?? 'Support-creator',
                     'images' => ["https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/"],
-                    "default_price_data" => ["currency" => strtolower($creator->default_currency), "unit_amount_decimal" => round($totalPrice, 2, PHP_ROUND_HALF_UP) * 100],
+                    "default_price_data" => ["currency" => strtolower($creator->default_currency), "unit_amount_decimal" => $totalPrice * 100],
                 ]);
             } catch (Exception $e) {
                 return response()->json([
@@ -990,7 +991,7 @@ class StripeController extends Controller
                         'price_data' => [
                             'currency' => $currency,
                             'product' => $stripe_client->id,
-                            'unit_amount_decimal' => Helpers::priceFormat($creator->default_currency, $totalPrice, $currency) * 100
+                            'unit_amount_decimal' => $final_price * 100
                         ]
                     ]
                 ],
