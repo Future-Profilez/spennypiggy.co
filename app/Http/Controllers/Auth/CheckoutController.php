@@ -54,11 +54,13 @@ class CheckoutController extends Controller
             if (Auth::check()) {
                 $getdata = UserCart::where('user_id', Auth::id())
                     ->where('owner_id', $id)
+                    ->where('country', 'global')
                     ->where('status', 1)
                     ->with(['wish'])
                     ->get();
-            } else {
-                $getdata = UserCart::where('device_id', $id)
+                } else {
+                    $getdata = UserCart::where('device_id', $id)
+                    ->where('country', 'global')
                     ->where('status', 1)
                     ->with(['wish'])
                     ->get();
