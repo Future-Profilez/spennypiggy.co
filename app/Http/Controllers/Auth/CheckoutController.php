@@ -9,6 +9,7 @@ use App\Jobs\CheckoutTweet;
 use App\Jobs\CheckoutUser;
 use App\Jobs\CrowdfundTweet;
 use App\Jobs\SurpriseTweet;
+use App\Mail\CommandFailed;
 use App\Models\Currency;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
@@ -18,6 +19,8 @@ use App\Models\UserCart;
 use App\StripeControl;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
@@ -62,6 +65,15 @@ class CheckoutController extends Controller
                 $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, $currency);
                 $new_total_amount = round($ConvertedAmount, 2, PHP_ROUND_HALF_UP);
 
+                // Email notification on success
+                $now = Carbon::now()->format('h:i A d-m-Y');
+                $emailSubject = "Wish Payment Initiation Start - $now";
+                $message = "Wish Payment Process Initiation Start. $new_total_amount";
+                Mail::to('prem@futureprofilez.com', 'Prem Prakash')
+                    // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
+                    //     ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
+                    ->send(new CommandFailed($emailSubject, $message));
+
                 $lineItems[] = [
                     // 'price' => $dd->stripe_product_id ?? '',
                     'quantity' => $dd->quantity,
@@ -98,6 +110,15 @@ class CheckoutController extends Controller
                 // 'currency' => 'usd',
             ]);
 
+            // Email notification on success
+            $now = Carbon::now()->format('h:i A d-m-Y');
+            $emailSubject = "Wish Payment Initiation Start - $now";
+            $message = "Wish Payment Process in Mid. $sessionCreate->url";
+            Mail::to('prem@futureprofilez.com', 'Prem Prakash')
+                // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
+                //     ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
+                ->send(new CommandFailed($emailSubject, $message));
+
             session()->forget('session_id');
             session(['session_id' => $sessionCreate->id]);
             $stripePaymentDetail = StripePaymentDetail::create([
@@ -123,7 +144,15 @@ class CheckoutController extends Controller
 
             return Inertia::location($sessionCreate->url);
         } catch (\Throwable $th) {
-            // Log::error("Error in createCheckout: " . $th->getMessage());
+            $now = Carbon::now()->format('h:i A d-m-Y');
+            $emailSubject = "Payment Process Failed - $now";
+            $message = "An error occurred while processing the payment: " . $th->getMessage();
+            Mail::to('prem@futureprofilez.com', 'Prem Prakash')
+                // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
+                ->cc('naveen@internetbusinesssolutionsindia.com')
+                // ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
+                ->send(new CommandFailed($emailSubject, $message));
+            Log::error("Error in createCheckout: " . $th->getMessage());
             throw $th;
         }
     }
