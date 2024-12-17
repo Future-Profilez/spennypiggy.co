@@ -747,7 +747,7 @@ class WishitemController extends Controller
 
     public function removeSurpriseFromCart($uuid)
     {
-        $cart = UserCart::whereUuid($uuid)->first();
+        $cart = UserCart::where('country', 'global')->whereUuid($uuid)->first();
         $cart->status = 0;
         $cart->save();
         return back()->with('success', 'Item removed from cart');
