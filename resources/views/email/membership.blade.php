@@ -1,7 +1,7 @@
 @extends('email.default-2')
 @section('content')
     <tr>
-        <td align="center" style="padding:10px 10px 20px 10px;"><a href="https://uk.spennypiggy.co/"><img alt="image"
+        <td align="center" style="padding:10px 10px 20px 10px;"><a href="{{ env('APP_URL') . '/' }}"><img alt="image"
                     width="119" src="https://ucarecdn.com/8df7911e-6a62-4bb4-967c-9ec0fda23c16/spennyPiggyMailLogo.png" style="border:none"></a></td>
     </tr>
     <tr>
@@ -19,13 +19,12 @@
                 <tr>
                     <td
                         style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; color: #4D4D4D; text-align: center; line-height: 18px;">
-                        Go to <a href="https://uk.spennypiggy.co/wish-tracker/">Spenny Piggy</a> to manage your current Memberships.</td>
+                        Go to <a href="{{ env('APP_URL') . '/wish-tracker' }}">Spenny Piggy</a> to manage your current Memberships.</td>
                 </tr>
 
                 <tr>
                     <td style="padding:0 0 10px 0; text-align: center;">
-                        <a href="{{ env('APP_URL') . '/wish-tracker' }}"
-                        style="border-radius:30px;padding: 13px 25px 13px 25px;border:none;background-color:#f94f97;font-family:Arial;font-weight:bold;font-size: 15px;text-align:center;color:#ffffff;text-decoration: none;" >My Account.</a>
+                        <a href="{{ env('APP_URL') . '/wish-tracker' }}" style="border-radius:30px;padding: 13px 25px 13px 25px;border:none;background-color:#f94f97;font-family:Arial;font-weight:bold;font-size: 15px;text-align:center;color:#ffffff;text-decoration: none;" >My Account.</a>
                     </td>
                 </tr>
 

@@ -1,7 +1,7 @@
 @extends('email.default-2')
 @section('content')
     <tr>
-        <td align="center" style="padding:10px 10px 20px 10px;"><a href="https://uk.spennypiggy.co/https://spennypiggy.cohttps://spennypiggy.co"><img alt="image"
+        <td align="center" style="padding:10px 10px 20px 10px;"><a href="{{ env('APP_URL') . '/' }}"><img alt="image"
                     width="119" src="https://ucarecdn.com/8df7911e-6a62-4bb4-967c-9ec0fda23c16/spennyPiggyMailLogo.png" style="border:none"></a></td>
     </tr>
     <tr>
@@ -31,7 +31,7 @@
                 <tr>
                     <td
                         style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                        Go to <a href="spennypiggy.co">Spenny Piggy</a> and discover more creators wishes to fulfil! Check out their profile Intros, memberships and more! </td>
+                        Go to <a href="{{ env('APP_URL') . '/' }}">Spenny Piggy</a> and discover more creators wishes to fulfil! Check out their profile Intros, memberships and more! </td>
                 </tr>
                 @if (!empty($tip->message))
                     <tr>
