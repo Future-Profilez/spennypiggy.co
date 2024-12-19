@@ -48,7 +48,6 @@
             "width: 100%",
             "padding:30px 30px",
         ];
-        console.log("%cWelcome to Spenny Piggy.", css1.join(";"));
     </script>
     <script type="application/ld+json">
         {

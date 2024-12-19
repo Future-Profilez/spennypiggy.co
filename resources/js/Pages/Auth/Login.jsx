@@ -1,7 +1,7 @@
 import React from 'react'
 import { useEffect } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import LoaderButton from '@/Components/LoaderButton';
 import { useAlerts } from '@/Components/Alerts';
 import EnterOTP from './EnterOTP';
@@ -9,6 +9,10 @@ import axios from 'axios';
 import { useState } from 'react';
 
 export default function Login({ status, canResetPassword }) {
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramValue = urlParams.get('redirect');
+
     const [open, setOpen] = useState(false);
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -33,6 +37,9 @@ export default function Login({ status, canResetPassword }) {
                 }
                 localStorage.removeItem("cart");
                 reset();
+                if(paramValue){
+                    router.visit(paramValue);
+                }
             },
             onError: (err) => {
                 reset("password");
