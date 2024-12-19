@@ -1250,12 +1250,12 @@ class StripeController extends Controller
                 $sub->upcoming_payment = Carbon::now()->addMonth();
                 $sub->save();
 
-                MonthlySubscribedJob::dispatch('prem@futureprofilez.com', $sub, 'success');
+                MonthlySubscribedJob::dispatch($sub->email, $sub, 'success');
 
                 return to_route('user.show', ['username' => $sub->user->username])->with('success', "Subscription Success!");
             }
 
-            MonthlySubscribedJob::dispatch('prem@futureprofilez.com', $sub, 'failure');
+            MonthlySubscribedJob::dispatch($sub->email, $sub, 'failure');
             // MonthlySubscriptionFailedJobs::dispatch($sub);
             // SubscriptionFailed::dispatch($sub);
 

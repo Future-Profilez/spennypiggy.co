@@ -8,7 +8,7 @@
      <td>
         <table width="100%" cellspacing="0" cellpadding="0" border="0" >
            <tr>
-              <td align="center" style="padding:10px 10px 20px 10px;"><a href="https://whoyouinto.com"><img alt="image" width="119" src="https://d36ape3u423eoo.cloudfront.net/1374cecd-53d6-4089-a20a-5b8812ee3d4d/build/assets/logo-164abf9b.png" style="border:none"></a></td>
+              <td align="center" style="padding:10px 10px 20px 10px;"><a href="https://whoyouinto.com"><img alt="image" width="119" src="https://ucarecdn.com/8df7911e-6a62-4bb4-967c-9ec0fda23c16/spennyPiggyMailLogo.png" style="border:none"></a></td>
            </tr>
         </table>
      </td>

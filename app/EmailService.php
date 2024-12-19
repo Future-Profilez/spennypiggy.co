@@ -161,7 +161,7 @@ class EmailService
     public static function sendMonthlySubscribedMail($email, $sub)
     {
         try {
-            Mail::to('prem@futureprofilez.com')->send(new MonthlySubscriptionSuccessMail($sub));
+            Mail::to($email)->send(new MonthlySubscriptionSuccessMail($sub));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
