@@ -6,6 +6,7 @@ import dummy from '../../../assets/img/uploadedimg.png';
 import EditMembership from './EditMembership';
 import DropdownButton from 'react-bootstrap/DropdownButton';
 import RemoveMembership from './RemoveMembership';
+import { useAlerts } from '@/Components/Alerts';
 
 const rewards_lists = [
   {
@@ -51,8 +52,9 @@ const rewards_lists = [
 ];
 
 export default function Membership({item, hidebtn, IsloggedIn, fetch_membership}) {
-
+  const { successAlert, errorAlert, errorsHandling } = useAlerts();
   const gotologin = () => { 
+    errorAlert("You must login first.");
     router.visit(`/login?redirect=${`/membership/checkout/${item.uuid}`}`);
   }
   const {auth} = usePage().props;
@@ -126,7 +128,7 @@ export default function Membership({item, hidebtn, IsloggedIn, fetch_membership}
                 </Link> 
                 :  
                 <button className='btn-pink w-full sm mt-3 ' 
-                    onClick={gotologin}>Join Now s
+                    onClick={gotologin}>Join Now
                 </button> 
               }
             </>

@@ -10,8 +10,11 @@ import { CSS } from '@dnd-kit/utilities';
 const AddBills = React.lazy(() => import('./AddBills'));
 import DropdownButton from 'react-bootstrap/DropdownButton';
 import RemoveBill from './RemoveBill';
+import { useAlerts } from '@/Components/Alerts';
 
 export default function Bill(props) {
+  
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
   
   const {auth} = usePage().props;
   const { format, formatMultiPrice } = PriceFormat();
@@ -41,6 +44,7 @@ export default function Bill(props) {
   },[itemUID]);
 
   const gotologin = () => { 
+    errorAlert("You must login first.");
     router.visit(`/login?redirect=${`/bill/checkout/${itm.uuid}`}`);
   }
 

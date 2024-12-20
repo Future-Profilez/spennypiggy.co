@@ -8,10 +8,12 @@ import { useState } from "react";
 import { useEffect } from "react";
 import PriceFormat from "@/includes/PriceFormat";
 import { Link, router } from "@inertiajs/react";
+import { useAlerts } from "@/Components/Alerts";
 export default function AddCart(props) {
 
     const { auth, action, uuid, item, currency, showall } = props;
     const [sub, setSub] = useState('daily');
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
     const { format , formatMultiPrice} = PriceFormat();
     const [cartamount, setcartamount] = useState(null);
@@ -41,6 +43,7 @@ export default function AddCart(props) {
     }
 
     const gotologin = (recure) => { 
+        successAlert("You must login first.");
         const url = `/wish/checkout/${item.uuid}/${recure ? recure : ''}`
         router.visit(`/login?redirect=${url}`);
     }

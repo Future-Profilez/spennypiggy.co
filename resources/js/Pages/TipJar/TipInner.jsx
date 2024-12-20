@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { useForm, Link, usePage } from "@inertiajs/react";
+import { useForm, Link, usePage, router } from "@inertiajs/react";
 import PriceFormat from '@/includes/PriceFormat';
 import {piggynose, piggyface, tipheading, leftleg, rightleg} from '@/includes/Icons';
 import { useEffect } from 'react';
@@ -17,8 +17,6 @@ export default function TipInner({classes}) {
   const [tipQuantity, setTipQuantity] = useState(1);
   const [coinsQuantity, setCoinsQuanitity] = useState(1)
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
-
-
   
   const incresevalue = () =>{ 
       const c = parseInt(tipQuantity+1);
@@ -69,8 +67,14 @@ export default function TipInner({classes}) {
    },[amount]);
 
    const [loading, setLoading] = useState(false);
+
   const send = (e) => {
     e.preventDefault();
+    if(auth && auth.user == null ){
+        errorAlert("You must login first.");
+        router.visit("/login?redirect=" + window.location.pathname);
+        return false;
+    }
     setLoading(true);
     const resp = axios.post(`tip-jar/pay/${user.uuid}`, data);
     resp.then((res) => {
@@ -86,6 +90,8 @@ export default function TipInner({classes}) {
       setLoading(false);
     });
   }
+
+  
   
   return <div className='tip-wrapper'>
       <div className='piggyface' dangerouslySetInnerHTML={{ __html: piggyface }} />

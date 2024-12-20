@@ -1,3 +1,4 @@
+import { useAlerts } from '@/Components/Alerts';
 import PriceFormat from '@/includes/PriceFormat';
 import { Link, router, usePage } from '@inertiajs/react'
 import React from 'react'
@@ -6,18 +7,20 @@ export default function ProfileProduct({item}) {
 
    const {auth} = usePage().props;
    const { formatMultiPrice} = PriceFormat();
-   
+
    const slug = (inputString) => { 
       return inputString
-      .toLowerCase() // Convert the string to lowercase
-      .replace(/[^a-z0-9\s-]/g, '') // Remove all non-alphanumeric characters except spaces and hyphens
-      .trim() // Remove leading and trailing spaces
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/-+/g, '-'); // Replace multiple hyphens with a single hyphen
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
    }
 
+   const { successAlert, errorAlert, errorsHandling } = useAlerts();
    const url = `/shop/item/${slug(item.name)}/${item.uuid}`;
    const gotologin = () => { 
+      errorAlert("You must login first.");
       router.visit(`/login?redirect=${url}`);
    }
 
