@@ -3,7 +3,7 @@ import { useState } from 'react';
 import uploadedimg from '../../../assets/img/uploadedimg.png';
 import { useEffect } from 'react';
 import PriceFormat from '@/includes/PriceFormat';
-import { Link } from "@inertiajs/react";
+import { Link, router, usePage } from "@inertiajs/react";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -12,13 +12,15 @@ import DropdownButton from 'react-bootstrap/DropdownButton';
 import RemoveBill from './RemoveBill';
 
 export default function Bill(props) {
-   
+  
+  const {auth} = usePage().props;
   const { format, formatMultiPrice } = PriceFormat();
   const { itm, itemid, IsloggedIn, classes, key, fetchBills  } = props;
   const { attributes, listeners, isDragging, index, over, setNodeRef, transform, transition } = useSortable({ id: itm && itm.id });
   const style = { 
     transform: CSS.Translate.toString(transform)
   };
+
   const stylenone = { 
     transform: '',
   };
@@ -38,15 +40,12 @@ export default function Bill(props) {
     }
   },[itemUID]);
 
-  const getPercentage = (actual, paid) => {
-    const r = (paid/actual)*100;
-    return r.toFixed(1);
+  const gotologin = () => { 
+    router.visit(`/login?redirect=${`/bill/checkout/${itm.uuid}`}`);
   }
 
   return <>
     <div key={key} style={IsloggedIn ? style : stylenone}  className={` position-relative billbox wish-item-box ${classes} ${isDragging ? 'dragging' : ''}`}> 
-      
-      
       <div  className='wishlistcntbox  mb-3 mb-sm-4 whbg relative'>
             {IsloggedIn && itm && itm.approved === 0 ?  
               <div className='approvalmessge membership m-3 rounded-3 p-3 py-2 mb-2 ' >
@@ -91,9 +90,19 @@ export default function Bill(props) {
                   <AddBills fetchBills={props.fetchBills} classes="btn-pink px-2 sm text-center w-100" text="Update Bill"
                   item={itm} isEdit={true} />
                 :
-              <Link method='get' 
-                href={route('bill.checkout',{uuid: itm.uuid})}
-                className='btn-pink px-2 sm text-center' >Pay Bill</Link>
+                <>
+                {
+                  auth && auth.user !== null ?
+                  <Link method='get' 
+                    href={route('bill.checkout',{uuid: itm.uuid})}
+                    className='btn-pink px-2 sm text-center' >Pay Bill</Link>
+                  :
+                  <button  
+                     onClick={gotologin}
+                    className='btn-pink px-2 sm text-center w-full' >Pay Bill</button>
+
+                }
+                </>
               } 
             </div>
         

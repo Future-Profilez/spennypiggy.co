@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useState } from 'react';
 import PriceFormat from '@/includes/PriceFormat';
-import { Link } from "@inertiajs/react";
+import { Link, router, usePage } from "@inertiajs/react";
 import dummy from '../../../assets/img/uploadedimg.png';
 import EditMembership from './EditMembership';
 import DropdownButton from 'react-bootstrap/DropdownButton';
@@ -52,6 +52,10 @@ const rewards_lists = [
 
 export default function Membership({item, hidebtn, IsloggedIn, fetch_membership}) {
 
+  const gotologin = () => { 
+    router.visit(`/login?redirect=${`/membership/checkout/${item.uuid}`}`);
+  }
+  const {auth} = usePage().props;
   const { formatMultiPrice } = PriceFormat();
 
   const [rewards ,setrewards ] = useState(JSON.parse(item && item.rewards));
@@ -111,14 +115,22 @@ export default function Membership({item, hidebtn, IsloggedIn, fetch_membership}
               </li>
           })}
         </ul>
-          {hidebtn ? '' : 
-          !IsloggedIn ? 
-            <Link className='btn-pink sm mt-3 ' method='get'
-                href={route('membership.checkout',{uuid: item.uuid})}>Join Now
-            </Link> 
-            : ''
+        
+          
+
+          {IsloggedIn ? <EditMembership fetch_membership={fetch_membership} item={item} /> : 
+            <>
+              {auth && auth.user !== null ? 
+                <Link className='btn-pink sm mt-3 ' method='get'
+                    href={route('membership.checkout',{uuid: item.uuid})}>Join Now
+                </Link> 
+                :  
+                <button className='btn-pink w-full sm mt-3 ' 
+                    onClick={gotologin}>Join Now s
+                </button> 
+              }
+            </>
           }
-          {IsloggedIn ? <EditMembership fetch_membership={fetch_membership} item={item} /> : ''}
       </div>
 
 

@@ -7,7 +7,7 @@ import ProgressBar from "react-bootstrap/ProgressBar";
 import { useState } from "react";
 import { useEffect } from "react";
 import PriceFormat from "@/includes/PriceFormat";
-import { Link } from "@inertiajs/react";
+import { Link, router } from "@inertiajs/react";
 export default function AddCart(props) {
 
     const { auth, action, uuid, item, currency, showall } = props;
@@ -38,6 +38,11 @@ export default function AddCart(props) {
     const getPercentage = (actual, paid) => {
         const r = (paid/actual)*100;
         return r.toFixed(1);
+    }
+
+    const gotologin = (recure) => { 
+        const url = `/wish/checkout/${item.uuid}/${recure ? recure : ''}`
+        router.visit(`/login?redirect=${url}`);
     }
 
     return (
@@ -92,7 +97,10 @@ export default function AddCart(props) {
                 ) : (
                     ""
                 )}
-                {item.subscription == 1 ?
+            {item.subscription == 1 ?
+            <>
+            {auth && auth.user !== null ?
+            <>
                 <div className=" pb-2">
                     <Link className="inline-flex items-center px-4 border 
                     border-transparentfont-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 false flex btn-pink lg w-100 mb-2 font-CeraGR  mx-auto"
@@ -115,7 +123,35 @@ export default function AddCart(props) {
 
                     
                 </div>
-                : <div className=" pb-2">
+            </>
+            :
+            <>
+                <div className=" pb-2">
+                    <button className="inline-flex items-center px-4 border 
+                    border-transparentfont-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 false flex btn-pink lg w-100 mb-2 font-CeraGR  mx-auto"
+                     onClick={()=>gotologin('onetime')}>
+                        OneTime Purchase
+                    </button>
+                    <button className="inline-flex items-center px-4 border 
+                    border-transparent text-xs text-white 
+                    uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 `
+                    active:bg-gray-900 focus:outline-none focus:ring-2 
+                    focus:ring-indigo-500 focus:ring-offset-2 transition 
+                    ease-in-out duration-150 false flex btn-pink lg w-100 
+                    mb-3 font-CeraGR  mx-auto" 
+                    onClick={()=>gotologin()}>
+                        Pay Every {item.subscription_period == 'daily' ? " Day" : ''}
+                        {item.subscription_period == 'weekly' ? " Week" : ''}
+                        {item.subscription_period == 'monthly' ? " Month" : ''}
+                    </button>
+                    <p className="text-center" >Gain access to my exclusive subscriber only posts</p>
+                </div>
+                </>
+            }
+            </>
+                
+                : 
+                <div className=" pb-2">
                     <ToCart currency={currency} sub={sub} ItemAdded={ItemAdded}  auth={auth}
                         pending={item.price - item.fullfill_amount}
                         crowd={item.subscription == 2}
