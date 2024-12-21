@@ -45,9 +45,16 @@ use Stripe\Stripe;
 use Stripe\Checkout\Session;
 use Stripe\StripeClient;
 use Stripe\Webhook;
+use Stripe\Identity;
+use Stripe\Identity\VerificationSession;
 
 class StripeController extends Controller
 {
+
+    public function __construct()
+    {
+        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+    }
 
     /**
      * Landing Page for Stripe Connect
@@ -1343,5 +1350,53 @@ class StripeController extends Controller
         }
 
         return true;
+    }
+
+
+    public function createVerificationSession(Request $request)
+    {
+        try {
+            // Set Stripe secret key
+            Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+
+            // Create a new verification session
+            $session = VerificationSession::create([
+                'type' => 'document',
+                'metadata' => [
+                    'user_id' => $request->user() ? $request->user()->id : null,
+                ],
+            ]);
+
+            // Retrieve the user
+            $user = User::find(228); // Update 228 to dynamic user ID logic if necessary
+
+            if (!$user) {
+                return response()->json([
+                    'error' => 'User not found.',
+                ], 404);
+            }
+
+            // Update the user's Stripe session ID
+            $user->stripe_user_id = $session->id;
+
+            if ($user->save()) {
+                return response()->json([
+                    'sessionId' => $session->id,
+                    'url' => $session->url,
+                ]);
+            } else {
+                return response()->json([
+                    'error' => 'Failed to update user Stripe session ID.',
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            // Log the error for debugging purposes
+            Log::error('Error creating verification session', ['message' => $e->getMessage()]);
+
+            // Handle any errors
+            return response()->json([
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
