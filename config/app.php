@@ -189,11 +189,11 @@ return [
 
     'surprise_tax' => 10,
     'single_tax' => 20,
-    'subs_tax' => 20,
+    'subs_tax' => 10,
     'crowd_tax' => 20,
-    'member_tax' => 20,
+    'member_tax' => 10,
     'jar_tax' => 20,
-    'bill_tax' => 20,
+    'bill_tax' => 10,
     'shop_tax' => 20,
 
 
