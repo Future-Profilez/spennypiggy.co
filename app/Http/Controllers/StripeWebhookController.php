@@ -49,23 +49,23 @@ class StripeWebhookController extends Controller
         }
     }
 
-    private function handleProcessingEvent($session)
-    {
-        $user = User::where('stripe_user_id', $session->id)->first();
+    // private function handleProcessingEvent($session)
+    // {
+    //     $user = User::where('stripe_user_id', $session->id)->first();
 
-        if ($user) {
-            $user->update([
-                'identity_status' => 2, // Processing
-                'identity_verification_error' => null, // Clear previous errors
-            ]);
+    //     if ($user) {
+    //         $user->update([
+    //             'identity_status' => 2, // Processing
+    //             'identity_verification_error' => null, // Clear previous errors
+    //         ]);
 
-            Log::info('Verification session is processing', ['user_id' => $user->id, 'session_id' => $session->id]);
+    //         Log::info('Verification session is processing', ['user_id' => $user->id, 'session_id' => $session->id]);
 
-            SendIdentityVerificationEmail::dispatch($user, 'process');
-        } else {
-            Log::error('User not found for processing verification session', ['session_id' => $session->id]);
-        }
-    }
+    //         SendIdentityVerificationEmail::dispatch($user, 'process');
+    //     } else {
+    //         Log::error('User not found for processing verification session', ['session_id' => $session->id]);
+    //     }
+    // }
 
     private function handleRequiresInputEvent($session)
     {
@@ -75,6 +75,7 @@ class StripeWebhookController extends Controller
             $user->update([
                 'identity_status' => 0, // Failed
                 'identity_verification_error' => $session->last_error ? json_encode($session->last_error) : null,
+                'identity_verification_details' => null,
             ]);
 
             Log::info('Verification session requires input', ['user_id' => $user->id, 'session_id' => $session->id]);
