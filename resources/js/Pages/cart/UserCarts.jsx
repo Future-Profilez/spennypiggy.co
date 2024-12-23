@@ -21,7 +21,7 @@ export default function UserCarts(props) {
     const [message, setMessage] = useState(null);
     const [name, setName] = useState(auth && auth.name || '');
     const [email, setEmail] = useState(auth && auth.email || '');
-   
+
 
     const [checking, setChecking] = useState(false);
     const handleSubmit = (e) => {
@@ -37,7 +37,7 @@ export default function UserCarts(props) {
 
     const executeCaptcha = (e) => {
         e.preventDefault();
-        hcaptchaRef.current.execute(); 
+        hcaptchaRef.current.execute();
         setChecking(true);
     };
 
@@ -85,7 +85,7 @@ export default function UserCarts(props) {
         setsubtotal(value);
         const fees = items && items.reduce((total, item) => +total + +item.tax * (+item.quantity || 1), 0) + p;
         setFee(fees);
-    } 
+    }
 
     const quantityUpdate = (type, amount, tax) => {
         if (type == 'add') {
@@ -125,7 +125,7 @@ export default function UserCarts(props) {
                     </p>
                     <div className="CartItemBox">
                         {items && items.map((c, i) => {
-                            return <CartItem currency={datas?.user && datas?.user?.default_currency} quantityUpdate={quantityUpdate} 
+                            return <CartItem currency={datas?.user && datas?.user?.default_currency} quantityUpdate={quantityUpdate}
                             removeCart={removeCart} data={c} key={i} />;
                         })}
                     </div>
@@ -134,7 +134,21 @@ export default function UserCarts(props) {
                         <div className="cartSubTotal text-right mt-1">
                             <span>Platform Fee :</span>{" "}
                             <strong className="text-end">
-                                {formatMultiPrice(fee || "", datas?.user && datas?.user?.default_currency)}
+                                {formatMultiPrice(fee || "", datas?.user && datas?.user?.default_currency)}<button className='tooltipbtn flex justify-center items-center !font-normal' >?<p className="!text-start">
+                                    <strong className="text-white !font-normal ">Open Banking:</strong> <br></br>
+                                    Bills - 10%<br></br>
+                                    Memberships - 10%<br></br>
+                                    Piggy Bank - 20%<br></br>
+                                    Crowdfunding - 20%<br></br>
+                                    Subscriptions - 10%<br></br>
+                                    Single Purchases - 20%<br></br>
+                                    Profile Shop - 20%<br></br><br></br>
+                                    <strong className="text-white !font-normal ">Card payments</strong> <br></br>
+                                    25% + £0.80 card fee.
+                                    <br></br><br></br>
+                                            Administrative Fee on all Transactions  - £1
+                                </p>
+                                </button>
                             </strong>
                         </div>
                         <div className="cartSubTotal text-right mt-1">
@@ -199,9 +213,9 @@ export default function UserCarts(props) {
                                             type="checkbox"
                                             id="anonymous"
                                             name="anonymous"
-                                            className="me-2" 
+                                            className="me-2"
                                             value="anonymous" ></input>
-                                        Keep anonymous 
+                                        Keep anonymous
                                     </label>
                                     <p className="text-muted text-small mb-3" >Your personal email and name will be private.</p>
 

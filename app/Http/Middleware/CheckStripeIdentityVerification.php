@@ -21,12 +21,12 @@ class CheckStripeIdentityVerification
         $user = Auth::user();
 
         // Check if the user is logged in
-        if (!$user) {
-            return redirect()->route('login'); // Redirect to login if not authenticated
-        }
+        // if (!$user) {
+        //     return redirect()->route('login'); // Redirect to login if not authenticated
+        // }
 
         // Check if the user's identity_status is not verified (0)
-        if ($user->identity_status !== 1) {
+        if ($user && $user->identity_status !== 1) {
             // Redirect to the Stripe identity verification page
             return Inertia::render('Auth/StripeIdentity', [
                 'status' => false,

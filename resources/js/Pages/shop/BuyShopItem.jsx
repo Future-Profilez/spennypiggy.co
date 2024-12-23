@@ -27,11 +27,11 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
 
    const { successAlert, errorAlert, infoAlert, errorsHandling } = useAlerts();
    const [isfairPrice, setIsfaiPrice] = useState(false);
-   
-   const actualPrice = () => { 
+
+   const actualPrice = () => {
       if(s && s.is_member == 1 && s.special_member_price){
          return s.special_member_price;
-      } else { 
+      } else {
          return s.price
       }
    }
@@ -48,27 +48,27 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
          ...shipping_info,
          [e.target.name]: e.target.value
        });
- 
+
    }
 
    const [fairPrice, setfaiPrice] = useState(actualPrice());
 
-   const enterFairPrice = (e) => { 
+   const enterFairPrice = (e) => {
       if(e.target.value){
          setIsfaiPrice(true);
-      } else { 
+      } else {
          setIsfaiPrice(false);
       }
       setfaiPrice(e.target.value);
    }
-   const slug = (inputString) => { 
+   const slug = (inputString) => {
       return inputString
-      .toLowerCase()  
-      .replace(/[^a-z0-9\s-]/g, '') 
-      .trim()  
-      .replace(/\s+/g, '-')  
-      .replace(/-+/g, '-');  
-   } 
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+   }
 
    const [email, setEmail] = useState(auth && auth.user?.email || '');
    const [name, setName] = useState(auth && auth.user?.name || '');
@@ -84,7 +84,7 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
 
   const executeCaptcha = (e) => {
    e.preventDefault();
-   hcaptchaRef.current.execute(); 
+   hcaptchaRef.current.execute();
    setChecking(true);
 };
 
@@ -106,7 +106,7 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
           }).catch(err => {
               setLoading(false);
               errorsHandling(err)
-          }); 
+          });
       } else {
          setLoading(true);
          axios.get(`/shop/buy/${s.uuid}/no_varient?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}`).then(res => {
@@ -127,10 +127,10 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
    const [posting, setposting] = useState(false);
    const [reply, setReply] = useState();
    const inputref = useRef();
-   
-   const sendReply = async () => { 
+
+   const sendReply = async () => {
       setposting(true)
-      axios.post(`/shop/answer-to-payment/${isPaid}`, { 
+      axios.post(`/shop/answer-to-payment/${isPaid}`, {
          answer: reply
       }).then(res => {
          if(res.data.status){
@@ -175,7 +175,7 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
                <Link href={`/${s.user.username }`} className="font-semibold text-black">{s.user.name || "User"}</Link>
             </div>
 
-            {isPaid && opened == 0 ? 
+            {isPaid && opened == 0 ?
                <>
                 <h2 className='text-center font-bold text-xl py-2' >Thank you for your purchase!</h2>
                   <div className='border border-gray-200 p-3 rounded-[20px] mt-4' >
@@ -191,7 +191,7 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
                         </div>
                      </div>
 
-                     {s && s.success_page_type == 'text' ? 
+                     {s && s.success_page_type == 'text' ?
                        <p>{s && s.success_page_value}</p>
                       :
                      <a target="_blank" className='text-blue-800 text-break' href={s && s.success_page_value} >{s && s.success_page_value}</a>
@@ -203,23 +203,37 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
                       {reply ? <button onClick={sendReply} className='pinkbg text-center text-white px-3 py-1 mt-3 m-auto d-table rounded-[20px]' >{posting ? "Posting" : "Post"}</button>: ''}
                     </> : ''
                    }
-                  
+
                   </div>
 
                   <div className="ShareSupport" >
                      <h2 className="text-black font-bold text-center font-2xl mb-2 mt-10" >Share your support</h2>
                      <p className='text-center' >{s.user.name} would love a shoutout! Share it out or tell your friends using this link:</p>
-                     <button onClick={handleCopy} className="bg-gray-200 rounded-[30px] px-4 py-2 m-auto d-table mt-3 text-sm" >Copy Link</button> 
+                     <button onClick={handleCopy} className="bg-gray-200 rounded-[30px] px-4 py-2 m-auto d-table mt-3 text-sm" >Copy Link</button>
                   </div>
 
-               </> 
+               </>
                :
             <>
                <div className="text-center mt-2">
-                  {fairPrice ? <p className="text-gray-500 my-2 ">You will be charged <strong  className='text-black' > 
-                     {formatMultiPrice((fairPrice || s.price), s?.currency || 'GBP') } {vat_percent ? `+${formatMultiPrice(vat_percent, s?.currency || 'GBP')}` : ""} + 12% processing fee </strong>.</p> 
-                  : 
-                  <p className="text-gray-500 my-2 ">You will get it for free.</p> 
+                  {fairPrice ? <p className="text-gray-500 my-2 ">You will be charged <strong  className='text-black' >
+                     {formatMultiPrice((fairPrice || s.price), s?.currency || 'GBP') } {vat_percent ? `+${formatMultiPrice(vat_percent, s?.currency || 'GBP')}` : ""} + processing fee</strong><button className='tooltipbtn flex justify-center items-center !font-normal' >?<p className="!text-start">
+                                    <strong className="text-white !font-normal ">Open Banking:</strong> <br></br>
+                                    Bills - 10%<br></br>
+                                    Memberships - 10%<br></br>
+                                    Piggy Bank - 20%<br></br>
+                                    Crowdfunding - 20%<br></br>
+                                    Subscriptions - 10%<br></br>
+                                    Single Purchases - 20%<br></br>
+                                    Profile Shop - 20%<br></br><br></br>
+                                    <strong className="text-white !font-normal ">Card payments</strong> <br></br>
+                                    25% + £0.80 card fee.
+                                    <br></br><br></br>
+                                            Administrative Fee on all Transactions  - £1
+                                </p>
+                                </button></p>
+                  :
+                  <p className="text-gray-500 my-2 ">You will get it for free.</p>
                }
                </div>
                <div className='my-3 shop-item flex justify-between w-full items-center bg-white rounded-xl' >
@@ -236,7 +250,7 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
                {/* <p className='mb-1' >Enter a fair price (optional)</p>
                <input required onChange={enterFairPrice} min={s.price}
                className="form-input w-100 rounded mb-3" placeholder={`+${s.price}`} type="number" /> */}
-               
+
                <div className="form-field mb-3">
                   <p className='mb-1'>Name</p>
                   <input required disabled={auth && auth.user?.name ? true : false}
@@ -264,26 +278,26 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
                      </select>
                   </div>
                   <div className="form-field mb-3 ">
-                     <input required  
+                     <input required
                         className="form-input w-100 rounded"
                          onChange={handleShipInput} name="street_address"
                         type="text" placeholder="Street Address" />
                   </div>
                   <div className="form-field mb-3 ">
-                     <input required  
+                     <input required
                         className="form-input w-100 rounded"
                         onChange={handleShipInput} name="city"
                         type="text" placeholder="City" />
                   </div>
                   <div className='grid grid-cols-2 gap-3' >
                      <div className="form-field mb-3 ">
-                        <input required  
+                        <input required
                            className="form-input w-100 rounded"
                            onChange={handleShipInput} name="state"
                            type="text" placeholder="State" />
                      </div>
                      <div className="form-field mb-3 ">
-                        <input required  
+                        <input required
                            className="form-input w-100 rounded"
                            onChange={handleShipInput} name="postal_code"
                            type="email" placeholder="Postal Code" />
