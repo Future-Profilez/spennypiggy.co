@@ -60,14 +60,14 @@ class BillsController extends Controller
 
         $price = $request->price;
         // Fetch tax and administration fee from the configuration file
-        $singleTax = config('app.single_tax'); // Tax percentage
+        $billTax = config('app.bill_tax'); // Tax percentage
         // $adminFeeAmount = config('app.administration_fee'); // Admin fee as a amount in gbp
 
         // $adminFee = config('app.administration_fee');
         // $convertedCurrAmount = Helpers::priceFormat('GBP', $adminFee, strtoupper($user->default_currency));
 
         // Calculate tax and total amount
-        $taxAmount = round(($price * $singleTax / 100), 2, PHP_ROUND_HALF_UP);
+        $taxAmount = round(($price * $billTax / 100), 2, PHP_ROUND_HALF_UP);
 
         $createPriceId = $price + $taxAmount; // Total price including tax and admin fee
 
@@ -154,7 +154,7 @@ class BillsController extends Controller
             $media = $request->thumbnail;
 
             $price = $request->price;
-            $taxamount = round(($price * config('app.single_tax') / 100), 2, PHP_ROUND_HALF_UP);
+            $taxamount = round(($price * config('app.bill_tax') / 100), 2, PHP_ROUND_HALF_UP);
             $createpriceid = $price + $taxamount;
 
             $bill->user_id = Auth::id();

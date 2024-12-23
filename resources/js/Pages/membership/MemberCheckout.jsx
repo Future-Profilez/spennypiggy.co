@@ -21,10 +21,10 @@ export default function SubCheckout(props) {
         message: '',
         agree: false,
         anonymous: 0,
-    }); 
+    });
 
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
-    function checkanonymous(e){ 
+    function checkanonymous(e){
         setKeepAnonmyous(e.target.checked);
         if(e.target.checked){
             setData("anonymous", 1);
@@ -51,7 +51,7 @@ export default function SubCheckout(props) {
 
     const executeCaptcha = (e) => {
         e.preventDefault();
-        hcaptchaRef.current.execute(); 
+        hcaptchaRef.current.execute();
         setChecking(true);
     };
 
@@ -79,7 +79,7 @@ export default function SubCheckout(props) {
                 <div className="my-4 cartsub cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
                     <div className="cartMain">
                         <h2 className="pb-1 wishtitle">
-                            Membership Basket for {membership?.user?.name || " "} 
+                            Membership Basket for {membership?.user?.name || " "}
                             <Link className="text-voilet" target="_blank"
                                 href={`/${membership?.user?.username || ""}`} >
                                 @{membership?.user?.username || ""}
@@ -90,20 +90,37 @@ export default function SubCheckout(props) {
                         </p>
 
                         <Membership hidebtn={true} item={membership} />
-                       
+
                         <div className="cartTotal px-0 py-3">
                             <div className="cartSubTotal text-right mt-1">
                                 <span>Platform Fee :</span>{" "}
                                 <strong className="text-end">
                                     {formatMultiPrice(membership.tax_amount || "", membership && membership.currency)}
-                                </strong>
+                                </strong><button className='tooltipbtn flex justify-center items-center !font-normal' >?<p className="!text-start">
+                                    <strong className="text-white !font-normal ">Open Banking:</strong> <br></br>
+                                    Bills - 10%<br></br>
+                                    Memberships - 10%<br></br>
+                                    Piggy Bank - 20%<br></br>
+                                    Crowdfunding - 20%<br></br>
+                                    Subscriptions - 10%<br></br>
+                                    Single Purchases - 20%<br></br>
+                                    Profile Shop - 20%<br></br><br></br>
+                                    <strong className="text-white !font-normal ">Card payments</strong> <br></br>
+                                    25% + £0.80 card fee.
+                                    <br></br><br></br>
+                                            Administrative Fee on all Transactions  - £1
+                                </p>
+                                </button>
                             </div>
+
+                            {vat_amount && vat_amount > 0 ? (
                             <div className="cartSubTotal text-right mt-1">
                                 <span>VAT :</span>{" "}
                                 <strong className="text-end">
                                     {formatMultiPrice(vat_amount || "", membership && membership.currency)}
                                 </strong>
                             </div>
+                            ) : '' }
                             <div className="cartSubTotal text-right mt-1">
                                 <span>Subtotal :</span>{" "}
                                 <strong className="text-end">
@@ -158,7 +175,7 @@ export default function SubCheckout(props) {
                                                 />
                                                 <span className="text-xs text-red-600">{errors.name}</span>
                                             </div>
-                                            
+
                                         </div>
                                     </li>
                                     <li className="cheklistbox">
@@ -200,7 +217,7 @@ export default function SubCheckout(props) {
                                         className={`${!data.agree || processing || checking ? "disabled" : ""} btn-pink md px-4 mt-3 text-center`}
                                         disabled={!data.agree || processing || checking}>
                                         {processing || checking ? 'Processing...' : 'Join Now'}
-                                    </button> 
+                                    </button>
                                     <HCaptcha ref={hcaptchaRef} sitekey={hcaptchakey || ''} data-theme="light" size="invisible" onVerify={onVerify} required />
                                 </div>
                             </form>
