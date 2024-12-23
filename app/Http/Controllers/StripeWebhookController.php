@@ -25,9 +25,9 @@ class StripeWebhookController extends Controller
             $session = $event->data->object;
 
             switch ($event->type) {
-                case 'identity.verification_session.processing':
-                    $this->handleProcessingEvent($session);
-                    break;
+                // case 'identity.verification_session.processing':
+                //     $this->handleProcessingEvent($session);
+                //     break;
 
                 case 'identity.verification_session.requires_input':
                     $this->handleRequiresInputEvent($session);
