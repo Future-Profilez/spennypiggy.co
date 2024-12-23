@@ -21,7 +21,7 @@ export default function UserCarts(props) {
     const [message, setMessage] = useState(null);
     const [name, setName] = useState(auth && auth.name || '');
     const [email, setEmail] = useState(auth && auth.email || '');
-   
+
 
     const [checking, setChecking] = useState(false);
     const handleSubmit = (e) => {
@@ -37,7 +37,7 @@ export default function UserCarts(props) {
 
     const executeCaptcha = (e) => {
         e.preventDefault();
-        hcaptchaRef.current.execute(); 
+        hcaptchaRef.current.execute();
         setChecking(true);
     };
 
@@ -85,7 +85,7 @@ export default function UserCarts(props) {
         setsubtotal(value);
         const fees = items && items.reduce((total, item) => +total + +item.tax * (+item.quantity || 1), 0) + p;
         setFee(fees);
-    } 
+    }
 
     const quantityUpdate = (type, amount, tax) => {
         if (type == 'add') {
@@ -125,7 +125,7 @@ export default function UserCarts(props) {
                     </p>
                     <div className="CartItemBox">
                         {items && items.map((c, i) => {
-                            return <CartItem currency={datas?.user && datas?.user?.default_currency} quantityUpdate={quantityUpdate} 
+                            return <CartItem currency={datas?.user && datas?.user?.default_currency} quantityUpdate={quantityUpdate}
                             removeCart={removeCart} data={c} key={i} />;
                         })}
                     </div>
@@ -199,9 +199,9 @@ export default function UserCarts(props) {
                                             type="checkbox"
                                             id="anonymous"
                                             name="anonymous"
-                                            className="me-2" 
+                                            className="me-2"
                                             value="anonymous" ></input>
-                                        Keep anonymous 
+                                        Keep anonymous
                                     </label>
                                     <p className="text-muted text-small mb-3" >Your personal email and name will be private.</p>
 
