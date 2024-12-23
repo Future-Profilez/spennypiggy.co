@@ -30,17 +30,17 @@ class RegisteredUserController extends Controller
      */
     public function create(Request $request)
     {
-        $locale = $request->cookie('locale') ? json_decode($request->cookie('locale'), true) : null;
-        if(!$locale AND !in_array($request->getHttpHost(), ['::1:8000', 'localhost:8000', '127.0.0.1:8000', 'uk.spennypiggy.co'])) {
-            IpTracker::getIpInfo();
-            if(IpTracker::$ipInfo->country == "GB" || IpTracker::$ipInfo->country == "UK") {
-                return Inertia::location("https://uk.spennypiggy.co/register");
-            }
-        } else if($locale AND in_array($request->getHttpHost(), ['::1:8000', 'localhost:8000', '127.0.0.1:8000', 'uk.spennypiggy.co'])){
-            if($locale['country'] == "GB" || $locale["country"]=="GB"){
-                return Inertia::location("https://uk.spennypiggy.co/register");
-            }
-        }
+        // $locale = $request->cookie('locale') ? json_decode($request->cookie('locale'), true) : null;
+        // if(!$locale AND !in_array($request->getHttpHost(), ['::1:8000', 'localhost:8000', '127.0.0.1:8000', 'uk.spennypiggy.co'])) {
+        //     IpTracker::getIpInfo();
+        //     if(IpTracker::$ipInfo->country == "GB" || IpTracker::$ipInfo->country == "UK") {
+        //         return Inertia::location("https://uk.spennypiggy.co/register");
+        //     }
+        // } else if($locale AND in_array($request->getHttpHost(), ['::1:8000', 'localhost:8000', '127.0.0.1:8000', 'uk.spennypiggy.co'])){
+        //     if($locale['country'] == "GB" || $locale["country"]=="GB"){
+        //         return Inertia::location("https://uk.spennypiggy.co/register");
+        //     }
+        // }
         return Inertia::render('Auth/Register');
     }
 
