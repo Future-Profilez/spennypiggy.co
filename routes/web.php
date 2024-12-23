@@ -48,7 +48,7 @@ Route::get('/stripe-identity', function () {
 
 // Route::post('/stripe/identity/verify', [StripeController::class, 'createVerificationSession']);
 
-Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
+Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
 
 
 //check referal code
