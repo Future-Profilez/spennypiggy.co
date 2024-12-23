@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Auth\StripeController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\WishtenderController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
