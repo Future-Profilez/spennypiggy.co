@@ -37,7 +37,11 @@ class User extends Authenticatable
         'password',
         'uuid',
         'deleted_at',
-        'creator_category'
+        'creator_category',
+        'identity_status',
+        'identity_verified_at',
+        'identity_verification_error',
+        'identity_verification_details',
     ];
 
     public static function boot()

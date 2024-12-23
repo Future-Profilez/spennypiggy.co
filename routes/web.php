@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\Auth\CheckoutController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TestController;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
@@ -33,6 +35,21 @@ Route::get('/', function () {
 Route::get('/membership-dashboard', function () {
     return Inertia::render('membership/Membership_dashboard');
 })->name('membershipDashboard');
+
+// Route::get('/stripe-identity', function () {
+//     return Inertia::render('IdentityVerification');
+// })->name('stripe.identity');
+
+
+Route::get('/stripe-identity', function () {
+    return Inertia::render('IdentityVerification');
+})->name('stripe.identity');
+
+
+// Route::post('/stripe/identity/verify', [StripeController::class, 'createVerificationSession']);
+
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
+
 
 //check referal code
 Route::get('check-coupon-code/{code}', [RegisteredUserController::class, 'checkCouponCode'])->name('checkCouponCode');

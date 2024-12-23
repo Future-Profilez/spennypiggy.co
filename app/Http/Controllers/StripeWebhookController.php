@@ -1,0 +1,106 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Jobs\SendIdentityVerificationEmail;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Stripe\Stripe;
+use Stripe\Webhook;
+
+class StripeWebhookController extends Controller
+{
+    public function handleWebhook(Request $request)
+    {
+        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+
+        $endpointSecret = env('STRIPE_WEBHOOK_SECRET');
+        $sigHeader = $request->header('Stripe-Signature');
+        $payload = $request->getContent();
+
+        try {
+            // Validate and construct the Stripe event
+            $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
+            $session = $event->data->object;
+
+            switch ($event->type) {
+                // case 'identity.verification_session.processing':
+                //     $this->handleProcessingEvent($session);
+                //     break;
+
+                case 'identity.verification_session.requires_input':
+                    $this->handleRequiresInputEvent($session);
+                    break;
+
+                case 'identity.verification_session.verified':
+                    $this->handleVerifiedEvent($session);
+                    break;
+
+                default:
+                    Log::warning('Unhandled event type', ['type' => $event->type]);
+                    break;
+            }
+
+            return response()->json(['status' => 'success']);
+        } catch (\Exception $e) {
+            Log::error('Stripe Webhook Error', ['message' => $e->getMessage()]);
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
+
+    private function handleProcessingEvent($session)
+    {
+        $user = User::where('stripe_user_id', $session->id)->first();
+
+        if ($user) {
+            $user->update([
+                'identity_status' => 2, // Processing
+                'identity_verification_error' => null, // Clear previous errors
+            ]);
+
+            Log::info('Verification session is processing', ['user_id' => $user->id, 'session_id' => $session->id]);
+
+            SendIdentityVerificationEmail::dispatch($user, 'process');
+        } else {
+            Log::error('User not found for processing verification session', ['session_id' => $session->id]);
+        }
+    }
+
+    private function handleRequiresInputEvent($session)
+    {
+        $user = User::where('stripe_user_id', $session->id)->first();
+
+        if ($user) {
+            $user->update([
+                'identity_status' => 0, // Failed
+                'identity_verification_error' => $session->last_error ? json_encode($session->last_error) : null,
+            ]);
+
+            Log::info('Verification session requires input', ['user_id' => $user->id, 'session_id' => $session->id]);
+
+            SendIdentityVerificationEmail::dispatch($user, 'failed');
+        } else {
+            Log::error('User not found for verification session requiring input', ['session_id' => $session->id]);
+        }
+    }
+
+    private function handleVerifiedEvent($session)
+    {
+        $user = User::where('stripe_user_id', $session->id)->first();
+
+        if ($user) {
+            $user->update([
+                'identity_status' => 1, // Verified
+                'identity_verified_at' => now(),
+                'identity_verification_details' => json_encode($session),
+            ]);
+
+            Log::info('Verification session verified', ['user_id' => $user->id, 'session_id' => $session->id]);
+
+            SendIdentityVerificationEmail::dispatch($user, 'success');
+        } else {
+            Log::error('User not found for verified verification session', ['session_id' => $session->id]);
+        }
+    }
+}

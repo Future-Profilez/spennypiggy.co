@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Auth\StripeController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\WishtenderController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -24,5 +26,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::get('/products', [ProductController::class, 'index']);
 Route::post('/create-product', [ProductController::class, 'store']);
 Route::put('/products/{id}', [ProductController::class, 'update']);
+
+Route::post('/stripe/identity/verify', [StripeController::class, 'createVerificationSession']);
 
 
