@@ -20,18 +20,15 @@ class StripeWebhookController extends Controller
         $payload = $request->getContent();
 
         try {
-            // Validate and construct the Stripe event
+            // Validate the Stripe event
             $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
+
             $session = $event->data->object;
 
             switch ($event->type) {
-                // case 'identity.verification_session.processing':
-                //     $this->handleProcessingEvent($session);
+                // case 'identity.verification_session.requires_input':
+                //     $this->handleRequiresInputEvent($session);
                 //     break;
-
-                case 'identity.verification_session.requires_input':
-                    $this->handleRequiresInputEvent($session);
-                    break;
 
                 case 'identity.verification_session.verified':
                     $this->handleVerifiedEvent($session);
@@ -43,11 +40,59 @@ class StripeWebhookController extends Controller
             }
 
             return response()->json(['status' => 'success']);
-        } catch (\Exception $e) {
-            Log::error('Stripe Webhook Error', ['message' => $e->getMessage()]);
-            return response()->json(['error' => $e->getMessage()], 400);
+        } catch (\UnexpectedValueException $e) {
+            // Invalid payload
+            Log::error('Invalid Payload', ['message' => $e->getMessage()]);
+            return response()->json(['error' => 'Invalid payload'], 400);
+        } catch (\Stripe\Exception\SignatureVerificationException $e) {
+            // Invalid signature
+            Log::error('Invalid Signature', [
+                'message' => $e->getMessage(),
+                'sig_header' => $sigHeader,
+                'payload' => $payload,
+                'expected_secret' => $endpointSecret,
+            ]);
+            return response()->json(['error' => 'Invalid signature'], 400);
         }
     }
+
+    // public function handleWebhook(Request $request)
+    // {
+    //     Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+
+    //     $endpointSecret = env('STRIPE_WEBHOOK_SECRET');
+    //     $sigHeader = $request->header('Stripe-Signature');
+    //     $payload = $request->getContent();
+
+    //     try {
+    //         // Validate and construct the Stripe event
+    //         $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
+    //         $session = $event->data->object;
+
+    //         switch ($event->type) {
+    //             // case 'identity.verification_session.processing':
+    //             //     $this->handleProcessingEvent($session);
+    //             //     break;
+
+    //             case 'identity.verification_session.requires_input':
+    //                 $this->handleRequiresInputEvent($session);
+    //                 break;
+
+    //             case 'identity.verification_session.verified':
+    //                 $this->handleVerifiedEvent($session);
+    //                 break;
+
+    //             default:
+    //                 Log::warning('Unhandled event type', ['type' => $event->type]);
+    //                 break;
+    //         }
+
+    //         return response()->json(['status' => 'success']);
+    //     } catch (\Exception $e) {
+    //         Log::error('Stripe Webhook Error', ['message' => $e->getMessage()]);
+    //         return response()->json(['error' => $e->getMessage()], 400);
+    //     }
+    // }
 
     // private function handleProcessingEvent($session)
     // {
