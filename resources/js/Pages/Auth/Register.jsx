@@ -235,7 +235,7 @@ export default function Register(props) {
     
     return (
         <GuestLayout>
-            <IpRedirection />
+            {/* <IpRedirection />/ */}
             <Head title="Create Wishlist" />
             <div className='loginPage  blackbg pb-4 pb-md-5'>
                 <div className='containerbox '>
