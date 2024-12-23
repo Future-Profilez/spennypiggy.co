@@ -71,7 +71,7 @@ export default function StripeIdentity() {
                         <p className="text-center">
                             Need help? Contact our support team at
                             <a href="mailto:mailto:support@spennypiggy.co" className="text-blue-600 hover:underline ml-1">
-                                mailto:support@spennypiggy.co
+                                support@spennypiggy.co
                             </a>
                         </p>
                     </footer>
