@@ -11,9 +11,8 @@ import axios from 'axios';
 import AllContries from '../../includes/AllCountries';
 
 export default function ShopDetailItem(props) {
-
+ 
    const { vat_percent, auth, user, shop } = props;
-   console.log("props",props)
    const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (shop && shop.user && shop && shop.user.username));
    const url = window.location.href;
    const [open, setOpen] = useState();
@@ -76,6 +75,8 @@ export default function ShopDetailItem(props) {
    getIp();
   },[shop]);
 
+
+  
    
    
   return (
@@ -124,9 +125,9 @@ export default function ShopDetailItem(props) {
                      <p className=" text-lg lg:leading-tight leading-normal text-gray-600">{shop.description}</p>
 
                      <p className=" text-md lg:leading-tight leading-normal text-black mt-3 mb-2">
-                        Category : <span className='capitalize' >{shop.category && shop.category.map((c, i)=>{
-                           return `${c.category.category} `
-                        })}</span>
+                        Category : <span className='capitalize' >{shop?.category && shop.category.map((c, i)=>{
+                           return `${c?.category?.category !== null ? c?.category?.category : ''} `
+                        }) || 'Not Available'}</span>
                      </p>
 
                      {shop && shop.is_member == 0 && shop.special_member_price ? <div className='special-discount flex items-center bg-gray-100 border-gray-200 my-3 rounded-[20px] px-1 py-2 '>
@@ -231,8 +232,10 @@ export default function ShopDetailItem(props) {
                            <>
                               {(shop.slot_limitation && (shop.slot_limitation - shop.total_sold) === 0 ) ?
                                  <button className='btn-pink sm disabled w-full sm:w-auto' >SOLD</button> 
-                              : 
+                                 : 
+                              <>
                                  <BuyShopItem shippingPrice={shippingPrice} country={currentCountry} selectedVarient={selectedVarient} vat_percent={vat_percent} opened={props.opened} isPaid={props.payment_id} open={open} s={shop} text={'Get This'} classes="w-full sm:w-auto btn-pink font-light md  mb-3" /> 
+                              </>
                               }
                            </>
                         }  

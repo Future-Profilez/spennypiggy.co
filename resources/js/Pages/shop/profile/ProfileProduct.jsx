@@ -1,19 +1,28 @@
+import { useAlerts } from '@/Components/Alerts';
 import PriceFormat from '@/includes/PriceFormat';
-import { Link } from '@inertiajs/react'
+import { Link, router, usePage } from '@inertiajs/react'
 import React from 'react'
 
 export default function ProfileProduct({item}) {
 
+   const {auth} = usePage().props;
    const { formatMultiPrice} = PriceFormat();
+
    const slug = (inputString) => { 
       return inputString
-      .toLowerCase() // Convert the string to lowercase
-      .replace(/[^a-z0-9\s-]/g, '') // Remove all non-alphanumeric characters except spaces and hyphens
-      .trim() // Remove leading and trailing spaces
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/-+/g, '-'); // Replace multiple hyphens with a single hyphen
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
    }
+
+   const { successAlert, errorAlert, errorsHandling } = useAlerts();
    const url = `/shop/item/${slug(item.name)}/${item.uuid}`;
+   const gotologin = () => { 
+      errorAlert("You must login first.");
+      router.visit(`/login?redirect=${url}`);
+   }
 
   return (
       <article class="max-w-sm w-full bg-white rounded-[22px] overflow-hidden ">
@@ -30,9 +39,20 @@ export default function ProfileProduct({item}) {
          <div class="mt-2 sm:mt-4 p-3 sm:p-4 border-t flex justify-between border-gray-200">
             <h2 className='font-bold text-sm sm:text-xl' >{formatMultiPrice(item.price, item?.currency || 'GBP') || "FREE"}</h2>
 
-            <Link href={url} class=" font-bold cursor-pointer hover:underline text-black text-sm sm:text-lg">
-               Buy Now 
-            </Link>
+            {auth && auth.user !== null ? 
+               <>
+                  <Link href={url} class=" font-bold cursor-pointer hover:underline text-black text-sm sm:text-lg">
+                     Buy Now 
+                  </Link>
+               </>
+               :
+               <>
+                  <button onClick={gotologin} class="font-bold cursor-pointer hover:underline text-black text-sm sm:text-lg">
+                     Buy Now 
+                  </button>
+               </>
+            }
+
          </div>
       </article>
   )
