@@ -32,13 +32,13 @@ class CheckoutController extends Controller
     public function createCheckout($id)
     {
         // Email notification on success
-        $now = Carbon::now()->format('h:i A d-m-Y');
-        $emailSubject = "Wish Payment Initiation Start - $now";
-        $message = "Wish Payment Process Initiation Start. $id";
-        Mail::to('prem@futureprofilez.com', 'Prem Prakash')
-            // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
-            //     ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
-            ->send(new CommandFailed($emailSubject, $message));
+        // $now = Carbon::now()->format('h:i A d-m-Y');
+        // $emailSubject = "Wish Payment Initiation Start - $now";
+        // $message = "Wish Payment Process Initiation Start. $id";
+        // Mail::to('prem@futureprofilez.com', 'Prem Prakash')
+        //     // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
+        //     //     ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
+        //     ->send(new CommandFailed($emailSubject, $message));
 
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         try {
@@ -77,13 +77,13 @@ class CheckoutController extends Controller
                 $new_total_amount = round($ConvertedAmount, 2, PHP_ROUND_HALF_UP);
 
                 // Email notification on success
-                $now = Carbon::now()->format('h:i A d-m-Y');
-                $emailSubject = "Wish Payment Initiation Start - $now";
-                $message = "Wish Payment Process Initiation Start. $new_total_amount";
-                Mail::to('prem@futureprofilez.com', 'Prem Prakash')
-                    // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
-                    //     ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
-                    ->send(new CommandFailed($emailSubject, $message));
+                // $now = Carbon::now()->format('h:i A d-m-Y');
+                // $emailSubject = "Wish Payment Initiation Start - $now";
+                // $message = "Wish Payment Process Initiation Start. $new_total_amount";
+                // Mail::to('prem@futureprofilez.com', 'Prem Prakash')
+                //     // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
+                //     //     ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
+                //     ->send(new CommandFailed($emailSubject, $message));
 
                 $lineItems[] = [
                     // 'price' => $dd->stripe_product_id ?? '',
@@ -122,13 +122,13 @@ class CheckoutController extends Controller
             ]);
 
             // Email notification on success
-            $now = Carbon::now()->format('h:i A d-m-Y');
-            $emailSubject = "Wish Payment Initiation Start - $now";
-            $message = "Wish Payment Process in Mid. $sessionCreate->url";
-            Mail::to('prem@futureprofilez.com', 'Prem Prakash')
-                // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
-                //     ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
-                ->send(new CommandFailed($emailSubject, $message));
+            // $now = Carbon::now()->format('h:i A d-m-Y');
+            // $emailSubject = "Wish Payment Initiation Start - $now";
+            // $message = "Wish Payment Process in Mid. $sessionCreate->url";
+            // Mail::to('prem@futureprofilez.com', 'Prem Prakash')
+            //     // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
+            //     //     ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
+            //     ->send(new CommandFailed($emailSubject, $message));
 
             session()->forget('session_id');
             session(['session_id' => $sessionCreate->id]);
