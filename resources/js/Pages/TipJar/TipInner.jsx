@@ -64,9 +64,9 @@ export default function TipInner({classes}) {
 
   useEffect(()=>{
     setData("amount", amount);
-   },[amount]);
+  },[amount]);
 
-   const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const send = (e) => {
     e.preventDefault();
