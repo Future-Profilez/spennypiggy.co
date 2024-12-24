@@ -97,7 +97,7 @@ export default function SubCheckout(props) {
                                 <strong className="text-end">
                                     {formatMultiPrice(membership.tax_amount || "", membership && membership.currency)}
                                 </strong><button className='tooltipbtn flex justify-center items-center !font-normal' >?<p className="!text-start">
-                                    <strong className="text-white !font-normal ">Open Banking:</strong> <br></br>
+                                    <strong className="text-white !font-normal ">Card Payments:</strong> <br></br>
                                     Bills - 10%<br></br>
                                     Memberships - 10%<br></br>
                                     Piggy Bank - 20%<br></br>
@@ -105,9 +105,9 @@ export default function SubCheckout(props) {
                                     Subscriptions - 10%<br></br>
                                     Single Purchases - 20%<br></br>
                                     Profile Shop - 20%<br></br><br></br>
-                                    <strong className="text-white !font-normal ">Card payments</strong> <br></br>
+                                    {/* <strong className="text-white !font-normal ">Card payments</strong> <br></br>
                                     25% + £0.80 card fee.
-                                    <br></br><br></br>
+                                    <br></br><br></br> */}
                                             Administrative Fee on all Transactions  - £1
                                 </p>
                                 </button>

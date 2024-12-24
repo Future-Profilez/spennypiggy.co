@@ -120,15 +120,14 @@ export default function BillCheckout(props) {
                                     <span>Platform Fee :</span>{" "}
                                     <strong className="text-end">
                                         {formatMultiPrice(
-                                            bill.tax_amount || "",
-                                            bill && bill.currency
+                                            bill.tax_amount || "", bill && bill.currency
                                         )}
                                     </strong>
                                     <button className="tooltipbtn flex justify-center items-center !font-normal">
                                         ?
                                         <p className="!text-start">
                                             <strong className="text-white !font-normal ">
-                                                Open Banking:
+                                            Card Payments:
                                             </strong>{" "}
                                             <br></br>
                                             Bills - 10%<br></br>
@@ -139,12 +138,12 @@ export default function BillCheckout(props) {
                                             Single Purchases - 20%<br></br>
                                             Profile Shop - 20%<br></br>
                                             <br></br>
-                                            <strong className="text-white !font-normal ">
+                                            {/* <strong className="text-white !font-normal ">
                                                 Card payments
                                             </strong>{" "}
                                             <br></br>
                                             25% + £0.80 card fee.
-                                            <br></br>
+                                            <br></br> */}
                                             <br></br>
                                             Administrative Fee on all
                                             Transactions - £1
