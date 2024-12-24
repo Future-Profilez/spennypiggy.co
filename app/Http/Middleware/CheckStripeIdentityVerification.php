@@ -19,7 +19,7 @@ class CheckStripeIdentityVerification
     public function handle(Request $request, Closure $next)
     {
         $user = Auth::user();
-
+        // dd($user->identity_status == 1);
         // Check if the user's identity_status is not verified (0)
         if ($user && $user->identity_status !== 1) {
             // Redirect to the Stripe identity verification page
