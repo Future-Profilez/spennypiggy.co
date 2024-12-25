@@ -25,6 +25,7 @@ class CheckStripeIdentityVerification
             // Redirect to the Stripe identity verification page
             return Inertia::render('Auth/StripeIdentity', [
                 'status' => false,
+                'data' => $user,
                 'message' => 'Please complete your Stripe identity verification.',
             ]);
         }
