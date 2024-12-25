@@ -27,6 +27,4 @@ Route::get('/products', [ProductController::class, 'index']);
 Route::post('/create-product', [ProductController::class, 'store']);
 Route::put('/products/{id}', [ProductController::class, 'update']);
 
-Route::post('/stripe/identity/verify', [StripeController::class, 'createVerificationSession']);
-
 

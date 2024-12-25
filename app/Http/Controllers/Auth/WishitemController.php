@@ -100,7 +100,8 @@ class WishitemController extends Controller
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         } else {
 
-            $taxamount = $request->price * env('TAX_PERCENTAGE', 20) / 100;
+            $taxamount = $request->price * config('app.single_tax') / 100;
+            // $taxamount = $request->price * env('TAX_PERCENTAGE', 20) / 100; // commented old code which written by saurav sir
             $createpriceid = ceil($request->price) + ceil($taxamount);
             $user = User::find(Auth::id());
             $wish = WishItem::create([
@@ -486,63 +487,69 @@ class WishitemController extends Controller
         return response()->json([
             'status' => true,
             'msg' => "Category Saved."
-        ]);;
+        ]);
     }
 
     public function discover_all_wishes($order, $type, $price)
     {
+        $tag = request()->query('tag') ? str_replace('-', ' ', request()->query('tag')) : false;
 
-        $tag = false;
-
-        if (!empty(request()->query('tag'))) {
-            $tag = str_replace('-', ' ', request()->query('tag'));
-        }
-
-        $query = WishItem::where('deleted_at', null)
+        $query = WishItem::query()
+            ->whereNull('deleted_at')
             ->where('is_approved', 1)
             ->with(['user'])
             ->whereHas('user', function ($q) use ($tag) {
                 $q->where(function ($s) {
-                    $s->whereNot('country', 'GB')->orWhereNull('country');
+                    $s->whereNot('country', 'GB')
+                        ->whereNotNull('account_id')
+                        ->orWhereNull('country');
                 });
-                if (!empty($tag)) {
+
+                if ($tag) {
                     $q->whereJsonContains('creator_category', $tag);
                 }
             });
 
-        if ($order == 'new') {
+        // Order by condition
+        if ($order === 'new') {
             $query->latest();
         }
 
-        if ($price == '5to10') {
-            $query->whereBetween('price', [4.99, 9.99]);
-        } elseif ($price == '10to30') {
-            $query->whereBetween('price', [9.99, 29.99]);
-        } elseif ($price == '30to50') {
-            $query->whereBetween('price', [29.99, 49.99]);
-        } elseif ($price == '50to100') {
-            $query->whereBetween('price', [49.99, 99.99]);
-        } elseif ($price == '100plus') {
+        // Price range filter
+        $priceRanges = [
+            '5to10' => [4.99, 9.99],
+            '10to30' => [9.99, 29.99],
+            '30to50' => [29.99, 49.99],
+            '50to100' => [49.99, 99.99],
+        ];
+
+        if (isset($priceRanges[$price])) {
+            $query->whereBetween('price', $priceRanges[$price]);
+        } elseif ($price === '100plus') {
             $query->where('price', '>', 99.99);
         }
 
-        if ($type == 'subscription') {
-            $query->where('subscription', 1);
-        } elseif ($type == 'crowdfund') {
-            $query->where('subscription', 2);
-        } elseif ($type == 'single') {
-            $query->where('subscription', 0);
+        // Subscription type filter
+        $subscriptionTypes = [
+            'subscription' => 1,
+            'crowdfund' => 2,
+            'single' => 0,
+        ];
+
+        if (isset($subscriptionTypes[$type])) {
+            $query->where('subscription', $subscriptionTypes[$type]);
         }
 
+        // Pagination and response
         $wishes = $query->paginate(30);
 
         return response()->json([
-            'success'   => true,
+            'success' => true,
             'wishes' => $wishes,
-            "last_page" => $wishes->lastPage() ?? null,
-            "current_page" => $wishes->currentPage() ?? null,
-            "total" => $wishes->total() ?? null,
-            "per_page" => $wishes->perPage() ?? null,
+            'last_page' => $wishes->lastPage(),
+            'current_page' => $wishes->currentPage(),
+            'total' => $wishes->total(),
+            'per_page' => $wishes->perPage(),
         ]);
     }
 
@@ -632,7 +639,7 @@ class WishitemController extends Controller
         if (Auth::check()) {
             if (Auth::id() == $wishitem->user_id) {
                 return response()->json([
-                    "success" => true,
+                    "success" => false,
                     "msg" => "You are not able to add your item to your cart.",
                 ]);
             }
@@ -756,7 +763,14 @@ class WishitemController extends Controller
     public function cartItems()
     {
         if (!empty(Auth::id())) {
-            $user = User::where('id', Auth::id())->where('country', '!=', 'GB')->first();
+            $groupedWishes = [];
+            $user = User::where('id', Auth::id())
+                ->where(function ($query) {
+                    $query->where('country', '!=', 'GB')
+                        ->orWhereNull('country');
+                })
+                ->first();
+
             $cart = [];
             if ($user) {
                 $carts = UserCart::where('user_id', $user->id)->where('country', 'global')->where('status', 1)->get();

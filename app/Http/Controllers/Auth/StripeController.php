@@ -1359,16 +1359,19 @@ class StripeController extends Controller
             // Set Stripe secret key
             Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
 
+            $user = Auth::user();
+
             // Create a new verification session
             $session = VerificationSession::create([
                 'type' => 'document',
                 'metadata' => [
                     'user_id' => $request->user() ? $request->user()->id : null,
                 ],
+                'return_url' => route('user.show', [$user->username]), // Redirect here after success or failure
             ]);
 
             // Retrieve the user
-            $user = User::find(228); // Update 228 to dynamic user ID logic if necessary
+            // $user = User::find($user->id); // Update 228 to dynamic user ID logic if necessary
 
             if (!$user) {
                 return response()->json([
@@ -1378,6 +1381,7 @@ class StripeController extends Controller
 
             // Update the user's Stripe session ID
             $user->stripe_user_id = $session->id;
+            $user->identity_verification_error = null;
 
             if ($user->save()) {
                 return response()->json([

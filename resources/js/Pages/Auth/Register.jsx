@@ -64,10 +64,10 @@ export default function Register(props) {
     });
 
     const [role, setRole] = useState(null);
-    const handleBecomeCreator = (e)=> { 
+    const handleBecomeCreator = (e)=> {
         setData("role", e);
         setRole(e);
-        if(e == 1){ 
+        if(e == 1){
             setStep(1);
         }else {
             setStep(2);
@@ -105,7 +105,7 @@ export default function Register(props) {
         }
     };
 
-    const resetCaptcha = () => { 
+    const resetCaptcha = () => {
         captchaRef.current && captchaRef.current.resetCaptcha();
         setVerified(false);
     }
@@ -184,7 +184,7 @@ export default function Register(props) {
         });
     };
 
-    const removecode = () => { 
+    const removecode = () => {
         setCodeValid(false);
         promoinput.current.value = '';
         setData("promo", '');
@@ -232,19 +232,19 @@ export default function Register(props) {
             length.classList.remove('valid');
         }
     }
-    
+
     return (
         <GuestLayout>
-            <IpRedirection />
+            {/* <IpRedirection />/ */}
             <Head title="Create Wishlist" />
             <div className='loginPage  blackbg pb-4 pb-md-5'>
                 <div className='containerbox '>
                     <div className='loginform mt-3 mt-md-5 mx-auto border-black whbg shadow-mint'>
-                        
+
                         <div className='loginheadbox pinkbg p-4'>
                             <span className='mintbg '></span>
                             <span className='bluebg '></span>
-                        </div> 
+                        </div>
 
                         <h1 className='text-[30px] font-GillSans text-uppercase d-none pt-8 text-center px-2'>Create Wishlist</h1>
                         <h2 className='text-[30px] font-GillSans text-uppercase pt-8 text-center px-2'>Create Account</h2>
@@ -270,7 +270,7 @@ export default function Register(props) {
                         <div className={`${step === 1 ? '' : 'd-none'}  what-are-you px-3`} >
                             <div className='px-0 px-md-4 px-lg-5 pb-4'>
                                 <p className='text-center text-[17px] text-muted ' >Choose from the following categories. This helps people find your profile. You can change these at any time.</p>
-                                
+
                                 <div className='d-flex creator-tags justify-content-center flex-wrap mt-4' >
                                     {creatortypes.map((s, index) => (
                                         <div key={index} className="flex items-center">
@@ -398,14 +398,14 @@ export default function Register(props) {
                                         <div className='d-flex align-items-center' >
                                             <input ref={promoinput}
                                             placeholder="Enter Referral Code..." className='form-control ' />
-                                            {codevalid ? <div  onClick={removecode}  
+                                            {codevalid ? <div  onClick={removecode}
                                             className={`cursor-pointer ${codevalid ? "mintbg text-dark" : "pinkbg"} promocode-btn ms-2 text-center`}
                                             >Remove</div>
-                                                : 
-                                            <div  onClick={checkPromo}  
+                                                :
+                                            <div  onClick={checkPromo}
                                             className={`cursor-pointer ${codevalid ? "mintbg text-dark" : "pinkbg"} promocode-btn ms-2 text-center`}
                                             >{ codevalid ? "Applied" : "Apply" }</div>}
-                                        </div> 
+                                        </div>
                                     </div>
 
                                     <div className='termselect'>
@@ -421,8 +421,8 @@ export default function Register(props) {
                                     <div className='m-auto hcaptcha-wrap d-table mb-3 mt-0 mt-md-3' >
                                         <HCaptcha  ref={captchaRef}
                                         sitekey={props.hcaptchakey || ''}
-                                        data-theme="light" 
-                                        data-size="compact" 
+                                        data-theme="light"
+                                        data-size="compact"
                                         onVerify={onVerify}
                                         />
                                     </div>
@@ -434,7 +434,7 @@ export default function Register(props) {
                                 </div>
                             </form>
                         </div>
-                        
+
                     </div>
                 </div>
             </div>

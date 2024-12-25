@@ -39,7 +39,7 @@ export default function ToCart({
 
     const addtocart = async (sets) => {
         if(auth && !auth.user){
-            successAlert("You must login first.");
+            errorAlert("You must login first.");
             router.visit("/login?redirect=" + window.location.pathname);
             return false;
         }
