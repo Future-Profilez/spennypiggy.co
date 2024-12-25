@@ -46,11 +46,10 @@ export default function StripeIdentity(props) {
             <div className="flex flex-col items-center justify-center  h-[80vh] bg-gray-100">
                 <div>
                     <div className=" rounded-lg p-6 sm:p-10 max-w-xl w-full">
-                        {props.data?.identity_verification_error && 
-                        props.data?.identity_status == 0 && (
-                            <div className="mb-4 text-red-600 text-center flex flex-col gap-1">
-                            Error: {props.data?.identity_verification_error?.code.replaceAll("_"," ")} 
-                            Possible Reason:{props.data?.identity_verification_error?.reason}
+                        {props?.data?.identity_verification_error && (
+                            <div className="mb-4 text-red-600 text-center flex flex-col gap-1 capitalize">
+                            Error: {props?.data?.identity_verification_error?.code?.replaceAll("_"," ") || "Unknown Error Occured"} 
+                            Possible Reason:{props?.data?.identity_verification_error?.reason || "N/A"}
                         </div>
                         
                         )}
