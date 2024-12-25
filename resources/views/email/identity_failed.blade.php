@@ -21,11 +21,33 @@
                     Unfortunately, your identity verification failed. Please review the details you submitted and try again.
                 </td>
             </tr>
+            @if(isset($user->identity_verification_error))
             <tr>
+                <td style="padding: 0 0 25px 0; font-family: Arial; font-size: 16px; line-height: 24px; color: #DC3545; text-align: left;">
+                    <strong>Error Details:</strong>
+                    @php
+                    $error = json_decode($user->identity_verification_error, true);
+                    @endphp
+                    @if($error && is_array($error))
+                    <ul style="padding: 0; margin: 10px 0 0 0; list-style-type: none;">
+                        @if(isset($error['code']))
+                        <li><strong>Code:</strong> {{ $error['code'] }}</li>
+                        @endif
+                        @if(isset($error['reason']))
+                        <li><strong>Reason:</strong> {{ $error['reason'] }}</li>
+                        @endif
+                    </ul>
+                    @else
+                    <p>Unable to retrieve error details. Please contact support for further assistance.</p>
+                    @endif
+                </td>
+            </tr>
+            @endif
+            <!-- <tr>
                 <td style="padding: 0 0 25px 0; font-family: Arial; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: left;">
                     If you believe this is an error, contact our support team for assistance.
                 </td>
-            </tr>
+            </tr> -->
         </table>
     </td>
 </tr>
