@@ -6,11 +6,10 @@ import { useAlerts } from "@/Components/Alerts";
 
 export default function StripeIdentity(props) {
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState("");
-    const { successAlert, errorAlert, errorsHandling } = useAlerts();
+    const { successAlert, errorAlert } = useAlerts();
+
     const handleVerification = async () => {
         setLoading(true);
-        setMessage(""); // Clear any previous messages
 
         try {
             const response = await axios.post(route("stripe.identity.verify"));
@@ -43,15 +42,21 @@ export default function StripeIdentity(props) {
 
     return (
         <Authenticated>
-            <div className="flex flex-col items-center justify-center  h-[80vh] bg-gray-100">
+            <div className="flex flex-col items-center justify-center h-[80vh] bg-gray-100">
                 <div>
-                    <div className=" rounded-lg p-6 sm:p-10 max-w-xl w-full">
+                    <div className="rounded-lg p-6 sm:p-10 max-w-xl w-full">
                         {props?.data?.identity_verification_error && (
                             <div className="mb-4 text-red-600 text-center flex flex-col gap-1 capitalize">
-                            Error: {props?.data?.identity_verification_error?.code?.replaceAll("_"," ") || "Unknown Error Occured"} 
-                            Possible Reason:{props?.data?.identity_verification_error?.reason || "N/A"}
-                        </div>
-                        
+                                Error:{" "}
+                                {props?.data?.identity_verification_error?.code?.replaceAll(
+                                    "_",
+                                    " "
+                                ) || "Unknown Error Occurred"}
+                                <br />
+                                Possible Reason:{" "}
+                                {props?.data?.identity_verification_error
+                                    ?.reason || "N/A"}
+                            </div>
                         )}
                         <h2 className="text-center welcomeHeading !text-3xl shadow-yellow font-GillSans text-uppercase mb-1">
                             Identity Verification Required
@@ -61,6 +66,17 @@ export default function StripeIdentity(props) {
                             identity verification. This process ensures your
                             account's security and compliance.
                         </p>
+
+                        {/* New Section: Guidelines Link */}
+                        <div className="mt-4 text-center text-sm text-gray-700">
+                            For details on acceptable documents and instructions
+                            on how to upload, visit the{" "}
+                            <a href="https://docs.stripe.com/acceptable-verification-documents" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                Stripe Verification Guidelines
+                            </a>
+                            .
+                        </div>
+
                         <div className="mt-6 flex justify-center">
                             <LoaderButton
                                 disabled={loading}
@@ -68,18 +84,23 @@ export default function StripeIdentity(props) {
                                 className="px-6 py-[13px] bg-blue-600 text-white rounded-xl hover:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-300 transition-all ease-in-out duration-200"
                                 spinnerClassName="fill-white"
                             >
-                                {loading ? "Processing..." :
-                                props.data?.identity_verification_error && 
-                                props.data?.identity_status == 0 ? "Reverify Now":
-                                "Verify Now"}
+                                {loading
+                                    ? "Processing..."
+                                    : props.data?.identity_verification_error &&
+                                      props.data?.identity_status == 0
+                                    ? "Reverify Now"
+                                    : "Verify Now"}
                             </LoaderButton>
                         </div>
                     </div>
 
-                    <footer className=" text-sm text-gray-500">
+                    <footer className="text-sm text-gray-500">
                         <p className="text-center">
                             Need help? Contact our support team at
-                            <a href="mailto:mailto:support@spennypiggy.co" className="text-blue-600 hover:underline ml-1">
+                            <a
+                                href="mailto:support@spennypiggy.co"
+                                className="text-blue-600 hover:underline ml-1"
+                            >
                                 support@spennypiggy.co
                             </a>
                         </p>
