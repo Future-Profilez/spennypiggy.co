@@ -52,7 +52,7 @@ export default function StripeIdentity({ data }) {
                     {/* Display error details */}
                     {data?.identity_verification_error && (
                         <div className="mb-4 text-red-600 text-center flex flex-col gap-1 capitalize">
-                            <p>Error: {error?.code?.replaceAll("_", " ") || "Unknown Error Occurred"}</p>
+                            <p>Error: {error?.code?.replaceAll("_", " ") || error?.code || "Unknown Error Occurred"}</p>
                             <p>Possible Reason: {error?.reason || "N/A"}</p>
                         </div>
                     )}
