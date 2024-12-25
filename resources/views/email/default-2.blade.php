@@ -4,9 +4,7 @@
     <title>{{ $title ?? 'spenny Piggy Emails' }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&amp;display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
     <style>
         * {
             font-family: 'Outfit', sans-serif;
@@ -86,7 +84,7 @@
         style="width: 100%; max-width: 450px; border-collapse: collapse; box-shadow: 0 0 25px 0 rgba(0,0,0,0.1); border-radius: 10px;">
         <tr>
             <td style="background-color: #F94F97; padding: 10px 15px 10px 15px">
-                <img src="https://whoyouinto.com/emails/user/activedots.png" alt="img">
+                <img src="https://ucarecdn.com/1fa9114e-a0ee-4097-add8-0cd7afa2632b/activedots.png" alt="img">
             </td>
         </tr>
 
@@ -107,20 +105,17 @@
                                     <!-- <td valign="middle" style="padding-right: 10px"><a
                                             href="https://m.facebook.com/whoyouinto" target="_blank"><img
                                                 src="https://whoyouinto.com/emails/user/facebookicon.png"></a></td> -->
-                                    <td valign="middle" style="padding-right: 10px"><a
-                                            href="https://x.com/spennypiggy?s=21&t=C7pgKTNG0gHS2ka9yuTonA" target="_blank"><img
-                                                src="https://whoyouinto.com/emails/user/twittericon.png"></a></td>
-                                    <td valign="middle" style="padding-right: 10px"><a
-                                            href="https://www.instagram.com/spennypiggy?igsh=MW55cjFqYjh6eWFrZQ=="
-                                            target="_blank"><img
-                                                src="https://whoyouinto.com/emails/user/instagramicon.png"></a></td>
-                                    <td valign="middle" style="padding-right: 10px"><a
-                                            href="https://m.youtube.com/channel/UCC1GASMLYEjW46dHuKZZMZQ"
-                                            target="_blank"><img
-                                                src="https://whoyouinto.com/emails/user/youtubeicon.png"></a></td>
-                                    <td valign="middle"><a href="https://www.tiktok.com/@spennypiggy?_t=8iySXCcoeGG&_r=1"
-                                            target="_blank"><img
-                                                src="https://whoyouinto.com/emails/user/tiktokicon.png"></a></td>
+                                    <td valign="middle" style="padding-right: 10px"><a href="https://x.com/spennypiggy?s=21&t=C7pgKTNG0gHS2ka9yuTonA" target="_blank">
+                                            <img src="https://ucarecdn.com/e8193ffe-aadc-4d10-8a18-1cbb8336a284/twittericon.png"></a></td>
+                                    <td valign="middle" style="padding-right: 10px">
+                                        <a href="https://www.instagram.com/spennypiggy?igsh=MW55cjFqYjh6eWFrZQ==" target="_blank">
+                                            <img src="https://ucarecdn.com/a6a70fa1-396c-43b6-be45-12fcdbbeca5b/instagramicon.png"></a></td>
+                                    <td valign="middle" style="padding-right: 10px">
+                                        <a href="https://m.youtube.com/channel/UCC1GASMLYEjW46dHuKZZMZQ" target="_blank">
+                                            <img src="https://ucarecdn.com/28ec803c-9f8b-4580-b8e8-2bbf9d5f94f6/youtubeicon.png"></a></td>
+                                    <td valign="middle">
+                                        <a href="https://www.tiktok.com/@spennypiggy?_t=8iySXCcoeGG&_r=1" target="_blank">
+                                            <img src="https://ucarecdn.com/89808096-fd59-4aad-a352-cf05bac855e7/tiktokicon.png"></a></td>
                                 </tr>
                             </table>
                         </td>
@@ -132,8 +127,7 @@
                                     <td width="50%" style="padding: 0 5px 0 0">
                                         <table align="left" cellspacing="0" cellpadding="0" border="0">
                                             <tr>
-                                                <td><img src="https://whoyouinto.com/emails/user/lockicon.png"
-                                                        alt="img"></td>
+                                                <td><img src="https://ucarecdn.com/fcce9347-a23a-495e-b6c3-b3a71360b9f9/lockicon.png" alt="img"></td>
                                                 <td
                                                     style="color:#8C52FF; font-family: Arial; font-size:12px; font-style: normal; font-weight: 400; line-height: normal;">
                                                     SSl Encryption</td>
@@ -143,10 +137,8 @@
                                     <td width="50%" style="padding: 0 0 0 5px">
                                         <table align="left" cellspacing="0" cellpadding="0" border="0">
                                             <tr>
-                                                <td><img src="https://whoyouinto.com/emails/user/pciimg.png"
-                                                        alt="img"></td>
-                                                <td
-                                                    style="color:#8C52FF; font-family: Arial; font-size:12px; font-style: normal; font-weight: 400; line-height: normal;">
+                                                <td><img src="https://ucarecdn.com/be624d04-6b8d-485b-ac21-b20fd0c0d5bc/pciimg.png" alt="img"></td>
+                                                <td style="color:#8C52FF; font-family: Arial; font-size:12px; font-style: normal; font-weight: 400; line-height: normal;">
                                                     SSl Encryption</td>
                                             </tr>
                                         </table>

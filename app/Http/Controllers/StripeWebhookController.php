@@ -121,6 +121,7 @@ class StripeWebhookController extends Controller
                 'identity_status' => 0, // Failed
                 'identity_verification_error' => $session->last_error ? json_encode($session->last_error) : null,
                 'identity_verification_details' => null,
+                'identity_verified_at' => null,
             ]);
 
             Log::info('Verification session requires input', ['user_id' => $user->id, 'session_id' => $session->id]);

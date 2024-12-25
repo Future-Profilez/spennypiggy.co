@@ -4,11 +4,10 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
 
-export default function StripeIdentity() {
+export default function StripeIdentity(props) {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
-
     const handleVerification = async () => {
         setLoading(true);
         setMessage(""); // Clear any previous messages
@@ -47,6 +46,14 @@ export default function StripeIdentity() {
             <div className="flex flex-col items-center justify-center  h-[80vh] bg-gray-100">
                 <div>
                     <div className=" rounded-lg p-6 sm:p-10 max-w-xl w-full">
+                        {props.data?.identity_verification_error && 
+                        props.data?.identity_status == 0 && (
+                            <div className="mb-4 text-red-600 text-center flex flex-col gap-1">
+                            Error: {props.data?.identity_verification_error?.code.replaceAll("_"," ")} 
+                            Possible Reason:{props.data?.identity_verification_error?.reason}
+                        </div>
+                        
+                        )}
                         <h2 className="text-center welcomeHeading !text-3xl shadow-yellow font-GillSans text-uppercase mb-1">
                             Identity Verification Required
                         </h2>
@@ -62,7 +69,10 @@ export default function StripeIdentity() {
                                 className="px-6 py-[13px] bg-blue-600 text-white rounded-xl hover:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-300 transition-all ease-in-out duration-200"
                                 spinnerClassName="fill-white"
                             >
-                                {loading ? "Processing..." : "Verify Now"}
+                                {loading ? "Processing..." :
+                                props.data?.identity_verification_error && 
+                                props.data?.identity_status == 0 ? "Reverify Now":
+                                "Verify Now"}
                             </LoaderButton>
                         </div>
                     </div>
