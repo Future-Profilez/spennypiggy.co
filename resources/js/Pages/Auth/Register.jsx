@@ -2,12 +2,13 @@ import React, {  useState } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import InputError from '@/Components/InputError';
 import { useAlerts } from "@/Components/Alerts";
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import LoaderButton from '@/Components/LoaderButton';
 import { useRef } from 'react';
 import axios from 'axios';
 import HCaptcha from '@hcaptcha/react-hcaptcha';
-const IpRedirection = React.lazy(() => import('@/includes/IpRedirection'));
+// const IpRedirection = React.lazy(() => import('@/includes/IpRedirection'));
+import { handleIpRedirection } from '../../includes/useIpRedirection';
 
 export default function Register(props) {
     const CheckCircleIcon = () => {
@@ -49,7 +50,13 @@ export default function Register(props) {
         { "label": "Writer", "value": "Writer" }
     ]
 
-    const [step, setStep] = useState(0);
+    const { ziggy } = usePage().props;
+    const { url } = usePage(); // Access the current URL
+
+    // Extract query parameters from the URL
+    const params = new URLSearchParams(url.split('?')[1]); // Extract the query string
+    const type = params.get('type'); // Get the 'type' parameter
+    // console.log("type",type);
 
     const { data, setData, post, get, processing, errors, reset } = useForm({
         name: '',
@@ -59,20 +66,23 @@ export default function Register(props) {
         gender: '',
         password_confirmation: '',
         promo: '',
-        role: 0,
+        role: type && type === "creator" ? 1 : 0,
         creator_category:''
     });
 
+    const [step, setStep] = useState(type && type === "creator" ? 1 : 0);
     const [role, setRole] = useState(null);
-    const handleBecomeCreator = (e)=> {
+    const handleBecomeCreator = async(e)=> {
         setData("role", e);
         setRole(e);
         if(e == 1){
+            await handleIpRedirection(ziggy);
             setStep(1);
         }else {
             setStep(2);
         }
     }
+    // console.log("data",data);
 
     const termsaccept = () => {
         errorAlert("Please check accept terms & conditions checkbox");
