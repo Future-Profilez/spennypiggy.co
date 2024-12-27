@@ -17,11 +17,11 @@
             </table>
         </td>
     </tr>
-    <tr>
+    <!-- <tr>
         <td style="padding: 5px 5px 10px 5px; text-align: center;">
             <img src="https://whoyouinto.com/emails/welcome/welcomebanner.png" alt="img">
         </td>
-    </tr>
+    </tr> -->
     <tr>
         <td style="padding:10px 10px 20px 10px;">
             <table width="100%" cellspacing="0" cellpadding="0" border="0" style=" width: 100%; text-align: center;">
