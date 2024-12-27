@@ -9,9 +9,10 @@ export async function handleIpRedirection(ziggy) {
 
     if (ziggy && ziggy?.url === 'https://spennypiggy.co' && countryCode === 'GB') {
       window.location = 'https://uk.spennypiggy.co/register?type=creator';
-    } else if (ziggy && ziggy?.url === 'https://uk.spennypiggy.co' && countryCode !== 'GB') {
-      window.location = 'https://spennypiggy.co/register?type=creator';
     }
+    // else if (ziggy && ziggy?.url === 'https://uk.spennypiggy.co' && countryCode !== 'GB') {
+    //   window.location = 'https://spennypiggy.co/register?type=creator';
+    // }
   } catch (error) {
     console.error('Error fetching IP location data:', error);
   }
