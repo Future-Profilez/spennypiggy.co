@@ -26,6 +26,7 @@ class SendIdentityVerificationEmail implements ShouldQueue
      */
     public function __construct($user, $status)
     {
+        Log::info("come in function construct " . $user->id);
         $this->user = $user;
         $this->status = $status;
     }
@@ -38,6 +39,7 @@ class SendIdentityVerificationEmail implements ShouldQueue
         if ($this->status == 'success') {
             Mail::to($this->user->email)->send(new IdentityVerificationSuccess($this->user));
         } elseif ($this->status == 'failed') {
+            Log::info("come in failed function");
             Mail::to($this->user->email)->send(new IdentityVerificationFailed($this->user));
         } elseif ($this->status == 'process') {
             Mail::to($this->user->email)->send(new IdentityVerificationProcess($this->user));

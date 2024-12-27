@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
+use App\Jobs\SendIdentityVerificationEmail;
+use Illuminate\Support\Facades\Log;
 use Stripe\Balance;
 use Stripe\Stripe;
 
@@ -210,5 +212,35 @@ class TestController extends Controller
             'success'   =>  true,
             'ip_indo'   =>  IpTracker::$ipInfo
         ]);
+    }
+
+    public function sendFailedVerificationEmails()
+    {
+        try {
+            // Fetch users with non-null identity_verification_error
+            $users = User::whereNotNull('identity_verification_error')->get();
+
+            if ($users->isEmpty()) {
+                return response()->json(['status' => 'error', 'message' => 'No users found with identity verification errors.']);
+            }
+            Log::info('come after if');
+
+            // Dispatch email jobs for each user
+            foreach ($users as $user) {
+                Log::info("come after if " . $user->id);
+                dispatch(new SendIdentityVerificationEmail($user, 'failed'));
+            }
+
+            return response()->json(['status' => 'success', 'message' => 'Emails sent to users with identity verification errors.']);
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            Log::error("Error in sending identity verification emails", [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return response()->json(['status' => 'error', 'message' => 'An error occurred while sending emails.']);
+        }
     }
 }

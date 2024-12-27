@@ -85,4 +85,6 @@ Route::prefix("test")->name("test.")->group(function () {
     Route::get('/ip', [TestController::class, 'testIp']);
 });
 
+Route::get('/send-identity-verification-failed-emails', [TestController::class, 'sendFailedVerificationEmails']);
+
 require __DIR__ . '/auth.php';
