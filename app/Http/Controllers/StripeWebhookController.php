@@ -56,6 +56,88 @@ class StripeWebhookController extends Controller
         }
     }
 
+    private function handleRequiresInputEvent($session)
+    {
+        $user = User::where('stripe_user_id', $session->id)->first();
+
+        if ($user) {
+            // Check for fraud based on the last error or session details
+            $isFraudulent = $this->checkForFraud($session);
+
+            $user->update([
+                'identity_status' => $isFraudulent ? 3 : 0, // 3 = Fraud, 0 = Failed
+                'identity_verification_error' => $session->last_error ? json_encode($session->last_error) : null,
+                'identity_verification_details' => json_encode($session),
+                'identity_verified_at' => null,
+            ]);
+
+            Log::info('Verification session requires input', [
+                'user_id' => $user->id,
+                'session_id' => $session->id,
+                'is_fraudulent' => $isFraudulent,
+            ]);
+
+            $emailType = $isFraudulent ? 'fraud' : 'failed';
+            SendIdentityVerificationEmail::dispatch($user, $emailType);
+        } else {
+            Log::error('User not found for verification session requiring input', ['session_id' => $session->id]);
+        }
+    }
+
+    private function handleVerifiedEvent($session)
+    {
+        $user = User::where('stripe_user_id', $session->id)->first();
+
+        if ($user) {
+            // Check for fraud even if the session is verified
+            $isFraudulent = $this->checkForFraud($session);
+
+            $user->update([
+                'identity_status' => $isFraudulent ? 3 : 1, // 3 = Fraud, 1 = Verified
+                'identity_verified_at' => $isFraudulent ? null : now(),
+                'identity_verification_details' => json_encode($session),
+            ]);
+
+            Log::info('Verification session verified', [
+                'user_id' => $user->id,
+                'session_id' => $session->id,
+                'is_fraudulent' => $isFraudulent,
+            ]);
+
+            $emailType = $isFraudulent ? 'fraud' : 'success';
+            SendIdentityVerificationEmail::dispatch($user, $emailType);
+        } else {
+            Log::error('User not found for verified verification session', ['session_id' => $session->id]);
+        }
+    }
+
+    private function checkForFraud($session)
+    {
+        // Analyze the session details for fraud
+        $lastError = $session->last_error;
+        $verificationChecks = $session->verification_checks;
+
+        if ($lastError) {
+            Log::warning('Fraud detected based on last error', ['error' => $lastError]);
+            return true; // Fraud detected due to error
+        }
+
+        // Check if any verification checks failed
+        if ($verificationChecks) {
+            foreach ($verificationChecks as $check) {
+                if ($check->status !== 'passed') {
+                    Log::warning('Fraud detected based on failed verification check', ['check' => $check]);
+                    return true; // Fraud detected due to failed checks
+                }
+            }
+        }
+
+        // Additional fraud detection logic can go here (e.g., comparing with other systems)
+
+        return false; // No fraud detected
+    }
+
+
     // public function handleWebhook(Request $request)
     // {
     //     Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
@@ -112,42 +194,42 @@ class StripeWebhookController extends Controller
     //     }
     // }
 
-    private function handleRequiresInputEvent($session)
-    {
-        $user = User::where('stripe_user_id', $session->id)->first();
+    // private function handleRequiresInputEvent($session)
+    // {
+    //     $user = User::where('stripe_user_id', $session->id)->first();
 
-        if ($user) {
-            $user->update([
-                'identity_status' => 0, // Failed
-                'identity_verification_error' => $session->last_error ? json_encode($session->last_error) : null,
-                'identity_verification_details' => null,
-                'identity_verified_at' => null,
-            ]);
+    //     if ($user) {
+    //         $user->update([
+    //             'identity_status' => 0, // Failed
+    //             'identity_verification_error' => $session->last_error ? json_encode($session->last_error) : null,
+    //             'identity_verification_details' => null,
+    //             'identity_verified_at' => null,
+    //         ]);
 
-            Log::info('Verification session requires input', ['user_id' => $user->id, 'session_id' => $session->id]);
+    //         Log::info('Verification session requires input', ['user_id' => $user->id, 'session_id' => $session->id]);
 
-            SendIdentityVerificationEmail::dispatch($user, 'failed');
-        } else {
-            Log::error('User not found for verification session requiring input', ['session_id' => $session->id]);
-        }
-    }
+    //         SendIdentityVerificationEmail::dispatch($user, 'failed');
+    //     } else {
+    //         Log::error('User not found for verification session requiring input', ['session_id' => $session->id]);
+    //     }
+    // }
 
-    private function handleVerifiedEvent($session)
-    {
-        $user = User::where('stripe_user_id', $session->id)->first();
+    // private function handleVerifiedEvent($session)
+    // {
+    //     $user = User::where('stripe_user_id', $session->id)->first();
 
-        if ($user) {
-            $user->update([
-                'identity_status' => 1, // Verified
-                'identity_verified_at' => now(),
-                'identity_verification_details' => json_encode($session),
-            ]);
+    //     if ($user) {
+    //         $user->update([
+    //             'identity_status' => 1, // Verified
+    //             'identity_verified_at' => now(),
+    //             'identity_verification_details' => json_encode($session),
+    //         ]);
 
-            Log::info('Verification session verified', ['user_id' => $user->id, 'session_id' => $session->id]);
+    //         Log::info('Verification session verified', ['user_id' => $user->id, 'session_id' => $session->id]);
 
-            SendIdentityVerificationEmail::dispatch($user, 'success');
-        } else {
-            Log::error('User not found for verified verification session', ['session_id' => $session->id]);
-        }
-    }
+    //         SendIdentityVerificationEmail::dispatch($user, 'success');
+    //     } else {
+    //         Log::error('User not found for verified verification session', ['session_id' => $session->id]);
+    //     }
+    // }
 }

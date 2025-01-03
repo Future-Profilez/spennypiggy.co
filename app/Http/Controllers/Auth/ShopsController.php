@@ -663,7 +663,6 @@ class ShopsController extends Controller
                 ];
 
                 $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-
                 $sessionCreate = $stripe->checkout->sessions->create([
                     'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
                     'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
@@ -722,9 +721,13 @@ class ShopsController extends Controller
                 'msg' => "Payment Successfull",
                 'url' => route('single-shop-list', [$slug, $shop->uuid, $shopPaymentDetail->session_id])
             ]);
-        } catch (\Throwable $th) {
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ]);
             // Log::error("Error in createCheckout: " . $th->getMessage());
-            throw $th;
+            // throw $e->getMessage();
         }
     }
 

@@ -1367,6 +1367,7 @@ class StripeController extends Controller
                 'metadata' => [
                     'user_id' => $request->user() ? $request->user()->id : null,
                 ],
+                'provided_details' => ['email' => $request->user() ? $request->user()->email : null],
                 'return_url' => route('user.show', [$user->username]), // Redirect here after success or failure
             ]);
 

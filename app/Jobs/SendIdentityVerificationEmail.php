@@ -2,17 +2,14 @@
 
 namespace App\Jobs;
 
-use App\EmailService;
+use App\Mail\IdentityVerificationSuccess;
+use App\Mail\IdentityVerificationFailed;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\IdentityVerificationSuccess;
-use App\Mail\IdentityVerificationFailed;
-use App\Mail\IdentityVerificationProcess;
 use Illuminate\Support\Facades\Log;
 
 class SendIdentityVerificationEmail implements ShouldQueue
@@ -21,28 +18,52 @@ class SendIdentityVerificationEmail implements ShouldQueue
 
     protected $user;
     protected $status;
+
     /**
      * Create a new job instance.
+     *
+     * @param $user
+     * @param $status
      */
     public function __construct($user, $status)
     {
-        Log::info("come in function construct " . $user->id);
         $this->user = $user;
         $this->status = $status;
     }
 
     /**
      * Execute the job.
+     *
+     * @return void
      */
     public function handle(): void
     {
-        if ($this->status == 'success') {
-            Mail::to($this->user->email)->send(new IdentityVerificationSuccess($this->user));
-        } elseif ($this->status == 'failed') {
-            Log::info("come in failed function");
-            Mail::to($this->user->email)->send(new IdentityVerificationFailed($this->user));
-        } elseif ($this->status == 'process') {
-            Mail::to($this->user->email)->send(new IdentityVerificationProcess($this->user));
+        try {
+            $emailClass = $this->getEmailClassForStatus($this->status);
+            if ($emailClass) {
+                Mail::to($this->user->email)->send(new $emailClass($this->user));
+            } else {
+                Log::warning("No email class defined for status: {$this->status} for user ID: {$this->user->id}");
+            }
+        } catch (\Exception $e) {
+            Log::error("Error sending identity verification email for user ID: {$this->user->id}. Error: {$e->getMessage()}");
         }
+    }
+
+    /**
+     * Get the appropriate email class based on the status.
+     *
+     * @param string $status
+     * @return string|null
+     */
+    protected function getEmailClassForStatus(string $status): ?string
+    {
+        $statusEmailMapping = [
+            'success' => IdentityVerificationSuccess::class,
+            'failed'  => IdentityVerificationFailed::class,
+            'fraud'   => IdentityVerificationFailed::class,
+        ];
+
+        return $statusEmailMapping[$status] ?? null;
     }
 }

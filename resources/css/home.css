@@ -1,7 +1,7 @@
 @keyframes menu{0%{opacity:0;transition:0.6s;}
 to{opacity:1;transition:0.6s;}
 }
- 
+
 
 .new-wish-cats {
   overflow: auto;
@@ -554,7 +554,7 @@ ul.socialmedia li svg{width:25px !important;height:24px !important;}
 /* responsive */
 @media (min-width:767px){
   .about-sticky{position:sticky;top:133px;}
-  .new-wish-cats { 
+  .new-wish-cats {
     flex-wrap: wrap;
   }
 }
@@ -861,7 +861,7 @@ select#country{width:100%;}
   .isintro span,.isintro span img{max-height:340px;}
   .discover-icon svg{width:30px;height:30px;}
   .sno p{font-size:16px;}
-  
+
 }
 @media (max-width:575px){
   .wishlistbutton{padding:5px 25px !important;}
