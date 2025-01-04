@@ -39,18 +39,15 @@ export default function SubCheckout(props) {
 
     const [checking, setChecking] = useState(false);
     const handleSubmit = (e) => {
-        e.preventDefault();
-        post(
-            route(`membership.checkout`, {
-                uuid: membership.uuid,
-                reccure:
-                    membership?.level == "lifetime" ? "onetime" : "continue",
-            }),
-            {
-                preserveScroll: true,
-            }
-        );
-    };
+        e && e.preventDefault();
+        post(route(`membership.checkout`,{
+            uuid:membership.uuid,
+            reccure : membership?.level == 'lifetime' ? 'onetime' : 'continue'
+          }),
+        {
+            preserveScroll:true
+        });
+    }
 
     const onVerify = (token) => {
         handleSubmit();
