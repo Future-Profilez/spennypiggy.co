@@ -114,7 +114,7 @@ class StripeController extends Controller
                     "type" => "express",
                     'email' => $user->email,
                     'capabilities' => [
-                        // 'card_payments' => ['requested' => true],
+                        'card_payments' => ['requested' => true],
                         'transfers' => ['requested' => true],
                     ],
                     'tos_acceptance' => ['service_agreement' => $country == 'US' ? 'full' : 'recipient'],
