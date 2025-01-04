@@ -5,13 +5,12 @@ import PriceFormat from "@/includes/PriceFormat";
 import DeviceID from "@/includes/DeviceID";
 import axios from "axios";
 import { useEffect } from "react";
-import { add_to_cart } from '@/Pages/redux/UserSlice';
-import HCaptcha from '@hcaptcha/react-hcaptcha';
+import { add_to_cart } from "@/Pages/redux/UserSlice";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 
 export default function UserCarts(props) {
-
     const hcaptchaRef = useRef(null);
-    const {hcaptchakey} = usePage().props;
+    const { hcaptchakey } = usePage().props;
     const deviceid = DeviceID();
     const { auth, removeFromCart } = props;
     const { format, formatMultiPrice } = PriceFormat();
@@ -19,16 +18,21 @@ export default function UserCarts(props) {
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
     const [isChecked, setIsChecked] = useState(false);
     const [message, setMessage] = useState(null);
-    const [name, setName] = useState(auth && auth.name || '');
-    const [email, setEmail] = useState(auth && auth.email || '');
-
+    const [name, setName] = useState((auth && auth.name) || "");
+    const [email, setEmail] = useState((auth && auth.email) || "");
 
     const [checking, setChecking] = useState(false);
     const handleSubmit = (e) => {
         if (auth && auth.id) {
-            window.location.href = `/create-checkout-session/${datas?.user?.id || ''}?message=${message}&from=${name}&email=${email}&anonymous=${keepAnonmyous ? 1 : 0}`;
+            window.location.href = `/create-checkout-session/${
+                datas?.user?.id || ""
+            }?message=${message}&from=${name}&email=${email}&anonymous=${
+                keepAnonmyous ? 1 : 0
+            }`;
         } else {
-            window.location.href = `/create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}&anonymous=${keepAnonmyous ? 1 : 0}`;
+            window.location.href = `/create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}&anonymous=${
+                keepAnonmyous ? 1 : 0
+            }`;
         }
     };
     const onVerify = (token) => {
@@ -50,117 +54,158 @@ export default function UserCarts(props) {
             onSuccess: (resp) => {
                 setCartCleared(true);
                 setLoading(false);
-                if(index == 0){
+                if (index == 0) {
                     window.location.reload = false;
                 }
             },
             onError: (_err) => {
                 console.error("error", _err);
                 setLoading(false);
-            }
+            },
         });
-    }
+    };
 
     const [items, setItems] = useState(datas?.items);
     const removeCart = (id) => {
         router.get(`/remove-from-cart/${id}`, {
             preserveScroll: true,
             onSuccess: (resp) => {
-                const updatedItems = items.filter(item => item.uuid !== id);
+                const updatedItems = items.filter((item) => item.uuid !== id);
                 setItems(updatedItems);
             },
             onError: (_err) => {
                 console.error("error", _err);
-            }
-        }
-        );
-
+            },
+        });
     };
 
     const [subtotal, setsubtotal] = useState();
     const [fee, setFee] = useState(0.2 * subtotal);
 
     function updateTotals(p) {
-        const value = items && items.reduce((total, item) => +total + +item.price * (+item.quantity || 1), 0) + p;
+        const value =
+            items &&
+            items.reduce(
+                (total, item) => +total + +item.price * (+item.quantity || 1),
+                0
+            ) + p;
         setsubtotal(value);
-        const fees = items && items.reduce((total, item) => +total + +item.tax * (+item.quantity || 1), 0) + p;
+        const fees =
+            items &&
+            items.reduce(
+                (total, item) => +total + +item.tax * (+item.quantity || 1),
+                0
+            ) + p;
         setFee(fees);
     }
 
     const quantityUpdate = (type, amount, tax) => {
-        if (type == 'add') {
+        if (type == "add") {
             const updated = subtotal + amount;
             setsubtotal(updated);
-            const totalfee = fee + tax
+            const totalfee = fee + tax;
             setFee(totalfee);
         } else {
             const updated = subtotal - amount;
-            setsubtotal(updated)
-            const totalfee = fee - tax
+            setsubtotal(updated);
+            const totalfee = fee - tax;
             setFee(totalfee);
         }
-    }
+    };
 
     useEffect(() => {
         updateTotals(0);
     }, [items]);
 
-
-    console.log("props.hcaptchakey ",hcaptchakey)
+    console.log("props.hcaptchakey ", hcaptchakey);
     return (
-        <div className={`${cartCleared ? "d-none" : ''} px-2`}>
+        <div className={`${cartCleared ? "d-none" : ""} px-2`}>
             <div className="my-4 cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
                 <div className="cartMain">
                     <h2 className="pb-1 wishtitle">
                         Your Basket for {datas?.user?.name || ""}
-                        <Link className="text-voilet"
-                            href={`/${datas?.user?.username || ""}`} >
-                             @{datas?.user?.username || ""}
+                        <Link
+                            className="text-voilet"
+                            href={`/${datas?.user?.username || ""}`}
+                        >
+                            @{datas?.user?.username || ""}
                         </Link>
                     </h2>
                     <p className="pb-4">
                         You are about to send a payout to
-                        <strong> {datas?.user?.name || ""} </strong> to fund their
-                        lifestyle.
+                        <strong> {datas?.user?.name || ""} </strong> to fund
+                        their lifestyle.
                     </p>
                     <div className="CartItemBox">
-                        {items && items.map((c, i) => {
-                            return <CartItem currency={datas?.user && datas?.user?.default_currency} quantityUpdate={quantityUpdate}
-                            removeCart={removeCart} data={c} key={i} />;
-                        })}
+                        {items &&
+                            items.map((c, i) => {
+                                return (
+                                    <CartItem
+                                        currency={
+                                            datas?.user &&
+                                            datas?.user?.default_currency
+                                        }
+                                        quantityUpdate={quantityUpdate}
+                                        removeCart={removeCart}
+                                        data={c}
+                                        key={i}
+                                    />
+                                );
+                            })}
                     </div>
 
                     <div className="cartTotal px-0 py-3">
                         <div className="cartSubTotal text-right mt-1">
                             <span>Platform Fee :</span>{" "}
                             <strong className="text-end">
-                                {formatMultiPrice(fee || "", datas?.user && datas?.user?.default_currency)}<button className='tooltipbtn flex justify-center items-center !font-normal' >?<p className="!text-start">
-                                    <strong className="text-white !font-normal ">Card Payments:</strong> <br></br>
-                                    Bills - 10%<br></br>
-                                    Memberships - 10%<br></br>
-                                    Piggy Bank - 20%<br></br>
-                                    Crowdfunding - 20%<br></br>
-                                    Subscriptions - 10%<br></br>
-                                    Single Purchases - 20%<br></br>
-                                    Profile Shop - 20%<br></br><br></br>
-                                    {/* <strong className="text-white !font-normal ">Card payments</strong> <br></br>
-                                    25% + £0.80 card fee. */}
-                                    {/* <br></br><br></br> */}
-                                            Administrative Fee on all Transactions  - £1
-                                </p>
+                                {formatMultiPrice(
+                                    fee || "",
+                                    datas?.user && datas?.user?.default_currency
+                                )}
+                                <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">
+                                    ?
+                                    <p className="absolute bg-[#505050] p-[10px] rounded-md top-[20px] right-[-28px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
+                                        <strong className="text-white font-normal">
+                                            Card Payments:
+                                        </strong>{" "}
+                                        <br />
+                                        Bills - 10%
+                                        <br />
+                                        Memberships - 10%
+                                        <br />
+                                        Piggy Bank - 20%
+                                        <br />
+                                        Crowdfunding - 20%
+                                        <br />
+                                        Subscriptions - 10%
+                                        <br />
+                                        Single Purchases - 20%
+                                        <br />
+                                        Profile Shop - 20%
+                                        <br />
+                                        <br />
+                                        Administrative Fee on all Transactions -
+                                        £1
+                                    </p>
                                 </button>
                             </strong>
                         </div>
                         <div className="cartSubTotal text-right mt-1">
                             <span>Subtotal :</span>{" "}
                             <strong className="text-end">
-                                {formatMultiPrice(subtotal || "", datas?.user && datas?.user?.default_currency)}
+                                {formatMultiPrice(
+                                    subtotal || "",
+                                    datas?.user && datas?.user?.default_currency
+                                )}
                             </strong>
                         </div>
                         <div className="cartSubTotal text-right mt-1">
                             <strong className="text-dark">Total :</strong>{" "}
                             <strong className="text-end">
-                                {formatMultiPrice(fee + subtotal || "", datas?.user && datas?.user?.default_currency)}
+                                {formatMultiPrice(
+                                    fee + subtotal || "",
+                                    datas?.user && datas?.user?.default_currency
+                                )}
                             </strong>
                         </div>
                     </div>
@@ -180,13 +225,30 @@ export default function UserCarts(props) {
                                 <li className="w-100 mt-3">
                                     <li className="row">
                                         <div className="col-md-12 mb-4">
-                                            <label className="d-block text-start">Email </label>
-                                            <p className="text-small text-muted mb-1">Your e-mail remains private.</p>
-                                            <input required className={`${auth && auth.email ? 'disabled' : ''} form-input w-100 rounded`}
+                                            <label className="d-block text-start">
+                                                Email{" "}
+                                            </label>
+                                            <p className="text-small text-muted mb-1">
+                                                Your e-mail remains private.
+                                            </p>
+                                            <input
+                                                required
+                                                className={`${
+                                                    auth && auth.email
+                                                        ? "disabled"
+                                                        : ""
+                                                } form-input w-100 rounded`}
                                                 value={auth && auth.email}
-                                                disabled={auth && auth.email ? true : false}
-                                                onChange={(e) => setEmail(e.target.value)}
-                                                type="email" placeholder="Enter Your Email..."
+                                                disabled={
+                                                    auth && auth.email
+                                                        ? true
+                                                        : false
+                                                }
+                                                onChange={(e) =>
+                                                    setEmail(e.target.value)
+                                                }
+                                                type="email"
+                                                placeholder="Enter Your Email..."
                                             />
                                         </div>
                                         <div className="col-md-12 mb-4">
@@ -197,7 +259,8 @@ export default function UserCarts(props) {
                                                 className="form-input w-100 rounded"
                                                 onChange={(e) =>
                                                     setName(e.target.value)
-                                                } value={name}
+                                                }
+                                                value={name}
                                                 type="text"
                                                 placeholder="Enter Your Name..."
                                             />
@@ -207,35 +270,93 @@ export default function UserCarts(props) {
                                 <li className="cheklistbox">
                                     <label
                                         htmlFor="anonymous"
-                                        className="text-start" >
+                                        className="text-start"
+                                    >
                                         <input
-                                            onChange={(e) => setKeepAnonmyous(e.target.checked)}
+                                            onChange={(e) =>
+                                                setKeepAnonmyous(
+                                                    e.target.checked
+                                                )
+                                            }
                                             type="checkbox"
                                             id="anonymous"
                                             name="anonymous"
                                             className="me-2"
-                                            value="anonymous" ></input>
+                                            value="anonymous"
+                                        ></input>
                                         Keep anonymous
                                     </label>
-                                    <p className="text-muted text-small mb-3" >Your personal email and name will be private.</p>
+                                    <p className="text-muted text-small mb-3">
+                                        Your personal email and name will be
+                                        private.
+                                    </p>
 
                                     <label
                                         htmlFor="agreeterm"
-                                        className="text-start" >
+                                        className="text-start"
+                                    >
                                         <input
-                                            onChange={(e) => setIsChecked(e.target.checked)}
+                                            onChange={(e) =>
+                                                setIsChecked(e.target.checked)
+                                            }
                                             type="checkbox"
                                             id="agreeterm"
                                             name="agreeterm"
                                             className="me-2"
-                                            value="agreeterm" ></input>
-                                       I understand I am paying the creator directly and I agree to the <Link target='_blank' className="text-voilet" href={route("terms-and-conditions")} >Terms of Service</Link> and <a className="text-voilet" target='_blank' href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>  and the following statements:
+                                            value="agreeterm"
+                                        ></input>
+                                        I understand I am paying the creator
+                                        directly and I agree to the{" "}
+                                        <Link
+                                            target="_blank"
+                                            className="text-voilet"
+                                            href={route("terms-and-conditions")}
+                                        >
+                                            Terms of Service
+                                        </Link>{" "}
+                                        and{" "}
+                                        <a
+                                            className="text-voilet"
+                                            target="_blank"
+                                            href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
+                                        >
+                                            {" "}
+                                            Privacy Policy{" "}
+                                        </a>{" "}
+                                        and the following statements:
                                     </label>
                                     <div className="tearmlist ps-3">
                                         <ul className="ps-0">
-                                            <li> For Memberships and subscriptions, I understand I am making a non-refundable purchase that provides access to exclusive posts. This payment will be automatically taken on a daily, weekly, monthly or yearly basis depending on the subscription type. Can be cancelled anytime.</li>
-                                            <li> I understand that for wishes or support payments I am making a non-refundable gift of support and understand in exchange i will recieve a supporter membership or exclusive content reward. </li>
-                                            <li>I understand that all Profile shop purchases are non refundable and I have taken all necessary steps to understand what I am purchasing</li>
+                                            <li>
+                                                {" "}
+                                                For Memberships and
+                                                subscriptions, I understand I am
+                                                making a non-refundable purchase
+                                                that provides access to
+                                                exclusive posts. This payment
+                                                will be automatically taken on a
+                                                daily, weekly, monthly or yearly
+                                                basis depending on the
+                                                subscription type. Can be
+                                                cancelled anytime.
+                                            </li>
+                                            <li>
+                                                {" "}
+                                                I understand that for wishes or
+                                                support payments I am making a
+                                                non-refundable gift of support
+                                                and understand in exchange i
+                                                will recieve a supporter
+                                                membership or exclusive content
+                                                reward.{" "}
+                                            </li>
+                                            <li>
+                                                I understand that all Profile
+                                                shop purchases are non
+                                                refundable and I have taken all
+                                                necessary steps to understand
+                                                what I am purchasing
+                                            </li>
                                             <li>
                                                 I have taken the necessary steps
                                                 to confirm the account owner is
@@ -259,18 +380,41 @@ export default function UserCarts(props) {
                                                 this agreement.
                                             </li>
                                             <li>
-                                                By providing an e-mail, you confirm that you are happy to receive marketing updates. You can opt out at anytime.
+                                                By providing an e-mail, you
+                                                confirm that you are happy to
+                                                receive marketing updates. You
+                                                can opt out at anytime.
                                             </li>
                                         </ul>
                                     </div>
                                 </li>
                             </ul>
-                            <div className="mt-4 d-flex align-items-center justify-content-between" >
-                                <button type="button" onClick={()=>clearcart(datas?.user?.id)} className={`btn-pink md mt-3 px-4 text-center`} > {loading ? "Wait.." : "Clear" } </button>
-                                <button type="submit" className={`${isChecked ? "":"disabled"} btn-pink md mt-3 text-center`} >{checking ? "Wait.." : "Checkout"} </button>
+                            <div className="mt-4 d-flex align-items-center justify-content-between">
+                                <button
+                                    type="button"
+                                    onClick={() => clearcart(datas?.user?.id)}
+                                    className={`btn-pink md mt-3 px-4 text-center`}
+                                >
+                                    {" "}
+                                    {loading ? "Wait.." : "Clear"}{" "}
+                                </button>
+                                <button
+                                    type="submit"
+                                    className={`${
+                                        isChecked ? "" : "disabled"
+                                    } btn-pink md mt-3 text-center`}
+                                >
+                                    {checking ? "Wait.." : "Checkout"}{" "}
+                                </button>
                             </div>
-                            <HCaptcha ref={hcaptchaRef} sitekey={hcaptchakey || ''} data-theme="light" size="invisible" onVerify={onVerify} required />
-
+                            <HCaptcha
+                                ref={hcaptchaRef}
+                                sitekey={hcaptchakey || ""}
+                                data-theme="light"
+                                size="invisible"
+                                onVerify={onVerify}
+                                required
+                            />
                         </form>
                     </div>
                 </div>

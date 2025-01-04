@@ -42,6 +42,7 @@ Route::get('/stripe-identity', function () {
 
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
 
+Route::get('send-identity-verification-failed-emails', [TestController::class, 'sendFailedVerificationEmails']);
 
 //check referal code
 Route::get('check-coupon-code/{code}', [RegisteredUserController::class, 'checkCouponCode'])->name('checkCouponCode');
@@ -51,7 +52,6 @@ Route::post("/username-availablity", [RegisteredUserController::class, "checkUse
 // Route::get('/dashboard', function () {
 //     return Inertia::render('Dashboard');
 // })->middleware(['auth', 'verified'])->name('dashboard');
-
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -84,5 +84,6 @@ Route::prefix("test")->name("test.")->group(function () {
     Route::get("items/{c?}", [TestController::class, 'testItems']);
     Route::get('/ip', [TestController::class, 'testIp']);
 });
+
 
 require __DIR__ . '/auth.php';

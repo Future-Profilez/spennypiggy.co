@@ -60,17 +60,17 @@ export default function Login({ status, canResetPassword }) {
                    setTimeout(() => {
                     setOpen(false);
                    },1000);
-                } else { 
+                } else {
                     submit();
                 }
-           } else { 
+           } else {
                errorAlert(resp.data.msg);
            }
             setLoading(false);
         }).catch((err) => {
             console.error("err", err);
         });
-    };     
+    };
 
     return (
         <GuestLayout>
@@ -127,7 +127,7 @@ export default function Login({ status, canResetPassword }) {
                                         <div className=" mt-4 m-auto d-table ">
                                             <Link
                                                 href={route("password.request")}
-                                                className="text-sm text-sm text-gray-600 hover:text-gray-900"
+                                                className="text-sm text-gray-600 hover:text-gray-900"
                                             >
                                                 Forgot your password?
                                             </Link>
