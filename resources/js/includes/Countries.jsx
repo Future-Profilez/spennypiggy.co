@@ -320,8 +320,11 @@ export default function Countries({send}) {
   return <>
     <div className="custom-country-select" >
       <select onChange={(e)=>send(e.target.value )} >
+        <option value={null} disabled selected >Choose</option>
         {updated && updated.map((c, i)=>{ 
-          return <option key={`country-${i}`} value={JSON.stringify(c)} >{c.label}</option>
+          return <>
+            <option key={`country-${i}`} value={JSON.stringify(c)} >{c.label}</option>
+          </> 
         })}
       </select>
     </div>

@@ -959,7 +959,15 @@ class StripeController extends Controller
             $taxAmount = round(($amount * $taxPercentage / 100), 2, PHP_ROUND_HALF_UP); // Tax based on combined percentage
             $totalTaxAmount = $taxAmount + $adminFeeAmount;
             $totalPrice = round($amount + $taxAmount + $adminFeeAmount, 2, PHP_ROUND_HALF_UP);
-            $final_price = Helpers::priceFormat($creator->default_currency, $totalPrice, $currency);
+            $final_price = Helpers::priceFormat('GBP', $totalPrice, $currency);
+            // $final_price = Helpers::priceFormat($creator->default_currency, $totalPrice, $currency);
+            
+            Log::info("creator->default_currency $creator->default_currency");
+            Log::info("currency $currency");
+            Log::info("final_price $final_price");
+            Log::info("totalPrice $totalPrice");
+            Log::info("totalTaxAmount $totalTaxAmount");
+            Log::info("taxAmount $taxAmount");
 
             try {
 
