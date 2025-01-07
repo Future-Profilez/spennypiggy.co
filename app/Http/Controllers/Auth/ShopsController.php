@@ -668,17 +668,33 @@ class ShopsController extends Controller
                     'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
                     'line_items' => $lineItems,
                     'mode' => 'payment',
+                    'payment_method_types' => ['card'], // Add this line
                     'payment_intent_data' => [
                         'transfer_data' => [
-                            'destination' => $shop->user->account_id, // Creator's connected account ID
+                            'destination' => $shop->user->account_id,
                             'amount' => Helpers::priceFormat($shop->user->default_currency, $amount, $currency) * 100,
                         ],
-                        // 'application_fee_amount' => $taxNew * 100,
                         'on_behalf_of'  => $shop->user->account_id,
                     ],
-                    'customer_email' =>  request()->query('email'),
-                    // 'currency' => 'usd',
+                    'customer_email' => request()->query('email'),
                 ]);
+
+                // $sessionCreate = $stripe->checkout->sessions->create([
+                //     'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
+                //     'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
+                //     'line_items' => $lineItems,
+                //     'mode' => 'payment',
+                //     'payment_intent_data' => [
+                //         'transfer_data' => [
+                //             'destination' => $shop->user->account_id, // Creator's connected account ID
+                //             'amount' => Helpers::priceFormat($shop->user->default_currency, $amount, $currency) * 100,
+                //         ],
+                //         // 'application_fee_amount' => $taxNew * 100,
+                //         'on_behalf_of'  => $shop->user->account_id,
+                //     ],
+                //     'customer_email' =>  request()->query('email'),
+                //     // 'currency' => 'usd',
+                // ]);
 
                 $shopPaymentDetail->session_id =  $sessionCreate->id;
                 $shopPaymentDetail->save();
