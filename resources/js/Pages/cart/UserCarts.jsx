@@ -141,10 +141,7 @@ export default function UserCarts(props) {
                             items.map((c, i) => {
                                 return (
                                     <CartItem
-                                        currency={
-                                            datas?.user &&
-                                            datas?.user?.default_currency
-                                        }
+                                        currency={datas?.user && datas?.user?.default_currency}
                                         quantityUpdate={quantityUpdate}
                                         removeCart={removeCart}
                                         data={c}

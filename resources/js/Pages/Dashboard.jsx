@@ -515,66 +515,14 @@ export default function Dashboard(props) {
                                                                     <>
                                                                         {its &&
                                                                         its.length ? (
-                                                                            <DndContext
-                                                                                sensors={
-                                                                                    sensors
-                                                                                }
-                                                                                collisionDetection={
-                                                                                    closestCenter
-                                                                                }
-                                                                                onDragEnd={
-                                                                                    handleDragEnd
-                                                                                }
-                                                                            >
-                                                                                <SortableContext
-                                                                                    strategy={
-                                                                                        rectSortingStrategy
-                                                                                    }
-                                                                                    items={
-                                                                                        its
-                                                                                    }
-                                                                                >
-                                                                                    {!loading &&
-                                                                                        its.map(
-                                                                                            (
-                                                                                                c,
-                                                                                                i
-                                                                                            ) => {
+                                                                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                                                                <SortableContext strategy={rectSortingStrategy} items={its}>
+                                                                                    {!loading && its.map((c, i) => {
                                                                                                 return (
-                                                                                                    <Wishlistbox
-                                                                                                        key={`wish-item-${i}`}
-                                                                                                        classes="col-xl-3 col-lg-3 col-md-4 col-6"
-                                                                                                        currency={
-                                                                                                            global_currency
-                                                                                                        }
-                                                                                                        fetchingcats={
-                                                                                                            fetchingcats
-                                                                                                        }
-                                                                                                        categories={
-                                                                                                            categories
-                                                                                                        }
-                                                                                                        IsloggedIn={
-                                                                                                            IsloggedIn
-                                                                                                        }
-                                                                                                        auth={
-                                                                                                            auth.user
-                                                                                                        }
-                                                                                                        itemid={
-                                                                                                            itemid
-                                                                                                        }
-                                                                                                        setuped={
-                                                                                                            auth &&
-                                                                                                            auth.user &&
-                                                                                                            auth
-                                                                                                                .user
-                                                                                                                .stripe_details_submitted ==
-                                                                                                                1
-                                                                                                                ? true
-                                                                                                                : false
-                                                                                                        }
-                                                                                                        itm={
-                                                                                                            c
-                                                                                                        }
+                                                                                                    <Wishlistbox key={`wish-item-${i}`} classes="col-xl-3 col-lg-3 col-md-4 col-6"
+                                                                                                        currency={global_currency} fetchingcats={fetchingcats} categories={categories} IsloggedIn={IsloggedIn}
+                                                                                                        auth={auth.user} itemid={itemid} setuped={auth && auth.user && auth.user.stripe_details_submitted == 1
+                                                                                                                ? true : false} itm={c}
                                                                                                     />
                                                                                                 );
                                                                                             }

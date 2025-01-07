@@ -674,7 +674,7 @@ class WishitemController extends Controller
             $cart->is_subscribed = ($sub == 'onetime' || $sub == false) ? 0 : 1;
             if ($wishitem->subscription == 2) {
 
-                $price = Helpers::priceFormat($currency, $amount, $cart->owner->default_currency);
+                $price = Helpers::priceFormat($cart->owner->default_currency, $amount, $currency);
                 $fullfillamount = $price;
                 $tax =  round(($price * config('app.crowd_tax', 10) / 100), 2, PHP_ROUND_HALF_UP);
                 $createpriceid = $price + $tax;
@@ -703,7 +703,7 @@ class WishitemController extends Controller
             ]);
         } else {
             if ($wishitem->subscription == 2) {
-                $price = Helpers::priceFormat($currency, $amount, $wishitem->user->default_currency);
+                $price = Helpers::priceFormat($wishitem->user->default_currency, $amount, $currency);
                 $fullfillamount = $price;
                 $tax = round(($price * config('app.crowd_tax', 10) / 100), 2, PHP_ROUND_HALF_UP);
                 $createpriceid = $price + $tax;
