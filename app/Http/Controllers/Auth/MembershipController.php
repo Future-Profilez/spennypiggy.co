@@ -28,6 +28,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
 use Stripe\StripeClient;
@@ -293,8 +294,8 @@ class MembershipController extends Controller
             $vat_percentage_amount = ($price + $tax) * $membership->user->vat_amount_percentage / 100;
         }
 
-         $adminFeeAmount = config('app.administration_fee'); // Admin fee as a percentage
-         $adminFeeForStoreDB = Helpers::priceFormat('GBP', $adminFeeAmount, $membership->currency) * 100;
+        $adminFeeAmount = config('app.administration_fee'); // Admin fee as a percentage
+        $adminFeeForStoreDB = Helpers::priceFormat('GBP', $adminFeeAmount, $membership->currency) * 100;
 
         // Combine tax percentage and admin fee percentage
         $totalTaxAmount = $tax + $adminFeeForStoreDB;
@@ -488,9 +489,11 @@ class MembershipController extends Controller
                 $mem->upcoming_payment = $current;
                 $mem->save();
 
-                if ($mem->recurring_for == 'onetime' and $mem->recurring_type == 'monthly') {
+                if ($mem->recurring_for == 'onetime' && $mem->recurring_type == 'monthly') {
                     SubscriptionCancelAtEnd::dispatch($mem);
                 } else {
+                    Log::info("else condition: $mem");
+                    Log::info("else condition: " . $mem->membership->user);
                     MembershipMail::dispatch($mem);
                 }
 

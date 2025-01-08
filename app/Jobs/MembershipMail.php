@@ -9,6 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class MembershipMail implements ShouldQueue
 {
@@ -20,6 +21,7 @@ class MembershipMail implements ShouldQueue
      */
     public function __construct($mem)
     {
+        Log::info("come in MembershipMail construct");
         $this->mem = $mem;
     }
 
@@ -29,6 +31,7 @@ class MembershipMail implements ShouldQueue
     public function handle(): void
     {
         if((isset($this->mem->membership->user) && $this->mem->membership->user->notification_send == 1) || (empty($this->mem->membership->user))){
+            Log::info("come in MembershipMail file handle method if condition");
             EmailService::sendMembershipMail($this->mem);
         }
     }

@@ -26,7 +26,6 @@ class BillPayMail implements ShouldQueue
     {
         $this->bill_pay = $bill_pay;
         $this->amountWithVat = $amountWithVat;
-        Log::info("come in BillPayMail method construct: $this->bill_pay");
     }
 
 

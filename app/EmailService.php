@@ -243,9 +243,10 @@ class EmailService
     public static function sendMembershipMail($data)
     {
         try {
-
+            Log::info("come in EmailService Class method try condition");
             Mail::to($data->membership->user->email)->send(new MemberMail($data));
         } catch (TransportException $e) {
+            Log::info("come in EmailService Class method catch condition");
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }

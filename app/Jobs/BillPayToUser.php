@@ -25,7 +25,6 @@ class BillPayToUser implements ShouldQueue
      */
     public function __construct($bill_pay, $amountWithCurr, $user_name)
     {
-        Log::info("this->bill_pay->guest_email in construct: " . $this->bill_pay->guest_email);
         $this->bill_pay = $bill_pay;
         $this->amountWithCurr = $amountWithCurr;
         $this->user_name = $user_name;
@@ -36,7 +35,6 @@ class BillPayToUser implements ShouldQueue
      */
     public function handle()
     {
-        Log::info("this->bill_pay->guest_email: " . $this->bill_pay->guest_email);
         if ((isset($this->bill_pay->user) && $this->bill_pay->user->notification_send == 1) || (empty($this->bill_pay->user))) {
             // EmailService::sendBillMailToUser($this->bill_pay, $this->amountWithCurr, $this->user_name);
             Mail::to($this->bill_pay->guest_email)->send(new BillMailToUser($this->bill_pay, $this->amountWithCurr, $this->user_name));

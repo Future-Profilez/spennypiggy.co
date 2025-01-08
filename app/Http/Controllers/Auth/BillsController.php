@@ -438,13 +438,9 @@ class BillsController extends Controller
                 $amountWithVat = $symbol->symbol . $bill_pay->amount + $vatAmountPercentage;
                 $amountWithCurr = $symbol->symbol . $bill_pay->amount;
 
-                log::info("come before send mail");
                 BillPayMail::dispatch($bill_pay, $amountWithVat);
 
                 // send mail jobs for user
-                Log::info("this->bill_pay->guest_email: " . $bill_pay->guest_email);
-                Log::info("amountWithCurr: " . $amountWithCurr);
-                Log::info("user_name: " . $user_name);
                 BillPayToUser::dispatch($bill_pay, $amountWithCurr, $user_name);
 
                 if ($bill_pay->anonymous == 1) {

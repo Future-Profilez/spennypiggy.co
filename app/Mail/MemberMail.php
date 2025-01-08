@@ -8,6 +8,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class MemberMail extends Mailable
 {
@@ -21,6 +22,7 @@ class MemberMail extends Mailable
      */
     public function __construct($data)
     {
+        Log::info("come in EmailService Class method catch condition: $data");
         $this->data = $data;
     }
 
