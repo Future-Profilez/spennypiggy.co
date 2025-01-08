@@ -20,6 +20,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
 use Stripe\StripeClient;
@@ -250,137 +251,139 @@ class BillsController extends Controller
      */
     public function buyBill(Request $request, $uuid, $reccure = 'continue')
     {
-        $bill = Bills::whereUuid($uuid)->with('user')->first();
+        try {
 
-        if (Auth::check() && ($bill->user_id == Auth::id())) {
-            return redirect()->back()->with('error', "You can't buy your own bill!");
-        }
+            $bill = Bills::whereUuid($uuid)->with('user')->first();
 
-        if (!$bill) {
-            return redirect()->back()->with('error', 'Bill not found!');
-        }
+            if (Auth::check() && ($bill->user_id == Auth::id())) {
+                return redirect()->back()->with('error', "You can't buy your own bill!");
+            }
 
-        $vat_percentage_amount = 0;
+            if (!$bill) {
+                return redirect()->back()->with('error', 'Bill not found!');
+            }
 
-        $currency   =   strtolower($request->cookie("currency", "GBP"));
-        $tax = round($bill->tax_amount, 2, PHP_ROUND_HALF_UP);
-        $price = round($bill->price, 2, PHP_ROUND_HALF_UP);
+            $vat_percentage_amount = 0;
+            $currency   =   strtolower($request->cookie("currency", "GBP"));
+            $price = round($bill->price, 2, PHP_ROUND_HALF_UP);
+            $tax = round($bill->tax_amount, 2, PHP_ROUND_HALF_UP);
 
-        $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
+            // $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
+            if (!empty($bill->user->vat_amount_percentage)) {
+                $vat_percentage_amount = ($price + $tax) * $bill->user->vat_amount_percentage / 100;
+            }
 
-        if (!empty($bill->user->vat_amount_percentage)) {
-            $vat_percentage_amount = ($price + $tax) * $bill->user->vat_amount_percentage / 100;
-        }
+            $adminFee = config('app.administration_fee');
+            $adminFees = Helpers::priceFormat('GBP', $adminFee, strtoupper($bill->currency));
+            $totalTax = $tax + $adminFees;
 
-        $adminFee = config('app.administration_fee');
-        // $convertedCurrAmount = Helpers::priceFormat('GBP', $adminFee, strtoupper($currency));
+            if ($request->isMethod("POST")) {
+                $request->validate([
+                    'name' => [
+                        'nullable',
+                        'sometimes',
+                        'string',
+                        'max:50'
+                    ],
+                    'email' =>  [
+                        'required',
+                        'email:dns'
+                    ],
+                    'message' =>  [
+                        'sometimes',
+                        'nullable',
+                        'string',
+                        'max:800'
+                    ]
+                ]);
 
-        $totalTax = $bill->tax_amount + $adminFee;
+                $sub = BillPayment::create([
+                    'bills_id'  =>  $bill->id,
+                    'user_id'       =>  Auth::id() ?? null,
+                    'guest_name'    =>  $request->name ?? NULL,
+                    'guest_email'   =>  $request->email,
+                    'currency'      =>  $bill->currency,
+                    'amount'        =>  $bill->price,
+                    'tax'           =>  $totalTax,
+                    'recurring_for' =>  $reccure,
+                    'recurring_type' => 'monthly',
+                    'message'  =>  $request->message ?? NULL,
+                    'anonymous' => $request->anonymous ?? 0
+                ]);
 
-        if ($request->isMethod("POST")) {
-            $request->validate([
-                'name' => [
-                    'nullable',
-                    'sometimes',
-                    'string',
-                    'max:50'
-                ],
-                'email' =>  [
-                    'required',
-                    'email:dns'
-                ],
-                'message' =>  [
-                    'sometimes',
-                    'nullable',
-                    'string',
-                    'max:800'
-                ]
+                // $transfering_amount = Helpers::priceFormat($bill->currency, $price, $currency) * 100;
+                $price += $vat_percentage_amount;
+                $amount_per = round(($price / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
+                $adminFeeForPay = Helpers::priceFormat('GBP', $adminFee, $bill->currency);
+                $finalTax = $tax + $adminFeeForPay;
+                $amount = $price + $finalTax;
+                $unit_amount = Helpers::priceFormat($bill->currency, $amount, $currency) * 100;
+
+                $items  =   [
+                    'quantity' =>   1
+                ];
+                // if($currency == strtolower($bill->currency)) {
+                //     $items['price']  =   $bill->price_id;
+                // } else {
+                $items['price_data']    =   [
+                    'currency'  =>  $currency,
+                    'product'   =>  $bill->product_id,
+                    'unit_amount_decimal'   =>  $unit_amount,
+                    'recurring' => [
+                        'interval'  =>  StripeControl::$periods[$bill->period],
+                        'interval_count'    =>  1
+                    ]
+                ];
+                // }
+
+                $payload    =   [
+                    "currency"  =>  $currency,
+                    'line_items' =>  [$items],
+                    'customer_email'    =>  $request->email,
+                    'success_url'       =>  route('bill.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
+                    'cancel_url'       =>  route('bill.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
+                ];
+
+                $payload['mode']    =   'subscription';
+                $payload['subscription_data']     =   [
+                    // 'application_fee_percent'   =>  $fee_per,
+                    'transfer_data' => [
+                        'destination' => $bill->user->account_id, // Creator's connected account ID
+                        'amount_percent' => $amount_per,
+                    ],
+                    // 'on_behalf_of'  => $bill->user->account_id,
+                    // 'cancel_at_period_end'  =>  $reccure == 'onetime',
+                    // 'description'   => "{$bill->name} of {$bill->user->username}."
+                    'description'   => "Membership Content Purchase."
+                ];
+
+                // try {
+                $session = StripeControl::createCheckoutSession($payload);
+                $sub->update([
+                    'session_id' =>  $session->id
+                ]);
+
+                return Inertia::location($session->url);
+                // } catch (Exception $e) {
+                //     $sub->delete();
+                //     return back()->with('error', $e->getMessage());
+                // }
+                // return response()->json([
+                //     'success'   => true,
+                //     'session'   => $session
+                // ]);
+
+
+            }
+
+            return Inertia::render('bills/BillCheckout', [
+                'bill'  => $bill,
+                'vat_amount' => $vat_percentage_amount,
+                'reccure'   => $reccure
             ]);
-
-            $sub = BillPayment::create([
-                'bills_id'  =>  $bill->id,
-                'user_id'       =>  Auth::id() ?? null,
-                'guest_name'    =>  $request->name ?? NULL,
-                'guest_email'   =>  $request->email,
-                'currency'      =>  $bill->currency,
-                'amount'        =>  $bill->price,
-                'tax'           =>  $totalTax,
-                'recurring_for' =>  $reccure,
-                'recurring_type' => 'monthly',
-                'message'  =>  $request->message ?? NULL,
-                'anonymous' => $request->anonymous ?? 0
-            ]);
-
-            $tranfering_amount = Helpers::priceFormat($bill->currency, $price, $currency) * 100;
-            $price += $vat_percentage_amount;
-            $amount_per = round(($price / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
-
-            $amount = $price + $totalTax;
-            $unit_amount = Helpers::priceFormat($bill->currency, $amount, $currency) * 100;
-            $tax =   Helpers::priceFormat($bill->currency, $tax, $currency);
-
-            $items  =   [
-                'quantity' =>   1
-            ];
-            // if($currency == strtolower($bill->currency)) {
-            //     $items['price']  =   $bill->price_id;
-            // } else {
-            $items['price_data']    =   [
-                'currency'  =>  $currency,
-                'product'   =>  $bill->product_id,
-                'unit_amount_decimal'   =>  $unit_amount,
-                'recurring' => [
-                    'interval'  =>  StripeControl::$periods[$bill->period],
-                    'interval_count'    =>  1
-                ]
-            ];
-            // }
-
-            $payload    =   [
-                "currency"  =>  $currency,
-                'line_items' =>  [$items],
-                'customer_email'    =>  $request->email,
-                'success_url'       =>  route('bill.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
-                'cancel_url'       =>  route('bill.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
-            ];
-
-            $payload['mode']    =   'subscription';
-            $payload['subscription_data']     =   [
-                // 'application_fee_percent'   =>  $fee_per,
-                'transfer_data' => [
-                    'destination' => $bill->user->account_id, // Creator's connected account ID
-                    'amount_percent' => $amount_per,
-                ],
-                // 'on_behalf_of'  => $bill->user->account_id,
-                // 'cancel_at_period_end'  =>  $reccure == 'onetime',
-                // 'description'   => "{$bill->name} of {$bill->user->username}."
-                'description'   => "Membership Content Purchase."
-            ];
-
-            // try {
-            $session = StripeControl::createCheckoutSession($payload);
-            $sub->update([
-                'session_id' =>  $session->id
-            ]);
-
-            return Inertia::location($session->url);
-            // } catch (Exception $e) {
-            //     $sub->delete();
-            //     return back()->with('error', $e->getMessage());
-            // }
-            // return response()->json([
-            //     'success'   => true,
-            //     'session'   => $session
-            // ]);
-
-
+        } catch (Exception $e) {
+            return to_route('user.show', ['username' => $bill->user->username])->with('error', $e->getMessage());
         }
-
-        return Inertia::render('bills/BillCheckout', [
-            'bill'  => $bill,
-            'vat_amount' => $vat_percentage_amount,
-            'reccure'   => $reccure
-        ]);
     }
 
 
@@ -419,6 +422,7 @@ class BillsController extends Controller
                 $bill_pay->upcoming_payment = $current;
                 $bill_pay->save();
 
+                log::info("come before send mail");
                 BillPayMail::dispatch($bill_pay);
 
                 if ($bill_pay->anonymous == 1) {

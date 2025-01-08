@@ -8,20 +8,26 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class BillMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $data;
+    public $bill_pay;
+    // public $amountWithVat;
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($data)
+    public function __construct($bill_pay)
+    // public function __construct($bill_pay, $amountWithVat)
     {
-        $this->data = $data;
+        Log::info("come in BillMail construct");
+
+        $this->bill_pay = $bill_pay;
+        // $this->amountWithVat = $amountWithVat;
     }
 
     /**

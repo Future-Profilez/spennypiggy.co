@@ -73,12 +73,12 @@ class CheckoutController extends Controller
             $transfer_amount = 0;
             foreach ($getdata as $dd) {
                 $adminFee = config('app.administration_fee');
+                $adminsFees = Helpers::priceFormat($dd->owner->default_currency, $adminFee, $currency);
                 $totalAmount = $dd->amount;
                 $totalTax =  $dd->tax;
                 $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, $currency);
                 $ConvertedTax = Helpers::priceFormat($dd->owner->default_currency, $totalTax, $currency);
-                $adminsFees = Helpers::priceFormat($dd->owner->default_currency, $adminFee, $currency);
-                $TotalConvertedFinalAmount = $ConvertedTax + $ConvertedAmount + $adminsFees;
+                $TotalConvertedFinalAmount = $ConvertedTax + $ConvertedAmount;
                 $new_total_amount = round($TotalConvertedFinalAmount, 2, PHP_ROUND_HALF_UP);
 
                 $lineItems[] = [
@@ -99,7 +99,7 @@ class CheckoutController extends Controller
                 $transfer_amount += $ConvertedAmount * $dd->quantity;
             }
 
-            // $transfering_amount = $subtotal - $taxNew;
+            $transfering_amount = $transfer_amount + $adminsFees;
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
@@ -112,7 +112,7 @@ class CheckoutController extends Controller
                 'payment_intent_data' => [
                     'transfer_data' => [
                         'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
-                        'amount' => $transfer_amount * 100,
+                        'amount' => $transfering_amount * 100,
                     ],
                     // 'application_fee_amount' => $taxNew,
                     'description' => "Custom Content Purchase."

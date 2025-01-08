@@ -9,6 +9,7 @@ use App\Mail\MemberMail;
 use App\Mail\MonthlySubscriptionSuccessMail;
 use App\Mail\MonthlySubscriptionFailedMail;
 use App\Jobs\MonthlySubscriptionFailedJobs;
+use App\Mail\BillMail;
 use App\Mail\RenewMail;
 use App\Mail\SendAdminIntroMail;
 use App\Mail\SendAvatarRestrictionMail;
@@ -247,6 +248,25 @@ class EmailService
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }
+
+    public static function sendBillMail($bill_pay)
+    {
+        try {
+            Log::info("come in EmailService try ");
+            Mail::to($bill_pay->bill->user->email)->send(new BillMail($bill_pay));
+        } catch (TransportException $e) {
+            Log::info("come in EmailService catch");
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+    // public static function sendBillMail($data, $amountWithVat)
+    // {
+    //     try {
+    //         Mail::to($data->bill->user->email)->send(new BillMail($data, $amountWithVat));
+    //     } catch (TransportException $e) {
+    //         AppService::setStatus('email', 0, $e->getMessage());
+    //     }
+    // }
 
     public static function sendTipJarSubscribedMail($data, $symbol)
     {

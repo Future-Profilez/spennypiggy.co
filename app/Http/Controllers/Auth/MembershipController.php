@@ -283,21 +283,21 @@ class MembershipController extends Controller
         }
 
         $vat_percentage_amount = 0;
-
         $currency   =   strtolower($request->cookie("currency", "GBP"));
         $tax = round($membership->tax_amount, 2, PHP_ROUND_HALF_UP);
         $price = round($membership->price, 2, PHP_ROUND_HALF_UP);
 
-        $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
+        // $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
 
         if (!empty($membership->user->vat_amount_percentage)) {
             $vat_percentage_amount = ($price + $tax) * $membership->user->vat_amount_percentage / 100;
         }
 
          $adminFeeAmount = config('app.administration_fee'); // Admin fee as a percentage
+         $adminFeeForStoreDB = Helpers::priceFormat('GBP', $adminFeeAmount, $membership->currency) * 100;
 
         // Combine tax percentage and admin fee percentage
-        $totalTaxAmount = $tax + $adminFeeAmount;
+        $totalTaxAmount = $tax + $adminFeeForStoreDB;
 
         if ($request->isMethod("POST")) {
             $request->validate([
@@ -333,13 +333,13 @@ class MembershipController extends Controller
                 'anonymous' => $request->anonymous ?? 0
             ]);
 
-            $tranfering_amount = Helpers::priceFormat($membership->currency, $price, $currency) * 100;
+            // $transfering_amount = Helpers::priceFormat($membership->currency, $price, $currency) * 100;
             $price += $vat_percentage_amount;
             $amount_per = round(($price / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
 
             $amount = $price + $totalTaxAmount;
             $unit_amount = Helpers::priceFormat($membership->currency, $amount, $currency) * 100;
-            $tax =   Helpers::priceFormat($membership->currency, $tax, $currency);
+            // $tax =   Helpers::priceFormat($membership->currency, $tax, $currency);
 
             $items  =   [
                 'quantity' =>   1
