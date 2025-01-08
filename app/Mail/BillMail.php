@@ -24,8 +24,6 @@ class BillMail extends Mailable
     // public function __construct($bill_pay)
     public function __construct($bill_pay, $amountWithVat)
     {
-        Log::info("come in BillMail construct");
-
         $this->bill_pay = $bill_pay;
         $this->amountWithVat = $amountWithVat;
     }
