@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Auth;
 use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\BillPayMail;
+use App\Jobs\BillPayToUser;
 use App\Jobs\MembershipMail;
 use App\Jobs\NotificationSave;
 use App\Jobs\SendRenewMail;
 use App\Models\BillPayment;
 use App\Models\Bills;
+use App\Models\Currency;
 use App\Models\Logs;
 use App\Models\User;
 use App\StripeControl;
@@ -422,8 +424,25 @@ class BillsController extends Controller
                 $bill_pay->upcoming_payment = $current;
                 $bill_pay->save();
 
+                $vatAmountPercentage = 0;
+                $user_name = $bill_pay->bill->user->name; // creator name
+                $vat_percentage = $bill_pay->bill->user->vat_amount_percentage ?? 0;
+                $symbol = Currency::where('iso', strtoupper($bill_pay->currency))->first();
+                $tax = $bill_pay->amount * config('app.bill_tax_plaid') / 100;
+                $amountWithTax = $bill_pay->amount + $tax;
+
+                if ($vat_percentage > 0) {
+                    $vatAmountPercentage = $amountWithTax * $vat_percentage / 100;
+                }
+
+                $amountWithVat = $symbol->symbol . $bill_pay->amount + $vatAmountPercentage;
+                $amountWithCurr = $symbol->symbol . $bill_pay->amount;
+
                 log::info("come before send mail");
-                BillPayMail::dispatch($bill_pay);
+                BillPayMail::dispatch($bill_pay, $amountWithVat);
+
+                 // send mail jobs for user
+                 BillPayToUser::dispatch($bill_pay, $amountWithCurr, $user_name);
 
                 if ($bill_pay->anonymous == 1) {
                     $username = "Anonymous user";

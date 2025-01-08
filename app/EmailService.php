@@ -10,6 +10,7 @@ use App\Mail\MonthlySubscriptionSuccessMail;
 use App\Mail\MonthlySubscriptionFailedMail;
 use App\Jobs\MonthlySubscriptionFailedJobs;
 use App\Mail\BillMail;
+use App\Mail\BillMailToUser;
 use App\Mail\RenewMail;
 use App\Mail\SendAdminIntroMail;
 use App\Mail\SendAvatarRestrictionMail;
@@ -249,16 +250,25 @@ class EmailService
         }
     }
 
-    public static function sendBillMail($bill_pay)
+    public static function sendBillMail($bill_pay, $amountWithVat)
     {
         try {
             Log::info("come in EmailService try ");
-            Mail::to($bill_pay->bill->user->email)->send(new BillMail($bill_pay));
+            Mail::to($bill_pay->bill->user->email)->send(new BillMail($bill_pay, $amountWithVat));
         } catch (TransportException $e) {
             Log::info("come in EmailService catch");
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }
+
+    // public static function sendBillMailToUser($bill_pay, $amountWithCurr, $user_name)
+    // {
+    //     try {
+    //         Mail::to($bill_pay->bill->user)->send(new BillMailToUser($bill_pay, $amountWithCurr, $user_name));
+    //     } catch (TransportException $e) {
+    //         AppService::setStatus('email', 0, $e->getMessage());
+    //     }
+    // }
     // public static function sendBillMail($data, $amountWithVat)
     // {
     //     try {

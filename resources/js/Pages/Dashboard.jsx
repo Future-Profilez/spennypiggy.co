@@ -319,7 +319,7 @@ export default function Dashboard(props) {
                      top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full">
                         <div className="w-full max-w-[550px] px-3">
                             <Suspense fallback={"Loading.."}>
-                                <div className="bg-gray-100 w-full p-6 md:p-10 rounded-3xl shadow-lg z-10 w-full ">
+                                <div className="bg-gray-100 w-full p-6 md:p-10 rounded-3xl shadow-lg z-10">
                                     <h2 className="font-bold text-black  text-xl md:text-2xl mb-4 text-center m-auto ">Add Item to fund your lifestyle.</h2>
                                     {auth.user && auth.user.stripe_details_submitted == 1 ?
                                         <>
