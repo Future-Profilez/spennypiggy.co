@@ -9,17 +9,13 @@
                 </tr>
                 <tr>
                     <td
-                        style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
+                        style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 16px; line-height: 23px;  color: 141414; text-align: left; text-align: center;">
                         <span style="color:#F94F97 ">
-                            Thank you for your purchase - {{ $data->shop->name }} of {{ $curr }}{{ $data->amount + $data->tax_amount }} on Spenny Piggy 🐷🎁
+                        Thank you for purchasing {{ $data->user->name }} Shop Item ({{ $data->shop->name }}) for {{ $curr.$data->amount }} on Spenny Piggy 🐷🎁!
                         </span>
                     </td>
                 </tr>
 
-                <tr>
-                    <td style=" height:10px;line-height: 10px;">
-                    </td>
-                </tr>
                 @if(!empty($url))
                     <tr>
                         <td>
@@ -45,13 +41,13 @@
                     </tr>
                 @endif
                 <tr>
-                    <td style="height: 19px;line-height: 19px;">
+                    <td style="height: 10px;line-height: 10px;">
                     </td>
                 </tr>
                 <tr>
                     <td
                         style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                        Go to <a href="https://spennypiggy.co/">Spenny Piggy</a>  and discover more creators wishes to fulfil! Check out their profile Intros, memberships and more!
+                        Go to <a href="{{ env('APP_URL') . '/wish-tracker' }}">Spenny Piggy</a>  and discover more creators wishes to fulfil! Check out their profile Intros, memberships and more!
                     </td>
                 </tr>
                 <tr>

@@ -15,18 +15,18 @@ class ShopBuyedMail extends Mailable
 
     public $data;
     public $anon;
-    public $symbol;
+    public $amountUserPay;
 
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($data, $anon, $symbol)
+    public function __construct($data, $anon, $amountUserPay)
     {
         $this->data = $data;
         $this->anon = $anon;
-        $this->symbol = $symbol;
+        $this->amountUserPay = $amountUserPay;
     }
 
     /**

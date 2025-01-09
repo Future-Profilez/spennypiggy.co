@@ -23,6 +23,7 @@ class BillPayment extends Model
         'currency',
         'recurring_for',
         'tax',
+        'vat_tax_amount',
         'recurring_type',
         'message',
         'anonymous',

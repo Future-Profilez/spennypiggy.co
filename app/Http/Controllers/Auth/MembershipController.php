@@ -6,12 +6,14 @@ use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\MembershipAutoTweet;
 use App\Jobs\MembershipMail;
+use App\Jobs\MembershipMailToUser;
 use App\Jobs\NotificationSave;
 use App\Jobs\SendRenewMail;
 use App\Jobs\SubscribeAutoTweet;
 use App\Jobs\SubscribedMail;
 use App\Jobs\SubscriptionCancelAtEnd;
 use App\Jobs\SubscriptionFailed;
+use App\Models\Currency;
 use App\Models\Logs;
 use App\Models\Membership;
 use App\Models\MembershipPayment;
@@ -295,7 +297,7 @@ class MembershipController extends Controller
         }
 
         $adminFeeAmount = config('app.administration_fee'); // Admin fee as a percentage
-        $adminFeeForStoreDB = Helpers::priceFormat('GBP', $adminFeeAmount, $membership->currency) * 100;
+        $adminFeeForStoreDB = Helpers::priceFormat('GBP', $adminFeeAmount, $membership->currency);
 
         // Combine tax percentage and admin fee percentage
         $totalTaxAmount = $tax + $adminFeeForStoreDB;
@@ -322,13 +324,14 @@ class MembershipController extends Controller
 
             $sub = MembershipPayment::create([
                 'membership_id'  =>  $membership->id,
-                'user_id'       =>  Auth::id() ?? null,
-                'guest_name'    =>  $request->name ?? NULL,
-                'guest_email'   =>  $request->email,
-                'currency'      =>  $membership->currency,
-                'amount'        =>  $membership->price,
-                'tax'           =>  $totalTaxAmount,
-                'recurring_for' =>  $reccure,
+                'user_id'        =>  Auth::id() ?? null,
+                'guest_name'     =>  $request->name ?? NULL,
+                'guest_email'    =>  $request->email,
+                'currency'       =>  $membership->currency,
+                'amount'         =>  $membership->price,
+                'tax'            =>  $totalTaxAmount,
+                'vat_tax_amount' =>  $vat_percentage_amount,
+                'recurring_for'  =>  $reccure,
                 'recurring_type' =>  in_array($membership->level, ['bronze', 'silver', 'gold', 'platinum']) ? 'monthly' : 'lifetime',
                 'surprise_message'  =>  $request->message ?? NULL,
                 'anonymous' => $request->anonymous ?? 0
@@ -492,10 +495,20 @@ class MembershipController extends Controller
                 if ($mem->recurring_for == 'onetime' && $mem->recurring_type == 'monthly') {
                     SubscriptionCancelAtEnd::dispatch($mem);
                 } else {
-                    Log::info("else condition: $mem");
-                    Log::info("else condition: " . $mem->membership->user);
-                    MembershipMail::dispatch($mem);
+                    $symbol = Currency::where('iso', strtoupper($mem->currency))->first();
+
+                    $total_amount = $mem->membership->price + $mem->vat_tax_amount;
+                    $amountWithCurr = $symbol->symbol . $total_amount;
+                    MembershipMail::dispatch($mem, $amountWithCurr);
                 }
+
+                // this job is for creator
+                //  MembershipMail::dispatch($mem, $amountWithCurr);
+
+                $amountWithcurrency = $symbol->symbol . $mem->amount;
+
+                // this job is for fan
+                MembershipMailToUser::dispatch($mem, $amountWithcurrency);
 
                 if ($mem->anonymous == 1) {
                     $username = "Anonymous user";

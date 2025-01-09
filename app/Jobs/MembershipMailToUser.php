@@ -9,19 +9,19 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-class MembershipMail implements ShouldQueue
+class MembershipMailToUser implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $mem;
-    public $amountWithCurr;
+    public $amountWithcurrency;
     /**
      * Create a new job instance.
      */
-    public function __construct($mem, $amountWithCurr)
+    public function __construct($mem, $amountWithcurrency)
     {
         $this->mem = $mem;
-        $this->amountWithCurr = $amountWithCurr;
+        $this->amountWithcurrency = $amountWithcurrency;
     }
 
     /**
@@ -29,8 +29,8 @@ class MembershipMail implements ShouldQueue
      */
     public function handle(): void
     {
-        if((isset($this->mem->membership->user) && $this->mem->membership->user->notification_send == 1) || (empty($this->mem->membership->user))){
-            EmailService::sendMembershipMail($this->mem, $this->amountWithCurr);
+        if((isset($this->mem->user) && $this->mem->user->notification_send == 1) || (empty($this->mem->user))){
+            EmailService::sendMembershipMailToUser($this->mem, $this->amountWithcurrency);
         }
     }
 }

@@ -10,7 +10,7 @@
             style="max-width: 296px; width: 100%; text-align: center;">
             <tr>
                 <td style="font-family: Arial; font-weight: bold; font-size: 18px; color:#000; line-height: 26px; padding: 0 0 25px 0; text-align: center;">
-                    {{ $mem->anonymous == 1 ? 'Someone' : $mem->user->name }} subscribed to your <span style="color: #8C52FF"> {{ ucwords(str_replace('_',' ',$mem->membership->level)) }} </span> Membership of {{ $amountWithCurr }} on Spenny Piggy 🐷🎁!
+                    You have successfully subscribed <span style="color: #8C52FF">{{ $mem->membership->user->name }}</span> {{ $mem->membership->level }} Membership of amount {{ $amountWithcurrency }} on Spenny Piggy 🐷🎁!
                 </td>
             </tr>
 

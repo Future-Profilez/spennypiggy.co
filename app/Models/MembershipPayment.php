@@ -22,6 +22,7 @@ class MembershipPayment extends Model
         'currency',
         'amount',
         'tax',
+        'vat_tax_amount',
         'recurring_for',
         'recurring_type',
         'message',

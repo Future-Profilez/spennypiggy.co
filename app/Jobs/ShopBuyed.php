@@ -23,7 +23,7 @@ class ShopBuyed implements ShouldQueue
      * @var bool
      */
     public $anon;
-    public $symbol;
+    public $amountUserPay;
 
     /**
      * Create a new job instance.
@@ -32,11 +32,11 @@ class ShopBuyed implements ShouldQueue
      * @param bool $social = false
      * @return void
      */
-    public function __construct($payment, $anon, $symbol)
+    public function __construct($payment, $anon, $amountUserPay)
     {
         $this->payment = $payment;
         $this->anon = $anon;
-        $this->symbol = $symbol;
+        $this->amountUserPay = $amountUserPay;
     }
 
     /**
@@ -47,7 +47,7 @@ class ShopBuyed implements ShouldQueue
     public function handle()
     {
         if((isset($this->payment->shop->user) && $this->payment->shop->user->notification_send == 1) || (empty($this->payment->shop->user))){
-            EmailService::shopBuyed($this->payment, $this->anon,$this->symbol);
+            EmailService::shopBuyed($this->payment, $this->anon,$this->amountUserPay);
         }
     }
 }

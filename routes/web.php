@@ -11,6 +11,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -39,6 +40,14 @@ Route::get('/membership-dashboard', function () {
 Route::get('/stripe-identity', function () {
     return Inertia::render('IdentityVerification');
 })->name('stripe.identity');
+
+
+// Route::post('test-stripe', function (Request $request) {
+//     $request = json_encode($request->all());
+//     Log::info("webhook run: $request");
+//     $a = "come in this condition";
+//     return response()->json(['status' => 'done', 'message' => $a], 200);
+// })->name('test.stripe');
 
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
 
