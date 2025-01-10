@@ -10,7 +10,7 @@ use Ramsey\Uuid\Uuid;
 
 class  TipGoalsPayment extends Model
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'uuid',
@@ -34,8 +34,8 @@ class  TipGoalsPayment extends Model
         'user_id',
         'tip_goal_id',
         'session_id',
-        'currency',
-        'created_at',
+        // 'currency',
+        // 'created_at',
         'updated_at',
     ];
 
@@ -46,7 +46,7 @@ class  TipGoalsPayment extends Model
     public static function boot()
     {
         parent::boot();
-        static::creating(fn ($s) =>  $s->uuid = Uuid::uuid4());
+        static::creating(fn($s) =>  $s->uuid = Uuid::uuid4());
     }
 
 
@@ -61,15 +61,18 @@ class  TipGoalsPayment extends Model
         return $this->belongsTo(TipGoal::class, 'tip_goal_id');
     }
 
-    public function creator(){
+    public function creator()
+    {
         return $this->belongsTo(User::class, 'creator_id');
     }
 
     public function getSenderAttribute()
     {
         $sender = false;
-        if (Auth::check() && !empty($this->tipGoal->user_id)) {
-            $sender = $this->tipGoal->user_id == Auth::id() ? false : true;
+        if (isset($this->creator_id)) {
+            if (Auth::check() && $this->creator_id != Auth::id()) {
+                $sender = true;
+            }
         }
         return $sender;
     }

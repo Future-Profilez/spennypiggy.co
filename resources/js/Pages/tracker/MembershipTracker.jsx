@@ -1,95 +1,65 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import Collapse from "react-bootstrap/Collapse";
-import PriceFormat from "@/includes/PriceFormat";
-import ProgressBar from "react-bootstrap/ProgressBar";
-import Nocontent from "@/includes/Nocontent";
-import Avatar from "@/includes/Avatar";
+import PriceFormat from '@/includes/PriceFormat';
+import ProgressBar from 'react-bootstrap/ProgressBar';
+import Nocontent from '@/includes/Nocontent';
+import Avatar from '@/includes/Avatar';
 import userphoto from "../../../assets/img/userphoto.png";
-import TweetNow from "./TweetNow";
-import { TimeFormat } from "@/includes/TimeFormat";
+import TweetNow from './TweetNow';
+import { TimeFormat } from '@/includes/TimeFormat';
 const defaultsec = "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/";
 
-export default function BillsTracker({ auth }) {
-    const { formatMultiPrice } = PriceFormat();
-    const [bills, serBills] = useState([]);
+export default function MembershipTracker({auth}) {
 
-    const fetchBills = () => {
-        axios
-            .get(`bill-tracker`)
-            .then((resp) => {
-                serBills(resp.data.bill_payments);
-            })
-            .catch((_err) => {
-                console.error("error", _err);
-            });
-    };
+   const { formatMultiPrice } = PriceFormat();
+   const [membership, serMembership] = useState([]);
 
-    useEffect(() => {
-        fetchBills();
-    }, []);
+   const fetchMembership = () => {
+      axios.get(`membership-tracker`).then(resp => {
+         serMembership(resp.data.membership_payments);
+      }).catch(_err => {
+         console.error("error", _err);
+      });
+   }
 
-    const getPercentage = (actual, paid) => {
-        const r = (paid / actual) * 100;
-        return r.toFixed(2);
-    };
+   useEffect(()=>{
+      fetchMembership();
+   },[]);
 
-    const GoalItem = ({ n }) => {
-        const [open, setOpen] = useState(false);
-        const openState = () => {
-            setOpen(!open);
-        };
-        return (
-            <>
-                <div className="trackItem cursor-pointer shadow-pink box mb-4">
+   const getPercentage = (actual, paid) => {
+      const r = (paid/actual)*100;
+      return r.toFixed(2);
+   }
+
+   const GoalItem = ({n}) => {
+      const [open, setOpen] = useState(false);
+      const openState = () => { setOpen(!open) }
+      return <>
+          <div className="trackItem cursor-pointer shadow-pink box mb-4">
                     <div
                         onClick={openState}
                         aria-controls="example-collapse-text"
                         aria-expanded={open}
                         className=" cursor-pointer trackbar "
                     >
+
+
                         <div className="d-flex align-items-center justify-content-between">
                             <div className="text-dark">
-                                {n.anonymous == 1 && n.sender == false ? (
-                                    <Avatar
-                                        name={`From : Anonymous`}
-                                        subhead={
-                                            (n.bill && n.bill.name) ||
-                                            "Surprise Gift"
-                                        }
-                                        src={userphoto || ""}
-                                    />
+                                {n.anonymous == 1 && n && n.sender == false ? (
+                                    <Avatar name={`From : Anonymous`} subhead={(n.membership && n.membership.level) || "Membership Payment"} src={userphoto || ""}/>
                                 ) : (
-                                    <Avatar
-                                        name={`From : ${
-                                            (n && n.user && n.user.name) ||
-                                            n.guest_name
-                                        }`}
-                                        link={
-                                            (n.user && n.user.username) || null
-                                        }
-                                        subhead={
-                                            (n.bill && n.bill.name) ||
-                                            "Surprise Gift"
-                                        }
-                                        username={
-                                            (n.user && n.user.username) || ""
-                                        }
-                                        src={
-                                            (n &&
-                                                n.user &&
-                                                n.user.avatar_url) ||
-                                            userphoto
-                                        }
-                                    />
+                                    <>
+                                    <Avatar name={`From : ${ (n && n.user && n.user.name) || "Anonymous" }`} link={ (n.user && n.user.username) || null } subhead={(n.membership && n.membership.level) ||"Membership Payment"} username={(n.user && n.user.username) || ""} src={(n && n.user && n.user.avatar_url) ||userphoto} />
+                                    </>
                                 )}
                             </div>
                             <div className="text-muted rightbar d-flex align-items-center ">
                                 <div>
                                     {n && n.sender ? (
                                         <div className="identity text-danger text-nowrap">
-                                            -
-                                            {formatMultiPrice(
+                                            -{formatMultiPrice(
                                                 n.amount,
                                                 n.currency
                                             )}
@@ -98,16 +68,12 @@ export default function BillsTracker({ auth }) {
                                         <div className="identity text-success text-nowrap">
                                             +
                                             {formatMultiPrice(
-                                                n.amount,
+                                                n.final_amount,
                                                 n.currency
                                             )}
                                         </div>
                                     )}
-                                    <p className="text-[13px] text-right">
-                                        <TimeFormat
-                                            dateString={n && n && n.created_at}
-                                        />
-                                    </p>
+                                    <p className='text-[13px] text-right'><TimeFormat dateString={n &&n &&n.created_at}  /></p>
                                 </div>
 
                                 <div className="angle-icon">
@@ -135,6 +101,7 @@ export default function BillsTracker({ auth }) {
                                         </g>{" "}
                                     </svg>
                                 </div>
+
                             </div>
                         </div>
                     </div>
@@ -146,8 +113,7 @@ export default function BillsTracker({ auth }) {
                                         <div className="wish-item">
                                             <img
                                                 src={
-                                                    (n.bill &&
-                                                        n.bill.perma_link) ||
+                                                    (n.membership && n.membership.perma_link) ||
                                                     defaultsec
                                                 }
                                                 alt="image"
@@ -156,18 +122,17 @@ export default function BillsTracker({ auth }) {
                                         </div>
                                         <div className="item-dd ps-3">
                                             <p className="mb-0 pe-2">
-                                                {(n.bill && n.bill.name) ||
+                                                {(n.membership && n.membership.level) ||
                                                     "Surprise Gift"}
                                             </p>
                                             <p className="text-muted text-small">
-                                                OTY : {n.quantity || 1} x{" "}
+                                                QTY : {n.quantity || 1} x{" "}
                                                 {formatMultiPrice(
                                                     n.amount,
-                                                    n?.currency || "gbp"
+                                                    n?.currency ||
+                                                        "gbp"
                                                 )}
-                                                {n && n.sender == false
-                                                    ? " + VAT"
-                                                    : ""}
+                                                 {n && n.sender == false ? ' + VAT' : ''}
                                             </p>
                                         </div>
                                     </div>
@@ -187,13 +152,13 @@ export default function BillsTracker({ auth }) {
                                     <div className="border-top pt-3 mt-3  d-flex justify-content-between align-items-center">
                                         <p className="mb-0 pe-2">Paid in </p>
                                         <p className="text-muted text-small">
-                                            {n && n && n.currency}
+                                            {n &&
+                                                n &&
+                                                n.currency}
                                         </p>
                                     </div>
                                     <div className="border-top pt-3 mt-3  d-flex justify-content-between align-items-center">
-                                        <p className="mb-0 pe-2">
-                                            Guest Email{" "}
-                                        </p>
+                                        <p className="mb-0 pe-2">Guest Email </p>
                                         <p className="text-muted text-small">
                                             {n && n.guest_email}
                                         </p>
@@ -204,16 +169,17 @@ export default function BillsTracker({ auth }) {
                                             {n && n.guest_name}
                                         </p>
                                     </div>
+
                                 </div>
 
-                                {/* {n && n.sender == false ? (
-                                    <TweetNow
+                                {/* {n && n.sender == false ? ( */}
+                                    {/* <TweetNow
                                         type="purchase"
                                         id={n && n.uuid}
-                                    />
-                                ) : (
-                                    ""
-                                )} */}
+                                    /> */}
+                                {/* // ) : (
+                                //     ""
+                                // )} */}
                                 {/* <p className="mt-3 mb-2">Exclusive Rewards </p>
                                 {n && n.message_url ? (
                                     <div className="message-media my-2">
@@ -233,20 +199,14 @@ export default function BillsTracker({ auth }) {
                         </div>
                     </Collapse>
                 </div>
-            </>
-        );
-    };
-    return (
-        <div className="tips mt-4">
-            {bills &&
-                bills.map((g, i) => {
-                    return <GoalItem n={g} />;
-                })}
-            {bills && bills.length < 1 ? (
-                <Nocontent text="nothing to see" />
-            ) : (
-                ""
-            )}
-        </div>
-    );
+      </>
+   }
+   return (
+      <div className='tips mt-4'>
+         {membership && membership.map((g, i)=>{
+            return <GoalItem n={g} />
+         })}
+          {membership && membership.length < 1 ?<Nocontent text="nothing to see" /> : ''}
+      </div>
+  )
 }

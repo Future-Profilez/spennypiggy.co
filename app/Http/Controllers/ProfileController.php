@@ -972,7 +972,7 @@ class ProfileController extends Controller
         $user = User::where('id', Auth::id())->first();
 
         $notifications = Notification::where('notifiable_id',$user->id)->with('user')->orderBy('created_at','DESC')->paginate(30);
-
+        dd($notifications);
         return response()->json([
             'status' => true,
             'notifications' => $notifications->items(),

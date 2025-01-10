@@ -108,13 +108,13 @@ export default function Accountsetting(props) {
                                 </Popup>
                             </li>
 
-                            <li>
+                            {/* <li>
                                 <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>VAT <span className='text-gray'>{vatpercent || "0"}%</span></>} >
                                     <ChangeVat defaultvalue={vatpercent} updatevat={updatevat} />
                                 </Popup>
-                            </li>
+                            </li> */}
 
-                            <li>
+                            {/* <li>
                                 <Popup action={passClose} space='4' modalclassName="pinkmodal"
                                 text={
                                 <>
@@ -128,7 +128,7 @@ export default function Accountsetting(props) {
                                     auth={auth}
                                     username={auth && auth.user && auth.user.twitter_username || false}  />
                                 </Popup>
-                            </li>
+                            </li> */}
 
                             <li>
                                 <div className='notification uppercase'>
@@ -141,7 +141,7 @@ export default function Accountsetting(props) {
                                 </div>
                             </li>
 
-                            <li>
+                            {/* <li>
                                 <div className='notification uppercase'>
                                 Show Piggy Bank Earnings
                                     <label className="toggle-switch">
@@ -150,7 +150,7 @@ export default function Accountsetting(props) {
                                         <span for='showbankearning' className="slider"></span>
                                     </label>
                                 </div>
-                            </li>
+                            </li> */}
 
                             {/* <li>
                                 <TFA text={<>

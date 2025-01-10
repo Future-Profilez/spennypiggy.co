@@ -155,6 +155,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function getUserProfile($username)
     {
+        $username = Auth::user()->username;
         $user = User::where('username', $username)->where(function ($q) {
             $q->whereNot('country', 'GB')->orWhereNull('country');
         })->first();

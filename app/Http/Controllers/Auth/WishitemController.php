@@ -1428,22 +1428,46 @@ class WishitemController extends Controller
      */
     public function userTips()
     {
-        $user = Auth::user();
+        $userId = Auth::id(); // Use the user ID directly
 
-        $user_tips = TipGoalsPayment::whereHas('tipGoal', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->with('tipGoal')->orWhere('user_id', $user->id)->get();
+        // Retrieve TipGoalsPayment records where either the payment's user_id matches or related tipGoal's user_id matches
+        $userTips = TipGoalsPayment::with('tipGoal.user') // Eager load the user relationship in tipGoal
+            ->where('user_id', $userId)
+            ->orWhere('creator_id', $userId)
+            ->orWhereHas('tipGoal', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })->latest()
+            ->get();
 
-        $tips = $user_tips->map(function ($q) {
-            $q->owner = $q->tipGoal->user;
-            return $q;
+        // Map each tip and add owner property dynamically
+        $tips = $userTips->map(function ($tip) {
+            $tip->setAttribute('owner', $tip->creator ?? null); // Dynamically set the 'owner' attribute
+            return $tip;
         });
 
         return response()->json([
             'status' => true,
-            'tips' => $tips
+            'tips' => $tips,
         ]);
     }
+    // public function userTips()
+    // {
+    //     $user = Auth::user();
+
+    //     $user_tips = TipGoalsPayment::whereHas('tipGoal', function ($q) use ($user) {
+    //         $q->where('user_id', $user->id);
+    //     })->with('tipGoal')->orWhere('user_id', $user->id)->get();
+
+    //     $tips = $user_tips->map(function ($q) {
+    //         $q->owner = $q->tipGoal->user;
+    //         return $q;
+    //     });
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'tips' => $tips
+    //     ]);
+    // }
 
     /**
      * Enable disable the auto tweet
@@ -1540,11 +1564,45 @@ class WishitemController extends Controller
     public function billTracker()
     {
         $user = Auth::user();
+
+        // Fetch bill payments with conditional user data
         $bill_payments = BillPayment::whereHas('bill', function ($q) use ($user) {
             $q->where('user_id', $user->id);
-        })->with('bill')->latest()->get();
+        })->orWhere('user_id', $user->id)
+            ->with('bill', 'user') // Load bill and user relationships
+            ->latest()
+            ->get();
 
-        $bill_payments->map(function ($q) {
+        // Map the results to include user data or fallback to guest email
+        $bill_payments->map(function ($payment) {
+            $payment->user_data = $payment->user
+                ? [
+                    'name' => $payment->user->name,
+                    'avatar' => $payment->user->avatar_url,
+                    'uuid' => $payment->user->uuid,
+                ]
+                : [
+                    'name' => $payment->guest_name ?? 'Anonymous',
+                    'avatar' => null, // Set default avatar or null for guests
+                    'email' => $payment->guest_email ?? 'N/A',
+                ];
+            return $payment;
+        });
+
+        return response()->json([
+            'status' => true,
+            'bill_payments' => $bill_payments
+        ]);
+    }
+
+    public function membershipTracker()
+    {
+        $user = Auth::user();
+        $membership_payments = MembershipPayment::whereHas('membership', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->orWhere('user_id', $user->id)->with('membership')->latest()->get();
+
+        $membership_payments->map(function ($q) {
             $q->user_data = [
                 'name' => $q->user->name,
                 'avatar' => $q->user->avatar_url,
@@ -1555,7 +1613,28 @@ class WishitemController extends Controller
 
         return response()->json([
             'status' => true,
-            'bill_payments' => $bill_payments
+            'membership_payments' => $membership_payments
         ]);
     }
+    // public function billTracker()
+    // {
+    //     $user = Auth::user();
+    //     $bill_payments = BillPayment::whereHas('bill', function ($q) use ($user) {
+    //         $q->where('user_id', $user->id);
+    //     })->with('bill')->latest()->get();
+
+    //     $bill_payments->map(function ($q) {
+    //         $q->user_data = [
+    //             'name' => $q->user->name,
+    //             'avatar' => $q->user->avatar_url,
+    //             'uuid' => $q->user->uuid
+    //         ];
+    //         return $q;
+    //     });
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'bill_payments' => $bill_payments
+    //     ]);
+    // }
 }

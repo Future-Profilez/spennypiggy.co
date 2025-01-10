@@ -974,8 +974,6 @@ class StripeController extends Controller
             $totalTaxForDB = $tax + $adminFeeForStoreDB;
             $totalAmountForStoreDB = $price + $totalTaxForDB;
 
-
-
             // define variable to show and pay on payment page
             $taxPercentage = config('app.jar_tax'); // Tax percentage
             $adminFeeForPay = Helpers::priceFormat('GBP', $adminFeeAmount, $currency);
@@ -1081,7 +1079,7 @@ class StripeController extends Controller
             if ($session->payment_status == 'paid') {
                 $ownerCurrency = Currency::where('iso', strtoupper($tip_pay->currency))->first();
                 $userCurrency = Currency::where('iso', strtoupper($currency))->first();
-                $userAmount = Helpers::priceFormat($tip_pay->currency, ($tip_pay->amount + $tip_pay->tax), $currency);
+                $userAmount = Helpers::priceFormat($tip_pay->currency, $tip_pay->amount, $currency);
 
                 TipJarPurchased::dispatch($tip_pay, $ownerCurrency->symbol);
                 TipJarMailToUser::dispatch($tip_pay, $userCurrency->symbol, $userAmount);
