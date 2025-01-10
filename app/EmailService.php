@@ -29,6 +29,7 @@ use App\Mail\TipJarMail;
 use App\Mail\VerifyEmail;
 use App\Mail\Welcome;
 use App\Mail\Wishlist;
+use App\Mail\WishSubscriptionMailToUsers;
 use App\Models\AppService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -229,11 +230,10 @@ class EmailService
         }
     }
 
-    public static function sendSubscribedMail($data)
+    public static function sendSubscribedMail($sub, $creatorFinalAmount)
     {
         try {
-
-            Mail::to($data->wish_item->user->email)->send(new SubsMail($data));
+            Mail::to($sub->wish_item->user->email)->send(new SubsMail($sub, $creatorFinalAmount));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
@@ -363,6 +363,15 @@ class EmailService
     {
         try {
             Mail::to("jack@spennypiggy.co")->send(new ThankYouMailAdmin($pay));
+        } catch (TransportException $e) {
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+    public static function wishSubscriptionMailToUser($sub, $mailToSend, $amountTotal, $creator_name)
+    {
+        try {
+            Mail::to($mailToSend)->send(new WishSubscriptionMailToUsers($sub, $amountTotal, $creator_name));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }

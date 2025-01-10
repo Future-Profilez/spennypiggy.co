@@ -42,6 +42,7 @@ use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -100,10 +101,13 @@ class WishitemController extends Controller
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         } else {
 
-            $taxamount = $request->price * config('app.single_tax') / 100;
-            // $taxamount = $request->price * env('TAX_PERCENTAGE', 20) / 100; // commented old code which written by saurav sir
-            $createpriceid = ceil($request->price) + ceil($taxamount);
             $user = User::find(Auth::id());
+            $taxamount = $request->price * config('app.single_tax') / 100;
+            $adminFee = config('app.administration_fee');
+            $adminFees = Helpers::priceFormat('GBP', $adminFee, $user->default_currency);
+            // $taxamount = $request->price * env('TAX_PERCENTAGE', 20) / 100; // commented old code which written by saurav sir
+            $createpriceid = ceil($request->price) + ceil($taxamount) + ceil($adminFees);
+            $totalTax = ceil($taxamount) + ceil($adminFees);
             $wish = WishItem::create([
                 "user_id" => Auth::id(),
                 'wishname' => $request->wishname,
@@ -114,7 +118,7 @@ class WishitemController extends Controller
                 'subscription' => $request->subscription,
                 'subscription_period' => $request->subscription_period ?? null,
                 'repeat_purchase' => $request->repeat_purchase ?? 0,
-                'tax_amount' => ceil($taxamount),
+                'tax_amount' => $totalTax,
                 // 'category' => $request->category ?? null,
             ]);
 
@@ -226,8 +230,7 @@ class WishitemController extends Controller
         $price = $request->price;
 
         // $price = round($request->price, 2, PHP_ROUND_HALF_UP);
-
-        if ($request->susbcription == 0) {
+        if ($request->subscription == 0) {
             $tax_percent = config('app.single_tax');
         } elseif ($request->subscription == 1) {
             $tax_percent = config('app.subs_tax');
@@ -315,7 +318,7 @@ class WishitemController extends Controller
 
         $old_price = $wish->price;
         if (!empty($request->price)) {
-            if ($request->susbcription == 0) {
+            if ($request->subscription == 0) {
                 $tax_percent = config('app.single_tax');
             } elseif ($request->subscription == 1) {
                 $tax_percent = config('app.subs_tax');

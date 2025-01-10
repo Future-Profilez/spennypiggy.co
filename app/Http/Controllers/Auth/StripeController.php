@@ -19,6 +19,7 @@ use App\Jobs\SubscriptionFailed;
 use App\Jobs\TipJarMailToUser;
 use App\Jobs\TipJarPurchased;
 use App\Jobs\TipJarTweet;
+use App\Jobs\WishSubscriptionMailToUser;
 use App\Models\Currency;
 use App\Models\MonthlyCharge;
 use App\Models\Post;
@@ -583,8 +584,12 @@ class StripeController extends Controller
         $tax = number_format($wish->tax_amount, 2);
         $price = number_format($wish->price, 2);
 
+        $adminFee = config('app.administration_fee');
+        $adminFee =   Helpers::priceFormat('GBP', $adminFee, $wish->currency);
+        $totalTax = number_format($tax + $adminFee, 2);
         $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
 
+        // dd($reccure);
         if ($reccure == 'continue') {
             if (!empty($wish->user->vat_amount_percentage)) {
                 $vat_percentage_amount = ($price + $tax) * $wish->user->vat_amount_percentage / 100;
@@ -612,14 +617,15 @@ class StripeController extends Controller
             ]);
 
             $sub = WishItemSubscription::create([
-                'wish_item_id'  =>  $wish->id,
-                'user_id'       =>  Auth::id(),
-                'guest_name'    =>  $request->name ?? NULL,
-                'guest_email'   =>  $request->email,
-                'currency'      =>  $wish->currency,
-                'amount'        =>  $wish->price,
-                'tax'           =>  $wish->tax_amount,
-                'recurring_for' =>  $reccure,
+                'wish_item_id'   =>  $wish->id,
+                'user_id'        =>  Auth::id(),
+                'guest_name'     =>  $request->name ?? NULL,
+                'guest_email'    =>  $request->email,
+                'currency'       =>  $wish->currency,
+                'amount'         =>  $wish->price,
+                'tax'            =>  $totalTax,
+                'vat_tax_amount' =>  ceil($vat_percentage_amount),
+                'recurring_for'  =>  $reccure,
                 'recurring_type' =>  $wish->subscription_period,
                 'surprise_message'  =>  $request->message ?? NULL,
                 'anonymous' => $request->anonymous ?? 0
@@ -638,14 +644,19 @@ class StripeController extends Controller
             // } else {
 
             $amount = $price + $tax;
-            $unit_amount = Helpers::priceFormat($wish->currency, $amount, $currency) * 100;
+            $unit_amount = Helpers::priceFormat($wish->currency, $amount, $currency);
             $tax =   Helpers::priceFormat($wish->currency, $tax, $currency);
+
+            $adminFee = config('app.administration_fee');
+            $adminFee =   Helpers::priceFormat('GBP', $adminFee, $currency);
+            $total_unit_amount = $unit_amount + $adminFee;
+
             $items  =   [
                 'quantity'      =>  1,
                 'price_data'    =>   [
                     'currency'  =>  $currency,
                     'product'   =>  $wish->stripe_product_id,
-                    'unit_amount_decimal'   =>  $unit_amount,
+                    'unit_amount_decimal'   =>  $total_unit_amount * 100,
                     'recurring' =>  [
                         'interval'  =>  StripeControl::$periods[$wish->subscription_period],
                         'interval_count'    =>  1
@@ -688,8 +699,6 @@ class StripeController extends Controller
             //     'success'   => true,
             //     'session'   => $session
             // ]);
-
-
         }
 
         return Inertia::render('cart/SubCheckout', [
@@ -717,8 +726,20 @@ class StripeController extends Controller
         }
         try {
             $session = StripeControl::getCheckoutSession($sub->session_id);
+
             $sub->status = $session->payment_status;
             if ($session->payment_status == 'paid') {
+
+                $symbol = Currency::where('iso', strtoupper($sub->currency))->first();
+                $creatorAmount = $sub->amount + $sub->vat_tax_amount;
+                $creatorFinalAmount = $symbol->symbol . $creatorAmount;
+                $amountTotal = $symbol->symbol . $sub->amount;
+                $creator_name = $sub->wish_item->user->name;
+                $mailToSend = $sub->guest_email;
+
+                // wish subscription mail send to user
+                WishSubscriptionMailToUser::dispatch($sub, $mailToSend, $amountTotal, $creator_name);
+
                 $sub->stripe_id = $session->subscription;
                 $current = Carbon::now();
                 if ($sub->recurring_type == 'daily') {
@@ -736,7 +757,7 @@ class StripeController extends Controller
                 if ($sub->recurring_for == 'onetime') {
                     SubscriptionCancelAtEnd::dispatch($sub);
                 } else {
-                    SubscribedMail::dispatch($sub);
+                    SubscribedMail::dispatch($sub, $creatorFinalAmount);
                 }
 
                 if ($sub->wish_item->user->auto_tweet == 1) {
@@ -1238,7 +1259,6 @@ class StripeController extends Controller
     public function handleMandatorySubscription($uuid, $status)
     {
         $sub = MonthlyCharge::whereUuid($uuid)->first();
-        Log::info("sub data - " . $sub);
         if (!$sub) {
             return to_route('home')->with("error", 'Insufficient data!');
         }

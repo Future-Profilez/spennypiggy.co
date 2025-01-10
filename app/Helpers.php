@@ -13,12 +13,9 @@ class Helpers
     public static function checkBlockData($request)
     {
         $blockedWords = ['paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive','tax','fee','session','deposit','tribute','dick','goddess','master','mistress'];
-        Log::info("request -". json_encode($request->all(),true));
         $blockedEmojis = ['😈', '💩', '💬', '👅', '🍆', '🍌', '🌽', '🌶️', '🍑', '💎', '💦'];
         foreach ($blockedWords as $key => $word) {
             if (stripos($request->getContent(), $word) !== false) {
-                Log::info("word -$key ". $word);
-                Log::info("word -request->getContent() ". $request->getContent());
                 // return response()->json([
                 //     'status' => true,
                 //     'message' => 'Some restricted words are not allowed.',

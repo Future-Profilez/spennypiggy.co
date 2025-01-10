@@ -73,9 +73,11 @@ class CheckoutController extends Controller
             $transfer_amount = 0;
             foreach ($getdata as $dd) {
                 $adminFee = config('app.administration_fee');
-                $adminsFees = Helpers::priceFormat($dd->owner->default_currency, $adminFee, $currency);
+                $showAdminsFees = Helpers::priceFormat('GBP', $adminFee, $currency);
+                $StoreAdminsFees = Helpers::priceFormat('GBP', $adminFee, $dd->owner->default_currency);
                 $totalAmount = $dd->amount;
                 $totalTax =  $dd->tax;
+
                 $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, $currency);
                 $ConvertedTax = Helpers::priceFormat($dd->owner->default_currency, $totalTax, $currency);
                 $TotalConvertedFinalAmount = $ConvertedTax + $ConvertedAmount;
@@ -93,13 +95,13 @@ class CheckoutController extends Controller
 
                 $subtotal += $dd->amount * $dd->quantity;
                 $taxNew += $dd->tax * $dd->quantity;
-                $taxNew += $adminFee;
+                $taxNew += $StoreAdminsFees;
 
                 // this amount will be transfer to the creators account
                 $transfer_amount += $ConvertedAmount * $dd->quantity;
             }
 
-            $transfering_amount = $transfer_amount + $adminsFees;
+            $transfering_amount = $transfer_amount + $showAdminsFees;
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
@@ -123,10 +125,11 @@ class CheckoutController extends Controller
 
             session()->forget('session_id');
             session(['session_id' => $sessionCreate->id]);
+            $amountSubtotal = $subtotal + $taxNew;
             $stripePaymentDetail = StripePaymentDetail::create([
                 'session_id' => $sessionCreate->id,
                 'amount_subtotal' => $subtotal,
-                'amount_total' => $sessionCreate->amount_total / 100,
+                'amount_total' => $amountSubtotal,
                 'tax' => $taxNew,
                 'currency' => $getdata[0]->owner->default_currency,
                 'payment_method_config_detail_id' => optional($sessionCreate->payment_method_configuration_details)->id,
