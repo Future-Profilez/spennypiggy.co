@@ -1435,7 +1435,6 @@ class WishitemController extends Controller
         $userTips = TipGoalsPayment::with('tipGoal.user') // Eager load the user relationship in tipGoal
             ->where('user_id', $userId)
             ->whereIn('status', ['paid', 'cancelled'])
-            ->orWhere('creator_id', $userId)
             ->orWhereHas('tipGoal', function ($q) use ($userId) {
                 $q->where('user_id', $userId);
             })->latest()

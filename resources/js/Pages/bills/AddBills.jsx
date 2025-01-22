@@ -59,7 +59,6 @@ export default function AddBills(props) {
     );
     const spValue = (e) => {
         setPeriod(e.target.value);
-        console.log("e.target.value", e.target.value);
         setData("period", e.target.value);
     };
 

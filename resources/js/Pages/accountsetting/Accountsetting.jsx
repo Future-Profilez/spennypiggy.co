@@ -20,7 +20,6 @@ export default function Accountsetting(props) {
     const { successAlert, errorAlert } = useAlerts();
     const {auth, user, global_currency, auto_tweet} = props;
 
-    console.log("props", props)
     const [emailEnabled, setSetEnabled] = useState(auth && auth.user && auth.user.notification_send == 1 ? true : false )
     const [showEarning, setShowEarning] = useState(auth && auth.user && auth.user.show_piggy_bank == 1 ? true : false );
     const swicthEarning  = () =>{

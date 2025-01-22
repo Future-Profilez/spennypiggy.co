@@ -51,7 +51,6 @@ export default function ImageGenerationWithAI({ classes, size, update }) {
                 if (resp.data.status) {
                     setClose(false);
                     setAiImage(null);
-                    console.log("resp.data",resp.data)
                     update && update({ uuid: resp.data.uuid, url: AiImage.url });
                 } else {
                     errorAlert(

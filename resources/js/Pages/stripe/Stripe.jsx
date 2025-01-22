@@ -9,7 +9,6 @@ import Popup from '@/Components/Popup';
 
 export default function Stripe(props) {
     const { auth, user } = props;
-    console.log("props", props);
     const checkRef = useRef();
     const { errorAlert } = useAlerts();
     const { data, setData, get, post, processing, errors, reset } = useForm({
@@ -19,7 +18,6 @@ export default function Stripe(props) {
     const [countryCurrency, setCountryCurrency] = useState();
     const [country, setCountry] = useState('');
     const getCountry = (e) => {
-        console.log("get",e);
         if(e == ''){
             setCountry('')
         } else {
@@ -30,8 +28,6 @@ export default function Stripe(props) {
     };
 
     const checkTerms = () => {
-        console.log("country", country);
-        
         if (country == '') {
             errorAlert("Please choose your country.");
             return false;
@@ -138,7 +134,7 @@ export default function Stripe(props) {
                         </div> */}
                     </div>
                     <div className="text-center flex justify-center mb-4 ">
-                       
+
 
                         <Popup modalclass="pinkmodal full stripe-terms shadow-pink ps-0"
                             space="4" size="md"
@@ -169,7 +165,7 @@ export default function Stripe(props) {
                                     </div>
 
                                     <button className='btn-pink md m-auto mt-4  d-table' onClick={() => { return checkTerms(); }}>Go to Stripe</button>
-                                </div>  
+                                </div>
                             </Popup>
 
                     </div>

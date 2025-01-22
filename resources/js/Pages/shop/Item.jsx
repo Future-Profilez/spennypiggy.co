@@ -11,7 +11,7 @@ import axios from 'axios';
 import AllContries from '../../includes/AllCountries';
 
 export default function ShopDetailItem(props) {
- 
+
    const { vat_percent, auth, user, shop } = props;
    const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (shop && shop.user && shop && shop.user.username));
    const url = window.location.href;
@@ -42,7 +42,7 @@ export default function ShopDetailItem(props) {
 
    const [price, setPrice] = useState(shop.price);
    const [selectedVarient, setSelectedVarient] = useState(shop && shop.shop_varients[0] && shop.shop_varients[0].id);
-   const handleVarient = (e) => { 
+   const handleVarient = (e) => {
       const varient = shop.shop_varients.find(v => v.id == e.target.value);
       setPrice(varient.price);
       setSelectedVarient(varient.id);
@@ -53,7 +53,6 @@ export default function ShopDetailItem(props) {
       await axios.get(`https://ipapi.co/json/`).then((resp)=>{
          if(resp.data && resp.data.country_code){
             setCurrentCountry(resp.data.country_code);
-            console.log("resp.data.country_code",resp.data.country_code)
             getShippingPrice(resp.data.country_code);
          }
       }).catch((err)=>{
@@ -76,9 +75,9 @@ export default function ShopDetailItem(props) {
   },[shop]);
 
 
-  
-   
-   
+
+
+
   return (
     <>
       <Guest auth={auth.user} user={user}>
@@ -87,7 +86,7 @@ export default function ShopDetailItem(props) {
                <div className='py-6 md:py-14 max-w-[900px] m-auto' >
                   <Head title={shop.name || 'Spenny Piggy Shop'}  />
                   <div className="product-details max-w-[700px] px-2 mx-auto">
-                
+
 
                      <button className='flex md:hidden items-center text-xl mb-4 ' onClick={()=>history.back()} ><span className='mt-1'><IoChevronBackOutline size="1.5rem" /></span> Back</button>
                      <nav className="hidden md:flex mb-4" aria-label="Breadcrumb">
@@ -119,7 +118,7 @@ export default function ShopDetailItem(props) {
                      <div className="w-full relative">
                         <img className="w-full max-h-[400px] object-cover rounded-xl" alt="image of a girl posing" src={shop.perma_link}/>
                         {shop.ai_generated == 1 ? <div className='absolute bottom-2 left-2 z-1 bg-black shadow-sm rounded-xl px-2 py-1 text-[8px] text-white'>MADE WITH AI </div> : ""}
-                     </div> 
+                     </div>
 
                      <h2 className='font-GillSans text-uppercase text-3xl pt-4 pb-3' >{shop.name}</h2>
                      <p className=" text-lg lg:leading-tight leading-normal text-gray-600">{shop.description}</p>
@@ -150,7 +149,7 @@ export default function ShopDetailItem(props) {
                         <div className="mb-1 mt-4 font-medium text-gray-500">Social</div>
                         <ul className="mb-4 -ml-2 flex md:order-1 md:mb-0">
                            <li>
-                              <a 
+                              <a
                               href={`https://twitter.com/intent/tweet?url=${url}`} target="_blank"
                                className=" text-break text-muted inline-flex items-center rounded-lg p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
                                  aria-label="Twitter" ><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
@@ -178,7 +177,7 @@ export default function ShopDetailItem(props) {
 
                            <li>
                               <div className="cursor-pointer text-muted inline-flex items-center rounded-lg p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
-                                    aria-label="Facebook" 
+                                    aria-label="Facebook"
                                      onClick={fbShare}
                                      ><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -207,16 +206,16 @@ export default function ShopDetailItem(props) {
                         <h2 className='text-lg mb-2'>Select Varient</h2>
                         <select onChange={handleVarient} className='bg-white rounded-xl text-lg text-capitalize px-4 py-2.5 mb-3 w-full border-0'>
                            {shop.shop_varients && shop.shop_varients.map((varient) => <option value={varient.id}>{varient.name}</option>)}
-                        </select> 
+                        </select>
                         </> : ""
                      }
-                     
+
                      <div className='sm:flex items-center justify-between' >
                         <div className=' mb-3'>
                            <h3 className='text-3xl font-bold' >
                               {shop && shop.is_member == 1 && shop.special_member_price ? <>
                                  {formatMultiPrice(shop.special_member_price, shop?.currency || 'GBP') } <span className='line-through text-gray-400' >{price > 0 ? formatMultiPrice(price, shop?.currency || 'GBP') : "FREE"}</span>
-                              </>  
+                              </>
                               : price > 0 ? formatMultiPrice(price, shop?.currency || 'GBP') : "Free"
                               }
                               {shop.slot_limitation ? <span className='ms-3 text-pink text-lg font-light ' >Only {shop.slot_limitation - shop.total_sold} Left</span> :""}
@@ -225,20 +224,20 @@ export default function ShopDetailItem(props) {
                               Shipping Price : {formatMultiPrice(shippingPrice, shop?.currency || 'GBP')}</h2>
                            : ''}
                         </div>
- 
-                        { IsloggedIn ? 
+
+                        { IsloggedIn ?
                            ""
-                           : 
+                           :
                            <>
                               {(shop.slot_limitation && (shop.slot_limitation - shop.total_sold) === 0 ) ?
-                                 <button className='btn-pink sm disabled w-full sm:w-auto' >SOLD</button> 
-                                 : 
+                                 <button className='btn-pink sm disabled w-full sm:w-auto' >SOLD</button>
+                                 :
                               <>
-                                 <BuyShopItem shippingPrice={shippingPrice} country={currentCountry} selectedVarient={selectedVarient} vat_percent={vat_percent} opened={props.opened} isPaid={props.payment_id} open={open} s={shop} text={'Get This'} classes="w-full sm:w-auto btn-pink font-light md  mb-3" /> 
+                                 <BuyShopItem shippingPrice={shippingPrice} country={currentCountry} selectedVarient={selectedVarient} vat_percent={vat_percent} opened={props.opened} isPaid={props.payment_id} open={open} s={shop} text={'Get This'} classes="w-full sm:w-auto btn-pink font-light md  mb-3" />
                               </>
                               }
                            </>
-                        }  
+                        }
                      </div>
 
                   </div>

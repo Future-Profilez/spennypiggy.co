@@ -12,7 +12,6 @@ const defaultsec = "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/";
 export default function ShopTracker() {
     const { formatMultiPrice } = PriceFormat();
     const [goals, setGoals] = useState([]);
-    console.log("goals", goals);
 
     const fetchgoals = () => {
         axios

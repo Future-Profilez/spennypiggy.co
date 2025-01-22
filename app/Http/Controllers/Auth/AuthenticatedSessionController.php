@@ -155,7 +155,6 @@ class AuthenticatedSessionController extends Controller
      */
     public function getUserProfile($username)
     {
-        $username = Auth::user()->username;
         $user = User::where('username', $username)->where(function ($q) {
             $q->whereNot('country', 'GB')->orWhereNull('country');
         })->first();
@@ -196,7 +195,9 @@ class AuthenticatedSessionController extends Controller
         }
         $arr = array_unique($arr);
         $supporters = count($arr);
-        $notification_count = Notification::where('notifiable_id', $user->id)->where('is_read', 0)->count();
+
+        $authUser = Auth::id();
+        $notification_count = Notification::where('notifiable_id', $authUser)->where('is_read', 0)->count();
 
         if (!empty(request()->query('item'))) {
             $itemdid = request()->query('item');

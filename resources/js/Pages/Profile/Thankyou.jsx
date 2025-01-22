@@ -9,9 +9,6 @@ import userphoto from "../../../assets/img/userphoto.png";
 
 export default function Thankyou(props) {
 
-
-  console.log("props",props);
-
   const {owner} = props;
   const { global_currency, auth, user } = usePage().props;
 
@@ -20,11 +17,11 @@ export default function Thankyou(props) {
             <Head title={"Thankyou"} />
             <style>{`
             .thankyou-wrap { min-height:89vh; }
-            .giftthank { 
+            .giftthank {
               border:2px dashed var(--mint);
             }
             `}</style>
-             
+
              <div className='p-4 text-center text-mint thankyou-wrap d-flex justify-content-center items-center'>
               <div>
                 <h2 className='text-[25px] ' >Your gift has been sent.</h2>
@@ -34,7 +31,7 @@ export default function Thankyou(props) {
 
                     <div className="avatar rounded-[50%] w-20 h-20 overflow-hidden m-auto d-table mt-4 " >
                           <LazyLoadImage
-                          src={owner.avatar_url || userphoto} 
+                          src={owner.avatar_url || userphoto}
                           alt="image-avatar" className="img-fluid rounded w-full h-full object-cover" useIntersectionObserver={true} effect="blur"
                           height={100}
                           width={100} />
@@ -47,11 +44,11 @@ export default function Thankyou(props) {
                   </div>
                 </div>
                 <div className='w-full mt-4' >
-                  {auth && auth.user ? 
+                  {auth && auth.user ?
                       <Link className='button lg mt-4' href={`/${owner && owner.username}`}>
                         Back to profile
-                      </Link> 
-                    : 
+                      </Link>
+                    :
                     <Link className='button lg mt-4' href={route("register")}>
                       Create a Gifter account
                     </Link>

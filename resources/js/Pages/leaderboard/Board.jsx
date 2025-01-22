@@ -10,8 +10,6 @@ import { crown } from "@/includes/Icons";
 export default function Board(props) {
     const { auth, data, is_daily } = props;
 
-    console.log(props);
-
     const [positions, setPositions] = useState([]);
     const [ranks, setRanks] = useState([]);
 
