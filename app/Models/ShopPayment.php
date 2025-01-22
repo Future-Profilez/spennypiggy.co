@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
 use Ramsey\Uuid\Uuid;
 
 class ShopPayment extends Model
@@ -39,12 +40,27 @@ class ShopPayment extends Model
         'deleted_at',
     ];
 
+    protected $appends = [
+        'sender',
+    ];
+
+
     public static function boot()
     {
         parent::boot();
         static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 
+    public function getSenderAttribute()
+    {
+        $sender = false;
+        if (isset($this->user_id)) {
+            if (Auth::check() && $this->user_id == Auth::id()) {
+                $sender = true;
+            }
+        }
+        return $sender;
+    }
 
     public function user(){
         return $this->belongsTo(User::class, 'user_id');

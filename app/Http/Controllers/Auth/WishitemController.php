@@ -21,6 +21,7 @@ use App\Mail\CheckError;
 use App\Models\BillPayment;
 use App\Models\Logs;
 use App\Models\MembershipPayment;
+use App\Models\ShopPayment;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\Subscription;
@@ -1433,6 +1434,7 @@ class WishitemController extends Controller
         // Retrieve TipGoalsPayment records where either the payment's user_id matches or related tipGoal's user_id matches
         $userTips = TipGoalsPayment::with('tipGoal.user') // Eager load the user relationship in tipGoal
             ->where('user_id', $userId)
+            ->whereIn('status', ['paid', 'cancelled'])
             ->orWhere('creator_id', $userId)
             ->orWhereHas('tipGoal', function ($q) use ($userId) {
                 $q->where('user_id', $userId);
@@ -1569,6 +1571,7 @@ class WishitemController extends Controller
         $bill_payments = BillPayment::whereHas('bill', function ($q) use ($user) {
             $q->where('user_id', $user->id);
         })->orWhere('user_id', $user->id)
+            ->whereIn('status', ['paid', 'cancelled'])
             ->with('bill', 'user') // Load bill and user relationships
             ->latest()
             ->get();
@@ -1600,7 +1603,11 @@ class WishitemController extends Controller
         $user = Auth::user();
         $membership_payments = MembershipPayment::whereHas('membership', function ($q) use ($user) {
             $q->where('user_id', $user->id);
-        })->orWhere('user_id', $user->id)->with('membership')->latest()->get();
+        })->orWhere('user_id', $user->id)
+            ->whereIn('status', ['paid', 'cancelled'])
+            ->with('membership')
+            ->latest()
+            ->get();
 
         $membership_payments->map(function ($q) {
             $q->user_data = [
@@ -1616,6 +1623,33 @@ class WishitemController extends Controller
             'membership_payments' => $membership_payments
         ]);
     }
+
+    public function shopTracker()
+    {
+        $user = Auth::user();
+        $shopPayments = ShopPayment::whereHas('shop', function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })->orWhere('user_id', $user->id)
+            ->with('shop')
+            ->whereIn('payment_status', ['paid', 'cancelled'])
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $shopPayments->map(function ($q) {
+            $q->user_data = [
+                'name' => $q->user->name,
+                'avatar' => $q->user->avatar_url,
+                'uuid' => $q->user->uuid
+            ];
+            return $q;
+        });
+
+        return response()->json([
+            'status' => true,
+            'shop_payments' => $shopPayments
+        ]);
+    }
+
     // public function billTracker()
     // {
     //     $user = Auth::user();

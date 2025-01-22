@@ -19,10 +19,11 @@ import TweetNow from './TweetNow';
 import MembershipTracker from './MembershipTracker';
 import { TimeFormat } from '@/includes/TimeFormat';
 import GlobalCheckout from '../checkout/GlobalCheckout';
+import ShopTracker from './Shoptracker';
 const defaultsec = 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/';
 
 export default function Wishtracker(props) {
-  const { auth, user, tracks, user_subs, creator_subs } = props;
+    const { auth, user, tracks, user_subs, creator_subs, shop_payment } = props;
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
   const TruncatedString = ({ inputString, maxLength }) => {
     if (inputString?.length <= maxLength) {
@@ -675,6 +676,9 @@ export default function Wishtracker(props) {
             </Tab>
             <Tab eventKey="5" title="Memberships">
               <MembershipTracker auth={auth} />
+            </Tab>
+            <Tab eventKey="6" title="Shop">
+              <ShopTracker shop_payment={shop_payment} />
             </Tab>
           </Tabs>
         </div>

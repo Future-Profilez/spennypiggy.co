@@ -142,7 +142,10 @@ Route::middleware('auth')->group(function () {
             Route::get('user-tips', [WishitemController::class, 'userTips'])->name('user-tips');
 
             Route::get('bill-tracker', [WishitemController::class, 'billTracker'])->name('bill-tracker');
+
             Route::get('membership-tracker', [WishitemController::class, 'membershipTracker'])->name('membership.tracker');
+
+            Route::get('shop-tracker', [WishitemController::class, 'shopTracker'])->name('shop.tracker');
 
             Route::get('subscriptions', [WishitemController::class, 'creatorSubscriptions'])->name('subscriptions');
 
