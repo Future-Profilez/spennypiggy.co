@@ -317,8 +317,7 @@ class BillsController extends Controller
                 // $transfering_amount = Helpers::priceFormat($bill->currency, $price, $currency) * 100;
                 $price += $vat_percentage_amount;
                 $amount_per = round(($price / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
-                $finalTax = $tax + $adminFees;
-                $amount = $price + $finalTax;
+                $amount = $price + $totalTax;
                 $unit_amount = Helpers::priceFormat($bill->currency, $amount, $currency) * 100;
 
                 $items  =   [

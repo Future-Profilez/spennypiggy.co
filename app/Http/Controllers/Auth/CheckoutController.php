@@ -80,7 +80,7 @@ class CheckoutController extends Controller
 
                 $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, $currency);
                 $ConvertedTax = Helpers::priceFormat($dd->owner->default_currency, $totalTax, $currency);
-                $TotalConvertedFinalAmount = $ConvertedTax + $ConvertedAmount;
+                $TotalConvertedFinalAmount = $ConvertedTax + $ConvertedAmount + $showAdminsFees;
                 $new_total_amount = round($TotalConvertedFinalAmount, 2, PHP_ROUND_HALF_UP);
 
                 $lineItems[] = [

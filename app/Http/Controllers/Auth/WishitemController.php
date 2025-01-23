@@ -1423,9 +1423,9 @@ class WishitemController extends Controller
     }
 
     /**
-     * User tips send or get
+     * User tips payment show data
      *
-     * @return mixed
+     * @return Response
      */
     public function userTips()
     {
@@ -1451,24 +1451,6 @@ class WishitemController extends Controller
             'tips' => $tips,
         ]);
     }
-    // public function userTips()
-    // {
-    //     $user = Auth::user();
-
-    //     $user_tips = TipGoalsPayment::whereHas('tipGoal', function ($q) use ($user) {
-    //         $q->where('user_id', $user->id);
-    //     })->with('tipGoal')->orWhere('user_id', $user->id)->get();
-
-    //     $tips = $user_tips->map(function ($q) {
-    //         $q->owner = $q->tipGoal->user;
-    //         return $q;
-    //     });
-
-    //     return response()->json([
-    //         'status' => true,
-    //         'tips' => $tips
-    //     ]);
-    // }
 
     /**
      * Enable disable the auto tweet
@@ -1562,6 +1544,11 @@ class WishitemController extends Controller
         ]);
     }
 
+    /**
+     * Bill Payment Data Show
+     *
+     * @return Response
+     */
     public function billTracker()
     {
         $user = Auth::user();
@@ -1597,6 +1584,11 @@ class WishitemController extends Controller
         ]);
     }
 
+    /**
+     * Membership Payment Data Show
+     *
+     * @return Response
+     */
     public function membershipTracker()
     {
         $user = Auth::user();
@@ -1623,6 +1615,11 @@ class WishitemController extends Controller
         ]);
     }
 
+    /**
+     * Shop Payment Data Show
+     *
+     * @return Response
+     */
     public function shopTracker()
     {
         $user = Auth::user();
@@ -1648,26 +1645,4 @@ class WishitemController extends Controller
             'shop_payments' => $shopPayments
         ]);
     }
-
-    // public function billTracker()
-    // {
-    //     $user = Auth::user();
-    //     $bill_payments = BillPayment::whereHas('bill', function ($q) use ($user) {
-    //         $q->where('user_id', $user->id);
-    //     })->with('bill')->latest()->get();
-
-    //     $bill_payments->map(function ($q) {
-    //         $q->user_data = [
-    //             'name' => $q->user->name,
-    //             'avatar' => $q->user->avatar_url,
-    //             'uuid' => $q->user->uuid
-    //         ];
-    //         return $q;
-    //     });
-
-    //     return response()->json([
-    //         'status' => true,
-    //         'bill_payments' => $bill_payments
-    //     ]);
-    // }
 }
