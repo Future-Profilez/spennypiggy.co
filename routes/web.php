@@ -94,5 +94,8 @@ Route::prefix("test")->name("test.")->group(function () {
     Route::get('/ip', [TestController::class, 'testIp']);
 });
 
+Route::get('rey-test', function () {
+    return Inertia::render('ReyTest');
+})->name('rey.test');
 
 require __DIR__ . '/auth.php';
