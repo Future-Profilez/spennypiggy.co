@@ -78,14 +78,14 @@ Route::post('stripe/identity/verify', [StripeController::class, 'createVerificat
 Route::middleware('auth')->group(function () {
 
     Route::get('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
-    // Route::post('verify-2fa', [AuthenticatedSessionController::class, 'verify2FA'])->name('verify2FA')->middleware('mustCompletedStripeIdentity');
+    // Route::post('verify-2fa', [AuthenticatedSessionController::class, 'verify2FA'])->name('verify2FA');
 
     /*send surprise amount*/
     Route::get('verification', [EmailVerificationPromptController::class, '__invoke'])->name('verification.notice');
     Route::get('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
         ->name('verification.email');
 
-    Route::middleware('mustCompletedStripeIdentity')->group(function () {
+    // Route::middleware('mustCompletedStripeIdentity')->group(function () {
 
         Route::post('/say-thankyou/{payment_id}', [WishitemController::class, 'sayThanks'])->name('say-thankyou');
 
@@ -259,7 +259,7 @@ Route::middleware('auth')->group(function () {
         Route::post('switch-2fa', [ProfileController::class, 'update2faStatus']);
         Route::post('verification-2fa', [ProfileController::class, 'verification2FA']);
     });
-});
+// });
 
 Route::post('/report-content/', [ProfileController::class, 'reportContent'])->name('report-content');
 
@@ -292,7 +292,7 @@ Route::get('my-intro/{id}', [ProfileController::class, 'getIntroById'])->name('g
 
 Route::get('discover', function () {
     return Inertia::render('discover/Discover');
-})->name("discover")->middleware('mustCompletedStripeIdentity');
+})->name("discover");
 Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class, 'discover_all_wishes'])->name('discover_wish');
 Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');
 Route::get('discover/creators/categories', [WishitemController::class, 'all_creators_categories'])->name('allcreators_categories');
@@ -313,7 +313,7 @@ Route::get('/add-to-cart/{uuid}/{device_id}/{sub}/{amount?}', [WishitemControlle
 
 Route::get('/clear-cart/{device_id}/{ownerid}', [WishitemController::class, 'clearCart'])->name('clear-cart');
 
-Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart')->middleware('mustCompletedStripeIdentity');
+Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 
 Route::get('anonymous-cart/{deviceId}', [WishitemController::class, 'anonymousCartItems'])->name('anonymous-cart');
 
@@ -359,7 +359,7 @@ Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-
 Route::post('mandatory-status/', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status')->withoutMiddleware(VerifyCsrfToken::class);
 
 /* wishtender */
-Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('leaderboard')->middleware('mustCompletedStripeIdentity');
+Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('leaderboard');
 Route::get('first-three-leaderboard/{type?}', [LeaderBoardController::class, 'firstThreeWisher'])->name('first-three-wishes');
 
 Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
@@ -409,7 +409,7 @@ Route::get('posts/{username}', [AuthenticatedSessionController::class, 'user_pos
 
 Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('user.posts.comments');
 
-Route::get('/{username}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show')->middleware('mustCompletedStripeIdentity');
+Route::get('/{username}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
 Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');
 Route::get('/items/{username}/{category_id?}', [AuthenticatedSessionController::class, 'userItems'])->name('user.items');
 Route::get('/user_category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.category');

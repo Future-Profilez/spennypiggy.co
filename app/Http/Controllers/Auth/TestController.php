@@ -69,7 +69,6 @@ class TestController extends Controller
         return Inertia::location($verificationLink);
     }
 
-
     public function reviewWebhook()
     {
         $payload = @file_get_contents('php://input');
@@ -105,7 +104,6 @@ class TestController extends Controller
             'message' => 'Webhook received successfully.',
         ]);
     }
-
 
     public function testAiImage()
     {
@@ -170,7 +168,6 @@ class TestController extends Controller
         //     ]);
         // }
     }
-
 
     public function manualPayout()
     {
