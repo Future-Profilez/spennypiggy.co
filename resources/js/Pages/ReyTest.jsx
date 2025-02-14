@@ -191,27 +191,35 @@ export default function RyeCartTest() {
             },
             pagination: { limit: 10, offset: 0 },
         });
-
         console.log("Fetched Products:", products);
     }
 
 
-      const createStore = async (storeDetails) => {
-        const shopperIp = await getShopperIp();
-        const ryeClient = new RyeClient({
-            authHeader: "Basic UllFL3N0YWdpbmctYTA2ZWYwZmYzYTZiNGVjNWI2Y2I6",
-            shopperIp: shopperIp,
-            environment: ENVIRONMENT.STAGING,
-        });
+    const addStore = async () => {
+        const query = `
+            mutation {
+                requestStoreByURL(input: { url: "https://www.amazon.com" }) {
+                    storeId
+                    storeUrl
+                    storeStatus
+                }
+            }
+        `;
+
         try {
-            const store = await ryeClient.requestStoreByUrl({
-                input: {
-                    name: "naveen",
-                },
-            });
-            console.log('store',store);
+            const response = await axios.post(
+                "https://staging.graphql.api.rye.com/v1/query",
+                { query },
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: "Basic UllFL3N0YWdpbmctYTA2ZWYwZmYzYTZiNGVjNWI2Y2I6",
+                    },
+                }
+            );
+            console.log("Store Registered:", response.data);
         } catch (error) {
-            console.error("Error creating store:", error);
+            console.error("Error Registering Store:", error);
         }
     };
     
@@ -225,7 +233,7 @@ export default function RyeCartTest() {
         <div>
         <button className="btn-pink" onClick={addProduct}>Add Product</button>
         <button className="btn-pink" onClick={getProducts}>getProducts</button>
-        <button className="btn-pink" onClick={()=>createStore({ name: "naveen" })}>createStore</button>
+        <button className="btn-pink" onClick={()=>addStore()}>createStore</button>
             <h1>Rye Cart Test</h1>
             {error ? (
                 <p style={{ color: "red" }}>{error}</p>
