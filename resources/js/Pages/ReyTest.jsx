@@ -58,7 +58,7 @@ const ProductFetcher = () => {
             console.log("Product details fetched from Rye API:", result);
 
             // Send the fetched product data to your API
-            const res = await axios.post(route("get.all.products"), {
+            const res = await axios.post(route("create.creator.product"), {
                 url: productData, // Pass productData as the request body
             });
 

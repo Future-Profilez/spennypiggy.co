@@ -256,7 +256,6 @@ class TestController extends Controller
 
     public function createRyeProduct(Request $request)
     {
-
         $request->validate([
             'url' => 'required',
         ]);
