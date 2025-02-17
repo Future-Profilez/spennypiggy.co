@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Jobs\SendIdentityVerificationEmail;
 use App\Models\RyeProduct;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Stripe\Balance;
 use Stripe\Stripe;
@@ -246,14 +247,12 @@ class TestController extends Controller
         }
     }
 
-    // public function createRyeProduct(Request $request)
-    // {
-    //     $request->validate([
-    //         'url'
-    //     ]);
-
-    //     $productDetail = Http::asForm();
-    // }
+    public function fetchRyeProducts()
+    {
+        $creatorID = Auth::id();
+        $allProducts = RyeProduct::whereCreatorId($creatorID)->get();
+        return response()->json(['status' => 'success', 'message' => 'Product list.', 'data' => $allProducts ?? []]);
+    }
 
     public function createRyeProduct(Request $request)
     {
@@ -275,16 +274,5 @@ class TestController extends Controller
         if ($ryeProducts->save()) {
             return response()->json(['status' => 'success', 'message' => 'Data Added Successfully.']);
         }
-    }
-
-
-    private function extractProductIdFromUrl($url)
-    {
-        // Use regex to match Amazon ASIN product ID (found after '/dp/')
-        if (preg_match('/\/dp\/([A-Z0-9]{10})/', $url, $matches)) {
-            return $matches[1]; // Return the ASIN (product ID)
-        }
-
-        return null; // Return null if no product ID is found
     }
 }

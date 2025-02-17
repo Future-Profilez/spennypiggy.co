@@ -40,8 +40,8 @@ Route::get('/membership-dashboard', function () {
 // Route::get('/stripe-identity', function () {
 //     return Inertia::render('IdentityVerification');
 // })->name('stripe.identity');
-Route::get('create-creator-product', [TestController::class, 'createRyeProduct'])->name('create.creator.product');
-Route::post('get-all-products', [TestController::class, 'fetchRyeProducts'])->name('get.all.products');
+Route::post('create-creator-product', [TestController::class, 'createRyeProduct'])->name('create.creator.product');
+Route::get('get-all-products', [TestController::class, 'fetchRyeProducts'])->name('get.all.products');
 
 
 Route::get('rey-test', function () {
