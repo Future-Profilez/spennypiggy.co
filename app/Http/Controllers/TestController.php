@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
 use App\Jobs\SendIdentityVerificationEmail;
+use App\Models\RyeProduct;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Log;
 use Stripe\Balance;
 use Stripe\Stripe;
@@ -242,5 +244,47 @@ class TestController extends Controller
 
             return response()->json(['status' => 'error', 'message' => 'An error occurred while sending emails.']);
         }
+    }
+
+    // public function createRyeProduct(Request $request)
+    // {
+    //     $request->validate([
+    //         'url'
+    //     ]);
+
+    //     $productDetail = Http::asForm();
+    // }
+
+    public function createRyeProduct(Request $request)
+    {
+
+        $request->validate([
+            'url' => 'required',
+        ]);
+        // Extract the URL from the request (assuming it's passed as a query parameter)
+        $url = $request->input('url');  // You can change this as per your need
+        $checkProductId = RyeProduct::where('creator_id', 1)->where('product_id', $url['id'])->exists();
+        // dd($url);
+        if ($checkProductId) {
+            return response()->json(['status' => 'error', 'message' => 'Product Already Added.']);
+        }
+        $ryeProducts = new RyeProduct();
+        $ryeProducts->creator_id = 1;
+        $ryeProducts->product_id = $url['id'];
+        $ryeProducts->details = json_encode($url, true);
+        if ($ryeProducts->save()) {
+            return response()->json(['status' => 'success', 'message' => 'Data Added Successfully.']);
+        }
+    }
+
+
+    private function extractProductIdFromUrl($url)
+    {
+        // Use regex to match Amazon ASIN product ID (found after '/dp/')
+        if (preg_match('/\/dp\/([A-Z0-9]{10})/', $url, $matches)) {
+            return $matches[1]; // Return the ASIN (product ID)
+        }
+
+        return null; // Return null if no product ID is found
     }
 }
