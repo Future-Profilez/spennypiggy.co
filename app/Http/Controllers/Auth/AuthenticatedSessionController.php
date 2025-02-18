@@ -11,6 +11,7 @@ use App\Models\BillPayment;
 use App\Models\FanContract;
 use App\Models\MembershipPayment;
 use App\Models\Notification;
+use App\Models\RyeProduct;
 use App\Models\SocialLinks;
 use App\Models\StripePaymentDetail;
 use App\Models\TipGoalsPayment;
@@ -512,6 +513,27 @@ class AuthenticatedSessionController extends Controller
             return response()->json([
                 'success'   => true,
                 'bills' => $bills
+            ]);
+        }
+        return response()->json([
+            'success'   => false,
+            'items'     => [],
+            'message'   =>  'User not found'
+        ]);
+    }
+
+    public function userGiftItems($username)
+    {
+        $user = User::where(function ($q) {
+            $q->whereNot('country', 'GB')->orWhereNull('country');
+        })->firstWhere('username', $username);
+
+        if ($user) {
+            $allProducts = RyeProduct::whereCreatorId($user->id)->get();
+
+            return response()->json([
+                'success'   => true,
+                'items' => $allProducts
             ]);
         }
         return response()->json([

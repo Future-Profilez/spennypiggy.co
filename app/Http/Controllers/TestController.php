@@ -247,12 +247,12 @@ class TestController extends Controller
         }
     }
 
-    public function fetchRyeProducts()
-    {
-        $creatorID = Auth::id();
-        $allProducts = RyeProduct::whereCreatorId($creatorID)->get();
-        return response()->json(['status' => 'success', 'message' => 'Product list.', 'data' => $allProducts ?? []]);
-    }
+    // public function fetchRyeProducts()
+    // {
+    //     $creatorID = Auth::id();
+    //     $allProducts = RyeProduct::whereCreatorId($creatorID)->get();
+    //     return response()->json(['status' => 'success', 'message' => 'Product list.', 'data' => $allProducts ?? []]);
+    // }
 
     public function createRyeProduct(Request $request)
     {

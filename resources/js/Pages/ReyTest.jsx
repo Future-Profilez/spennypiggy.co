@@ -8,6 +8,9 @@ const ProductFetcher = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [products, setProducts] = useState([]);
+    const [cartId, setCartId] = useState(null);
+    const [cartItems, setCartItems] = useState([]);
+    const [message, setMessage] = useState("");
 
     // Function to get the shopper's IP
     const getShopperIp = async () => {
@@ -29,6 +32,8 @@ const ProductFetcher = () => {
         setProducts([]); // Reset products before fetching new ones
 
         try {
+            // };
+
             // Get the shopper's IP
             const shopperIp = await getShopperIp();
 
@@ -46,6 +51,102 @@ const ProductFetcher = () => {
                 },
             });
 
+            console.log("result details", result);
+
+            // User Identity Details
+            // const buyerIdentity = {
+            //     firstName: "John",
+            //     lastName: "Doe",
+            //     email: "johndoe@example.com",
+            //     phone: "+15551234567", // Dummy US phone number
+            //     address1: "123 Main Street",
+            //     address2: "Apt 4B",
+            //     city: "New York",
+            //     provinceCode: "NY",
+            //     postalCode: "10001",
+            // };
+
+            // Function to create a cart with buyer identity
+            // const createCartWithIdentity = async () => {
+            setLoading(true);
+            setError(null);
+            setMessage("");
+
+            // try {
+            const resultss = await ryeClient.createCart({
+                input: {
+                    items: {
+                        amazonCartItemsInput: [
+                            {
+                                quantity: 1,
+                                productId: result.productID, // Example Amazon Product ID
+                            },
+                        ],
+                    },
+                    buyerIdentity: {
+                        firstName: 'John',
+                        lastName: 'Doe',
+                        email: 'johndoe@example.com',
+                        phone: '+1 212-555-1234', // US phone number format
+                        address1: '1600 Amphitheatre Parkway',
+                        address2: 'Suite 100', // Optional
+                        city: 'Mountain View',
+                        provinceCode: 'CA', // US state code (California)
+                        countryCode: 'US', // US country code
+                        postalCode: '94043', // US ZIP code format
+                      },
+                },
+            });
+
+            console.log("Cart Created:", resultss);
+            setCartId(resultss.id);
+            setMessage("Cart created successfully!");
+            // } catch (err) {
+            //     console.error("Error creating cart:", err);
+            //     setError("Failed to create cart.");
+            // } finally {
+            //     setLoading(false);
+            // }
+            // };
+
+            // Function to add items to an existing cart
+            // const addToCart = async () => {
+            // if (!cartId) {
+            //     setError("Create a cart first.");
+            //     return;
+            // }
+
+            // setLoading(true);
+            // setError(null);
+            // setMessage("");
+
+            // try {
+            console.log("checking before assigning",result.productID);
+            console.log("checking resultss.id",resultss.cart.id);
+            const results = await ryeClient.addCartItems({
+                input: {
+                    id: resultss.cart.id,
+                    items: {
+                        amazonCartItemsInput: [
+                            {
+                                quantity: 1,
+                                productId: result.productID,
+                            },
+                        ],
+                    },
+                },
+            });
+
+            console.log("Item Added to Cart:", results);
+            setCartItems(results.cartItems || []);
+            setMessage("Item added to cart successfully!");
+            // } catch (err) {
+            //     console.error("Error adding item to cart:", err);
+            //     setError("Failed to add item to cart.");
+            // } finally {
+            //     setLoading(false);
+            // }
+
             // Fetching the product details using the productID
             const productData = await ryeClient.getProductById({
                 input: {
@@ -53,9 +154,6 @@ const ProductFetcher = () => {
                     marketplace: "AMAZON",
                 },
             });
-
-            console.log("productData:", productData);
-            console.log("Product details fetched from Rye API:", result);
 
             // Send the fetched product data to your API
             const res = await axios.post(route("create.creator.product"), {
@@ -81,7 +179,7 @@ const ProductFetcher = () => {
                     type="text"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
-                    placeholder="Example: - https://www.amazon.com/ROG-B550-F-II-Motherboard-Addressable/dp/B09GP7P1XS"
+                    placeholder="Product URL Example: - https://www.amazon.com/ROG-B550-F-II-Motherboard-Addressable/dp/B09GP7P1XS"
                     className="border p-2 rounded w-full mb-2"
                     required
                 />
@@ -106,6 +204,9 @@ const ProductFetcher = () => {
                     )}{" "}
                 </div>
             )}
+
+            {cartId && <p>this is a cart ID:- {cartId}</p>}
+            {cartId && <p>this is a cart Item Detail:- {cartItems}</p>}
         </div>
     );
 };
