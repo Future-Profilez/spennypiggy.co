@@ -405,6 +405,8 @@ Route::get('memberships/{username}', [AuthenticatedSessionController::class, 'us
 
 Route::get('bills/{username}', [AuthenticatedSessionController::class, 'user_bills'])->name('user.bills');
 
+Route::get('gift-items/{username}', [AuthenticatedSessionController::class, 'userGiftItems'])->name('gift.items');
+
 Route::get('posts/{username}', [AuthenticatedSessionController::class, 'user_posts'])->name('user.posts');
 
 Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('user.posts.comments');
