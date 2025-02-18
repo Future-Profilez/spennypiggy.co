@@ -263,13 +263,13 @@ class TestController extends Controller
         ]);
         // Extract the URL from the request (assuming it's passed as a query parameter)
         $url = $request->input('url');  // You can change this as per your need
-        $checkProductId = RyeProduct::where('creator_id', 1)->where('product_id', $url['id'])->exists();
+        $checkProductId = RyeProduct::where('creator_id', Auth::id())->where('product_id', $url['id'])->exists();
         // dd($url);
         if ($checkProductId) {
             return response()->json(['status' => 'error', 'message' => 'Product Already Added.']);
         }
         $ryeProducts = new RyeProduct();
-        $ryeProducts->creator_id = 1;
+        $ryeProducts->creator_id = Auth::id();
         $ryeProducts->product_id = $url['id'];
         $ryeProducts->details = json_encode($url, true);
         if ($ryeProducts->save()) {
