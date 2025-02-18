@@ -20,7 +20,9 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
 use App\Jobs\SendIdentityVerificationEmail;
+use App\Models\RyeCart;
 use App\Models\RyeProduct;
+use Exception;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -274,4 +276,21 @@ class TestController extends Controller
             return response()->json(['status' => 'success', 'message' => 'Data Added Successfully.']);
         }
     }
+
+    // public function createCart(Request $request)
+    // {
+    //     try {
+    //         $user_id = Auth::id();
+    //         RyeCart::create([
+    //             'user_id' => $user_id,
+    //             'creator_id' => $request->creator_id,
+    //             'cart_id' => $request->cart_id,
+    //             'cart_details' => json_encode($request->data, true)
+    //         ]);
+
+    //         return response()->json(['status' => 'success', 'message' => 'Added To Cart']);
+    //     } catch (Exception $e) {
+    //         return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+    //     }
+    // }
 }

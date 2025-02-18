@@ -98,7 +98,13 @@ const ProductFetcher = () => {
                 },
             });
 
-            console.log("Cart Created:", resultss);
+            // Send the fetched product data to your API
+            const addCart = await axios.post(route("create.cart"), {
+                data: resultss, // Pass productData as the request body
+                cart_id: resultss.cart.id, // Pass productData as the request body
+            });
+
+            console.log("addCart:", addCart);
             setCartId(resultss.id);
             setMessage("Cart created successfully!");
             // } catch (err) {

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class RyeProduct extends Model
+class RyeCart extends Model
 {
     use HasFactory, HasUuids;
 
@@ -14,4 +14,6 @@ class RyeProduct extends Model
     {
         return ['uuid'];
     }
+
+    protected $fillable = ['user_id', 'creator_id', 'cart_id', 'cart_details'];
 }

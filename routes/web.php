@@ -41,6 +41,8 @@ Route::get('/membership-dashboard', function () {
 //     return Inertia::render('IdentityVerification');
 // })->name('stripe.identity');
 Route::post('create-creator-product', [TestController::class, 'createRyeProduct'])->name('create.creator.product');
+
+// Route::post('create-cart', [TestController::class, 'createCart'])->name('create.cart');
 // Route::get('get-all-products', [TestController::class, 'fetchRyeProducts'])->name('get.all.products');
 
 

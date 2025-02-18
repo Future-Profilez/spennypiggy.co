@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('rye_carts', function (Blueprint $table) {
             $table->id();
+            $table->uuid();
             $table->bigInteger('user_id');
             $table->bigInteger('creator_id');
             $table->string('cart_id');

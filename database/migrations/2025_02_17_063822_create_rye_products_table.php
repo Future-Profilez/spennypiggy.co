@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('rye_products', function (Blueprint $table) {
             $table->id();
+            $table->uuid();
             $table->bigInteger('creator_id');
             $table->string('product_id');
             $table->longText('details')->comment("all the product details in json");

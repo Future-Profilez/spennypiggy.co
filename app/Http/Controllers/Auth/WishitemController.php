@@ -21,6 +21,7 @@ use App\Mail\CheckError;
 use App\Models\BillPayment;
 use App\Models\Logs;
 use App\Models\MembershipPayment;
+use App\Models\RyeCart;
 use App\Models\ShopPayment;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
@@ -741,6 +742,24 @@ class WishitemController extends Controller
                 'added' => true,
                 "msg" => "Item added to cart.",
             ]);
+        }
+    }
+
+    // This function is used to add product on rye cart
+    public function createCart(Request $request)
+    {
+        try {
+            $user_id = Auth::id();
+            RyeCart::create([
+                'user_id' => $user_id,
+                'creator_id' => $request->creator_id,
+                'cart_id' => $request->cart_id,
+                'cart_details' => json_encode($request->data, true)
+            ]);
+
+            return response()->json(['status' => 'success', 'message' => 'Added To Cart']);
+        } catch (Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
 
