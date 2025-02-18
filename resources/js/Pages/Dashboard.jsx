@@ -40,11 +40,19 @@ import "react-tabs-scrollable/dist/rts.css";
 import ProfileSteps from "./Profile/ProfileSteps";
 import ProfileProductLists from "./shop/profile/ProfileProductLists";
 import AddItem from "./shop/AddItem";
+import AddGift from "./feed/AddGift";
+import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css';
+import { Autoplay, Pagination, Navigation } from 'swiper/modules';
+import PriceFormat from "@/includes/PriceFormat";
+import GiftListing from "@/rye/GiftListing";
+
 
 export default function Dashboard(props) {
 
     const parsePageId = (path) => path.substring(path.lastIndexOf('/') + 1)
     const pageId = parsePageId(window.location.pathname);
+      const { format, formatMultiPrice } = PriceFormat();
 
 
 
@@ -66,11 +74,23 @@ export default function Dashboard(props) {
     const [socialLinks, setSocialLinks] = useState([]);
     const [sLinks, setLinks] = useState([]);
     const [categories, setcategories] = useState([]);
+    const [gifts, setGifts] = useState([]);
 
     const fetch_categories = async (signal) => {
         axios.get(`/user_category/${username}`, { signal })
         .then((resp) => {
             setcategories(resp.data.categories);
+        }).catch((_err) => {
+            console.error("error", _err);
+        });
+    };
+
+    const fetch_gifts = async (signal) => {
+        axios.get(`/get-all-products`, { signal })
+        .then((resp) => {
+            let details=JSON.parse(resp?.data?.data[0]?.details);
+            console.log("resp",details);
+            setGifts(resp?.data?.data);
         }).catch((_err) => {
             console.error("error", _err);
         });
@@ -107,6 +127,10 @@ export default function Dashboard(props) {
         const { signal } = controller;
         if(tab == '1'){
             fetch_categories(signal);
+            fetchingcats(false, signal);
+        }
+        if(tab == '6'){
+            fetch_gifts(signal);
             fetchingcats(false, signal);
         }
         return () => controller.abort();
@@ -336,6 +360,7 @@ export default function Dashboard(props) {
                                         </>
                                     : '' }
                                     <AddPost classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} />
+                                    <AddGift classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} />
                                     <button onClick={()=>setShowAdd(false)} className="m-auto table p-2 mt-3"  >Cancel</button>
                                 </div>
                             </Suspense>
@@ -403,6 +428,7 @@ export default function Dashboard(props) {
                                                         <Tab key="3" >Membership</Tab>
                                                         <Tab key="4" >Bills</Tab>
                                                         <Tab key="5" >Shop</Tab>
+                                                        <Tab key="6" >Add Gift Item</Tab>
                                                     </Tabs>
                                                     {IsloggedIn ? <Toggle /> : ''}
                                                 </div>
@@ -593,6 +619,21 @@ export default function Dashboard(props) {
                                                             )}
                                                         </Suspense>
                                                     : "" }
+
+                                                    {tab == '6' ?
+                                                     <Suspense fallback={<LoadingScreen />} >
+                                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+                                                     {gifts && gifts?.map((gift) => {
+                                                        const details = JSON.parse(gift.details); // Parse the details JSON
+
+                                                        return (
+                                                            <GiftListing gift={gift} details={details}/>
+                                                        );
+                                                        })}
+
+                                                     </div>
+                                                  </Suspense>
+                                                    : ''}
                                                 </div>
                                         </div>
                                     </div>
