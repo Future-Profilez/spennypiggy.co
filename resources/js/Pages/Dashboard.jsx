@@ -86,11 +86,11 @@ export default function Dashboard(props) {
     };
 
     const fetch_gifts = async (signal) => {
-        axios.get(`/get-all-products`, { signal })
+        axios.get(`/gift-items/${username}`, { signal })
         .then((resp) => {
-            let details=JSON.parse(resp?.data?.data[0]?.details);
-            console.log("resp",details);
-            setGifts(resp?.data?.data);
+            let details=JSON.parse(resp?.data?.items[0]?.details);
+            console.log("resp",resp);
+            setGifts(resp?.data?.items);
         }).catch((_err) => {
             console.error("error", _err);
         });
