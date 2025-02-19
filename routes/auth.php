@@ -313,6 +313,8 @@ Route::get('/add-to-cart/{uuid}/{device_id}/{sub}/{amount?}', [WishitemControlle
 
 Route::post('create-cart', [WishitemController::class, 'createCart'])->name('create.cart');
 
+Route::post('get-cart-details', [WishitemController::class, 'getCartDetails'])->name('get.cart.details');
+
 Route::get('/clear-cart/{device_id}/{ownerid}', [WishitemController::class, 'clearCart'])->name('clear-cart');
 
 Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');

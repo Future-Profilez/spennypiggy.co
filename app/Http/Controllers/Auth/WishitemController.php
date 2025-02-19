@@ -763,6 +763,16 @@ class WishitemController extends Controller
         }
     }
 
+    public function getCartDetails()
+    {
+        $user_id = Auth::id();
+        if (!$user_id) {
+            return response()->json(['status' => 'error', 'message' => 'Cart data not found', 'data' => []]);
+        }
+        $cartDetails = RyeCart::where('user_id', $user_id)->get();
+        return response()->json(['status' => 'success', 'message' => 'Cart Data Get Successfully', 'data' => $cartDetails ?? []]);
+    }
+
     public function clearCart($deviceid, $ownerid)
     {
         $query = UserCart::where('country', 'global')->where('owner_id', $ownerid)->where('status', 1);
