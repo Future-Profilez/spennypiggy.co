@@ -13,7 +13,7 @@ import LoaderButton from "@/Components/LoaderButton";
 import { RyeClient, ENVIRONMENT, Marketplace } from "@rye-api/rye-sdk";
 import axios from "axios";
 
-export default function GiftAddCart({ data, action, user }) {
+export default function GiftAddCart({ data, action, user, IsloggedIn }) {
     // console.log("user", user?.id);
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     // console.log("data",data);
@@ -39,7 +39,7 @@ export default function GiftAddCart({ data, action, user }) {
         }
     };
 
-    const addtocart = async () => {
+    const addtocart = async (navigate=false) => {
         console.log("Hello");
         setLoading(true);
         try {
@@ -106,6 +106,10 @@ export default function GiftAddCart({ data, action, user }) {
                 creator_id: user?.id,
             });
             console.log("addCart:", addCart);
+            successAlert(addCart?.data?.message);
+            setClose(false);
+            console.log("navigate",navigate);
+            {navigate && router.visit("cart")}
             setLoading(false);
         } catch (error) {
             console.log(error);
@@ -142,15 +146,15 @@ export default function GiftAddCart({ data, action, user }) {
                 <div className=" pb-2">
                     <LoaderButton
                         disabled={loading}
-                        onClick={() => addtocart()}
+                        onClick={() => addtocart(false)}
                         className={`flex btn-pink lg w-100 mb-3 font-CeraGR mx-auto`}
                         spinnerClassName="fill-red-600"
                     >
                         {loading ? "Processing" : "Add to Cart"}
                     </LoaderButton>
                     <LoaderButton
-                        disabled={checkoutloading}
-                        //   onClick={() => addtocart(1)}
+                        // disabled={checkoutloading(true)}
+                          onClick={() => addtocart(true)}
                         className={`flex btn-pink lg w-100 mb-3 font-CeraGR mx-auto`}
                         spinnerClassName="fill-red-600"
                     >

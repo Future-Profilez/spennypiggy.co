@@ -6,8 +6,9 @@ import 'swiper/css';
 import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 import { useState } from "react";
 import GiftAddCart from "./GiftAddCart";
+import GiftEdit from "./GiftEdit";
 
-export default function GiftListing({ gift, details, user }) {
+export default function GiftListing({ details, user, IsloggedIn }) {
      const [open, setOpen] = useState();
      const[data,setData]=useState();
      const openAddtocart = () => {
@@ -19,10 +20,15 @@ export default function GiftListing({ gift, details, user }) {
 
     return (
         <div
-            key={gift.id}
             className="wishlistcntbox mb-3 mb-sm-4 whbg relative shadow-voilet"
         >
-            <GiftAddCart data={details} action={open} user={user} />
+            {IsloggedIn ?
+            <>
+            <GiftEdit data={details} action={open} user={user} IsloggedIn={IsloggedIn} />
+            </>
+            :
+            <GiftAddCart data={details} action={open} user={user} IsloggedIn={IsloggedIn} />
+            }
             <Swiper
                 spaceBetween={0}
                 slidesPerView={1}

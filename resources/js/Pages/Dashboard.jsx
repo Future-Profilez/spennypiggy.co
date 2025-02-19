@@ -71,6 +71,7 @@ export default function Dashboard(props) {
     const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
     const [loading, setLoading] = useState(false);
+    const [giftsloading, setGiftsLoading] = useState(false);
     const [socialLinks, setSocialLinks] = useState([]);
     const [sLinks, setLinks] = useState([]);
     const [categories, setcategories] = useState([]);
@@ -86,13 +87,16 @@ export default function Dashboard(props) {
     };
 
     const fetch_gifts = async (signal) => {
+        setGiftsLoading(true);
         axios.get(`/gift-items/${username}`, { signal })
         .then((resp) => {
             let details=JSON.parse(resp?.data?.items[0]?.details);
-            console.log("resp",resp);
+            // console.log("resp",resp);
             setGifts(resp?.data?.items);
+            setGiftsLoading(false);
         }).catch((_err) => {
             console.error("error", _err);
+            setGiftsLoading(false);
         });
     };
 
@@ -428,7 +432,7 @@ export default function Dashboard(props) {
                                                         <Tab key="3" >Membership</Tab>
                                                         <Tab key="4" >Bills</Tab>
                                                         <Tab key="5" >Shop</Tab>
-                                                        <Tab key="6" >Add Gift Item</Tab>
+                                                        <Tab key="6" >Gift Item</Tab>
                                                     </Tabs>
                                                     {IsloggedIn ? <Toggle /> : ''}
                                                 </div>
@@ -621,18 +625,23 @@ export default function Dashboard(props) {
                                                     : "" }
 
                                                     {tab == '6' ?
-                                                     <Suspense fallback={<LoadingScreen />} >
-                                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-                                                     {gifts && gifts?.map((gift) => {
-                                                        const details = JSON.parse(gift.details); // Parse the details JSON
-
-                                                        return (
-                                                            <GiftListing gift={gift} details={details} user={user}/>
-                                                        );
-                                                        })}
-
-                                                     </div>
-                                                  </Suspense>
+                                                     <Suspense fallback={<LoadingScreen />}>
+                                                     {giftsloading ? (
+                                                       <LoadingScreen />
+                                                     ) : gifts && gifts.length > 0 ? (
+                                                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+                                                         {gifts.map((gift) => {
+                                                           const details = JSON.parse(gift.details); // Parse the details JSON
+                                                           return <GiftListing key={gift.id} details={details} user={user} IsloggedIn={IsloggedIn} />;
+                                                         })}
+                                                       </div>
+                                                     ) : (
+                                                       <div className="col-md-12">
+                                                         <Nocontent text="Nothing to see." />
+                                                       </div>
+                                                     )}
+                                                   </Suspense>
+                                                   
                                                     : ''}
                                                 </div>
                                         </div>
