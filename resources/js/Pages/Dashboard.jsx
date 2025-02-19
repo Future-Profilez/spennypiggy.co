@@ -627,7 +627,7 @@ export default function Dashboard(props) {
                                                         const details = JSON.parse(gift.details); // Parse the details JSON
 
                                                         return (
-                                                            <GiftListing gift={gift} details={details}/>
+                                                            <GiftListing gift={gift} details={details} user={user}/>
                                                         );
                                                         })}
 

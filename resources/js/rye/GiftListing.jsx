@@ -7,7 +7,7 @@ import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 import { useState } from "react";
 import GiftAddCart from "./GiftAddCart";
 
-export default function GiftListing({ gift, details }) {
+export default function GiftListing({ gift, details, user }) {
      const [open, setOpen] = useState();
      const[data,setData]=useState();
      const openAddtocart = () => {
@@ -22,7 +22,7 @@ export default function GiftListing({ gift, details }) {
             key={gift.id}
             className="wishlistcntbox mb-3 mb-sm-4 whbg relative shadow-voilet"
         >
-            <GiftAddCart data={details} action={open} />
+            <GiftAddCart data={details} action={open} user={user} />
             <Swiper
                 spaceBetween={0}
                 slidesPerView={1}
@@ -42,7 +42,7 @@ export default function GiftListing({ gift, details }) {
                                 effect="blur"
                                 height={280}
                                 src={item?.url || ""}
-                                className="w-full object-fit"
+                                className="w-full object-fit cursor-pointer"
                                 onClick={openAddtocart}
                             />
                         </SwiperSlide>
