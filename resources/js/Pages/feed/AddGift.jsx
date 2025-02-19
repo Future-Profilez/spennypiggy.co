@@ -29,20 +29,20 @@ export default function AddGift({ item, classes, updateState }) {
         }
     };
 
-    const submitPost = async (e) => { 
+    const submitPost = async (e) => {
         e.preventDefault();
         setLoading(true);
-    
+
         try {
             // Get the shopper's IP
             const shopperIp = await getShopperIp();
-            
+
             const ryeClient = new RyeClient({
                 authHeader: `Basic UllFL3N0YWdpbmctYTlmYjk0YjhmYTM1NGE4MTg5NWI6`, // Use env variable
                 shopperIp: shopperIp,
                 environment: ENVIRONMENT.STAGING,
             });
-    
+
             // Requesting product details from Rye API using Amazon URL
             const result = await ryeClient.requestProductByUrl({
                 input: {
@@ -50,7 +50,7 @@ export default function AddGift({ item, classes, updateState }) {
                     marketplace: Marketplace.Amazon,
                 },
             });
-    
+
             // Fetching the product details using the productID
             const productData = await ryeClient.getProductById({
                 input: {
@@ -58,10 +58,10 @@ export default function AddGift({ item, classes, updateState }) {
                     marketplace: "AMAZON",
                 },
             });
-    
+
             console.log("productData:", productData);
             console.log("Product details fetched from Rye API:", result);
-    
+
             // Send the fetched product data to your API
             const response=await axios.post(route("create.creator.product"), {
                 url: productData,
@@ -78,13 +78,13 @@ export default function AddGift({ item, classes, updateState }) {
             else{
                 errorAlert(response.data.message);
             }
-    
+
             setLoading(false);
         } catch (err) {
             setLoading(false);
             errorsHandling(err);
         }
-    };    
+    };
 
     const AddItem = () => (
         <div className="flex items-center">
@@ -99,18 +99,18 @@ export default function AddGift({ item, classes, updateState }) {
     );
 
     return (
-        <Popup modalclass='' space="4" size='md' action={close} 
-            classes={`w-full addop bg-white rounded-xl py-2 px-3 ${classes}`} 
+        <Popup modalclass='' space="4" size='md' action={close}
+            classes={`w-full addop bg-white rounded-xl py-2 px-3 ${classes}`}
             text={<AddItem />}>
                 <form onSubmit={submitPost}>
             <div className="flex align-items-center">
-                <div className={`gift-icon me-2 voilet`} dangerouslySetInnerHTML={{ __html: piggy }} />  
+                <div className={`gift-icon me-2 voilet`} dangerouslySetInnerHTML={{ __html: piggy }} />
                 <h2 className="text-xl font-bold text-dark-500">Add Gift Item</h2>
             </div>
             <p className="text-grey-500 mb-3 mt-4">Enter a Product URL here</p>
-            <input onChange={handleInput} 
-                value={title} 
-                name="title" 
+            <input onChange={handleInput}
+                value={title}
+                name="title"
                 required
                 placeholder="Example - https://www.amazon.com/Gaming-Headphone-Controller-Holder-Organizer-Black/dp/B0BPSP3BQH"
                 className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control" />

@@ -14,7 +14,7 @@ import { RyeClient, ENVIRONMENT, Marketplace } from "@rye-api/rye-sdk";
 import axios from "axios";
 
 export default function GiftAddCart({ data, action, user }) {
-    console.log("user",user?.id);
+    // console.log("user", user?.id);
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     // console.log("data",data);
 
@@ -49,35 +49,61 @@ export default function GiftAddCart({ data, action, user }) {
                 shopperIp: shopperIp,
                 environment: ENVIRONMENT.STAGING,
             });
-            const resultss = await ryeClient.createCart({
-                input: {
-                    items: {
-                        amazonCartItemsInput: [
-                            {
-                                quantity: 1,
-                                productId: data.id,
-                            },
-                        ],
+
+            const checkCartExist = await axios.get(
+                route("check.cart.exist", user?.id)
+            );
+
+            let resultss;
+
+            console.log("data.id", data.id);
+
+            if (checkCartExist.data.status == true) {
+                resultss = await ryeClient.addCartItems({
+                    input: {
+                        id: checkCartExist.data.cart_id,
+                        items: {
+                            amazonCartItemsInput: [
+                                {
+                                    quantity: 1,
+                                    productId: data.id,
+                                },
+                            ],
+                        },
                     },
-                    // buyerIdentity: {
-                    //     firstName: 'John',
-                    //     lastName: 'Doe',
-                    //     email: 'johndoe@example.com',
-                    //     phone: '+1 212-555-1234', // US phone number format
-                    //     address1: '1600 Amphitheatre Parkway',
-                    //     address2: 'Suite 100', // Optional
-                    //     city: 'Mountain View',
-                    //     provinceCode: 'CA', // US state code (California)
-                    //     countryCode: 'US', // US country code
-                    //     postalCode: '94043', // US ZIP code format
-                    //   },
-                },
-            });
+                });
+            } else {
+                resultss = await ryeClient.createCart({
+                    input: {
+                        items: {
+                            amazonCartItemsInput: [
+                                {
+                                    quantity: 1,
+                                    productId: data.id,
+                                },
+                            ],
+                        },
+                        // buyerIdentity: {
+                        //     firstName: 'John',
+                        //     lastName: 'Doe',
+                        //     email: 'johndoe@example.com',
+                        //     phone: '+1 212-555-1234', // US phone number format
+                        //     address1: '1600 Amphitheatre Parkway',
+                        //     address2: 'Suite 100', // Optional
+                        //     city: 'Mountain View',
+                        //     provinceCode: 'CA', // US state code (California)
+                        //     countryCode: 'US', // US country code
+                        //     postalCode: '94043', // US ZIP code format
+                        //   },
+                    },
+                });
+            }
+
             console.log("resultss", resultss);
             const addCart = await axios.post(route("create.cart"), {
                 data: resultss, // Pass productData as the request body
                 cart_id: resultss.cart.id, // Pass productData as the request body
-                creator_id:user?.id,
+                creator_id: user?.id,
             });
             console.log("addCart:", addCart);
             setLoading(false);

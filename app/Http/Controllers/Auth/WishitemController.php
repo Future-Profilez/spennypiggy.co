@@ -41,9 +41,11 @@ use App\StripeControl;
 use App\TwitterAuthService;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
@@ -745,35 +747,121 @@ class WishitemController extends Controller
         }
     }
 
-    // This function is used to add product on rye cart
+    // // This function is used to add product on rye cart
+    // public function createCart(Request $request)
+    // {
+    //     try {
+    //         $user_id = Auth::id();
+    //         if ($user_id == $request->creator_id) {
+    //             return response()->json(['status' => 'error', 'message' => 'User can not add own gift item']);
+    //         }
+
+    //         $checkCartExist = RyeCart::whereUserId($user_id)->whereCreatorId($request->creator_id)->whereCartId($request->cart_id)->first();
+    //         if ($checkCartExist) {
+    //             $checkCartExist->cart_details = json_encode($request->data, true);
+    //             $checkCartExist->save();
+
+    //             return response()->json(['status' => 'success', 'message' => 'Updated Cart Item']);
+    //         }
+
+    //         RyeCart::create([
+    //             'user_id' => $user_id,
+    //             'creator_id' => $request->creator_id,
+    //             'cart_id' => $request->cart_id,
+    //             'cart_details' => json_encode($request->data, true),
+    //         ]);
+
+    //         return response()->json(['status' => 'success', 'message' => 'Added To Cart']);
+    //     } catch (Exception $e) {
+    //         return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+    //     }
+    // }
+
     public function createCart(Request $request)
     {
         try {
-            $user_id = Auth::id();
-            if ($user_id == $request->creator_id) {
-                return response()->json(['status' => 'error', 'message' => 'User can not add own gift item']);
+            $userId = Auth::id();
+
+            // Prevent user from adding their own gift item
+            if ($userId === (int) $request->creator_id) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'User cannot add their own gift item'
+                ], 403);
             }
-            RyeCart::create([
-                'user_id' => $user_id,
+
+            // Prepare data
+            $cartData = [
+                'user_id' => $userId,
                 'creator_id' => $request->creator_id,
                 'cart_id' => $request->cart_id,
-                'cart_details' => json_encode($request->data, true)
-            ]);
+            ];
 
-            return response()->json(['status' => 'success', 'message' => 'Added To Cart']);
+            // Use firstOrNew to find or create a new instance
+            $cart = RyeCart::firstOrNew($cartData);
+
+            // Update cart details only if it's different to avoid unnecessary writes
+            $newCartDetails = json_encode($request->data, true);
+            if ($cart->exists && $cart->cart_details === $newCartDetails) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Cart item is already added'
+                ]);
+            }
+
+            // Update or create the cart item
+            $cart->cart_details = $newCartDetails;
+            $cart->save();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => $cart->wasRecentlyCreated ? 'Added to Cart' : 'Updated Cart Item'
+            ]);
         } catch (Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 
-    public function getCartDetails()
+    public function checkCartExist($creator_id): JsonResponse
     {
-        $user_id = Auth::id();
-        if (!$user_id) {
-            return response()->json(['status' => 'error', 'message' => 'Cart data not found', 'data' => []]);
+        $userId = Auth::id();
+
+        // Fetch only necessary fields using `pluck()` (more efficient than `select()->first()`)
+        $cartId = RyeCart::where([
+            'user_id' => $userId,
+            'creator_id' => $creator_id
+        ])->value('cart_id');
+
+        return response()->json([
+            'status' => (bool) $cartId,
+            'message' => $cartId ? 'Cart data found' : 'Cart not found',
+            'cart_id' => $cartId,
+        ]);
+    }
+
+    public function getCartDetails(): JsonResponse
+    {
+        if (!Auth::check()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not authenticated',
+                'data' => []
+            ], 401);
         }
-        $cartDetails = RyeCart::where('user_id', $user_id)->get();
-        return response()->json(['status' => 'success', 'message' => 'Cart Data Get Successfully', 'data' => $cartDetails ?? []]);
+
+        $cartDetails = RyeCart::where('user_id', Auth::id())
+            ->select(['cart_id', 'creator_id', 'cart_details'])
+            ->get()
+            ->toArray(); // Convert to array for optimized response
+
+        return response()->json([
+            'status' => !empty($cartDetails), // Returns true if data exists, false otherwise
+            'message' => !empty($cartDetails) ? 'Cart data retrieved successfully' : 'No cart data found',
+            'data' => $cartDetails
+        ]);
     }
 
     public function clearCart($deviceid, $ownerid)
