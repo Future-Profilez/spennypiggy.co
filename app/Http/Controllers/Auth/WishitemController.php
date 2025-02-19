@@ -750,6 +750,9 @@ class WishitemController extends Controller
     {
         try {
             $user_id = Auth::id();
+            if ($user_id == $request->creator_id) {
+                return response()->json(['status' => 'error', 'message' => 'User can not add own gift item']);
+            }
             RyeCart::create([
                 'user_id' => $user_id,
                 'creator_id' => $request->creator_id,
