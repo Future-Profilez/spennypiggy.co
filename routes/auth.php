@@ -316,7 +316,7 @@ Route::post('create-cart', [WishitemController::class, 'createCart'])->name('cre
 Route::get('check-cart-exist/{creator_id}', [WishitemController::class, 'checkCartExist'])->name('check.cart.exist');
 Route::get('delete-cart-item/{cart_id}', [WishitemController::class, 'deleteCartItem'])->name('delete.cart.item');
 Route::get('remove-cart/{cart_id}', [WishitemController::class, 'removeCart'])->name('remove.cart');
-Route::post('get-cart-details', [WishitemController::class, 'getCartDetails'])->name('get.cart.details');
+Route::get('get-cart-details', [WishitemController::class, 'getCartDetails'])->name('get.cart.details');
 // rye product routes end
 
 
