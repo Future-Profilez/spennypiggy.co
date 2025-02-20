@@ -127,8 +127,6 @@ const ProductFetcher = () => {
             // setMessage("");
 
             // try {
-            console.log("checking before assigning",result.productID);
-            console.log("checking resultss.id",resultss.cart.id);
             const results = await ryeClient.addCartItems({
                 input: {
                     id: resultss.cart.id,

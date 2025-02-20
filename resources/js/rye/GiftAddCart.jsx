@@ -40,7 +40,6 @@ export default function GiftAddCart({ data, action, user }) {
     };
 
     const addtocart = async () => {
-        console.log("Hello");
         setLoading(true);
         try {
             const shopperIp = await getShopperIp();
@@ -55,8 +54,6 @@ export default function GiftAddCart({ data, action, user }) {
             );
 
             let resultss;
-
-            console.log("data.id", data.id);
 
             if (checkCartExist.data.status == true) {
                 resultss = await ryeClient.addCartItems({
@@ -105,7 +102,6 @@ export default function GiftAddCart({ data, action, user }) {
                 cart_id: resultss.cart.id, // Pass productData as the request body
                 creator_id: user?.id,
             });
-            console.log("addCart:", addCart);
             setLoading(false);
         } catch (error) {
             console.log(error);
