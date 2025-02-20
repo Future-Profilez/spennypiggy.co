@@ -31,7 +31,7 @@ export default function CartListing() {
             fetchCartItem();
         }
     }, []);
-    console.log("cartsItems", cartsItems);
+    // console.log("cartsItems", cartsItems);
     return (
         <div className="blackbg">
             <div className="container pb-5 ">
@@ -50,6 +50,7 @@ export default function CartListing() {
                                         <CartItems
                                             // auth={auth && auth.user}
                                             // key={`user-cart-${i}`}
+                                            cartsItems={c}
                                             data={data}
                                         />
                                     );
