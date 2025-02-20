@@ -26,14 +26,18 @@ export default function CartItems({data}) {
                         && data?.cart?.stores[0]?.cartLines &&
                           data?.cart?.stores[0]?.cartLines?.map((c, i) => {
                                 return (
-                                    <div className={`border cartlist flex flex-wrap justify-between items-center content-between items-center border-purple shadow-purple rounded-xl 
+                                    <div className={`border cartlist flex flex-wrap justify-between content-between items-center border-purple shadow-purple rounded-xl 
                                         mb-3 mb-md-4 mb-ml-5 p-3 p-md-4`}>
                                         <div className='prodcartbox items-center'>
                                             <div className='productimg'>
                                                 <img src={c?.product?.images[0]?.url} alt='img' />
                                             </div>
                                             <div>
-                                                <div className='cartProdTitle ps-3'>{c?.product?.title}</div>
+                                                <div className='cartProdTitle ps-3 line-clamp-2'>
+                                                {c?.product?.title?.length > 30 
+                                                ? c.product.title.slice(0, 30) + "..." 
+                                                : c?.product?.title}
+                                                </div>
                                             </div>
                                         </div>
                             

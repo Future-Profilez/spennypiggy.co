@@ -45,7 +45,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 import PriceFormat from "@/includes/PriceFormat";
-import GiftListing from "@/rye/GiftListing";
+import GiftListing from "./rye/GiftListing";
 
 
 export default function Dashboard(props) {
