@@ -311,11 +311,12 @@ Route::get('/remove-from-cart/{uuid}', [WishitemController::class, 'removeSurpri
 
 Route::get('/add-to-cart/{uuid}/{device_id}/{sub}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
 
+// rye product routes start
 Route::post('create-cart', [WishitemController::class, 'createCart'])->name('create.cart');
-
 Route::get('check-cart-exist/{creator_id}', [WishitemController::class, 'checkCartExist'])->name('check.cart.exist');
-
-Route::post('get-cart-details', [WishitemController::class, 'getCartDetails'])->name('get.cart.details');
+Route::get('remove-cart/{cart_id}', [WishitemController::class, 'removeCart'])->name('remove.cart');
+Route::get('get-cart-details', [WishitemController::class, 'getCartDetails'])->name('get.cart.details');
+// rye product routes end
 
 Route::get('/clear-cart/{device_id}/{ownerid}', [WishitemController::class, 'clearCart'])->name('clear-cart');
 

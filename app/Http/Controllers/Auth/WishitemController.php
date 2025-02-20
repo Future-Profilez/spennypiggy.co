@@ -747,36 +747,10 @@ class WishitemController extends Controller
         }
     }
 
-    // // This function is used to add product on rye cart
-    // public function createCart(Request $request)
-    // {
-    //     try {
-    //         $user_id = Auth::id();
-    //         if ($user_id == $request->creator_id) {
-    //             return response()->json(['status' => 'error', 'message' => 'User can not add own gift item']);
-    //         }
-
-    //         $checkCartExist = RyeCart::whereUserId($user_id)->whereCreatorId($request->creator_id)->whereCartId($request->cart_id)->first();
-    //         if ($checkCartExist) {
-    //             $checkCartExist->cart_details = json_encode($request->data, true);
-    //             $checkCartExist->save();
-
-    //             return response()->json(['status' => 'success', 'message' => 'Updated Cart Item']);
-    //         }
-
-    //         RyeCart::create([
-    //             'user_id' => $user_id,
-    //             'creator_id' => $request->creator_id,
-    //             'cart_id' => $request->cart_id,
-    //             'cart_details' => json_encode($request->data, true),
-    //         ]);
-
-    //         return response()->json(['status' => 'success', 'message' => 'Added To Cart']);
-    //     } catch (Exception $e) {
-    //         return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
-    //     }
-    // }
-
+    /**
+     * rye product functionality starts
+     *
+     */
     public function createCart(Request $request)
     {
         try {
@@ -863,6 +837,24 @@ class WishitemController extends Controller
             'data' => $cartDetails
         ]);
     }
+
+    public function removeCart($cart_id)
+    {
+        $userId = Auth::id();
+        $deleted = RyeCart::where('user_id', $userId)
+            ->where('cart_id', $cart_id)
+            ->delete(); // Returns the number of deleted rows
+
+        // return Inertia::render('feed/AddGift');
+        return response()->json([
+            'status' => 'success',
+            'message' => $deleted ? 'Cart item deleted successfully' : 'Cart item not found'
+        ]);
+    }
+    /**
+     * rye product functionality ends
+     *
+     */
 
     public function clearCart($deviceid, $ownerid)
     {

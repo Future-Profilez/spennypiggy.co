@@ -1,5 +1,5 @@
 import React from "react";
-import giftimg from "../../assets/img/giftimg.jpg";
+import giftimg from "../../../assets/img/giftimg.jpg";
 const Popup = React.lazy(() => import("@/Components/Popup"));
 // import ToCart from "./ToCart";
 // import uploadedimg from "../../assets/img/uploadedimg.png";
@@ -39,12 +39,8 @@ export default function GiftAddCart({ data, action, user, IsloggedIn }) {
         }
     };
 
-<<<<<<< HEAD
     const addtocart = async (navigate=false) => {
         console.log("Hello");
-=======
-    const addtocart = async () => {
->>>>>>> a46a69c712e640af15b7d155220c1e0ee4f6d14c
         setLoading(true);
         try {
             const shopperIp = await getShopperIp();
@@ -59,6 +55,8 @@ export default function GiftAddCart({ data, action, user, IsloggedIn }) {
             );
 
             let resultss;
+
+            console.log("data.id", data.id);
 
             if (checkCartExist.data.status == true) {
                 resultss = await ryeClient.addCartItems({
@@ -107,14 +105,11 @@ export default function GiftAddCart({ data, action, user, IsloggedIn }) {
                 cart_id: resultss.cart.id, // Pass productData as the request body
                 creator_id: user?.id,
             });
-<<<<<<< HEAD
             console.log("addCart:", addCart);
             successAlert(addCart?.data?.message);
             setClose(false);
             console.log("navigate",navigate);
             {navigate && router.visit("cart")}
-=======
->>>>>>> a46a69c712e640af15b7d155220c1e0ee4f6d14c
             setLoading(false);
         } catch (error) {
             console.log(error);
