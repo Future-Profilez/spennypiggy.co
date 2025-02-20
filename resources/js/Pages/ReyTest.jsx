@@ -31,147 +31,201 @@ const ProductFetcher = () => {
         setResponse(null);
         setProducts([]); // Reset products before fetching new ones
 
-        try {
-            // };
+        // try {
+        // };
 
-            // Get the shopper's IP
-            const shopperIp = await getShopperIp();
+        // Get the shopper's IP
+        const shopperIp = await getShopperIp();
 
-            const ryeClient = new RyeClient({
-                authHeader: `Basic UllFL3N0YWdpbmctYTlmYjk0YjhmYTM1NGE4MTg5NWI6`, // Use env variable
-                shopperIp: shopperIp,
-                environment: ENVIRONMENT.STAGING,
-            });
+        const ryeClient = new RyeClient({
+            authHeader: `Basic UllFL3N0YWdpbmctYTlmYjk0YjhmYTM1NGE4MTg5NWI6`, // Use env variable
+            shopperIp: shopperIp,
+            environment: ENVIRONMENT.STAGING,
+        });
 
-            // Requesting product details from Rye API using Amazon URL
-            const result = await ryeClient.requestProductByUrl({
-                input: {
-                    url: url,
-                    marketplace: Marketplace.Amazon,
-                },
-            });
+        const getPaymentToken = async (cartId) => {
+            try {
+                const results = await ryeClient.getCart({
+                    id: "LNfIWLWacr9qNi6VF0tu",
+                    fetchBuyerIdentity: true, // Set to true to fetch buyer identity
+                    fetchOffer: true, // Set to true to fetch offers for each store
+                    fetchCartLines: true, // Set to true to fetch cart lines
+                    fetchShippingMethods: true, // Set to true to fetch shipping methods
+                });
 
-            console.log("result details", result);
+                console.log("Cart Data with Buyer Identity:", results);
+                return results?.buyerIdentity?.token || null;
+            } catch (error) {
+                console.error("Error fetching payment token:", error);
+                return null;
+            }
+        };
 
-            // User Identity Details
-            // const buyerIdentity = {
-            //     firstName: "John",
-            //     lastName: "Doe",
-            //     email: "johndoe@example.com",
-            //     phone: "+15551234567", // Dummy US phone number
-            //     address1: "123 Main Street",
-            //     address2: "Apt 4B",
-            //     city: "New York",
-            //     provinceCode: "NY",
-            //     postalCode: "10001",
-            // };
+        const submitAmazonCart = async (cartId) => {
+            console.log("cartId", cartId);
+            try {
+                const token = "NjhOUThTVjFDUzlZUlYzM0NBNEZDV0tFVzY6Z2JmTDIxRHVGaTR0Wm5NakVNOHdyZnpDa1RGYThtWHRUMGhZVzRuRXdjUjNYYXEyVlB5NVN6dnlGWk0xeXdnQg==";
+                // if (!token) {
+                //     console.error("No payment token available");
+                //     return;
+                // }
 
-            // Function to create a cart with buyer identity
-            // const createCartWithIdentity = async () => {
-            setLoading(true);
-            setError(null);
-            setMessage("");
-
-            // try {
-            const resultss = await ryeClient.createCart({
-                input: {
-                    items: {
-                        amazonCartItemsInput: [
-                            {
-                                quantity: 1,
-                                productId: result.productID, // Example Amazon Product ID
-                            },
-                        ],
+                const result = await ryeClient.submitCart({
+                    input: {
+                        id: cartId,
+                        token: token,
+                        billingAddress: {
+                            firstName: "John",
+                            lastName: "Doe",
+                            phone: "+61212345678", // Valid E.164 format (US number)
+                            address1: "123 Main Street",
+                            address2: "Apt 4B",
+                            city: "New York",
+                            provinceCode: "NY", // New York state code
+                            countryCode: "US", // United States country code
+                            postalCode: "10001", // Valid US ZIP code
+                        },
                     },
-                    buyerIdentity: {
-                        firstName: 'John',
-                        lastName: 'Doe',
-                        email: 'johndoe@example.com',
-                        phone: '+1 212-555-1234', // US phone number format
-                        address1: '1600 Amphitheatre Parkway',
-                        address2: 'Suite 100', // Optional
-                        city: 'Mountain View',
-                        provinceCode: 'CA', // US state code (California)
-                        countryCode: 'US', // US country code
-                        postalCode: '94043', // US ZIP code format
-                      },
-                },
-            });
+                });
 
-            // Send the fetched product data to your API
-            const addCart = await axios.post(route("create.cart"), {
-                data: resultss, // Pass productData as the request body
-                cart_id: resultss.cart.id, // Pass productData as the request body
-            });
 
-            console.log("addCart:", addCart);
-            setCartId(resultss.id);
-            setMessage("Cart created successfully!");
-            // } catch (err) {
-            //     console.error("Error creating cart:", err);
-            //     setError("Failed to create cart.");
-            // } finally {
-            //     setLoading(false);
-            // }
-            // };
+                console.log("Cart submitted successfully:", result);
+            } catch (error) {
+                console.error("Error submitting cart:", error);
+            }
+        };
 
-            // Function to add items to an existing cart
-            // const addToCart = async () => {
-            // if (!cartId) {
-            //     setError("Create a cart first.");
-            //     return;
-            // }
+        const a = submitAmazonCart("LNfIWLWacr9qNi6VF0tu");
+        console.log("a", a);
+        // Requesting product details from Rye API using Amazon URL
+        // const result = await ryeClient.requestProductByUrl({
+        //     input: {
+        //         url: url,
+        //         marketplace: Marketplace.Amazon,
+        //     },
+        // });
 
-            // setLoading(true);
-            // setError(null);
-            // setMessage("");
+        // console.log("result details", result);
 
-            // try {
-            const results = await ryeClient.addCartItems({
-                input: {
-                    id: resultss.cart.id,
-                    items: {
-                        amazonCartItemsInput: [
-                            {
-                                quantity: 1,
-                                productId: result.productID,
-                            },
-                        ],
-                    },
-                },
-            });
+        // User Identity Details
+        // const buyerIdentity = {
+        //     firstName: "John",
+        //     lastName: "Doe",
+        //     email: "johndoe@example.com",
+        //     phone: "+15551234567", // Dummy US phone number
+        //     address1: "123 Main Street",
+        //     address2: "Apt 4B",
+        //     city: "New York",
+        //     provinceCode: "NY",
+        //     postalCode: "10001",
+        // };
 
-            console.log("Item Added to Cart:", results);
-            setCartItems(results.cartItems || []);
-            setMessage("Item added to cart successfully!");
-            // } catch (err) {
-            //     console.error("Error adding item to cart:", err);
-            //     setError("Failed to add item to cart.");
-            // } finally {
-            //     setLoading(false);
-            // }
+        // Function to create a cart with buyer identity
+        // const createCartWithIdentity = async () => {
+        // setLoading(true);
+        // setError(null);
+        // setMessage("");
 
-            // Fetching the product details using the productID
-            const productData = await ryeClient.getProductById({
-                input: {
-                    id: result.productID,
-                    marketplace: "AMAZON",
-                },
-            });
+        // // try {
+        // const resultss = await ryeClient.createCart({
+        //     input: {
+        //         items: {
+        //             amazonCartItemsInput: [
+        //                 {
+        //                     quantity: 1,
+        //                     productId: result.productID, // Example Amazon Product ID
+        //                 },
+        //             ],
+        //         },
+        //         buyerIdentity: {
+        //             firstName: 'John',
+        //             lastName: 'Doe',
+        //             email: 'johndoe@example.com',
+        //             phone: '+1 212-555-1234', // US phone number format
+        //             address1: '1600 Amphitheatre Parkway',
+        //             address2: 'Suite 100', // Optional
+        //             city: 'Mountain View',
+        //             provinceCode: 'CA', // US state code (California)
+        //             countryCode: 'US', // US country code
+        //             postalCode: '94043', // US ZIP code format
+        //           },
+        //     },
+        // });
 
-            // Send the fetched product data to your API
-            const res = await axios.post(route("create.creator.product"), {
-                url: productData, // Pass productData as the request body
-            });
+        // // Send the fetched product data to your API
+        // const addCart = await axios.post(route("create.cart"), {
+        //     data: resultss, // Pass productData as the request body
+        //     cart_id: resultss.cart.id, // Pass productData as the request body
+        // });
 
-            setProducts(result ? [result] : []); // Set result if found, otherwise empty array
-            setResponse(res.data); // Set the response from your API
-        } catch (err) {
-            console.error("Error fetching products:", err);
-            setError("Failed to fetch product details.");
-        } finally {
-            setLoading(false);
-        }
+        // console.log("addCart:", addCart);
+        // setCartId(resultss.id);
+        // setMessage("Cart created successfully!");
+        // } catch (err) {
+        //     console.error("Error creating cart:", err);
+        //     setError("Failed to create cart.");
+        // } finally {
+        //     setLoading(false);
+        // }
+        // };
+
+        // Function to add items to an existing cart
+        // const addToCart = async () => {
+        // if (!cartId) {
+        //     setError("Create a cart first.");
+        //     return;
+        // }
+
+        // setLoading(true);
+        // setError(null);
+        // setMessage("");
+
+        // try {
+        // const results = await ryeClient.addCartItems({
+        //     input: {
+        //         id: resultss.cart.id,
+        //         items: {
+        //             amazonCartItemsInput: [
+        //                 {
+        //                     quantity: 1,
+        //                     productId: result.productID,
+        //                 },
+        //             ],
+        //         },
+        //     },
+        // });
+
+        // console.log("Item Added to Cart:", results);
+        // setCartItems(results.cartItems || []);
+        // setMessage("Item added to cart successfully!");
+        // } catch (err) {
+        //     console.error("Error adding item to cart:", err);
+        //     setError("Failed to add item to cart.");
+        // } finally {
+        //     setLoading(false);
+        // }
+
+        // Fetching the product details using the productID
+        //     const productData = await ryeClient.getProductById({
+        //         input: {
+        //             id: result.productID,
+        //             marketplace: "AMAZON",
+        //         },
+        //     });
+
+        //     // Send the fetched product data to your API
+        //     const res = await axios.post(route("create.creator.product"), {
+        //         url: productData, // Pass productData as the request body
+        //     });
+
+        //     setProducts(result ? [result] : []); // Set result if found, otherwise empty array
+        //     setResponse(res.data); // Set the response from your API
+        // } catch (err) {
+        //     console.error("Error fetching products:", err);
+        //     setError("Failed to fetch product details.");
+        // } finally {
+        //     setLoading(false);
+        // }
     };
 
     return (
