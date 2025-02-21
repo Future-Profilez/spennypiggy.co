@@ -8,7 +8,7 @@ import { useAlerts } from "@/Components/Alerts";
 import { CiGift } from "react-icons/ci";
 import { RyeClient, ENVIRONMENT, Marketplace } from "@rye-api/rye-sdk";
 
-export default function AddGift({ item, classes, updateState }) {
+export default function AddGift({ item, classes, updateState, fetch_gifts }) {
     const [close, setClose] = useState();
     const { errorsHandling, successAlert, errorAlert } = useAlerts();
     const [loading, setLoading] = useState(false);
@@ -69,6 +69,7 @@ export default function AddGift({ item, classes, updateState }) {
             console.log("response:", response);
             if(response.data.status === 'success'){
                 successAlert(response.data.message);
+                fetch_gifts && fetch_gifts();
                 updateState && updateState(new Date());
                 setClose(false);
                 setTimeout(()=>{
