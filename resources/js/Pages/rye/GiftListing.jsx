@@ -8,7 +8,7 @@ import { useState } from "react";
 import GiftAddCart from "./GiftAddCart";
 import GiftEdit from "./GiftEdit";
 
-export default function GiftListing({ details, user, IsloggedIn }) {
+export default function GiftListing({ details, user, IsloggedIn, fetch_gifts }) {
      const [open, setOpen] = useState();
      const[data,setData]=useState();
      const openAddtocart = () => {
@@ -27,7 +27,7 @@ export default function GiftListing({ details, user, IsloggedIn }) {
             <GiftEdit data={details} action={open} user={user} IsloggedIn={IsloggedIn} />
             </>
             :
-            <GiftAddCart data={details} action={open} user={user} IsloggedIn={IsloggedIn} />
+            <GiftAddCart data={details} action={open} user={user} IsloggedIn={IsloggedIn} fetch_gifts={fetch_gifts}/>
             }
             <Swiper
                 spaceBetween={0}

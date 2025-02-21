@@ -13,7 +13,7 @@ import LoaderButton from "@/Components/LoaderButton";
 import { RyeClient, ENVIRONMENT, Marketplace } from "@rye-api/rye-sdk";
 import axios from "axios";
 
-export default function GiftAddCart({ data, action, user, IsloggedIn }) {
+export default function GiftAddCart({ data, action, user, IsloggedIn, fetch_gifts }) {
     // console.log("user", user?.id);
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     // console.log("data",data);
@@ -106,6 +106,7 @@ export default function GiftAddCart({ data, action, user, IsloggedIn }) {
             console.log("addCart:", addCart);
             successAlert(addCart?.data?.message);
             setClose(false);
+            fetch_gifts();
             console.log("navigate",navigate);
             {navigate && router.visit("cart")}
             {navigate ? setCheckoutLoading(false) : setLoading(false)}
