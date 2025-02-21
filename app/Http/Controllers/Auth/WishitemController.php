@@ -830,12 +830,25 @@ class WishitemController extends Controller
         $cartDetails = RyeCart::where('user_id', Auth::id())
             ->select(['cart_id', 'creator_id', 'cart_details'])
             ->get()
+            ->map(function ($cart) {
+                // Decode the JSON data in cart_details
+                $cartData = json_decode($cart->cart_details, true);
+
+                // Check if cart_details is null or 'stores' is empty/missing
+                if (is_null($cart->cart_details) || empty($cartData['cart']['stores'])) {
+                    return null; // Skip this entry
+                }
+
+                return $cart;
+            })
+            ->filter() // Remove null entries from the collection
+            ->values() // Reset array keys
             ->toArray(); // Convert to array for optimized response
 
         return response()->json([
             'status' => !empty($cartDetails), // Returns true if data exists, false otherwise
             'message' => !empty($cartDetails) ? 'Cart data retrieved successfully' : 'No cart data found',
-            'data' => $cartDetails
+            'data' => !empty($cartDetails) ? $cartDetails : null
         ]);
     }
 
