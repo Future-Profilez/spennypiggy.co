@@ -40,7 +40,6 @@ export default function GiftAddCart({ data, action, user, IsloggedIn }) {
     };
 
     const addtocart = async (navigate=false) => {
-        console.log("Hello");
         setLoading(true);
         try {
             const shopperIp = await getShopperIp();
@@ -98,7 +97,6 @@ export default function GiftAddCart({ data, action, user, IsloggedIn }) {
                     },
                 });
             }
-
             console.log("resultss", resultss);
             const addCart = await axios.post(route("create.cart"), {
                 data: resultss, // Pass productData as the request body
