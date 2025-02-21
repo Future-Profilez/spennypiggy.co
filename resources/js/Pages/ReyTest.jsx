@@ -64,7 +64,7 @@ const ProductFetcher = () => {
         const submitAmazonCart = async (cartId) => {
             console.log("cartId", cartId);
             try {
-                const token = "NjhOUThTVjFDUzlZUlYzM0NBNEZDV0tFVzY6Z2JmTDIxRHVGaTR0Wm5NakVNOHdyZnpDa1RGYThtWHRUMGhZVzRuRXdjUjNYYXEyVlB5NVN6dnlGWk0xeXdnQg==";
+                const token = "gzHYOlb3OFbX0lu6N60IroeIqb73";
                 // if (!token) {
                 //     console.error("No payment token available");
                 //     return;
@@ -87,7 +87,6 @@ const ProductFetcher = () => {
                         },
                     },
                 });
-
 
                 console.log("Cart submitted successfully:", result);
             } catch (error) {

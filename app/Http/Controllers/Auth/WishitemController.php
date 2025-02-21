@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Helpers;
+use App\Helpers\JwtHelper;
 use App\Http\Controllers\Controller;
 use App\Jobs\CheckAdultContent;
 use App\Jobs\AutoTweetWishAdd;
@@ -850,6 +851,16 @@ class WishitemController extends Controller
             'status' => 'success',
             'message' => $deleted ? 'Cart item deleted successfully' : 'Cart item not found'
         ]);
+    }
+
+    public function getToken()
+    {
+        try {
+            $token = JwtHelper::generateToken();
+            return response()->json(['token' => $token], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
     /**
      * rye product functionality ends
