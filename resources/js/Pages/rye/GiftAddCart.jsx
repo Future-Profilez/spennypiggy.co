@@ -148,16 +148,16 @@ export default function GiftAddCart({ data, action, user, IsloggedIn }) {
                         className={`flex btn-pink lg w-100 mb-3 font-CeraGR mx-auto`}
                         spinnerClassName="fill-red-600"
                     >
-                        {loading ? "Processing" : "Add to Cart"}
+                        {loading ? "Processing..." : "Add to Cart"}
                     </LoaderButton>
                     <LoaderButton
-                        // disabled={checkoutloading(true)}
-                          onClick={() => addtocart(true)}
+                        disabled={checkoutloading}
+                         onClick={() => addtocart(true)}
                         className={`flex btn-pink lg w-100 mb-3 font-CeraGR mx-auto`}
                         spinnerClassName="fill-red-600"
                     >
                         {checkoutloading
-                            ? "Processing"
+                            ? "Processing..."
                             : "Add To Cart And Checkout"}
                     </LoaderButton>
                 </div>
