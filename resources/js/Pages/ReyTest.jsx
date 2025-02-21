@@ -64,7 +64,7 @@ const ProductFetcher = () => {
         const submitAmazonCart = async (cartId) => {
             console.log("cartId", cartId);
             try {
-                const token = "gzHYOlb3OFbX0lu6N60IroeIqb73";
+                const token = "56wyNnSmuA6CWYP7w0MiYCVIbW6";
                 // if (!token) {
                 //     console.error("No payment token available");
                 //     return;
