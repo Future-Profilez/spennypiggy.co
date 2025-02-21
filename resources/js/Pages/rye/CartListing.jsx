@@ -15,9 +15,14 @@ export default function CartListing() {
         setLoading(true);
         Axios.get(`get-cart-details`)
             .then((resp) => {
-                // console.log("resp?.data", resp?.data?.data);
-                // console.log(JSON.parse(resp?.data?.data[0]?.cart_details));
-                setCartItems(resp.data.data);
+                console.log("resp?.data", resp?.data);
+                if(resp?.data?.status){
+                    // console.log(JSON.parse(resp?.data?.data[0]?.cart_details));
+                    setCartItems(resp.data.data);
+                }
+                else{
+                    setCartItems([]);
+                }
                 setLoading(false);
             })
             .catch((_err) => {
@@ -50,6 +55,7 @@ export default function CartListing() {
                                         <CartItems
                                             // auth={auth && auth.user}
                                             // key={`user-cart-${i}`}
+                                            fetchCartItem={fetchCartItem}
                                             cartsItems={c}
                                             data={data}
                                         />

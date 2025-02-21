@@ -1,33 +1,32 @@
-// import CartItem from "./CartItem";
-// import { Link, router, usePage } from "@inertiajs/react";
-// import PriceFormat from "@/includes/PriceFormat";
-// import DeviceID from "@/includes/DeviceID";
-// import axios from "axios";
-// import { useEffect } from "react";
-// import { add_to_cart } from "@/Pages/redux/UserSlice";
-// import HCaptcha from "@hcaptcha/react-hcaptcha";
 import { useRef, useState } from "react";
 import { RyeClient, ENVIRONMENT, Marketplace } from "@rye-api/rye-sdk";
 import PriceFormat from "@/includes/PriceFormat";
 import { useEffect } from "react";
 import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
+import { Link, usePage } from "@inertiajs/react";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 
-export default function CartItems({ data, cartsItems }) {
+export default function CartItems({ data, cartsItems, fetchCartItem }) {
+    const { hcaptchakey } = usePage().props;
+    const hcaptchaRef = useRef(null);
     const { formatMultiPrice } = PriceFormat();
-        const { successAlert, errorAlert, errorsHandling } = useAlerts();
-        const [totalPrice, setTotalPrice] = useState(0);
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
+    const [totalPrice, setTotalPrice] = useState(0);
+    const [isChecked, setIsChecked] = useState(false);
+    const [checking, setChecking] = useState(false);
+    const[loading,setLoading]=useState(false);
 
-        const getShopperIp = async () => {
-            try {
-                const response = await fetch("https://api64.ipify.org?format=json");
-                const data = await response.json();
-                return data.ip;
-            } catch (error) {
-                console.error("Error fetching shopper IP:", error);
-                return "0.0.0.0"; // Fallback IP
-            }
-        };
+    const getShopperIp = async () => {
+        try {
+            const response = await fetch("https://api64.ipify.org?format=json");
+            const data = await response.json();
+            return data.ip;
+        } catch (error) {
+            console.error("Error fetching shopper IP:", error);
+            return "0.0.0.0"; // Fallback IP
+        }
+    };
 
     const handleQuantityChangeBackend = async (productId, finalQuantity) => {
         const shopperIp = await getShopperIp();
@@ -36,7 +35,13 @@ export default function CartItems({ data, cartsItems }) {
             shopperIp: shopperIp,
             environment: ENVIRONMENT.STAGING,
         });
-        console.log("data",productId,finalQuantity,data?.cart?.id,cartsItems?.creator_id );
+        console.log(
+            "data",
+            productId,
+            finalQuantity,
+            data?.cart?.id,
+            cartsItems?.creator_id
+        );
         // return;
         const result = await ryeClient.updateCartItems({
             input: {
@@ -51,13 +56,13 @@ export default function CartItems({ data, cartsItems }) {
                 },
             },
         });
-        console.log("result",result)
+        console.log("result", result);
         const addCart = await axios.post(route("create.cart"), {
             data: result, // Pass productData as the request body
             cart_id: data?.cart?.id, // Pass productData as the request body
             creator_id: cartsItems?.creator_id,
         });
-        console.log("addcart",addCart);
+        console.log("addcart", addCart);
         successAlert(addCart?.data?.message);
     };
 
@@ -74,7 +79,7 @@ export default function CartItems({ data, cartsItems }) {
             input: {
                 id: data?.cart?.id,
                 items: {
-                    amazonCartItemsInput: [
+                    amazonProducts: [
                         {
                             productId: productId,
                         },
@@ -82,27 +87,31 @@ export default function CartItems({ data, cartsItems }) {
                 },
             },
         });
-        console.log("result",result)
+        console.log("result", result);
         const addCart = await axios.post(route("create.cart"), {
             data: result, // Pass productData as the request body
             cart_id: data?.cart?.id, // Pass productData as the request body
             creator_id: cartsItems?.creator_id,
         });
-        console.log("addcart",addCart);
+        console.log("addcart", addCart);
         successAlert(addCart?.data?.message);
-    }
+    };
 
-    const [datatoMap, setDataToMap] = useState(data &&
-        data?.cart &&
-        data?.cart?.stores[0] &&
-        data?.cart?.stores[0]?.cartLines);
+    const [datatoMap, setDataToMap] = useState(
+        data &&
+            data?.cart &&
+            data?.cart?.stores[0] &&
+            data?.cart?.stores[0]?.cartLines
+    );
 
     useEffect(() => {
-      setDataToMap(data &&
-        data?.cart &&
-        data?.cart?.stores[0] &&
-        data?.cart?.stores[0]?.cartLines)
-    }, [data])
+        setDataToMap(
+            data &&
+                data?.cart &&
+                data?.cart?.stores[0] &&
+                data?.cart?.stores[0]?.cartLines
+        );
+    }, [data]);
 
     useEffect(() => {
         calculateTotalPrice();
@@ -110,22 +119,27 @@ export default function CartItems({ data, cartsItems }) {
 
     const calculateTotalPrice = () => {
         let newTotalPrice = 0;
-        if (datatoMap) { // Check if datatoMap is not null or undefined
-          datatoMap.forEach(item => {
-            newTotalPrice += item.product.price.value / 100 * item.quantity; // Correct price calculation
-          });
+        if (datatoMap) {
+            // Check if datatoMap is not null or undefined
+            datatoMap.forEach((item) => {
+                newTotalPrice +=
+                    (item.product.price.value / 100) * item.quantity; // Correct price calculation
+            });
         }
         setTotalPrice(newTotalPrice);
     };
 
-    const removeItem = (productId) => {
-        setDataToMap(prevData => prevData.filter(item => item.product.id !== productId));
-        handleRemove(productId);
+    const removeItem = async (productId) => {
+        setDataToMap((prevData) =>
+            prevData.filter((item) => item.product.id !== productId)
+        );
+        await handleRemove(productId);
+        fetchCartItem();
     };
 
     const updateQuantity = (productId, finalQuantity) => {
-        setDataToMap(prevData => {
-            return prevData.map(item => {
+        setDataToMap((prevData) => {
+            return prevData.map((item) => {
                 if (item.product.id === productId) {
                     const newQuantity = Math.max(1, finalQuantity);
                     return { ...item, quantity: newQuantity };
@@ -135,6 +149,48 @@ export default function CartItems({ data, cartsItems }) {
         });
         handleQuantityChangeBackend(productId, finalQuantity);
     };
+
+    const handleCartDeletion = async () => {
+        const shopperIp = await getShopperIp();
+        const ryeClient = new RyeClient({
+            authHeader: `Basic UllFL3N0YWdpbmctYTlmYjk0YjhmYTM1NGE4MTg5NWI6`, // Use env variable
+            shopperIp: shopperIp,
+            environment: ENVIRONMENT.STAGING,
+        });
+        const result = await ryeClient.removeCart({
+            input: {
+              id: data?.cart?.id,
+            },
+          });
+          const addCart = await axios.get(`remove-cart/${data?.cart?.id}`);
+          if(addCart?.data?.status  === "success"){
+            successAlert(addCart?.data?.message);
+          }
+          else{
+            errorAlert(addCart?.data?.message);
+          }    
+        console.log("addcart", addCart);
+    }
+
+    const clearcart = async() => {
+        setDataToMap([]);
+        await handleCartDeletion();
+        fetchCartItem();
+    }
+
+    const executeCaptcha = (e) => {
+        e.preventDefault();
+        hcaptchaRef.current.execute();
+        setChecking(true);
+    };
+
+    const onVerify = (token) => {
+        handleSubmit();
+    };
+
+    const handleSubmit=()=>{
+        console.log("Hello");
+    }
 
     return (
         <div className={`px-2`}>
@@ -146,7 +202,9 @@ export default function CartItems({ data, cartsItems }) {
                         <strong> a user </strong> to fund their lifestyle.
                     </p>
                     <div className="CartItemBox">
-                        {datatoMap && datatoMap?.map((c, i) => {
+                        {datatoMap &&
+                            datatoMap.length > 0 &&
+                            datatoMap?.map((c, i) => {
                                 return (
                                     <div
                                         className={`border cartlist flex flex-wrap justify-between content-between items-center border-purple shadow-purple rounded-xl 
@@ -157,13 +215,13 @@ export default function CartItems({ data, cartsItems }) {
                                                 <img
                                                     src={
                                                         c?.product?.images[0]
-                                                            ?.url
+                                                            ?.url || ""
                                                     }
                                                     alt="img"
                                                 />
                                             </div>
                                             <div>
-                                                <div className="cartProdTitle ps-3 line-clamp-2">
+                                                {/* <div className="cartProdTitle ps-3 line-clamp-2">
                                                     {c?.product?.title?.length >
                                                     30
                                                         ? c.product.title.slice(
@@ -171,7 +229,7 @@ export default function CartItems({ data, cartsItems }) {
                                                               30
                                                           ) + "..."
                                                         : c?.product?.title}
-                                                </div>
+                                                </div> */}
                                             </div>
                                         </div>
 
@@ -179,8 +237,13 @@ export default function CartItems({ data, cartsItems }) {
                                             <div className="quty flex items-center me-4 ">
                                                 {/* Decrement Button */}
                                                 <button
-                                                disabled={c?.quantity === 1}
-                                                onClick={() => updateQuantity(c.product.id, c?.quantity-1)}
+                                                    disabled={c?.quantity === 1}
+                                                    onClick={() =>
+                                                        updateQuantity(
+                                                            c.product.id,
+                                                            c?.quantity - 1
+                                                        )
+                                                    }
                                                 >
                                                     <svg
                                                         xmlns="http://www.w3.org/2000/svg"
@@ -198,10 +261,16 @@ export default function CartItems({ data, cartsItems }) {
                                                 <div className="qutynum">
                                                     {c?.quantity}
                                                 </div>
-                                                
+
                                                 {/* Increment button */}
                                                 <button
-                                                onClick={() => updateQuantity(c.product.id, c?.quantity+1)}>
+                                                    onClick={() =>
+                                                        updateQuantity(
+                                                            c.product.id,
+                                                            c?.quantity + 1
+                                                        )
+                                                    }
+                                                >
                                                     <svg
                                                         xmlns="http://www.w3.org/2000/svg"
                                                         width="24"
@@ -217,7 +286,11 @@ export default function CartItems({ data, cartsItems }) {
                                                 </button>
                                             </div>
                                             <div className="cartPric pe-4">
-                                                {formatMultiPrice(c?.product?.price?.value/100, c?.product?.price?.currency)}
+                                                {formatMultiPrice(
+                                                    c?.product?.price?.value /
+                                                        100,
+                                                    c?.product?.price?.currency
+                                                )}
                                                 {/* {
                                                     c?.product?.price
                                                         ?.value
@@ -255,7 +328,7 @@ export default function CartItems({ data, cartsItems }) {
                             })}
                     </div>
 
-                     <div className="cartTotal px-0 py-3">
+                    <div className="cartTotal px-0 py-3">
                         {/* <div className="cartSubTotal text-right mt-1">
                             <span>Platform Fee :</span>{" "}
                             <strong className="text-end">
@@ -300,19 +373,23 @@ export default function CartItems({ data, cartsItems }) {
                                 )}
                             </strong>
                         </div> */}
-                        <div className="cartSubTotal text-right mt-1">
-                            <strong className="text-dark">Total :</strong>{" "}
-                            <strong className="text-end">
-                                {formatMultiPrice(
-                                    totalPrice || 0,datatoMap[0]?.product?.price?.currency)}
-                            </strong>
-                        </div>
+                        {datatoMap?.length > 0 && (
+                            <div className="cartSubTotal text-right mt-1">
+                                <strong className="text-dark">Total :</strong>{" "}
+                                <strong className="text-end">
+                                    {formatMultiPrice(
+                                        totalPrice || 0,
+                                        datatoMap[0]?.product?.price?.currency
+                                    )}
+                                </strong>
+                            </div>
+                        )}
                     </div>
 
-                    {/*<div className="addMessage">
+                    <div className="addMessage">
                         <form onSubmit={executeCaptcha}>
                             <ul className="row">
-                                <li>
+                                {/* <li>
                                     <label>Add Message </label>
                                     <textarea
                                         onChange={(e) =>
@@ -320,8 +397,8 @@ export default function CartItems({ data, cartsItems }) {
                                         }
                                         placeholder="Send some words of support..."
                                     ></textarea>
-                                </li>
-                                <li className="w-100 mt-3">
+                                </li> */}
+                                {/* <li className="w-100 mt-3">
                                     <li className="row">
                                         <div className="col-md-12 mb-4">
                                             <label className="d-block text-start">
@@ -365,9 +442,9 @@ export default function CartItems({ data, cartsItems }) {
                                             />
                                         </div>
                                     </li>
-                                </li>
+                                </li> */}
                                 <li className="cheklistbox">
-                                    <label
+                                    {/* <label
                                         htmlFor="anonymous"
                                         className="text-start"
                                     >
@@ -384,11 +461,11 @@ export default function CartItems({ data, cartsItems }) {
                                             value="anonymous"
                                         ></input>
                                         Keep anonymous
-                                    </label>
-                                    <p className="text-muted text-small mb-3">
+                                    </label> */}
+                                    {/* <p className="text-muted text-small mb-3">
                                         Your personal email and name will be
                                         private.
-                                    </p>
+                                    </p> */}
 
                                     <label
                                         htmlFor="agreeterm"
@@ -491,7 +568,7 @@ export default function CartItems({ data, cartsItems }) {
                             <div className="mt-4 d-flex align-items-center justify-content-between">
                                 <button
                                     type="button"
-                                    onClick={() => clearcart(datas?.user?.id)}
+                                    onClick={() => clearcart()}
                                     className={`btn-pink md mt-3 px-4 text-center`}
                                 >
                                     {" "}
@@ -515,7 +592,7 @@ export default function CartItems({ data, cartsItems }) {
                                 required
                             />
                         </form>
-                    </div> */}
+                    </div>
                 </div>
             </div>
         </div>
