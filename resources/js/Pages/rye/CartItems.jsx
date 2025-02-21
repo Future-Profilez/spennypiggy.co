@@ -74,7 +74,7 @@ export default function CartItems({ data, cartsItems }) {
             input: {
                 id: data?.cart?.id,
                 items: {
-                    amazonCartItemsInput: [
+                    amazonProducts: [
                         {
                             productId: productId,
                         },
@@ -146,7 +146,7 @@ export default function CartItems({ data, cartsItems }) {
                         <strong> a user </strong> to fund their lifestyle.
                     </p>
                     <div className="CartItemBox">
-                        {datatoMap && datatoMap?.map((c, i) => {
+                        {datatoMap && datatoMap.length>0 && datatoMap?.map((c, i) => {
                                 return (
                                     <div
                                         className={`border cartlist flex flex-wrap justify-between content-between items-center border-purple shadow-purple rounded-xl 
@@ -157,13 +157,13 @@ export default function CartItems({ data, cartsItems }) {
                                                 <img
                                                     src={
                                                         c?.product?.images[0]
-                                                            ?.url
+                                                            ?.url || ""
                                                     }
                                                     alt="img"
                                                 />
                                             </div>
                                             <div>
-                                                <div className="cartProdTitle ps-3 line-clamp-2">
+                                                {/* <div className="cartProdTitle ps-3 line-clamp-2">
                                                     {c?.product?.title?.length >
                                                     30
                                                         ? c.product.title.slice(
@@ -171,7 +171,7 @@ export default function CartItems({ data, cartsItems }) {
                                                               30
                                                           ) + "..."
                                                         : c?.product?.title}
-                                                </div>
+                                                </div> */}
                                             </div>
                                         </div>
 
@@ -300,13 +300,14 @@ export default function CartItems({ data, cartsItems }) {
                                 )}
                             </strong>
                         </div> */}
+                        {datatoMap &&
                         <div className="cartSubTotal text-right mt-1">
                             <strong className="text-dark">Total :</strong>{" "}
                             <strong className="text-end">
                                 {formatMultiPrice(
                                     totalPrice || 0,datatoMap[0]?.product?.price?.currency)}
                             </strong>
-                        </div>
+                        </div>}
                     </div>
 
                     {/*<div className="addMessage">

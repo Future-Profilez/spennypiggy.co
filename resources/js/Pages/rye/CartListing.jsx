@@ -31,7 +31,7 @@ export default function CartListing() {
             fetchCartItem();
         }
     }, []);
-    // console.log("cartsItems", cartsItems);
+    console.log("cartsItems", cartsItems);
     return (
         <div className="blackbg">
             <div className="container pb-5 ">
