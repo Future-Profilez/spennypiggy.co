@@ -827,7 +827,7 @@ class WishitemController extends Controller
             ], 401);
         }
 
-        $cartDetails = RyeCart::where('user_id', Auth::id())
+        $cartDetails = RyeCart::with('creator')->where('user_id', Auth::id())
             ->select(['cart_id', 'creator_id', 'cart_details'])
             ->get()
             ->map(function ($cart) {

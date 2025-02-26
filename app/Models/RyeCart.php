@@ -16,4 +16,9 @@ class RyeCart extends Model
     }
 
     protected $fillable = ['user_id', 'creator_id', 'cart_id', 'cart_details'];
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'creator_id');
+    }
 }
