@@ -188,9 +188,37 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
         handleSubmit();
     };
 
-    const handleSubmit=()=>{
-        console.log("Hello");
-    }
+    const handleSubmit = async () => {        
+        const shopperIp = await getShopperIp();
+        const ryeClient = new RyeClient({
+            authHeader: `Basic UllFL3N0YWdpbmctYTlmYjk0YjhmYTM1NGE4MTg5NWI6`, // Use env variable
+            shopperIp: shopperIp,
+            environment: ENVIRONMENT.STAGING,
+        });
+    
+        console.log("data", data?.cart?.id);
+        return;
+    
+        const result = await ryeClient.submitCart({
+            input: {
+                id: data?.cart?.id,
+                token: "01JMYA3T67ESWNMRJABZP594CH",
+                billingAddress: {
+                    firstName: "Abhinav",
+                    lastName: "Mathur",
+                    phone: "7568311283",
+                    address1: "Office No. D-105B, G-4, Golden OAK-1, Devi Marg",
+                    city: "Jaipur",
+                    provinceCode: "RJ",
+                    countryCode: "IN",
+                    postalCode: "302016",
+                },
+            },
+        });
+    
+        console.log("result", result?.data);
+    };
+       
 
     return (
         <div className={`px-2`}>
