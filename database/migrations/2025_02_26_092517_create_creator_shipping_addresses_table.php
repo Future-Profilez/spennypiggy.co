@@ -21,7 +21,7 @@ return new class extends Migration
             $table->text('address_2')->nullable();
             $table->string('city')->nullable();
             $table->string('province_code', 3)->nullable();
-            $table->string('county_code', 2)->nullable();
+            $table->string('country_code', 2)->nullable();
             $table->bigInteger('postal_code')->nullable();
             $table->timestamps();
             $table->softDeletes();

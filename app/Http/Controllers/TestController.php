@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
 use App\Jobs\SendIdentityVerificationEmail;
+use App\Models\ProductOrderDetail;
 use App\Models\RyeCart;
 use App\Models\RyeProduct;
 use Exception;
@@ -320,21 +321,28 @@ class TestController extends Controller
                 ]
             ]);
 
-            // Get the response data
+            // Convert response to array
             $data = $response->json();
+            Log::info('SubmitCart API Response:', $data);
 
-            // Output or process response
-            return response()->json($data);
+            // Extract necessary details
+            $user_id = Auth::id();
+            $creator_id = $request->creator_id;
+            $order_id = $data['data']['submitCart']['cart']['stores'][0]['orderId'] ?? null;
+            $payment_status = $data['data']['submitCart']['cart']['stores'][0]['status'] ?? 'pending';
+            $details = json_encode($data, true);
 
-            // $user_id = Auth::id();
-            // RyeCart::create([
-            //     'user_id' => $user_id,
-            //     'creator_id' => $request->creator_id,
-            //     'cart_id' => $request->cart_id,
-            //     'cart_details' => json_encode($request->data, true)
-            // ]);
+            // Store the response data in the database
+            ProductOrderDetail::create([
+                'user_id' => $user_id,
+                'creater_id' => $creator_id,
+                'cart_id' => $cart_id,
+                'order_id' => $order_id,
+                'details' => $details,
+                'payment_status' => $payment_status,
+            ]);
 
-            // return response()->json(['status' => 'success', 'message' => 'Added To Cart']);
+            return response()->json(['status' => 'success', 'message' => 'Order details stored', 'data' => $data]);
         } catch (Exception $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
         }
@@ -405,10 +413,10 @@ class TestController extends Controller
         // Log the full request for debugging
         Log::info('Rye Webhook Request:', $request->all());
 
-        // **Fix: Extract challenge from "data.challenge"**
-        if ($request->has('data.challenge')) {
-            return response()->json(['challenge' => $request->input('data.challenge')]);
-        }
+        // // **Fix: Extract challenge from "data.challenge"**
+        // if ($request->has('data.challenge')) {
+        //     return response()->json(['challenge' => $request->input('data.challenge')]);
+        // }
 
         // **Step 2: Process Webhook Events**
         $webhookData = $request->all();
