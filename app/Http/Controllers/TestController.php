@@ -24,8 +24,10 @@ use App\Models\RyeCart;
 use App\Models\RyeProduct;
 use Exception;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Response;
 use Stripe\Balance;
 use Stripe\Stripe;
 
@@ -276,6 +278,160 @@ class TestController extends Controller
             return response()->json(['status' => 'success', 'message' => 'Data Added Successfully.']);
         }
     }
+
+    public function storeProductOrderDetails(Request $request)
+    {
+        try {
+
+            $cart_id = $request->cart_id;
+            $response = Http::withHeaders([
+                'Authorization' => 'Basic UllFL3N0YWdpbmctYTlmYjk0YjhmYTM1NGE4MTg5NWI6',
+                'Rye-Shopper-IP' => '122.180.247.198',
+                'Content-Type' => 'application/json',
+            ])->post('https://staging.graphql.api.rye.com/v1/query', [
+                'query' => "mutation SubmitCart(\$input: CartSubmitInput!) { submitCart(input: \$input) { cart { id stores { status orderId store { ... on ShopifyStore { store cartLines { quantity variant { id } } } } errors { code message } } } errors { code message } } }",
+                'variables' => [
+                    'input' => [
+                        'id' => $cart_id,
+                        'token' => env('PAYMENT_TOKEN'),
+                        'selectedShippingOptions' => [
+                            [
+                                'store' => 'amazon',
+                                'shippingId' => '0-Default shipping method',
+                            ]
+                        ],
+                        'billingAddress' => [
+                            'firstName' => 'Abhinav',
+                            'lastName' => 'Mathur',
+                            'phone' => '7568311283',
+                            'address1' => 'Office No. D-105B, G-4, Golden OAK-1, Devi Marg',
+                            'address2' => 'Sen Colony, Bani Park',
+                            'city' => 'Jaipur',
+                            'provinceCode' => 'RJ',
+                            'countryCode' => 'IN',
+                            'postalCode' => '302016',
+                        ],
+                        'cartSettings' => [
+                            'amazonSettings' => [
+                                'hidePriceOnPackage' => true,
+                            ]
+                        ]
+                    ]
+                ]
+            ]);
+
+            // Get the response data
+            $data = $response->json();
+
+            // Output or process response
+            return response()->json($data);
+
+            // $user_id = Auth::id();
+            // RyeCart::create([
+            //     'user_id' => $user_id,
+            //     'creator_id' => $request->creator_id,
+            //     'cart_id' => $request->cart_id,
+            //     'cart_details' => json_encode($request->data, true)
+            // ]);
+
+            // return response()->json(['status' => 'success', 'message' => 'Added To Cart']);
+        } catch (Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+    }
+
+    public function handleRyeProductPayment(Request $request)
+    {
+        $shopPaymentDetail = '';
+        $shop = [];
+        if ($shop->price > 0) {
+
+            $lineItems[] = [
+                // 'price' => $dd->stripe_product_id ?? '',
+                'quantity' => $shopPaymentDetail->quantity,
+                'price_data' => [
+                    'currency' => $currency,
+                    'product' => $shop->stripe_product_id,
+                    'unit_amount_decimal' => Helpers::priceFormat($shop->user->default_currency, $total, $currency) * 100
+                ]
+            ];
+
+            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+            $sessionCreate = $stripe->checkout->sessions->create([
+                'success_url' => route('rye.success-payment', [$shopPaymentDetail->uuid]),
+                'cancel_url' => route('rye.cancel-payment', [$shopPaymentDetail->uuid]),
+                'line_items' => $lineItems,
+                'mode' => 'payment',
+                'payment_method_types' => ['card'], // Add this line
+                'payment_intent_data' => [
+                    'transfer_data' => [
+                        'destination' => $shop->user->account_id,
+                        'amount' => Helpers::priceFormat($shop->user->default_currency, $amount, $currency) * 100,
+                    ],
+                    'on_behalf_of'  => $shop->user->account_id,
+                ],
+                'customer_email' => request()->query('email'),
+            ]);
+
+            // $sessionCreate = $stripe->checkout->sessions->create([
+            //     'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
+            //     'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
+            //     'line_items' => $lineItems,
+            //     'mode' => 'payment',
+            //     'payment_intent_data' => [
+            //         'transfer_data' => [
+            //             'destination' => $shop->user->account_id, // Creator's connected account ID
+            //             'amount' => Helpers::priceFormat($shop->user->default_currency, $amount, $currency) * 100,
+            //         ],
+            //         // 'application_fee_amount' => $taxNew * 100,
+            //         'on_behalf_of'  => $shop->user->account_id,
+            //     ],
+            //     'customer_email' =>  request()->query('email'),
+            //     // 'currency' => 'usd',
+            // ]);
+
+            // $shopPaymentDetail->session_id =  $sessionCreate->id;
+            // $shopPaymentDetail->save();
+
+            return response()->json([
+                'status' => true,
+                'url' => $sessionCreate->url
+            ]);
+        }
+    }
+
+    public function handleRyeWebhook(Request $request): JsonResponse
+    {
+        // Log the full request for debugging
+        Log::info('Rye Webhook Request:', $request->all());
+
+        // **Fix: Extract challenge from "data.challenge"**
+        if ($request->has('data.challenge')) {
+            return response()->json(['challenge' => $request->input('data.challenge')]);
+        }
+
+        // **Step 2: Process Webhook Events**
+        $webhookData = $request->all();
+
+        if (!empty($webhookData['event'])) {
+            switch ($webhookData['event']) {
+                case 'cart.updated':
+                    Log::info('Cart updated:', $webhookData);
+                    break;
+                case 'payment.success':
+                    Log::info('Payment successful:', $webhookData);
+                    break;
+                case 'order.created':
+                    Log::info('Order created:', $webhookData);
+                    break;
+                default:
+                    Log::info('Unhandled webhook event:', $webhookData);
+            }
+        }
+
+        return response()->json(['status' => 'success']);
+    }
+
 
     // public function createCart(Request $request)
     // {

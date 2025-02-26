@@ -9,11 +9,10 @@ use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TestController;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cookie;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -53,6 +52,11 @@ Route::get('rey-test', function () {
 Route::get('get-cart', function () {
     return Inertia::render('GetCart');
 })->name('get.cart');
+
+Route::post('/rye-webhook', [TestController::class, 'handleRyeWebhook'])->name('rye.webhook');
+
+Route::post('store-product-order-details', [TestController::class, 'storeProductOrderDetails'])->name('store.product.order.details');
+
 
 // Route::post('test-stripe', function (Request $request) {
 //     $request = json_encode($request->all());
