@@ -254,9 +254,15 @@ class User extends Authenticatable
         return $this->hasManyThrough(ShopPayment::class, Shop::class, 'user_id', 'shop_id', 'id', 'id');
     }
 
-    public function getIsCreatorAddressFoundAttribute()
+    // Accessor method to check if the creator has an address
+    public function getIsCreatorAddressFoundAttribute(): bool
     {
-        $check = $this->hasOne(CreatorShippingAddress::class, 'creator_id', 'id');
-        return $check->exists();
+        return $this->creatorShippingAddress()->exists();
+    }
+
+    // Define the relationship separately in the model
+    public function creatorShippingAddress()
+    {
+        return $this->hasOne(CreatorShippingAddress::class, 'creator_id', 'id');
     }
 }
