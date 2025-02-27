@@ -14,4 +14,12 @@ class RyeProduct extends Model
     {
         return ['uuid'];
     }
+
+    protected $fillable = [
+        'stripe_product_id',
+        'creator_id',
+        'product_id',
+        'details',
+        'deleted_at',
+    ];
 }

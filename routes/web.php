@@ -39,7 +39,6 @@ Route::get('/membership-dashboard', function () {
 // Route::get('/stripe-identity', function () {
 //     return Inertia::render('IdentityVerification');
 // })->name('stripe.identity');
-Route::post('create-creator-product', [TestController::class, 'createRyeProduct'])->name('create.creator.product');
 
 // Route::post('create-cart', [TestController::class, 'createCart'])->name('create.cart');
 // Route::get('get-all-products', [TestController::class, 'fetchRyeProducts'])->name('get.all.products');
@@ -54,6 +53,9 @@ Route::get('get-cart', function () {
 })->name('get.cart');
 
 Route::post('/rye-webhook', [TestController::class, 'handleRyeWebhook'])->name('rye.webhook');
+
+
+Route::post('create-creator-product', [TestController::class, 'createRyeProduct'])->name('create.creator.product');
 
 Route::post('store-product-order-details', [TestController::class, 'storeProductOrderDetails'])->name('store.product.order.details');
 
