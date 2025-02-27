@@ -20,6 +20,7 @@ use App\Jobs\TipJarTweet;
 use App\Jobs\WelcomeUser;
 use App\Mail\CheckError;
 use App\Models\BillPayment;
+use App\Models\CreatorShippingAddress;
 use App\Models\Logs;
 use App\Models\MembershipPayment;
 use App\Models\RyeCart;
@@ -751,6 +752,10 @@ class WishitemController extends Controller
     /**
      * rye product functionality starts
      *
+     * create cart product for rye into our site
+     *
+     * @return Response
+     *
      */
     public function createCart(Request $request)
     {
@@ -800,6 +805,11 @@ class WishitemController extends Controller
         }
     }
 
+    /**
+     * check rye cart exist or not
+     *
+     * @return Response
+     */
     public function checkCartExist($creator_id): JsonResponse
     {
         $userId = Auth::id();
@@ -817,6 +827,11 @@ class WishitemController extends Controller
         ]);
     }
 
+    /**
+     * get all carts products details of rye
+     *
+     * @return Response
+     */
     public function getCartDetails(): JsonResponse
     {
         if (!Auth::check()) {
@@ -852,6 +867,11 @@ class WishitemController extends Controller
         ]);
     }
 
+    /**
+     * remove cart from rye cart
+     *
+     * @return Response
+     */
     public function removeCart($cart_id)
     {
         $userId = Auth::id();
@@ -866,19 +886,66 @@ class WishitemController extends Controller
         ]);
     }
 
-    public function getToken()
+    /**
+     * create store address for creator on rye
+     *
+     * @return Response
+     */
+    public function creatorStoreAddress(Request $request)
     {
         try {
-            $token = JwtHelper::generateToken();
-            return response()->json(['token' => $token], 200);
+            // Validate incoming request based on database schema
+            $validatedData = $request->validate([
+                'first_name'     => 'nullable|string|max:255',
+                'last_name'      => 'nullable|string|max:255',
+                'phone'          => 'nullable|digits_between:8,15', // Ensures phone is numeric & valid length
+                'address_1'      => 'nullable',
+                'address_2'      => 'nullable',
+                'city'           => 'nullable|string|max:255',
+                'province_code'  => 'nullable|size:3',  // Exactly 3 characters
+                'country_code'   => 'nullable|size:2',  // Exactly 2 characters (ISO country codes)
+                'postal_code'    => 'nullable|digits_between:4,10', // Ensures postal code is numeric & valid length
+            ]);
+
+            // Create the address entry
+            $creatorAddress = CreatorShippingAddress::create([
+                'creator_id'    => Auth::id(),
+                'first_name'    => $validatedData['first_name'],
+                'last_name'     => $validatedData['last_name'],
+                'phone'         => $validatedData['phone'],
+                'address_1'     => $validatedData['address_1'],
+                'address_2'     => $validatedData['address_2'] ?? null,
+                'city'          => $validatedData['city'],
+                'province_code' => $validatedData['province_code'] ?? null,
+                'country_code'  => $validatedData['country_code'],
+                'postal_code'   => $validatedData['postal_code'],
+            ]);
+
+            // Return success response
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Address stored successfully',
+                'data'    => $creatorAddress,
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Validation failed',
+                'errors'  => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Something went wrong',
+                'error'   => $e->getMessage(),
+            ], 500);
         }
     }
     /**
      * rye product functionality ends
      *
      */
+
 
     public function clearCart($deviceid, $ownerid)
     {

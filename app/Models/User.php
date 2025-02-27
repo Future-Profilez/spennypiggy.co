@@ -47,7 +47,7 @@ class User extends Authenticatable
     public static function boot()
     {
         parent::boot();
-        static::creating(fn ($u) => $u->uuid = Uuid::uuid4());
+        static::creating(fn($u) => $u->uuid = Uuid::uuid4());
     }
 
     /**
@@ -72,7 +72,8 @@ class User extends Authenticatable
         'avatar_url',
         'cover_url',
         'twitter_username',
-        'monthly_charge_enabled'
+        'monthly_charge_enabled',
+        'is_creator_address_found',
     ];
 
     /**
@@ -91,21 +92,18 @@ class User extends Authenticatable
     {
         $url = false;
         if (!empty($this->avatar)) {
-            if($this->avatar_approved == 0){
-                if(Auth::check() && Auth::id() == $this->id){
-                    if(empty($this->avatar_cdn_modifier)){
+            if ($this->avatar_approved == 0) {
+                if (Auth::check() && Auth::id() == $this->id) {
+                    if (empty($this->avatar_cdn_modifier)) {
                         $url = "https://ucarecdn.com/" . $this->avatar . '/-/format/jpeg/';
-                    }
-                    else{
+                    } else {
                         $url = "https://ucarecdn.com/" . $this->avatar . '/' . $this->avatar_cdn_modifier . '-/preview/';
                     }
                 }
-            }
-            else{
-                if(empty($this->avatar_cdn_modifier)){
+            } else {
+                if (empty($this->avatar_cdn_modifier)) {
                     $url = "https://ucarecdn.com/" . $this->avatar . '/-/format/jpeg/';
-                }
-                else{
+                } else {
                     $url = "https://ucarecdn.com/" . $this->avatar . '/' . $this->avatar_cdn_modifier . '-/preview/';
                 }
             }
@@ -118,21 +116,18 @@ class User extends Authenticatable
     {
         $url = false;
         if (!empty($this->cover)) {
-            if($this->cover_approved == 0){
-                if(Auth::check() && Auth::id() == $this->id){
-                    if(empty($this->cover_cdn_modifier)){
+            if ($this->cover_approved == 0) {
+                if (Auth::check() && Auth::id() == $this->id) {
+                    if (empty($this->cover_cdn_modifier)) {
                         $url = "https://ucarecdn.com/" . $this->cover . '/';
-                    }
-                    else{
+                    } else {
                         $url = "https://ucarecdn.com/" . $this->cover . '/' . $this->cover_cdn_modifier . '-/preview/';
                     }
                 }
-            }
-            else{
-                if(empty($this->cover_cdn_modifier)){
+            } else {
+                if (empty($this->cover_cdn_modifier)) {
                     $url = "https://ucarecdn.com/" . $this->cover . '/';
-                }
-                else{
+                } else {
                     $url = "https://ucarecdn.com/" . $this->cover . '/' . $this->cover_cdn_modifier . '-/preview/';
                 }
             }
@@ -211,26 +206,31 @@ class User extends Authenticatable
     }
 
 
-    public function memberships(){
+    public function memberships()
+    {
         return $this->hasMany(Membership::class, 'user_id');
     }
 
-    public function posts(){
+    public function posts()
+    {
         return $this->hasMany(Post::class, 'user_id');
     }
 
-    public function bills(){
+    public function bills()
+    {
         return $this->hasMany(Bills::class, 'user_id');
     }
 
-    public function getDefaultCurrencyAttribute($value){
+    public function getDefaultCurrencyAttribute($value)
+    {
         return strtoupper($value);
     }
 
-    public function getMonthlyChargeEnabledAttribute(){
-        if(Auth::check() && $this->id == Auth::id()){
-            $charge = MonthlyCharge::where('user_id',$this->id)->where('status','paid')->first();
-            if(!empty($charge)){
+    public function getMonthlyChargeEnabledAttribute()
+    {
+        if (Auth::check() && $this->id == Auth::id()) {
+            $charge = MonthlyCharge::where('user_id', $this->id)->where('status', 'paid')->first();
+            if (!empty($charge)) {
                 return true;
             }
             return false;
@@ -239,16 +239,30 @@ class User extends Authenticatable
     }
 
 
-    public function intro(){
-        return $this->hasOne(UserIntro::class,'user_id');
+    public function intro()
+    {
+        return $this->hasOne(UserIntro::class, 'user_id');
     }
 
-    public function shop(){
-        return $this->hasMany(Shop::class,'user_id');
+    public function shop()
+    {
+        return $this->hasMany(Shop::class, 'user_id');
     }
 
     public function shop_payments()
     {
         return $this->hasManyThrough(ShopPayment::class, Shop::class, 'user_id', 'shop_id', 'id', 'id');
+    }
+
+    // Accessor method to check if the creator has an address
+    public function getIsCreatorAddressFoundAttribute(): bool
+    {
+        return $this->creatorShippingAddress()->exists();
+    }
+
+    // Define the relationship separately in the model
+    public function creatorShippingAddress()
+    {
+        return $this->hasOne(CreatorShippingAddress::class, 'creator_id', 'id');
     }
 }
