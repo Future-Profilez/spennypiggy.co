@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\CurrencyExchange;
+use App\Helpers;
 use App\IpTracker;
 use App\Jobs\FetchSelfTwitterData;
 use App\Mail\Welcome;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
 use App\Jobs\SendIdentityVerificationEmail;
+use App\Models\CreatorShippingAddress;
 use App\Models\ProductOrderDetail;
 use App\Models\RyeCart;
 use App\Models\RyeProduct;
@@ -252,13 +254,15 @@ class TestController extends Controller
         }
     }
 
-    // public function fetchRyeProducts()
-    // {
-    //     $creatorID = Auth::id();
-    //     $allProducts = RyeProduct::whereCreatorId($creatorID)->get();
-    //     return response()->json(['status' => 'success', 'message' => 'Product list.', 'data' => $allProducts ?? []]);
-    // }
 
+
+    /**
+     * rye integrations starts from here
+     *
+     * create rye product and store in the database
+     *
+     * @return Response
+     */
     public function createRyeProduct(Request $request)
     {
         $request->validate([
@@ -280,46 +284,54 @@ class TestController extends Controller
         }
     }
 
+    /**
+     * hit submitCart api and store the response in the database
+     *
+     * @return Response
+     */
     public function storeProductOrderDetails(Request $request)
     {
         try {
-
-            $cart_id = $request->cart_id;
-            $response = Http::withHeaders([
-                'Authorization' => 'Basic UllFL3N0YWdpbmctYTlmYjk0YjhmYTM1NGE4MTg5NWI6',
-                'Rye-Shopper-IP' => '122.180.247.198',
-                'Content-Type' => 'application/json',
-            ])->post('https://staging.graphql.api.rye.com/v1/query', [
-                'query' => "mutation SubmitCart(\$input: CartSubmitInput!) { submitCart(input: \$input) { cart { id stores { status orderId store { ... on ShopifyStore { store cartLines { quantity variant { id } } } } errors { code message } } } errors { code message } } }",
-                'variables' => [
-                    'input' => [
-                        'id' => $cart_id,
-                        'token' => env('PAYMENT_TOKEN'),
-                        'selectedShippingOptions' => [
-                            [
-                                'store' => 'amazon',
-                                'shippingId' => '0-Default shipping method',
-                            ]
-                        ],
-                        'billingAddress' => [
-                            'firstName' => 'Abhinav',
-                            'lastName' => 'Mathur',
-                            'phone' => '7568311283',
-                            'address1' => 'Office No. D-105B, G-4, Golden OAK-1, Devi Marg',
-                            'address2' => 'Sen Colony, Bani Park',
-                            'city' => 'Jaipur',
-                            'provinceCode' => 'RJ',
-                            'countryCode' => 'IN',
-                            'postalCode' => '302016',
-                        ],
-                        'cartSettings' => [
-                            'amazonSettings' => [
-                                'hidePriceOnPackage' => true,
+            $creatorShipping = CreatorShippingAddress::firstOrFail('creator_id', $request->creator_id);
+            $response = objectValue();
+            if ($creatorShipping) {
+                $cart_id = $request->cart_id;
+                $response = Http::withHeaders([
+                    'Authorization' => 'Basic UllFL3N0YWdpbmctYTlmYjk0YjhmYTM1NGE4MTg5NWI6',
+                    'Rye-Shopper-IP' => '122.180.247.198',
+                    'Content-Type' => 'application/json',
+                ])->post('https://staging.graphql.api.rye.com/v1/query', [
+                    'query' => "mutation SubmitCart(\$input: CartSubmitInput!) { submitCart(input: \$input) { cart { id stores { status orderId store { ... on ShopifyStore { store cartLines { quantity variant { id } } } } errors { code message } } } errors { code message } } }",
+                    'variables' => [
+                        'input' => [
+                            'id' => $cart_id,
+                            'token' => env('PAYMENT_TOKEN'),
+                            'selectedShippingOptions' => [
+                                [
+                                    'store' => 'amazon',
+                                    'shippingId' => '0-Default shipping method',
+                                ]
+                            ],
+                            'billingAddress' => [
+                                'firstName' => $creatorShipping->first_name,
+                                'lastName' => $creatorShipping->last_name,
+                                'phone' => $creatorShipping->phone,
+                                'address1' => $creatorShipping->address_1,
+                                'address2' => $creatorShipping->address_2,
+                                'city' => $creatorShipping->city,
+                                'provinceCode' => $creatorShipping->province_code,
+                                'countryCode' => $creatorShipping->country_code,
+                                'postalCode' => $creatorShipping->postal_code,
+                            ],
+                            'cartSettings' => [
+                                'amazonSettings' => [
+                                    'hidePriceOnPackage' => true,
+                                ]
                             ]
                         ]
                     ]
-                ]
-            ]);
+                ]);
+            }
 
             // Convert response to array
             $data = $response->json();
@@ -348,66 +360,87 @@ class TestController extends Controller
         }
     }
 
+    /**
+     * handle rye product payment and return the payment url
+     *
+     * @return Response
+     */
     public function handleRyeProductPayment(Request $request)
     {
-        $shopPaymentDetail = '';
-        $shop = [];
-        if ($shop->price > 0) {
+        $orderDetails = ProductOrderDetail::with('creator')->where(['cart_id' => $request->cart_id, 'creator_id' => $request->creator_id])->first();
+        if ($orderDetails) {
+            $amount = 00;
+            $currency = 'usd';
+            if (isset($orderDetails->details)) {
 
-            $lineItems[] = [
-                // 'price' => $dd->stripe_product_id ?? '',
-                'quantity' => $shopPaymentDetail->quantity,
-                'price_data' => [
-                    'currency' => $currency,
-                    'product' => $shop->stripe_product_id,
-                    'unit_amount_decimal' => Helpers::priceFormat($shop->user->default_currency, $total, $currency) * 100
-                ]
-            ];
+                $lineItems[] = [
+                    // 'price' => $dd->stripe_product_id ?? '',
+                    'quantity' => $orderDetails->details['data']['submitCart']['cart']['stores'][0]['cartLines'][0]['quantity'] ?? 1,
+                    'price_data' => [
+                        'currency' => 'usd',
+                        'product' => $orderDetails->details['data']['submitCart']['cart']['stores'][0]['cartLines'][0]['variant']['id'] ?? '',
+                        'unit_amount' => $orderDetails->details['data']['submitCart']['cart']['stores'][0]['cartLines'][0]['variant']['price'] ?? 0,
+                    ]
+                ];
+                //     'price_data' => [
+                //         'currency' => $currency,
+                //         'product' => $shop->stripe_product_id,
+                //         'unit_amount_decimal' => Helpers::priceFormat($shop->user->default_currency, $total, $currency) * 100
+                //     ]
+                // ];
 
-            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-            $sessionCreate = $stripe->checkout->sessions->create([
-                'success_url' => route('rye.success-payment', [$shopPaymentDetail->uuid]),
-                'cancel_url' => route('rye.cancel-payment', [$shopPaymentDetail->uuid]),
-                'line_items' => $lineItems,
-                'mode' => 'payment',
-                'payment_method_types' => ['card'], // Add this line
-                'payment_intent_data' => [
-                    'transfer_data' => [
-                        'destination' => $shop->user->account_id,
-                        'amount' => Helpers::priceFormat($shop->user->default_currency, $amount, $currency) * 100,
+                $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+                $sessionCreate = $stripe->checkout->sessions->create([
+                    'success_url' => route('rye.success.payment', [$orderDetails->uuid]),
+                    'cancel_url' => route('rye.cancel.payment', [$orderDetails->uuid]),
+                    'line_items' => $lineItems,
+                    'mode' => 'payment',
+                    'payment_method_types' => ['card'], // Add this line
+                    'payment_intent_data' => [
+                        'transfer_data' => [
+                            'destination' => $orderDetails->creator->account_id,
+                            'amount' => Helpers::priceFormat($orderDetails->user->default_currency, $amount, $currency) * 100,
+                        ],
+                        'on_behalf_of'  => $orderDetails->user->account_id,
                     ],
-                    'on_behalf_of'  => $shop->user->account_id,
-                ],
-                'customer_email' => request()->query('email'),
-            ]);
+                    'customer_email' => request()->query('email'),
+                ]);
 
-            // $sessionCreate = $stripe->checkout->sessions->create([
-            //     'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
-            //     'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
-            //     'line_items' => $lineItems,
-            //     'mode' => 'payment',
-            //     'payment_intent_data' => [
-            //         'transfer_data' => [
-            //             'destination' => $shop->user->account_id, // Creator's connected account ID
-            //             'amount' => Helpers::priceFormat($shop->user->default_currency, $amount, $currency) * 100,
-            //         ],
-            //         // 'application_fee_amount' => $taxNew * 100,
-            //         'on_behalf_of'  => $shop->user->account_id,
-            //     ],
-            //     'customer_email' =>  request()->query('email'),
-            //     // 'currency' => 'usd',
-            // ]);
+                // $sessionCreate = $stripe->checkout->sessions->create([
+                //     'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
+                //     'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
+                //     'line_items' => $lineItems,
+                //     'mode' => 'payment',
+                //     'payment_intent_data' => [
+                //         'transfer_data' => [
+                //             'destination' => $shop->user->account_id, // Creator's connected account ID
+                //             'amount' => Helpers::priceFormat($shop->user->default_currency, $amount, $currency) * 100,
+                //         ],
+                //         // 'application_fee_amount' => $taxNew * 100,
+                //         'on_behalf_of'  => $shop->user->account_id,
+                //     ],
+                //     'customer_email' =>  request()->query('email'),
+                //     // 'currency' => 'usd',
+                // ]);
 
-            // $shopPaymentDetail->session_id =  $sessionCreate->id;
-            // $shopPaymentDetail->save();
+                $orderDetails->session_id =  $sessionCreate->id;
+                $orderDetails->save();
 
-            return response()->json([
-                'status' => true,
-                'url' => $sessionCreate->url
-            ]);
+                return response()->json([
+                    'status' => true,
+                    'url' => $sessionCreate->url
+                ]);
+            }
         }
     }
 
+    /**
+     * rye integrations and functionality ends here
+     *
+     * handle rye webhook and store the response in the database
+     *
+     * @return Response
+     */
     public function handleRyeWebhook(Request $request): JsonResponse
     {
         // Log the full request for debugging

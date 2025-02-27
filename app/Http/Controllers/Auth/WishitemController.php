@@ -752,6 +752,10 @@ class WishitemController extends Controller
     /**
      * rye product functionality starts
      *
+     * create cart product for rye into our site
+     *
+     * @return Response
+     *
      */
     public function createCart(Request $request)
     {
@@ -801,6 +805,11 @@ class WishitemController extends Controller
         }
     }
 
+    /**
+     * check rye cart exist or not
+     *
+     * @return Response
+     */
     public function checkCartExist($creator_id): JsonResponse
     {
         $userId = Auth::id();
@@ -818,6 +827,11 @@ class WishitemController extends Controller
         ]);
     }
 
+    /**
+     * get all carts products details of rye
+     *
+     * @return Response
+     */
     public function getCartDetails(): JsonResponse
     {
         if (!Auth::check()) {
@@ -853,6 +867,30 @@ class WishitemController extends Controller
         ]);
     }
 
+    /**
+     * remove cart from rye cart
+     *
+     * @return Response
+     */
+    public function removeCart($cart_id)
+    {
+        $userId = Auth::id();
+        $deleted = RyeCart::where('user_id', $userId)
+            ->where('cart_id', $cart_id)
+            ->delete(); // Returns the number of deleted rows
+
+        // return Inertia::render('feed/AddGift');
+        return response()->json([
+            'status' => 'success',
+            'message' => $deleted ? 'Cart item deleted successfully' : 'Cart item not found'
+        ]);
+    }
+
+    /**
+     * create store address for creator on rye
+     *
+     * @return Response
+     */
     public function creatorStoreAddress(Request $request)
     {
         try {
@@ -903,34 +941,11 @@ class WishitemController extends Controller
             ], 500);
         }
     }
-
-    public function removeCart($cart_id)
-    {
-        $userId = Auth::id();
-        $deleted = RyeCart::where('user_id', $userId)
-            ->where('cart_id', $cart_id)
-            ->delete(); // Returns the number of deleted rows
-
-        // return Inertia::render('feed/AddGift');
-        return response()->json([
-            'status' => 'success',
-            'message' => $deleted ? 'Cart item deleted successfully' : 'Cart item not found'
-        ]);
-    }
-
-    public function getToken()
-    {
-        try {
-            $token = JwtHelper::generateToken();
-            return response()->json(['token' => $token], 200);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-    }
     /**
      * rye product functionality ends
      *
      */
+
 
     public function clearCart($deviceid, $ownerid)
     {

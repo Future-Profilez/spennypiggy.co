@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('creator_shipping_addresses', function (Blueprint $table) {
             $table->id();
+            $table->uuid('uuid')->unique();
             $table->bigInteger('creator_id');
             $table->string('first_name')->nullable();
             $table->string('last_name')->nullable();
