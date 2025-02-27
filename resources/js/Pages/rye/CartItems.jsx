@@ -224,10 +224,17 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
         <div className={`px-2`}>
             <div className="my-4 cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
                 <div className="cartMain">
-                    <h2 className="pb-1 wishtitle">Your Basket is Here.</h2>
+                    <h2 className="pb-1 wishtitle">Your Basket is for {cartsItems?.creator?.name || ""}
+                    <Link
+                            className="text-voilet"
+                            href={`/${cartsItems?.creator?.username || ""}`}
+                        >
+                            @{cartsItems?.creator?.username || ""}
+                        </Link>
+                    </h2>
                     <p className="pb-4">
                         You are about to send a payout to
-                        <strong> a user </strong> to fund their lifestyle.
+                        <strong> {cartsItems?.creator?.name || ""} </strong> to fund their lifestyle.
                     </p>
                     <div className="CartItemBox">
                         {datatoMap &&

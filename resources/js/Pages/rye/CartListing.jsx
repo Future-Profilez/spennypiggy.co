@@ -7,8 +7,8 @@ import LoadingScreen from "@/includes/LoadingScreen";
 import Nocontent from "@/includes/Nocontent";
 import CartItems from "./CartItems";
 
-export default function CartListing({auth, user}) {
-    // const { auth, user } = usePage().props;
+export default function CartListing() {
+    const { auth, user } = usePage().props;
     const [cartsItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(false);
     const fetchCartItem = (e) => {
@@ -33,7 +33,7 @@ export default function CartListing({auth, user}) {
 
     useEffect(() => {
         if (auth) {
-            fetchCartItem();
+        fetchCartItem();
         }
     }, []);
     // console.log("user",user);
