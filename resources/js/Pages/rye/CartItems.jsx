@@ -210,8 +210,8 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
                 errorAlert(response?.data?.message);
             }
         } catch (error) {
-            console.log("error", error);
-            errorAlert(error);
+            console.log("error", error?.response?.data);
+            errorAlert(error?.response?.data?.message);
         }
 
     }
