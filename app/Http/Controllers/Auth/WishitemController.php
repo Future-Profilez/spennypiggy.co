@@ -964,8 +964,9 @@ class WishitemController extends Controller
             $totalAmount = 0;
             $lineItems = [];
 
-            // Fetch cart lines dynamically
-            $cartLines = data_get($orderDetails, 'cart.stores.0.cartLines', []);
+            // Decode cart data if stored as JSON
+            $cartData = is_string($orderDetails->cart) ? json_decode($orderDetails->cart, true) : $orderDetails->cart;
+            $cartLines = data_get($cartData, 'stores.0.cartLines', []);
 
             // Check if cartLines is not empty
             if (empty($cartLines)) {
@@ -978,8 +979,8 @@ class WishitemController extends Controller
             // Loop through each cart line and build the Stripe line items
             foreach ($cartLines as $cartLine) {
                 $quantity = data_get($cartLine, 'quantity', 1);
-                $productId = data_get($cartLine, 'variant.id', '');
-                $unitPrice = data_get($cartLine, 'variant.price', 0) * 100; // Convert to cents
+                $unitPrice = data_get($cartLine, 'product.price.value', 0) * 100; // Convert to cents
+                $productId = data_get($cartLine, 'product.id', '');
 
                 if (!$productId || $unitPrice <= 0) {
                     return response()->json([
@@ -996,8 +997,10 @@ class WishitemController extends Controller
                     'quantity' => $quantity,
                     'price_data' => [
                         'currency' => $currency,
-                        'product' => $productId,
                         'unit_amount' => $unitPrice,
+                        'product_data' => [
+                            'name' => data_get($cartLine, 'product.title', 'Product'),
+                        ],
                     ],
                 ];
             }
@@ -1030,10 +1033,6 @@ class WishitemController extends Controller
                 'customer_email' => $orderDetails->user->email,
             ]);
 
-            // Store session ID in database
-            // $orderDetails->session_id = $sessionCreate->id;
-            // $orderDetails->save();
-
             return response()->json([
                 'status' => true,
                 'url' => $sessionCreate->url,
@@ -1050,6 +1049,7 @@ class WishitemController extends Controller
             ], 500);
         }
     }
+
     /**
      * rye product functionality ends
      *
