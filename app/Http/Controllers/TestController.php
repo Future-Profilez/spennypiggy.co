@@ -144,7 +144,7 @@ class TestController extends Controller
     }
 
     /**
-     * Test Tweetter OAuth1.1
+     * Test Twitter OAuth1.1
      */
     public function testX()
     {
@@ -294,7 +294,7 @@ class TestController extends Controller
         $ryeProducts->stripe_product_id = $product->id;
         $ryeProducts->details = json_encode($url, true);
         if ($ryeProducts->save()) {
-            return response()->json(['status' => 'success', 'message' => 'Data Added Successfully.']);
+            return response()->json(['status' => 'success', 'message' => 'Product Added Successfully.']);
         }
     }
 
@@ -374,80 +374,77 @@ class TestController extends Controller
         }
     }
 
-    /**
-     * handle rye product payment and return the payment url
-     *
-     * @return Response
-     */
-    public function handleRyeProductPayment(Request $request)
-    {
-        $orderDetails = ProductOrderDetail::with('creator')->where(['cart_id' => $request->cart_id, 'creator_id' => $request->creator_id])->first();
-        if ($orderDetails) {
-            $amount = $orderDetails->details['data']['submitCart']['cart']['stores'][0]['cartLines'][0]['variant']['price'] ?? 0;
-            $currency = 'usd';
-            if (isset($orderDetails->details)) {
 
-                $lineItems[] = [
-                    // 'price' => $dd->stripe_product_id ?? '',
-                    'quantity' => $orderDetails->details['data']['submitCart']['cart']['stores'][0]['cartLines'][0]['quantity'] ?? 1,
-                    'price_data' => [
-                        'currency' => 'usd',
-                        'product' => $orderDetails->details['data']['submitCart']['cart']['stores'][0]['cartLines'][0]['variant']['id'] ?? '',
-                        'unit_amount' => $orderDetails->details['data']['submitCart']['cart']['stores'][0]['cartLines'][0]['variant']['price'] ?? 0,
-                    ]
-                ];
 
-                //     'price_data' => [
-                //         'currency' => $currency,
-                //         'product' => $shop->stripe_product_id,
-                //         'unit_amount_decimal' => Helpers::priceFormat($shop->user->default_currency, $total, $currency) * 100
-                //     ]
-                // ];
+    // public function handleRyeProductPayment(Request $request)
+    // {
+    //     $orderDetails = RyeCart::with('creator')->where(['cart_id' => $request->cart_id, 'creator_id' => $request->creator_id])->first();
+    //     if ($orderDetails) {
+    //         $amount = $orderDetails->cart['stores'][0]['cartLines'][0]['variant']['price'] ?? 0;
+    //         $currency = 'usd';
+    //         if (isset($orderDetails->cart)) {
 
-                $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-                $sessionCreate = $stripe->checkout->sessions->create([
-                    'success_url' => route('rye.success.payment', [$orderDetails->uuid]),
-                    'cancel_url' => route('rye.cancel.payment', [$orderDetails->uuid]),
-                    'line_items' => $lineItems,
-                    'mode' => 'payment',
-                    'payment_method_types' => ['card'], // Add this line
-                    'payment_intent_data' => [
-                        'transfer_data' => [
-                            'destination' => $orderDetails->creator->account_id,
-                            'amount' => Helpers::priceFormat($orderDetails->user->default_currency, $amount, $currency) * 100,
-                        ],
-                        'on_behalf_of'  => $orderDetails->creator->account_id,
-                    ],
-                    'customer_email' => request()->query('email'),
-                ]);
+    //             $lineItems[] = [
+    //                 // 'price' => $dd->stripe_product_id ?? '',
+    //                 'quantity' => $orderDetails->cart['stores'][0]['cartLines'][0]['quantity'] ?? 1,
+    //                 'price_data' => [
+    //                     'currency' => 'usd',
+    //                     'product' => $orderDetails->cart['stores'][0]['cartLines'][0]['variant']['id'] ?? '',
+    //                     'unit_amount' => $orderDetails->cart['stores'][0]['cartLines'][0]['variant']['price'] ?? 0,
+    //                 ]
+    //             ];
 
-                // $sessionCreate = $stripe->checkout->sessions->create([
-                //     'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
-                //     'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
-                //     'line_items' => $lineItems,
-                //     'mode' => 'payment',
-                //     'payment_intent_data' => [
-                //         'transfer_data' => [
-                //             'destination' => $shop->user->account_id, // Creator's connected account ID
-                //             'amount' => Helpers::priceFormat($shop->user->default_currency, $amount, $currency) * 100,
-                //         ],
-                //         // 'application_fee_amount' => $taxNew * 100,
-                //         'on_behalf_of'  => $shop->user->account_id,
-                //     ],
-                //     'customer_email' =>  request()->query('email'),
-                //     // 'currency' => 'usd',
-                // ]);
+    //             //     'price_data' => [
+    //             //         'currency' => $currency,
+    //             //         'product' => $shop->stripe_product_id,
+    //             //         'unit_amount_decimal' => Helpers::priceFormat($shop->user->default_currency, $total, $currency) * 100
+    //             //     ]
+    //             // ];
 
-                $orderDetails->session_id =  $sessionCreate->id;
-                $orderDetails->save();
+    //             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+    //             $sessionCreate = $stripe->checkout->sessions->create([
+    //                 'success_url' => route('rye.success.payment', [$orderDetails->uuid]),
+    //                 'cancel_url' => route('rye.cancel.payment', [$orderDetails->uuid]),
+    //                 'line_items' => $lineItems,
+    //                 'mode' => 'payment',
+    //                 'payment_method_types' => ['card'], // Add this line
+    //                 'payment_intent_data' => [
+    //                     'transfer_data' => [
+    //                         'destination' => $orderDetails->creator->account_id,
+    //                         'amount' => Helpers::priceFormat($orderDetails->user->default_currency, $amount, $currency) * 100,
+    //                     ],
+    //                     'on_behalf_of'  => $orderDetails->creator->account_id,
+    //                 ],
+    //                 'customer_email' => request()->query('email'),
+    //             ]);
 
-                return response()->json([
-                    'status' => true,
-                    'url' => $sessionCreate->url
-                ]);
-            }
-        }
-    }
+    //             // $sessionCreate = $stripe->checkout->sessions->create([
+    //             //     'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
+    //             //     'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
+    //             //     'line_items' => $lineItems,
+    //             //     'mode' => 'payment',
+    //             //     'payment_intent_data' => [
+    //             //         'transfer_data' => [
+    //             //             'destination' => $shop->user->account_id, // Creator's connected account ID
+    //             //             'amount' => Helpers::priceFormat($shop->user->default_currency, $amount, $currency) * 100,
+    //             //         ],
+    //             //         // 'application_fee_amount' => $taxNew * 100,
+    //             //         'on_behalf_of'  => $shop->user->account_id,
+    //             //     ],
+    //             //     'customer_email' =>  request()->query('email'),
+    //             //     // 'currency' => 'usd',
+    //             // ]);
+
+    //             $orderDetails->session_id =  $sessionCreate->id;
+    //             $orderDetails->save();
+
+    //             return response()->json([
+    //                 'status' => true,
+    //                 'url' => $sessionCreate->url
+    //             ]);
+    //         }
+    //     }
+    // }
 
     /**
      * rye integrations and functionality ends here

@@ -941,6 +941,115 @@ class WishitemController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * handle rye product payment and return the payment url
+     *
+     * @return Response
+     */
+    public function handleRyeProductPayment(Request $request)
+    {
+        try {
+            // Fetch order details with creator relation
+            $orderDetails = RyeCart::with('creator', 'user')->where(['cart_id' => $request->cart_id, 'creator_id' => $request->creator_id])->first();
+
+            if (!$orderDetails) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Order details not found.',
+                ], 404);
+            }
+
+            $currency = 'usd'; // Assuming USD as currency
+            $totalAmount = 0;
+            $lineItems = [];
+
+            // Fetch cart lines dynamically
+            $cartLines = data_get($orderDetails, 'cart.stores.0.cartLines', []);
+
+            // Check if cartLines is not empty
+            if (empty($cartLines)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Cart is empty.',
+                ], 422);
+            }
+
+            // Loop through each cart line and build the Stripe line items
+            foreach ($cartLines as $cartLine) {
+                $quantity = data_get($cartLine, 'quantity', 1);
+                $productId = data_get($cartLine, 'variant.id', '');
+                $unitPrice = data_get($cartLine, 'variant.price', 0) * 100; // Convert to cents
+
+                if (!$productId || $unitPrice <= 0) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Invalid product details in cart.',
+                    ], 422);
+                }
+
+                // Add to total amount
+                $totalAmount += ($unitPrice * $quantity);
+
+                // Prepare Stripe line items
+                $lineItems[] = [
+                    'quantity' => $quantity,
+                    'price_data' => [
+                        'currency' => $currency,
+                        'product' => $productId,
+                        'unit_amount' => $unitPrice,
+                    ],
+                ];
+            }
+
+            // Ensure creator has a Stripe account
+            if (empty($orderDetails->creator->account_id) || empty($orderDetails->user->account_id)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Stripe account details are missing.',
+                ], 422);
+            }
+
+            // Initialize Stripe
+            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+
+            // Create Stripe checkout session
+            $sessionCreate = $stripe->checkout->sessions->create([
+                'success_url' => route('rye.success.payment', [$orderDetails->uuid]),
+                'cancel_url' => route('rye.cancel.payment', [$orderDetails->uuid]),
+                'line_items' => $lineItems,
+                'mode' => 'payment',
+                'payment_method_types' => ['card'],
+                'payment_intent_data' => [
+                    'transfer_data' => [
+                        'destination' => $orderDetails->creator->account_id,
+                        'amount' => $totalAmount,
+                    ],
+                    'on_behalf_of' => $orderDetails->creator->account_id,
+                ],
+                'customer_email' => $orderDetails->user->email,
+            ]);
+
+            // Store session ID in database
+            // $orderDetails->session_id = $sessionCreate->id;
+            // $orderDetails->save();
+
+            return response()->json([
+                'status' => true,
+                'url' => $sessionCreate->url,
+            ]);
+        } catch (\Stripe\Exception\ApiErrorException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Stripe API error: ' . $e->getMessage(),
+            ], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Something went wrong: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
     /**
      * rye product functionality ends
      *
