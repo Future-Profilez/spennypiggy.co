@@ -275,9 +275,23 @@ class TestController extends Controller
         if ($checkProductId) {
             return response()->json(['status' => 'error', 'message' => 'Product Already Added.']);
         }
+
+        // Create a new product on Stripe
+        $productPayload = [
+            "name"  =>  $url['title'],
+            "images" => [$url['images'][0]['url']],
+            "default_price_data"    =>  [
+                "currency"  =>  $url['price']['currency'],
+                "unit_amount_decimal"   => $url['price']['value'],
+            ],
+            "url"   => env('APP_URL') . "/gift-item/$url[id]",
+        ];
+
+        $product = StripeControl::createProduct($productPayload);
         $ryeProducts = new RyeProduct();
         $ryeProducts->creator_id = Auth::id();
         $ryeProducts->product_id = $url['id'];
+        $ryeProducts->stripe_product_id = $product->id;
         $ryeProducts->details = json_encode($url, true);
         if ($ryeProducts->save()) {
             return response()->json(['status' => 'success', 'message' => 'Data Added Successfully.']);
@@ -369,7 +383,7 @@ class TestController extends Controller
     {
         $orderDetails = ProductOrderDetail::with('creator')->where(['cart_id' => $request->cart_id, 'creator_id' => $request->creator_id])->first();
         if ($orderDetails) {
-            $amount = 00;
+            $amount = $orderDetails->details['data']['submitCart']['cart']['stores'][0]['cartLines'][0]['variant']['price'] ?? 0;
             $currency = 'usd';
             if (isset($orderDetails->details)) {
 
@@ -382,6 +396,7 @@ class TestController extends Controller
                         'unit_amount' => $orderDetails->details['data']['submitCart']['cart']['stores'][0]['cartLines'][0]['variant']['price'] ?? 0,
                     ]
                 ];
+
                 //     'price_data' => [
                 //         'currency' => $currency,
                 //         'product' => $shop->stripe_product_id,
@@ -401,7 +416,7 @@ class TestController extends Controller
                             'destination' => $orderDetails->creator->account_id,
                             'amount' => Helpers::priceFormat($orderDetails->user->default_currency, $amount, $currency) * 100,
                         ],
-                        'on_behalf_of'  => $orderDetails->user->account_id,
+                        'on_behalf_of'  => $orderDetails->creator->account_id,
                     ],
                     'customer_email' => request()->query('email'),
                 ]);
