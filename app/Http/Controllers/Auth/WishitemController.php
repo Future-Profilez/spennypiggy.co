@@ -979,7 +979,7 @@ class WishitemController extends Controller
             // Loop through each cart line and build the Stripe line items
             foreach ($cartLines as $cartLine) {
                 $quantity = data_get($cartLine, 'quantity', 1);
-                $unitPrice = data_get($cartLine, 'product.price.value', 0) * 100; // Convert to cents
+                $unitPrice = data_get($cartLine, 'product.price.value', 0); // Convert to cents
                 $productId = data_get($cartLine, 'product.id', '');
 
                 if (!$productId || $unitPrice <= 0) {
