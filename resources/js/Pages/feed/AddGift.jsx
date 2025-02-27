@@ -9,12 +9,18 @@ import { CiGift } from "react-icons/ci";
 import { RyeClient, ENVIRONMENT, Marketplace } from "@rye-api/rye-sdk";
 import Countries from "@/includes/Countries";
 
-export default function AddGift({ item, classes, updateState, fetch_gifts, addressAdded }) {
+export default function AddGift({
+    item,
+    classes,
+    updateState,
+    fetch_gifts,
+    addressAdded,
+}) {
     const [close, setClose] = useState();
     const { errorsHandling, successAlert, errorAlert } = useAlerts();
     const [loading, setLoading] = useState(false);
     const [title, setTitle] = useState(item?.title || "");
-    const[hasAdded,setHasAdded] = useState(addressAdded);
+    const [hasAdded, setHasAdded] = useState(addressAdded);
     const [formData, setFormData] = useState({
         first_name: "",
         last_name: "",
@@ -344,7 +350,7 @@ export default function AddGift({ item, classes, updateState, fetch_gifts, addre
             currency: "ZAR",
         },
     ];
-    
+
     const updated = data.sort((a, b) => a.label.localeCompare(b.label));
 
     const handleInput = (e) => {
@@ -355,18 +361,33 @@ export default function AddGift({ item, classes, updateState, fetch_gifts, addre
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = async(e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("formData",formData);
+        console.log("formData", formData);
         // Send the fetched product data to your API
-        const response = await axios.post(("creator-store-address"), formData);
-        console.log("response?.data",response?.data);
+        try {
+            const response = await axios.post(
+                "creator-store-address",
+                formData
+            );
+            console.log("response?.data", response?.data);
+            if (response?.data?.status === "success") {
+                successAlert(response?.data?.message);
+                setHasAdded(true);
+            } else {
+                errorAlert(response?.data?.message);
+            }
+        } catch (error) {
+            errorAlert(error);
+        }
     };
 
     const getCountry = (e) => {
         const selectedCode = e.target.value;
-        const selectedCountry = data.find(country => country.code === selectedCode);
-    
+        const selectedCountry = data.find(
+            (country) => country.code === selectedCode
+        );
+
         if (selectedCountry) {
             console.log("Selected Country:", selectedCountry.label);
             setFormData({ ...formData, country_code: selectedCountry.code });
@@ -374,7 +395,6 @@ export default function AddGift({ item, classes, updateState, fetch_gifts, addre
             setFormData({ ...formData, country_code: "" });
         }
     };
-    
 
     const getShopperIp = async () => {
         try {
@@ -553,12 +573,12 @@ export default function AddGift({ item, classes, updateState, fetch_gifts, addre
                     <input
                         onChange={(e) => {
                             if (
-                              e.target.value.length <= 10 &&
-                              /^[0-9]*$/.test(e.target.value)
+                                e.target.value.length <= 10 &&
+                                /^[0-9]*$/.test(e.target.value)
                             ) {
-                              handleChange(e);
+                                handleChange(e);
                             }
-                          }}
+                        }}
                         value={formData.phone}
                         name="phone"
                         type="text"
@@ -607,13 +627,11 @@ export default function AddGift({ item, classes, updateState, fetch_gifts, addre
                             required
                         />
                         <input
-                           onChange={(e) => {
-                            if (
-                              e.target.value.length <= 3
-                            ) {
-                              handleChange(e);
-                            }
-                          }}
+                            onChange={(e) => {
+                                if (e.target.value.length <= 3) {
+                                    handleChange(e);
+                                }
+                            }}
                             value={formData.province_code}
                             name="province_code"
                             placeholder="Province Code"
@@ -624,12 +642,22 @@ export default function AddGift({ item, classes, updateState, fetch_gifts, addre
                             send={handleChange}
                             className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
                         /> */}
-                        <select onChange={getCountry} name="country_code" className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control" required>
-                    <option value="" disabled selected>Choose</option>
-                    {updated && updated.map((c, i) => (
-                        <option key={`country-${i}`} value={c.code}>{c.label}</option>
-                    ))}
-                </select>
+                        <select
+                            onChange={getCountry}
+                            name="country_code"
+                            className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                            required
+                        >
+                            <option value="" disabled selected>
+                                Choose
+                            </option>
+                            {updated &&
+                                updated.map((c, i) => (
+                                    <option key={`country-${i}`} value={c.code}>
+                                        {c.label}
+                                    </option>
+                                ))}
+                        </select>
                         <input
                             onChange={handleChange}
                             type="number"
