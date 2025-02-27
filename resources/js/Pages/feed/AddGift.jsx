@@ -9,11 +9,12 @@ import { CiGift } from "react-icons/ci";
 import { RyeClient, ENVIRONMENT, Marketplace } from "@rye-api/rye-sdk";
 import Countries from "@/includes/Countries";
 
-export default function AddGift({ item, classes, updateState, fetch_gifts, auth }) {
+export default function AddGift({ item, classes, updateState, fetch_gifts, addressAdded }) {
     const [close, setClose] = useState();
     const { errorsHandling, successAlert, errorAlert } = useAlerts();
     const [loading, setLoading] = useState(false);
     const [title, setTitle] = useState(item?.title || "");
+    const[hasAdded,setHasAdded] = useState(addressAdded);
     const [formData, setFormData] = useState({
         first_name: "",
         last_name: "",
@@ -25,8 +26,7 @@ export default function AddGift({ item, classes, updateState, fetch_gifts, auth 
         country_code: "",
         postal_code: "",
     });
-    const [hasAdded, setHasAdded] = useState(false);
-    console.log("auth", auth);
+    console.log("addressAdded", addressAdded);
 
     const data = [
         {
@@ -344,6 +344,7 @@ export default function AddGift({ item, classes, updateState, fetch_gifts, auth 
             currency: "ZAR",
         },
     ];
+    
     const updated = data.sort((a, b) => a.label.localeCompare(b.label));
 
     const handleInput = (e) => {
@@ -354,12 +355,12 @@ export default function AddGift({ item, classes, updateState, fetch_gifts, auth 
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async(e) => {
         e.preventDefault();
         console.log("formData",formData);
-        // setLoading(true);
-        // Submit logic here
-        // setLoading(false);
+        // Send the fetched product data to your API
+        const response = await axios.post(("creator-store-address"), formData);
+        console.log("response?.data",response?.data);
     };
 
     const getCountry = (e) => {
@@ -368,7 +369,7 @@ export default function AddGift({ item, classes, updateState, fetch_gifts, auth 
     
         if (selectedCountry) {
             console.log("Selected Country:", selectedCountry.label);
-            setFormData({ ...formData, country_code: selectedCountry.label });
+            setFormData({ ...formData, country_code: selectedCountry.code });
         } else {
             setFormData({ ...formData, country_code: "" });
         }
@@ -550,9 +551,18 @@ export default function AddGift({ item, classes, updateState, fetch_gifts, auth 
                         Enter your Phone Number here
                     </p>
                     <input
-                        onChange={handleChange}
+                        onChange={(e) => {
+                            if (
+                              e.target.value.length <= 10 &&
+                              /^[0-9]*$/.test(e.target.value)
+                            ) {
+                              handleChange(e);
+                            }
+                          }}
                         value={formData.phone}
                         name="phone"
+                        type="text"
+                        maxLength="10"
                         placeholder="Phone"
                         className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control mb-3"
                         required
@@ -597,7 +607,13 @@ export default function AddGift({ item, classes, updateState, fetch_gifts, auth 
                             required
                         />
                         <input
-                            onChange={handleChange}
+                           onChange={(e) => {
+                            if (
+                              e.target.value.length <= 3
+                            ) {
+                              handleChange(e);
+                            }
+                          }}
                             value={formData.province_code}
                             name="province_code"
                             placeholder="Province Code"

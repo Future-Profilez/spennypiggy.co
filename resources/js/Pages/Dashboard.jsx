@@ -364,7 +364,7 @@ export default function Dashboard(props) {
                                         </>
                                     : '' }
                                     <AddPost classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} />
-                                    <AddGift classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} fetch_gifts={fetch_gifts} auth={auth} />
+                                    <AddGift classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} fetch_gifts={fetch_gifts} addressAdded={auth?.user?.is_creator_address_found} />
                                     <button onClick={()=>setShowAdd(false)} className="m-auto table p-2 mt-3"  >Cancel</button>
                                 </div>
                             </Suspense>
