@@ -17,6 +17,8 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
     const [checking, setChecking] = useState(false);
     const[loading,setLoading]=useState(false);
 
+    console.log("data",data);
+    console.log("cartsItems",cartsItems);
     const getShopperIp = async () => {
         try {
             const response = await fetch("https://api64.ipify.org?format=json");
@@ -178,7 +180,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
         fetchCartItem();
     }
 
-    const executeCaptcha = (e) => {
+    const executeCaptcha = async(e) => {
         e.preventDefault();
         hcaptchaRef.current.execute();
         setChecking(true);
@@ -188,18 +190,77 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
         handleSubmit();
     };
 
-    const handleSubmit=()=>{
-        console.log("Hello");
+    const handleSubmit=async()=>{
+        console.log("data?.cart?.id", data?.cart?.id);
+        console.log("cartsItems?.creator?.id", cartsItems?.creator?.id);
+        // return;
+        try {
+            const response = await axios.post(
+                "handle-rye-product-payment",{
+                    cart_id : data?.cart?.id,
+                    creator_id : cartsItems?.creator?.id,
+                }
+            );
+            console.log("response?.data", response?.data);
+            if (response?.data?.status === "success") {
+                successAlert(response?.data?.message);
+                setHasAdded(true);
+            } else {
+                errorAlert(response?.data?.message);
+            }
+        } catch (error) {
+            errorAlert(error);
+        }
+
     }
+
+    // const handleSubmit = async () => {        
+    //     const shopperIp = await getShopperIp();
+    //     const ryeClient = new RyeClient({
+    //         authHeader: `Basic UllFL3N0YWdpbmctYTlmYjk0YjhmYTM1NGE4MTg5NWI6`, // Use env variable
+    //         shopperIp: shopperIp,
+    //         environment: ENVIRONMENT.STAGING,
+    //     });
+    
+    //     console.log("data", data?.cart?.id);
+    //     return;
+    
+    //     const result = await ryeClient.submitCart({
+    //         input: {
+    //             id: data?.cart?.id,
+    //             token: "01JMYA3T67ESWNMRJABZP594CH",
+    //             billingAddress: {
+    //                 firstName: "Abhinav",
+    //                 lastName: "Mathur",
+    //                 phone: "7568311283",
+    //                 address1: "Office No. D-105B, G-4, Golden OAK-1, Devi Marg",
+    //                 city: "Jaipur",
+    //                 provinceCode: "RJ",
+    //                 countryCode: "IN",
+    //                 postalCode: "302016",
+    //             },
+    //         },
+    //     });
+    
+    //     console.log("result", result?.data);
+    // };
+       
 
     return (
         <div className={`px-2`}>
             <div className="my-4 cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
                 <div className="cartMain">
-                    <h2 className="pb-1 wishtitle">Your Basket is Here.</h2>
+                    <h2 className="pb-1 wishtitle">Your Basket is for {cartsItems?.creator?.name || ""}
+                    <Link
+                            className="text-voilet"
+                            href={`/${cartsItems?.creator?.username || ""}`}
+                        >
+                            @{cartsItems?.creator?.username || ""}
+                        </Link>
+                    </h2>
                     <p className="pb-4">
                         You are about to send a payout to
-                        <strong> a user </strong> to fund their lifestyle.
+                        <strong> {cartsItems?.creator?.name || ""} </strong> to fund their lifestyle.
                     </p>
                     <div className="CartItemBox">
                         {datatoMap &&
@@ -221,7 +282,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
                                                 />
                                             </div>
                                             <div>
-                                                {/* <div className="cartProdTitle ps-3 line-clamp-2">
+                                                <div className="cartProdTitle ps-3 line-clamp-2">
                                                     {c?.product?.title?.length >
                                                     30
                                                         ? c.product.title.slice(
@@ -229,7 +290,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
                                                               30
                                                           ) + "..."
                                                         : c?.product?.title}
-                                                </div> */}
+                                                </div>
                                             </div>
                                         </div>
 

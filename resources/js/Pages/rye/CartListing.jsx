@@ -33,9 +33,10 @@ export default function CartListing() {
 
     useEffect(() => {
         if (auth) {
-            fetchCartItem();
+        fetchCartItem();
         }
     }, []);
+    // console.log("user",user);
     // console.log("cartsItems", cartsItems);
     return (
         <div className="blackbg">
