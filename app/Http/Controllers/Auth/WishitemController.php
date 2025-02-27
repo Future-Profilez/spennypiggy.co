@@ -965,9 +965,9 @@ class WishitemController extends Controller
             $lineItems = [];
 
             // Decode cart data if stored as JSON
-            $cartData = is_string($orderDetails->cart) ? json_decode($orderDetails->cart, true) : $orderDetails->cart;
-            $cartLines = data_get($cartData, 'stores.0.cartLines', []);
-
+            $cartData = is_string($orderDetails->cart_details) ? json_decode($orderDetails->cart_details, true) : $orderDetails->cart_details;
+            $cartLines = data_get($cartData, 'cart.stores.0.cartLines', []);
+            // dd($cartLines);
             // Check if cartLines is not empty
             if (empty($cartLines)) {
                 return response()->json([
@@ -1006,7 +1006,7 @@ class WishitemController extends Controller
             }
 
             // Ensure creator has a Stripe account
-            if (empty($orderDetails->creator->account_id) || empty($orderDetails->user->account_id)) {
+            if (empty($orderDetails->creator->account_id)) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Stripe account details are missing.',
