@@ -170,7 +170,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
           }
           else{
             errorAlert(addCart?.data?.message);
-          }    
+          }
         console.log("addcart", addCart);
     }
 
@@ -214,17 +214,17 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
 
     }
 
-    // const handleSubmit = async () => {        
+    // const handleSubmit = async () => {
     //     const shopperIp = await getShopperIp();
     //     const ryeClient = new RyeClient({
     //         authHeader: `Basic UllFL3N0YWdpbmctYTlmYjk0YjhmYTM1NGE4MTg5NWI6`, // Use env variable
     //         shopperIp: shopperIp,
     //         environment: ENVIRONMENT.STAGING,
     //     });
-    
+
     //     console.log("data", data?.cart?.id);
     //     return;
-    
+
     //     const result = await ryeClient.submitCart({
     //         input: {
     //             id: data?.cart?.id,
@@ -241,10 +241,10 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
     //             },
     //         },
     //     });
-    
+
     //     console.log("result", result?.data);
     // };
-       
+
 
     return (
         <div className={`px-2`}>
@@ -268,7 +268,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
                             datatoMap?.map((c, i) => {
                                 return (
                                     <div
-                                        className={`border cartlist flex flex-wrap justify-between content-between items-center border-purple shadow-purple rounded-xl 
+                                        className={`border cartlist flex flex-wrap justify-between content-between items-center border-purple shadow-purple rounded-xl
                                         mb-3 mb-md-4 mb-ml-5 p-3 p-md-4`}
                                     >
                                         <div className="prodcartbox items-center">
