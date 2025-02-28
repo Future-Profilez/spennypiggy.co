@@ -11,6 +11,7 @@ import axios from 'axios';
 import { useAlerts } from '@/Components/Alerts';
 
 export default function Thankyou(props) {
+  const[apiRun,setApiRun]=useState(false);
 
     console.log('props', props);
         const { successAlert, errorAlert, errorsHandling } = useAlerts();
@@ -31,6 +32,7 @@ export default function Thankyou(props) {
         } else {
             errorAlert(response?.data?.message);
         }
+        setApiRun(true);
     } catch (error) {
         console.log("error", error?.response?.data);
         errorAlert(error?.response?.data?.message);
@@ -38,7 +40,9 @@ export default function Thankyou(props) {
     }
 
     useEffect(()=>{
-      getData();      
+      if(props?.cartData?.cart_id && props?.cartData?.creator_id && !apiRun){
+      getData();
+      }    
     },[props])
 
     return (
