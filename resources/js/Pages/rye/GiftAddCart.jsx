@@ -82,18 +82,18 @@ export default function GiftAddCart({ data, action, user, IsloggedIn }) {
                                 },
                             ],
                         },
-                        // buyerIdentity: {
-                        //     firstName: 'John',
-                        //     lastName: 'Doe',
-                        //     email: 'johndoe@example.com',
-                        //     phone: '+1 212-555-1234', // US phone number format
-                        //     address1: '1600 Amphitheatre Parkway',
-                        //     address2: 'Suite 100', // Optional
-                        //     city: 'Mountain View',
-                        //     provinceCode: 'CA', // US state code (California)
-                        //     countryCode: 'US', // US country code
-                        //     postalCode: '94043', // US ZIP code format
-                        //   },
+                        buyerIdentity: {
+                            firstName: 'John',
+                            lastName: 'Doe',
+                            email: 'johndoe@example.com',
+                            phone: '+1 212-555-1234', // US phone number format
+                            address1: '1600 Amphitheatre Parkway',
+                            address2: 'Suite 100', // Optional
+                            city: 'Mountain View',
+                            provinceCode: 'CA', // US state code (California)
+                            countryCode: 'US', // US country code
+                            postalCode: '94043', // US ZIP code format
+                          },
                     },
                 });
             }
