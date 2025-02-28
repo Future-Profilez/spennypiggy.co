@@ -6,13 +6,40 @@ import { useState } from 'react';
 import { useRef } from 'react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import userphoto from "../../../assets/img/userphoto.png";
+import { useEffect } from 'react';
+import axios from 'axios';
+import { useAlerts } from '@/Components/Alerts';
 
 export default function Thankyou(props) {
 
     console.log('props', props);
+        const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
-//   const {owner} = props;
-//   const { global_currency, auth, user } = usePage().props;
+    const getData = async() => {
+      try {
+        const cartId = props?.cartData?.cart_id || " ";
+        const creatorId = props?.cartData?.creator_id || "";
+        const response = await axios.post(route("store.product.order.details")
+            ,{
+                cart_id : cartId,
+                creator_id : creatorId,
+            }
+        );
+        console.log("response?.data", response?.data);
+        if (response?.data?.status === true) {
+            window.location.href = response?.data?.url;
+        } else {
+            errorAlert(response?.data?.message);
+        }
+    } catch (error) {
+        console.log("error", error?.response?.data);
+        errorAlert(error?.response?.data?.message);
+    }
+    }
+
+    useEffect(()=>{
+      getData();      
+    },[props])
 
     return (
         // <Authenticated auth={auth.user} user={user} >
@@ -30,11 +57,11 @@ export default function Thankyou(props) {
                 <h2 className='text-[25px] ' >Your gift has been sent.</h2>
                 <p className='pt-2 pb-4' >Check your email for a receipt.</p>
                 <div className='giftthank p-4' >
-                  <p>Thank you from Spenny Piggy on behalf of name here.</p>
+                  <p>Thank you from Spenny Piggy on behalf of {props && props?.cartData && props?.cartData?.creator && props?.cartData?.creator?.username} here.</p>
 
                     <div className="avatar rounded-[50%] w-20 h-20 overflow-hidden m-auto d-table mt-4 " >
                           <LazyLoadImage
-                          src={userphoto}
+                          src={props?.cartData?.creator?.avatar_url || userphoto}
                           alt="image-avatar" className="img-fluid rounded w-full h-full object-cover" useIntersectionObserver={true} effect="blur"
                           height={100}
                           width={100} />
