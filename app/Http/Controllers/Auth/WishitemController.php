@@ -1018,27 +1018,11 @@ class WishitemController extends Controller
             }
 
             // Initialize Stripe
-            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-
-            // $account = $stripe->accounts->retrieve($orderDetails->creator->account_id);
-
-            // $account = $stripe->accounts->update(
-            //     $orderDetails->creator->account_id,
-            //     [
-            //         'capabilities' => [
-            //             'card_payments' => ['requested' => true],
-            //             'transfers' => ['requested' => true]
-            //         ]
-            //     ]
-            // );
-
-            // dd($account);
-
 
             $ryeProductPayment = new RyeProductPayment();
             $ryeProductPayment->user_id = Auth::id();
             $ryeProductPayment->currency = $currency;
-            $ryeProductPayment->amount = $totalAmount;
+            $ryeProductPayment->amount = $totalAmount / 100;
             $ryeProductPayment->payment_method = 'card';
             $ryeProductPayment->customer_email = $orderDetails->user->email;
             $ryeProductPayment->save();
@@ -1046,6 +1030,7 @@ class WishitemController extends Controller
             Session::put('cartData', $orderDetails);
 
 
+            $stripe = new \Stripe\StripeClient(env('TEST_STRIPE_SECRET_KEY'));
             // Create Stripe checkout session
             $sessionCreate = $stripe->checkout->sessions->create([
                 'success_url' => route('rye.success.payment', [$ryeProductPayment->uuid]),
