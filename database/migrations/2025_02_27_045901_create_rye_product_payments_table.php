@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->bigInteger('user_id');
-            $table->bigInteger('product_id');
             $table->string('currency', 3); // Store currency code (USD, INR, etc.)
             $table->unsignedDecimal('amount', 10, 2); // Ensure no negative values
             $table->unsignedDecimal('tax', 10, 2)->default(0); // Default 0 to avoid null

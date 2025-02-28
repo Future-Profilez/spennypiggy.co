@@ -24,6 +24,7 @@ use App\Models\CreatorShippingAddress;
 use App\Models\Logs;
 use App\Models\MembershipPayment;
 use App\Models\RyeCart;
+use App\Models\RyeProductPayment;
 use App\Models\ShopPayment;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
@@ -50,6 +51,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Ramsey\Uuid\Nonstandard\Uuid as NonstandardUuid;
@@ -979,7 +981,7 @@ class WishitemController extends Controller
             // Loop through each cart line and build the Stripe line items
             foreach ($cartLines as $cartLine) {
                 $quantity = data_get($cartLine, 'quantity', 1);
-                $unitPrice = data_get($cartLine, 'product.price.value', 0) * 100; // Convert to cents
+                $unitPrice = data_get($cartLine, 'product.price.value', 0); // Convert to cents
                 $productId = data_get($cartLine, 'product.id', '');
 
                 if (!$productId || $unitPrice <= 0) {
@@ -1016,10 +1018,36 @@ class WishitemController extends Controller
             // Initialize Stripe
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
+            // $account = $stripe->accounts->retrieve($orderDetails->creator->account_id);
+
+            // $account = $stripe->accounts->update(
+            //     $orderDetails->creator->account_id,
+            //     [
+            //         'capabilities' => [
+            //             'card_payments' => ['requested' => true],
+            //             'transfers' => ['requested' => true]
+            //         ]
+            //     ]
+            // );
+
+            // dd($account);
+
+
+            $ryeProductPayment = new RyeProductPayment();
+            $ryeProductPayment->user_id = Auth::id();
+            $ryeProductPayment->currency = $currency;
+            $ryeProductPayment->amount = $totalAmount;
+            $ryeProductPayment->payment_method = 'card';
+            $ryeProductPayment->customer_email = $orderDetails->user->email;
+            $ryeProductPayment->save();
+
+            Session::put('cartData', [$orderDetails]);
+
+
             // Create Stripe checkout session
             $sessionCreate = $stripe->checkout->sessions->create([
-                'success_url' => route('rye.success.payment', [$orderDetails->uuid]),
-                'cancel_url' => route('rye.cancel.payment', [$orderDetails->uuid]),
+                'success_url' => route('rye.success.payment', [$ryeProductPayment->uuid]),
+                'cancel_url' => route('rye.cancel.payment', [$ryeProductPayment->uuid]),
                 'line_items' => $lineItems,
                 'mode' => 'payment',
                 'payment_method_types' => ['card'],
@@ -1032,6 +1060,9 @@ class WishitemController extends Controller
                 ],
                 'customer_email' => $orderDetails->user->email,
             ]);
+            Log::info('Stripe session create', ['session' => $sessionCreate]);
+
+            $ryeProductPayments = RyeProductPayment::whereUuid($ryeProductPayment->uuid)->update(['payment_metadata' => json_encode($sessionCreate)]);
 
             return response()->json([
                 'status' => true,
@@ -1048,6 +1079,34 @@ class WishitemController extends Controller
                 'message' => 'Something went wrong: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * handle rye product payment success
+     *
+     * @return Response
+     */
+    public function ryeSuccessPayment($uuid)
+    {
+        $orderDetails = RyeProductPayment::with('user')->where('uuid', $uuid)->first();
+
+        if (!$orderDetails) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Payment details not found.',
+            ], 404);
+        }
+
+        // Update order status
+        $orderDetails->status = 'succeeded';
+        $orderDetails->save();
+
+        $value = Session::get('cartData');
+
+        return Inertia::render('rye/ThankYouRye', [
+            'giftItem' => $orderDetails,
+            'cartData' => $value,
+        ]);
     }
 
     /**

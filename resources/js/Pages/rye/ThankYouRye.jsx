@@ -9,6 +9,8 @@ import userphoto from "../../../assets/img/userphoto.png";
 
 export default function Thankyou(props) {
 
+    console.log('props', props);
+
 //   const {owner} = props;
 //   const { global_currency, auth, user } = usePage().props;
 

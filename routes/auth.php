@@ -342,11 +342,6 @@ Route::get('users', [MyController::class, 'getUsers'])->name('users');
 
 Route::post('/send-surprize', [WishitemController::class, 'sendSurprise'])->name('send-surprize');
 
-
-Route::get('/thank-you-rye', function () {
-    return Inertia::render('rye/ThankYouRye');
-})->name("thank-you-rye");
-
 Route::get('/how-it-works', function () {
     return Inertia::render('howitworks/Works');
 })->name("how-it-works");
