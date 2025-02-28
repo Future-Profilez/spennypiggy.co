@@ -1143,7 +1143,7 @@ class WishitemController extends Controller
                                 'city' => $creatorShipping->city ?? 'New York',
                                 'provinceCode' => $creatorShipping->province_code ?? 'NY',
                                 'countryCode' => $creatorShipping->country_code ?? 'US',
-                                'postalCode' => $creatorShipping->postal_code ?? '00000', // Set a default postal code
+                                'postalCode' => $creatorShipping->postal_code ?? '10001', // Set a default postal code
                             ],
 
                             'cartSettings' => [
