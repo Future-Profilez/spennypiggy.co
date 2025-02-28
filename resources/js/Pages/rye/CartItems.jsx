@@ -204,8 +204,6 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
             console.log("response?.data", response?.data);
             if (response?.data?.status === true) {
                 window.location.href = response?.data?.url;
-                successAlert(response?.data?.message);
-                setHasAdded(true);
             } else {
                 errorAlert(response?.data?.message);
             }
