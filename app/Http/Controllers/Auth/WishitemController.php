@@ -1041,7 +1041,7 @@ class WishitemController extends Controller
             $ryeProductPayment->customer_email = $orderDetails->user->email;
             $ryeProductPayment->save();
 
-            Session::put('cartData', [$orderDetails]);
+            Session::put('cartData', $orderDetails);
 
 
             // Create Stripe checkout session
