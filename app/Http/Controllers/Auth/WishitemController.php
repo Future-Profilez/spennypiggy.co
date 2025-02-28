@@ -1106,7 +1106,6 @@ class WishitemController extends Controller
         $value = Session::get('cartData');
 
         return Inertia::render('rye/ThankYouRye', [
-            'giftItem' => $orderDetails,
             'cartData' => $value,
         ]);
     }

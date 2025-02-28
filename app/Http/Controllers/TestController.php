@@ -18,21 +18,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
 use App\Jobs\SendIdentityVerificationEmail;
-use App\Models\CreatorShippingAddress;
-use App\Models\ProductOrderDetail;
-use App\Models\RyeCart;
-use App\Models\RyeProduct;
 use Exception;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
-use Stripe\Balance;
-use Stripe\Stripe;
 
 class TestController extends Controller
 {
@@ -253,14 +245,6 @@ class TestController extends Controller
             return response()->json(['status' => 'error', 'message' => 'An error occurred while sending emails.']);
         }
     }
-
-
-
-
-
-
-
-
 
     // public function handleRyeProductPayment(Request $request)
     // {
