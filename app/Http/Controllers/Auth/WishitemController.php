@@ -1104,7 +1104,7 @@ class WishitemController extends Controller
     {
         try {
             $creatorShipping = CreatorShippingAddress::firstOrFail('creator_id', $request->creator_id);
-            $response = objectValue();
+            $response = (object) []; // Empty object
             if ($creatorShipping) {
                 $cart_id = $request->cart_id;
                 $response = Http::withHeaders([
