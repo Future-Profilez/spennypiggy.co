@@ -65,7 +65,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
             creator_id: cartsItems?.creator_id,
         });
         console.log("addcart", addCart);
-        successAlert(addCart?.data?.message);
+        // successAlert(addCart?.data?.message);
     };
 
     const handleRemove = async (productId) => {
@@ -96,7 +96,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
             creator_id: cartsItems?.creator_id,
         });
         console.log("addcart", addCart);
-        successAlert(addCart?.data?.message);
+        // successAlert(addCart?.data?.message);
     };
 
     const [datatoMap, setDataToMap] = useState(
@@ -250,7 +250,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
         <div className={`px-2`}>
             <div className="my-4 cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
                 <div className="cartMain">
-                    <h2 className="pb-1 wishtitle">Your Basket is for {cartsItems?.creator?.name || ""}
+                    <h2 className="pb-1 wishtitle">Your Basket for {cartsItems?.creator?.name || ""}
                     <Link
                             className="text-voilet"
                             href={`/${cartsItems?.creator?.username || ""}`}
