@@ -18,21 +18,21 @@ export default function Thankyou(props) {
 
     const getData = async() => {
       try {
+        setApiRun(true);
         const cartId = props?.cartData?.cart_id || " ";
         const creatorId = props?.cartData?.creator_id || "";
         const response = await axios.post(route("store.product.order.details")
-            ,{
-                cart_id : cartId,
-                creator_id : creatorId,
-            }
-        );
-        console.log("response?.data", response?.data);
+        ,{
+          cart_id : cartId,
+          creator_id : creatorId,
+        }
+      );
+      console.log("response?.data", response?.data);
         if (response?.data?.status === true) {
             window.location.href = response?.data?.url;
         } else {
             errorAlert(response?.data?.message);
         }
-        setApiRun(true);
     } catch (error) {
         console.log("error", error?.response?.data);
         errorAlert(error?.response?.data?.message);
