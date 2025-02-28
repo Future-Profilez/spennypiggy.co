@@ -23,7 +23,9 @@ use App\Models\BillPayment;
 use App\Models\CreatorShippingAddress;
 use App\Models\Logs;
 use App\Models\MembershipPayment;
+use App\Models\ProductOrderDetail;
 use App\Models\RyeCart;
+use App\Models\RyeProduct;
 use App\Models\RyeProductPayment;
 use App\Models\ShopPayment;
 use App\Models\StripePaymentDetail;
@@ -1109,6 +1111,125 @@ class WishitemController extends Controller
         ]);
     }
 
+        /**
+     * hit submitCart api and store the response in the database
+     *
+     * @return Response
+     */
+    public function storeProductOrderDetails(Request $request)
+    {
+        try {
+            $creatorShipping = CreatorShippingAddress::firstOrFail('creator_id', $request->creator_id);
+            $response = objectValue();
+            if ($creatorShipping) {
+                $cart_id = $request->cart_id;
+                $response = Http::withHeaders([
+                    'Authorization' => 'Basic UllFL3N0YWdpbmctYTlmYjk0YjhmYTM1NGE4MTg5NWI6',
+                    'Rye-Shopper-IP' => '122.180.247.198',
+                    'Content-Type' => 'application/json',
+                ])->post('https://staging.graphql.api.rye.com/v1/query', [
+                    'query' => "mutation SubmitCart(\$input: CartSubmitInput!) { submitCart(input: \$input) { cart { id stores { status orderId store { ... on ShopifyStore { store cartLines { quantity variant { id } } } } errors { code message } } } errors { code message } } }",
+                    'variables' => [
+                        'input' => [
+                            'id' => $cart_id,
+                            'token' => env('PAYMENT_TOKEN'),
+                            'selectedShippingOptions' => [
+                                [
+                                    'store' => 'amazon',
+                                    'shippingId' => '0-Default shipping method',
+                                ]
+                            ],
+                            'billingAddress' => [
+                                'firstName' => $creatorShipping->first_name,
+                                'lastName' => $creatorShipping->last_name,
+                                'phone' => $creatorShipping->phone,
+                                'address1' => $creatorShipping->address_1,
+                                'address2' => $creatorShipping->address_2,
+                                'city' => $creatorShipping->city,
+                                'provinceCode' => $creatorShipping->province_code,
+                                'countryCode' => $creatorShipping->country_code,
+                                'postalCode' => $creatorShipping->postal_code,
+                            ],
+                            'cartSettings' => [
+                                'amazonSettings' => [
+                                    'hidePriceOnPackage' => true,
+                                ]
+                            ]
+                        ]
+                    ]
+                ]);
+            }
+
+            // Convert response to array
+            $data = $response->json();
+            Log::info('SubmitCart API Response:', $data);
+
+            // Extract necessary details
+            $user_id = Auth::id();
+            $creator_id = $request->creator_id;
+            $order_id = $data['data']['submitCart']['cart']['stores'][0]['orderId'] ?? null;
+            $payment_status = $data['data']['submitCart']['cart']['stores'][0]['status'] ?? 'pending';
+            $details = json_encode($data, true);
+
+            // Store the response data in the database
+            ProductOrderDetail::create([
+                'user_id' => $user_id,
+                'creater_id' => $creator_id,
+                'cart_id' => $cart_id,
+                'order_id' => $order_id,
+                'details' => $details,
+                'payment_status' => $payment_status,
+            ]);
+
+            RyeCart::where('cart_id', $cart_id)->delete();
+
+            return response()->json(['status' => 'success', 'message' => 'Order details stored', 'data' => $data]);
+        } catch (Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+    }
+
+        /**
+     * rye integrations starts from here
+     *
+     * create rye product and store in the database
+     *
+     * @return Response
+     */
+    public function createRyeProduct(Request $request)
+    {
+        $request->validate([
+            'url' => 'required',
+        ]);
+        // Extract the URL from the request (assuming it's passed as a query parameter)
+        $url = $request->input('url');  // You can change this as per your need
+        $checkProductId = RyeProduct::where('creator_id', Auth::id())->where('product_id', $url['id'])->exists();
+        // dd($url);
+        if ($checkProductId) {
+            return response()->json(['status' => 'error', 'message' => 'Product Already Added.']);
+        }
+
+        // Create a new product on Stripe
+        $productPayload = [
+            "name"  =>  $url['title'],
+            "images" => [$url['images'][0]['url']],
+            "default_price_data"    =>  [
+                "currency"  =>  $url['price']['currency'],
+                "unit_amount_decimal"   => $url['price']['value'],
+            ],
+            "url"   => env('APP_URL') . "/gift-item/$url[id]",
+        ];
+
+        $product = StripeControl::createProduct($productPayload);
+        $ryeProducts = new RyeProduct();
+        $ryeProducts->creator_id = Auth::id();
+        $ryeProducts->product_id = $url['id'];
+        $ryeProducts->stripe_product_id = $product->id;
+        $ryeProducts->details = json_encode($url, true);
+        if ($ryeProducts->save()) {
+            return response()->json(['status' => 'success', 'message' => 'Product Added Successfully.']);
+        }
+    }
     /**
      * rye product functionality ends
      *

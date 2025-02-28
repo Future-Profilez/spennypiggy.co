@@ -55,11 +55,6 @@ Route::get('get-cart', function () {
 Route::post('/rye-webhook', [TestController::class, 'handleRyeWebhook'])->name('rye.webhook');
 
 
-Route::post('create-creator-product', [TestController::class, 'createRyeProduct'])->name('create.creator.product');
-
-Route::post('store-product-order-details', [TestController::class, 'storeProductOrderDetails'])->name('store.product.order.details');
-
-
 // Route::post('test-stripe', function (Request $request) {
 //     $request = json_encode($request->all());
 //     Log::info("webhook run: $request");

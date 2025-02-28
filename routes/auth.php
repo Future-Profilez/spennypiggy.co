@@ -312,6 +312,7 @@ Route::get('/remove-from-cart/{uuid}', [WishitemController::class, 'removeSurpri
 Route::get('/add-to-cart/{uuid}/{device_id}/{sub}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
 
 // rye product routes start
+Route::post('create-creator-product', [WishitemController::class, 'createRyeProduct'])->name('create.creator.product');
 Route::post('create-cart', [WishitemController::class, 'createCart'])->name('create.cart');
 Route::get('check-cart-exist/{creator_id}', [WishitemController::class, 'checkCartExist'])->name('check.cart.exist');
 Route::get('remove-cart/{cart_id}', [WishitemController::class, 'removeCart'])->name('remove.cart');
@@ -319,6 +320,7 @@ Route::get('get-cart-details', [WishitemController::class, 'getCartDetails'])->n
 Route::post('creator-store-address', [WishitemController::class, 'creatorStoreAddress'])->name('creator.store.address');
 Route::post('handle-rye-product-payment', [WishitemController::class, 'handleRyeProductPayment'])->name('handle.rye.product.payment');
 Route::get('rye-success-payment/{uuid}', [WishitemController::class, 'ryeSuccessPayment'])->name('rye.success.payment');
+Route::post('store-product-order-details', [WishitemController::class, 'storeProductOrderDetails'])->name('store.product.order.details');
 Route::get('rye-cancel-payment/{uuid}', [WishitemController::class, 'ryeCancelPayment'])->name('rye.cancel.payment');
 // rye product routes end
 
