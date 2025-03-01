@@ -1095,7 +1095,7 @@ class WishitemController extends Controller
         ]);
     }
 
-        /**
+    /**
      * hit submitCart api and store the response in the database
      *
      * @return Response
@@ -1123,17 +1123,29 @@ class WishitemController extends Controller
                                     'shippingId' => '0-Default shipping method',
                                 ]
                             ],
+                            // 'billingAddress' => [
+                            //     'firstName' => 'John',
+                            //     'lastName' => 'Doe',
+                            //     'phone' => '+12345678901',
+                            //     'address1' => '123 Main Street',
+                            //     'address2' => 'Apt 4B',
+                            //     'city' => 'New York',
+                            //     'provinceCode' => 'NY',
+                            //     'countryCode' => 'US',
+                            //     'postalCode' => '10001',
+                            // ],
                             'billingAddress' => [
-                                'firstName' => $creatorShipping->first_name,
-                                'lastName' => $creatorShipping->last_name,
-                                'phone' => $creatorShipping->phone,
-                                'address1' => $creatorShipping->address_1,
-                                'address2' => $creatorShipping->address_2,
-                                'city' => $creatorShipping->city,
-                                'provinceCode' => $creatorShipping->province_code,
-                                'countryCode' => $creatorShipping->country_code,
-                                'postalCode' => $creatorShipping->postal_code,
+                                'firstName' => $creatorShipping->first_name ?? 'John',
+                                'lastName' => $creatorShipping->last_name ?? 'Doe',
+                                'phone' => $creatorShipping->phone ?? '+1 234-567-8901',
+                                'address1' => $creatorShipping->address_1 ?? '123 Main Street',
+                                'address2' => $creatorShipping->address_2 ?? 'Apt 4B',
+                                'city' => $creatorShipping->city ?? 'New York',
+                                'provinceCode' => $creatorShipping->province_code ?? 'NY',
+                                'countryCode' => $creatorShipping->country_code ?? 'US',
+                                'postalCode' => $creatorShipping->postal_code ?? '10001', // Set a default postal code
                             ],
+
                             'cartSettings' => [
                                 'amazonSettings' => [
                                     'hidePriceOnPackage' => true,
@@ -1165,7 +1177,7 @@ class WishitemController extends Controller
                 'payment_status' => $payment_status,
             ]);
 
-            RyeCart::where('cart_id', $cart_id)->delete();
+            // RyeCart::where('cart_id', $cart_id)->delete();
 
             return response()->json(['status' => 'success', 'message' => 'Order details stored', 'data' => $data]);
         } catch (Exception $e) {
@@ -1173,7 +1185,7 @@ class WishitemController extends Controller
         }
     }
 
-        /**
+    /**
      * rye integrations starts from here
      *
      * create rye product and store in the database
