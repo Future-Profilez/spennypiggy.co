@@ -11,21 +11,23 @@ import axios from 'axios';
 import { useAlerts } from '@/Components/Alerts';
 
 export default function Thankyou(props) {
+  const[apiRun,setApiRun]=useState(false);
 
     console.log('props', props);
         const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
     const getData = async() => {
       try {
+        setApiRun(true);
         const cartId = props?.cartData?.cart_id || " ";
         const creatorId = props?.cartData?.creator_id || "";
         const response = await axios.post(route("store.product.order.details")
-            ,{
-                cart_id : cartId,
-                creator_id : creatorId,
-            }
-        );
-        console.log("response?.data", response?.data);
+        ,{
+          cart_id : cartId,
+          creator_id : creatorId,
+        }
+      );
+      console.log("response?.data", response?.data);
         if (response?.data?.status === true) {
             window.location.href = response?.data?.url;
         } else {
@@ -38,7 +40,9 @@ export default function Thankyou(props) {
     }
 
     useEffect(()=>{
-      getData();      
+      if(props?.cartData?.cart_id && props?.cartData?.creator_id && !apiRun){
+      getData();
+      }    
     },[props])
 
     return (
