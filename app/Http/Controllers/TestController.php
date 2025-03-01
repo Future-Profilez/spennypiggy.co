@@ -316,44 +316,7 @@ class TestController extends Controller
     //     }
     // }
 
-    /**
-     * rye integrations and functionality ends here
-     *
-     * handle rye webhook and store the response in the database
-     *
-     * @return Response
-     */
-    public function handleRyeWebhook(Request $request): JsonResponse
-    {
-        // Log the full request for debugging
-        Log::info('Rye Webhook Request:', $request->all());
 
-        // // **Fix: Extract challenge from "data.challenge"**
-        // if ($request->has('data.challenge')) {
-        //     return response()->json(['challenge' => $request->input('data.challenge')]);
-        // }
-
-        // **Step 2: Process Webhook Events**
-        $webhookData = $request->all();
-
-        if (!empty($webhookData['event'])) {
-            switch ($webhookData['event']) {
-                case 'cart.updated':
-                    Log::info('Cart updated:', $webhookData);
-                    break;
-                case 'payment.success':
-                    Log::info('Payment successful:', $webhookData);
-                    break;
-                case 'order.created':
-                    Log::info('Order created:', $webhookData);
-                    break;
-                default:
-                    Log::info('Unhandled webhook event:', $webhookData);
-            }
-        }
-
-        return response()->json(['status' => 'success']);
-    }
 
 
     // public function createCart(Request $request)

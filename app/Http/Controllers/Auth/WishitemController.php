@@ -954,121 +954,121 @@ class WishitemController extends Controller
     public function handleRyeProductPayment(Request $request)
     {
         Log::info('Rye Product Payment Request', ['request' => $request->all()]);
-        // try {
-        // Fetch order details with creator relation
-        $orderDetails = RyeCart::with('creator', 'user')->where(['cart_id' => $request->cart_id, 'creator_id' => $request->creator_id])->first();
+        try {
+            // Fetch order details with creator relation
+            $orderDetails = RyeCart::with('creator', 'user')->where(['cart_id' => $request->cart_id, 'creator_id' => $request->creator_id])->first();
 
-        if (!$orderDetails) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Order details not found.',
-            ], 404);
-        }
-
-        $currency = 'usd'; // Assuming USD as currency
-        $totalAmount = 0;
-        $lineItems = [];
-
-        // Decode cart data if stored as JSON
-        $cartData = is_string($orderDetails->cart_details) ? json_decode($orderDetails->cart_details, true) : $orderDetails->cart_details;
-        $cartLines = data_get($cartData, 'cart.stores.0.cartLines', []);
-        // dd($cartLines);
-        // Check if cartLines is not empty
-        if (empty($cartLines)) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Cart is empty.',
-            ], 422);
-        }
-
-        // Loop through each cart line and build the Stripe line items
-        foreach ($cartLines as $cartLine) {
-            $quantity = data_get($cartLine, 'quantity', 1);
-            $unitPrice = data_get($cartLine, 'product.price.value', 0); // Convert to cents
-            $productId = data_get($cartLine, 'product.id', '');
-
-            if (!$productId || $unitPrice <= 0) {
+            if (!$orderDetails) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Invalid product details in cart.',
+                    'message' => 'Order details not found.',
+                ], 404);
+            }
+
+            $currency = 'usd'; // Assuming USD as currency
+            $totalAmount = 0;
+            $lineItems = [];
+
+            // Decode cart data if stored as JSON
+            $cartData = is_string($orderDetails->cart_details) ? json_decode($orderDetails->cart_details, true) : $orderDetails->cart_details;
+            $cartLines = data_get($cartData, 'cart.stores.0.cartLines', []);
+            // dd($cartLines);
+            // Check if cartLines is not empty
+            if (empty($cartLines)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Cart is empty.',
                 ], 422);
             }
 
-            // Add to total amount
-            $totalAmount += ($unitPrice * $quantity);
+            // Loop through each cart line and build the Stripe line items
+            foreach ($cartLines as $cartLine) {
+                $quantity = data_get($cartLine, 'quantity', 1);
+                $unitPrice = data_get($cartLine, 'product.price.value', 0); // Convert to cents
+                $productId = data_get($cartLine, 'product.id', '');
 
-            // Prepare Stripe line items
-            $lineItems[] = [
-                'quantity' => $quantity,
-                'price_data' => [
-                    'currency' => $currency,
-                    'unit_amount' => $unitPrice,
-                    'product_data' => [
-                        'name' => data_get($cartLine, 'product.title', 'Product'),
+                if (!$productId || $unitPrice <= 0) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Invalid product details in cart.',
+                    ], 422);
+                }
+
+                // Add to total amount
+                $totalAmount += ($unitPrice * $quantity);
+
+                // Prepare Stripe line items
+                $lineItems[] = [
+                    'quantity' => $quantity,
+                    'price_data' => [
+                        'currency' => $currency,
+                        'unit_amount' => $unitPrice,
+                        'product_data' => [
+                            'name' => data_get($cartLine, 'product.title', 'Product'),
+                        ],
                     ],
-                ],
-            ];
-        }
+                ];
+            }
 
-        // Ensure creator has a Stripe account
-        if (empty($orderDetails->creator->account_id)) {
+            // Ensure creator has a Stripe account
+            if (empty($orderDetails->creator->account_id)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Stripe account details are missing.',
+                ], 422);
+            }
+
+            // Initialize Stripe
+
+            $ryeProductPayment = new RyeProductPayment();
+            $ryeProductPayment->user_id = Auth::id();
+            $ryeProductPayment->currency = $currency;
+            $ryeProductPayment->amount = $totalAmount / 100;
+            $ryeProductPayment->payment_method = 'card';
+            $ryeProductPayment->customer_email = $orderDetails->user->email;
+            $ryeProductPayment->save();
+
+            Session::put('cartData', $orderDetails);
+
+
+            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+            // Create Stripe checkout session
+            $sessionCreate = $stripe->checkout->sessions->create([
+                'success_url' => route('rye.success.payment', [$ryeProductPayment->uuid]),
+                'cancel_url' => route('rye.cancel.payment', [$ryeProductPayment->uuid]),
+                'line_items' => $lineItems,
+                'mode' => 'payment',
+                'payment_method_types' => ['card'],
+                'payment_intent_data' => [
+                    'transfer_data' => [
+                        'destination' => $orderDetails->creator->account_id,
+                        'amount' => $totalAmount,
+                    ],
+                    'on_behalf_of' => $orderDetails->creator->account_id,
+                ],
+                'customer_email' => $orderDetails->user->email,
+            ]);
+            Log::info('Stripe session create', ['session' => $sessionCreate]);
+
+            $ryeProductPayments = RyeProductPayment::whereUuid($ryeProductPayment->uuid)->update(['payment_metadata' => json_encode($sessionCreate)]);
+
+            return response()->json([
+                'status' => true,
+                'url' => $sessionCreate->url,
+            ]);
+        } catch (\Stripe\Exception\ApiErrorException $e) {
+            Log::info('Stripe API Error', ['error' => $e->getMessage()]);
             return response()->json([
                 'status' => false,
-                'message' => 'Stripe account details are missing.',
-            ], 422);
+                'message' => 'Stripe API error: ' . $e->getMessage(),
+            ], 500);
+        } catch (\Exception $e) {
+            Log::info('Stripe Payment Error', ['error' => $e->getMessage()]);
+            return response()->json([
+                'status' => false,
+                'message' => 'Something went wrong: ' . $e->getMessage(),
+            ], 500);
         }
-
-        // Initialize Stripe
-
-        $ryeProductPayment = new RyeProductPayment();
-        $ryeProductPayment->user_id = Auth::id();
-        $ryeProductPayment->currency = $currency;
-        $ryeProductPayment->amount = $totalAmount / 100;
-        $ryeProductPayment->payment_method = 'card';
-        $ryeProductPayment->customer_email = $orderDetails->user->email;
-        $ryeProductPayment->save();
-
-        Session::put('cartData', $orderDetails);
-
-
-        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-        // Create Stripe checkout session
-        $sessionCreate = $stripe->checkout->sessions->create([
-            'success_url' => route('rye.success.payment', [$ryeProductPayment->uuid]),
-            'cancel_url' => route('rye.cancel.payment', [$ryeProductPayment->uuid]),
-            'line_items' => $lineItems,
-            'mode' => 'payment',
-            'payment_method_types' => ['card'],
-            'payment_intent_data' => [
-                'transfer_data' => [
-                    'destination' => $orderDetails->creator->account_id,
-                    'amount' => $totalAmount,
-                ],
-                'on_behalf_of' => $orderDetails->creator->account_id,
-            ],
-            'customer_email' => $orderDetails->user->email,
-        ]);
-        Log::info('Stripe session create', ['session' => $sessionCreate]);
-
-        $ryeProductPayments = RyeProductPayment::whereUuid($ryeProductPayment->uuid)->update(['payment_metadata' => json_encode($sessionCreate)]);
-
-        return response()->json([
-            'status' => true,
-            'url' => $sessionCreate->url,
-        ]);
-        // } catch (\Stripe\Exception\ApiErrorException $e) {
-        //     Log::info('Stripe API Error', ['error' => $e->getMessage()]);
-        //     return response()->json([
-        //         'status' => false,
-        //         'message' => 'Stripe API error: ' . $e->getMessage(),
-        //     ], 500);
-        // } catch (\Exception $e) {
-        //     Log::info('Stripe Payment Error', ['error' => $e->getMessage()]);
-        //     return response()->json([
-        //         'status' => false,
-        //         'message' => 'Something went wrong: ' . $e->getMessage(),
-        //     ], 500);
-        // }
     }
 
     /**
@@ -1096,6 +1096,45 @@ class WishitemController extends Controller
         return Inertia::render('rye/ThankYouRye', [
             'cartData' => $value,
         ]);
+    }
+
+    /**
+     * rye integrations and functionality ends here
+     *
+     * handle rye webhook and store the response in the database
+     *
+     * @return Response
+     */
+    public function handleRyeWebhook(Request $request): JsonResponse
+    {
+        // Log the full request for debugging
+        Log::info('Rye Webhook Request:', $request->all());
+
+        // // **Fix: Extract challenge from "data.challenge"**
+        // if ($request->has('data.challenge')) {
+        //     return response()->json(['challenge' => $request->input('data.challenge')]);
+        // }
+
+        // **Step 2: Process Webhook Events**
+        $webhookData = $request->all();
+
+        if (!empty($webhookData['event'])) {
+            switch ($webhookData['event']) {
+                case 'cart.updated':
+                    Log::info('Cart updated:', $webhookData);
+                    break;
+                case 'payment.success':
+                    Log::info('Payment successful:', $webhookData);
+                    break;
+                case 'order.created':
+                    Log::info('Order created:', $webhookData);
+                    break;
+                default:
+                    Log::info('Unhandled webhook event:', $webhookData);
+            }
+        }
+
+        return response()->json(['status' => 'success']);
     }
 
     /**
