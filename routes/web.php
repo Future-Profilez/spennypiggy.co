@@ -56,6 +56,9 @@ Route::get('get-cart', function () {
 Route::post('/rye-webhook', [WishitemController::class, 'handleRyeWebhook'])->name('rye.webhook');
 
 
+Route::post('handle-rye-product-payment', [WishitemController::class, 'handleRyeProductPayment'])->name('handle.rye.product.payment');
+
+
 // Route::post('test-stripe', function (Request $request) {
 //     $request = json_encode($request->all());
 //     Log::info("webhook run: $request");

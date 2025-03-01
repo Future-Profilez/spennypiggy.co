@@ -1030,7 +1030,6 @@ class WishitemController extends Controller
 
             Session::put('cartData', $orderDetails);
 
-
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
             // Create Stripe checkout session
             $sessionCreate = $stripe->checkout->sessions->create([
@@ -1048,10 +1047,11 @@ class WishitemController extends Controller
                 ],
                 'customer_email' => $orderDetails->user->email,
             ]);
+            // Log::info('Stripe session create', ['session' => $sessionCreate]);
+
+            RyeProductPayment::whereUuid($ryeProductPayment->uuid)->update(['payment_metadata' => json_encode($sessionCreate)]);
+
             Log::info('Stripe session create', ['session' => $sessionCreate]);
-
-            $ryeProductPayments = RyeProductPayment::whereUuid($ryeProductPayment->uuid)->update(['payment_metadata' => json_encode($sessionCreate)]);
-
             return response()->json([
                 'status' => true,
                 'url' => $sessionCreate->url,
@@ -1096,6 +1096,31 @@ class WishitemController extends Controller
         return Inertia::render('rye/ThankYouRye', [
             'cartData' => $value,
         ]);
+    }
+
+    /**
+     * handle rye product payment success
+     *
+     * @return Response
+     */
+    public function ryeCancelPayment($uuid)
+    {
+        $orderDetails = RyeProductPayment::with('user')->where('uuid', $uuid)->first();
+
+        if ($orderDetails) {
+            $orderDetails->status = "canceled";
+            $orderDetails->save();
+        }
+        // if (!$orderDetails) {
+        // return response()->json([
+        //     'status' => false,
+        //     'message' => 'Payment details not found.',
+        // ], 404);
+        // }
+
+        $payment = ShopPayment::where('uuid', $uuid)->first();
+
+        return redirect(route('cart'))->with('error', 'Payment Cancelled.');
     }
 
     /**
