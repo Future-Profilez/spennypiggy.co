@@ -953,6 +953,7 @@ class WishitemController extends Controller
      */
     public function handleRyeProductPayment(Request $request)
     {
+        Log::info('Rye Product Payment Request', ['request' => $request->all()]);
         try {
             // Fetch order details with creator relation
             $orderDetails = RyeCart::with('creator', 'user')->where(['cart_id' => $request->cart_id, 'creator_id' => $request->creator_id])->first();
@@ -1056,11 +1057,13 @@ class WishitemController extends Controller
                 'url' => $sessionCreate->url,
             ]);
         } catch (\Stripe\Exception\ApiErrorException $e) {
+            Log::info('Stripe API Error', ['error' => $e->getMessage()]);
             return response()->json([
                 'status' => false,
                 'message' => 'Stripe API error: ' . $e->getMessage(),
             ], 500);
         } catch (\Exception $e) {
+            Log::info('Stripe Payment Error', ['error' => $e->getMessage()]);
             return response()->json([
                 'status' => false,
                 'message' => 'Something went wrong: ' . $e->getMessage(),
