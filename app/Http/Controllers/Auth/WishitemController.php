@@ -1031,7 +1031,7 @@ class WishitemController extends Controller
             Session::put('cartData', $orderDetails);
 
 
-            $stripe = new \Stripe\StripeClient(env('TEST_STRIPE_SECRET_KEY'));
+            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
             // Create Stripe checkout session
             $sessionCreate = $stripe->checkout->sessions->create([
                 'success_url' => route('rye.success.payment', [$ryeProductPayment->uuid]),
