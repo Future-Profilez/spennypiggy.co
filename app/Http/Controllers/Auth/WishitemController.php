@@ -1030,6 +1030,8 @@ class WishitemController extends Controller
             $ryeProductPayment->customer_email = $orderDetails->user->email;
             $ryeProductPayment->save();
 
+            Session::put('cartData', $orderDetails);
+
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
             $sessionCreate = $stripe->checkout->sessions->create([
                 'success_url' => route('rye.success.payment', [$ryeProductPayment->uuid]),
