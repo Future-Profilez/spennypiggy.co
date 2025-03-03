@@ -1100,6 +1100,8 @@ class WishitemController extends Controller
         ]);
     }
 
+
+
     /**
      * handle rye product payment success
      *
@@ -1177,7 +1179,7 @@ class WishitemController extends Controller
             if ($creatorShipping) {
                 $cart_id = $request->cart_id;
                 $response = Http::withHeaders([
-                    'Authorization' => 'Basic UllFL3N0YWdpbmctYTlmYjk0YjhmYTM1NGE4MTg5NWI6',
+                    'Authorization' => env('RYE_API_KEY'),
                     'Rye-Shopper-IP' => '122.180.247.198',
                     'Content-Type' => 'application/json',
                 ])->post('https://staging.graphql.api.rye.com/v1/query', [
