@@ -1048,9 +1048,7 @@ class WishitemController extends Controller
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
             // Create Stripe checkout session
             $successUrl = route('rye.success.payment', [$ryeProductPayment->uuid]) .
-                '?amount=' . $totalAmount .
-                '&currency=' . $currency .
-                '&user=' . urlencode($orderDetails->user->email);
+                '&order_uuid=' . urlencode($orderDetails->uuid);
 
             $sessionCreate = $stripe->checkout->sessions->create([
                 'success_url' => $successUrl, // Include query parameters
@@ -1251,7 +1249,7 @@ class WishitemController extends Controller
      *
      * @return Response
      */
-    public function ryeSuccessPayment($uuid)
+    public function ryeSuccessPayment($uuid, $orderUuid)
     {
         $orderDetails = RyeProductPayment::with('user')->where('uuid', $uuid)->first();
 
@@ -1266,10 +1264,12 @@ class WishitemController extends Controller
         $orderDetails->status = 'succeeded';
         $orderDetails->save();
 
-        $value = Session::get('cartData');
+        // Update gift item payment status
+        RyeCart::where('uuid', $orderUuid)->delete();
+
 
         return Inertia::render('rye/ThankYouRye', [
-            'cartData' => $value,
+            'status' => 'success',
         ]);
     }
 
