@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\CheckoutController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\TwitterController;
+use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TestController;
@@ -52,7 +53,10 @@ Route::get('get-cart', function () {
     return Inertia::render('GetCart');
 })->name('get.cart');
 
-Route::post('/rye-webhook', [TestController::class, 'handleRyeWebhook'])->name('rye.webhook');
+Route::post('/rye-webhook', [WishitemController::class, 'handleRyeWebhook'])->name('rye.webhook');
+
+
+Route::post('handle-rye-product-payment', [WishitemController::class, 'handleRyeProductPayment'])->name('handle.rye.product.payment');
 
 
 // Route::post('test-stripe', function (Request $request) {

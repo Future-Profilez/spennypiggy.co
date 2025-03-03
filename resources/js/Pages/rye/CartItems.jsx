@@ -195,8 +195,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
         console.log("cartsItems?.creator?.id", cartsItems?.creator?.id);
         // return;
         try {
-            const response = await axios.post(
-                "handle-rye-product-payment",{
+            const response = await axios.post(route('handle.rye.product.payment'),{
                     cart_id : data?.cart?.id,
                     creator_id : cartsItems?.creator?.id,
                 }
