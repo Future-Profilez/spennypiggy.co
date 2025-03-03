@@ -1030,9 +1030,23 @@ class WishitemController extends Controller
             $ryeProductPayment->customer_email = $orderDetails->user->email;
             $ryeProductPayment->save();
 
-            // Session::put('cartData', $orderDetails);
-
+            // $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+            // $sessionCreate = $stripe->checkout->sessions->create([
+            //     'success_url' => route('rye.success.payment', [$ryeProductPayment->uuid]),
+            //     'cancel_url' => route('rye.cancel.payment', [$ryeProductPayment->uuid]),
+            //     'line_items' => $lineItems,
+            //     'mode' => 'payment',
+            //     'payment_method_types' => ['card'],
+            //     'payment_intent_data' => [
+            //         'transfer_data' => [
+            //             'destination' => $orderDetails->creator->account_id,
+            //         ],
+            //         'on_behalf_of' => $orderDetails->creator->account_id,
+            //     ],
+            //     'customer_email' => $orderDetails->user->email,
+            // ]);
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+            // Create Stripe checkout session
             $sessionCreate = $stripe->checkout->sessions->create([
                 'success_url' => route('rye.success.payment', [$ryeProductPayment->uuid]),
                 'cancel_url' => route('rye.cancel.payment', [$ryeProductPayment->uuid]),
@@ -1042,6 +1056,7 @@ class WishitemController extends Controller
                 'payment_intent_data' => [
                     'transfer_data' => [
                         'destination' => $orderDetails->creator->account_id,
+                        'amount' => $totalAmount,
                     ],
                     'on_behalf_of' => $orderDetails->creator->account_id,
                 ],
@@ -1054,8 +1069,11 @@ class WishitemController extends Controller
 
             return response()->json([
                 'status' => true,
-                'url' => $sessionCreate->url
+                'url' => $sessionCreate->url,
+                'orderDetails' => $orderDetails, // Send data directly
+                'creator' => $orderDetails->creator,
             ]);
+
         } catch (\Stripe\Exception\ApiErrorException $e) {
             Log::error('Stripe API Error', ['error' => $e->getMessage()]);
 
