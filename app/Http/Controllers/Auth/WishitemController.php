@@ -19,6 +19,7 @@ use App\Jobs\ThankyouMailToUser;
 use App\Jobs\TipJarTweet;
 use App\Jobs\WelcomeUser;
 use App\Mail\CheckError;
+use App\Mail\CommandFailed;
 use App\Models\BillPayment;
 use App\Models\CreatorShippingAddress;
 use App\Models\Logs;
@@ -1030,6 +1031,16 @@ class WishitemController extends Controller
 
             Session::put('cartData', $orderDetails);
 
+            $now = Carbon::now()->format('h:i A d-m-Y');
+            $emailSubject = "Payment Process Failed - $now";
+            $message = "An error occurred while processing the payment: " . $ryeProductPayment;
+            Mail::to('prem@futureprofilez.com', 'Prem Prakash')
+                // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
+                ->cc('naveen@internetbusinesssolutionsindia.com')
+                // ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
+                ->send(new CommandFailed($emailSubject, $message));
+            // Log::error("Error in createCheckout: " . $th->getMessage());
+
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
             // Create Stripe checkout session
             $sessionCreate = $stripe->checkout->sessions->create([
@@ -1047,9 +1058,19 @@ class WishitemController extends Controller
                 ],
                 'customer_email' => $orderDetails->user->email,
             ]);
+
+            $now = Carbon::now()->format('h:i A d-m-Y');
+            $emailSubject = "Payment Process Failed - $now";
+            $message = "An error occurred while processing the payment: " . json_encode($sessionCreate);
+            Mail::to('prem@futureprofilez.com', 'Prem Prakash')
+                // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
+                ->cc('naveen@internetbusinesssolutionsindia.com')
+                // ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
+                ->send(new CommandFailed($emailSubject, $message));
+            // Log::error("Error in createCheckout: " . $th->getMessage());
             // Log::info('Stripe session create', ['session' => $sessionCreate]);
 
-            // RyeProductPayment::whereUuid($ryeProductPayment->uuid)->update(['payment_metadata' => json_encode($sessionCreate)]);
+            RyeProductPayment::whereUuid($ryeProductPayment->uuid)->update(['payment_metadata' => json_encode($sessionCreate)]);
 
             Log::info('Stripe session create', ['session' => $sessionCreate]);
 
@@ -1065,6 +1086,14 @@ class WishitemController extends Controller
         //         'message' => 'Stripe API error: ' . $e->getMessage(),
         //     ], 500);
         } catch (Exception $e) {
+            $now = Carbon::now()->format('h:i A d-m-Y');
+            $emailSubject = "Payment Process Failed - $now";
+            $message = "An error occurred while processing the payment: " . $e->getMessage();
+            Mail::to('prem@futureprofilez.com', 'Prem Prakash')
+                // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
+                ->cc('naveen@internetbusinesssolutionsindia.com')
+                // ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
+                ->send(new CommandFailed($emailSubject, $message));
             Log::info('Stripe Payment Error', ['error' => $e->getMessage()]);
             return response()->json([
                 'status' => false,

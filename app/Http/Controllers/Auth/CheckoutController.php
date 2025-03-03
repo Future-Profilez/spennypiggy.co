@@ -149,7 +149,7 @@ class CheckoutController extends Controller
 
             return Inertia::location($sessionCreate->url);
         } catch (\Throwable $th) {
-            return redirect(route('user.show', [$id]))->with('error', $th->getMessage());
+            return redirect(route('user.show', [$getdata[0]->owner->username]))->with('error', $th->getMessage());
             // $now = Carbon::now()->format('h:i A d-m-Y');
             // $emailSubject = "Payment Process Failed - $now";
             // $message = "An error occurred while processing the payment: " . $th->getMessage();
