@@ -1048,7 +1048,7 @@ class WishitemController extends Controller
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
             // Create Stripe checkout session
             $successUrl = route('rye.success.payment', [$ryeProductPayment->uuid]) .
-                '&order_uuid=' . urlencode($orderDetails->uuid);
+                '/' . urlencode($orderDetails->uuid);
 
             $sessionCreate = $stripe->checkout->sessions->create([
                 'success_url' => $successUrl, // Include query parameters
