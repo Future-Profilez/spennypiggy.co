@@ -1059,28 +1059,12 @@ class WishitemController extends Controller
         } catch (\Stripe\Exception\ApiErrorException $e) {
             Log::error('Stripe API Error', ['error' => $e->getMessage()]);
 
-            // Send email notification for Stripe API errors
-            $now = Carbon::now()->format('h:i A d-m-Y');
-            $emailSubject = "Stripe API Error - $now";
-            $message = "An error occurred with Stripe API: " . $e->getMessage();
-            Mail::to('prem@futureprofilez.com', 'Prem Prakash')
-                ->cc('naveen@internetbusinesssolutionsindia.com')
-                ->send(new CommandFailed($emailSubject, $message));
-
             return response()->json([
                 'status' => false,
                 'message' => 'Stripe API error: ' . $e->getMessage(),
             ], 500);
         } catch (Exception $e) {
             Log::error('Payment Processing Error', ['error' => $e->getMessage()]);
-
-            // Send email notification for general payment errors
-            $now = Carbon::now()->format('h:i A d-m-Y');
-            $emailSubject = "Payment Processing Error - $now";
-            $message = "An error occurred while processing the payment: " . $e->getMessage();
-            Mail::to('prem@futureprofilez.com', 'Prem Prakash')
-                ->cc('naveen@internetbusinesssolutionsindia.com')
-                ->send(new CommandFailed($emailSubject, $message));
 
             return response()->json([
                 'status' => false,
