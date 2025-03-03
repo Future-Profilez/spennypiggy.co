@@ -16,4 +16,9 @@ class CreatorShippingAddress extends Model
     }
 
     protected $fillable = ['creator_id', 'first_name', 'last_name', 'phone', 'address_1', 'address_2', 'city', 'province_code', 'country_code', 'postal_code'];
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
