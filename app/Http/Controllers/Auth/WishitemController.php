@@ -1030,6 +1030,7 @@ class WishitemController extends Controller
             $ryeProductPayment->customer_email = $orderDetails->user->email;
             $ryeProductPayment->save();
 
+<<<<<<< HEAD
             // $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
             // $sessionCreate = $stripe->checkout->sessions->create([
             //     'success_url' => route('rye.success.payment', [$ryeProductPayment->uuid]),
@@ -1045,6 +1046,10 @@ class WishitemController extends Controller
             //     ],
             //     'customer_email' => $orderDetails->user->email,
             // ]);
+=======
+            // Session::put('cartData', $orderDetails);
+
+>>>>>>> ebda8c8d5fccddccae4dd8326c3342235cc9df17
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
             // Create Stripe checkout session
             $sessionCreate = $stripe->checkout->sessions->create([
