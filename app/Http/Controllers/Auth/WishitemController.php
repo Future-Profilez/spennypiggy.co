@@ -1047,11 +1047,14 @@ class WishitemController extends Controller
             // ]);
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
             // Create Stripe checkout session
-            $successUrl = route('rye.success.payment', [$ryeProductPayment->uuid]) .
-                '&order_uuid=' . urlencode($orderDetails->uuid);
+            // Create Stripe checkout session
+            $successUrl = route('rye.success.payment', [
+                'uuid' => $ryeProductPayment->uuid,
+                'orderUuid' => $orderDetails->uuid
+            ]);
 
             $sessionCreate = $stripe->checkout->sessions->create([
-                'success_url' => $successUrl, // Include query parameters
+                'success_url' => $successUrl, // Include correct parameters
                 'cancel_url' => route('rye.cancel.payment', [$ryeProductPayment->uuid]),
                 'line_items' => $lineItems,
                 'mode' => 'payment',
@@ -1065,6 +1068,7 @@ class WishitemController extends Controller
                 ],
                 'customer_email' => $orderDetails->user->email,
             ]);
+
 
 
             RyeProductPayment::whereUuid($ryeProductPayment->uuid)->update(['payment_metadata' => json_encode($sessionCreate)]);
