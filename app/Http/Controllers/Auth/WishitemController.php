@@ -1049,9 +1049,11 @@ class WishitemController extends Controller
             ]);
             // Log::info('Stripe session create', ['session' => $sessionCreate]);
 
-            RyeProductPayment::whereUuid($ryeProductPayment->uuid)->update(['payment_metadata' => json_encode($sessionCreate)]);
+            // RyeProductPayment::whereUuid($ryeProductPayment->uuid)->update(['payment_metadata' => json_encode($sessionCreate)]);
 
             Log::info('Stripe session create', ['session' => $sessionCreate]);
+
+            Log::info('Stripe session url', ['url' => $sessionCreate->url]);
             return response()->json([
                 'status' => true,
                 'url' => $sessionCreate->url,
