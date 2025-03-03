@@ -9,27 +9,27 @@ import userphoto from "../../../assets/img/userphoto.png";
 import { useEffect } from 'react';
 import axios from 'axios';
 import { useAlerts } from '@/Components/Alerts';
+import OrderDetail from '../shop/order/OrderDetail';
 
 export default function Thankyou(props) {
   const[apiRun,setApiRun]=useState(false);
+  const [orderDetails, setOrderDetails] = useState(null);
 
-    console.log('props', props);
-        const { successAlert, errorAlert, errorsHandling } = useAlerts();
+  const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
     const getData = async() => {
+      console.log("orderDetails",orderDetails);
       try {
         setApiRun(true);
-        const cartId = props?.cartData?.cart_id || " ";
-        const creatorId = props?.cartData?.creator_id || "";
         const response = await axios.post(route("store.product.order.details")
         ,{
-          cart_id : cartId,
-          creator_id : creatorId,
+          cart_id : orderDetails?.cart_id || "",
+          creator_id : orderDetails?.creator?.id || "",
         }
       );
       console.log("response?.data", response?.data);
         if (response?.data?.status === true) {
-            window.location.href = response?.data?.url;
+            // window.location.href = response?.data?.url;
         } else {
             errorAlert(response?.data?.message);
         }
@@ -40,7 +40,10 @@ export default function Thankyou(props) {
     }
 
     useEffect(()=>{
-      if(props?.cartData?.cart_id && props?.cartData?.creator_id && !apiRun){
+      const getOrder=localStorage && localStorage.getItem('orderDetails') || null
+      setOrderDetails(JSON.parse(getOrder));
+      console.log("Order",orderDetails);
+      if(orderDetails && !apiRun){
       getData();
       }    
     },[props])
@@ -61,25 +64,27 @@ export default function Thankyou(props) {
                 <h2 className='text-[25px] ' >Your gift has been sent.</h2>
                 <p className='pt-2 pb-4' >Check your email for a receipt.</p>
                 <div className='giftthank p-4' >
-                  <p>Thank you from Spenny Piggy on behalf of {props && props?.cartData && props?.cartData?.creator && props?.cartData?.creator?.username} here.</p>
+                  <p>Thank you from Spenny Piggy on behalf of {" "} 
+                    <span className='capitalize'>{orderDetails && orderDetails?.creator && orderDetails?.creator?.name} </span>
+                    here.</p>
 
                     <div className="avatar rounded-[50%] w-20 h-20 overflow-hidden m-auto d-table mt-4 " >
                           <LazyLoadImage
-                          src={props?.cartData?.creator?.avatar_url || userphoto}
+                          src={orderDetails && orderDetails?.creator && orderDetails?.creator?.avatar_url || userphoto}
                           alt="image-avatar" className="img-fluid rounded w-full h-full object-cover" useIntersectionObserver={true} effect="blur"
                           height={100}
                           width={100} />
                     </div>
 
                   <div className='w-full mt-2' >
-                    {/* <Link href={`/${owner && owner.username}`} className='underline' >
-                        visit @{owner && owner.username}'s wishlist
-                    </Link> */}
+                    <Link href={`/${orderDetails && orderDetails?.creator && orderDetails?.creator?.username}`} className='underline' >
+                        Visit @{orderDetails && orderDetails?.creator && orderDetails?.creator?.username}'s wishlist
+                    </Link>
                   </div>
                 </div>
-                {/* <div className='w-full mt-4' >
-                  {auth && auth.user ?
-                      <Link className='button lg mt-4' href={`/${owner && owner.username}`}>
+                <div className='w-full mt-4' >
+                  {orderDetails && orderDetails?.creator ?
+                      <Link className='button lg mt-4' href={`/${orderDetails && orderDetails?.creator && orderDetails?.creator?.username}`}>
                         Back to profile
                       </Link>
                     :
@@ -87,7 +92,7 @@ export default function Thankyou(props) {
                       Create a Gifter account
                     </Link>
                   }
-                </div> */}
+                </div>
               </div>
              </div>
              </>

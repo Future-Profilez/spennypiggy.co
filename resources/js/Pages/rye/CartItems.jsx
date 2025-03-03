@@ -202,13 +202,17 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
             );
             console.log("response?.data", response?.data);
             if (response?.data?.status === true) {
+                localStorage && localStorage.setItem("orderDetails", JSON.stringify(response?.data?.orderDetails) || "");
                 window.location.href = response?.data?.url;
+                setChecking(false);
             } else {
                 errorAlert(response?.data?.message);
+                setChecking(false);
             }
         } catch (error) {
             console.log("error", error?.response?.data);
             errorAlert(error?.response?.data?.message);
+            setChecking(false);
         }
 
     }
