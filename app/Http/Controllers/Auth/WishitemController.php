@@ -1056,13 +1056,13 @@ class WishitemController extends Controller
                 'status' => true,
                 'url' => $sessionCreate->url,
             ]);
-        } catch (\Stripe\Exception\ApiErrorException $e) {
-            Log::info('Stripe API Error', ['error' => $e->getMessage()]);
-            return response()->json([
-                'status' => false,
-                'message' => 'Stripe API error: ' . $e->getMessage(),
-            ], 500);
-        } catch (\Exception $e) {
+        // } catch (\Stripe\Exception\ApiErrorException $e) {
+        //     Log::info('Stripe API Error', ['error' => $e->getMessage()]);
+        //     return response()->json([
+        //         'status' => false,
+        //         'message' => 'Stripe API error: ' . $e->getMessage(),
+        //     ], 500);
+        } catch (Exception $e) {
             Log::info('Stripe Payment Error', ['error' => $e->getMessage()]);
             return response()->json([
                 'status' => false,

@@ -149,16 +149,17 @@ class CheckoutController extends Controller
 
             return Inertia::location($sessionCreate->url);
         } catch (\Throwable $th) {
-            $now = Carbon::now()->format('h:i A d-m-Y');
-            $emailSubject = "Payment Process Failed - $now";
-            $message = "An error occurred while processing the payment: " . $th->getMessage();
-            Mail::to('prem@futureprofilez.com', 'Prem Prakash')
-                // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
-                ->cc('naveen@internetbusinesssolutionsindia.com')
-                // ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
-                ->send(new CommandFailed($emailSubject, $message));
-            Log::error("Error in createCheckout: " . $th->getMessage());
-            throw $th;
+            return redirect(route('user.show', [$id]))->with('error', $th->getMessage());
+            // $now = Carbon::now()->format('h:i A d-m-Y');
+            // $emailSubject = "Payment Process Failed - $now";
+            // $message = "An error occurred while processing the payment: " . $th->getMessage();
+            // Mail::to('prem@futureprofilez.com', 'Prem Prakash')
+            //     // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
+            //     ->cc('naveen@internetbusinesssolutionsindia.com')
+            //     // ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
+            //     ->send(new CommandFailed($emailSubject, $message));
+            // Log::error("Error in createCheckout: " . $th->getMessage());
+            // throw $th;
         }
     }
 
