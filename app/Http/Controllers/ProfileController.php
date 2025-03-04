@@ -621,7 +621,7 @@ class ProfileController extends Controller
         foreach ($user_tips as $key => $value) {
             $trackData[$key] = [
                 'owner' => [
-                    'name' => $value->creator->name,
+                    'name' => $value->creator->name ?? '',
                     'avatar' => $value->creator->avatar_url,
                     'cover' => $value->creator->cover_url,
                     'username' => $value->creator->username,

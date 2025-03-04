@@ -45,7 +45,7 @@ export default function Thankyou(props) {
       console.log("Order",orderDetails);
       if(orderDetails && !apiRun){
       getData();
-      }    
+      }
     },[props])
 
     return (
@@ -64,7 +64,7 @@ export default function Thankyou(props) {
                 <h2 className='text-[25px] ' >Your gift has been sent.</h2>
                 <p className='pt-2 pb-4' >Check your email for a receipt.</p>
                 <div className='giftthank p-4' >
-                  <p>Thank you from Spenny Piggy on behalf of {" "} 
+                  <p>Thank you from Spenny Piggy on behalf of {" "}
                     <span className='capitalize'>{orderDetails && orderDetails?.creator && orderDetails?.creator?.name} </span>
                     here.</p>
 
