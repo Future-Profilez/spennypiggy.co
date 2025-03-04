@@ -43,7 +43,7 @@ export default function AddCart(props) {
     }
 
     const gotologin = (recure) => { 
-        successAlert("You must login first.");
+        errorAlert("You must login first.");
         const url = `/wish/checkout/${item.uuid}/${recure ? recure : ''}`
         router.visit(`/login?redirect=${url}`);
     }
