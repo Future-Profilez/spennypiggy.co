@@ -40,7 +40,7 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
     };
 
     const gotologin = (recure) => { 
-            successAlert("You must login first.");
+            errorAlert("You must login first.");
             const url = `/${user?.username || ""}`
             router.visit(`/login?redirect=${url}`);
         }
