@@ -632,7 +632,7 @@ export default function Dashboard(props) {
                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
                                                          {gifts.map((gift) => {
                                                            const details = JSON.parse(gift.details); // Parse the details JSON
-                                                           return <GiftListing key={gift.id} details={details} user={user} IsloggedIn={IsloggedIn} fetch_gifts={fetch_gifts} />;
+                                                           return <GiftListing key={gift.id} details={details} user={user} IsloggedIn={IsloggedIn} fetch_gifts={fetch_gifts} auth={auth} />;
                                                          })}
                                                        </div>
                                                      ) : (
