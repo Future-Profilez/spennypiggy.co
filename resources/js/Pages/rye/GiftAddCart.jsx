@@ -13,8 +13,8 @@ import LoaderButton from "@/Components/LoaderButton";
 import { RyeClient, ENVIRONMENT, Marketplace } from "@rye-api/rye-sdk";
 import axios from "axios";
 
-export default function GiftAddCart({ data, action, user, IsloggedIn }) {
-    // console.log("user", user?.id);
+export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
+    // console.log("user", user);
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     // console.log("data",data);
 
@@ -39,9 +39,20 @@ export default function GiftAddCart({ data, action, user, IsloggedIn }) {
         }
     };
 
+    const gotologin = (recure) => { 
+            successAlert("You must login first.");
+            const url = `/${user?.username || ""}`
+            router.visit(`/login?redirect=${url}`);
+        }
+
     const addtocart = async (navigate=false) => {
         {navigate ? setCheckoutLoading(true) : setLoading(true)}
         try {
+            if(auth && auth?.user === null)
+                {
+                    gotologin();
+                    return;
+                }
             const shopperIp = await getShopperIp();
             const ryeClient = new RyeClient({
                 authHeader: `Basic UllFL3N0YWdpbmctYTlmYjk0YjhmYTM1NGE4MTg5NWI6`, // Use env variable
