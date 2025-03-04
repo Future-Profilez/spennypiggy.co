@@ -63,6 +63,7 @@ use Stripe\StripeClient;
 
 class WishitemController extends Controller
 {
+
     public function saveWishItem(Request $request): RedirectResponse
     {
         $request->validate([
@@ -1314,34 +1315,91 @@ class WishitemController extends Controller
     public function handleRyeWebhook(Request $request): JsonResponse
     {
         // Log the full request for debugging
-        Log::info('Rye Webhook Request:', $request->all());
+        Log::info('Rye Webhook Received:', $request->all());
 
-        // // **Fix: Extract challenge from "data.challenge"**
+        // **Step 1: Handle Challenge Verification**
         if ($request->has('data.challenge')) {
             return response()->json(['challenge' => $request->input('data.challenge')]);
         }
 
-        // **Step 2: Process Webhook Events**
+        // **Step 2: Validate & Process Webhook Events**
         $webhookData = $request->all();
 
-        if (!empty($webhookData['event'])) {
-            switch ($webhookData['event']) {
-                case 'cart.updated':
-                    Log::info('Cart updated:', $webhookData);
-                    break;
-                case 'payment.success':
-                    Log::info('Payment successful:', $webhookData);
-                    break;
-                case 'order.created':
-                    Log::info('Order created:', $webhookData);
-                    break;
-                default:
-                    Log::info('Unhandled webhook event:', $webhookData);
-            }
+        if (!isset($webhookData['event'])) {
+            Log::warning('Invalid Rye Webhook: Missing event type');
+            return response()->json(['status' => 'error', 'message' => 'Invalid event type'], 400);
         }
 
-        return response()->json(['status' => 'success']);
+        try {
+            switch ($webhookData['event']) {
+                case 'cart.updated':
+                    Log::info('Cart Updated:', $webhookData);
+                    // You can add logic to update cart details in your DB if necessary.
+                    break;
+
+                case 'payment.success':
+                    Log::info('Payment Successful:', $webhookData);
+                    $this->updateOrderStatus($webhookData, 'paid');
+                    break;
+
+                case 'order.created':
+                    Log::info('Order Created:', $webhookData);
+                    $this->createNewOrder($webhookData);
+                    break;
+
+                default:
+                    Log::warning('Unhandled Rye Webhook Event:', $webhookData);
+                    break;
+            }
+
+            return response()->json(['status' => 'success']);
+        } catch (\Exception $e) {
+            Log::error('Error Processing Rye Webhook: ' . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
     }
+
+    /**
+     * Update order status in the database based on payment success
+     */
+    private function updateOrderStatus(array $data, string $status): void
+    {
+        if (isset($data['order']['id'])) {
+            $orderId = $data['order']['id'];
+
+            ProductOrderDetail::where('order_id', $orderId)
+                ->update(['payment_status' => $status]);
+
+            Log::info("Order ID {$orderId} updated to status: {$status}");
+        } else {
+            Log::warning('Payment success event received but missing order ID', $data);
+        }
+    }
+
+    /**
+     * Store new order details in the database
+     */
+    private function createNewOrder(array $data): void
+    {
+        if (!isset($data['order'])) {
+            Log::warning('Order created event missing order details', $data);
+            return;
+        }
+
+        $order = $data['order'];
+
+        ProductOrderDetail::create([
+            'user_id' => $order['user_id'] ?? null,
+            'creater_id' => $order['creator_id'] ?? null,
+            'cart_id' => $order['cart_id'] ?? null,
+            'order_id' => $order['id'],
+            'details' => json_encode($order),
+            'payment_status' => 'pending', // Default status until payment is confirmed
+        ]);
+
+        Log::info("New order stored with ID: {$order['id']}");
+    }
+
 
     /**
      * hit submitCart api and store the response in the database
@@ -1351,80 +1409,197 @@ class WishitemController extends Controller
     public function storeProductOrderDetails(Request $request)
     {
         try {
+            $creatorShipping = CreatorShippingAddress::with('creator')
+                ->where('creator_id', $request->creator_id)
+                ->first();
 
-            $creatorShipping = CreatorShippingAddress::with('creator')->where('creator_id', $request->creator_id)->first();
-            $response = (object) []; // Empty object
-            if ($creatorShipping) {
-
-                $cart_id = $request->cart_id;
-                $buyerIdentity = $this->updateCartBuyerIdentity($cart_id, $creatorShipping);
-                Log::info('Buyer Identity API Response:', $buyerIdentity);
-                $response = Http::withHeaders([
-                    'Authorization' => env('RYE_API_KEY'),
-                    'Rye-Shopper-IP' => '122.180.247.198',
-                    'Content-Type' => 'application/json',
-                ])->post('https://staging.graphql.api.rye.com/v1/query', [
-                    'query' => "mutation SubmitCart(\$input: CartSubmitInput!) { submitCart(input: \$input) { cart { id stores { status orderId store { ... on ShopifyStore { store cartLines { quantity variant { id } } } } errors { code message } } } errors { code message } } }",
-                    'variables' => [
-                        'input' => [
-                            'id' => $cart_id,
-                            'token' => env('PAYMENT_TOKEN'),
-                            'selectedShippingOptions' => [
-                                [
-                                    'store' => 'amazon',
-                                    'shippingId' => '0-Default shipping method',
-                                ]
-                            ],
-                            'billingAddress' => [
-                                'firstName' => $creatorShipping->first_name ?? 'John',
-                                'lastName' => $creatorShipping->last_name ?? 'Doe',
-                                'phone' => $creatorShipping->phone ?? '+1 234-567-8901',
-                                'address1' => $creatorShipping->address_1 ?? '123 Main Street',
-                                'address2' => $creatorShipping->address_2 ?? 'Apt 4B',
-                                'city' => $creatorShipping->city ?? 'New York',
-                                'provinceCode' => $creatorShipping->province_code ?? 'NY',
-                                'countryCode' => $creatorShipping->country_code ?? 'US',
-                                'postalCode' => $creatorShipping->postal_code ?? '10001', // Set a default postal code
-                            ],
-
-                            'cartSettings' => [
-                                'amazonSettings' => [
-                                    'hidePriceOnPackage' => true,
-                                ]
-                            ]
-                        ]
-                    ]
-                ]);
+            if (!$creatorShipping) {
+                return response()->json(['status' => false, 'message' => 'Shipping address not found']);
             }
 
-            // Convert response to array
+            $cart_id = $request->cart_id;
+            $buyerIdentity = $this->updateCartBuyerIdentity($cart_id, $creatorShipping);
+            $responseData = json_decode($buyerIdentity->getContent(), true);
+
+            $shippingId = '0-Default shipping method';
+            $store = 'amazon';
+
+            if (!empty($responseData['data']['data']['updateCartBuyerIdentity']['cart']['stores'][0])) {
+                $storeData = $responseData['data']['data']['updateCartBuyerIdentity']['cart']['stores'][0];
+                $shippingId = $storeData['offer']['shippingMethods'][0]['id'] ?? $shippingId;
+                $store = $storeData['store'] ?? $store;
+            }
+
+            Log::info("Shipping ID: $shippingId, Store: $store");
+
+            $response = Http::withHeaders([
+                'Authorization' => env('RYE_API_KEY'),
+                'Rye-Shopper-IP' => '122.180.247.198',
+                'Content-Type' => 'application/json',
+            ])->post('https://staging.graphql.api.rye.com/v1/query', [
+                'query' => "mutation SubmitCart(\$input: CartSubmitInput!) {
+                submitCart(input: \$input) {
+                    cart {
+                        id
+                        stores {
+                            status
+                            orderId
+                            store {
+                                ... on ShopifyStore {
+                                    store
+                                    cartLines { quantity variant { id } }
+                                }
+                            }
+                            errors { code message }
+                        }
+                    }
+                    errors { code message }
+                }
+            }",
+                'variables' => [
+                    'input' => [
+                        'id' => $cart_id,
+                        'token' => env('PAYMENT_TOKEN'),
+                        'selectedShippingOptions' => [[
+                            'store' => $store,
+                            'shippingId' => $shippingId,
+                        ]],
+                        'billingAddress' => [
+                            'firstName' => $creatorShipping->first_name ?? 'John',
+                            'lastName' => $creatorShipping->last_name ?? 'Doe',
+                            'phone' => (string) ($creatorShipping->phone ?? '4155552671'),
+                            'address1' => $creatorShipping->address_1 ?? '123 Main Street',
+                            'address2' => $creatorShipping->address_2 ?? 'Apt 4B',
+                            'city' => $creatorShipping->city ?? 'New York',
+                            'provinceCode' => $creatorShipping->province_code ?? 'NY',
+                            'countryCode' => $creatorShipping->country_code ?? 'US',
+                            'postalCode' => (string) ($creatorShipping->postal_code ?? '10001'),
+                        ],
+                        'cartSettings' => ['amazonSettings' => ['hidePriceOnPackage' => true]]
+                    ]
+                ]
+            ]);
+
             $data = $response->json();
             Log::info('SubmitCart API Response:', $data);
 
-            // Extract necessary details
-            $user_id = Auth::id();
-            $creator_id = $request->creator_id;
-            $order_id = $data['data']['submitCart']['cart']['stores'][0]['orderId'] ?? null;
-            $payment_status = $data['data']['submitCart']['cart']['stores'][0]['status'] ?? 'pending';
-            $details = json_encode($data, true);
+            $storeData = $data['data']['submitCart']['cart']['stores'][0] ?? null;
 
-            // Store the response data in the database
-            ProductOrderDetail::create([
-                'user_id' => $user_id,
-                'creater_id' => $creator_id,
-                'cart_id' => $cart_id,
-                'order_id' => $order_id,
-                'details' => $details,
-                'payment_status' => $payment_status,
-            ]);
+            if ($storeData && $storeData['status'] === 'COMPLETED') {
+                ProductOrderDetail::create([
+                    'user_id' => Auth::id(),
+                    'creater_id' => $request->creator_id,
+                    'cart_id' => $cart_id,
+                    'order_id' => $storeData['orderId'] ?? null,
+                    'details' => json_encode($data),
+                    'payment_status' => $storeData['status'] ?? 'pending',
+                ]);
 
-            // RyeCart::where('cart_id', $cart_id)->delete();
+                return response()->json(['status' => true, 'message' => 'Order details stored', 'data' => $data]);
+            }
 
-            return response()->json(['status' => true, 'message' => 'Order details stored', 'data' => $data]);
+            return response()->json(['status' => false, 'message' => 'Order details not stored']);
         } catch (Exception $e) {
+            Log::error('Error in storeProductOrderDetails: ' . $e->getMessage());
             return response()->json(['status' => false, 'message' => $e->getMessage()]);
         }
     }
+
+    // public function storeProductOrderDetails(Request $request)
+    // {
+    //     try {
+
+    //         $creatorShipping = CreatorShippingAddress::with('creator')->where('creator_id', $request->creator_id)->first();
+    //         $response = (object) []; // Empty object
+    //         if ($creatorShipping) {
+
+    //             $cart_id = $request->cart_id;
+    //             $buyerIdentity = $this->updateCartBuyerIdentity($cart_id, $creatorShipping);
+    //             // Decode the JSON response correctly
+    //             $responseData = json_decode($buyerIdentity->getContent(), true);
+
+    //             $shippingId = '0-Default shipping method';
+    //             $store = 'amazon';
+    //             if (isset($responseData['data']['data']['updateCartBuyerIdentity']['cart']['stores'][0])) {
+    //                 $shippingId = $responseData['data']['data']['updateCartBuyerIdentity']['cart']['stores'][0]['offer']['shippingMethods'][0]['id'];
+    //                 $store = $responseData['data']['data']['updateCartBuyerIdentity']['cart']['stores'][0]['store'];
+
+    //                 Log::info('Shipping ID: ' . $shippingId);
+    //                 Log::info('store: ' . $store);
+    //             }
+
+    //             $response = Http::withHeaders([
+    //                 'Authorization' => env('RYE_API_KEY'),
+    //                 'Rye-Shopper-IP' => '122.180.247.198',
+    //                 'Content-Type' => 'application/json',
+    //             ])->post('https://staging.graphql.api.rye.com/v1/query', [
+    //                 'query' => "mutation SubmitCart(\$input: CartSubmitInput!) { submitCart(input: \$input) { cart { id stores { status orderId store { ... on ShopifyStore { store cartLines { quantity variant { id } } } } errors { code message } } } errors { code message } } }",
+    //                 'variables' => [
+    //                     'input' => [
+    //                         'id' => $cart_id,
+    //                         'token' => env('PAYMENT_TOKEN'),
+    //                         'selectedShippingOptions' => [
+    //                             [
+    //                                 'store' => $store,
+    //                                 'shippingId' => $shippingId,
+    //                             ]
+    //                         ],
+    //                         'billingAddress' => [
+    //                             'firstName' => $creatorShipping->first_name ?? 'John',
+    //                             'lastName' => $creatorShipping->last_name ?? 'Doe',
+    //                             'phone' => (string) $creatorShipping->phone ?? '4155552671',
+    //                             'address1' => $creatorShipping->address_1 ?? '123 Main Street',
+    //                             'address2' => $creatorShipping->address_2 ?? 'Apt 4B',
+    //                             'city' => $creatorShipping->city ?? 'New York',
+    //                             'provinceCode' => $creatorShipping->province_code ?? 'NY',
+    //                             'countryCode' => $creatorShipping->country_code ?? 'US',
+    //                             'postalCode' => (string) $creatorShipping->postal_code ?? '10001', // Set a default postal code
+    //                         ],
+
+    //                         'cartSettings' => [
+    //                             'amazonSettings' => [
+    //                                 'hidePriceOnPackage' => true,
+    //                             ]
+    //                         ]
+    //                     ]
+    //                 ]
+    //             ]);
+    //         }
+
+    //         // Convert response to array
+    //         $data = $response->json();
+    //         Log::info('SubmitCart API Response:', $data);
+    //         $data = json_decode($data, true);
+    //         if ($data['data']['submitCart']['cart']['stores'][0]['status'] == 'COMPLETED') {
+    //             // Extract necessary details
+    //             $user_id = Auth::id();
+    //             $creator_id = $request->creator_id;
+    //             $order_id = $data['data']['submitCart']['cart']['stores'][0]['orderId'] ?? null;
+    //             $payment_status = $data['data']['submitCart']['cart']['stores'][0]['status'] ?? 'pending';
+    //             $details = json_encode($data, true);
+
+    //             // Store the response data in the database
+    //             ProductOrderDetail::create([
+    //                 'user_id' => $user_id,
+    //                 'creater_id' => $creator_id,
+    //                 'cart_id' => $cart_id,
+    //                 'order_id' => $order_id,
+    //                 'details' => $details,
+    //                 'payment_status' => $payment_status,
+    //             ]);
+
+    //             // RyeCart::where('cart_id', $cart_id)->delete();
+
+    //             return response()->json(['status' => true, 'message' => 'Order details stored', 'data' => $data]);
+    //         } else {
+    //             return response()->json(['status' => false, 'message' => 'Order details not stored']);
+    //         }
+    //     } catch (Exception $e) {
+    //         return response()->json(['status' => false, 'message' => $e->getMessage()]);
+    //     } catch (Exception $e) {
+    //         return response()->json(['status' => false, 'message' => $e->getMessage()]);
+    //     }
+    // }
 
     /**
      * rye integrations starts from here
