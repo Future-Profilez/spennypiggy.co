@@ -15,7 +15,6 @@ async function getShopperIp() {
 
 const Cart = () => {
   const [cartData, setCartData] = useState([]);
-  console.log(cartData)
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -92,7 +91,6 @@ const Cart = () => {
       {cartData.length > 0 ? (
         cartData.map((cart, index) => (
             <div key={index} style={{ border: "1px solid #ddd", padding: "10px", marginBottom: "10px" }}>
-              {console.log('cart',cart)}
             <h3>Cart ID: {cart?.cart?.id}</h3>
             {cart.error ? (
               <p style={{ color: "red" }}>Error: {cart.error}</p>

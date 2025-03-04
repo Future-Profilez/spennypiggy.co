@@ -53,7 +53,6 @@ const ProductFetcher = () => {
                     fetchShippingMethods: true, // Set to true to fetch shipping methods
                 });
 
-                console.log("Cart Data with Buyer Identity:", results);
                 return results?.buyerIdentity?.token || null;
             } catch (error) {
                 console.error("Error fetching payment token:", error);
@@ -62,7 +61,6 @@ const ProductFetcher = () => {
         };
 
         const submitAmazonCart = async (cartId) => {
-            console.log("cartId", cartId);
             try {
                 const token = "56wyNnSmuA6CWYP7w0MiYCVIbW6";
                 // if (!token) {
@@ -88,14 +86,12 @@ const ProductFetcher = () => {
                     },
                 });
 
-                console.log("Cart submitted successfully:", result);
             } catch (error) {
                 console.error("Error submitting cart:", error);
             }
         };
 
         const a = submitAmazonCart("LNfIWLWacr9qNi6VF0tu");
-        console.log("a", a);
         // Requesting product details from Rye API using Amazon URL
         // const result = await ryeClient.requestProductByUrl({
         //     input: {

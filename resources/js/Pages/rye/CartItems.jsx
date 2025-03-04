@@ -17,8 +17,6 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
     const [checking, setChecking] = useState(false);
     const[loading,setLoading]=useState(false);
 
-    console.log("data",data);
-    console.log("cartsItems",cartsItems);
     const getShopperIp = async () => {
         try {
             const response = await fetch("https://api64.ipify.org?format=json");
@@ -58,13 +56,11 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
                 },
             },
         });
-        console.log("result", result);
         const addCart = await axios.post(route("create.cart"), {
             data: result, // Pass productData as the request body
             cart_id: data?.cart?.id, // Pass productData as the request body
             creator_id: cartsItems?.creator_id,
         });
-        console.log("addcart", addCart);
         // successAlert(addCart?.data?.message);
     };
 
@@ -89,13 +85,11 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
                 },
             },
         });
-        console.log("result", result);
         const addCart = await axios.post(route("create.cart"), {
             data: result, // Pass productData as the request body
             cart_id: data?.cart?.id, // Pass productData as the request body
             creator_id: cartsItems?.creator_id,
         });
-        console.log("addcart", addCart);
         // successAlert(addCart?.data?.message);
     };
 
@@ -171,7 +165,6 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
           else{
             errorAlert(addCart?.data?.message);
           }
-        console.log("addcart", addCart);
     }
 
     const clearcart = async() => {
@@ -191,8 +184,6 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
     };
 
     const handleSubmit=async()=>{
-        console.log("data?.cart?.id", data?.cart?.id);
-        console.log("cartsItems?.creator?.id", cartsItems?.creator?.id);
         // return;
         try {
             const response = await axios.post(route('handle.rye.product.payment'),{
@@ -200,7 +191,6 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
                     creator_id : cartsItems?.creator?.id,
                 }
             );
-            console.log("response?.data", response?.data);
             if (response?.data?.status === true) {
                 localStorage && localStorage.setItem("orderDetails", JSON.stringify(response?.data?.orderDetails) || "");
                 window.location.href = response?.data?.url;
@@ -210,7 +200,6 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
                 setChecking(false);
             }
         } catch (error) {
-            console.log("error", error?.response?.data);
             errorAlert(error?.response?.data?.message);
             setChecking(false);
         }
@@ -532,7 +521,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
                                     </p> */}
 
                                     <label
-                                        htmlFor="agreeterm"
+                                        htmlFor="agreeterms"
                                         className="text-start"
                                     >
                                         <input
@@ -540,7 +529,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
                                                 setIsChecked(e.target.checked)
                                             }
                                             type="checkbox"
-                                            id="agreeterm"
+                                            id="agreeterms"
                                             name="agreeterm"
                                             className="me-2"
                                             value="agreeterm"

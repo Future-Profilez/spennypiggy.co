@@ -32,7 +32,6 @@ export default function AddGift({
         country_code: "",
         postal_code: "",
     });
-    console.log("addressAdded", addressAdded);
 
     const data = [
         {
@@ -363,14 +362,12 @@ export default function AddGift({
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("formData", formData);
         // Send the fetched product data to your API
         try {
             const response = await axios.post(
                 "creator-store-address",
                 formData
             );
-            console.log("response?.data", response?.data);
             if (response?.data?.status === "success") {
                 successAlert(response?.data?.message);
                 setHasAdded(true);
@@ -389,7 +386,6 @@ export default function AddGift({
         );
 
         if (selectedCountry) {
-            console.log("Selected Country:", selectedCountry.label);
             setFormData({ ...formData, country_code: selectedCountry.code });
         } else {
             setFormData({ ...formData, country_code: "" });
@@ -437,14 +433,10 @@ export default function AddGift({
                 },
             });
 
-            console.log("productData:", productData);
-            console.log("Product details fetched from Rye API:", result);
-
             // Send the fetched product data to your API
             const response = await axios.post(route("create.creator.product"), {
                 url: productData,
             });
-            console.log("response:", response);
             if (response.data.status === "success") {
                 successAlert(response.data.message);
                 fetch_gifts && fetch_gifts();

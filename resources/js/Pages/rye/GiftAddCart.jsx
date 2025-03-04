@@ -39,7 +39,7 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
         }
     };
 
-    const gotologin = (recure) => { 
+    const gotologin = (recure) => {
             errorAlert("You must login first.");
             const url = `/${user?.username || ""}`
             router.visit(`/login?redirect=${url}`);
@@ -65,8 +65,6 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
             );
 
             let resultss;
-
-            console.log("data.id", data.id);
 
             if (checkCartExist.data.status == true) {
                 resultss = await ryeClient.addCartItems({
@@ -108,17 +106,13 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
                     },
                 });
             }
-            console.log("resultss", resultss);
             const addCart = await axios.post(route("create.cart"), {
                 data: resultss, // Pass productData as the request body
                 cart_id: resultss.cart.id, // Pass productData as the request body
                 creator_id: user?.id,
             });
-            console.log("addCart:", addCart);
             successAlert(addCart?.data?.message);
-            console.log('Hello code reached here');
             setClose(false);
-            console.log("navigate",navigate);
             {navigate && router.visit("cart")}
             {navigate ? setCheckoutLoading(false) : setLoading(false)}
         } catch (error) {

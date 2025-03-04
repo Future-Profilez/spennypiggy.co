@@ -18,7 +18,6 @@ export default function Thankyou(props) {
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
     const getData = async() => {
-      console.log("orderDetails",orderDetails);
       try {
         setApiRun(true);
         const response = await axios.post(route("store.product.order.details")
@@ -27,14 +26,12 @@ export default function Thankyou(props) {
           creator_id : orderDetails?.creator?.id || "",
         }
       );
-      console.log("response?.data", response?.data);
         if (response?.data?.status === true) {
             // window.location.href = response?.data?.url;
         } else {
             errorAlert(response?.data?.message);
         }
     } catch (error) {
-        console.log("error", error?.response?.data);
         errorAlert(error?.response?.data?.message);
     }
     }
@@ -42,7 +39,6 @@ export default function Thankyou(props) {
     useEffect(()=>{
       const getOrder=localStorage && localStorage.getItem('orderDetails') || null
       setOrderDetails(JSON.parse(getOrder));
-      console.log("Order",orderDetails);
       if(orderDetails && !apiRun){
       getData();
       }

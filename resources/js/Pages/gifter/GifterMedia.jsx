@@ -19,7 +19,7 @@ export default function GifterMedia ({username}) {
           setLoading(false);
       });
     };
-  
+
     useEffect(()=>{
       fetch_items();
     },[]);
@@ -30,35 +30,35 @@ export default function GifterMedia ({username}) {
       console.log("showAll",showAll)
     },[showAll]);
 
-    const MediaGroup = ({item}) => { 
+    const MediaGroup = ({item}) => {
       return <>
         <div onClick={()=>setShowAll(item)} className="w-full md:w-[calc(100%/2-11px)] lg:w-[calc(100%/3-1.2rem)] my-6 md:my-0 cursor-pointer">
             {item && item.reward && item.reward.length > 0 ? <>
                   <div className="h-56 mb-2 overflow-hidden rounded-xl w-full flex gap-2">
                     <div className={`${item?.reward[1] ? 'w-[calc(100%/2-4px)]' : 'w-[100%]'}  h-full bg-gray-200`}>
                         <img src={item?.reward[0]} className="w-full h-full object-cover" alt="" />
-                    </div> 
-                    {item?.reward[1] ? 
+                    </div>
+                    {item?.reward[1] ?
                       <div className="flex flex-col gap-2 w-[calc(100%/2-6px)] h-full">
                           <div className={`w-full ${item?.reward[2] ? 'h-[calc(100%/2-4px)]' : 'h-[100%]' } bg-gray-200`}>
                               <img src={item?.reward[1]} className="w-full h-full object-cover" alt="" />
-                          </div> 
+                          </div>
                           {item?.reward[2] ? <div className="w-full h-[calc(100%/2-4px)] bg-gray-200">
                               <img src={item?.reward[2]} className="w-full h-full object-cover" alt="" />
                           </div> : ''}
                       </div>
-                    : ''} 
+                    : ''}
                   </div>
                   <h1 className="text-xl font-semibold text-gray-300">{item.name || 'Anonymous'}</h1>
-            </> 
-            : '' } 
+            </>
+            : '' }
         </div>
       </>
     }
 
     return (
         <>
-          {showAll ? 
+          {showAll ?
           <>
           <div onClick={()=>setShowAll(false)} className="d-flex align-items-center cursor-pointer w-auto align-center mb-4"  >
           <svg width="32" height="29" viewBox="0 0 32 29" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -70,15 +70,14 @@ export default function GifterMedia ({username}) {
               </h1>
           </div>
             <Gallerybox images={showAll.reward || []} />
-          </> 
-          : 
+          </>
+          :
           <div className="my-4 md:my-10 flex gap-6 flex-wrap">
-            {media && media.length ? media.map((itm, i)=>{ 
+            {media && media.length ? media.map((itm, i)=>{
                 return <MediaGroup item={itm} />
-            }) : <div className="w-full m-auto" ><Nocontent text="No Posts to see" /> </div> } 
+            }) : <div className="w-full m-auto" ><Nocontent text="No Posts to see" /> </div> }
           </div>
           }
         </>
     );
 };
- 

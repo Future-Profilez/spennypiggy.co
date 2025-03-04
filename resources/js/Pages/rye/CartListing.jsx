@@ -15,7 +15,6 @@ export default function CartListing() {
         setLoading(true);
         Axios.get(`get-cart-details`)
             .then((resp) => {
-                console.log("resp?.data", resp?.data);
                 if(resp?.data?.status){
                     // console.log(JSON.parse(resp?.data?.data[0]?.cart_details));
                     setCartItems(resp.data.data);
@@ -51,7 +50,6 @@ export default function CartListing() {
                             <>
                                 {cartsItems?.map((c, i) => {
                                     let data=JSON.parse(c.cart_details);
-                                    console.log("data",data);
                                     return (
                                         <CartItems
                                             // auth={auth && auth.user}

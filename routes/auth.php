@@ -309,7 +309,6 @@ Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
 
 Route::get('/remove-from-cart/{uuid}', [WishitemController::class, 'removeSurpriseFromCart'])->name('remove-from-cart');
 
-
 Route::get('/add-to-cart/{uuid}/{device_id}/{sub}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
 
 // rye product routes start

@@ -166,7 +166,6 @@ export default function AddItem(props) {
                 setFetchingCats(false);
             })
             .catch((err) => {
-                console.log(err);
                 setFetchingCats(false);
             });
         };
