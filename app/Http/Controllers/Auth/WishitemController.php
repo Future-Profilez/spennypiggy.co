@@ -759,13 +759,14 @@ class WishitemController extends Controller
         }
     }
 
-    /**
-     * rye product functionality starts
+
+    /*x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x******x******x*****x******x*****x*****x******x******x******x******x******x*****x
      *
-     * create cart product for rye into our site
+     * Rye product functionality starts
+     *
+     * Rye create cart product for rye into our site
      *
      * @return Response
-     *
      */
     public function createCart(Request $request)
     {
@@ -775,7 +776,7 @@ class WishitemController extends Controller
             // Prevent user from adding their own gift item
             if ($userId === (int) $request->creator_id) {
                 return response()->json([
-                    'status' => 'error',
+                    'status' => false,
                     'message' => 'User cannot add their own gift item'
                 ], 403);
             }
@@ -794,7 +795,7 @@ class WishitemController extends Controller
             $newCartDetails = json_encode($request->data, true);
             if ($cart->exists && $cart->cart_details === $newCartDetails) {
                 return response()->json([
-                    'status' => 'success',
+                    'status' => true,
                     'message' => 'Cart item is already added'
                 ]);
             }
@@ -804,19 +805,19 @@ class WishitemController extends Controller
             $cart->save();
 
             return response()->json([
-                'status' => 'success',
+                'status' => true,
                 'message' => $cart->wasRecentlyCreated ? 'Added to Cart' : 'Updated Cart Item'
             ]);
         } catch (Exception $e) {
             return response()->json([
-                'status' => 'error',
+                'status' => false,
                 'message' => $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * check rye cart exist or not
+     * Rye check rye cart exist or not
      *
      * @return Response
      */
@@ -838,7 +839,7 @@ class WishitemController extends Controller
     }
 
     /**
-     * get all carts products details of rye
+     * Rye get all carts products details of rye
      *
      * @return Response
      */
@@ -878,7 +879,7 @@ class WishitemController extends Controller
     }
 
     /**
-     * remove cart from rye cart
+     * Rye remove cart from rye cart
      *
      * @return Response
      */
@@ -891,13 +892,13 @@ class WishitemController extends Controller
 
         // return Inertia::render('feed/AddGift');
         return response()->json([
-            'status' => 'success',
+            'status' => true,
             'message' => $deleted ? 'Cart item deleted successfully' : 'Cart item not found'
         ]);
     }
 
     /**
-     * create store address for creator on rye
+     * Rye create store address for creator on rye
      *
      * @return Response
      */
@@ -909,43 +910,48 @@ class WishitemController extends Controller
                 'first_name'     => 'nullable|string|max:255',
                 'last_name'      => 'nullable|string|max:255',
                 'phone'          => 'nullable|digits_between:8,15', // Ensures phone is numeric & valid length
-                'address_1'      => 'nullable',
-                'address_2'      => 'nullable',
+                'address_1'      => 'nullable|string|max:255',
+                'address_2'      => 'nullable|string|max:255',
                 'city'           => 'nullable|string|max:255',
                 'province_code'  => 'nullable|size:3',  // Exactly 3 characters
                 'country_code'   => 'nullable|size:2',  // Exactly 2 characters (ISO country codes)
                 'postal_code'    => 'nullable|digits_between:4,10', // Ensures postal code is numeric & valid length
             ]);
 
-            // Create the address entry
-            $creatorAddress = CreatorShippingAddress::create([
-                'creator_id'    => Auth::id(),
-                'first_name'    => $validatedData['first_name'],
-                'last_name'     => $validatedData['last_name'],
-                'phone'         => $validatedData['phone'],
-                'address_1'     => $validatedData['address_1'],
-                'address_2'     => $validatedData['address_2'] ?? null,
-                'city'          => $validatedData['city'],
-                'province_code' => $validatedData['province_code'] ?? null,
-                'country_code'  => $validatedData['country_code'],
-                'postal_code'   => $validatedData['postal_code'],
-            ]);
+            // Get the authenticated creator's ID
+            $creatorId = Auth::id();
+
+            // Update or create an address for the creator
+            $creatorAddress = CreatorShippingAddress::updateOrCreate(
+                ['creator_id' => $creatorId],  // Search criteria
+                [ // Values to insert/update
+                    'first_name'    => $validatedData['first_name'],
+                    'last_name'     => $validatedData['last_name'],
+                    'phone'         => $validatedData['phone'],
+                    'address_1'     => $validatedData['address_1'],
+                    'address_2'     => $validatedData['address_2'] ?? null,
+                    'city'          => $validatedData['city'],
+                    'province_code' => $validatedData['province_code'] ?? null,
+                    'country_code'  => $validatedData['country_code'],
+                    'postal_code'   => $validatedData['postal_code'],
+                ]
+            );
 
             // Return success response
             return response()->json([
-                'status'  => 'success',
+                'status'  => true,
                 'message' => 'Address stored successfully',
                 'data'    => $creatorAddress,
             ], 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
-                'status'  => 'error',
+                'status'  => false,
                 'message' => 'Validation failed',
                 'errors'  => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
-                'status'  => 'error',
+                'status'  => false,
                 'message' => 'Something went wrong',
                 'error'   => $e->getMessage(),
             ], 500);
@@ -953,7 +959,24 @@ class WishitemController extends Controller
     }
 
     /**
-     * handle rye product payment and return the payment url
+     * Rye get creator store address
+     *
+     * @return Response
+     */
+    public function getCreatorStoreAddress()
+    {
+        $creatorId = Auth::id();
+        $creatorAddress = CreatorShippingAddress::where('creator_id', $creatorId)->first();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Creator address retrieved successfully',
+            'data' => $creatorAddress,
+        ]);
+    }
+
+    /**
+     * Rye handle rye product payment and return the payment url
      *
      * @return Response
      */
@@ -1254,7 +1277,7 @@ class WishitemController extends Controller
     // }
 
     /**
-     * handle rye product payment success
+     * Rye handle rye product payment success
      *
      * @return Response
      */
@@ -1278,14 +1301,12 @@ class WishitemController extends Controller
 
 
         return Inertia::render('rye/ThankYouRye', [
-            'status' => 'success',
+            'status' => true,
         ]);
     }
 
-
-
     /**
-     * handle rye product payment success
+     * Rye handle rye product payment success
      *
      * @return Response
      */
@@ -1312,7 +1333,7 @@ class WishitemController extends Controller
     /**
      * rye integrations and functionality ends here
      *
-     * handle rye webhook and store the response in the database
+     * Rye handle rye webhook and store the response in the database
      *
      * @return Response
      */
@@ -1364,7 +1385,7 @@ class WishitemController extends Controller
     }
 
     /**
-     * Update order status in the database based on payment success
+     * Rye Update order status in the database based on payment success
      */
     private function updateOrderStatus(array $data, string $status): void
     {
@@ -1381,7 +1402,7 @@ class WishitemController extends Controller
     }
 
     /**
-     * Store new order details in the database
+     * Rye Store new order details in the database
      */
     private function createNewOrder(array $data): void
     {
@@ -1404,9 +1425,9 @@ class WishitemController extends Controller
         Log::info("New order stored with ID: {$order['id']}");
     }
 
-
     /**
-     * hit submitCart api and store the response in the database
+     *
+     * Rye hit submitCart api and store the response in the database
      *
      * @return Response
      */
@@ -1509,106 +1530,9 @@ class WishitemController extends Controller
         }
     }
 
-    // public function storeProductOrderDetails(Request $request)
-    // {
-    //     try {
-
-    //         $creatorShipping = CreatorShippingAddress::with('creator')->where('creator_id', $request->creator_id)->first();
-    //         $response = (object) []; // Empty object
-    //         if ($creatorShipping) {
-
-    //             $cart_id = $request->cart_id;
-    //             $buyerIdentity = $this->updateCartBuyerIdentity($cart_id, $creatorShipping);
-    //             // Decode the JSON response correctly
-    //             $responseData = json_decode($buyerIdentity->getContent(), true);
-
-    //             $shippingId = '0-Default shipping method';
-    //             $store = 'amazon';
-    //             if (isset($responseData['data']['data']['updateCartBuyerIdentity']['cart']['stores'][0])) {
-    //                 $shippingId = $responseData['data']['data']['updateCartBuyerIdentity']['cart']['stores'][0]['offer']['shippingMethods'][0]['id'];
-    //                 $store = $responseData['data']['data']['updateCartBuyerIdentity']['cart']['stores'][0]['store'];
-
-    //                 Log::info('Shipping ID: ' . $shippingId);
-    //                 Log::info('store: ' . $store);
-    //             }
-
-    //             $response = Http::withHeaders([
-    //                 'Authorization' => env('RYE_API_KEY'),
-    //                 'Rye-Shopper-IP' => '122.180.247.198',
-    //                 'Content-Type' => 'application/json',
-    //             ])->post('https://staging.graphql.api.rye.com/v1/query', [
-    //                 'query' => "mutation SubmitCart(\$input: CartSubmitInput!) { submitCart(input: \$input) { cart { id stores { status orderId store { ... on ShopifyStore { store cartLines { quantity variant { id } } } } errors { code message } } } errors { code message } } }",
-    //                 'variables' => [
-    //                     'input' => [
-    //                         'id' => $cart_id,
-    //                         'token' => env('PAYMENT_TOKEN'),
-    //                         'selectedShippingOptions' => [
-    //                             [
-    //                                 'store' => $store,
-    //                                 'shippingId' => $shippingId,
-    //                             ]
-    //                         ],
-    //                         'billingAddress' => [
-    //                             'firstName' => $creatorShipping->first_name ?? 'John',
-    //                             'lastName' => $creatorShipping->last_name ?? 'Doe',
-    //                             'phone' => (string) $creatorShipping->phone ?? '4155552671',
-    //                             'address1' => $creatorShipping->address_1 ?? '123 Main Street',
-    //                             'address2' => $creatorShipping->address_2 ?? 'Apt 4B',
-    //                             'city' => $creatorShipping->city ?? 'New York',
-    //                             'provinceCode' => $creatorShipping->province_code ?? 'NY',
-    //                             'countryCode' => $creatorShipping->country_code ?? 'US',
-    //                             'postalCode' => (string) $creatorShipping->postal_code ?? '10001', // Set a default postal code
-    //                         ],
-
-    //                         'cartSettings' => [
-    //                             'amazonSettings' => [
-    //                                 'hidePriceOnPackage' => true,
-    //                             ]
-    //                         ]
-    //                     ]
-    //                 ]
-    //             ]);
-    //         }
-
-    //         // Convert response to array
-    //         $data = $response->json();
-    //         Log::info('SubmitCart API Response:', $data);
-    //         $data = json_decode($data, true);
-    //         if ($data['data']['submitCart']['cart']['stores'][0]['status'] == 'COMPLETED') {
-    //             // Extract necessary details
-    //             $user_id = Auth::id();
-    //             $creator_id = $request->creator_id;
-    //             $order_id = $data['data']['submitCart']['cart']['stores'][0]['orderId'] ?? null;
-    //             $payment_status = $data['data']['submitCart']['cart']['stores'][0]['status'] ?? 'pending';
-    //             $details = json_encode($data, true);
-
-    //             // Store the response data in the database
-    //             ProductOrderDetail::create([
-    //                 'user_id' => $user_id,
-    //                 'creater_id' => $creator_id,
-    //                 'cart_id' => $cart_id,
-    //                 'order_id' => $order_id,
-    //                 'details' => $details,
-    //                 'payment_status' => $payment_status,
-    //             ]);
-
-    //             // RyeCart::where('cart_id', $cart_id)->delete();
-
-    //             return response()->json(['status' => true, 'message' => 'Order details stored', 'data' => $data]);
-    //         } else {
-    //             return response()->json(['status' => false, 'message' => 'Order details not stored']);
-    //         }
-    //     } catch (Exception $e) {
-    //         return response()->json(['status' => false, 'message' => $e->getMessage()]);
-    //     } catch (Exception $e) {
-    //         return response()->json(['status' => false, 'message' => $e->getMessage()]);
-    //     }
-    // }
-
     /**
-     * rye integrations starts from here
      *
-     * create rye product and store in the database
+     * Rye create rye product and store in the database
      *
      * @return Response
      */
@@ -1622,7 +1546,7 @@ class WishitemController extends Controller
         $checkProductId = RyeProduct::where('creator_id', Auth::id())->where('product_id', $url['id'])->exists();
         // dd($url);
         if ($checkProductId) {
-            return response()->json(['status' => 'error', 'message' => 'Product Already Added.']);
+            return response()->json(['status' => false, 'message' => 'Product Already Added.']);
         }
 
         // Create a new product on Stripe
@@ -1643,10 +1567,28 @@ class WishitemController extends Controller
         $ryeProducts->stripe_product_id = $product->id;
         $ryeProducts->details = json_encode($url, true);
         if ($ryeProducts->save()) {
-            return response()->json(['status' => 'success', 'message' => 'Product Added Successfully.']);
+            return response()->json(['status' => true, 'message' => 'Product Added Successfully.']);
         }
     }
 
+    /**
+     * rye delete product from database
+     *
+     */
+    public function deleteRyeProduct($id)
+    {
+        $ryeProduct = RyeProduct::where('id', $id)->where('creator_id', Auth::id())->delete();
+
+        if ($ryeProduct)
+            return response()->json(['status' => true, 'message' => 'Product deleted successfully']);
+
+        return response()->json(['status' => false, 'message' => 'Failed to delete product']);
+    }
+
+    /**
+     * rye update buyer identity functionality
+     *
+     */
     public function updateCartBuyerIdentity($cart_id, $address)
     {
         $url = 'https://staging.graphql.api.rye.com/v1/query';
@@ -1747,7 +1689,8 @@ class WishitemController extends Controller
     /**
      * rye product functionality ends
      *
-     */
+     *x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x******x******x*****x******x*****x*****x******x******x******x******x******x*****/
+
 
     public function clearCart($deviceid, $ownerid)
     {
