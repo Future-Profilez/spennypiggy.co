@@ -1,15 +1,68 @@
 import React from "react";
 import LoaderButton from "@/Components/LoaderButton";
 import { piggy } from "@/includes/Icons";
+import { useState } from "react";
+import axios from "axios";
+import { useEffect } from "react";
 
-export default function AddressForm({
-    handleSubmit,
-    formData,
-    setFormData,
-    loading,
-}) {
-    
-    const data = [
+export default function AddressForm({ setHasAdded, isEditPopup }) {
+    const [loading, setLoading] = useState(false);
+    const [addressData, setAddressData] = useState({});
+    const [formData, setFormData] = useState({
+        first_name: "",
+        last_name: "",
+        phone: "",
+        address_1: "",
+        address_2: "",
+        city: "",
+        province_code: "",
+        country_code: "",
+        postal_code: "",
+    });
+
+    const fetchAddressData = () => {
+        axios
+            .get(`get-creator-address`)
+            .then((resp) => {
+                if (resp?.data?.status) {
+                    setAddressData(resp?.data?.data);
+                } else {
+                    setAddressData({});
+                }
+            })
+            .catch((_err) => {
+                console.error("error", _err);
+            });
+    };
+
+    // Fetch data when component mounts
+    useEffect(() => {
+        if (isEditPopup) {
+            fetchAddressData();
+        }
+    }, []);
+
+    // Update formData when addressData changes
+    useEffect(() => {
+        if (Object.keys(addressData).length > 0) {
+            setFormData({
+                first_name: addressData?.first_name || "",
+                last_name: addressData?.last_name || "",
+                phone: addressData?.phone || "",
+                address_1: addressData?.address_1 || "",
+                address_2: addressData?.address_2 || "",
+                city: addressData?.city || "",
+                province_code: addressData?.province_code || "",
+                country_code: addressData?.country_code || "",
+                postal_code: addressData?.postal_code || "",
+            });
+        }
+    }, [addressData]); // Runs when addressData updates
+
+    console.log("addressData", addressData);
+    console.log("formData", formData);
+
+    const datas = [
         {
             code: "AT",
             label: "Austria",
@@ -326,7 +379,7 @@ export default function AddressForm({
         },
     ];
 
-    const updated = data.sort((a, b) => a.label.localeCompare(b.label));
+    const updated = datas.sort((a, b) => a.label.localeCompare(b.label));
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -334,7 +387,7 @@ export default function AddressForm({
 
     const getCountry = (e) => {
         const selectedCode = e.target.value;
-        const selectedCountry = data.find(
+        const selectedCountry = datas.find(
             (country) => country.code === selectedCode
         );
 
@@ -342,6 +395,29 @@ export default function AddressForm({
             setFormData({ ...formData, country_code: selectedCountry.code });
         } else {
             setFormData({ ...formData, country_code: "" });
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        // Send the fetched product data to your API
+        try {
+            const response = await axios.post(
+                "creator-store-address",
+                formData
+            );
+            if (response?.data?.status === "success") {
+                successAlert(response?.data?.message);
+                setHasAdded(true);
+                setLoading(false);
+            } else {
+                errorAlert(response?.data?.message);
+                setLoading(false);
+            }
+        } catch (error) {
+            errorAlert(error);
+            setLoading(false);
         }
     };
 
@@ -499,7 +575,11 @@ export default function AddressForm({
                 className="flex btn-pink lg mt-4 w-full "
                 spinnerClassName="fill-red-600"
             >
-                {loading ? "Adding..." : "Add Details"}
+                {loading
+                    ? "Adding..."
+                    : isEditPopup
+                    ? "Update Details"
+                    : "Add Details"}
             </LoaderButton>
         </form>
     );

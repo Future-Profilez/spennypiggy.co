@@ -15,6 +15,7 @@ import ChangeVat from '../account/ChangeVat';
 import DeleteStripeAccount from '../Profile/DeleteStripeAccount';
 import SiteSubscription from '../Profile/SiteSubscription';
 import TFA from '../Auth/TFA';
+import AddressForm from '../rye/AddressForm';
 
 export default function Accountsetting(props) {
     const { successAlert, errorAlert } = useAlerts();
@@ -107,8 +108,8 @@ export default function Accountsetting(props) {
                                 </Popup>
                             </li>
                             <li>
-                                <Popup action={passClose} space='4' modalclassName="pinkmodal" text={"Edit Address"} >
-                                    <ChangeCurrency defaultvalue={global_currency} />
+                                <Popup size={"lg"} action={passClose} space='4' modalclassName="pinkmodal" text={"Edit Address"} >
+                                    <AddressForm isEditPopup={true}/>
                                 </Popup>
                             </li>
 

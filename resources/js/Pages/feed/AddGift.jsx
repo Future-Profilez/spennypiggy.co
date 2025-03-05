@@ -22,39 +22,9 @@ export default function AddGift({
     const [loading, setLoading] = useState(false);
     const [title, setTitle] = useState(item?.title || "");
     const [hasAdded, setHasAdded] = useState(addressAdded);
-    const [formData, setFormData] = useState({
-        first_name: "",
-        last_name: "",
-        phone: "",
-        address_1: "",
-        address_2: "",
-        city: "",
-        province_code: "",
-        country_code: "",
-        postal_code: "",
-    });
 
     const handleInput = (e) => {
         setTitle(e.target.value);
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        // Send the fetched product data to your API
-        try {
-            const response = await axios.post(
-                "creator-store-address",
-                formData
-            );
-            if (response?.data?.status === "success") {
-                successAlert(response?.data?.message);
-                setHasAdded(true);
-            } else {
-                errorAlert(response?.data?.message);
-            }
-        } catch (error) {
-            errorAlert(error);
-        }
     };
 
     const getShopperIp = async () => {
@@ -334,10 +304,9 @@ export default function AddGift({
                 //         {loading ? "Adding..." : "Add Details"}
                 //     </LoaderButton>
                 // </form>
-                <AddressForm  handleSubmit={handleSubmit}
-                formData={formData}
-                setFormData={setFormData}
-                loading={loading}/>
+                <AddressForm 
+                setHasAdded={setHasAdded}
+                />
             )}
         </Popup>
     );
