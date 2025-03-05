@@ -102,8 +102,8 @@ export default function AddGift({
             const response = await axios.post(route("create.creator.product"), {
                 url: productData,
             });
-            if (response.data.status === "success") {
-                successAlert(response.data.message);
+            if (response && response?.data && response?.data?.status) {
+                successAlert(response?.data?.message);
                 fetch_gifts && fetch_gifts();
                 updateState && updateState(new Date());
                 setClose(false);
@@ -113,7 +113,6 @@ export default function AddGift({
             } else {
                 errorAlert(response.data.message);
             }
-
             setLoading(false);
         } catch (err) {
             setLoading(false);

@@ -15,7 +15,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
     const [totalPrice, setTotalPrice] = useState(0);
     const [isChecked, setIsChecked] = useState(false);
     const [checking, setChecking] = useState(false);
-    const[loading,setLoading]=useState(false);
+    const [loading, setLoading] = useState(false);
 
     const getShopperIp = async () => {
         try {
@@ -61,6 +61,11 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
             cart_id: data?.cart?.id, // Pass productData as the request body
             creator_id: cartsItems?.creator_id,
         });
+        if (addCart?.data?.status) {
+            successAlert(addCart?.data?.message);
+        } else {
+            errorAlert(response.data.message);
+        }
         // successAlert(addCart?.data?.message);
     };
 
@@ -155,25 +160,24 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
         });
         const result = await ryeClient.removeCart({
             input: {
-              id: data?.cart?.id,
+                id: data?.cart?.id,
             },
-          });
-          const addCart = await axios.get(`remove-cart/${data?.cart?.id}`);
-          if(addCart?.data?.status  === "success"){
+        });
+        const addCart = await axios.get(`remove-cart/${data?.cart?.id}`);
+        if (addCart?.data?.status) {
             successAlert(addCart?.data?.message);
-          }
-          else{
+        } else {
             errorAlert(addCart?.data?.message);
-          }
-    }
+        }
+    };
 
-    const clearcart = async() => {
+    const clearcart = async () => {
         setDataToMap([]);
         await handleCartDeletion();
         fetchCartItem();
-    }
+    };
 
-    const executeCaptcha = async(e) => {
+    const executeCaptcha = async (e) => {
         e.preventDefault();
         hcaptchaRef.current.execute();
         setChecking(true);
@@ -183,16 +187,22 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
         handleSubmit();
     };
 
-    const handleSubmit=async()=>{
+    const handleSubmit = async () => {
         // return;
         try {
-            const response = await axios.post(route('handle.rye.product.payment'),{
-                    cart_id : data?.cart?.id,
-                    creator_id : cartsItems?.creator?.id,
+            const response = await axios.post(
+                route("handle.rye.product.payment"),
+                {
+                    cart_id: data?.cart?.id,
+                    creator_id: cartsItems?.creator?.id,
                 }
             );
             if (response?.data?.status === true) {
-                localStorage && localStorage.setItem("orderDetails", JSON.stringify(response?.data?.orderDetails) || "");
+                localStorage &&
+                    localStorage.setItem(
+                        "orderDetails",
+                        JSON.stringify(response?.data?.orderDetails) || ""
+                    );
                 window.location.href = response?.data?.url;
                 setChecking(false);
             } else {
@@ -203,8 +213,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
             errorAlert(error?.response?.data?.message);
             setChecking(false);
         }
-
-    }
+    };
 
     // const handleSubmit = async () => {
     //     const shopperIp = await getShopperIp();
@@ -237,13 +246,13 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
     //     console.log("result", result?.data);
     // };
 
-
     return (
         <div className={`px-2`}>
             <div className="my-4 cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
                 <div className="cartMain">
-                    <h2 className="pb-1 wishtitle">Your Basket for {cartsItems?.creator?.name || ""}
-                    <Link
+                    <h2 className="pb-1 wishtitle">
+                        Your Basket for {cartsItems?.creator?.name || ""}
+                        <Link
                             className="text-voilet"
                             href={`/${cartsItems?.creator?.username || ""}`}
                         >
@@ -252,7 +261,8 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
                     </h2>
                     <p className="pb-4">
                         You are about to send a payout to
-                        <strong> {cartsItems?.creator?.name || ""} </strong> to fund their lifestyle.
+                        <strong> {cartsItems?.creator?.name || ""} </strong> to
+                        fund their lifestyle.
                     </p>
                     <div className="CartItemBox">
                         {datatoMap &&
