@@ -1666,6 +1666,21 @@ class WishitemController extends Controller
         }
     }
 
+    /**
+     * rye product functionality starts
+     *
+     */
+    public function deleteRyeProduct($id)
+    {
+        $ryeProduct = RyeProduct::where('id', $id)->where('creator_id', Auth::id())->delete();
+
+        if ($ryeProduct)
+            return response()->json(['status' => true, 'message' => 'Product deleted successfully']);
+
+        return response()->json(['status' => false, 'message' => 'Failed to delete product']);
+    }
+
+
     public function updateCartBuyerIdentity($cart_id, $address)
     {
         $url = 'https://staging.graphql.api.rye.com/v1/query';
