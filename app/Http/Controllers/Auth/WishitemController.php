@@ -775,7 +775,7 @@ class WishitemController extends Controller
             // Prevent user from adding their own gift item
             if ($userId === (int) $request->creator_id) {
                 return response()->json([
-                    'status' => 'error',
+                    'status' => false,
                     'message' => 'User cannot add their own gift item'
                 ], 403);
             }
@@ -794,7 +794,7 @@ class WishitemController extends Controller
             $newCartDetails = json_encode($request->data, true);
             if ($cart->exists && $cart->cart_details === $newCartDetails) {
                 return response()->json([
-                    'status' => 'success',
+                    'status' => true,
                     'message' => 'Cart item is already added'
                 ]);
             }
@@ -804,12 +804,12 @@ class WishitemController extends Controller
             $cart->save();
 
             return response()->json([
-                'status' => 'success',
+                'status' => true,
                 'message' => $cart->wasRecentlyCreated ? 'Added to Cart' : 'Updated Cart Item'
             ]);
         } catch (Exception $e) {
             return response()->json([
-                'status' => 'error',
+                'status' => false,
                 'message' => $e->getMessage()
             ], 500);
         }
@@ -891,7 +891,7 @@ class WishitemController extends Controller
 
         // return Inertia::render('feed/AddGift');
         return response()->json([
-            'status' => 'success',
+            'status' => true,
             'message' => $deleted ? 'Cart item deleted successfully' : 'Cart item not found'
         ]);
     }
@@ -909,47 +909,69 @@ class WishitemController extends Controller
                 'first_name'     => 'nullable|string|max:255',
                 'last_name'      => 'nullable|string|max:255',
                 'phone'          => 'nullable|digits_between:8,15', // Ensures phone is numeric & valid length
-                'address_1'      => 'nullable',
-                'address_2'      => 'nullable',
+                'address_1'      => 'nullable|string|max:255',
+                'address_2'      => 'nullable|string|max:255',
                 'city'           => 'nullable|string|max:255',
                 'province_code'  => 'nullable|size:3',  // Exactly 3 characters
                 'country_code'   => 'nullable|size:2',  // Exactly 2 characters (ISO country codes)
                 'postal_code'    => 'nullable|digits_between:4,10', // Ensures postal code is numeric & valid length
             ]);
 
-            // Create the address entry
-            $creatorAddress = CreatorShippingAddress::create([
-                'creator_id'    => Auth::id(),
-                'first_name'    => $validatedData['first_name'],
-                'last_name'     => $validatedData['last_name'],
-                'phone'         => $validatedData['phone'],
-                'address_1'     => $validatedData['address_1'],
-                'address_2'     => $validatedData['address_2'] ?? null,
-                'city'          => $validatedData['city'],
-                'province_code' => $validatedData['province_code'] ?? null,
-                'country_code'  => $validatedData['country_code'],
-                'postal_code'   => $validatedData['postal_code'],
-            ]);
+            // Get the authenticated creator's ID
+            $creatorId = Auth::id();
+
+            // Update or create an address for the creator
+            $creatorAddress = CreatorShippingAddress::updateOrCreate(
+                ['creator_id' => $creatorId],  // Search criteria
+                [ // Values to insert/update
+                    'first_name'    => $validatedData['first_name'],
+                    'last_name'     => $validatedData['last_name'],
+                    'phone'         => $validatedData['phone'],
+                    'address_1'     => $validatedData['address_1'],
+                    'address_2'     => $validatedData['address_2'] ?? null,
+                    'city'          => $validatedData['city'],
+                    'province_code' => $validatedData['province_code'] ?? null,
+                    'country_code'  => $validatedData['country_code'],
+                    'postal_code'   => $validatedData['postal_code'],
+                ]
+            );
 
             // Return success response
             return response()->json([
-                'status'  => 'success',
+                'status'  => true,
                 'message' => 'Address stored successfully',
                 'data'    => $creatorAddress,
             ], 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
-                'status'  => 'error',
+                'status'  => false,
                 'message' => 'Validation failed',
                 'errors'  => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
-                'status'  => 'error',
+                'status'  => false,
                 'message' => 'Something went wrong',
                 'error'   => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * get creator store address
+     *
+     * @return Response
+     */
+    public function getCreatorStoreAddress()
+    {
+        $creatorId = Auth::id();
+        $creatorAddress = CreatorShippingAddress::where('creator_id', $creatorId)->first();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Creator address retrieved successfully',
+            'data' => $creatorAddress,
+        ]);
     }
 
     /**
@@ -1278,11 +1300,9 @@ class WishitemController extends Controller
 
 
         return Inertia::render('rye/ThankYouRye', [
-            'status' => 'success',
+            'status' => true,
         ]);
     }
-
-
 
     /**
      * handle rye product payment success
@@ -1403,7 +1423,6 @@ class WishitemController extends Controller
 
         Log::info("New order stored with ID: {$order['id']}");
     }
-
 
     /**
      * hit submitCart api and store the response in the database
@@ -1622,7 +1641,7 @@ class WishitemController extends Controller
         $checkProductId = RyeProduct::where('creator_id', Auth::id())->where('product_id', $url['id'])->exists();
         // dd($url);
         if ($checkProductId) {
-            return response()->json(['status' => 'error', 'message' => 'Product Already Added.']);
+            return response()->json(['status' => false, 'message' => 'Product Already Added.']);
         }
 
         // Create a new product on Stripe
@@ -1643,7 +1662,7 @@ class WishitemController extends Controller
         $ryeProducts->stripe_product_id = $product->id;
         $ryeProducts->details = json_encode($url, true);
         if ($ryeProducts->save()) {
-            return response()->json(['status' => 'success', 'message' => 'Product Added Successfully.']);
+            return response()->json(['status' => true, 'message' => 'Product Added Successfully.']);
         }
     }
 
