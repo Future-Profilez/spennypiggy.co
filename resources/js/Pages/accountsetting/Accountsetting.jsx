@@ -106,6 +106,11 @@ export default function Accountsetting(props) {
                                     <ChangeCurrency defaultvalue={global_currency} />
                                 </Popup>
                             </li>
+                            <li>
+                                <Popup action={passClose} space='4' modalclassName="pinkmodal" text={"Edit Address"} >
+                                    <ChangeCurrency defaultvalue={global_currency} />
+                                </Popup>
+                            </li>
 
                             {/* <li>
                                 <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>VAT <span className='text-gray'>{vatpercent || "0"}%</span></>} >
