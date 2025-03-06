@@ -1337,92 +1337,172 @@ class WishitemController extends Controller
      *
      * @return Response
      */
-    public function handleRyeWebhook(Request $request)
+    public function handleWebhook(Request $request)
     {
-        Log::info('Rye Webhook Received:', $request->all());
+        // Get webhook event type
+        $eventType = $request->input('type');
+        $payload = $request->all();
 
-        // Ensure the request contains a "type" field
-        if (!$request->has('type')) {
-            Log::warning('Invalid Rye Webhook: Missing event type');
-            return response()->json(['error' => 'Invalid webhook: Missing event type'], 400);
-        }
+        // Log webhook for debugging
+        Log::info("Received Rye Webhook: " . $eventType, $payload);
 
-        $eventType = $request->input('type'); // Extract event type
-        $webhookData = $request->all(); // Extract event type
+        // Store webhook in database
+        // $webhook = RyeWebhook::create([
+        //     'event_type' => $eventType,
+        //     'payload' => $payload
+        // ]);
 
+        // Handle specific event types
         switch ($eventType) {
-            case 'PAYMENT_FAILED':
-                // Handle return cancellation logic
-                Log::info("Processing PAYMENT_FAILED;;;; event.");
-                break;
-
-            case 'ORDER_CREATED':
-                // Handle order creation logic
-                Log::info("Processing ORDER_CREATED event.");
-                $this->createNewOrder($webhookData);
-                break;
-
             case 'PAYMENT_SUCCEEDED':
-                // Handle order creation logic
-                Log::info("Processing ORDER_CREATED event.");
-                // $this->updateOrderStatus($webhookData, 'paid');
-                break;
+                return $this->handlePaymentSucceeded($payload);
 
-            case 'ORDER_PLACED':
-                // Handle order creation logic
-                Log::info("Processing ORDER_PLACED event.");
-                // $this->updateOrderStatus($webhookData, 'paid');
-                break;
-
-            case 'TRACKING_OBTAINED':
-                // Handle order creation logic
-                Log::info("Processing TRACKING_OBTAINED event.");
-                // $this->updateOrderStatus($webhookData, 'paid');
-                break;
-
-            case 'ORDER_FAILED':
-                // Handle order creation logic
-                Log::info("Processing ORDER_FAILED event.");
-                // $this->updateOrderStatus($webhookData, 'paid');
-                break;
+            case 'PAYMENT_FAILED':
+                return $this->handlePaymentFailed($payload);
 
             case 'PAYMENT_REFUNDED':
-                // Handle order creation logic
-                Log::info("Processing PAYMENT_REFUNDED event.");
-                // $this->updateOrderStatus($webhookData, 'paid');
-                break;
+                return $this->handlePaymentRefunded($payload);
 
             case 'ORDER_SUBMISSION_STARTED':
-                // Handle order creation logic
-                Log::info("Processing ORDER_SUBMISSION_STARTED event.");
-                // $this->updateOrderStatus($webhookData, 'paid');
-                break;
+                return $this->handleOrderSubmissionStarted($payload);
 
             case 'ORDER_SUBMISSION_SUCCEEDED':
-                // Handle order creation logic
-                Log::info("Processing ORDER_SUBMISSION_SUCCEEDED event.");
-                // $this->updateOrderStatus($webhookData, 'paid');
-                break;
+                return $this->handleOrderSubmissionSucceeded($payload);
+
+            case 'ORDER_PLACED':
+                return $this->handleOrderPlaced($payload);
+
+            case 'ORDER_FAILED':
+                return $this->handleOrderFailed($payload);
+
+            case 'ORDER_CANCEL_REQUESTED':
+                return $this->handleOrderCancelRequested($payload);
+
+            case 'ORDER_CANCEL_SUCCEEDED':
+                return $this->handleOrderCancelSucceeded($payload);
+
+            case 'TRACKING_OBTAINED':
+                return $this->handleTrackingObtained($payload);
+
+            case 'RETURN_REQUESTED':
+                return $this->handleReturnRequested($payload);
 
             case 'RETURN_APPROVED':
-                // Handle order creation logic
-                Log::info("Processing RETURN_APPROVED event.");
-                // $this->updateOrderStatus($webhookData, 'paid');
-                break;
+                return $this->handleReturnApproved($payload);
 
-            case 'RETURN_APPROVED':
-                // Handle order creation logic
-                Log::info("Processing RETURN_APPROVED event.");
-                // $this->updateOrderStatus($webhookData, 'paid');
-                break;
+            case 'RETURN_DECLINED':
+                return $this->handleReturnDeclined($payload);
 
-            // Add more cases as needed
+            case 'RETURN_CLOSED':
+                return $this->handleReturnClosed($payload);
+
+            case 'RETURN_CANCELLED':
+                return $this->handleReturnCancelled($payload);
+
+            case 'SHOPIFY_PRODUCT_UPDATED':
+                return $this->handleShopifyProductUpdated($payload);
+
             default:
-                Log::warning("Unhandled Rye Webhook event: $eventType");
-                return response()->json(['error' => "Unhandled event type: $eventType"], 400);
+                return response()->json(['message' => 'Event not handled'], 200);
         }
+    }
 
-        return response()->json(['status' => 'success'], 200);
+    // Handling each webhook event
+    protected function handlePaymentSucceeded($payload)
+    {
+        // Example: Mark order as paid
+        Log::info("Handling PaymentSucceeded", $payload);
+        return response()->json(['message' => 'Payment succeeded processed']);
+    }
+
+    protected function handlePaymentFailed($payload)
+    {
+        Log::info("Handling PaymentFailed", $payload);
+        return response()->json(['message' => 'Payment failed processed']);
+    }
+
+    protected function handlePaymentRefunded($payload)
+    {
+        Log::info("Handling PaymentRefunded", $payload);
+        return response()->json(['message' => 'Payment refunded processed']);
+    }
+
+    protected function handleOrderSubmissionStarted($payload)
+    {
+        Log::info("Handling OrderSubmissionStarted", $payload);
+        return response()->json(['message' => 'Order submission started processed']);
+    }
+
+    protected function handleOrderSubmissionSucceeded($payload)
+    {
+        Log::info("Handling OrderSubmissionSucceeded", $payload);
+        return response()->json(['message' => 'Order submission succeeded processed']);
+    }
+
+    protected function handleOrderPlaced($payload)
+    {
+        Log::info("Handling OrderPlaced", $payload);
+        return response()->json(['message' => 'Order placed processed']);
+    }
+
+    protected function handleOrderFailed($payload)
+    {
+        Log::info("Handling OrderFailed", $payload);
+        return response()->json(['message' => 'Order failed processed']);
+    }
+
+    protected function handleOrderCancelRequested($payload)
+    {
+        Log::info("Handling OrderCancelRequested", $payload);
+        return response()->json(['message' => 'Order cancel requested processed']);
+    }
+
+    protected function handleOrderCancelSucceeded($payload)
+    {
+        Log::info("Handling OrderCancelSucceeded", $payload);
+        return response()->json(['message' => 'Order cancel succeeded processed']);
+    }
+
+    protected function handleTrackingObtained($payload)
+    {
+        Log::info("Handling TrackingObtained", $payload);
+        return response()->json(['message' => 'Tracking obtained processed']);
+    }
+
+    protected function handleReturnRequested($payload)
+    {
+        Log::info("Handling ReturnRequested", $payload);
+        return response()->json(['message' => 'Return requested processed']);
+    }
+
+    protected function handleReturnApproved($payload)
+    {
+        Log::info("Handling ReturnApproved", $payload);
+        return response()->json(['message' => 'Return approved processed']);
+    }
+
+    protected function handleReturnDeclined($payload)
+    {
+        Log::info("Handling ReturnDeclined", $payload);
+        return response()->json(['message' => 'Return declined processed']);
+    }
+
+    protected function handleReturnClosed($payload)
+    {
+        Log::info("Handling ReturnClosed", $payload);
+        return response()->json(['message' => 'Return closed processed']);
+    }
+
+    protected function handleReturnCancelled($payload)
+    {
+        Log::info("Handling ReturnCancelled", $payload);
+        return response()->json(['message' => 'Return cancelled processed']);
+    }
+
+    protected function handleShopifyProductUpdated($payload)
+    {
+        Log::info("Handling ShopifyProductUpdated", $payload);
+        return response()->json(['message' => 'Shopify product updated processed']);
     }
 
     /**
@@ -1613,7 +1693,7 @@ class WishitemController extends Controller
     }
 
     /**
-     * rye delete product from database
+     * rye delete and restore product from database
      *
      */
     public function deleteAndRestoredRyeProduct($uuid)
