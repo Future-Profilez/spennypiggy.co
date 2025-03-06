@@ -529,7 +529,10 @@ class AuthenticatedSessionController extends Controller
         })->firstWhere('username', $username);
 
         if ($user) {
-            $allProducts = RyeProduct::whereCreatorId($user->id)->get();
+            $allProducts = RyeProduct::withTrashed()
+                ->where('creator_id', $user->id)
+                ->get();
+
 
             return response()->json([
                 'success'   => true,
