@@ -298,9 +298,6 @@ Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'di
 Route::get('discover/creators/categories', [WishitemController::class, 'all_creators_categories'])->name('allcreators_categories');
 // Route::get('discover/creators_videos', [WishitemController::class, 'discover_creators_videos'])->name('discover_videos');
 
-
-
-
 Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
 Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity');
 Route::get('cancel-subs/{uuid}', [StripeController::class, 'cancelSubs'])->name('cancel-subs');
@@ -313,7 +310,7 @@ Route::get('/add-to-cart/{uuid}/{device_id}/{sub}/{amount?}', [WishitemControlle
 
 // rye product routes start
 Route::post('create-creator-product', [WishitemController::class, 'createRyeProduct'])->name('create.creator.product');
-Route::get('delete-creator-products/{id}', [WishitemController::class, 'deleteRyeProduct'])->name('delete.creator.products');
+Route::get('delete-creator-products/{uuid}', [WishitemController::class, 'deleteRyeProduct'])->name('delete.creator.products');
 Route::post('create-cart', [WishitemController::class, 'createCart'])->name('create.cart');
 Route::get('check-cart-exist/{creator_id}', [WishitemController::class, 'checkCartExist'])->name('check.cart.exist');
 Route::get('remove-cart/{cart_id}', [WishitemController::class, 'removeCart'])->name('remove.cart');
