@@ -63,10 +63,10 @@ use Stripe\StripeClient;
 
 class WishitemController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
+    // public function __construct()
+    // {
+    //     $this->middleware('auth');
+    // }
 
     public function saveWishItem(Request $request): RedirectResponse
     {
@@ -1337,52 +1337,140 @@ class WishitemController extends Controller
      *
      * @return Response
      */
-    public function handleRyeWebhook(Request $request): JsonResponse
+    public function handleRyeWebhook(Request $request)
     {
-        // Log the full request for debugging
         Log::info('Rye Webhook Received:', $request->all());
 
-        // **Step 1: Handle Challenge Verification**
-        if ($request->has('data.challenge')) {
-            return response()->json(['challenge' => $request->input('data.challenge')]);
-        }
-
-        // **Step 2: Validate & Process Webhook Events**
-        $webhookData = $request->all();
-
-        if (!isset($webhookData['event'])) {
+        // Ensure the request contains a "type" field
+        if (!$request->has('type')) {
             Log::warning('Invalid Rye Webhook: Missing event type');
-            return response()->json(['status' => 'error', 'message' => 'Invalid event type'], 400);
+            return response()->json(['error' => 'Invalid webhook: Missing event type'], 400);
         }
 
-        try {
-            switch ($webhookData['event']) {
-                case 'cart.updated':
-                    Log::info('Cart Updated:', $webhookData);
-                    // You can add logic to update cart details in your DB if necessary.
-                    break;
+        $eventType = $request->input('type'); // Extract event type
+        $webhookData = $request->all(); // Extract event type
 
-                case 'payment.success':
-                    Log::info('Payment Successful:', $webhookData);
-                    $this->updateOrderStatus($webhookData, 'paid');
-                    break;
+        switch ($eventType) {
+            case 'PAYMENT_FAILED':
+                // Handle return cancellation logic
+                Log::info("Processing PAYMENT_FAILED;;;; event.");
+                break;
 
-                case 'order.created':
-                    Log::info('Order Created:', $webhookData);
-                    $this->createNewOrder($webhookData);
-                    break;
+            case 'ORDER_CREATED':
+                // Handle order creation logic
+                Log::info("Processing ORDER_CREATED event.");
+                $this->createNewOrder($webhookData);
+                break;
 
-                default:
-                    Log::warning('Unhandled Rye Webhook Event:', $webhookData);
-                    break;
-            }
+            case 'PAYMENT_SUCCEEDED':
+                // Handle order creation logic
+                Log::info("Processing ORDER_CREATED event.");
+                // $this->updateOrderStatus($webhookData, 'paid');
+                break;
 
-            return response()->json(['status' => 'success']);
-        } catch (\Exception $e) {
-            Log::error('Error Processing Rye Webhook: ' . $e->getMessage());
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            case 'ORDER_PLACED':
+                // Handle order creation logic
+                Log::info("Processing ORDER_PLACED event.");
+                // $this->updateOrderStatus($webhookData, 'paid');
+                break;
+
+            case 'TRACKING_OBTAINED':
+                // Handle order creation logic
+                Log::info("Processing TRACKING_OBTAINED event.");
+                // $this->updateOrderStatus($webhookData, 'paid');
+                break;
+
+            case 'ORDER_FAILED':
+                // Handle order creation logic
+                Log::info("Processing ORDER_FAILED event.");
+                // $this->updateOrderStatus($webhookData, 'paid');
+                break;
+
+            case 'PAYMENT_REFUNDED':
+                // Handle order creation logic
+                Log::info("Processing PAYMENT_REFUNDED event.");
+                // $this->updateOrderStatus($webhookData, 'paid');
+                break;
+
+            case 'ORDER_SUBMISSION_STARTED':
+                // Handle order creation logic
+                Log::info("Processing ORDER_SUBMISSION_STARTED event.");
+                // $this->updateOrderStatus($webhookData, 'paid');
+                break;
+
+            case 'ORDER_SUBMISSION_SUCCEEDED':
+                // Handle order creation logic
+                Log::info("Processing ORDER_SUBMISSION_SUCCEEDED event.");
+                // $this->updateOrderStatus($webhookData, 'paid');
+                break;
+
+            case 'RETURN_APPROVED':
+                // Handle order creation logic
+                Log::info("Processing RETURN_APPROVED event.");
+                // $this->updateOrderStatus($webhookData, 'paid');
+                break;
+
+            case 'RETURN_APPROVED':
+                // Handle order creation logic
+                Log::info("Processing RETURN_APPROVED event.");
+                // $this->updateOrderStatus($webhookData, 'paid');
+                break;
+
+            // Add more cases as needed
+            default:
+                Log::warning("Unhandled Rye Webhook event: $eventType");
+                return response()->json(['error' => "Unhandled event type: $eventType"], 400);
         }
+
+        return response()->json(['status' => 'success'], 200);
     }
+
+    // public function handleRyeWebhook(Request $request): JsonResponse
+    // {
+    //     // Log the full request for debugging
+    //     Log::info('Rye Webhook Received:', $request->all());
+
+    //     // **Step 1: Handle Challenge Verification**
+    //     if ($request->has('data.challenge')) {
+    //         return response()->json(['challenge' => $request->input('data.challenge')]);
+    //     }
+
+    //     // **Step 2: Validate & Process Webhook Events**
+    //     $webhookData = $request->all();
+
+    //     if (!isset($webhookData['type'])) {
+    //         Log::warning('Invalid Rye Webhook: Missing event type');
+    //         return response()->json(['status' => 'error', 'message' => 'Invalid event type'], 400);
+    //     }
+
+    //     try {
+    //         switch ($webhookData['event']) {
+    //             case 'cart.updated':
+    //                 Log::info('Cart Updated:', $webhookData);
+    //                 // You can add logic to update cart details in your DB if necessary.
+    //                 break;
+
+    //             case 'payment.success':
+    //                 Log::info('Payment Successful:', $webhookData);
+    //                 $this->updateOrderStatus($webhookData, 'paid');
+    //                 break;
+
+    //             case 'order.created':
+    //                 Log::info('Order Created:', $webhookData);
+    //                 $this->createNewOrder($webhookData);
+    //                 break;
+
+    //             default:
+    //                 Log::warning('Unhandled Rye Webhook Event:', $webhookData);
+    //                 break;
+    //         }
+
+    //         return response()->json(['status' => 'success']);
+    //     } catch (\Exception $e) {
+    //         Log::error('Error Processing Rye Webhook: ' . $e->getMessage());
+    //         return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+    //     }
+    // }
 
     /**
      * Rye Update order status in the database based on payment success
@@ -1575,9 +1663,9 @@ class WishitemController extends Controller
      * rye delete product from database
      *
      */
-    public function deleteRyeProduct($id)
+    public function deleteRyeProduct($uuid)
     {
-        $ryeProduct = RyeProduct::where('id', $id)->where('creator_id', Auth::id())->delete();
+        $ryeProduct = RyeProduct::where('uuid', $uuid)->where('creator_id', Auth::id())->delete();
 
         if ($ryeProduct)
             return response()->json(['status' => true, 'message' => 'Product deleted successfully']);
