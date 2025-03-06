@@ -6,7 +6,7 @@ import axios from "axios";
 import { useEffect } from "react";
 import { useAlerts } from "@/Components/Alerts";
 
-export default function AddressForm({ setHasAdded, isEditPopup }) {
+export default function AddressForm({ setHasAdded, isEditPopup, setSassClose }) {
     const [loading, setLoading] = useState(false);
     const [addressData, setAddressData] = useState({});
     const { errorsHandling, successAlert, errorAlert } = useAlerts();
@@ -413,6 +413,9 @@ export default function AddressForm({ setHasAdded, isEditPopup }) {
                 successAlert(response?.data?.message);
                 if (!isEditPopup) {
                     setHasAdded(true);
+                }
+                else{
+                    setSassClose(false);
                 }
                 setLoading(false);
             } else {
