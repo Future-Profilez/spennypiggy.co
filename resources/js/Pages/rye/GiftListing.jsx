@@ -9,10 +9,13 @@ import GiftAddCart from "./GiftAddCart";
 import GiftEdit from "./GiftEdit";
 import Dropdown from 'react-bootstrap/Dropdown';
 import DropdownButton from 'react-bootstrap/DropdownButton';
+import axios from "axios";
+import { useAlerts } from "@/Components/Alerts";
 
-export default function GiftListing({ details, user, IsloggedIn, auth, gift }) {
+export default function GiftListing({ details, user, IsloggedIn, auth, gift, fetch_gifts }) {
      const [open, setOpen] = useState();
-     const[data,setData]=useState();
+     const { successAlert, errorAlert, errorsHandling } = useAlerts();
+
      const openAddtocart = () => {
         setOpen(true);
         setTimeout(() => {
@@ -20,8 +23,19 @@ export default function GiftListing({ details, user, IsloggedIn, auth, gift }) {
         }, 1000); // Adjust the delay as needed
     };
     
-    const DeleteItem =(id)=>{
-        console.log("Hello",id);
+    const DeleteItem = async(id)=>{
+        try{
+        const removeItem = await axios.get(`delete-creator-products/${id}`);
+        if (removeItem?.data?.status) {
+            successAlert(removeItem?.data?.message);
+            fetch_gifts();
+        } else {
+            errorAlert(removeItem?.data?.message);
+        }
+    }catch(error){
+        console.log("error",error);
+        errorAlert("An unknown error occured");        
+    }
     }
     console.log("gift",gift);
 
