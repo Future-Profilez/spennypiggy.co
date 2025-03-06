@@ -532,7 +532,7 @@ class AuthenticatedSessionController extends Controller
             // If the authenticated user is the profile owner, exclude deleted products
             $query = RyeProduct::where('creator_id', $user->id);
 
-            if (!$authUser || $authUser->id !== $user->id) {
+            if ($authUser->id == $user->id) {
                 // If user is not the owner, include soft-deleted products
                 $query->withTrashed();
             }
