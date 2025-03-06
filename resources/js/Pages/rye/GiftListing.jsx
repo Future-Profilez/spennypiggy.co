@@ -7,8 +7,10 @@ import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 import { useState } from "react";
 import GiftAddCart from "./GiftAddCart";
 import GiftEdit from "./GiftEdit";
+import Dropdown from 'react-bootstrap/Dropdown';
+import DropdownButton from 'react-bootstrap/DropdownButton';
 
-export default function GiftListing({ details, user, IsloggedIn, auth }) {
+export default function GiftListing({ details, user, IsloggedIn, auth, gift }) {
      const [open, setOpen] = useState();
      const[data,setData]=useState();
      const openAddtocart = () => {
@@ -17,11 +19,35 @@ export default function GiftListing({ details, user, IsloggedIn, auth }) {
             setOpen();
         }, 1000); // Adjust the delay as needed
     };
+    
+    const DeleteItem =(id)=>{
+        console.log("Hello",id);
+    }
+    console.log("gift",gift);
 
     return (
         <div
             className="wishlistcntbox mb-3 mb-sm-4 whbg relative shadow-voilet"
         >
+            {IsloggedIn && (
+        <div className="absolute top-2 right-2 z-10">
+            <DropdownButton
+                className="wishedit"
+                id="dropdown-basic-button"
+                title={
+                    <div className="flex flex-col items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-dark rounded-full"></span>
+                        <span className="w-1.5 h-1.5 bg-dark rounded-full"></span>
+                        <span className="w-1.5 h-1.5 bg-dark rounded-full"></span>
+                    </div>
+                }
+            >
+                <Dropdown.Item>
+                    <button onClick={()=>{DeleteItem(gift?.uuid);}}>Remove Item</button>
+                </Dropdown.Item>
+            </DropdownButton>
+        </div>
+    )}
             {IsloggedIn ?
             <>
             <GiftEdit data={details} action={open} user={user} IsloggedIn={IsloggedIn} auth={auth} />

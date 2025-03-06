@@ -4,10 +4,12 @@ import { piggy } from "@/includes/Icons";
 import { useState } from "react";
 import axios from "axios";
 import { useEffect } from "react";
+import { useAlerts } from "@/Components/Alerts";
 
 export default function AddressForm({ setHasAdded, isEditPopup }) {
     const [loading, setLoading] = useState(false);
     const [addressData, setAddressData] = useState({});
+    const { errorsHandling, successAlert, errorAlert } = useAlerts();
     const [formData, setFormData] = useState({
         first_name: "",
         last_name: "",
@@ -407,9 +409,11 @@ export default function AddressForm({ setHasAdded, isEditPopup }) {
                 "creator-store-address",
                 formData
             );
-            if (response?.data?.status === "success") {
+            if (response?.data?.status) {
                 successAlert(response?.data?.message);
-                setHasAdded(true);
+                if (!isEditPopup) {
+                    setHasAdded(true);
+                }
                 setLoading(false);
             } else {
                 errorAlert(response?.data?.message);
@@ -545,18 +549,18 @@ export default function AddressForm({ setHasAdded, isEditPopup }) {
                 <select
                     onChange={getCountry}
                     name="country_code"
+                    value={formData.country_code} // Ensure the selected value is set
                     className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
                     required
                 >
-                    <option value="" disabled selected>
+                    <option value="" disabled>
                         Choose
                     </option>
-                    {updated &&
-                        updated.map((c, i) => (
-                            <option key={`country-${i}`} value={c.code}>
-                                {c.label}
-                            </option>
-                        ))}
+                    {updated.map((c, i) => (
+                        <option key={`country-${i}`} value={c.code}>
+                            {c.label}
+                        </option>
+                    ))}
                 </select>
                 <input
                     onChange={handleChange}
@@ -575,7 +579,9 @@ export default function AddressForm({ setHasAdded, isEditPopup }) {
                 className="flex btn-pink lg mt-4 w-full "
                 spinnerClassName="fill-red-600"
             >
-                {loading
+                {loading && isEditPopup
+                    ? "Updating..."
+                    : loading && !isEditPopup
                     ? "Adding..."
                     : isEditPopup
                     ? "Update Details"
