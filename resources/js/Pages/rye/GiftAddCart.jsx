@@ -111,10 +111,15 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
                 cart_id: resultss.cart.id, // Pass productData as the request body
                 creator_id: user?.id,
             });
+            if(addCart?.data?.status){
             successAlert(addCart?.data?.message);
             setClose(false);
             {navigate && router.visit("cart")}
             {navigate ? setCheckoutLoading(false) : setLoading(false)}
+        }
+        else{
+            errorAlert(response.data.message);
+        }
         } catch (error) {
             console.log(error);
             {navigate ? setCheckoutLoading(false) : setLoading(false)}
