@@ -1616,7 +1616,7 @@ class WishitemController extends Controller
      * rye delete product from database
      *
      */
-    public function toggleDeleteRyeProduct($uuid)
+    public function deleteAndRestoredRyeProduct($uuid)
     {
         // Find the product, including soft-deleted ones
         $ryeProduct = RyeProduct::withTrashed()->where('uuid', $uuid)->where('creator_id', Auth::id())->first();

@@ -312,7 +312,7 @@ Route::get('/add-to-cart/{uuid}/{device_id}/{sub}/{amount?}', [WishitemControlle
 Route::post('creator-store-address', [WishitemController::class, 'creatorStoreAddress'])->name('creator.store.address');
 Route::get('get-creator-address', [WishitemController::class, 'getCreatorStoreAddress'])->name('get.creator.address');
 Route::post('create-creator-product', [WishitemController::class, 'createRyeProduct'])->name('create.creator.product');
-Route::get('delete-creator-products/{uuid}', [WishitemController::class, 'deleteRyeProduct'])->name('delete.creator.products');
+Route::get('delete-creator-products/{uuid}', [WishitemController::class, 'deleteAndRestoredRyeProduct'])->name('delete.creator.products');
 Route::post('create-cart', [WishitemController::class, 'createCart'])->name('create.cart');
 Route::get('check-cart-exist/{creator_id}', [WishitemController::class, 'checkCartExist'])->name('check.cart.exist');
 Route::get('remove-cart/{cart_id}', [WishitemController::class, 'removeCart'])->name('remove.cart');

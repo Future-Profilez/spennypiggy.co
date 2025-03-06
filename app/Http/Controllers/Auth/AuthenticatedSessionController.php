@@ -524,33 +524,37 @@ class AuthenticatedSessionController extends Controller
     public function userGiftItems($username)
     {
         $authUser = Auth::user(); // Get the logged-in user
+
         $user = User::where(function ($q) {
             $q->whereNot('country', 'GB')->orWhereNull('country');
         })->firstWhere('username', $username);
 
-        if ($user) {
-            // If the authenticated user is the profile owner, exclude deleted products
-            $query = RyeProduct::where('creator_id', $user->id);
-
-            if ($authUser->id == $user->id) {
-                // If user is not the owner, include soft-deleted products
-                $query->withTrashed();
-            }
-
-            $allProducts = $query->get();
-
+        if (!$user) {
             return response()->json([
-                'success' => true,
-                'items'   => $allProducts
+                'success' => false,
+                'items'   => [],
+                'message' => 'User not found'
             ]);
         }
 
+        // Initialize query for fetching products
+        $query = RyeProduct::where('creator_id', $user->id);
+
+        // If the authenticated user is not the owner, include soft-deleted products
+        if (isset($authUser) && isset($user)) {
+            if ($authUser->id == $user->id) {
+                $query->withTrashed();
+            }
+        }
+
+        $allProducts = $query->get();
+
         return response()->json([
-            'success' => false,
-            'items'   => [],
-            'message' => 'User not found'
+            'success' => true,
+            'items'   => $allProducts
         ]);
     }
+
 
     public function sociallinks($username)
     {
