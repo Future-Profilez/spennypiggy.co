@@ -1425,53 +1425,6 @@ class WishitemController extends Controller
         return response()->json(['status' => 'success'], 200);
     }
 
-    // public function handleRyeWebhook(Request $request): JsonResponse
-    // {
-    //     // Log the full request for debugging
-    //     Log::info('Rye Webhook Received:', $request->all());
-
-    //     // **Step 1: Handle Challenge Verification**
-    //     if ($request->has('data.challenge')) {
-    //         return response()->json(['challenge' => $request->input('data.challenge')]);
-    //     }
-
-    //     // **Step 2: Validate & Process Webhook Events**
-    //     $webhookData = $request->all();
-
-    //     if (!isset($webhookData['type'])) {
-    //         Log::warning('Invalid Rye Webhook: Missing event type');
-    //         return response()->json(['status' => 'error', 'message' => 'Invalid event type'], 400);
-    //     }
-
-    //     try {
-    //         switch ($webhookData['event']) {
-    //             case 'cart.updated':
-    //                 Log::info('Cart Updated:', $webhookData);
-    //                 // You can add logic to update cart details in your DB if necessary.
-    //                 break;
-
-    //             case 'payment.success':
-    //                 Log::info('Payment Successful:', $webhookData);
-    //                 $this->updateOrderStatus($webhookData, 'paid');
-    //                 break;
-
-    //             case 'order.created':
-    //                 Log::info('Order Created:', $webhookData);
-    //                 $this->createNewOrder($webhookData);
-    //                 break;
-
-    //             default:
-    //                 Log::warning('Unhandled Rye Webhook Event:', $webhookData);
-    //                 break;
-    //         }
-
-    //         return response()->json(['status' => 'success']);
-    //     } catch (\Exception $e) {
-    //         Log::error('Error Processing Rye Webhook: ' . $e->getMessage());
-    //         return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-    //     }
-    // }
-
     /**
      * Rye Update order status in the database based on payment success
      */
@@ -1663,15 +1616,26 @@ class WishitemController extends Controller
      * rye delete product from database
      *
      */
-    public function deleteRyeProduct($uuid)
+    public function deleteAndRestoredRyeProduct($uuid)
     {
-        $ryeProduct = RyeProduct::where('uuid', $uuid)->where('creator_id', Auth::id())->delete();
+        // Find the product, including soft-deleted ones
+        $ryeProduct = RyeProduct::withTrashed()->where('uuid', $uuid)->where('creator_id', Auth::id())->first();
 
-        if ($ryeProduct)
-            return response()->json(['status' => true, 'message' => 'Product deleted successfully']);
+        if (!$ryeProduct) {
+            return response()->json(['status' => false, 'message' => 'Product not found']);
+        }
 
-        return response()->json(['status' => false, 'message' => 'Failed to delete product']);
+        if ($ryeProduct->trashed()) {
+            // If the product is deleted, restore it
+            $ryeProduct->restore();
+            return response()->json(['status' => true, 'message' => 'Product Enabled successfully']);
+        } else {
+            // Otherwise, soft delete it
+            $ryeProduct->delete();
+            return response()->json(['status' => true, 'message' => 'Product Disabled successfully']);
+        }
     }
+
 
     /**
      * rye update buyer identity functionality

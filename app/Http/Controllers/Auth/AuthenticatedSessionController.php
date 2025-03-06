@@ -492,7 +492,6 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
-
     public function user_bills($username)
     {
         $user = User::where(function ($q) {
@@ -521,34 +520,38 @@ class AuthenticatedSessionController extends Controller
             'message'   =>  'User not found'
         ]);
     }
+
     public function userGiftItems($username)
     {
         $authUser = Auth::user(); // Get the logged-in user
+
         $user = User::where(function ($q) {
             $q->whereNot('country', 'GB')->orWhereNull('country');
         })->firstWhere('username', $username);
 
-        if ($user) {
-            // If the authenticated user is the profile owner, exclude deleted products
-            $query = RyeProduct::where('creator_id', $user->id);
-
-            if ($authUser->id == $user->id) {
-                // If user is not the owner, include soft-deleted products
-                $query->withTrashed();
-            }
-
-            $allProducts = $query->get();
-
+        if (!$user) {
             return response()->json([
-                'success' => true,
-                'items'   => $allProducts
+                'success' => false,
+                'items'   => [],
+                'message' => 'User not found'
             ]);
         }
 
+        // Initialize query for fetching products
+        $query = RyeProduct::where('creator_id', $user->id);
+
+        // If the authenticated user is not the owner, include soft-deleted products
+        if (isset($authUser) && isset($user)) {
+            if ($authUser->id == $user->id) {
+                $query->withTrashed();
+            }
+        }
+
+        $allProducts = $query->get();
+
         return response()->json([
-            'success' => false,
-            'items'   => [],
-            'message' => 'User not found'
+            'success' => true,
+            'items'   => $allProducts
         ]);
     }
 
@@ -615,7 +618,6 @@ class AuthenticatedSessionController extends Controller
         }
     }
 
-
     public function checkUserName($username)
     {
         try {
@@ -656,7 +658,6 @@ class AuthenticatedSessionController extends Controller
 
         return back()->with('error', 'No linked twitter account found.');
     }
-
 
     /**
      * Handle Redirect from cross domain
@@ -705,7 +706,6 @@ class AuthenticatedSessionController extends Controller
         return to_route('user.show', ['username' => $user->username])->with('success', 'Welcome back. Login successfull.');
     }
 
-
     public function updateVat($percent)
     {
         $user = User::where('id', Auth::id())->first();
@@ -718,8 +718,6 @@ class AuthenticatedSessionController extends Controller
             'message'   =>  'Vat updated successfully'
         ]);
     }
-
-
 
     /**
      * Verify 2FA OTP
@@ -803,7 +801,6 @@ class AuthenticatedSessionController extends Controller
         }
     }
 
-
     /**
      * Generating the backup codes for 2fa
      *
@@ -830,7 +827,6 @@ class AuthenticatedSessionController extends Controller
             'backup_codes' => $codes ?? null
         ], 200);
     }
-
 
     /**
      * Sign Contract
