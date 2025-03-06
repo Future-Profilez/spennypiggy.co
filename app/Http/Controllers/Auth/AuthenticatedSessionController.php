@@ -492,7 +492,6 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
-
     public function user_bills($username)
     {
         $user = User::where(function ($q) {
@@ -521,6 +520,7 @@ class AuthenticatedSessionController extends Controller
             'message'   =>  'User not found'
         ]);
     }
+
     public function userGiftItems($username)
     {
         $authUser = Auth::user(); // Get the logged-in user
@@ -551,7 +551,6 @@ class AuthenticatedSessionController extends Controller
             'message' => 'User not found'
         ]);
     }
-
 
     public function sociallinks($username)
     {
@@ -615,7 +614,6 @@ class AuthenticatedSessionController extends Controller
         }
     }
 
-
     public function checkUserName($username)
     {
         try {
@@ -656,7 +654,6 @@ class AuthenticatedSessionController extends Controller
 
         return back()->with('error', 'No linked twitter account found.');
     }
-
 
     /**
      * Handle Redirect from cross domain
@@ -705,7 +702,6 @@ class AuthenticatedSessionController extends Controller
         return to_route('user.show', ['username' => $user->username])->with('success', 'Welcome back. Login successfull.');
     }
 
-
     public function updateVat($percent)
     {
         $user = User::where('id', Auth::id())->first();
@@ -718,8 +714,6 @@ class AuthenticatedSessionController extends Controller
             'message'   =>  'Vat updated successfully'
         ]);
     }
-
-
 
     /**
      * Verify 2FA OTP
@@ -803,7 +797,6 @@ class AuthenticatedSessionController extends Controller
         }
     }
 
-
     /**
      * Generating the backup codes for 2fa
      *
@@ -830,7 +823,6 @@ class AuthenticatedSessionController extends Controller
             'backup_codes' => $codes ?? null
         ], 200);
     }
-
 
     /**
      * Sign Contract
