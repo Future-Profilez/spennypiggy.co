@@ -57,7 +57,13 @@ export default function GiftListing({ details, user, IsloggedIn, auth, gift, fet
                 }
             >
                 <Dropdown.Item>
-                    <button onClick={()=>{DeleteItem(gift?.uuid);}}>Remove Item</button>
+                    <button onClick={()=>{DeleteItem(gift?.uuid);}}>
+                        {gift?.deleted_at === null ? 
+                        "Disable Item"
+                        :
+                        "Enable Item"
+                        }
+                        </button>
                 </Dropdown.Item>
             </DropdownButton>
         </div>
