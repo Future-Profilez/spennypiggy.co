@@ -521,27 +521,37 @@ class AuthenticatedSessionController extends Controller
             'message'   =>  'User not found'
         ]);
     }
-
     public function userGiftItems($username)
     {
+        $authUser = Auth::user(); // Get the logged-in user
         $user = User::where(function ($q) {
             $q->whereNot('country', 'GB')->orWhereNull('country');
         })->firstWhere('username', $username);
 
         if ($user) {
-            $allProducts = RyeProduct::whereCreatorId($user->id)->get();
+            // If the authenticated user is the profile owner, exclude deleted products
+            $query = RyeProduct::where('creator_id', $user->id);
+
+            if (!$authUser || $authUser->id !== $user->id) {
+                // If user is not the owner, include soft-deleted products
+                $query->withTrashed();
+            }
+
+            $allProducts = $query->get();
 
             return response()->json([
-                'success'   => true,
-                'items' => $allProducts
+                'success' => true,
+                'items'   => $allProducts
             ]);
         }
+
         return response()->json([
-            'success'   => false,
-            'items'     => [],
-            'message'   =>  'User not found'
+            'success' => false,
+            'items'   => [],
+            'message' => 'User not found'
         ]);
     }
+
 
     public function sociallinks($username)
     {
