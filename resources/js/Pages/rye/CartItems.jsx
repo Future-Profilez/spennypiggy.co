@@ -177,32 +177,18 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
         fetchCartItem();
     };
 
-    // const executeCaptcha = async (e) => {
-    //     console.log('come at execute captcha before')
-    //     e.preventDefault();
-    //     hcaptchaRef.current.execute();
-    //     console.log('come at execute captcha after')
-    //     setChecking(true);
-    // };
-
     const executeCaptcha = async (e) => {
         e.preventDefault();
+        hcaptchaRef.current.execute();
         setChecking(true);
-        console.log('Executing HCaptcha...');
-        if (hcaptchaRef.current) {
-            hcaptchaRef.current.execute();
-        } else {
-            console.error('HCaptcha ref is not available.');
-        }
     };
 
     const onVerify = (token) => {
-        console.log('come at on verify')
         handleSubmit();
     };
 
     const handleSubmit = async () => {
-        console.log('Submitting payment...');
+        // return;
         try {
             const response = await axios.post(
                 route("handle.rye.product.payment"),
@@ -211,54 +197,23 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
                     creator_id: cartsItems?.creator?.id,
                 }
             );
-            console.log("Response:", response?.data);
-    
             if (response?.data?.status === true) {
-                localStorage.setItem(
-                    "orderDetails",
-                    JSON.stringify(response?.data?.orderDetails) || ""
-                );
+                localStorage &&
+                    localStorage.setItem(
+                        "orderDetails",
+                        JSON.stringify(response?.data?.orderDetails) || ""
+                    );
                 window.location.href = response?.data?.url;
+                setChecking(false);
             } else {
                 errorAlert(response?.data?.message);
+                setChecking(false);
             }
         } catch (error) {
-            console.error("Error in handleSubmit:", error);
-            errorAlert(error?.response?.data?.message || "Payment failed");
-        } finally {
+            errorAlert(error?.response?.data?.message);
             setChecking(false);
         }
     };
-    
-
-    // const handleSubmit = async () => {
-    //     console.log('come at handle submit')
-    //     // return;
-    //     try {
-    //         const response = await axios.post(
-    //             route("handle.rye.product.payment"),
-    //             {
-    //                 cart_id: data?.cart?.id,
-    //                 creator_id: cartsItems?.creator?.id,
-    //             }
-    //         );
-    //         if (response?.data?.status === true) {
-    //             localStorage &&
-    //                 localStorage.setItem(
-    //                     "orderDetails",
-    //                     JSON.stringify(response?.data?.orderDetails) || ""
-    //                 );
-    //             window.location.href = response?.data?.url;
-    //             setChecking(false);
-    //         } else {
-    //             errorAlert(response?.data?.message);
-    //             setChecking(false);
-    //         }
-    //     } catch (error) {
-    //         errorAlert(error?.response?.data?.message);
-    //         setChecking(false);
-    //     }
-    // };
 
     // const handleSubmit = async () => {
     //     const shopperIp = await getShopperIp();
