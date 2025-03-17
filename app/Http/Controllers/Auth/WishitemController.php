@@ -1729,6 +1729,8 @@ class WishitemController extends Controller
                     'payment_status' => $storeData['status'] ?? 'pending',
                 ]);
 
+                RyeCart::where('id', $cart_id)->delete();
+
                 return response()->json(['status' => true, 'message' => 'Order details stored', 'data' => $data]);
             }
 
