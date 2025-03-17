@@ -9,12 +9,12 @@ import HCaptcha from "@hcaptcha/react-hcaptcha";
 
 export default function CartItems({ data, cartsItems, fetchCartItem }) {
     const { hcaptchakey } = usePage().props;
-    // const hcaptchaRef = useRef(null);
+    const hcaptchaRef = useRef(null);
     const { formatMultiPrice } = PriceFormat();
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [totalPrice, setTotalPrice] = useState(0);
     const [isChecked, setIsChecked] = useState(false);
-    // const [checking, setChecking] = useState(false);
+    const [checking, setChecking] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const getShopperIp = async () => {
@@ -177,15 +177,13 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
         fetchCartItem();
     };
 
-    // const executeCaptcha = async (e) => {
-    //     e.preventDefault();
-        // hcaptchaRef.current.execute();
-    //     setChecking(true);
-    // };
-
-    // const onVerify = (token) => {
-    const onVerify = () => {
+    const executeCaptcha = async (e) => {
+        e.preventDefault();
+        hcaptchaRef.current.execute();
         setChecking(true);
+    };
+
+    const onVerify = (token) => {
         handleSubmit();
     };
 
@@ -452,7 +450,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
                     </div>
 
                     <div className="addMessage">
-                        <form onSubmit={onVerify}>
+                        <form onSubmit={executeCaptcha}>
                             <ul className="row">
                                 {/* <li>
                                     <label>Add Message </label>
@@ -642,28 +640,20 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
                                 <button
                                     type="submit"
                                     className={`${
-                                        isChecked ? "" : ""
-                                    } btn-pink md mt-3 text-center`}
-                                    > Checkout
-                                
-                                </button>
-                                {/* <button
-                                    type="submit"
-                                    className={`${
                                         isChecked ? "" : "disabled"
                                     } btn-pink md mt-3 text-center`}
-                                    > {checking ? "Wait.." : "Checkout"}{" "} 
-                                
-                                </button> */}
+                                >
+                                    {checking ? "Wait.." : "Checkout"}{" "}
+                                </button>
                             </div>
-                            {/* <HCaptcha
+                            <HCaptcha
                                 ref={hcaptchaRef}
                                 sitekey={hcaptchakey || ""}
                                 data-theme="light"
                                 size="invisible"
                                 onVerify={onVerify}
                                 required
-                            /> */}
+                            />
                         </form>
                     </div>
                 </div>
