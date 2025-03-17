@@ -345,6 +345,9 @@ class StripeController extends Controller
                 ]);
                 $payment_data->refresh();
                 $message = $stripeid->message;
+
+                Log::info("come at stripeController 349 line");
+
                 if ($dd->wish_item_id == NULL) {
                     CheckoutUser::dispatch($payment_data, false, $dd, $message, false);
                 } else {
@@ -540,6 +543,9 @@ class StripeController extends Controller
                 $data->refresh();
                 $value->status = 0;
                 $value->save();
+
+                Log::info("come at stripeController 547 line");
+
                 // $dd->wish_id == NULL
                 CheckoutUser::dispatch($data, true, false, false, $stripeid->name);
             }

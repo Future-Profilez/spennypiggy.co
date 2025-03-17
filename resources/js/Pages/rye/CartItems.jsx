@@ -178,7 +178,6 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
     };
 
     const executeCaptcha = async (e) => {
-        console.log("Hello");
         e.preventDefault();
         hcaptchaRef.current.execute();
         setChecking(true);

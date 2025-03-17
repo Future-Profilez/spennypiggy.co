@@ -228,6 +228,9 @@ class CheckoutController extends Controller
                 $symbol = Currency::where('iso', strtoupper($payment_data->payment->currency))->first();
 
                 $message = $stripeid->message;
+
+                Log::info("come at CheckoutController 232 line");
+
                 if (Auth::check()) {
                     if ($dd->wish_item_id == NULL) {
                         CheckoutUser::dispatch($payment_data, false, $dd, $message, null, $symbol->symbol);

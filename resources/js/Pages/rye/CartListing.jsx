@@ -49,7 +49,6 @@ export default function CartListing() {
                         {cartsItems && cartsItems.length>0 ? (
                             <>
                                 {cartsItems?.map((c, i) => {
-                                    console.log("c",c);
                                     let data=JSON.parse(c.cart_details);
                                     return (
                                         <CartItems

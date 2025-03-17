@@ -7,7 +7,7 @@ import { LazyLoadImage } from "react-lazy-load-image-component";
 // import spennypiggy from "../../assets/img/logo.png";
 
 export default function Footer(props) {
-    
+
     const {ziggy}  = usePage().props;
     const { auth } = props;
     async function configIntercom() {
@@ -119,7 +119,7 @@ export default function Footer(props) {
     return (
         <>
             <Helmet>
-                <script async type="text/javascript" src="https://app.termly.io/embed.min.js" data-auto-block="on" data-website-uuid="ced8ded9-995d-471a-bf54-880b8c679a81" ></script>
+                {/* <script async type="text/javascript" src="https://app.termly.io/embed.min.js" data-auto-block="on" data-website-uuid="ced8ded9-995d-471a-bf54-880b8c679a81" ></script> */}
                 <script async src="https://www.googletagmanager.com/gtag/js?id=G-9F1M3QZZB3" ></script>
             </Helmet>
             <div className="whbg" >
@@ -184,4 +184,3 @@ export default function Footer(props) {
 }
 
 
-  

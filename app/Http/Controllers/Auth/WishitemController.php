@@ -1376,7 +1376,7 @@ class WishitemController extends Controller
         $orderDetails->save();
 
         // Update gift item payment status
-        RyeCart::where('uuid', $orderUuid)->delete();
+        // RyeCart::where('uuid', $orderUuid)->delete();
 
 
         return Inertia::render('rye/ThankYouRye', [

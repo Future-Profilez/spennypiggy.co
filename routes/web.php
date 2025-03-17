@@ -11,6 +11,7 @@ use App\Http\Controllers\TestController;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -23,6 +24,14 @@ use Inertia\Inertia;
 | routes are loaded by the RouteServiceProvider within a group which
 | contains the "web" middleware group. Now create something great!
 */
+
+Route::get('/send-test-mail', function () {
+    Mail::raw('This is a test email. If you are seeing this, your mail configuration is working!', function ($message) {
+        $message->to('prem@futureprofilez.com')
+            ->subject('Test Email');
+    });
+    return 'Test email sent!';
+});
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
