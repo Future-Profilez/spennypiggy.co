@@ -46,7 +46,7 @@ export default function AddressForm({ setHasAdded, isEditPopup, setSassClose }) 
 
     // Update formData when addressData changes
     useEffect(() => {
-        if (Object.keys(addressData).length > 0) {
+        if (addressData && Object.keys(addressData).length > 0) {
             setFormData({
                 first_name: addressData?.first_name || "",
                 last_name: addressData?.last_name || "",
@@ -60,9 +60,6 @@ export default function AddressForm({ setHasAdded, isEditPopup, setSassClose }) 
             });
         }
     }, [addressData]); // Runs when addressData updates
-
-    console.log("addressData", addressData);
-    console.log("formData", formData);
 
     const datas = [
         {
