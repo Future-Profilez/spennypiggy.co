@@ -18,6 +18,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class LeaderBoardController extends Controller
@@ -474,11 +475,13 @@ class LeaderBoardController extends Controller
         $currentWeekEndDate = Carbon::now()->endOfWeek();
         $currentDate = Carbon::today();
 
-        $single_wish = StripePaymentItems::whereHas('wish',function($q){
-            $q->whereNotNull('stripe_product_id');
-        })->whereHas('payment',function($query) use($user){
-            $query->where('owner_id',$user->id);
-        });
+        $single_wish = StripePaymentItems::whereHas('payment',function($q)use($user){
+            $q->where('owner_id',$user->id);
+        })->whereHas('wish',function($q)use($user){
+            $q->whereNotNull('stripe_product_id')->where('user_id',$user->id);
+        })->groupBy('wish_item_id');
+        Log::info('single_wish start');
+        Log::info($single_wish->sum('amount'));
 
         // $crowd_wish = StripePaymentItems::whereHas('wish',function($q){
         //     $q->whereNull('stripe_product_id');
@@ -560,6 +563,8 @@ class LeaderBoardController extends Controller
 
             $single_wish->whereYear('created_at', '=', $currentYear)
             ->whereMonth('created_at',$currentMonth);
+            Log::info('single_wish end');
+            Log::info($single_wish->sum('amount'));
 
             // $crowd_wish->whereYear('created_at', '=', $currentYear)
             // ->whereMonth('created_at',$currentMonth);
@@ -594,7 +599,6 @@ class LeaderBoardController extends Controller
         // } else {
         //     $per = (($tip_goal->sum('amount') - $performance['tip_goal']) / $performance['tip_goal']) * 100;
         // }
-
 
         $resp['earnings'][0] = [
             'amount' => $single_wish->sum('amount'),
@@ -678,7 +682,6 @@ class LeaderBoardController extends Controller
 
         return response()->json($resp, 200);
     }
-
 
     public function graphData(){
         $user = User::where('id', Auth::id())->first();
@@ -772,7 +775,6 @@ class LeaderBoardController extends Controller
         }
     }
 
-
     public function topWishes(){
         $user = User::where('id', Auth::id())->first();
 
@@ -797,7 +799,8 @@ class LeaderBoardController extends Controller
 
         return response()->json([
             'status' => true,
-            'data' => $resp
+            'data' => $resp,
+            'auth' => $user
         ]);
     }
 

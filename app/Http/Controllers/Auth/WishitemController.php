@@ -1125,23 +1125,8 @@ class WishitemController extends Controller
             $ryeProductPayment->customer_email = $orderDetails->user->email;
             $ryeProductPayment->save();
 
-            // $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-            // $sessionCreate = $stripe->checkout->sessions->create([
-            //     'success_url' => route('rye.success.payment', [$ryeProductPayment->uuid]),
-            //     'cancel_url' => route('rye.cancel.payment', [$ryeProductPayment->uuid]),
-            //     'line_items' => $lineItems,
-            //     'mode' => 'payment',
-            //     'payment_method_types' => ['card'],
-            //     'payment_intent_data' => [
-            //         'transfer_data' => [
-            //             'destination' => $orderDetails->creator->account_id,
-            //         ],
-            //         'on_behalf_of' => $orderDetails->creator->account_id,
-            //     ],
-            //     'customer_email' => $orderDetails->user->email,
-            // ]);
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-            // Create Stripe checkout session
+
             // Create Stripe checkout session
             $successUrl = route('rye.success.payment', [
                 'uuid' => $ryeProductPayment->uuid,
@@ -1174,7 +1159,6 @@ class WishitemController extends Controller
                     'payment_source' => 'website',
                 ],
             ]);
-
 
             RyeProductPayment::whereUuid($ryeProductPayment->uuid)->update(['payment_metadata' => json_encode($sessionCreate)]);
 
@@ -1358,10 +1342,8 @@ class WishitemController extends Controller
      *
      * @return Response
      */
-    public function ryeSuccessPayment(Request $request, $uuid, $orderUuid)
+    public function ryeSuccessPayment($uuid, $orderUuid)
     {
-
-        Log::info('Rye Product Payment Success', ['request' => $request->all()]);
         $orderDetails = RyeProductPayment::with('user')->where('uuid', $uuid)->first();
 
         if (!$orderDetails) {
@@ -1374,10 +1356,6 @@ class WishitemController extends Controller
         // Update order status
         $orderDetails->status = 'succeeded';
         $orderDetails->save();
-
-        // Update gift item payment status
-        // RyeCart::where('uuid', $orderUuid)->delete();
-
 
         return Inertia::render('rye/ThankYouRye', [
             'status' => true,
@@ -1496,18 +1474,60 @@ class WishitemController extends Controller
     {
         // Example: Mark order as paid
         Log::info("Handling PaymentSucceeded", $payload);
+
+        ProductOrderDetail::updateOrCreate(
+            ['order_id' => $payload['requestId']], // Search condition
+            [
+                // 'user_id' => Auth::id() ?? null,
+                // 'creater_id' => $payload['order']['creater_id'] ?? null,
+                // 'cart_id' => $payload['order']['cart_id'] ?? null,
+                'order_id' => $payload['requestId'],
+                'details' => $payload ? json_encode($payload, true) : null,
+                'payment_status' => 'COMPLETED', // Update payment status
+                'session_id' => $payload['order']['session_id'] ?? null,
+            ]
+        );
+
         return response()->json(['message' => 'Payment succeeded processed']);
     }
 
     protected function handlePaymentFailed($payload)
     {
         Log::info("Handling PaymentFailed", $payload);
+
+        ProductOrderDetail::updateOrCreate(
+            ['order_id' => $payload['requestId']], // Search condition
+            [
+                // 'user_id' => Auth::id() ?? null,
+                // 'creater_id' => $payload['order']['creater_id'] ?? null,
+                // 'cart_id' => $payload['order']['cart_id'] ?? null,
+                'order_id' => $payload['requestId'],
+                'details' => $payload ? json_encode($payload, true) : null,
+                'payment_status' => 'FAILED', // Update payment status
+                'session_id' => $payload['order']['session_id'] ?? null,
+            ]
+        );
+
         return response()->json(['message' => 'Payment failed processed']);
     }
 
     protected function handlePaymentRefunded($payload)
     {
         Log::info("Handling PaymentRefunded", $payload);
+
+        ProductOrderDetail::updateOrCreate(
+            ['order_id' => $payload['requestId']], // Search condition
+            [
+                // 'user_id' => Auth::id() ?? null,
+                // 'creater_id' => $payload['order']['creater_id'] ?? null,
+                // 'cart_id' => $payload['order']['cart_id'] ?? null,
+                'order_id' => $payload['requestId'],
+                'details' => $payload ? json_encode($payload, true) : null,
+                'payment_status' => 'REFUNDED', // Update payment status
+                'session_id' => $payload['order']['session_id'] ?? null,
+            ]
+        );
+
         return response()->json(['message' => 'Payment refunded processed']);
     }
 
@@ -1526,6 +1546,20 @@ class WishitemController extends Controller
     protected function handleOrderPlaced($payload)
     {
         Log::info("Handling OrderPlaced", $payload);
+
+        ProductOrderDetail::updateOrCreate(
+            ['order_id' => $payload['requestId']], // Search condition
+            [
+                'user_id' => Auth::id() ?? null,
+                'creater_id' => $payload['order']['creater_id'] ?? null,
+                'cart_id' => $payload['order']['cart_id'] ?? null,
+                'order_id' => $payload['requestId'],
+                'details' => $payload ? json_encode($payload, true) : null,
+                'payment_status' => 'ORDER PLACED', // Update payment status
+                'session_id' => $payload['order']['session_id'] ?? null,
+            ]
+        );
+
         return response()->json(['message' => 'Order placed processed']);
     }
 
@@ -1550,6 +1584,19 @@ class WishitemController extends Controller
     protected function handleTrackingObtained($payload)
     {
         Log::info("TrackingObtained Webhook:", $payload);
+
+        ProductOrderDetail::updateOrCreate(
+            ['order_id' => $payload['requestId']], // Search condition
+            [
+                // 'user_id' => Auth::id() ?? null,
+                // 'creater_id' => $payload['order']['creater_id'] ?? null,
+                // 'cart_id' => $payload['order']['cart_id'] ?? null,
+                'order_id' => $payload['requestId'],
+                'details' => $payload ? json_encode($payload, true) : null,
+                'payment_status' => 'ORDER TRACKED', // Update payment status
+                'session_id' => $payload['order']['session_id'] ?? null,
+            ]
+        );
 
         return response()->json([
             'message' => 'Tracking obtained processed',
@@ -1725,11 +1772,11 @@ class WishitemController extends Controller
                     'creater_id' => $request->creator_id,
                     'cart_id' => $cart_id,
                     'order_id' => $storeData['orderId'] ?? null,
-                    'details' => json_encode($data),
-                    'payment_status' => $storeData['status'] ?? 'pending',
+                    // 'details' => json_encode($data),
+                    // 'payment_status' => $storeData['status'] ?? 'pending',
                 ]);
 
-                RyeCart::where('id', $cart_id)->delete();
+                RyeCart::where('cart_id', $cart_id)->delete();
 
                 return response()->json(['status' => true, 'message' => 'Order details stored', 'data' => $data]);
             }
