@@ -20,7 +20,9 @@ use App\Jobs\TipJarMailToUser;
 use App\Jobs\TipJarPurchased;
 use App\Jobs\TipJarTweet;
 use App\Jobs\WishSubscriptionMailToUser;
+use App\Models\Bills;
 use App\Models\Currency;
+use App\Models\Membership;
 use App\Models\MonthlyCharge;
 use App\Models\Post;
 use App\Models\StripePaymentDetail;
@@ -95,12 +97,15 @@ class StripeController extends Controller
     {
         $user = User::find(Auth::id());
 
-        $sub_post = Post::where('user_id', $user->id)->where('for_module', 'subscription')->first();
-        $mem_post = Post::where('user_id', $user->id)->where('for_module', 'membership')->first();
-        $support_post = Post::where('user_id', $user->id)->where('for_module', 'support')->first();
+        // $sub_post = Post::where('user_id', $user->id)->where('for_module', 'subscription')->first();
+        // $mem_post = Post::where('user_id', $user->id)->where('for_module', 'membership')->first();
+        // $support_post = Post::where('user_id', $user->id)->where('for_module', 'support')->first();
 
-        if (empty($sub_post) || empty($mem_post) || empty($support_post)) {
-            return redirect(route("user.show", ["username" => $user->username]))->with("error", "Before connecting your stripe account, it's necessary to add one image post for your subscribers, members and supporters! So 3 in total.");
+        $membership = Membership::where('user_id', $user->id)->where('deleted_at', null)->where('status', 1)->where('approved', 1)->first();
+        $bill = Bills::where('user_id', $user->id)->where('deleted_at', null)->where('status', 1)->where('approved', 1)->first();
+
+        if (empty($membership) || empty($bill)) {
+            return redirect(route("user.show", ["username" => $user->username]))->with("error", "Before connecting your Stripe account, you need to add at least one Membership and one Bill for your fans total of at least two items.");
         }
 
         if (empty($user->account_id)) {

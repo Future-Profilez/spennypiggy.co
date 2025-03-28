@@ -357,14 +357,14 @@ export default function Dashboard(props) {
                                             setuped={auth.user &&auth.user.stripe_details_submitted == 1 ? true : false}
                                             fetchingcats={fetchingcats}
                                             categories={categories} />
-                                            <AddMembership updateState={updateState} />
-                                            <AddBills updatebill={updatebill}/>
                                             <AddItem  classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
                                             product_type="digital_products"  />
+                                        <AddPost classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} />
+                                        <AddGift classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} fetch_gifts={fetch_gifts} addressAdded={auth?.user?.is_creator_address_found} />
                                         </>
                                     : '' }
-                                    <AddPost classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} />
-                                    <AddGift classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} fetch_gifts={fetch_gifts} addressAdded={auth?.user?.is_creator_address_found} />
+                                    <AddMembership updateState= {updateState} />
+                                    <AddBills updatebill={updatebill}/>
                                     <button onClick={()=>setShowAdd(false)} className="m-auto table p-2 mt-3"  >Cancel</button>
                                 </div>
                             </Suspense>
@@ -634,7 +634,7 @@ export default function Dashboard(props) {
                                                            const details = JSON.parse(gift.details); // Parse the details JSON
                                                            return(
                                                             <>
-                                                            {(IsloggedIn || gift?.deleted_at === null) && 
+                                                            {(IsloggedIn || gift?.deleted_at === null) &&
                                                            <GiftListing key={gift.id} gift={gift} details={details} user={user} IsloggedIn={IsloggedIn} fetch_gifts={fetch_gifts} auth={auth} />}
                                                            </>
                                                         );

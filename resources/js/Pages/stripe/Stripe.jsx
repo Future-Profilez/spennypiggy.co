@@ -144,16 +144,16 @@ export default function Stripe(props) {
                                     <h2 className="text-uppercase font-GillSans pb-4 font-large">Important notice !</h2>
 
                                     <p className='mb-2'><strong>Oink! @{auth && auth.user && auth.user.username}</strong></p>
-                                    <p className='mb-2' > To comply with Stripes new rules, you must be posting exclusive content for your:</p>
+                                    <p className='mb-2' > To comply with Stripes new rules, you must be posting exclusive content in:</p>
 
                                     <div className='d-block py-3' >
-                                        <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >FOR Supporters</h2>
-                                        <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >FOR Subscribers</h2>
-                                        <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >FOR Members</h2>
+                                        <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >Membership</h2>
+                                        <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >Bill</h2>
+                                        {/* <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >FOR Members</h2> */}
                                     </div>
 
-                                    <p className='mb-1 text-[17px]'>Please ensure you create an Image Post for each group above. </p>
-                                    <p className='mb-1 text-[17px]'>That is a minimum of 3 posts per month.</p>
+                                    <p className='mb-1 text-[17px]'>Please ensure you create an <b>Membership</b> and <b>Bill</b> for your fans. </p>
+                                    {/* <p className='mb-1 text-[17px]'>That is a minimum of 2 posts per month.</p> */}
                                     <p className='mb-1 text-[17px]'>Oink! Oink! 🐷</p>
 
                                     <div className='termselect mt-4'>
