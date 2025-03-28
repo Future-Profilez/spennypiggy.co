@@ -10,9 +10,9 @@ environments:
     domain: dev.spennypiggy.co
     database: spennypiggy-db-dev
     build:
-      - "composer install --no-dev"
-      - "php artisan event:cache"
-      - "php artisan optimize:clear"
+      # - "composer install --no-dev"
+      # - "php artisan event:cache"
+      # - "php artisan optimize:clear"
       # - "npm ci && npm run build && rm -rf node_modules"
       - "npm ci && npm run build && rd /s /q node_modules"
 
@@ -31,9 +31,9 @@ environments:
     database: spennypiggy-db
     database-proxy: true
     build:
-      - "composer install --no-dev"
-      - "php artisan event:cache"
-      - "php artisan optimize:clear"
+      # - "composer install --no-dev"
+      # - "php artisan event:cache"
+      # - "php artisan optimize:clear"
       # - "npm ci && npm run build && rm -rf node_modules"
       - "npm ci && npm run build && rd /s /q node_modules"
     deploy:
