@@ -18,6 +18,5 @@ yarn-error.log
 /.idea
 /.vscode
 /.vapor
-/vendor_old
 
 .env.uk_live
