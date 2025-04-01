@@ -1,0 +1,1 @@
+import{W as a,j as i}from"./app-6b585e63.js";import{L as l}from"./LoaderButton-7ea4d9f1.js";function m({auth:p,classes:t,text:r}){const{data:c,post:n,processing:e}=a(),o=s=>{s.preventDefault(),n(route("stripe.login"),{preserveScroll:!0})};return i.jsx(l,{onClick:o,disabled:e,className:t,spinnerClassName:"fill-red-600",children:e?"Connecting":r})}export{m as default};

@@ -1,0 +1,1 @@
+import{j as r}from"./app-6b585e63.js";import"./index-58c1a5a2.js";function c({children:o,username:t,classes:e,custom:n}){function i(){const a=n||window.location.href;navigator.share({url:a,title:t||"Spenny Piggy"})}return r.jsx(r.Fragment,{children:r.jsx("button",{className:e,onClick:i,children:o})})}export{c as default};

@@ -1,0 +1,7 @@
+import{j as e}from"./app-6b585e63.js";import{b as s}from"./index-548b7423.js";import t from"./LiveBar-3ec56a4a.js";import"./emotion-unitless.esm-7c38d562.js";const o="/build/assets/PREMIUMMEMBERSHIP-a5108532.png";function m(){return e.jsxs(e.Fragment,{children:[e.jsx("style",{children:`
+    .commingsooon { 
+      position:absolute;
+      top:47%;
+      left:0
+    }
+    `}),e.jsxs("div",{className:"forcreators overflow-hidden py-3 py-md-5 px-3 px-md-0 bg-white",children:[e.jsxs("div",{className:"container py-4",children:[e.jsx("h2",{className:"headingSm shadow-none text-dark stroke-none mb-3 text-center mb-6",children:"Premium Membership"}),e.jsx("p",{className:"max-width-900 text-muted m-auto text-center text-[20px]",children:"Discover a hassle-free way to enhance your earnings potential. Enjoy zero fees for fans, with creators keeping 100% of their earnings. Unlock premium features, including enhanced chargeback protection. Cancel anytime. Join us today!"})]}),e.jsxs("div",{className:"position-relative p-0 p-md-4",children:[e.jsx(t,{reps:20,color:"yellowbg",classes:"commingsooon",text:"  Coming Soon      "}),e.jsx("div",{"data-aos":"zoom-in-up",className:"membership-image py-2 m-auto d-table d-flex justify-content-center max-width-900 mt-3 ",children:e.jsx(s.LazyLoadImage,{alt:"image",useIntersectionObserver:!0,effect:"blur",className:"",src:o,width:982,height:600})}),e.jsx("strong",{className:"font-[23px] text-center my-2 m-auto d-table",children:"*Supporters just pay payment processing. No service fees."})]})]})]})}export{m as default};

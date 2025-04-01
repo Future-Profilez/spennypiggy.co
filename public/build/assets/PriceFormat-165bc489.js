@@ -1,0 +1,1 @@
+import{q as s}from"./app-6b585e63.js";function l(){return{formatMultiPrice:(n,t)=>{const{rates:o,global_currency:r}=s().props,e=t&&t.toUpperCase()||r&&r.toUpperCase(),c=r&&r.toUpperCase(),a=o[e],i=n/a*o[c||"GBP"];return new Intl.NumberFormat("en-GB",{style:"currency",currency:r||"GBP",minimumFractionDigits:2,maximumFractionDigits:2}).format(i)}}}export{l as P};
