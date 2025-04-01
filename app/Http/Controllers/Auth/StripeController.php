@@ -102,8 +102,8 @@ class StripeController extends Controller
         // $mem_post = Post::where('user_id', $user->id)->where('for_module', 'membership')->first();
         // $support_post = Post::where('user_id', $user->id)->where('for_module', 'support')->first();
 
-        $membership = Membership::where('user_id', $user->id)->where('deleted_at', null)->where('status', 1)->where('approved', 1)->first();
-        $bill = Bills::where('user_id', $user->id)->where('deleted_at', null)->where('status', 1)->where('approved', 1)->first();
+        $membership = Membership::where('user_id', $user->id)->where('deleted_at', null)->whereIn('status', [0, 1])->whereIn('approved', [0, 1])->first();
+        $bill = Bills::where('user_id', $user->id)->where('deleted_at', null)->whereIn('status', [0, 1])->whereIn('approved', [0, 1])->first();
 
         if (empty($membership) || empty($bill)) {
             return redirect(route("user.show", ["username" => $user->username]))->with("error", "Before connecting your Stripe account, you need to add at least one Membership and one Bill for your fans total of at least two items.");
