@@ -1393,10 +1393,12 @@ class StripeController extends Controller
             $customerName = data_get($event, 'data.object.customer_name');
             $invoicePdf = data_get($event, 'data.object.invoice_pdf');
 
-            $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->first();
+            // $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->first();
+            $subs = MonthlyCharge::where('stripe_id', $event['data']['object']['subscription'])->first();
 
             try {
-                $ret = StripeControl::getSubscription($subscriptionId);
+                // $ret = StripeControl::getSubscription($subscriptionId);
+                $ret = StripeControl::getSubscription($event['data']['object']['subscription']);
             } catch (\Exception $e) {
                 Log::error("Failed to retrieve subscription: " . $e->getMessage());
                 return response()->json(['error' => 'Failed to retrieve subscription'], 500);
