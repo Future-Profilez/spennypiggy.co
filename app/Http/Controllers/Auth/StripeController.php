@@ -1387,6 +1387,8 @@ class StripeController extends Controller
             return response()->json(['error' => 'Invalid signature'], 400);
         }
 
+        Log::info(json_encode($event, true));
+        
         if (!empty($event)) {
             $subscriptionId = data_get($event, 'data.object.id');
             $customerEmail = data_get($event, 'data.object.customer_email');
@@ -1394,7 +1396,8 @@ class StripeController extends Controller
             $invoicePdf = data_get($event, 'data.object.invoice_pdf');
 
             // $subs = MonthlyCharge::where('stripe_id', $event['data']['object']['id'])->first();
-            $subs = MonthlyCharge::where('stripe_id', $event['data']['object']['id'])->first();
+            $subs = MonthlyCharge::where('stripe_id', $event['data']['object']->id)->first();
+            Log::info($event['data']['object']['id']);
 
             try {
                 // $ret = StripeControl::getSubscription($subscriptionId);
