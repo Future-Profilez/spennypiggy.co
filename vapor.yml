@@ -9,7 +9,7 @@ environments:
     runtime: "php-8.2:al2"
     domain: dev.spennypiggy.co
     database: spennypiggy-db-dev
-    build:
+    build::
       # - "composer install --no-dev"
       # - "php artisan event:cache"
       # - "php artisan optimize:clear"
