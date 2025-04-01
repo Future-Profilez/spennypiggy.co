@@ -452,7 +452,6 @@ export default function Register(props) {
                                         onVerify={onVerify}
                                         />
                                     </div>
-                                    sadasd
                     </div>
                 </div>
             </div>
