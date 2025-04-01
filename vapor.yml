@@ -17,7 +17,7 @@ environments:
       - "npm ci"
       - "npm run build"
       - "rm -rf node_modules"   # Linux/macOS
-      # - "if exist node_modules rmdir /s /q node_modules"  # Windows
+      # - "rd /s /q node_modules"  # Windows/
     deploy:
       - "php artisan migrate --force"
 
@@ -42,7 +42,7 @@ environments:
       - "npm ci"
       - "npm run build"
       - "rm -rf node_modules"   # Linux/macOS
-      # - "if exist node_modules rmdir /s /q node_modules"  # Windows
+      # - "rd /s /q node_modules"  # Windows
     deploy:
       - "php artisan migrate --force"
 
