@@ -1387,18 +1387,21 @@ class StripeController extends Controller
             return response()->json(['error' => 'Invalid signature'], 400);
         }
 
+        Log::info(json_encode($event, true));
+        
         if (!empty($event)) {
             $subscriptionId = data_get($event, 'data.object.subscription');
             $customerEmail = data_get($event, 'data.object.customer_email');
             $customerName = data_get($event, 'data.object.customer_name');
             $invoicePdf = data_get($event, 'data.object.invoice_pdf');
 
-            // $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->first();
-            $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->first();
+            // $subs = MonthlyCharge::where('stripe_id', $event['data']['object']['id'])->first();
+            $subs = MonthlyCharge::where('stripe_id', $event['data']['object']->id)->first();
+            Log::info($event['data']['object']['id']);
 
             try {
                 // $ret = StripeControl::getSubscription($subscriptionId);
-                $ret = StripeControl::getSubscription($subscriptionId);
+                $ret = StripeControl::getSubscription($event['data']['object']['id']);
             } catch (\Exception $e) {
                 Log::error("Failed to retrieve subscription: " . $e->getMessage());
                 return response()->json(['error' => 'Failed to retrieve subscription'], 500);
