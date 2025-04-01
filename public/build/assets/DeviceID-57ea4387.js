@@ -1,1 +1,0 @@
-function a(){function e(){if(navigator&&window){const n=navigator.userAgent,t=navigator.platform,i=window.screen.width,r=window.screen.height,o=`${n}_${t}_${i}_${r}`;return btoa(o)}else return null}return e()}export{a as D};

@@ -1,6 +1,0 @@
-import{r,j as e}from"./app-6b585e63.js";function d(){const[o,i]=r.useState(!1),a="1.0.2",s=()=>{"caches"in window&&(caches.keys().then(n=>{n.forEach(t=>{caches.delete(t)}),localStorage.setItem("version",a)}),window.location.reload(!0))};return r.useEffect(()=>{const n=typeof window<"u"?localStorage.getItem("version"):null;n===void 0||n==""||n!=a?i(!0):i(!1),"caches"in window&&caches.keys().then(t=>{t.forEach(l=>{caches.delete(l)})})},[]),e.jsxs(e.Fragment,{children:[e.jsx("style",{jsx:"true",children:`.newVer{padding:15px;border-radius:10px;margin-bottom:20px;}
-   .newVer p{color:var(--white);margin:0;}
-   button.updatever{background:transparent;border:0;color:#ff6aff;font-weight:600;}
-   .newVer p{color:transparent;background:linear-gradient(to left,#e3e780,#ff007b);-webkit-background-clip:text;font-size:17px;-webkit-animation:gradient-1 2s linear infinite;-moz-animation:gradient-1 2s linear infinite;-o-animation:gradient-1 2s linear infinite;animation:gradient-1 2s linear infinite;}
-   .newVer{position:relative;z-index:1;}
-  `}),o?e.jsxs("div",{className:"newVer boxs box d-flex justify-content-between mb-3",children:[e.jsx("p",{className:"pe-3",children:"New version 1.1.0 of app is available."}),e.jsx("button",{className:"updatever",onClick:s,children:"Update"})]}):""]})}export{d as default};
