@@ -980,7 +980,7 @@ class WishitemController extends Controller
                 'address_1'      => 'nullable|string|max:255',
                 'address_2'      => 'nullable|string|max:255',
                 'city'           => 'nullable|string|max:255',
-                'province_code'  => 'nullable|size:3',  // Exactly 3 characters
+                'province_code'  => 'nullable|size:2',  // Exactly 3 characters
                 'country_code'   => 'nullable|size:2',  // Exactly 2 characters (ISO country codes)
                 'postal_code'    => 'nullable|digits_between:4,10', // Ensures postal code is numeric & valid length
             ]);
