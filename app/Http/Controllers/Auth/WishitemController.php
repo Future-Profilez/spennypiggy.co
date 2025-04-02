@@ -1051,6 +1051,14 @@ class WishitemController extends Controller
     {
         Log::info('Rye Product Payment Request', ['request' => $request->all()]);
 
+        $request->validate([
+            'country' => 'required|string',
+            'street_address' => 'required|string',
+            'city' => 'required|string',
+            'state' => 'required|string',
+            'postal_code' => 'required|integer',
+        ]);
+
         try {
             $orderDetails = RyeCart::with('creator', 'user')->where([
                 'cart_id' => $request->cart_id,
@@ -1117,11 +1125,22 @@ class WishitemController extends Controller
                 ], 422);
             }
 
+            $addressData = [
+                'country' => $request->country,
+                'street_address' => $request->street_address,
+                'city' => $request->city,
+                'state' => $request->state,
+                'postal_code' => $request->postal_code,
+            ];
+            // Convert to JSON format
+            $addressJson = json_encode($addressData);
+
             $ryeProductPayment = new RyeProductPayment();
             $ryeProductPayment->user_id = Auth::id();
             $ryeProductPayment->currency = $currency;
             $ryeProductPayment->amount = $totalAmount / 100;
             $ryeProductPayment->payment_method = 'card';
+            $ryeProductPayment->shipping_address = $addressJson;
             $ryeProductPayment->customer_email = $orderDetails->user->email;
             $ryeProductPayment->save();
 
