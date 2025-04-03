@@ -40,10 +40,10 @@ export default function ActivateSubscription(props) {
                         <div className='stripNote p-3 p-md-4'>
                             <h4 className='text-[30px] font-GillSans text-center text-uppercase mb-3'>Set up Subscription</h4>
                             <p className='mb-4 text-[18px] text-center'>
-                                Enjoy a <span className='text-green-500 font-bold'>7-days free trial</span> before your monthly subscription begins! Stripe charges £2 a month for this service, and we add a £2 administrator charge due to heightened compliance requirements.
+                                Enjoy a <span className='text-green-500 font-bold'>3-days free trial</span> before your monthly subscription begins! Stripe charges £2 a month for this service, and we add a £2 administrator charge due to heightened compliance requirements.
                             </p>
                             <div className='bg-blue-100 text-blue-800 p-4 rounded-lg text-center mb-4'>
-                                <p className='font-semibold'>Start your subscription today and pay nothing for the first 7 days!</p>
+                                <p className='font-semibold'>Start your subscription today and pay nothing for the first 3 days!</p>
                             </div>
                         </div>
                         <div className='text-center flex justify-center mb-4'>

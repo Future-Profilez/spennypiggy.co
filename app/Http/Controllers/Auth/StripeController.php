@@ -1189,7 +1189,7 @@ class StripeController extends Controller
         $unit_amount = Helpers::priceFormat("GBP", $amount, $currency) * 100;
 
         // Set Trial End and Billing Cycle Anchor dynamically
-        $trial_end = now()->addDays(7)->timestamp; // 7-day trial period
+        $trial_end = now()->addDays(3)->timestamp; // 7-day trial period
         // $billing_cycle_anchor = now()->addDays(7)->timestamp; // Billing starts after trial
 
         $payload = [
@@ -1208,7 +1208,8 @@ class StripeController extends Controller
                 ]
             ]],
             'subscription_data' =>  [
-                'trial_end' => $trial_end, // Set trial end date
+                'trial_period_days' => 3, // 3-day trial period
+                // 'trial_end' => $trial_end, // Set trial end date
                 'description' => "Subscription for using site through Stripe."
             ],
             'customer_email' => $user->email,
