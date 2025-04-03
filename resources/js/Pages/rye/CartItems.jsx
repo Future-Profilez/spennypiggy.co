@@ -7,7 +7,7 @@ import { useAlerts } from "@/Components/Alerts";
 import { Link, usePage } from "@inertiajs/react";
 import HCaptcha from "@hcaptcha/react-hcaptcha";
 
-export default function CartItems({ data, cartsItems, fetchCartItem }) {
+export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
     const { hcaptchakey } = usePage().props;
     const hcaptchaRef = useRef(null);
     const { formatMultiPrice } = PriceFormat();
@@ -564,6 +564,66 @@ export default function CartItems({ data, cartsItems, fetchCartItem }) {
                                         </a>{" "}
                                         and the following statements:
                                     </label>
+                                    {/* Form fields starts here */}
+                                    <p className="py-2">
+                                    Please fill the below information. It will be used while 
+                                    sending your gift to <strong> {cartsItems?.creator?.name || ""} </strong>.
+                                    </p>
+                                    <div className="form-field mb-3">
+                                        <p className='mb-1'>Name</p>
+                                        <input required disabled={auth && auth.user?.name ? true : false}
+                                            className="form-input w-100 rounded"
+                                            defaultValue={auth && auth.user?.name}
+                                            // onChange={(e) => setName(e.target.value)}
+                                            type="text" placeholder="Enter name.. " />
+                                    </div>
+                                    <div className="form-field mb-3 ">
+                                        <p className='mb-1'>Email</p>
+                                        <input required  disabled={auth && auth.user?.email ? true : false}
+                                            className="form-input w-100 rounded"
+                                            defaultValue={auth && auth.user?.email}
+                                            // onChange={(e) => setEmail(e.target.value)}
+                                            type="email" placeholder="Enter email.. " />
+                                        <p className='text-[12px] text-muted mt-1 ' >Your email address is kept private and will not be shown to anyone.</p>
+                                    </div>
+                                    {/* <div className="form-field mb-3 ">
+                                        <p className='mb-2'>Shipping Information</p>
+                                        <select className="form-input w-100 rounded" name="country" onChange={handleShipInput} >
+                                            <option value={''} >Choose Country</option>
+                                            {AllContries && AllContries.map((c, i) => <option key={i} value={c.code}>{c.label}</option>)}
+                                        </select>
+                                    </div> */}
+                                    <div className="form-field mb-3 ">
+                                        <input required
+                                            className="form-input w-100 rounded"
+                                            // onChange={handleShipInput} 
+                                            name="street_address"
+                                            type="text" placeholder="Address" />
+                                    </div>
+                                    <div className="form-field mb-3 ">
+                                        <input required
+                                            className="form-input w-100 rounded"
+                                            // onChange={handleShipInput} 
+                                            name="city"
+                                            type="text" placeholder="City" />
+                                    </div>
+                                    <div className='grid grid-cols-2 gap-3' >
+                                        <div className="form-field mb-3 ">
+                                            <input required
+                                            className="form-input w-100 rounded"
+                                            // onChange={handleShipInput}
+                                             name="state"
+                                            type="text" placeholder="State" />
+                                        </div>
+                                        <div className="form-field mb-3 ">
+                                            <input required
+                                            className="form-input w-100 rounded"
+                                            // onChange={handleShipInput} 
+                                            name="postal_code"
+                                            type="email" placeholder="Postal Code" />
+                                        </div>
+                                    </div>
+                                    {/* Form fields ends here */}
                                     <div className="tearmlist ps-3">
                                         <ul className="ps-0">
                                             <li>

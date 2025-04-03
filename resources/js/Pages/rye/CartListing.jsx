@@ -57,6 +57,7 @@ export default function CartListing() {
                                             fetchCartItem={fetchCartItem}
                                             cartsItems={c}
                                             data={data}
+                                            auth={auth}
                                         />
                                     );
                                 })}

@@ -399,28 +399,32 @@ export default function AddressForm({ setHasAdded, isEditPopup, setSassClose }) 
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log("Hello");
         setLoading(true);
-        // Send the fetched product data to your API
+        
         try {
-            const response = await axios.post(
-                "creator-store-address",
-                formData
-            );
+            const response = await axios.post("creator-store-address", formData);
+            console.log("response", response);
+            
             if (response?.data?.status) {
                 successAlert(response?.data?.message);
                 if (!isEditPopup) {
                     setHasAdded(true);
-                }
-                else{
+                } else {
                     setSassClose(false);
                 }
-                setLoading(false);
             } else {
-                errorAlert(response?.data?.message);
-                setLoading(false);
+                if (response?.data?.errors) {
+                    const errorMessages = Object.values(response.data.errors).flat().join(" \n");
+                    errorsHandling(errorMessages);
+                } else {
+                    errorAlert(response?.data?.message);
+                }
             }
         } catch (error) {
-            errorAlert(error);
+            console.log("error", error);
+            errorAlert(error?.response?.data?.message || "An error occurred");
+        } finally {
             setLoading(false);
         }
     };
