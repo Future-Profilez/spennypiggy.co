@@ -315,6 +315,7 @@ Route::post('create-creator-product', [WishitemController::class, 'createRyeProd
 Route::get('delete-creator-products/{uuid}', [WishitemController::class, 'deleteAndRestoredRyeProduct'])->name('delete.creator.products');
 Route::post('create-cart', [WishitemController::class, 'createCart'])->name('create.cart');
 Route::get('check-cart-exist/{creator_id}', [WishitemController::class, 'checkCartExist'])->name('check.cart.exist');
+Route::post('handle-rye-product-payment', [WishitemController::class, 'handleRyeProductPayment'])->name('handle.rye.product.payment');
 Route::get('remove-cart/{cart_id}', [WishitemController::class, 'removeCart'])->name('remove.cart');
 Route::get('get-cart-details', [WishitemController::class, 'getCartDetails'])->name('get.cart.details');
 Route::get('rye-success-payment/{uuid}/{orderUuid}', [WishitemController::class, 'ryeSuccessPayment'])->name('rye.success.payment');
