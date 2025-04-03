@@ -137,6 +137,7 @@ class CheckoutController extends Controller
                 'user_id' => Auth::id() ?? null,
                 'owner_id' => $getdata[0]->owner->id,
                 'name' => request()->query('from') ?? '',
+                'guest_email' => request()->query('email') ?? '',
                 'message' => $message ?? '',
                 'anonymous' => request()->query('anonymous') ?? 0,
                 'session_created' => $sessionCreate->created,
@@ -228,8 +229,6 @@ class CheckoutController extends Controller
                 $symbol = Currency::where('iso', strtoupper($payment_data->payment->currency))->first();
 
                 $message = $stripeid->message;
-
-                Log::info("come at CheckoutController 232 line");
 
                 if (Auth::check()) {
                     if ($dd->wish_item_id == NULL) {
