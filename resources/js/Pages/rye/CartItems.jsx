@@ -6,6 +6,7 @@ import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
 import { Link, usePage } from "@inertiajs/react";
 import HCaptcha from "@hcaptcha/react-hcaptcha";
+import AllCountries from '../../includes/AllCountries';
 
 export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
     const { hcaptchakey } = usePage().props;
@@ -16,6 +17,20 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
     const [isChecked, setIsChecked] = useState(false);
     const [checking, setChecking] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState({
+          country: '',
+          street_address: '',
+          city: '',
+          state: '',
+          postal_code: '',
+       });
+    
+    const handleChange = (e) => {
+        setFormData({
+          ...formData,
+          [e.target.name]: e.target.value
+        });
+    }
 
     const getShopperIp = async () => {
         try {
@@ -195,6 +210,11 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                 {
                     cart_id: data?.cart?.id,
                     creator_id: cartsItems?.creator?.id,
+                    country: formData?.country,
+                    street_address: formData?.street_address,
+                    city: formData?.city,
+                    state: formData?.state,
+                    postal_code: formData?.postal_code,
                 }
             );
             if (response?.data?.status === true) {
@@ -214,37 +234,6 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
             setChecking(false);
         }
     };
-
-    // const handleSubmit = async () => {
-    //     const shopperIp = await getShopperIp();
-    //     const ryeClient = new RyeClient({
-    //         authHeader: `Basic UllFL3N0YWdpbmctYTlmYjk0YjhmYTM1NGE4MTg5NWI6`, // Use env variable
-    //         shopperIp: shopperIp,
-    //         environment: ENVIRONMENT.STAGING,
-    //     });
-
-    //     console.log("data", data?.cart?.id);
-    //     return;
-
-    //     const result = await ryeClient.submitCart({
-    //         input: {
-    //             id: data?.cart?.id,
-    //             token: "01JMYA3T67ESWNMRJABZP594CH",
-    //             billingAddress: {
-    //                 firstName: "Abhinav",
-    //                 lastName: "Mathur",
-    //                 phone: "7568311283",
-    //                 address1: "Office No. D-105B, G-4, Golden OAK-1, Devi Marg",
-    //                 city: "Jaipur",
-    //                 provinceCode: "RJ",
-    //                 countryCode: "IN",
-    //                 postalCode: "302016",
-    //             },
-    //         },
-    //     });
-
-    //     console.log("result", result?.data);
-    // };
 
     return (
         <div className={`px-2`}>
@@ -586,24 +575,26 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                             type="email" placeholder="Enter email.. " />
                                         <p className='text-[12px] text-muted mt-1 ' >Your email address is kept private and will not be shown to anyone.</p>
                                     </div>
-                                    {/* <div className="form-field mb-3 ">
+                                    <div className="form-field mb-3 ">
                                         <p className='mb-2'>Shipping Information</p>
-                                        <select className="form-input w-100 rounded" name="country" onChange={handleShipInput} >
+                                        <select required className="form-input w-100 rounded" name="country" 
+                                        onChange={handleChange} 
+                                        >
                                             <option value={''} >Choose Country</option>
-                                            {AllContries && AllContries.map((c, i) => <option key={i} value={c.code}>{c.label}</option>)}
+                                            {AllCountries && AllCountries.map((c, i) => <option key={i} value={c.code}>{c.label}</option>)}
                                         </select>
-                                    </div> */}
+                                    </div>
                                     <div className="form-field mb-3 ">
                                         <input required
                                             className="form-input w-100 rounded"
-                                            // onChange={handleShipInput} 
+                                            onChange={handleChange}
                                             name="street_address"
                                             type="text" placeholder="Address" />
                                     </div>
                                     <div className="form-field mb-3 ">
                                         <input required
                                             className="form-input w-100 rounded"
-                                            // onChange={handleShipInput} 
+                                            onChange={handleChange} 
                                             name="city"
                                             type="text" placeholder="City" />
                                     </div>
@@ -611,16 +602,16 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                         <div className="form-field mb-3 ">
                                             <input required
                                             className="form-input w-100 rounded"
-                                            // onChange={handleShipInput}
+                                            onChange={handleChange}
                                              name="state"
                                             type="text" placeholder="State" />
                                         </div>
                                         <div className="form-field mb-3 ">
                                             <input required
                                             className="form-input w-100 rounded"
-                                            // onChange={handleShipInput} 
+                                            onChange={handleChange}
                                             name="postal_code"
-                                            type="email" placeholder="Postal Code" />
+                                            type="number" placeholder="Postal Code" />
                                         </div>
                                     </div>
                                     {/* Form fields ends here */}
