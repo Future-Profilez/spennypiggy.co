@@ -1056,7 +1056,7 @@ class WishitemController extends Controller
             'street_address' => 'required|string',
             'city' => 'required|string',
             'state' => 'required|string',
-            'postal_code' => 'required|integer',
+            'postal_code' => 'required|integer|digits_between:4,8',
         ]);
 
         try {
@@ -1133,7 +1133,7 @@ class WishitemController extends Controller
                 'postal_code' => $request->postal_code,
             ];
             // Convert to JSON format
-            $addressJson = json_encode($addressData);
+            $addressJson = json_encode($addressData, true);
 
             $ryeProductPayment = new RyeProductPayment();
             $ryeProductPayment->user_id = Auth::id();

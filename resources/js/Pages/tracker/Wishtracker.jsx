@@ -243,7 +243,7 @@ export default function Wishtracker(props) {
                 ) : (
                   ''
                 )}
-                <p className="mt-3 mb-2">Exclusive Rewards </p>
+                {/* <p className="mt-3 mb-2">Exclusive Rewards </p>
                 {n && n.message_url ? (
                   <div className="message-media my-2">
                     <LazyLoadImage
@@ -257,7 +257,7 @@ export default function Wishtracker(props) {
                   </div>
                 ) : (
                   ''
-                )}
+                )} */}
 
                 {/* {msgSent ? <div className="msgSent my-2 p-1" >
                                     <p className="mt-2" >Thank you note : </p>

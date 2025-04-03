@@ -210,6 +210,7 @@ class StripeController extends Controller
     /* create checkout */
     public function createCheckout($owner_id)
     {
+        Log::info('Query Parameters:', request()->query());
         try {
             if (!empty(request()->query('message'))) {
                 $wordLimit = 100;
@@ -274,6 +275,7 @@ class StripeController extends Controller
                 'user_id' => Auth::id(),
                 'owner_id' => $owner_id,
                 'name' => request()->query('from') ?? '',
+                'guest_email' => request()->query('email') ?? Auth::user()->email,
                 'message' => $message ?? '',
                 'session_created' => $sessionCreate->created,
                 'session_expires_at' => $sessionCreate->expires_at,
@@ -1188,7 +1190,7 @@ class StripeController extends Controller
 
         // Set Trial End and Billing Cycle Anchor dynamically
         $trial_end = now()->addDays(7)->timestamp; // 7-day trial period
-        $billing_cycle_anchor = now()->addDays(7)->timestamp; // Billing starts after trial
+        // $billing_cycle_anchor = now()->addDays(7)->timestamp; // Billing starts after trial
 
         $payload = [
             "mode"  =>  'subscription',

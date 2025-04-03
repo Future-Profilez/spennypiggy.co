@@ -13,16 +13,16 @@ import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
 import { useState } from 'react';
 import GifterFeed from './GifterFeed';
-import GifterMedia from './GifterMedia';
+// import GifterMedia from './GifterMedia';
 import MembershipLists from './MembershipLists';
- 
+
 
 export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
 
   const { auth, user, itemid  } = usePage().props;
   const [tab, setTab] = useState("home");
 
-  const AboutScreen = () => { 
+  const AboutScreen = () => {
     return <>
         <div className=" about-sec max-w-3xl m-auto " >
               <div className={`${user && !user.bio ? "d-nones":""} box shadow-voilet rounded-lg mb-4`} >
@@ -41,7 +41,7 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
                     </ul>
                 </div> : ''}
               </div>
-          
+
               <GifterTips />
               <GifterItems IsloggedIn={IsloggedIn} />
               <GifterSubscriptions IsloggedIn={IsloggedIn} />
@@ -80,12 +80,12 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
                     <Tab eventKey="memberships" title="Memberships">
                         <MembershipLists username={user && user.username || ''}/>
                     </Tab>
-                    <Tab eventKey="media" title="Media">
+                    {/* <Tab eventKey="media" title="Media">
                         <GifterMedia username={user && user.username || ''} />
-                    </Tab>
+                    </Tab> */}
                 </Tabs>
             </div>
-            </> 
+            </>
           : <AboutScreen /> }
         </div>
     </>
