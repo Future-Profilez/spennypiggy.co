@@ -65,6 +65,10 @@ Route::get('get-cart', function () {
 Route::post('rye-webhook', [WishitemController::class, 'handleWebhook'])->name('rye.webhook');
 
 
+// GiftStore Route
+Route::get('/giftstore', function () {
+    return Inertia::render('rye/GiftStore');
+})->name('giftStore');
 
 
 // Route::post('test-stripe', function (Request $request) {

@@ -53,6 +53,8 @@ export default function Dashboard(props) {
     const parsePageId = (path) => path.substring(path.lastIndexOf('/') + 1)
     const pageId = parsePageId(window.location.pathname);
       const { format, formatMultiPrice } = PriceFormat();
+      const {ziggy}=props;
+      console.log("ziggy",ziggy);
 
 
 
@@ -360,7 +362,9 @@ export default function Dashboard(props) {
                                             <AddItem  classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
                                             product_type="digital_products"  />
                                         <AddPost classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} />
-                                        <AddGift classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} fetch_gifts={fetch_gifts} addressAdded={auth?.user?.is_creator_address_found} />
+                                        {ziggy && ziggy.url !== 'https://spennypiggy.co' &&
+                                            <AddGift classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} fetch_gifts={fetch_gifts} addressAdded={auth?.user?.is_creator_address_found} />
+                                        }
                                         </>
                                     : '' }
                                     <AddMembership updateState= {updateState} />

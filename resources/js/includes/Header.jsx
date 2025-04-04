@@ -26,6 +26,7 @@ import { LuBookMinus } from "react-icons/lu";
 import { MdClose } from "react-icons/md";
 import { AiOutlineLogout } from "react-icons/ai";
 import { RiPagesLine } from "react-icons/ri";
+import { FiGift } from "react-icons/fi";
 
 export default function Header() {
     const { global_currency, auth } = usePage().props;
@@ -101,6 +102,13 @@ export default function Header() {
                                 href={"/leaderboard"}
                             >
                                 🌟
+                            </Link>
+                            <Link
+                                className="d-none d-md-block ms-3 text-[30px] mb-[9px]"
+                                href={"/giftstore"}
+                            >
+                                🐽
+                                <span className="text-[16px] text-white">Gift Store</span>
                             </Link>
                         </div>
 
@@ -332,6 +340,25 @@ export default function Header() {
                                                 <li>
                                                     <Link
                                                         onClick={toggleClass}
+                                                        href={"giftstore"}
+                                                        class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                    >
+                                                        <span class="inline-flex justify-center items-center ml-4">
+                                                            <FiGift
+                                                                color="#fff"
+                                                                size={"1.2rem"}
+                                                            />
+                                                        </span>
+                                                        <span
+                                                            class="ml-2 text-[17px] tracking-wide truncate text-white"
+                                                        >
+                                                            Gift Store
+                                                        </span>
+                                                    </Link>
+                                                </li>
+                                                <li>
+                                                    <Link
+                                                        onClick={toggleClass}
                                                         href={`/earnings`}
                                                         class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                                     >
@@ -476,6 +503,25 @@ export default function Header() {
                             tracking-wide truncate text-white"
                                                 >
                                                     Leaderboard
+                                                </span>
+                                            </Link>
+                                        </li>
+                                        <li>
+                                            <Link
+                                                onClick={toggleClass}
+                                                href={"giftstore"}
+                                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                            >
+                                                <span class="inline-flex justify-center items-center ml-4">
+                                                    <FiGift
+                                                        color="#fff"
+                                                        size={"1.2rem"}
+                                                    />
+                                                </span>
+                                                <span
+                                                    class="ml-2 text-[17px] tracking-wide truncate text-white"
+                                                >
+                                                    Gift Store
                                                 </span>
                                             </Link>
                                         </li>
