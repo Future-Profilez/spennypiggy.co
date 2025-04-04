@@ -1051,6 +1051,18 @@ class WishitemController extends Controller
     {
         Log::info('Rye Product Payment Request', ['request' => $request->all()]);
 
+        $user = Auth::user(); // or $requestingUser if handling guests
+
+        if (empty($user->stripe_id)) {
+            $stripeCustomer = \Stripe\Customer::create([
+                'email' => $user->email,
+                'name' => $user->name ?? null,
+            ]);
+
+            $user->stripe_id = $stripeCustomer->id;
+            $user->save();
+        }
+
         $request->validate([
             'country' => 'required|string',
             'street_address' => 'required|string',

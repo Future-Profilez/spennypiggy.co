@@ -275,6 +275,19 @@ class MembershipController extends Controller
      */
     public function buyLevel(Request $request, $uuid, $reccure = 'continue')
     {
+
+        $user = Auth::user(); // or $requestingUser if handling guests
+
+        if (empty($user->stripe_id)) {
+            $stripeCustomer = \Stripe\Customer::create([
+                'email' => $user->email,
+                'name' => $user->name ?? null,
+            ]);
+
+            $user->stripe_id = $stripeCustomer->id;
+            $user->save();
+        }
+
         $membership = Membership::whereUuid($uuid)->with('user')->first();
 
         if (Auth::check() && ($membership->user_id == Auth::id())) {
@@ -367,7 +380,7 @@ class MembershipController extends Controller
             $payload    =   [
                 "currency"  =>  $currency,
                 'line_items' =>  [$items],
-                'customer_email'    =>  $request->email,
+                'customer' => $user->stripe_id,
                 'success_url'       =>  route('membership.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
                 'cancel_url'       =>  route('membership.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
             ];

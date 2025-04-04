@@ -255,6 +255,19 @@ class BillsController extends Controller
     {
         try {
 
+            $user = Auth::user(); // or $requestingUser if handling guests
+
+            if (empty($user->stripe_id)) {
+                $stripeCustomer = \Stripe\Customer::create([
+                    'email' => $user->email,
+                    'name' => $user->name ?? null,
+                ]);
+
+                $user->stripe_id = $stripeCustomer->id;
+                $user->save();
+            }
+
+
             $bill = Bills::whereUuid($uuid)->with('user')->first();
 
             if (Auth::check() && ($bill->user_id == Auth::id())) {
@@ -340,7 +353,7 @@ class BillsController extends Controller
                 $payload    =   [
                     "currency"  =>  $currency,
                     'line_items' =>  [$items],
-                    'customer_email'    =>  $request->email,
+                    'customer' => $user->stripe_id,
                     'success_url'       =>  route('bill.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
                     'cancel_url'       =>  route('bill.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
                 ];
@@ -386,8 +399,6 @@ class BillsController extends Controller
             return to_route('user.show', ['username' => $bill->user->username])->with('error', $e->getMessage());
         }
     }
-
-
 
     /**
      * Handle Checkout Session
