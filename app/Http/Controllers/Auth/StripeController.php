@@ -706,7 +706,7 @@ class StripeController extends Controller
                     // 'description'   => "Subscription for {$wish->wishname} of {$wish->user->username}."
                     'description'   => "Membership Content Purchase."
                 ],
-                'customer_email'    =>  $request->email,
+                'customer' => $user->stripe_id,
                 'success_url'       =>  route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
                 'cancel_url'       =>  route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
             ];
