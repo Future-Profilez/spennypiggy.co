@@ -11,7 +11,7 @@ to{opacity:1;transition:0.6s;}
 
 
 .legright,.legleft{z-index:-1;}
-.leftspaces{width:200px;}
+.leftspaces{width:260px;}
 .alert{border-radius:12px;}
 body{background:#000;}
 .wishlistimg span.lazy-load-image-background{display:block !important;width:100% !important;height:100% !important;}
