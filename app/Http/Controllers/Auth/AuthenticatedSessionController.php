@@ -31,6 +31,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -68,9 +69,17 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request)
     {
+        // Log::info($request->ip());
         $request->authenticate();
         $request->session()->regenerate();
         $user = Auth::user();
+
+        $ipAddress = $request->ip();
+        $checkIpExist = $user->ip_address;
+        if (empty($checkIpExist)) {
+            $user->ip_address = $ipAddress;
+            $user->save();
+        }
 
         // $auth = AuthRedirect::create([
         //     "user_id"   =>  $user->id,

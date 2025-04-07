@@ -63,10 +63,17 @@ class RegisteredUserController extends Controller
             'role' => ['required'],
         ]);
 
-        $exist = User::where('email',$request->email)->whereNull('deleted_at')->first();
+        $ip_address = $request->ip();
+        $checkIpExist = User::where('ip_address', $ip_address)->exists();
+        if ($checkIpExist) {
+            return redirect()->back()->with('error', "You have already registered with this IP address.");
+        }
 
-        if(!empty($exist)){
-            return redirect()->back()->with('error',"This email already has been taken.");
+
+        $exist = User::where('email', $request->email)->whereNull('deleted_at')->first();
+
+        if (!empty($exist)) {
+            return redirect()->back()->with('error', "This email already has been taken.");
         }
 
         $email = strtolower($request->email);
@@ -75,7 +82,7 @@ class RegisteredUserController extends Controller
         $secure = AllowedDomain::all()->pluck('name')->toArray();
 
         if (!in_array($domain[1], $secure)) {
-            return redirect()->back()->with('error',"Invalid Email Id.");
+            return redirect()->back()->with('error', "Invalid Email Id.");
         }
 
         $checkdata = Helpers::checkBlockData($request);
@@ -91,10 +98,11 @@ class RegisteredUserController extends Controller
                 'password' => Hash::make($request->password),
                 'role' => $request->role ?? 0,
                 'creator_category' => $request->creator_category ?? null,
+                'ip_address' => $ip_address,
             ]);
             $user->refresh();
 
-            if(!empty($request->promo)){
+            if (!empty($request->promo)) {
                 $promocode = PromoCode::whereCode($request->promo)->first();
                 $user->promo_code_id = $promocode->id;
                 $user->save();
