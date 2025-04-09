@@ -42,6 +42,12 @@ export default function AddGift({
         e.preventDefault();
         setLoading(true);
 
+        if (!title.includes("www.amazon")) {
+            errorAlert("Only Amazon products are supported");
+            setLoading(false);
+            return;
+        }
+
         try {
             // Get the shopper's IP
             const shopperIp = await getShopperIp();
@@ -67,7 +73,11 @@ export default function AddGift({
                     marketplace: "AMAZON",
                 },
             });
-
+            if (!productData) {
+                errorAlert("Product not found");
+                setLoading(false);
+                return;
+            }
             // Send the fetched product data to your API
             const response = await axios.post(route("create.creator.product"), {
                 url: productData,
@@ -304,9 +314,7 @@ export default function AddGift({
                 //         {loading ? "Adding..." : "Add Details"}
                 //     </LoaderButton>
                 // </form>
-                <AddressForm 
-                setHasAdded={setHasAdded}
-                />
+                <AddressForm setHasAdded={setHasAdded} />
             )}
         </Popup>
     );
