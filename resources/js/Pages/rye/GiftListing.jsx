@@ -81,13 +81,13 @@ export default function GiftListing({
             )}
             {IsloggedIn ? (
                 <>
-                    <GiftEdit
+                    {/* <GiftEdit
                         data={details}
                         action={open}
                         user={user}
                         IsloggedIn={IsloggedIn}
                         auth={auth}
-                    />
+                    /> */}
                 </>
             ) : (
                 <GiftAddCart
