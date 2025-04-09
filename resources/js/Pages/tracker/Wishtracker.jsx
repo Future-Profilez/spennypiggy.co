@@ -129,8 +129,9 @@ export default function Wishtracker(props) {
                   ) : (
                     <div className="identity text-success text-nowrap">
                       +
+                      {console.log(n)}
                       {formatMultiPrice(
-                        n.final_amount * (+n.quantity || 1),
+                        n.amount * (+n.quantity || 1),
                         n.payment.currency
                       )}
                     </div>
