@@ -31,6 +31,18 @@ class CheckoutController extends Controller
     /* create checkout */
     public function createCheckout($id)
     {
+        $user = Auth::user(); // or $requestingUser if handling guests
+
+        if (empty($user->stripe_id)) {
+            $stripeCustomer = \Stripe\Customer::create([
+                'email' => $user->email,
+                'name' => $user->name ?? null,
+            ]);
+
+            $user->stripe_id = $stripeCustomer->id;
+            $user->save();
+        }
+
         // Email notification on success
         // $now = Carbon::now()->format('h:i A d-m-Y');
         // $emailSubject = "Wish Payment Initiation Start - $now";

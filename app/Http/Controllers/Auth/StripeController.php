@@ -586,6 +586,18 @@ class StripeController extends Controller
      */
     public function wishItemSubscribe(Request $request, $uuid, $reccure = 'continue')
     {
+        $user = Auth::user(); // or $requestingUser if handling guests
+
+        if (empty($user->stripe_id)) {
+            $stripeCustomer = \Stripe\Customer::create([
+                'email' => $user->email,
+                'name' => $user->name ?? null,
+            ]);
+
+            $user->stripe_id = $stripeCustomer->id;
+            $user->save();
+        }
+
         $wish = WishItem::whereUuid($uuid)->with('user')->first();
 
         if (!$wish) {
@@ -641,6 +653,7 @@ class StripeController extends Controller
                 'vat_tax_amount' =>  ceil($vat_percentage_amount),
                 'recurring_for'  =>  $reccure,
                 'recurring_type' =>  $wish->subscription_period,
+                'payment_method' =>  'stripe',
                 'surprise_message'  =>  $request->message ?? NULL,
                 'anonymous' => $request->anonymous ?? 0
             ]);
@@ -693,7 +706,7 @@ class StripeController extends Controller
                     // 'description'   => "Subscription for {$wish->wishname} of {$wish->user->username}."
                     'description'   => "Membership Content Purchase."
                 ],
-                'customer_email'    =>  $request->email,
+                'customer' => $user->stripe_id,
                 'success_url'       =>  route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
                 'cancel_url'       =>  route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
             ];
@@ -865,6 +878,7 @@ class StripeController extends Controller
                 $newSubs->tax = $subs->tax;
                 $newSubs->recurring_for = $subs->recurring_for;
                 $newSubs->recurring_type = $subs->recurring_type;
+                $newSubs->payment_method = 'stripe';
                 $newSubs->surprise_message = $subs->surprise_message;
                 $newSubs->anonymous = $subs->anonymous;
                 $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
@@ -1177,30 +1191,28 @@ class StripeController extends Controller
 
         $user = User::where('id', Auth::id())->first();
         $sub = MonthlyCharge::create([
-            'user_id'       =>  $user->id,
-            'name'    =>  $user->name ?? NULL,
-            'email'   =>  $user->email,
-            'currency'      =>  "GBP",
-            'amount'        =>  $price,
-            'tax'   =>  $tax,
+            'user_id'   =>  $user->id,
+            'name'      =>  $user->name ?? NULL,
+            'email'     =>  $user->email,
+            'currency'  =>  "GBP",
+            'amount'    =>  $price,
+            'tax'       =>  $tax,
         ]);
 
         $amount = $price + $tax;
-        $unit_amount = Helpers::priceFormat("GBP", $amount, $currency) * 100;
+        $unit_amount = round(Helpers::priceFormat("GBP", $amount, $currency) * 100); // Ensure integer
 
-        // Set Trial End and Billing Cycle Anchor dynamically
-        $trial_end = now()->addDays(3)->timestamp; // 7-day trial period
-        // $billing_cycle_anchor = now()->addDays(7)->timestamp; // Billing starts after trial
+        $trial_period_days = 3; // 3-day free trial
 
         $payload = [
             "mode"  =>  'subscription',
-            "currency"  =>  strtolower($request->cookie("currency", "GBP")),
+            "currency"  =>  $currency,
             'line_items' =>  [[
                 'quantity' => 1,
                 'price_data' => [
                     'currency' => $currency,
                     'product' => env("SUBSCRIPTION_4_PRODUCT_ID"),
-                    'unit_amount_decimal' => $unit_amount,
+                    'unit_amount' => $unit_amount, // Ensure integer
                     'recurring' => [
                         'interval' => StripeControl::$periods["monthly"],
                         'interval_count' => 1
@@ -1208,8 +1220,7 @@ class StripeController extends Controller
                 ]
             ]],
             'subscription_data' =>  [
-                'trial_period_days' => 3, // 3-day trial period
-                // 'trial_end' => $trial_end, // Set trial end date
+                'trial_period_days' => $trial_period_days, // 3-day trial (REMOVED billing_cycle_anchor)
                 'description' => "Subscription for using site through Stripe."
             ],
             'customer_email' => $user->email,
@@ -1227,7 +1238,6 @@ class StripeController extends Controller
             return back()->with('error', $e->getMessage());
         }
     }
-
 
     // public function payMonthlyCharge(Request $request)
     // {

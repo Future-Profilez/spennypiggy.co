@@ -42,6 +42,7 @@ class User extends Authenticatable
         'identity_verified_at',
         'identity_verification_error',
         'identity_verification_details',
+        'ip_address',
     ];
 
     public static function boot()
