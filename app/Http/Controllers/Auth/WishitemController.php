@@ -51,6 +51,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -203,9 +204,9 @@ class WishitemController extends Controller
                     "sometimes",
                     "nullable"
                 ],
-                'reward_file' => [
-                    'required'
-                ],
+                // 'reward_file' => [
+                //     'required'
+                // ],
                 "subscription" => [
                     "required",
                     "integer",
@@ -264,7 +265,8 @@ class WishitemController extends Controller
             'currency' => $user->default_currency,
             'item_url' => $request->item_url != "" ? $request->item_url : null,
             'thumbnail' => $request->thumbnail ?? null,
-            'reward' => $request->reward_file ?? null,
+            'reward' => null,
+            // 'reward' => $request->reward_file ?? null,
             "ai_generated" => $request->ai_generated,
             'subscription' => $request->subscription,
             'subscription_period' => $request->subscription_period ?? null,
@@ -969,46 +971,46 @@ class WishitemController extends Controller
      *
      * @return Response
      */
+    private function safeEncrypt(?string $value): ?string
+    {
+        return $value ? Crypt::encryptString($value) : null;
+    }
+
     public function creatorStoreAddress(Request $request)
     {
         try {
-            // Validate incoming request based on database schema
             $validatedData = $request->validate([
                 'first_name'     => 'nullable|string|max:255',
                 'last_name'      => 'nullable|string|max:255',
-                'phone'          => 'nullable|digits_between:8,15', // Ensures phone is numeric & valid length
+                'phone'          => 'nullable|digits_between:8,15',
                 'address_1'      => 'nullable|string|max:255',
                 'address_2'      => 'nullable|string|max:255',
                 'city'           => 'nullable|string|max:255',
-                'province_code'  => 'nullable|size:2',  // Exactly 3 characters
-                'country_code'   => 'nullable|size:2',  // Exactly 2 characters (ISO country codes)
-                'postal_code'    => 'nullable|digits_between:4,10', // Ensures postal code is numeric & valid length
+                'province_code'  => 'nullable|size:2',
+                'country_code'   => 'nullable|size:2',
+                'postal_code'    => 'nullable|digits_between:4,10',
             ]);
 
-            // Get the authenticated creator's ID
             $creatorId = Auth::id();
 
-            // Update or create an address for the creator
-            $creatorAddress = CreatorShippingAddress::updateOrCreate(
-                ['creator_id' => $creatorId],  // Search criteria
-                [ // Values to insert/update
-                    'first_name'    => $validatedData['first_name'],
-                    'last_name'     => $validatedData['last_name'],
-                    'phone'         => $validatedData['phone'],
-                    'address_1'     => $validatedData['address_1'],
-                    'address_2'     => $validatedData['address_2'] ?? null,
-                    'city'          => $validatedData['city'],
-                    'province_code' => $validatedData['province_code'] ?? null,
-                    'country_code'  => $validatedData['country_code'],
-                    'postal_code'   => $validatedData['postal_code'],
+            CreatorShippingAddress::updateOrCreate(
+                ['creator_id' => $creatorId],
+                [
+                    'first_name'    => $this->safeEncrypt($validatedData['first_name'] ?? null),
+                    'last_name'     => $this->safeEncrypt($validatedData['last_name'] ?? null),
+                    'phone'         => $this->safeEncrypt($validatedData['phone'] ?? null),
+                    'address_1'     => $this->safeEncrypt($validatedData['address_1'] ?? null),
+                    'address_2'     => $this->safeEncrypt($validatedData['address_2'] ?? null),
+                    'city'          => $this->safeEncrypt($validatedData['city'] ?? null),
+                    'province_code' => $this->safeEncrypt($validatedData['province_code'] ?? null),
+                    'country_code'  => $this->safeEncrypt($validatedData['country_code'] ?? null),
+                    'postal_code'   => $this->safeEncrypt($validatedData['postal_code'] ?? null),
                 ]
             );
 
-            // Return success response
             return response()->json([
                 'status'  => true,
                 'message' => 'Address stored successfully',
-                'data'    => $creatorAddress,
             ], 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -1034,6 +1036,16 @@ class WishitemController extends Controller
     {
         $creatorId = Auth::id();
         $creatorAddress = CreatorShippingAddress::where('creator_id', $creatorId)->first();
+
+        $creatorAddress->first_name = Crypt::decryptString($creatorAddress->first_name);
+        $creatorAddress->last_name = Crypt::decryptString($creatorAddress->last_name);
+        $creatorAddress->address_1 = Crypt::decryptString($creatorAddress->address_1);
+        $creatorAddress->address_2 = Crypt::decryptString($creatorAddress->address_2);
+        $creatorAddress->city = Crypt::decryptString($creatorAddress->city);
+        $creatorAddress->postal_code = Crypt::decryptString($creatorAddress->postal_code);
+        $creatorAddress->country_code = Crypt::decryptString($creatorAddress->country_code);
+        $creatorAddress->province_code = Crypt::decryptString($creatorAddress->province_code);
+        $creatorAddress->phone = Crypt::decryptString($creatorAddress->phone);
 
         return response()->json([
             'status' => true,
