@@ -75,6 +75,16 @@ Route::middleware('guest')->group(function () {
 
 Route::post('stripe/identity/verify', [StripeController::class, 'createVerificationSession'])->name('stripe.identity.verify');
 
+
+Route::get('discover', function () {
+    return Inertia::render('discover/Discover');
+})->name("discover");
+Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class, 'discover_all_wishes'])->name('discover_wish');
+Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');
+Route::get('discover/creators/categories', [WishitemController::class, 'all_creators_categories'])->name('allcreators_categories');
+// Route::get('discover/creators_videos', [WishitemController::class, 'discover_creators_videos'])->name('discover_videos');save_social_links
+
+
 Route::middleware('auth')->group(function () {
 
     Route::get('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
@@ -290,14 +300,6 @@ Route::middleware('auth')->group(function () {
 
         Route::get('my-intro/{id}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
 
-        Route::get('discover', function () {
-            return Inertia::render('discover/Discover');
-        })->name("discover");
-        Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class, 'discover_all_wishes'])->name('discover_wish');
-        Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');
-        Route::get('discover/creators/categories', [WishitemController::class, 'all_creators_categories'])->name('allcreators_categories');
-        // Route::get('discover/creators_videos', [WishitemController::class, 'discover_creators_videos'])->name('discover_videos');
-
         Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
         Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity');
         Route::get('cancel-subs/{uuid}', [StripeController::class, 'cancelSubs'])->name('cancel-subs');
@@ -370,9 +372,6 @@ Route::middleware('auth')->group(function () {
 
         Route::post('mandatory-status', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status');
 
-        /* wishtender */
-        Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('leaderboard');
-        Route::get('first-three-leaderboard/{type?}', [LeaderBoardController::class, 'firstThreeWisher'])->name('first-three-wishes');
 
         Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
 
@@ -383,6 +382,9 @@ Route::middleware('auth')->group(function () {
         });
     });
 });
+/* wishtender */
+Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('leaderboard');
+Route::get('first-three-leaderboard/{type?}', [LeaderBoardController::class, 'firstThreeWisher'])->name('first-three-wishes');
 /*check username exist*/
 // Route::get('/data-check', function () {
 //     $ret = StripeControl::getSubscription("sub_1OND8tG7xsNScLmXLFzAhobA");

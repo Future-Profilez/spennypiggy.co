@@ -368,7 +368,7 @@ export default function Dashboard(props) {
                                             }
                                             </>
                                         : '' }
-                                        <AddMembership updateState= {updateState} /> 
+                                        <AddMembership updateState= {updateState} />
                                         <AddBills updatebill={updatebill}/>
                                     </div>
                                     <button onClick={()=>setShowAdd(false)} className="m-auto table p-2 mt-3"  >Cancel</button>

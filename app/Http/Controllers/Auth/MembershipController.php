@@ -17,6 +17,7 @@ use App\Models\Currency;
 use App\Models\Logs;
 use App\Models\Membership;
 use App\Models\MembershipPayment;
+use App\Models\SocialLinks;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\TipGoalsPayment;
@@ -33,6 +34,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
+use Stripe\Stripe;
 use Stripe\StripeClient;
 use Stripe\Webhook;
 
@@ -276,7 +278,24 @@ class MembershipController extends Controller
     public function buyLevel(Request $request, $uuid, $reccure = 'continue')
     {
 
+
+        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
         $user = Auth::user(); // or $requestingUser if handling guests
+
+        // $user socila membershipDashboard
+
+        $isSocilAdded = true;
+        $socialData = SocialLinks::where('user_id', $user->id)
+            ->whereNotNull('tumblr')
+            ->whereNotNull('instagram')
+            ->whereNotNull('twitch')
+            ->whereNotNull('facebook')
+            ->whereNotNull('twitter')
+            ->first();
+
+        if (!$socialData) {
+            $isSocilAdded = false;
+        }
 
         if (empty($user->stripe_id)) {
             $stripeCustomer = \Stripe\Customer::create([
@@ -470,6 +489,7 @@ class MembershipController extends Controller
 
         return Inertia::render('membership/MemberCheckout', [
             'membership'  => $membership,
+            'isSocilAdded' => $isSocilAdded,
             'vat_amount' => $vat_percentage_amount,
             'reccure'   => $reccure
         ]);
