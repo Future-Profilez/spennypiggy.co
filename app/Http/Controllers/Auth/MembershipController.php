@@ -286,12 +286,14 @@ class MembershipController extends Controller
 
         $isSocilAdded = true;
         $socialData = SocialLinks::where('user_id', $user->id)
-            ->whereNotNull('tumblr')
-            ->whereNotNull('instagram')
-            ->whereNotNull('twitch')
-            ->whereNotNull('facebook')
-            ->whereNotNull('twitter')
-            ->first();
+            ->where(function ($query) {
+                $query->whereNotNull('tumblr')
+                    ->orWhereNotNull('instagram')
+                    ->orWhereNotNull('twitch')
+                    ->orWhereNotNull('facebook')
+                    ->orWhereNotNull('twitter');
+            })->first();
+
 
         if (!$socialData) {
             $isSocilAdded = false;

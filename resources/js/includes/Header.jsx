@@ -107,7 +107,7 @@ export default function Header() {
                                 className="d-none d-md-block ms-3"
                                 href={"/giftstore"}
                             >
-                                
+
                                 <span className="flex items-center text-[19px] text-white">
                                     <span className="!text-[21px]">
                                     🐷
