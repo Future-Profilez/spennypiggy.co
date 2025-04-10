@@ -171,8 +171,8 @@ export default function AddMembership({updateState, item, text, classes}) {
               <FaHouseChimneyUser color="var(--pink)"  size="1.5rem" />
           </div>
           <div className="ps-3 text-start">
-              <h2 className="text-md">Add Membership Tier</h2>
-              <p className="text-sm font-normal">Let fans support you monthly</p>
+              <h2 className="text-md font-normal font-GillSans uppercase">Add Membership Tier</h2>
+              <p className="text-sm font-poppins">Let fans support you monthly</p>
           </div>
       </div>
     }

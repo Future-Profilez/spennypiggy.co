@@ -99,8 +99,8 @@ export default function AddPost({item, text, classes, isEdit, updateState, title
                 <FaPenNib color="var(--pink)"  size="1.5rem" />
             </div>
             <div className="ps-3 text-start">
-                <h2 className="text-md">Post Something</h2>
-                <p className="text-sm font-normal">Add an image, update or blog post</p>
+                <h2 className="text-md font-normal font-GillSans uppercase">Post Something</h2>
+                <p className="text-sm font-poppins">Add an image, update or blog post</p>
             </div>
         </div>
     }

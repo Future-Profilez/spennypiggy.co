@@ -347,28 +347,30 @@ export default function Dashboard(props) {
                 {showAdd ?
                     <div className="bg-[#0001] rounded-xl position-fixed shadow-lg z-[99999999999999999999] flex justify-center items-center
                      top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full">
-                        <div className="w-full max-w-[550px] px-3">
+                        <div className="w-full max-w-[550px]  px-3">
                             <Suspense fallback={"Loading.."}>
                                 <div className="bg-gray-100 w-full p-6 md:p-10 rounded-3xl shadow-lg z-10">
                                     <h2 className="font-bold text-black  text-xl md:text-2xl mb-4 text-center m-auto ">Add Item to fund your lifestyle.</h2>
-                                    {auth.user && auth.user.stripe_details_submitted == 1 ?
-                                        <>
-                                            <Wishlist
-                                            fetchcategories={fetch_categories}
-                                            currency={global_currency}
-                                            setuped={auth.user &&auth.user.stripe_details_submitted == 1 ? true : false}
-                                            fetchingcats={fetchingcats}
-                                            categories={categories} />
-                                            <AddItem  classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
-                                            product_type="digital_products"  />
-                                        <AddPost classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} />
-                                        {ziggy && ziggy.url !== 'https://spennypiggy.co' &&
-                                            <AddGift classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} fetch_gifts={fetch_gifts} addressAdded={auth?.user?.is_creator_address_found} />
-                                        }
-                                        </>
-                                    : '' }
-                                    <AddMembership updateState= {updateState} />
-                                    <AddBills updatebill={updatebill}/>
+                                    <div className="max-h-[40vh] overflow-y-auto">
+                                        {auth.user && auth.user.stripe_details_submitted == 1 ?
+                                            <>
+                                                <Wishlist
+                                                fetchcategories={fetch_categories}
+                                                currency={global_currency}
+                                                setuped={auth.user &&auth.user.stripe_details_submitted == 1 ? true : false}
+                                                fetchingcats={fetchingcats}
+                                                categories={categories} />
+                                                <AddItem  classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
+                                                product_type="digital_products"  />
+                                            <AddPost classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} />
+                                            {ziggy && ziggy.url !== 'https://spennypiggy.co' &&
+                                                <AddGift classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} fetch_gifts={fetch_gifts} addressAdded={auth?.user?.is_creator_address_found} />
+                                            }
+                                            </>
+                                        : '' }
+                                        <AddMembership updateState= {updateState} /> 
+                                        <AddBills updatebill={updatebill}/>
+                                    </div>
                                     <button onClick={()=>setShowAdd(false)} className="m-auto table p-2 mt-3"  >Cancel</button>
                                 </div>
                             </Suspense>

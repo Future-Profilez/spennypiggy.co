@@ -292,8 +292,8 @@ export default function Wishlist(props) {
                     <FaRegHeart color="var(--pink)" size="1.5rem" />
                 </div>
                 <div className="ps-3 text-start">
-                    <h2 className="text-md">Add Wish Item</h2>
-                    <p className="text-sm font-normal">
+                    <h2 className="text-md font-normal font-GillSans uppercase">Add Wish Items</h2>
+                    <p className="text-sm font-poppins">
                         Let fans fund your lifestyle for a reward.
                     </p>
                 </div>

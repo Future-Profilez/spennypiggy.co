@@ -6,7 +6,11 @@ import axios from "axios";
 import { useEffect } from "react";
 import { useAlerts } from "@/Components/Alerts";
 
-export default function AddressForm({ setHasAdded, isEditPopup, setSassClose }) {
+export default function AddressForm({
+    setHasAdded,
+    isEditPopup,
+    setSassClose,
+}) {
     const [loading, setLoading] = useState(false);
     const [addressData, setAddressData] = useState({});
     const { errorsHandling, successAlert, errorAlert } = useAlerts();
@@ -401,11 +405,14 @@ export default function AddressForm({ setHasAdded, isEditPopup, setSassClose }) 
         e.preventDefault();
         console.log("Hello");
         setLoading(true);
-        
+
         try {
-            const response = await axios.post("creator-store-address", formData);
+            const response = await axios.post(
+                "creator-store-address",
+                formData
+            );
             console.log("response", response);
-            
+
             if (response?.data?.status) {
                 successAlert(response?.data?.message);
                 if (!isEditPopup) {
@@ -415,7 +422,9 @@ export default function AddressForm({ setHasAdded, isEditPopup, setSassClose }) 
                 }
             } else {
                 if (response?.data?.errors) {
-                    const errorMessages = Object.values(response.data.errors).flat().join(" \n");
+                    const errorMessages = Object.values(response.data.errors)
+                        .flat()
+                        .join(" \n");
                     errorsHandling(errorMessages);
                 } else {
                     errorAlert(response?.data?.message);
@@ -441,99 +450,102 @@ export default function AddressForm({ setHasAdded, isEditPopup, setSassClose }) 
                         Add Your Biiling Address Details
                     </h2>
                 </div>
-                <p className="text-red-500">
+                <p className="text-red-500 mb-4 mt-2">
                     These details will be used to send you the project from
                     amazon, when someone orders it.
                 </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-3 mt-4">
-                <div className="flex flex-col w-full">
-                    <p className="text-grey-500 mb-1">
-                        Enter your First Name here
-                    </p>
-                    <input
-                        onChange={handleChange}
-                        value={formData.first_name}
-                        name="first_name"
-                        placeholder="First Name"
-                        className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                        required
-                    />
-                </div>
-                <div className="flex flex-col w-full">
-                    <p className="text-grey-500 mb-1">
-                        Enter your Last Name here
-                    </p>
-                    <input
-                        onChange={handleChange}
-                        value={formData.last_name}
-                        name="last_name"
-                        placeholder="Last Name"
-                        className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                        required
-                    />
-                </div>
+            {/* First Name */}
+            <div className="flex items-center mb-3">
+                <label className="w-28 text-grey-500">First Name</label>
+                <input
+                    onChange={handleChange}
+                    value={formData.first_name}
+                    name="first_name"
+                    placeholder="First Name"
+                    className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                    required
+                />
             </div>
-            <p className="text-grey-500 mb-1 mt-2">
-                Enter your Phone Number here
-            </p>
-            <input
-                onChange={(e) => {
-                    if (
-                        e.target.value.length <= 10 &&
-                        /^[0-9]*$/.test(e.target.value)
-                    ) {
-                        handleChange(e);
-                    }
-                }}
-                value={formData.phone}
-                name="phone"
-                type="text"
-                maxLength="10"
-                placeholder="Phone"
-                className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control mb-3"
-                required
-            />
-            <div className="my-2">
-                <p className="text-grey-500 mb-1">
-                    Enter your Address details below
-                </p>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 ">
-                    <div className="flex flex-col w-full">
-                        <input
-                            onChange={handleChange}
-                            value={formData.address_1}
-                            name="address_1"
-                            placeholder="Address 1"
-                            className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                            required
-                        />
-                    </div>
-                    <div className="flex flex-col w-full">
-                        {/* <p className="text-grey-500 mb-1">
-                                Enter your Last Name here
-                            </p> */}
-                        <input
-                            onChange={handleChange}
-                            value={formData.address_2}
-                            name="address_2"
-                            placeholder="Address 2"
-                            className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                            required
-                        />
-                    </div>
-                </div>
+
+            {/* Last Name */}
+            <div className="flex items-center mb-3">
+                <label className="w-28 text-grey-500">Last Name</label>
+                <input
+                    onChange={handleChange}
+                    value={formData.last_name}
+                    name="last_name"
+                    placeholder="Last Name"
+                    className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                    required
+                />
             </div>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mt-3">
+
+            {/* Phone */}
+            <div className="flex items-center mb-3">
+                <label className="w-28 text-grey-500">Phone</label>
+                <input
+                    onChange={(e) => {
+                        if (
+                            e.target.value.length <= 10 &&
+                            /^[0-9]*$/.test(e.target.value)
+                        ) {
+                            handleChange(e);
+                        }
+                    }}
+                    value={formData.phone}
+                    name="phone"
+                    type="text"
+                    maxLength="10"
+                    placeholder="Phone"
+                    className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                    required
+                />
+            </div>
+
+            {/* Address 1 */}
+            <div className="flex items-center mb-3">
+                <label className="w-28 text-grey-500">Address 1</label>
+                <input
+                    onChange={handleChange}
+                    value={formData.address_1}
+                    name="address_1"
+                    placeholder="Address 1"
+                    className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                    required
+                />
+            </div>
+
+            {/* Address 2 */}
+            <div className="flex items-center mb-3">
+                <label className="w-28 text-grey-500">Address 2</label>
+                <input
+                    onChange={handleChange}
+                    value={formData.address_2}
+                    name="address_2"
+                    placeholder="Address 2"
+                    className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                    required
+                />
+            </div>
+
+            {/* City */}
+            <div className="flex items-center mb-3">
+                <label className="w-28 text-grey-500">City</label>
                 <input
                     onChange={handleChange}
                     value={formData.city}
                     name="city"
                     placeholder="City"
-                    className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                    className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
                     required
                 />
+            </div>
+
+            {/* Province Code */}
+            <div className="flex items-center mb-3">
+                <label className="w-28 text-grey-500">Province</label>
                 <input
                     onChange={(e) => {
                         if (e.target.value.length <= 3) {
@@ -543,18 +555,19 @@ export default function AddressForm({ setHasAdded, isEditPopup, setSassClose }) 
                     value={formData.province_code}
                     name="province_code"
                     placeholder="Province Code"
-                    className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                    className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
                     required
                 />
-                {/* <Countries
-                            send={handleChange}
-                            className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                        /> */}
+            </div>
+
+            {/* Country Select */}
+            <div className="flex items-center mb-3">
+                <label className="w-28 text-grey-500">Country</label>
                 <select
                     onChange={getCountry}
                     name="country_code"
-                    value={formData.country_code} // Ensure the selected value is set
-                    className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                    value={formData.country_code}
+                    className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
                     required
                 >
                     <option value="" disabled>
@@ -566,13 +579,18 @@ export default function AddressForm({ setHasAdded, isEditPopup, setSassClose }) 
                         </option>
                     ))}
                 </select>
+            </div>
+
+            {/* Postal Code */}
+            <div className="flex items-center mb-3">
+                <label className="w-28 text-grey-500">Postal Code</label>
                 <input
                     onChange={handleChange}
                     type="number"
                     value={formData.postal_code}
                     name="postal_code"
                     placeholder="Postal Code"
-                    className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                    className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
                     required
                 />
             </div>
@@ -580,7 +598,7 @@ export default function AddressForm({ setHasAdded, isEditPopup, setSassClose }) 
             <LoaderButton
                 type="submit"
                 disabled={loading}
-                className="flex btn-pink lg mt-4 w-full "
+                className="flex btn-pink lg mt-2 w-full "
                 spinnerClassName="fill-red-600"
             >
                 {loading && isEditPopup
