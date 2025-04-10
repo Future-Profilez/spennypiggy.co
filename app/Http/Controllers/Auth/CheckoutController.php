@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
+use Stripe\Stripe;
 
 class CheckoutController extends Controller
 {
@@ -31,6 +32,7 @@ class CheckoutController extends Controller
     /* create checkout */
     public function createCheckout($id)
     {
+        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
         $user = Auth::user(); // or $requestingUser if handling guests
 
         if (empty($user->stripe_id)) {
