@@ -449,8 +449,7 @@ export default function AddressForm({
                     </h2>
                 </div>
                 <p className="text-red-500 mb-4 mt-2">
-                    These details will be used to send you the project from
-                    amazon, when someone orders it.
+                These details will be used to ship the gifts directly to your door. These details are kept secure and not shared with the gifter.
                 </p>
             </div>
 

@@ -10,7 +10,16 @@
             style="max-width: 296px; width: 100%; text-align: center;">
             <tr>
                 <td style="font-family: Arial; font-weight: bold; font-size: 18px; color:#000; line-height: 26px; padding: 0 0 25px 0; text-align: center;">
-                    {{ $mem->anonymous == 1 ? 'Someone' : $mem->user->name }} subscribed to your <span style="color: #8C52FF"> {{ ucwords(str_replace('_',' ',$mem->membership->level)) }} </span> Membership of {{ $amountWithCurr }} on Spenny Piggy 🐷🎁!
+                    {{ $mem->anonymous == 1 ? 'Someone' : ucfirst($mem->user->name) }} subscribed to your <span style="color: #8C52FF"> {{ ucwords(str_replace('_',' ',$mem->membership->level)) }} </span> Membership of {{ $amountWithCurr }} on Spenny Piggy 🐷🎁!
+                </td>
+            </tr>
+
+            <tr>
+                <td style="font-family: Arial; font-weight: normal; font-size: 14px; color:#4D4D4D; text-align: center; line-height: 20px; padding-bottom: 25px;">
+                    {{ $mem->anonymous == 1 ? 'Someone' : ucfirst($mem->user->name) }} has just bought a new membership for you.
+                    <a href="{{ env('APP_URL') . '/' . $mem->user->username }}" style="color: #8C52FF; text-decoration: underline;">
+                        Send them a message
+                    </a> and say thanks!
                 </td>
             </tr>
 
