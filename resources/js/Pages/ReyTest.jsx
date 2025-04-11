@@ -57,6 +57,162 @@ const ProductFetcher = () => {
             } catch (error) {
                 console.error("Error fetching payment token:", error);
                 return null;
+import { useEffect, useState } from "react";
+import { RyeClient, Marketplace, ENVIRONMENT } from "@rye-api/rye-sdk";
+import axios from "axios";
+
+async function getShopperIp() {
+    try {
+        const response = await fetch("https://api64.ipify.org?format=json");
+        const data = await response.json();
+        return data.ip;
+    } catch (error) {
+        console.error("Error fetching shopper IP:", error);
+        return "0.0.0.0"; // Fallback IP
+    }
+}
+
+export default function RyeCartTest() {
+    const [storeData, setStoreData] = useState(null);
+    const [productList, setProductList] = useState([]);
+    const [cartResponse, setCartResponse] = useState(null);
+    const [cartDetails, setCartDetails] = useState(null);
+    const [error, setError] = useState(null);
+
+    
+
+
+    useEffect(() => {
+        const fetchAndAddProducts = async () => {
+            try {
+
+                // Create RyeClient instance
+                const ryeClient = new RyeClient({
+                    authHeader:
+                        "Basic UllFL3N0YWdpbmctYTlmYjk0YjhmYTM1NGE4MTg5NWI6", // Replace with your actual API key
+                    shopperIp: shopperIp,
+                    environment: ENVIRONMENT.STAGING,
+                });
+
+                // Step 1: Add products to Rye Inventory
+                const productResult = await ryeClient.requestProductByUrl({
+                    input: {
+                        url: "https://www.amazon.com/dp/B07FZ8S74R",
+                        marketplace: Marketplace.Amazon,
+                    },
+                });
+
+                console.log("Added Product:", productResult);
+
+                // Extract product ID
+                const productId = productResult?.productID;
+                if (!productId) {
+                    throw new Error("Product ID not returned");
+                }
+
+                const response = await fetch(
+                    "https://graphql.api.rye.com/v1/query",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Basic <your_encoded_credentials>`, // Replace <your_encoded_credentials> with the actual key
+                        },
+                        body: JSON.stringify({
+                            query: `
+                            mutation {
+                                requestStoreByURL(input: { url: "https://www.amazon.com" }) {
+                                    id
+                                    name
+                                    details {
+                                        domain
+                                        createdAt
+                                    }
+                                }
+                            }
+                        `,
+                        }),
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                setStoreData(result.data.requestStoreByURL);
+
+                // console.log("store by url Product:", result);
+                // Step 2: Query products from Rye Inventory
+                // const products = await ryeClient.getProductsByDomainV2({
+                //     input: {
+                //         domain: "https://spennypiggy.co/naveen", // Replace with a valid domain
+                //     },
+                //     pagination: { limit: 10, offset: 0 },
+                // });
+
+                // console.log("Fetched Products:", products);
+                // setProductList(products);
+
+                // Fetch product details
+                // const products = await Promise.all(
+                //     productIds.map(async (id) =>
+                //         ryeClient.getProductById({
+                //             input: { productId: id },
+                //         })
+                //     )
+                // );
+
+                // console.log("Fetched Product Details:", products);
+
+                // Step 3: Create a cart
+                // const cartResult = await ryeClient.createCart({
+                //     input: {
+                //         items: {
+                //             amazonCartItemsInput: [
+                //                 {
+                //                     quantity: 1,
+                //                     productId: productId, // Use the fetched product ID
+                //                 },
+                //             ],
+                //         },
+                //         buyerIdentity: {
+                //             firstName: "Danny",
+                //             lastName: "Jangid",
+                //             email: "amatata156@gmail.com",
+                //             phone: "+1234567890",
+                //             address1: "123 Main Street",
+                //             city: "New York",
+                //             provinceCode: "NY",
+                //             countryCode: "US",
+                //             postalCode: "10001",
+                //         },
+                //     },
+                //     fetchBuyerIdentity: true,
+                // });
+
+                // console.log("Cart Created:", cartResult);
+                // setCartResponse(cartResult);
+
+                // const cartId = cartResult?.cart?.id;
+
+                // console.log("cartId", cartId);
+                // // // Fetch cart details
+                // const cartResults = await ryeClient.getCart({
+                //     id: cartId,
+                //     fetchBuyerIdentity: true, // Set to true to fetch buyer identity
+                //     fetchOffer: false, // Set to true to fetch offers for each store
+                //     fetchCartLines: false, // Set to true to fetch cart lines
+                //     fetchShippingMethods: false,
+                // });
+
+                // console.log("Cart Details:", cartResults);
+                // setCartDetails(cartResults);
+            } catch (err) {
+                console.error("Error:", err);
+                setError(
+                    "Failed to process your request. Check the console for details."
+                );
             }
         };
 
@@ -68,6 +224,7 @@ const ProductFetcher = () => {
                 //     return;
                 // }
 
+<<<<<<< HEAD
                 const result = await ryeClient.submitCart({
                     input: {
                         id: cartId,
@@ -256,6 +413,109 @@ const ProductFetcher = () => {
                         <p className="text-red-500">{response.message}</p>
                     )}{" "}
                 </div>
+=======
+    async function addProduct() {
+        const shopperIp = await getShopperIp();
+        const ryeClient = new RyeClient({
+            authHeader: "Basic UllFL3N0YWdpbmctYTA2ZWYwZmYzYTZiNGVjNWI2Y2I6",
+            shopperIp: shopperIp,
+            environment: ENVIRONMENT.STAGING,
+        });
+        console.log("ryeClient",ryeClient)
+        const url = 'https://www.amazon.com/Casio-MDV106-1AV-Analog-Watch-Black/dp/B009KYJAJY';
+        const product = await ryeClient.requestProductByUrl({ 
+            input: {
+                url: url,
+                marketplace: Marketplace.Amazon,
+            },
+         });
+        console.log("product", product);
+    }
+
+    const getProducts = async () => { 
+        const shopperIp = await getShopperIp();
+        const ryeClient = new RyeClient({
+            authHeader: "Basic UllFL3N0YWdpbmctYTA2ZWYwZmYzYTZiNGVjNWI2Y2I6",
+            shopperIp: shopperIp,
+            environment: ENVIRONMENT.STAGING,
+        });
+        const products = await ryeClient.getProductsByDomainV2({
+            input: {
+                domain: "https://dev.uk.spennypiggy.co/naveendevuk",
+            },
+            pagination: { limit: 10, offset: 0 },
+        });
+        console.log("Fetched Products:", products);
+    }
+
+
+    const addStore = async () => {
+        const query = `
+            mutation {
+                requestStoreByURL(input: { url: "https://www.amazon.com" }) {
+                    storeId
+                    storeUrl
+                    storeStatus
+                }
+            }
+        `;
+        try {
+            const response = await axios.post(
+                "https://staging.graphql.api.rye.com/v1/query",
+                { query },
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: "Basic UllFL3N0YWdpbmctYTA2ZWYwZmYzYTZiNGVjNWI2Y2I6",
+                    },
+                }
+            );
+            console.log("Store Registered:", response.data);
+        } catch (error) {
+            console.error("Error Registering Store:", error);
+        }
+    };
+    
+    return (
+        <div>
+        <button className="btn-pink" onClick={addProduct}>Add Product</button>
+        <button className="btn-pink" onClick={getProducts}>getProducts</button>
+        <button className="btn-pink" onClick={()=>addStore()}>createStore</button>
+            <h1>Rye Cart Test</h1>
+            {error ? (
+                <p style={{ color: "red" }}>{error}</p>
+            ) : (
+                <>
+                    {productList.length > 0 ? (
+                        <div>
+                            <h2>Fetched Products</h2>
+                            <ul>
+                                {productList.map((product, index) => (
+                                    <li key={index}>
+                                        <img
+                                            src={product.imageUrl}
+                                            alt={product.name}
+                                        />
+                                        <h3>{product.name}</h3>
+                                        <p>{product.description}</p>
+                                        <p>Price: ${product.price}</p>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ) : (
+                        <p>Loading products...</p>
+                    )}
+                    {cartResponse ? (
+                        <div>
+                            <h2>Cart Response</h2>
+                            <pre>{JSON.stringify(cartResponse, null, 2)}</pre>
+                        </div>
+                    ) : (
+                        <p>Loading cart...</p>
+                    )}
+                </>
+>>>>>>> 1dd784816540d81829a9f94cd33c338912f2c0b0
             )}
 
             {cartId && <p>this is a cart ID:- {cartId}</p>}
