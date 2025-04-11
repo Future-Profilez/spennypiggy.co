@@ -58,7 +58,6 @@ export default function Social({
         });
         response
             .then((res) => {
-                console.log("res", res);
                 if (res.data.status) {
                     successAlert(res.data.message || "Updated successfully.");
                     updatedLinks && updatedLinks();

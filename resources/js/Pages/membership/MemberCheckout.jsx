@@ -13,7 +13,6 @@ export default function SubCheckout(props) {
     const hcaptchaRef = useRef(null);
     const { hcaptchakey } = usePage().props;
     const { user, auth, membership, vat_amount, isSocilAdded } = props;
-    console.log("isSocilAdded",isSocilAdded)
     const { formatMultiPrice } = PriceFormat();
     const [username, setUserName] = useState(
         (auth && auth.user && auth.user.username) || ""
