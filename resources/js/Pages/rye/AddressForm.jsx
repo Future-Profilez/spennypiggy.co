@@ -403,7 +403,6 @@ export default function AddressForm({
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("Hello");
         setLoading(true);
 
         try {
@@ -411,7 +410,6 @@ export default function AddressForm({
                 "creator-store-address",
                 formData
             );
-            console.log("response", response);
 
             if (response?.data?.status) {
                 successAlert(response?.data?.message);

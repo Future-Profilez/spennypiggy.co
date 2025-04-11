@@ -44,11 +44,10 @@ export default function GiftListing({
             errorAlert("An unknown error occured");
         }
     };
-    console.log("gift", gift);
 
     return (
         <div
-            className={`wishlistcntbox mb-3 mb-sm-4 whbg relative 
+            className={`wishlistcntbox mb-3 mb-sm-4 whbg relative
                 ${gift?.deleted_at !== null ? "opacity-50" : ""}
                  shadow-voilet`}
         >

@@ -24,7 +24,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
           state: '',
           postal_code: '',
        });
-    
+
     const handleChange = (e) => {
         setFormData({
           ...formData,
@@ -50,13 +50,13 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
             shopperIp: shopperIp,
             environment: ENVIRONMENT.STAGING,
         });
-        console.log(
-            "data",
-            productId,
-            finalQuantity,
-            data?.cart?.id,
-            cartsItems?.creator_id
-        );
+        // console.log(
+        //     "data",
+        //     productId,
+        //     finalQuantity,
+        //     data?.cart?.id,
+        //     cartsItems?.creator_id
+        // );
         // return;
         const result = await ryeClient.updateCartItems({
             input: {
@@ -555,7 +555,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                     </label>
                                     {/* Form fields starts here */}
                                     <p className="py-2">
-                                    Please fill the below information. It will be used while 
+                                    Please fill the below information. It will be used while
                                     sending your gift to <strong> {cartsItems?.creator?.name || ""} </strong>.
                                     </p>
                                     <div className="form-field mb-3">
@@ -577,8 +577,8 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                     </div>
                                     <div className="form-field mb-3 ">
                                         <p className='mb-2'>Shipping Information</p>
-                                        <select required className="form-input w-100 rounded" name="country" 
-                                        onChange={handleChange} 
+                                        <select required className="form-input w-100 rounded" name="country"
+                                        onChange={handleChange}
                                         >
                                             <option value={''} >Choose Country</option>
                                             {AllCountries && AllCountries.map((c, i) => <option key={i} value={c.code}>{c.label}</option>)}
@@ -594,7 +594,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                     <div className="form-field mb-3 ">
                                         <input required
                                             className="form-input w-100 rounded"
-                                            onChange={handleChange} 
+                                            onChange={handleChange}
                                             name="city"
                                             type="text" placeholder="City" />
                                     </div>
