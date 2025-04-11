@@ -21,8 +21,8 @@ export default function AddGift({
     const { errorsHandling, successAlert, errorAlert } = useAlerts();
     const [loading, setLoading] = useState(false);
     const [title, setTitle] = useState(item?.title || "");
-    // const [hasAdded, setHasAdded] = useState(addressAdded);
-    const [hasAdded, setHasAdded] = useState(false);
+    const [hasAdded, setHasAdded] = useState(addressAdded);
+    // const [hasAdded, setHasAdded] = useState(false);
 
     const handleInput = (e) => {
         setTitle(e.target.value);
