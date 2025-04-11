@@ -59,7 +59,6 @@ export default function AddBills(props) {
     );
     const spValue = (e) => {
         setPeriod(e.target.value);
-        console.log("e.target.value", e.target.value);
         setData("period", e.target.value);
     };
 
@@ -122,8 +121,8 @@ export default function AddBills(props) {
                     <SlCalender color="var(--pink)" size="1.5rem" />
                 </div>
                 <div className="ps-3 text-start">
-                    <h2 className="text-md">Add Bills</h2>
-                    <p className="text-sm font-normal">
+                    <h2 className="text-md font-normal font-GillSans uppercase">Add Bills</h2>
+                    <p className="text-sm font-poppins">
                         Get those pesky bills paid with exclusive content
                     </p>
                 </div>

@@ -23,6 +23,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
@@ -561,7 +562,6 @@ class ShopsController extends Controller
         ]);
     }
 
-
     public function buyShopItem(Request $request, $shop_id, $varient_id)
     {
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
@@ -633,6 +633,7 @@ class ShopsController extends Controller
             $shopPaymentDetail = ShopPayment::create([
                 'amount' => $amount,
                 'tax_amount' => $totalTaxAmount,
+                'vat_tax_amount' => $vat_percentage_amount,
                 'currency' => $shop->user->default_currency,
                 'shop_id' => $shop->id,
                 'user_id' => (Auth::check()) ? Auth::id() : (!empty($logged_out_user) ? $logged_out_user->id : null),
@@ -668,17 +669,33 @@ class ShopsController extends Controller
                     'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
                     'line_items' => $lineItems,
                     'mode' => 'payment',
+                    'payment_method_types' => ['card'], // Add this line
                     'payment_intent_data' => [
                         'transfer_data' => [
-                            'destination' => $shop->user->account_id, // Creator's connected account ID
+                            'destination' => $shop->user->account_id,
                             'amount' => Helpers::priceFormat($shop->user->default_currency, $amount, $currency) * 100,
                         ],
-                        // 'application_fee_amount' => $taxNew * 100,
                         'on_behalf_of'  => $shop->user->account_id,
                     ],
-                    'customer_email' =>  request()->query('email'),
-                    // 'currency' => 'usd',
+                    'customer_email' => request()->query('email'),
                 ]);
+
+                // $sessionCreate = $stripe->checkout->sessions->create([
+                //     'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
+                //     'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
+                //     'line_items' => $lineItems,
+                //     'mode' => 'payment',
+                //     'payment_intent_data' => [
+                //         'transfer_data' => [
+                //             'destination' => $shop->user->account_id, // Creator's connected account ID
+                //             'amount' => Helpers::priceFormat($shop->user->default_currency, $amount, $currency) * 100,
+                //         ],
+                //         // 'application_fee_amount' => $taxNew * 100,
+                //         'on_behalf_of'  => $shop->user->account_id,
+                //     ],
+                //     'customer_email' =>  request()->query('email'),
+                //     // 'currency' => 'usd',
+                // ]);
 
                 $shopPaymentDetail->session_id =  $sessionCreate->id;
                 $shopPaymentDetail->save();
@@ -754,14 +771,14 @@ class ShopsController extends Controller
             $symbol = Currency::where('iso', strtoupper($stripeid->currency))->first();
 
             $message = $stripeid->message;
+            $amountUserPay = $symbol->symbol . $stripeid->amount + $stripeid->vat_tax_amount;
             if ($stripeid->anonymous == 0) {
-                ShopBuyed::dispatch($stripeid, false, $symbol->symbol);
+                ShopBuyed::dispatch($stripeid, false, $amountUserPay);
             } else {
-                ShopBuyed::dispatch($stripeid, true, $symbol->symbol);
+                ShopBuyed::dispatch($stripeid, true, $amountUserPay);
             }
 
-            $curr = Currency::where('iso', strtoupper($currency))->first();
-            ShopBuyedUser::dispatch($stripeid, $stripeid->shop->reward_file_url, $curr->symbol);
+            ShopBuyedUser::dispatch($stripeid, $stripeid->shop->reward_file_url, $symbol->symbol);
 
             $slug = strtolower(str_replace(" ", "-", $stripeid->shop->name));
 

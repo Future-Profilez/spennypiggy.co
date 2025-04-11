@@ -21,7 +21,8 @@ class CheckStripeIdentityVerification
         $user = Auth::user();
 
         // Check if the user's identity_status is not verified (0)
-        if ($user && $user->identity_status !== 1) {
+        if ($user && $user->identity_status !== 1 && $user->identity_status !== 0) {
+            // dd($user);
             // Redirect to the Stripe identity verification page
             return Inertia::render('Auth/StripeIdentity', [
                 'status' => false,

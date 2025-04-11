@@ -19,10 +19,10 @@ export default function SubCheckout(props) {
         message: '',
         agree: false,
         anonymous: 0,
-    }); 
+    });
 
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
-    function checkanonymous(e){ 
+    function checkanonymous(e){
         setKeepAnonmyous(e.target.checked);
         if(e.target.checked){
             setData("anonymous", 1)
@@ -34,7 +34,7 @@ export default function SubCheckout(props) {
     const handleSubmit = (e) => {
         e.preventDefault();
         post(route(`wish.subscribe.checkout`,{
-            uuid:wish.uuid, 
+            uuid:wish.uuid,
             reccure:reccure
         }),
         {
@@ -66,7 +66,7 @@ export default function SubCheckout(props) {
                 <div className="my-4 cartsub cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
                     <div className="cartMain">
                         <h2 className="pb-1 wishtitle">
-                            Wish Basket for {wish?.user?.name || " "} 
+                            Wish Basket for {wish?.user?.name || " "}
                             <Link className="text-voilet" target="_blank"
                                 href={`/${wish?.user?.username || ""}`} >
                                 @{wish?.user?.username || ""}
@@ -122,6 +122,7 @@ export default function SubCheckout(props) {
                             <div className="cartSubTotal text-right mt-1">
                                 <strong className="text-dark">Total :</strong>{" "}
                                 <strong className="text-end">
+                                    {/* {formatMultiPrice(wish.tax_amount + wish.price || "", wish && wish.currency)} */}
                                     {formatMultiPrice(wish.tax_amount + wish.price + vat_amount || "", wish && wish.currency)}
                                 </strong>
                             </div>
@@ -187,12 +188,12 @@ export default function SubCheckout(props) {
                                         <label
                                             htmlFor="agreeterm"
                                             className="text-start" >
-                                            <input 
-                                            onChange={(e) => setData('agree', e.target.checked)} 
-                                            type="checkbox" 
-                                            id="agreeterm" 
-                                            name="agreeterm" 
-                                            className="me-2" 
+                                            <input
+                                            onChange={(e) => setData('agree', e.target.checked)}
+                                            type="checkbox"
+                                            id="agreeterm"
+                                            name="agreeterm"
+                                            className="me-2"
                                             value="agreeterm" ></input>
                                            I understand I am paying the creator directly and I agree to the <Link target='_blank' className="text-voilet" href={route("terms-and-conditions")} >Terms of Service</Link> and <a className="text-voilet" target='_blank' href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>  and the following statements:
                                         </label>
@@ -215,7 +216,7 @@ export default function SubCheckout(props) {
                                         className={`${!data.agree || processing ? "disabled" : ""} btn-pink md px-4 mt-3 text-center`}
                                         disabled={!data.agree || processing}>
                                         {processing ? 'Processing...' : `${reccure == 'onetime' ? `Subscribe Once ` : `Subscribe ${wish.subscription_period}`} `}
-                                    </button> 
+                                    </button>
                                 </div>
                             </form>
                         </div>

@@ -9,7 +9,6 @@ import Popup from '@/Components/Popup';
 
 export default function Stripe(props) {
     const { auth, user } = props;
-    console.log("props", props);
     const checkRef = useRef();
     const { errorAlert } = useAlerts();
     const { data, setData, get, post, processing, errors, reset } = useForm({
@@ -19,7 +18,6 @@ export default function Stripe(props) {
     const [countryCurrency, setCountryCurrency] = useState();
     const [country, setCountry] = useState('');
     const getCountry = (e) => {
-        console.log("get",e);
         if(e == ''){
             setCountry('')
         } else {
@@ -30,8 +28,6 @@ export default function Stripe(props) {
     };
 
     const checkTerms = () => {
-        console.log("country", country);
-        
         if (country == '') {
             errorAlert("Please choose your country.");
             return false;
@@ -138,7 +134,7 @@ export default function Stripe(props) {
                         </div> */}
                     </div>
                     <div className="text-center flex justify-center mb-4 ">
-                       
+
 
                         <Popup modalclass="pinkmodal full stripe-terms shadow-pink ps-0"
                             space="4" size="md"
@@ -148,16 +144,16 @@ export default function Stripe(props) {
                                     <h2 className="text-uppercase font-GillSans pb-4 font-large">Important notice !</h2>
 
                                     <p className='mb-2'><strong>Oink! @{auth && auth.user && auth.user.username}</strong></p>
-                                    <p className='mb-2' > To comply with Stripes new rules, you must be posting exclusive content for your:</p>
+                                    <p className='mb-2' > To comply with Stripes new rules, you must be posting exclusive content in:</p>
 
                                     <div className='d-block py-3' >
-                                        <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >FOR Supporters</h2>
-                                        <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >FOR Subscribers</h2>
-                                        <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >FOR Members</h2>
+                                        <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >Membership</h2>
+                                        <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >Bill</h2>
+                                        {/* <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >FOR Members</h2> */}
                                     </div>
 
-                                    <p className='mb-1 text-[17px]'>Please ensure you create an Image Post for each group above. </p>
-                                    <p className='mb-1 text-[17px]'>That is a minimum of 3 posts per month.</p>
+                                    <p className='mb-1 text-[17px]'>Please ensure you create an <b>Membership</b> and <b>Bill</b> for your fans. </p>
+                                    {/* <p className='mb-1 text-[17px]'>That is a minimum of 2 posts per month.</p> */}
                                     <p className='mb-1 text-[17px]'>Oink! Oink! 🐷</p>
 
                                     <div className='termselect mt-4'>
@@ -169,7 +165,7 @@ export default function Stripe(props) {
                                     </div>
 
                                     <button className='btn-pink md m-auto mt-4  d-table' onClick={() => { return checkTerms(); }}>Go to Stripe</button>
-                                </div>  
+                                </div>
                             </Popup>
 
                     </div>

@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
+use Stripe\Stripe;
 
 class CheckoutController extends Controller
 {
@@ -31,6 +32,19 @@ class CheckoutController extends Controller
     /* create checkout */
     public function createCheckout($id)
     {
+        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+        $user = Auth::user(); // or $requestingUser if handling guests
+
+        if (empty($user->stripe_id)) {
+            $stripeCustomer = \Stripe\Customer::create([
+                'email' => $user->email,
+                'name' => $user->name ?? null,
+            ]);
+
+            $user->stripe_id = $stripeCustomer->id;
+            $user->save();
+        }
+
         // Email notification on success
         // $now = Carbon::now()->format('h:i A d-m-Y');
         // $emailSubject = "Wish Payment Initiation Start - $now";
@@ -58,8 +72,8 @@ class CheckoutController extends Controller
                     ->where('status', 1)
                     ->with(['wish'])
                     ->get();
-                } else {
-                    $getdata = UserCart::where('device_id', $id)
+            } else {
+                $getdata = UserCart::where('device_id', $id)
                     ->where('country', 'global')
                     ->where('status', 1)
                     ->with(['wish'])
@@ -70,20 +84,18 @@ class CheckoutController extends Controller
             $subtotal = 0;
             $taxNew = 0;
             $adminFee = 0;
+            $transfer_amount = 0;
             foreach ($getdata as $dd) {
                 $adminFee = config('app.administration_fee');
-                $totalAmount = $dd->amount + $dd->tax + $adminFee;
-                $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, $currency);
-                $new_total_amount = round($ConvertedAmount, 2, PHP_ROUND_HALF_UP);
+                $showAdminsFees = Helpers::priceFormat('GBP', $adminFee, $currency);
+                $StoreAdminsFees = Helpers::priceFormat('GBP', $adminFee, $dd->owner->default_currency);
+                $totalAmount = $dd->amount;
+                $totalTax =  $dd->tax;
 
-                // Email notification on success
-                // $now = Carbon::now()->format('h:i A d-m-Y');
-                // $emailSubject = "Wish Payment Initiation Start - $now";
-                // $message = "Wish Payment Process Initiation Start. $new_total_amount";
-                // Mail::to('prem@futureprofilez.com', 'Prem Prakash')
-                //     // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
-                //     //     ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
-                //     ->send(new CommandFailed($emailSubject, $message));
+                $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, $currency);
+                $ConvertedTax = Helpers::priceFormat($dd->owner->default_currency, $totalTax, $currency);
+                $TotalConvertedFinalAmount = $ConvertedTax + $ConvertedAmount + $showAdminsFees;
+                $new_total_amount = round($TotalConvertedFinalAmount, 2, PHP_ROUND_HALF_UP);
 
                 $lineItems[] = [
                     // 'price' => $dd->stripe_product_id ?? '',
@@ -97,12 +109,16 @@ class CheckoutController extends Controller
 
                 $subtotal += $dd->amount * $dd->quantity;
                 $taxNew += $dd->tax * $dd->quantity;
-                $taxNew += $adminFee;
+                $taxNew += $StoreAdminsFees;
+
+                // this amount will be transfer to the creators account
+                $transfer_amount += $ConvertedAmount * $dd->quantity;
             }
 
-            // $transfering_amount = $subtotal - $taxNew;
+            $transfering_amount = $transfer_amount + $showAdminsFees;
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+
 
             $sessionCreate = $stripe->checkout->sessions->create([
                 'success_url' => route('checkout.success', [$id]),
@@ -112,7 +128,7 @@ class CheckoutController extends Controller
                 'payment_intent_data' => [
                     'transfer_data' => [
                         'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
-                        'amount' => $new_total_amount * 100,
+                        'amount' => $transfering_amount * 100,
                     ],
                     // 'application_fee_amount' => $taxNew,
                     'description' => "Custom Content Purchase."
@@ -121,21 +137,13 @@ class CheckoutController extends Controller
                 // 'currency' => 'usd',
             ]);
 
-            // Email notification on success
-            // $now = Carbon::now()->format('h:i A d-m-Y');
-            // $emailSubject = "Wish Payment Initiation Start - $now";
-            // $message = "Wish Payment Process in Mid. $sessionCreate->url";
-            // Mail::to('prem@futureprofilez.com', 'Prem Prakash')
-            //     // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
-            //     //     ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
-            //     ->send(new CommandFailed($emailSubject, $message));
-
             session()->forget('session_id');
             session(['session_id' => $sessionCreate->id]);
+            $amountSubtotal = $subtotal + $taxNew;
             $stripePaymentDetail = StripePaymentDetail::create([
                 'session_id' => $sessionCreate->id,
                 'amount_subtotal' => $subtotal,
-                'amount_total' => $sessionCreate->amount_total / 100,
+                'amount_total' => $amountSubtotal,
                 'tax' => $taxNew,
                 'currency' => $getdata[0]->owner->default_currency,
                 'payment_method_config_detail_id' => optional($sessionCreate->payment_method_configuration_details)->id,
@@ -143,6 +151,7 @@ class CheckoutController extends Controller
                 'user_id' => Auth::id() ?? null,
                 'owner_id' => $getdata[0]->owner->id,
                 'name' => request()->query('from') ?? '',
+                'guest_email' => request()->query('email') ?? '',
                 'message' => $message ?? '',
                 'anonymous' => request()->query('anonymous') ?? 0,
                 'session_created' => $sessionCreate->created,
@@ -155,16 +164,17 @@ class CheckoutController extends Controller
 
             return Inertia::location($sessionCreate->url);
         } catch (\Throwable $th) {
-            $now = Carbon::now()->format('h:i A d-m-Y');
-            $emailSubject = "Payment Process Failed - $now";
-            $message = "An error occurred while processing the payment: " . $th->getMessage();
-            Mail::to('prem@futureprofilez.com', 'Prem Prakash')
-                // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
-                ->cc('naveen@internetbusinesssolutionsindia.com')
-                // ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
-                ->send(new CommandFailed($emailSubject, $message));
-            Log::error("Error in createCheckout: " . $th->getMessage());
-            throw $th;
+            return redirect(route('user.show', [$getdata[0]->owner->username]))->with('error', $th->getMessage());
+            // $now = Carbon::now()->format('h:i A d-m-Y');
+            // $emailSubject = "Payment Process Failed - $now";
+            // $message = "An error occurred while processing the payment: " . $th->getMessage();
+            // Mail::to('prem@futureprofilez.com', 'Prem Prakash')
+            //     // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
+            //     ->cc('naveen@internetbusinesssolutionsindia.com')
+            //     // ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
+            //     ->send(new CommandFailed($emailSubject, $message));
+            // Log::error("Error in createCheckout: " . $th->getMessage());
+            // throw $th;
         }
     }
 
@@ -233,6 +243,7 @@ class CheckoutController extends Controller
                 $symbol = Currency::where('iso', strtoupper($payment_data->payment->currency))->first();
 
                 $message = $stripeid->message;
+
                 if (Auth::check()) {
                     if ($dd->wish_item_id == NULL) {
                         CheckoutUser::dispatch($payment_data, false, $dd, $message, null, $symbol->symbol);

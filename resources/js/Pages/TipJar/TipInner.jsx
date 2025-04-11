@@ -17,14 +17,14 @@ export default function TipInner({classes}) {
   const [tipQuantity, setTipQuantity] = useState(1);
   const [coinsQuantity, setCoinsQuanitity] = useState(1)
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
-  
-  const incresevalue = () =>{ 
+
+  const incresevalue = () =>{
       const c = parseInt(tipQuantity+1);
       setAmount(defaultAmount*c);
       setTipQuantity(c);
   }
 
-  const decresevalue = () =>{ 
+  const decresevalue = () =>{
     if(tipQuantity > 1){
       const c = parseInt(tipQuantity-1);
       setAmount(defaultAmount*c);
@@ -34,11 +34,11 @@ export default function TipInner({classes}) {
 
   const [selectegTag, setselectegTag] = useState(5);
   const [custom, setCustom] = useState(false);
-  const selectCustom = ()=> { 
+  const selectCustom = ()=> {
      setCustom(true);
      setselectegTag("custom")
   }
-  const customAmountTag = (e) => { 
+  const customAmountTag = (e) => {
     setAmount(e);
     setdefaultAmount(e);
     setTipQuantity(1);
@@ -57,10 +57,10 @@ export default function TipInner({classes}) {
   const { data, setData, post, processing, errors, reset } = useForm({
     email: auth && auth.user?.email || '',
     name: auth && auth.user?.name || '',
-    message: '', 
+    message: '',
     anonymous: 0,
     amount: amount
-  }); 
+  });
 
   useEffect(()=>{
     setData("amount", amount);
@@ -78,7 +78,6 @@ export default function TipInner({classes}) {
     setLoading(true);
     const resp = axios.post(`tip-jar/pay/${user.uuid}`, data);
     resp.then((res) => {
-      console.log("res",res)
       if(res.data.status){
         window.location.href = res.data.url
       } else {
@@ -91,8 +90,8 @@ export default function TipInner({classes}) {
     });
   }
 
-  
-  
+
+
   return <div className='tip-wrapper'>
       <div className='piggyface' dangerouslySetInnerHTML={{ __html: piggyface }} />
       <div className='piggynose' dangerouslySetInnerHTML={{ __html: piggynose }} />
@@ -125,14 +124,14 @@ export default function TipInner({classes}) {
                 <div className="position-relative currency-wrapper " >
                     <span className="currency-tag">{global_currency || 'GBP'}</span>
                     <input className="form-input w-100 rounded" value={amount}
-                    onChange={customAmount} 
+                    onChange={customAmount}
                     type="number" placeholder="Enter amount.. " />
                 </div>
             </div> : ''}
 
             <div className="form-field mb-3">
-              <textarea className="form-input w-100 rounded" 
-              onChange={(e) => setData('message', e.target.value)} 
+              <textarea className="form-input w-100 rounded"
+              onChange={(e) => setData('message', e.target.value)}
               placeholder="Write a short note." />
             </div>
 
@@ -161,10 +160,10 @@ export default function TipInner({classes}) {
             <div className='termselect mt-3 mb-3'>
                 <label htmlFor="termaccept">
                   <p className='text-small text-dark font-normal' >
-                    <input className='cursor-pointer' 
-                    type="checkbox" ref={checkRef}  
-                    id="termaccept"  name="termaccept"  
-                    value="termaccept" required 
+                    <input className='cursor-pointer'
+                    type="checkbox" ref={checkRef}
+                    id="termaccept"  name="termaccept"
+                    value="termaccept" required
                     onChange={(e) => setData("termaccept", e.target.value)}></input>
                       By supporting me, you agree that this support is a gift and as a thank you, you get access to my profile feed and supporter only posts. To view these, you will need to create an account with the e-mail you used to send the support, as effectively you are purchasing a supporter Membership attached to your e-mail for 30 days.
                   </p>
@@ -173,20 +172,20 @@ export default function TipInner({classes}) {
 
             <div className='termselect mt-3 mb-3'>
                 <label htmlFor="keepanonymous">
-                  <p className='text-small text-dark font-normal'> 
-                    <input className='cursor-pointer' type="checkbox" 
-                    id="keepanonymous" name="keepanonymous"  
+                  <p className='text-small text-dark font-normal'>
+                    <input className='cursor-pointer' type="checkbox"
+                    id="keepanonymous" name="keepanonymous"
                     value="keepanonymous"
                     onChange={(e) => setData("anonymous", e.target.checked ? 1 : 0 )}
-                    ></input> Keep anonymous 
-                  </p> 
+                    ></input> Keep anonymous
+                  </p>
                 </label>
                 <p className="text-muted text-small mt-1 mb-3" >Your personal email and name will be private.</p>
             </div>
             <button onClick={send} className={`inline-flex items-center px-4 border shadow-black
                rounded-[30px] btn-pink md justify-content-center  border-0
-              ease-in-out duration-150 flex button text-center w-100  
-              font-CeraGR mx-auto ${checkRef.current && checkRef.current.checked ? '' :'disabled'}`}  
+              ease-in-out duration-150 flex button text-center w-100
+              font-CeraGR mx-auto ${checkRef.current && checkRef.current.checked ? '' :'disabled'}`}
                > {processing ? "Processing" : 'Support Me'} </button>
             {/* <div className='securestripe text-center mt-3' >
               🔒 Secured via <b>Stripe</b>

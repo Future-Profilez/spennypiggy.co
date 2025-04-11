@@ -7,14 +7,14 @@ import { useRef } from "react";
 import Popup from "@/Components/Popup";
 import { useEffect } from "react";
 import { useAlerts } from "@/Components/Alerts";
- 
+
 export default function EnterOTP({user, action}) {
 
    const [open, setOpen] = useState(false);
    useEffect(() => {
       if(action === 'open'){
          setOpen(true);
-      } else { 
+      } else {
          setOpen();
       }
    }, [action]);
@@ -53,14 +53,13 @@ export default function EnterOTP({user, action}) {
       e.preventDefault();
       setLoading(true);
          post(route('verify2FA', {
-            "otp":otp.join(""),  
+            "otp":otp.join(""),
             "backup_code": bCode || '',
             'email': user.email,
             'password': user.password,
          }),{
          preserveScroll: true,
          onSuccess: (resp) => {
-            console.log("resp",resp)
             setLoading(false);
             if(resp?.props?.flash?.error){
                errorAlert(resp?.props?.flash?.error || "Something went wrong.");
@@ -77,7 +76,7 @@ export default function EnterOTP({user, action}) {
       });
    };
 
-   
+
 
     return (
         <>
@@ -100,7 +99,7 @@ export default function EnterOTP({user, action}) {
                      </div>
                      <div class="text-sm text-slate-500 mt-4"> Don't have backup code ? <button class="font-medium text-indigo-500 hover:text-indigo-600" onClick={()=>setBackup(false)}  >Use Authenticator app</button></div>
                   </>
-                     : 
+                     :
                      <> <div class="flex items-center justify-center ">
                            {otp.map((data, index) => (
                                  <input

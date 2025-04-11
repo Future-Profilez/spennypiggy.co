@@ -8,20 +8,24 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class BillMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $data;
+    public $bill_pay;
+    public $amountWithVat;
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($data)
+    // public function __construct($bill_pay)
+    public function __construct($bill_pay, $amountWithVat)
     {
-        $this->data = $data;
+        $this->bill_pay = $bill_pay;
+        $this->amountWithVat = $amountWithVat;
     }
 
     /**
@@ -34,8 +38,8 @@ class BillMail extends Mailable
         try {
             $subject = 'WooHoo! You got a new Bill subscription.';
             return $this->view('email.bills')
-            ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
-            ->subject($subject);
+                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+                ->subject($subject);
         } catch (\Exception $e) {
         }
     }

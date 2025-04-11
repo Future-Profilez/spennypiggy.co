@@ -6,12 +6,18 @@ import { useAlerts } from "@/Components/Alerts";
 import PriceFormat from "@/includes/PriceFormat";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import HCaptcha from "@hcaptcha/react-hcaptcha";
+import Social from "../Auth/Social";
+import axios from "axios";
 
 export default function SubCheckout(props) {
     const hcaptchaRef = useRef(null);
     const { hcaptchakey } = usePage().props;
-    const { user, auth, membership, vat_amount } = props;
+    const { user, auth, membership, vat_amount, isSocilAdded } = props;
+    console.log("isSocilAdded",isSocilAdded)
     const { formatMultiPrice } = PriceFormat();
+    const [username, setUserName] = useState(
+        (auth && auth.user && auth.user.username) || ""
+    );
     const [name, setName] = useState(
         (auth && auth.user && auth.user.name) || ""
     );
@@ -41,7 +47,7 @@ export default function SubCheckout(props) {
     const handleSubmit = (e) => {
         e && e.preventDefault();
         post(route(`membership.checkout`,{
-            uuid:membership.uuid,
+            uuid:membership?.uuid || null,
             reccure : membership?.level == 'lifetime' ? 'onetime' : 'continue'
           }),
         {
@@ -75,6 +81,23 @@ export default function SubCheckout(props) {
         }
     }, [flash]);
 
+
+    const [socialLinks, setSocialLinks] = useState([]);
+    const [sLinks, setLinks] = useState([]);
+    const fetchingLinks = () => {
+        axios.get(`/sociallinks/${username}`)
+        .then((resp) => {
+            setSocialLinks(resp.data.sociallinks);
+            setLinks(resp.data.slinks);
+        }).catch((_err) => {
+            console.error("error", _err);
+        });
+    };
+
+    useEffect(() => {
+        fetchingLinks();
+    }, []);
+
     return (
         <>
             <Authenticated auth={auth.user} user={user}>
@@ -96,7 +119,7 @@ export default function SubCheckout(props) {
                                 </Link>
                             </h2>
                             <p className="pb-4">
-                                You are about to join {membership.level}{" "}
+                                You are about to join {membership?.level}{" "}
                                 membership.
                             </p>
 
@@ -107,8 +130,8 @@ export default function SubCheckout(props) {
                                     <span>Platform Fee :</span>{" "}
                                     <strong className="text-end">
                                         {formatMultiPrice(
-                                            membership.tax_amount || "",
-                                            membership && membership.currency
+                                            membership?.tax_amount || "",
+                                            membership && membership?.currency
                                         )}
                                     </strong>
                                     <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">
@@ -157,8 +180,8 @@ export default function SubCheckout(props) {
                                     <span>Subtotal :</span>{" "}
                                     <strong className="text-end">
                                         {formatMultiPrice(
-                                            membership.price || "",
-                                            membership && membership.currency
+                                            membership?.price || "",
+                                            membership && membership?.currency
                                         )}
                                     </strong>
                                 </div>
@@ -168,10 +191,10 @@ export default function SubCheckout(props) {
                                     </strong>{" "}
                                     <strong className="text-end">
                                         {formatMultiPrice(
-                                            membership.tax_amount +
-                                                membership.price +
+                                            membership?.tax_amount +
+                                                membership?.price +
                                                 vat_amount || "",
-                                            membership && membership.currency
+                                            membership && membership?.currency
                                         )}
                                     </strong>
                                 </div>
@@ -208,16 +231,16 @@ export default function SubCheckout(props) {
                                                     <input
                                                         className={`${
                                                             auth &&
-                                                            auth.user &&
-                                                            auth.user.email
+                                                            auth?.user &&
+                                                            auth?.user?.email
                                                                 ? "disabled"
                                                                 : ""
                                                         } form-input w-100 rounded`}
                                                         value={data.email}
                                                         disabled={
                                                             auth &&
-                                                            auth.user &&
-                                                            auth.user.email
+                                                            auth?.user &&
+                                                            auth?.user?.email
                                                                 ? true
                                                                 : false
                                                         }
@@ -251,7 +274,7 @@ export default function SubCheckout(props) {
                                                         placeholder="Enter Your Name..."
                                                     />
                                                     <span className="text-xs text-red-600">
-                                                        {errors.name}
+                                                        {errors?.name}
                                                     </span>
                                                 </div>
                                             </div>
@@ -436,6 +459,10 @@ export default function SubCheckout(props) {
                         </div>
                     </div>
                 </div>
+                <Social openSocial={isSocilAdded ? 'no' :"open"}
+                removetext={true} type="membership"
+                redirect_url={ `/membership/checkout/${membership?.uuid}${membership?.level == 'lifetime' ? '/onetime' : ''}` }
+                updatedLinks={fetchingLinks} links={sLinks} />
                 <Toaster />
             </Authenticated>
         </>

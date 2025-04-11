@@ -75,10 +75,20 @@ Route::middleware('guest')->group(function () {
 
 Route::post('stripe/identity/verify', [StripeController::class, 'createVerificationSession'])->name('stripe.identity.verify');
 
+
+Route::get('discover', function () {
+    return Inertia::render('discover/Discover');
+})->name("discover");
+Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class, 'discover_all_wishes'])->name('discover_wish');
+Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');
+Route::get('discover/creators/categories', [WishitemController::class, 'all_creators_categories'])->name('allcreators_categories');
+// Route::get('discover/creators_videos', [WishitemController::class, 'discover_creators_videos'])->name('discover_videos');save_social_links
+
+
 Route::middleware('auth')->group(function () {
 
     Route::get('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
-    // Route::post('verify-2fa', [AuthenticatedSessionController::class, 'verify2FA'])->name('verify2FA')->middleware('mustCompletedStripeIdentity');
+    // Route::post('verify-2fa', [AuthenticatedSessionController::class, 'verify2FA'])->name('verify2FA');
 
     /*send surprise amount*/
     Route::get('verification', [EmailVerificationPromptController::class, '__invoke'])->name('verification.notice');
@@ -142,6 +152,10 @@ Route::middleware('auth')->group(function () {
             Route::get('user-tips', [WishitemController::class, 'userTips'])->name('user-tips');
 
             Route::get('bill-tracker', [WishitemController::class, 'billTracker'])->name('bill-tracker');
+
+            Route::get('membership-tracker', [WishitemController::class, 'membershipTracker'])->name('membership.tracker');
+
+            Route::get('shop-tracker', [WishitemController::class, 'shopTracker'])->name('shop.tracker');
 
             Route::get('subscriptions', [WishitemController::class, 'creatorSubscriptions'])->name('subscriptions');
 
@@ -254,118 +268,123 @@ Route::middleware('auth')->group(function () {
         Route::get('show-2fa-qr', [ProfileController::class, 'show2faQR']);
         Route::post('switch-2fa', [ProfileController::class, 'update2faStatus']);
         Route::post('verification-2fa', [ProfileController::class, 'verification2FA']);
+
+
+
+        Route::post('/report-content/', [ProfileController::class, 'reportContent'])->name('report-content');
+
+        Route::prefix('shop')->group(function () {
+            Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
+            Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class, 'singleShopList'])->name('single-shop-list');
+            Route::match(['get', 'post'], '/buy/{uuid}/{varient_id}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item');
+            Route::post('/answer-to-payment/{payment_id}', [ShopsController::class, 'answerPayment'])->name('answerPayment');
+            Route::get('/success-payment/{uuid}', [ShopsController::class, 'successPayment'])->name('shop.success-payment');
+            Route::get('/cancel-payment/{uuid}', [ShopsController::class, 'cancelPayment'])->name('shop.cancel-payment');
+            Route::get('/shipping-price/{shop_id}', [ShopsController::class, 'shippingPrice'])->name('shop.shipping-price');
+        });
+
+        Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');
+        Route::get('gifter-subs/{username}', [ProfileController::class, 'gifterSubs'])->name('gifter-subscriptions');
+        Route::get('gifter-tips/{username}', [ProfileController::class, 'gifterTips'])->name('gifter-tips');
+        Route::get('gifter-access-posts/{username}', [ProfileController::class, 'gifterAccessPosts'])->name('gifter-access-posts');
+        Route::get('gifter-memberships/{username}', [ProfileController::class, 'gifterMemberships'])->name('gifter-memberships');
+        Route::get('gifter-medias/{username}', [ProfileController::class, 'gifterMedia'])->name('gifter-media');
+        Route::get('gifter-thanks-message/{username}', [ProfileController::class, 'gifterThanksMessages'])->name('gifter-thanks-message');
+        Route::get('gifter-subscriptions/{username}', [ProfileController::class, 'gifterSubscription'])->name('gifter-subscription');
+
+        // Intro video
+        Route::get('/redirecting', function () {
+            return Inertia::render('Redirecting');
+        })->name("redirecting");
+
+
+        Route::get('my-intro/{id}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
+
+        Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
+        Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity');
+        Route::get('cancel-subs/{uuid}', [StripeController::class, 'cancelSubs'])->name('cancel-subs');
+        Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
+            ->name('password.request');
+
+        Route::get('/remove-from-cart/{uuid}', [WishitemController::class, 'removeSurpriseFromCart'])->name('remove-from-cart');
+
+        Route::get('/add-to-cart/{uuid}/{device_id}/{sub}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
+
+        // rye product routes start
+        Route::post('creator-store-address', [WishitemController::class, 'creatorStoreAddress'])->name('creator.store.address');
+        Route::get('get-creator-address', [WishitemController::class, 'getCreatorStoreAddress'])->name('get.creator.address');
+        Route::post('create-creator-product', [WishitemController::class, 'createRyeProduct'])->name('create.creator.product');
+        Route::get('delete-creator-products/{uuid}', [WishitemController::class, 'deleteAndRestoredRyeProduct'])->name('delete.creator.products');
+        Route::post('create-cart', [WishitemController::class, 'createCart'])->name('create.cart');
+        Route::get('check-cart-exist/{creator_id}', [WishitemController::class, 'checkCartExist'])->name('check.cart.exist');
+        Route::post('handle-rye-product-payment', [WishitemController::class, 'handleRyeProductPayment'])->name('handle.rye.product.payment');
+        Route::get('remove-cart/{cart_id}', [WishitemController::class, 'removeCart'])->name('remove.cart');
+        Route::get('get-cart-details', [WishitemController::class, 'getCartDetails'])->name('get.cart.details');
+        Route::get('rye-success-payment/{uuid}/{orderUuid}', [WishitemController::class, 'ryeSuccessPayment'])->name('rye.success.payment');
+        Route::get('rye-cancel-payment/{uuid}', [WishitemController::class, 'ryeCancelPayment'])->name('rye.cancel.payment');
+        Route::post('store-product-order-details', [WishitemController::class, 'storeProductOrderDetails'])->name('store.product.order.details');
+        // rye product routes end
+
+        Route::get('/clear-cart/{device_id}/{ownerid}', [WishitemController::class, 'clearCart'])->name('clear-cart');
+
+        Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
+
+        Route::get('anonymous-cart/{deviceId}', [WishitemController::class, 'anonymousCartItems'])->name('anonymous-cart');
+
+        Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
+
+        Route::get('/create-checkout-session/{id}', [CheckoutController::class, 'createCheckout'])->name('create.checkout');
+
+        Route::get('/success-checkout/{id}', [CheckoutController::class, 'successCheckout'])->name('checkout.success');
+
+        Route::get('/cancel-checkout/{id}', [CheckoutController::class, 'cancelCheckout'])->name('checkout.cancel');
+
+        Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class, 'categoryItems'])->name('get_category_data');
+
+        Route::get('users', [MyController::class, 'getUsers'])->name('users');
+
+        Route::post('/send-surprize', [WishitemController::class, 'sendSurprise'])->name('send-surprize');
+
+        Route::get('/how-it-works', function () {
+            return Inertia::render('howitworks/Works');
+        })->name("how-it-works");
+
+
+        Route::get('/terms-and-conditions', function () {
+            return Inertia::render('Terms');
+        })->name("terms-and-conditions");
+
+
+        Route::get('/promotion-terms', function () {
+            return Inertia::render('Promotions');
+        })->name("promotion-terms");
+
+        Route::get('/files/{filename}', function (string $filename) {
+            $fullPath = asset($filename);
+            return Storage::response($fullPath);
+        });
+
+        Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status')->withoutMiddleware(VerifyCsrfToken::class);
+
+        Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status')->withoutMiddleware(VerifyCsrfToken::class);
+
+        Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-status')->withoutMiddleware(VerifyCsrfToken::class);
+
+        Route::post('mandatory-status', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status');
+
+
+        Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
+
+        Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
+            Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay");
+            Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
+            Route::get('/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');
+        });
     });
 });
-
-Route::post('/report-content/', [ProfileController::class, 'reportContent'])->name('report-content');
-
-Route::prefix('shop')->group(function () {
-    Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
-    Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class, 'singleShopList'])->name('single-shop-list');
-    Route::match(['get', 'post'], '/buy/{uuid}/{varient_id}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item');
-    Route::post('/answer-to-payment/{payment_id}', [ShopsController::class, 'answerPayment'])->name('answerPayment');
-    Route::get('/success-payment/{uuid}', [ShopsController::class, 'successPayment'])->name('shop.success-payment');
-    Route::get('/cancel-payment/{uuid}', [ShopsController::class, 'cancelPayment'])->name('shop.cancel-payment');
-    Route::get('/shipping-price/{shop_id}', [ShopsController::class, 'shippingPrice'])->name('shop.shipping-price');
-});
-
-Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');
-Route::get('gifter-subs/{username}', [ProfileController::class, 'gifterSubs'])->name('gifter-subscriptions');
-Route::get('gifter-tips/{username}', [ProfileController::class, 'gifterTips'])->name('gifter-tips');
-Route::get('gifter-access-posts/{username}', [ProfileController::class, 'gifterAccessPosts'])->name('gifter-access-posts');
-Route::get('gifter-memberships/{username}', [ProfileController::class, 'gifterMemberships'])->name('gifter-memberships');
-Route::get('gifter-medias/{username}', [ProfileController::class, 'gifterMedia'])->name('gifter-media');
-Route::get('gifter-thanks-message/{username}', [ProfileController::class, 'gifterThanksMessages'])->name('gifter-thanks-message');
-Route::get('gifter-subscriptions/{username}', [ProfileController::class, 'gifterSubscription'])->name('gifter-subscription');
-
-// Intro video
-Route::get('/redirecting', function () {
-    return Inertia::render('Redirecting');
-})->name("redirecting");
-
-
-Route::get('my-intro/{id}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
-
-Route::get('discover', function () {
-    return Inertia::render('discover/Discover');
-})->name("discover")->middleware('mustCompletedStripeIdentity');
-Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class, 'discover_all_wishes'])->name('discover_wish');
-Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');
-Route::get('discover/creators/categories', [WishitemController::class, 'all_creators_categories'])->name('allcreators_categories');
-// Route::get('discover/creators_videos', [WishitemController::class, 'discover_creators_videos'])->name('discover_videos');
-
-
-
-
-Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
-Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity');
-Route::get('cancel-subs/{uuid}', [StripeController::class, 'cancelSubs'])->name('cancel-subs');
-Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
-    ->name('password.request');
-
-Route::get('/remove-from-cart/{uuid}', [WishitemController::class, 'removeSurpriseFromCart'])->name('remove-from-cart');
-
-Route::get('/add-to-cart/{uuid}/{device_id}/{sub}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
-
-Route::get('/clear-cart/{device_id}/{ownerid}', [WishitemController::class, 'clearCart'])->name('clear-cart');
-
-Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart')->middleware('mustCompletedStripeIdentity');
-
-Route::get('anonymous-cart/{deviceId}', [WishitemController::class, 'anonymousCartItems'])->name('anonymous-cart');
-
-Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
-
-Route::get('/create-checkout-session/{id}', [CheckoutController::class, 'createCheckout'])->name('create.checkout');
-
-Route::get('/success-checkout/{id}', [CheckoutController::class, 'successCheckout'])->name('checkout.success');
-
-Route::get('/cancel-checkout/{id}', [CheckoutController::class, 'cancelCheckout'])->name('checkout.cancel');
-
-Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class, 'categoryItems'])->name('get_category_data');
-
-Route::get('users', [MyController::class, 'getUsers'])->name('users');
-
-Route::post('/send-surprize', [WishitemController::class, 'sendSurprise'])->name('send-surprize');
-
-
-Route::get('/how-it-works', function () {
-    return Inertia::render('howitworks/Works');
-})->name("how-it-works");
-
-Route::get('/terms-and-conditions', function () {
-    return Inertia::render('Terms');
-})->name("terms-and-conditions");
-
-
-Route::get('/promotion-terms', function () {
-    return Inertia::render('Promotions');
-})->name("promotion-terms");
-
-Route::get('/files/{filename}', function (string $filename) {
-    $fullPath = asset($filename);
-    return Storage::response($fullPath);
-});
-
-Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status')->withoutMiddleware(VerifyCsrfToken::class);
-
-Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status')->withoutMiddleware(VerifyCsrfToken::class);
-
-Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-status')->withoutMiddleware(VerifyCsrfToken::class);
-
-Route::post('mandatory-status/', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status')->withoutMiddleware(VerifyCsrfToken::class);
-
 /* wishtender */
-Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('leaderboard')->middleware('mustCompletedStripeIdentity');
+Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('leaderboard');
 Route::get('first-three-leaderboard/{type?}', [LeaderBoardController::class, 'firstThreeWisher'])->name('first-three-wishes');
-
-Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
-
-Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
-    Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay");
-    Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
-    Route::get('/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');
-});
-
 /*check username exist*/
 // Route::get('/data-check', function () {
 //     $ret = StripeControl::getSubscription("sub_1OND8tG7xsNScLmXLFzAhobA");
@@ -400,6 +419,8 @@ Route::get('sociallinks/{username}', [AuthenticatedSessionController::class, 'so
 Route::get('memberships/{username}', [AuthenticatedSessionController::class, 'user_memberships'])->name('user.memberships');
 
 Route::get('bills/{username}', [AuthenticatedSessionController::class, 'user_bills'])->name('user.bills');
+
+Route::get('gift-items/{username}', [AuthenticatedSessionController::class, 'userGiftItems'])->name('gift.items');
 
 Route::get('posts/{username}', [AuthenticatedSessionController::class, 'user_posts'])->name('user.posts');
 
@@ -440,4 +461,3 @@ Route::get('image/dalle', [TestController::class, 'testAiImage'])->name("image-d
 Route::match(["get", "post"], '/test-kyc-webhook', [TestController::class, 'reviewWebhook'])->name("test-kyc")->withoutMiddleware(VerifyCsrfToken::class);
 
 Route::get('/stripe/manual-payout', [TestController::class, 'manualPayout'])->name('stripe-payout');
-

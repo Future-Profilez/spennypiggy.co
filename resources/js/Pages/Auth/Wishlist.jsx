@@ -220,10 +220,10 @@ export default function Wishlist(props) {
             errorAlert("Please choose a category for this item.");
             return false;
         }
-        if ((!editpop && data && data.reward_file == "") || null || undefined) {
-            errorAlert("Please choose a exclusive reward for this wish item.");
-            return false;
-        }
+        // if ((!editpop && data && data.reward_file == "") || null || undefined) {
+        //     errorAlert("Please choose a exclusive reward for this wish item.");
+        //     return false;
+        // }
         if (editpop) {
             post(route(`update_wish_item`, [item && item.uuid]), {
                 preserveScroll: true,
@@ -292,8 +292,8 @@ export default function Wishlist(props) {
                     <FaRegHeart color="var(--pink)" size="1.5rem" />
                 </div>
                 <div className="ps-3 text-start">
-                    <h2 className="text-md">Add Wish Item</h2>
-                    <p className="text-sm font-normal">
+                    <h2 className="text-md font-normal font-GillSans uppercase">Add Wish Items</h2>
+                    <p className="text-sm font-poppins">
                         Let fans fund your lifestyle for a reward.
                     </p>
                 </div>
@@ -594,7 +594,7 @@ export default function Wishlist(props) {
                                 </Accordion>
                             </div>
 
-                            <div className="pt-4 pb-3">
+                            {/* <div className="pt-4 pb-3">
                                 <strong className="text-start d-block">
                                     Exclusive Reward or Art commission *
                                 </strong>
@@ -646,7 +646,7 @@ export default function Wishlist(props) {
                                         />
                                     </div>
                                 </div>
-                            </div>
+                            </div> */}
 
                             {/* <div className="twitter-an mt-3 pt-2">
                                             <div className="repeatpurchase mt-1 mb-2 text-start">

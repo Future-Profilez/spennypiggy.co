@@ -25,7 +25,7 @@ class ShopBuyedUser implements ShouldQueue
      * @param bool $social = false
      * @return void
      */
-    public function __construct($payment,$url,$curr)
+    public function __construct($payment, $url, $curr)
     {
         $this->payment = $payment;
         $this->url = $url;
@@ -39,8 +39,8 @@ class ShopBuyedUser implements ShouldQueue
      */
     public function handle()
     {
-        if((isset($this->payment->user) && $this->payment->user->notification_send == 1) || (empty($this->payment->user))){
-            EmailService::shopBuyedUser($this->payment,$this->url,$this->curr);
+        if ((isset($this->payment->user) && $this->payment->user->notification_send == 1) || (empty($this->payment->user))) {
+            EmailService::shopBuyedUser($this->payment, $this->url, $this->curr);
         }
     }
 }

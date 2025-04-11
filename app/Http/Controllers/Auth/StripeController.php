@@ -19,7 +19,10 @@ use App\Jobs\SubscriptionFailed;
 use App\Jobs\TipJarMailToUser;
 use App\Jobs\TipJarPurchased;
 use App\Jobs\TipJarTweet;
+use App\Jobs\WishSubscriptionMailToUser;
+use App\Models\Bills;
 use App\Models\Currency;
+use App\Models\Membership;
 use App\Models\MonthlyCharge;
 use App\Models\Post;
 use App\Models\StripePaymentDetail;
@@ -47,6 +50,7 @@ use Stripe\StripeClient;
 use Stripe\Webhook;
 use Stripe\Identity;
 use Stripe\Identity\VerificationSession;
+use Stripe\Exception\SignatureVerificationException;
 
 class StripeController extends Controller
 {
@@ -94,12 +98,15 @@ class StripeController extends Controller
     {
         $user = User::find(Auth::id());
 
-        $sub_post = Post::where('user_id', $user->id)->where('for_module', 'subscription')->first();
-        $mem_post = Post::where('user_id', $user->id)->where('for_module', 'membership')->first();
-        $support_post = Post::where('user_id', $user->id)->where('for_module', 'support')->first();
+        // $sub_post = Post::where('user_id', $user->id)->where('for_module', 'subscription')->first();
+        // $mem_post = Post::where('user_id', $user->id)->where('for_module', 'membership')->first();
+        // $support_post = Post::where('user_id', $user->id)->where('for_module', 'support')->first();
 
-        if (empty($sub_post) || empty($mem_post) || empty($support_post)) {
-            return redirect(route("user.show", ["username" => $user->username]))->with("error", "Before connecting your stripe account, it's necessary to add one image post for your subscribers, members and supporters! So 3 in total.");
+        $membership = Membership::where('user_id', $user->id)->where('deleted_at', null)->whereIn('status', [0, 1])->whereIn('approved', [0, 1])->first();
+        $bill = Bills::where('user_id', $user->id)->where('deleted_at', null)->whereIn('status', [0, 1])->whereIn('approved', [0, 1])->first();
+
+        if (empty($membership) || empty($bill)) {
+            return redirect(route("user.show", ["username" => $user->username]))->with("error", "Before connecting your Stripe account, you need to add at least one Membership and one Bill for your fans total of at least two items.");
         }
 
         if (empty($user->account_id)) {
@@ -203,6 +210,7 @@ class StripeController extends Controller
     /* create checkout */
     public function createCheckout($owner_id)
     {
+        Log::info('Query Parameters:', request()->query());
         try {
             if (!empty(request()->query('message'))) {
                 $wordLimit = 100;
@@ -267,6 +275,7 @@ class StripeController extends Controller
                 'user_id' => Auth::id(),
                 'owner_id' => $owner_id,
                 'name' => request()->query('from') ?? '',
+                'guest_email' => request()->query('email') ?? Auth::user()->email,
                 'message' => $message ?? '',
                 'session_created' => $sessionCreate->created,
                 'session_expires_at' => $sessionCreate->expires_at,
@@ -344,6 +353,9 @@ class StripeController extends Controller
                 ]);
                 $payment_data->refresh();
                 $message = $stripeid->message;
+
+                Log::info("come at stripeController 349 line");
+
                 if ($dd->wish_item_id == NULL) {
                     CheckoutUser::dispatch($payment_data, false, $dd, $message, false);
                 } else {
@@ -539,6 +551,9 @@ class StripeController extends Controller
                 $data->refresh();
                 $value->status = 0;
                 $value->save();
+
+                Log::info("come at stripeController 547 line");
+
                 // $dd->wish_id == NULL
                 CheckoutUser::dispatch($data, true, false, false, $stripeid->name);
             }
@@ -571,6 +586,18 @@ class StripeController extends Controller
      */
     public function wishItemSubscribe(Request $request, $uuid, $reccure = 'continue')
     {
+        $user = Auth::user(); // or $requestingUser if handling guests
+
+        if (empty($user->stripe_id)) {
+            $stripeCustomer = \Stripe\Customer::create([
+                'email' => $user->email,
+                'name' => $user->name ?? null,
+            ]);
+
+            $user->stripe_id = $stripeCustomer->id;
+            $user->save();
+        }
+
         $wish = WishItem::whereUuid($uuid)->with('user')->first();
 
         if (!$wish) {
@@ -583,8 +610,12 @@ class StripeController extends Controller
         $tax = number_format($wish->tax_amount, 2);
         $price = number_format($wish->price, 2);
 
+        $adminFee = config('app.administration_fee');
+        $adminFee =   Helpers::priceFormat('GBP', $adminFee, $wish->currency);
+        $totalTax = number_format($tax + $adminFee, 2);
         $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
 
+        // dd($reccure);
         if ($reccure == 'continue') {
             if (!empty($wish->user->vat_amount_percentage)) {
                 $vat_percentage_amount = ($price + $tax) * $wish->user->vat_amount_percentage / 100;
@@ -612,15 +643,17 @@ class StripeController extends Controller
             ]);
 
             $sub = WishItemSubscription::create([
-                'wish_item_id'  =>  $wish->id,
-                'user_id'       =>  Auth::id(),
-                'guest_name'    =>  $request->name ?? NULL,
-                'guest_email'   =>  $request->email,
-                'currency'      =>  $wish->currency,
-                'amount'        =>  $wish->price,
-                'tax'           =>  $wish->tax_amount,
-                'recurring_for' =>  $reccure,
+                'wish_item_id'   =>  $wish->id,
+                'user_id'        =>  Auth::id(),
+                'guest_name'     =>  $request->name ?? NULL,
+                'guest_email'    =>  $request->email,
+                'currency'       =>  $wish->currency,
+                'amount'         =>  $wish->price,
+                'tax'            =>  $totalTax,
+                'vat_tax_amount' =>  ceil($vat_percentage_amount),
+                'recurring_for'  =>  $reccure,
                 'recurring_type' =>  $wish->subscription_period,
+                'payment_method' =>  'stripe',
                 'surprise_message'  =>  $request->message ?? NULL,
                 'anonymous' => $request->anonymous ?? 0
             ]);
@@ -638,14 +671,19 @@ class StripeController extends Controller
             // } else {
 
             $amount = $price + $tax;
-            $unit_amount = Helpers::priceFormat($wish->currency, $amount, $currency) * 100;
+            $unit_amount = Helpers::priceFormat($wish->currency, $amount, $currency);
             $tax =   Helpers::priceFormat($wish->currency, $tax, $currency);
+
+            $adminFee = config('app.administration_fee');
+            $adminFee =   Helpers::priceFormat('GBP', $adminFee, $currency);
+            $total_unit_amount = $unit_amount + $adminFee;
+
             $items  =   [
                 'quantity'      =>  1,
                 'price_data'    =>   [
                     'currency'  =>  $currency,
                     'product'   =>  $wish->stripe_product_id,
-                    'unit_amount_decimal'   =>  $unit_amount,
+                    'unit_amount_decimal'   =>  $total_unit_amount * 100,
                     'recurring' =>  [
                         'interval'  =>  StripeControl::$periods[$wish->subscription_period],
                         'interval_count'    =>  1
@@ -668,7 +706,7 @@ class StripeController extends Controller
                     // 'description'   => "Subscription for {$wish->wishname} of {$wish->user->username}."
                     'description'   => "Membership Content Purchase."
                 ],
-                'customer_email'    =>  $request->email,
+                'customer' => $user->stripe_id,
                 'success_url'       =>  route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
                 'cancel_url'       =>  route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
             ];
@@ -688,8 +726,6 @@ class StripeController extends Controller
             //     'success'   => true,
             //     'session'   => $session
             // ]);
-
-
         }
 
         return Inertia::render('cart/SubCheckout', [
@@ -717,8 +753,20 @@ class StripeController extends Controller
         }
         try {
             $session = StripeControl::getCheckoutSession($sub->session_id);
+
             $sub->status = $session->payment_status;
             if ($session->payment_status == 'paid') {
+
+                $symbol = Currency::where('iso', strtoupper($sub->currency))->first();
+                $creatorAmount = $sub->amount + $sub->vat_tax_amount;
+                $creatorFinalAmount = $symbol->symbol . $creatorAmount;
+                $amountTotal = $symbol->symbol . $sub->amount;
+                $creator_name = $sub->wish_item->user->name;
+                $mailToSend = $sub->guest_email;
+
+                // wish subscription mail send to user
+                WishSubscriptionMailToUser::dispatch($sub, $mailToSend, $amountTotal, $creator_name);
+
                 $sub->stripe_id = $session->subscription;
                 $current = Carbon::now();
                 if ($sub->recurring_type == 'daily') {
@@ -736,7 +784,7 @@ class StripeController extends Controller
                 if ($sub->recurring_for == 'onetime') {
                     SubscriptionCancelAtEnd::dispatch($sub);
                 } else {
-                    SubscribedMail::dispatch($sub);
+                    SubscribedMail::dispatch($sub, $creatorFinalAmount);
                 }
 
                 if ($sub->wish_item->user->auto_tweet == 1) {
@@ -830,6 +878,7 @@ class StripeController extends Controller
                 $newSubs->tax = $subs->tax;
                 $newSubs->recurring_for = $subs->recurring_for;
                 $newSubs->recurring_type = $subs->recurring_type;
+                $newSubs->payment_method = 'stripe';
                 $newSubs->surprise_message = $subs->surprise_message;
                 $newSubs->anonymous = $subs->anonymous;
                 $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
@@ -927,7 +976,6 @@ class StripeController extends Controller
                 ]
             ]);
 
-            $amount = $request->amount;
 
             // if ($amount < $goal->default_price) {
             //     return redirect()->back()->with('error', "Please enter amount greater than $goal->default_price.");
@@ -938,35 +986,34 @@ class StripeController extends Controller
             //     return redirect()->back()->with('error', "This tip jar only needs $remaining_amount to complete the goal.");
             // }
 
-            // $price = Helpers::priceFormat($currency, $amount, $creator->default_currency);
             // $min_amount = $goal->default_price < 5 ? 5 : $goal->default_price;
             // $user_amount = Helpers::priceFormat($goal->currency,$min_amount,$currency);
             // if($price < $min_amount){
             //     return redirect()->back()->with("error", "Enter minimum $user_amount amount.");
             // }
 
-            // $tax = round(($price * config('app.jar_tax') / 100), 2, PHP_ROUND_HALF_UP);
-
-
-            // Combine tax percentage and admin fee percentage
-            // $totalTaxPercentage = $taxPercentage + $adminFeePercentage;
-
-            // Fetch tax and administration fee percentage from the configuration
-            $taxPercentage = config('app.jar_tax'); // Tax percentage
+            $amount = $request->amount;
             $adminFeeAmount = config('app.administration_fee', 1); // Administration fee percentage
 
-            // Calculate tax amount and total price
+            // define variable to store in db
+            $price = Helpers::priceFormat($currency, $amount, $creator->default_currency);
+            $tax = round(($price * config('app.jar_tax') / 100), 2, PHP_ROUND_HALF_UP);
+            $adminFeeForStoreDB = Helpers::priceFormat('GBP', $adminFeeAmount, $creator->default_currency);
+            $totalTaxForDB = $tax + $adminFeeForStoreDB;
+            $totalAmountForStoreDB = $price + $totalTaxForDB;
+
+            // define variable to show and pay on payment page
+            $taxPercentage = config('app.jar_tax'); // Tax percentage
+            $adminFeeForPay = Helpers::priceFormat('GBP', $adminFeeAmount, $currency);
             $taxAmount = round(($amount * $taxPercentage / 100), 2, PHP_ROUND_HALF_UP); // Tax based on combined percentage
-            $totalTaxAmount = $taxAmount + $adminFeeAmount;
-            $totalPrice = round($amount + $taxAmount + $adminFeeAmount, 2, PHP_ROUND_HALF_UP);
-            $final_price = Helpers::priceFormat($creator->default_currency, $totalPrice, $currency);
+            $totalTaxForPay = $taxAmount + $adminFeeForPay;
+            $totalPrice = round($amount + $totalTaxForPay, 2, PHP_ROUND_HALF_UP);
 
             try {
-
                 $stripe_client = StripeControl::createProduct([
                     'name' => $goal->name ?? 'Support-creator',
                     'images' => ["https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/"],
-                    "default_price_data" => ["currency" => strtolower($creator->default_currency), "unit_amount_decimal" => $totalPrice * 100],
+                    "default_price_data" => ["currency" => strtolower($creator->default_currency), "unit_amount_decimal" => $totalAmountForStoreDB * 100],
                 ]);
             } catch (Exception $e) {
                 return response()->json([
@@ -982,8 +1029,8 @@ class StripeController extends Controller
                 'guest_name'    =>  $request->name,
                 'guest_email'    =>  $request->email,
                 'currency'      =>  $creator->default_currency,
-                'amount'        =>  $amount,
-                'tax'           =>  $totalTaxAmount,
+                'amount'        =>  $price,
+                'tax'           =>  $totalTaxForDB,
                 'message'  =>  $request->message ?? NULL,
                 'anonymous' => $request->anonymous ?? 0,
                 'product_id' => $stripe_client->id
@@ -998,7 +1045,7 @@ class StripeController extends Controller
                         'price_data' => [
                             'currency' => $currency,
                             'product' => $stripe_client->id,
-                            'unit_amount_decimal' => $final_price * 100
+                            'unit_amount_decimal' => $totalPrice * 100
                         ]
                     ]
                 ],
@@ -1006,7 +1053,7 @@ class StripeController extends Controller
                     'transfer_data' => [
                         'destination' => $creator->account_id, // Creator's connected account ID
                     ],
-                    'application_fee_amount' => $totalTaxAmount * 100,
+                    'application_fee_amount' => $totalTaxForPay * 100,
                     // 'on_behalf_of'  => $creator->account_id,
                     'description' => "Supporter Membership Payment."
                 ],
@@ -1060,7 +1107,7 @@ class StripeController extends Controller
             if ($session->payment_status == 'paid') {
                 $ownerCurrency = Currency::where('iso', strtoupper($tip_pay->currency))->first();
                 $userCurrency = Currency::where('iso', strtoupper($currency))->first();
-                $userAmount = Helpers::priceFormat($tip_pay->currency, ($tip_pay->amount + $tip_pay->tax), $currency);
+                $userAmount = Helpers::priceFormat($tip_pay->currency, $tip_pay->amount, $currency);
 
                 TipJarPurchased::dispatch($tip_pay, $ownerCurrency->symbol);
                 TipJarMailToUser::dispatch($tip_pay, $userCurrency->symbol, $userAmount);
@@ -1137,95 +1184,152 @@ class StripeController extends Controller
      */
     public function payMonthlyCharge(Request $request)
     {
-
         $currency = strtolower($request->cookie("currency", "GBP"));
         $price = 4.00;
         $tax = round(($price * 20 / 100), 2, PHP_ROUND_HALF_UP);
-
         $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
 
-        // if ($request->isMethod("POST")) {
-        // $request->validate([
-        //     'name' => [
-        //         'nullable',
-        //         'sometimes',
-        //         'string',
-        //         'max:50'
-        //     ],
-        //     'email' =>  [
-        //         'required',
-        //         'email:dns'
-        //     ],
-        //     'message' =>  [
-        //         'sometimes',
-        //         'nullable',
-        //         'string',
-        //         'max:800'
-        //     ]
-        // ]);
         $user = User::where('id', Auth::id())->first();
         $sub = MonthlyCharge::create([
-            'user_id'       =>  $user->id,
-            'name'    =>  $user->name ?? NULL,
-            'email'   =>  $user->email,
-            'currency'      =>  "GBP",
-            'amount'        =>  $price,
-            'tax'   =>  $tax,
+            'user_id'   =>  $user->id,
+            'name'      =>  $user->name ?? NULL,
+            'email'     =>  $user->email,
+            'currency'  =>  "GBP",
+            'amount'    =>  $price,
+            'tax'       =>  $tax,
         ]);
 
         $amount = $price + $tax;
-        $unit_amount = Helpers::priceFormat("GBP", $amount, $currency) * 100;
-        $items  =   [
-            'quantity'      =>  1,
-            'price_data'    =>   [
-                'currency'  =>  $currency,
-                'product'   =>  env("SUBSCRIPTION_4_PRODUCT_ID"),
-                'unit_amount_decimal'   =>  $unit_amount,
-                'recurring' =>  [
-                    'interval'  =>  StripeControl::$periods["monthly"],
-                    'interval_count'    =>  1
-                ]
-            ]
-        ];
-        // }
+        $unit_amount = round(Helpers::priceFormat("GBP", $amount, $currency) * 100); // Ensure integer
+
+        $trial_period_days = 3; // 3-day free trial
+
         $payload = [
             "mode"  =>  'subscription',
-            "currency"  =>  strtolower($request->cookie("currency", "GBP")),
-            'line_items' =>  [$items],
+            "currency"  =>  $currency,
+            'line_items' =>  [[
+                'quantity' => 1,
+                'price_data' => [
+                    'currency' => $currency,
+                    'product' => env("SUBSCRIPTION_4_PRODUCT_ID"),
+                    'unit_amount' => $unit_amount, // Ensure integer
+                    'recurring' => [
+                        'interval' => StripeControl::$periods["monthly"],
+                        'interval_count' => 1
+                    ]
+                ]
+            ]],
             'subscription_data' =>  [
-                // 'application_fee_percent'   =>  100,
-                // 'transfer_data' => [
-                //     'destination' => "acct_1OOc6oCmFHIIsmOr", // Creator's connected account ID
-                // ],
-                // 'on_behalf_of'  => "acct_1OOc6oCmFHIIsmOr",
-                'description'   => "Subscription for using site through stripe."
+                'trial_period_days' => $trial_period_days, // 3-day trial (REMOVED billing_cycle_anchor)
+                'description' => "Subscription for using site through Stripe."
             ],
-            'customer_email'    =>  $user->email,
-            'success_url'       =>  route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
-            'cancel_url'       =>  route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
+            'customer_email' => $user->email,
+            'success_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
+            'cancel_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
         ];
 
         try {
             $session = StripeControl::createCheckoutSession($payload);
-            $sub->update([
-                'session_id' =>  $session->id
-            ]);
+            $sub->update(['session_id' => $session->id]);
 
             return Inertia::location($session->url);
         } catch (Exception $e) {
             $sub->delete();
             return back()->with('error', $e->getMessage());
         }
-        // return response()->json([
-        //     'success'   => true,
-        //     'session'   => $session
-        // ]);
-
-
-        // }
-
-        // return Inertia::render('cart/SubCheckout');
     }
+
+    // public function payMonthlyCharge(Request $request)
+    // {
+
+    //     $currency = strtolower($request->cookie("currency", "GBP"));
+    //     $price = 4.00;
+    //     $tax = round(($price * 20 / 100), 2, PHP_ROUND_HALF_UP);
+
+    //     $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
+
+    //     // if ($request->isMethod("POST")) {
+    //     // $request->validate([
+    //     //     'name' => [
+    //     //         'nullable',
+    //     //         'sometimes',
+    //     //         'string',
+    //     //         'max:50'
+    //     //     ],
+    //     //     'email' =>  [
+    //     //         'required',
+    //     //         'email:dns'
+    //     //     ],
+    //     //     'message' =>  [
+    //     //         'sometimes',
+    //     //         'nullable',
+    //     //         'string',
+    //     //         'max:800'
+    //     //     ]
+    //     // ]);
+    //     $user = User::where('id', Auth::id())->first();
+    //     $sub = MonthlyCharge::create([
+    //         'user_id'       =>  $user->id,
+    //         'name'    =>  $user->name ?? NULL,
+    //         'email'   =>  $user->email,
+    //         'currency'      =>  "GBP",
+    //         'amount'        =>  $price,
+    //         'tax'   =>  $tax,
+    //     ]);
+
+    //     $amount = $price + $tax;
+    //     $unit_amount = Helpers::priceFormat("GBP", $amount, $currency) * 100;
+    //     $items  =   [
+    //         'quantity'      =>  1,
+    //         'price_data'    =>   [
+    //             'currency'  =>  $currency,
+    //             'product'   =>  env("SUBSCRIPTION_4_PRODUCT_ID"),
+    //             'unit_amount_decimal'   =>  $unit_amount,
+    //             'recurring' =>  [
+    //                 'interval'  =>  StripeControl::$periods["monthly"],
+    //                 'interval_count'    =>  1
+    //             ]
+    //         ]
+    //     ];
+    //     // }
+    //     $payload = [
+    //         "mode"  =>  'subscription',
+    //         "currency"  =>  strtolower($request->cookie("currency", "GBP")),
+    //         'line_items' =>  [$items],
+    //         'subscription_data' =>  [
+    //             // 'application_fee_percent'   =>  100,
+    //             // 'transfer_data' => [
+    //             //     'destination' => "acct_1OOc6oCmFHIIsmOr", // Creator's connected account ID
+    //             // ],
+    //             // 'on_behalf_of'  => "acct_1OOc6oCmFHIIsmOr",
+    //             'description'   => "Subscription for using site through stripe."
+    //         ],
+    //         'customer_email'    =>  $user->email,
+    //         'success_url'       =>  route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
+    //         'cancel_url'       =>  route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
+    //     ];
+
+    //     try {
+    //         $session = StripeControl::createCheckoutSession($payload);
+    //         $sub->update([
+    //             'session_id' =>  $session->id
+    //         ]);
+
+    //         return Inertia::location($session->url);
+    //     } catch (Exception $e) {
+    //         $sub->delete();
+    //         return back()->with('error', $e->getMessage());
+    //     }
+    //     // return response()->json([
+    //     //     'success'   => true,
+    //     //     'session'   => $session
+    //     // ]);
+
+
+    //     // }
+
+    //     // return Inertia::render('cart/SubCheckout');
+    // }
 
 
     /**
@@ -1238,7 +1342,6 @@ class StripeController extends Controller
     public function handleMandatorySubscription($uuid, $status)
     {
         $sub = MonthlyCharge::whereUuid($uuid)->first();
-        Log::info("sub data - " . $sub);
         if (!$sub) {
             return to_route('home')->with("error", 'Insufficient data!');
         }
@@ -1273,84 +1376,275 @@ class StripeController extends Controller
         }
     }
 
+    /**
+     * Handle Stripe Webhook for mandatory subscription status
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function mandatorySubscriptionStatus(Request $request)
     {
+        Log::info('Webhook received: ' . json_encode($request->all()));
 
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-
-        // This is your Stripe CLI webhook secret for testing your endpoint locally.
-        $endpoint_secret = 'whsec_JhA8Jabgen1oYBOg9YZuCc8jenon9XoU';
+        $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
 
         $payload = @file_get_contents('php://input');
         $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
         $event = null;
 
         try {
-            $event = Webhook::constructEvent(
-                $payload,
-                $sig_header,
-                $endpoint_secret
-            );
-        } catch (\UnexpectedValueException $e) {
-            // Invalid payload
-            http_response_code(400);
-            exit();
-        } catch (\Stripe\Exception\SignatureVerificationException $e) {
-            // Invalid signature
-            http_response_code(400);
-            exit();
+            $event = Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
+        } catch (\UnexpectedValueException | SignatureVerificationException $e) {
+            Log::error("Webhook signature verification failed: " . $e->getMessage());
+            return response()->json(['error' => 'Invalid signature'], 400);
         }
 
-        $array = [];
+        Log::info(json_encode($event, true));
+
         if (!empty($event)) {
-            $subs = MonthlyCharge::where('stripe_id', $event->data->object->subscription)->first();
+            $subscriptionId = data_get($event, 'data.object.subscription');
+            $customerEmail = data_get($event, 'data.object.customer_email');
+            $customerName = data_get($event, 'data.object.customer_name');
+            $invoicePdf = data_get($event, 'data.object.invoice_pdf');
 
-            $ret = StripeControl::getSubscription($event->data->object->subscription);
+            // $subs = MonthlyCharge::where('stripe_id', $event['data']['object']['id'])->first();
+            $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->first();
+            Log::info($event['data']['object']['id']);
 
-            if ($event->type == "invoice.updated" && !empty($subs)) {
+            try {
+                // $ret = StripeControl::getSubscription($subscriptionId);
+                $ret = StripeControl::getSubscription($subscriptionId);
+            } catch (\Exception $e) {
+                Log::error("Failed to retrieve subscription: " . $e->getMessage());
+                return response()->json(['error' => 'Failed to retrieve subscription'], 500);
+            }
 
+            if ($subs) {
                 $array = [
-                    'email' => $event->data->object->customer_email,
-                    'name' => $event->data->object->customer_name,
-                    'invoice_pdf' => $event->data->object->invoice_pdf,
+                    'email' => $customerEmail,
+                    'name' => $customerName,
+                    'invoice_pdf' => $invoicePdf,
                     'uuid' => $subs->uuid,
-                    'notification' => $subs->user->notification_send ?? 0
+                    'notification' => $subs->user->notification_send ?? 0,
                 ];
 
-                $subs->status = "ended";
-                $subs->save();
+                switch ($event->type) {
+                    case "customer.subscription.trial_will_end":
+                        $subs->status = "trial_ending";
+                        $subs->save();
+                        SendRenewMail::dispatch($array, 'trial_ending', 'site');
+                        break;
 
-                $newSubs = new MonthlyCharge();
-                $newSubs->stripe_id = $subs->stripe_id;
-                $newSubs->session_id = $subs->session_id;
-                $newSubs->user_id = $subs->user_id;
-                $newSubs->name = $subs->name;
-                $newSubs->email = $subs->email;
-                $newSubs->currency = $subs->currency;
-                $newSubs->amount = $subs->amount;
-                $newSubs->tax = $subs->tax;
-                $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
-                $newSubs->status = "paid";
-                $newSubs->created_at = $subs->created_at;
-                $newSubs->updated_at = $subs->updated_at;
-                $newSubs->save();
+                    case "invoice.paid":
+                        $subs->status = "paid";
+                        $subs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+                        $subs->save();
+                        break;
 
-                SendRenewMail::dispatch($array, 'renew', 'site');
-            } elseif ($event->type == "customer.subscription.deleted" && !empty($subs)) {
-                $subs->status = 'cancelled';
-                $subs->save();
 
-                SendRenewMail::dispatch($array, 'cancelled', 'site');
-            } elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
-                $subs->status = 'failed';
-                $subs->save();
+                    case "invoice.payment_succeeded":
+                        $subs->status = "paid";
+                        $subs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+                        $subs->save();
+                        break;
 
-                SendRenewMail::dispatch($array, 'failed', 'site');
+                    case "customer.subscription.deleted":
+                        $subs->status = "cancelled";
+                        $subs->save();
+                        SendRenewMail::dispatch($array, 'cancelled', 'site');
+                        break;
+
+                    case "invoice.payment_failed":
+                        $subs->status = "failed";
+                        $subs->save();
+                        SendRenewMail::dispatch($array, 'failed', 'site');
+                        break;
+
+                    // if ($event->type == "invoice.updated" && !empty($subs)) {
+                    case "invoice.updated":
+
+                        $array = [
+                            'email' => $event->data->object->customer_email,
+                            'name' => $event->data->object->customer_name,
+                            'invoice_pdf' => $event->data->object->invoice_pdf,
+                            'uuid' => $subs->uuid,
+                            'notification' => $subs->user->notification_send ?? 0
+                        ];
+
+                        $subs->status = "ended";
+                        $subs->save();
+
+                        $newSubs = new MonthlyCharge();
+                        $newSubs->stripe_id = $subs->stripe_id;
+                        $newSubs->session_id = $subs->session_id;
+                        $newSubs->user_id = $subs->user_id;
+                        $newSubs->name = $subs->name;
+                        $newSubs->email = $subs->email;
+                        $newSubs->currency = $subs->currency;
+                        $newSubs->amount = $subs->amount;
+                        $newSubs->tax = $subs->tax;
+                        $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+                        $newSubs->status = "paid";
+                        $newSubs->created_at = $subs->created_at;
+                        $newSubs->updated_at = $subs->updated_at;
+                        $newSubs->save();
+
+                        SendRenewMail::dispatch($array, 'renew', 'site');
+                        break;
+                    // }
+
+                    default:
+                        Log::info("Unhandled event type: {$event->type}");
+                        break;
+                }
             }
         }
 
-        return true;
+        return response()->json(['status' => 'success']);
     }
+    // public function mandatorySubscriptionStatus(Request $request)
+    // {
+    //     Log::info('Webhook received: ' . json_encode($request->all()));
+    //     $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+    //     $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
+
+    //     $payload = @file_get_contents('php://input');
+    //     $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
+    //     $event = $request->all();
+
+    //     // try {
+    //     //     $event = Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
+    //     // } catch (\UnexpectedValueException | \Stripe\Exception\SignatureVerificationException $e) {
+    //     //     http_response_code(400);
+    //     //     exit();
+    //     // }
+
+    //     if (!empty($event)) {
+    //         $subs = MonthlyCharge::where('stripe_id', $event['data']['object']['subscription'])->first();
+    //         $ret = StripeControl::getSubscription($event['data']['object']['subscription']);
+
+    //         if (!empty($subs)) {
+    //             $array = [
+    //                 'email' => $event['data']['object']['customer_email'],
+    //                 'name' => $event['data']['object']['customer_name'],
+    //                 'invoice_pdf' => $event['data']['object']['invoice_pdf'],
+    //                 'uuid' => $subs->uuid,
+    //                 'notification' => $subs->user->notification_send ?? 0
+    //             ];
+
+    //             // Handle Trial Ending Event
+    //             if ($event['type'] == "customer.subscription.trial_will_end") {
+    //                 $subs->status = "trial_ending";
+    //                 $subs->save();
+    //                 SendRenewMail::dispatch($array, 'trial_ending', 'site');
+    //             }
+
+    //             // Handle Subscription Renewal (After Trial Ends)
+    //             elseif ($event['type'] == "invoice.payment_succeeded") {
+    //                 $subs->status = "paid";
+    //                 $subs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+    //                 $subs->save();
+    //             }
+
+    //             // Handle Subscription Cancellation
+    //             elseif ($event['type'] == "customer.subscription.deleted") {
+    //                 $subs->status = "cancelled";
+    //                 $subs->save();
+    //                 SendRenewMail::dispatch($array, 'cancelled', 'site');
+    //             }
+
+    //             // Handle Payment Failure
+    //             elseif ($event['type'] == "invoice.payment_failed") {
+    //                 $subs->status = "failed";
+    //                 $subs->save();
+    //                 SendRenewMail::dispatch($array, 'failed', 'site');
+    //             }
+    //         }
+    //     }
+
+    //     return response()->json(['status' => 'success']);
+    // }
+
+
+    // public function mandatorySubscriptionStatus(Request $request)
+    // {
+
+    //     $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+
+    //     // This is your Stripe CLI webhook secret for testing your endpoint locally.
+    //     $endpoint_secret = 'whsec_JhA8Jabgen1oYBOg9YZuCc8jenon9XoU';
+
+    //     $payload = @file_get_contents('php://input');
+    //     $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
+    //     $event = null;
+
+    //     try {
+    //         $event = Webhook::constructEvent(
+    //             $payload,
+    //             $sig_header,
+    //             $endpoint_secret
+    //         );
+    //     } catch (\UnexpectedValueException $e) {
+    //         // Invalid payload
+    //         http_response_code(400);
+    //         exit();
+    //     } catch (\Stripe\Exception\SignatureVerificationException $e) {
+    //         // Invalid signature
+    //         http_response_code(400);
+    //         exit();
+    //     }
+
+    //     $array = [];
+    //     if (!empty($event)) {
+    //         $subs = MonthlyCharge::where('stripe_id', $event->data->object->subscription)->first();
+
+    //         $ret = StripeControl::getSubscription($event->data->object->subscription);
+
+    //         if ($event->type == "invoice.updated" && !empty($subs)) {
+
+    //             $array = [
+    //                 'email' => $event->data->object->customer_email,
+    //                 'name' => $event->data->object->customer_name,
+    //                 'invoice_pdf' => $event->data->object->invoice_pdf,
+    //                 'uuid' => $subs->uuid,
+    //                 'notification' => $subs->user->notification_send ?? 0
+    //             ];
+
+    //             $subs->status = "ended";
+    //             $subs->save();
+
+    //             $newSubs = new MonthlyCharge();
+    //             $newSubs->stripe_id = $subs->stripe_id;
+    //             $newSubs->session_id = $subs->session_id;
+    //             $newSubs->user_id = $subs->user_id;
+    //             $newSubs->name = $subs->name;
+    //             $newSubs->email = $subs->email;
+    //             $newSubs->currency = $subs->currency;
+    //             $newSubs->amount = $subs->amount;
+    //             $newSubs->tax = $subs->tax;
+    //             $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+    //             $newSubs->status = "paid";
+    //             $newSubs->created_at = $subs->created_at;
+    //             $newSubs->updated_at = $subs->updated_at;
+    //             $newSubs->save();
+
+    //             SendRenewMail::dispatch($array, 'renew', 'site');
+    //         } elseif ($event->type == "customer.subscription.deleted" && !empty($subs)) {
+    //             $subs->status = 'cancelled';
+    //             $subs->save();
+
+    //             SendRenewMail::dispatch($array, 'cancelled', 'site');
+    //         } elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
+    //             $subs->status = 'failed';
+    //             $subs->save();
+
+    //             SendRenewMail::dispatch($array, 'failed', 'site');
+    //         }
+    //     }
+
+    //     return true;
+    // }
 
 
     public function createVerificationSession(Request $request)

@@ -40,11 +40,21 @@ import "react-tabs-scrollable/dist/rts.css";
 import ProfileSteps from "./Profile/ProfileSteps";
 import ProfileProductLists from "./shop/profile/ProfileProductLists";
 import AddItem from "./shop/AddItem";
+import AddGift from "./feed/AddGift";
+import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css';
+import { Autoplay, Pagination, Navigation } from 'swiper/modules';
+import PriceFormat from "@/includes/PriceFormat";
+import GiftListing from "./rye/GiftListing";
+
 
 export default function Dashboard(props) {
 
     const parsePageId = (path) => path.substring(path.lastIndexOf('/') + 1)
     const pageId = parsePageId(window.location.pathname);
+      const { format, formatMultiPrice } = PriceFormat();
+      const {ziggy}=props;
+      console.log("ziggy",ziggy);
 
 
 
@@ -63,9 +73,11 @@ export default function Dashboard(props) {
     const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
     const [loading, setLoading] = useState(false);
+    const [giftsloading, setGiftsLoading] = useState(false);
     const [socialLinks, setSocialLinks] = useState([]);
     const [sLinks, setLinks] = useState([]);
     const [categories, setcategories] = useState([]);
+    const [gifts, setGifts] = useState([]);
 
     const fetch_categories = async (signal) => {
         axios.get(`/user_category/${username}`, { signal })
@@ -73,6 +85,20 @@ export default function Dashboard(props) {
             setcategories(resp.data.categories);
         }).catch((_err) => {
             console.error("error", _err);
+        });
+    };
+
+    const fetch_gifts = async (signal) => {
+        setGiftsLoading(true);
+        axios.get(`/gift-items/${username}`, { signal })
+        .then((resp) => {
+            // console.log("resp",resp?.data);
+            // let details=JSON.parse(resp?.data?.items[0]?.details);
+            setGifts(resp?.data?.items);
+            setGiftsLoading(false);
+        }).catch((_err) => {
+            console.error("error", _err);
+            setGiftsLoading(false);
         });
     };
 
@@ -107,6 +133,10 @@ export default function Dashboard(props) {
         const { signal } = controller;
         if(tab == '1'){
             fetch_categories(signal);
+            fetchingcats(false, signal);
+        }
+        if(tab == '6'){
+            fetch_gifts(signal);
             fetchingcats(false, signal);
         }
         return () => controller.abort();
@@ -317,25 +347,30 @@ export default function Dashboard(props) {
                 {showAdd ?
                     <div className="bg-[#0001] rounded-xl position-fixed shadow-lg z-[99999999999999999999] flex justify-center items-center
                      top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full">
-                        <div className="w-full max-w-[550px] px-3">
+                        <div className="w-full max-w-[550px]  px-3">
                             <Suspense fallback={"Loading.."}>
-                                <div className="bg-gray-100 w-full p-6 md:p-10 rounded-3xl shadow-lg z-10 w-full ">
+                                <div className="bg-gray-100 w-full p-6 md:p-10 rounded-3xl shadow-lg z-10">
                                     <h2 className="font-bold text-black  text-xl md:text-2xl mb-4 text-center m-auto ">Add Item to fund your lifestyle.</h2>
-                                    {auth.user && auth.user.stripe_details_submitted == 1 ?
-                                        <>
-                                            <Wishlist
-                                            fetchcategories={fetch_categories}
-                                            currency={global_currency}
-                                            setuped={auth.user &&auth.user.stripe_details_submitted == 1 ? true : false}
-                                            fetchingcats={fetchingcats}
-                                            categories={categories} />
-                                            <AddMembership updateState={updateState} />
-                                            <AddBills updatebill={updatebill}/>
-                                            <AddItem  classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
-                                            product_type="digital_products"  />
-                                        </>
-                                    : '' }
-                                    <AddPost classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} />
+                                    <div className="max-h-[40vh] overflow-y-auto">
+                                        {auth.user && auth.user.stripe_details_submitted == 1 ?
+                                            <>
+                                                <Wishlist
+                                                fetchcategories={fetch_categories}
+                                                currency={global_currency}
+                                                setuped={auth.user &&auth.user.stripe_details_submitted == 1 ? true : false}
+                                                fetchingcats={fetchingcats}
+                                                categories={categories} />
+                                                <AddItem  classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
+                                                product_type="digital_products"  />
+                                            <AddPost classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} />
+                                            {ziggy && ziggy.url !== 'https://spennypiggy.co' &&
+                                                <AddGift classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} fetch_gifts={fetch_gifts} addressAdded={auth?.user?.is_creator_address_found} />
+                                            }
+                                            </>
+                                        : '' }
+                                        <AddMembership updateState= {updateState} />
+                                        <AddBills updatebill={updatebill}/>
+                                    </div>
                                     <button onClick={()=>setShowAdd(false)} className="m-auto table p-2 mt-3"  >Cancel</button>
                                 </div>
                             </Suspense>
@@ -403,6 +438,7 @@ export default function Dashboard(props) {
                                                         <Tab key="3" >Membership</Tab>
                                                         <Tab key="4" >Bills</Tab>
                                                         <Tab key="5" >Shop</Tab>
+                                                        <Tab key="6" >Gift Item</Tab>
                                                     </Tabs>
                                                     {IsloggedIn ? <Toggle /> : ''}
                                                 </div>
@@ -515,66 +551,14 @@ export default function Dashboard(props) {
                                                                     <>
                                                                         {its &&
                                                                         its.length ? (
-                                                                            <DndContext
-                                                                                sensors={
-                                                                                    sensors
-                                                                                }
-                                                                                collisionDetection={
-                                                                                    closestCenter
-                                                                                }
-                                                                                onDragEnd={
-                                                                                    handleDragEnd
-                                                                                }
-                                                                            >
-                                                                                <SortableContext
-                                                                                    strategy={
-                                                                                        rectSortingStrategy
-                                                                                    }
-                                                                                    items={
-                                                                                        its
-                                                                                    }
-                                                                                >
-                                                                                    {!loading &&
-                                                                                        its.map(
-                                                                                            (
-                                                                                                c,
-                                                                                                i
-                                                                                            ) => {
+                                                                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                                                                <SortableContext strategy={rectSortingStrategy} items={its}>
+                                                                                    {!loading && its.map((c, i) => {
                                                                                                 return (
-                                                                                                    <Wishlistbox
-                                                                                                        key={`wish-item-${i}`}
-                                                                                                        classes="col-xl-3 col-lg-3 col-md-4 col-6"
-                                                                                                        currency={
-                                                                                                            global_currency
-                                                                                                        }
-                                                                                                        fetchingcats={
-                                                                                                            fetchingcats
-                                                                                                        }
-                                                                                                        categories={
-                                                                                                            categories
-                                                                                                        }
-                                                                                                        IsloggedIn={
-                                                                                                            IsloggedIn
-                                                                                                        }
-                                                                                                        auth={
-                                                                                                            auth.user
-                                                                                                        }
-                                                                                                        itemid={
-                                                                                                            itemid
-                                                                                                        }
-                                                                                                        setuped={
-                                                                                                            auth &&
-                                                                                                            auth.user &&
-                                                                                                            auth
-                                                                                                                .user
-                                                                                                                .stripe_details_submitted ==
-                                                                                                                1
-                                                                                                                ? true
-                                                                                                                : false
-                                                                                                        }
-                                                                                                        itm={
-                                                                                                            c
-                                                                                                        }
+                                                                                                    <Wishlistbox key={`wish-item-${i}`} classes="col-xl-3 col-lg-3 col-md-4 col-6"
+                                                                                                        currency={global_currency} fetchingcats={fetchingcats} categories={categories} IsloggedIn={IsloggedIn}
+                                                                                                        auth={auth.user} itemid={itemid} setuped={auth && auth.user && auth.user.stripe_details_submitted == 1
+                                                                                                                ? true : false} itm={c}
                                                                                                     />
                                                                                                 );
                                                                                             }
@@ -645,6 +629,31 @@ export default function Dashboard(props) {
                                                             )}
                                                         </Suspense>
                                                     : "" }
+
+                                                    {tab == '6' ?
+                                                     <Suspense fallback={<LoadingScreen />}>
+                                                     {giftsloading ? (
+                                                       <LoadingScreen />
+                                                     ) : gifts && gifts.length > 0 ? (
+                                                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+                                                         {gifts.map((gift) => {
+                                                           const details = JSON.parse(gift.details); // Parse the details JSON
+                                                           return(
+                                                            <>
+                                                            {(IsloggedIn || gift?.deleted_at === null) &&
+                                                           <GiftListing key={gift.id} gift={gift} details={details} user={user} IsloggedIn={IsloggedIn} fetch_gifts={fetch_gifts} auth={auth} />}
+                                                           </>
+                                                        );
+                                                         })}
+                                                       </div>
+                                                     ) : (
+                                                       <div className="col-md-12">
+                                                         <Nocontent text="Nothing to see." />
+                                                       </div>
+                                                     )}
+                                                   </Suspense>
+
+                                                    : ''}
                                                 </div>
                                         </div>
                                     </div>

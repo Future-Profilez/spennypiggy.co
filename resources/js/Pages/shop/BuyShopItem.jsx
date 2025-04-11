@@ -101,7 +101,7 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
                window.location.href = res.data.url;
             } else {
                setLoading(false);
-               errorAlert('Something went wrong');
+               errorAlert(res.data.message || 'Something went wrong');
             }
           }).catch(err => {
               setLoading(false);
@@ -114,7 +114,7 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
                window.location.href = res.data.url;
             } else {
                setLoading(false);
-               errorAlert('Something went wrong');
+               errorAlert(res.data.message || 'Something went wrong');
             }
           }).catch(err => {
               setLoading(false);
@@ -136,10 +136,10 @@ export default function BuyShopItem({vat_percent, opened, classes, text, s, open
          if(res.data.status){
             inputref.current.value = '';
             setReply();
-            successAlert(res.data.msg);
+            successAlert(res.data.msg || res.data.message);
             setReplySent(true)
          } else {
-            errorAlert(res.data.msg);
+            errorAlert(res.data.msg || res.data.message);
          }
          setposting(false);
        }).catch(err => {

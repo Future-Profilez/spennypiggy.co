@@ -50,7 +50,6 @@ export default function BillCheckout(props) {
         );
     };
     const onVerify = (token) => {
-        console.log("token", token);
         handleSubmit();
     };
 

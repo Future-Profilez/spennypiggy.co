@@ -24,12 +24,13 @@ class EmailVerificationNotificationController extends Controller
         return back()->with('status', 'verification-link-sent');
     }
 
-    public function sendVerificationEmail(){
+    public function sendVerificationEmail()
+    {
         $user = User::whereId(Auth::id())->first();
         VerifyEmail::dispatch($user);
         return response()->json([
             "status" => true,
-            "message"=> "Verification link sent on your registred email address."
+            "message" => "Verification link sent on your registred email address."
         ]);
     }
 }

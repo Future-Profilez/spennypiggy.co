@@ -9,7 +9,7 @@ import Scrollspy from 'react-scrollspy';
 import { useState } from 'react';
 import { useEffect } from 'react';
 import Popup from '@/Components/Popup';
- 
+
 
 export default function Hero({auth}) {
 
@@ -21,7 +21,7 @@ export default function Hero({auth}) {
      const handleScroll = () => {
        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
        const offset = 150;
- 
+
        const currentSection = sections.find(section => {
          const sectionElement = document.getElementById(section);
          if (sectionElement) {
@@ -32,7 +32,7 @@ export default function Hero({auth}) {
        });
        setActiveSection(currentSection || '');
      };
- 
+
      window.addEventListener('scroll', handleScroll);
      return () => {
        window.removeEventListener('scroll', handleScroll);
@@ -46,7 +46,7 @@ export default function Hero({auth}) {
       targetElement.scrollIntoView({ behavior: 'smooth' });
     }
   };
-  
+
   const [showPopup, setShowPopup] = useState(false);
   useEffect(() => {
       const lastShown = localStorage.getItem("popupLastShown");
@@ -57,7 +57,7 @@ export default function Hero({auth}) {
   }, []);
 
   return <>
-            <Popup action={showPopup} space="4"
+            {/* <Popup action={showPopup} space="4"
             modalclassName="pinkmodal" >
               <div className='p-8'>
               <h2 className='text-center font-GillSans text-purple text-[20px] text-uppercase'>For Open banking payments and same day payouts, sign up via <a href='https://uk.spennypiggy.co'  >uk.spennypiggy.co </a> 🤑🚀</h2>
@@ -66,7 +66,7 @@ export default function Hero({auth}) {
                 <a className='btn btn-pink mt-3 w-full max-w-[200px] ' href='https://uk.spennypiggy.co'> Sign Up</a>
               </div>
               </div>
-            </Popup>
+            </Popup> */}
 
       <div className="d-block d-lg-none landing-bottom-bar">
         <Scrollspy items={sections} currentClassName="active" offset={-50}>
@@ -110,26 +110,26 @@ export default function Hero({auth}) {
 
                   <div className=" pt-4 wishlistbtn wishlistbtnFixed m-auto d-table">
 
-                    {auth?.user?.username 
-                      ?  
-                      <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink py-[8px] px-5 lg log" > 
-                        My Wishlist 
+                    {auth?.user?.username
+                      ?
+                      <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink py-[8px] px-5 lg log" >
+                        My Wishlist
                       </Link>
-                      :  <Link href="/register" className="btn-pink wishlistbutton lg px-5 shadow-mint border-mint " > Create  your page </Link> 
+                      :  <Link href="/register" className="btn-pink wishlistbutton lg px-5 shadow-mint border-mint " > Create  your page </Link>
                     }
 
                     <div className='itsfree-tag d-none d-md-block' >
                       <img alt={"image"}  className=' '
-                        src={itsfree} 
+                        src={itsfree}
                       />
                     </div>
                     <div className='itsfree-tag d-block d-md-none' >
                       <img alt={"image"}  className=' '
-                        src={itsfreemob} 
+                        src={itsfreemob}
                       />
                     </div>
                   </div>
-                  <div className='mt-5 mt-md-1 pt-3 pt-md-4 pt-md-0 d-flex justify-content-center' >  
+                  <div className='mt-5 mt-md-1 pt-3 pt-md-4 pt-md-0 d-flex justify-content-center' >
                     <TrustBox />
                   </div>
 
@@ -138,7 +138,7 @@ export default function Hero({auth}) {
                   </div> */}
 
                   {/* <div className="itsfree ps-0 mt-0 mt-md-3 pt-1 text-start"> Its’s Free 🎉 </div> */}
-                  
+
               </div>
           </div>
 
@@ -157,13 +157,13 @@ export default function Hero({auth}) {
       Oink! Oink! <br /> B*tch{" "}
     </h2>
 
-    <img alt={"image"} 
+    <img alt={"image"}
     height={377.63}
-    src={addwishlistimg} 
+    src={addwishlistimg}
     width={474} />
 
   <div className="proudlines mt-3 mt-md-0 mb-0 welcomeTitle sm text-center mt-1 shadow-yellow text-uppercase font-GillSans ps-0 ">
     Proudly 🏳️‍🌈 Owned
   </div>
-  
+
 </div>  */}

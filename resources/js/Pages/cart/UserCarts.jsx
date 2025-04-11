@@ -117,7 +117,6 @@ export default function UserCarts(props) {
         updateTotals(0);
     }, [items]);
 
-    console.log("props.hcaptchakey ", hcaptchakey);
     return (
         <div className={`${cartCleared ? "d-none" : ""} px-2`}>
             <div className="my-4 cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
@@ -141,10 +140,7 @@ export default function UserCarts(props) {
                             items.map((c, i) => {
                                 return (
                                     <CartItem
-                                        currency={
-                                            datas?.user &&
-                                            datas?.user?.default_currency
-                                        }
+                                        currency={datas?.user && datas?.user?.default_currency}
                                         quantityUpdate={quantityUpdate}
                                         removeCart={removeCart}
                                         data={c}

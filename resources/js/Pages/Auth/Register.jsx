@@ -444,7 +444,14 @@ export default function Register(props) {
                                 </div>
                             </form>
                         </div>
-
+                        {/* <div className='m-auto hcaptcha-wrap d-table mb-3 mt-0 mt-md-3' >
+                                        <HCaptcha  ref={captchaRef}
+                                        sitekey={props.hcaptchakey || ''}
+                                        data-theme="light"
+                                        data-size="compact"
+                                        onVerify={onVerify}
+                                        />
+                                    </div> */}
                     </div>
                 </div>
             </div>

@@ -4,15 +4,17 @@ use App\Http\Controllers\Auth\CheckoutController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\TwitterController;
+use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TestController;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -22,6 +24,14 @@ use Inertia\Inertia;
 | routes are loaded by the RouteServiceProvider within a group which
 | contains the "web" middleware group. Now create something great!
 */
+
+Route::get('/send-test-mail', function () {
+    Mail::raw('This is a test email. If you are seeing this, your mail configuration is working!', function ($message) {
+        $message->to('prem@futureprofilez.com')
+            ->subject('Test Email');
+    });
+    return 'Test email sent!';
+});
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -36,9 +46,37 @@ Route::get('/membership-dashboard', function () {
     return Inertia::render('membership/Membership_dashboard');
 })->name('membershipDashboard');
 
-Route::get('/stripe-identity', function () {
-    return Inertia::render('IdentityVerification');
-})->name('stripe.identity');
+// Route::get('/stripe-identity', function () {
+//     return Inertia::render('IdentityVerification');
+// })->name('stripe.identity');
+
+// Route::post('create-cart', [TestController::class, 'createCart'])->name('create.cart');
+// Route::get('get-all-products', [TestController::class, 'fetchRyeProducts'])->name('get.all.products');
+
+
+Route::get('rey-test', function () {
+    return Inertia::render('ReyTest');
+})->name('rey.test');
+
+Route::get('get-cart', function () {
+    return Inertia::render('GetCart');
+})->name('get.cart');
+
+Route::post('rye-webhook', [WishitemController::class, 'handleWebhook'])->name('rye.webhook');
+
+
+// GiftStore Route
+Route::get('/giftstore', function () {
+    return Inertia::render('rye/GiftStore');
+})->name('giftStore');
+
+
+// Route::post('test-stripe', function (Request $request) {
+//     $request = json_encode($request->all());
+//     Log::info("webhook run: $request");
+//     $a = "come in this condition";
+//     return response()->json(['status' => 'done', 'message' => $a], 200);
+// })->name('test.stripe');
 
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
 

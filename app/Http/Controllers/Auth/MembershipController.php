@@ -6,15 +6,18 @@ use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\MembershipAutoTweet;
 use App\Jobs\MembershipMail;
+use App\Jobs\MembershipMailToUser;
 use App\Jobs\NotificationSave;
 use App\Jobs\SendRenewMail;
 use App\Jobs\SubscribeAutoTweet;
 use App\Jobs\SubscribedMail;
 use App\Jobs\SubscriptionCancelAtEnd;
 use App\Jobs\SubscriptionFailed;
+use App\Models\Currency;
 use App\Models\Logs;
 use App\Models\Membership;
 use App\Models\MembershipPayment;
+use App\Models\SocialLinks;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\TipGoalsPayment;
@@ -28,8 +31,10 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
+use Stripe\Stripe;
 use Stripe\StripeClient;
 use Stripe\Webhook;
 
@@ -272,6 +277,38 @@ class MembershipController extends Controller
      */
     public function buyLevel(Request $request, $uuid, $reccure = 'continue')
     {
+
+
+        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+        $user = Auth::user(); // or $requestingUser if handling guests
+
+        // $user socila membershipDashboard
+
+        $isSocilAdded = true;
+        $socialData = SocialLinks::where('user_id', $user->id)
+            ->where(function ($query) {
+                $query->whereNotNull('tumblr')
+                    ->orWhereNotNull('instagram')
+                    ->orWhereNotNull('twitch')
+                    ->orWhereNotNull('facebook')
+                    ->orWhereNotNull('twitter');
+            })->first();
+
+
+        if (!$socialData) {
+            $isSocilAdded = false;
+        }
+
+        if (empty($user->stripe_id)) {
+            $stripeCustomer = \Stripe\Customer::create([
+                'email' => $user->email,
+                'name' => $user->name ?? null,
+            ]);
+
+            $user->stripe_id = $stripeCustomer->id;
+            $user->save();
+        }
+
         $membership = Membership::whereUuid($uuid)->with('user')->first();
 
         if (Auth::check() && ($membership->user_id == Auth::id())) {
@@ -283,21 +320,21 @@ class MembershipController extends Controller
         }
 
         $vat_percentage_amount = 0;
-
         $currency   =   strtolower($request->cookie("currency", "GBP"));
         $tax = round($membership->tax_amount, 2, PHP_ROUND_HALF_UP);
         $price = round($membership->price, 2, PHP_ROUND_HALF_UP);
 
-        $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
+        // $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
 
         if (!empty($membership->user->vat_amount_percentage)) {
             $vat_percentage_amount = ($price + $tax) * $membership->user->vat_amount_percentage / 100;
         }
 
-         $adminFeeAmount = config('app.administration_fee'); // Admin fee as a percentage
+        $adminFeeAmount = config('app.administration_fee'); // Admin fee as a percentage
+        $adminFeeForStoreDB = Helpers::priceFormat('GBP', $adminFeeAmount, $membership->currency);
 
         // Combine tax percentage and admin fee percentage
-        $totalTaxAmount = $tax + $adminFeeAmount;
+        $totalTaxAmount = $tax + $adminFeeForStoreDB;
 
         if ($request->isMethod("POST")) {
             $request->validate([
@@ -321,25 +358,26 @@ class MembershipController extends Controller
 
             $sub = MembershipPayment::create([
                 'membership_id'  =>  $membership->id,
-                'user_id'       =>  Auth::id() ?? null,
-                'guest_name'    =>  $request->name ?? NULL,
-                'guest_email'   =>  $request->email,
-                'currency'      =>  $membership->currency,
-                'amount'        =>  $membership->price,
-                'tax'           =>  $totalTaxAmount,
-                'recurring_for' =>  $reccure,
+                'user_id'        =>  Auth::id() ?? null,
+                'guest_name'     =>  $request->name ?? NULL,
+                'guest_email'    =>  $request->email,
+                'currency'       =>  $membership->currency,
+                'amount'         =>  $membership->price,
+                'tax'            =>  $totalTaxAmount,
+                'vat_tax_amount' =>  $vat_percentage_amount,
+                'recurring_for'  =>  $reccure,
                 'recurring_type' =>  in_array($membership->level, ['bronze', 'silver', 'gold', 'platinum']) ? 'monthly' : 'lifetime',
                 'surprise_message'  =>  $request->message ?? NULL,
                 'anonymous' => $request->anonymous ?? 0
             ]);
 
-            $tranfering_amount = Helpers::priceFormat($membership->currency, $price, $currency) * 100;
+            // $transfering_amount = Helpers::priceFormat($membership->currency, $price, $currency) * 100;
             $price += $vat_percentage_amount;
             $amount_per = round(($price / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
 
             $amount = $price + $totalTaxAmount;
             $unit_amount = Helpers::priceFormat($membership->currency, $amount, $currency) * 100;
-            $tax =   Helpers::priceFormat($membership->currency, $tax, $currency);
+            // $tax =   Helpers::priceFormat($membership->currency, $tax, $currency);
 
             $items  =   [
                 'quantity' =>   1
@@ -363,7 +401,7 @@ class MembershipController extends Controller
             $payload    =   [
                 "currency"  =>  $currency,
                 'line_items' =>  [$items],
-                'customer_email'    =>  $request->email,
+                'customer' => $user->stripe_id,
                 'success_url'       =>  route('membership.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
                 'cancel_url'       =>  route('membership.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
             ];
@@ -453,6 +491,7 @@ class MembershipController extends Controller
 
         return Inertia::render('membership/MemberCheckout', [
             'membership'  => $membership,
+            'isSocilAdded' => $isSocilAdded,
             'vat_amount' => $vat_percentage_amount,
             'reccure'   => $reccure
         ]);
@@ -488,11 +527,23 @@ class MembershipController extends Controller
                 $mem->upcoming_payment = $current;
                 $mem->save();
 
-                if ($mem->recurring_for == 'onetime' and $mem->recurring_type == 'monthly') {
+                if ($mem->recurring_for == 'onetime' && $mem->recurring_type == 'monthly') {
                     SubscriptionCancelAtEnd::dispatch($mem);
                 } else {
-                    MembershipMail::dispatch($mem);
+                    $symbol = Currency::where('iso', strtoupper($mem->currency))->first();
+
+                    $total_amount = $mem->membership->price + $mem->vat_tax_amount;
+                    $amountWithCurr = $symbol->symbol . $total_amount;
+                    MembershipMail::dispatch($mem, $amountWithCurr);
                 }
+
+                // this job is for creator
+                //  MembershipMail::dispatch($mem, $amountWithCurr);
+
+                $amountWithcurrency = $symbol->symbol . $mem->amount;
+
+                // this job is for fan
+                MembershipMailToUser::dispatch($mem, $amountWithcurrency);
 
                 if ($mem->anonymous == 1) {
                     $username = "Anonymous user";

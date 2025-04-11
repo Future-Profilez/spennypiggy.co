@@ -15,7 +15,6 @@ export default function GifterFeed({username}) {
   const fetchdata = () => {
     setLoading(true);
     axios.get(`/gifter-access-posts/${username}`).then((resp) => {
-        console.log("resp", resp)
         setPosts(resp.data.posts.data || []);
         setLoading(false);
     }).catch((_err) => {
@@ -23,7 +22,7 @@ export default function GifterFeed({username}) {
         setLoading(false);
     });
   };
-  
+
   useEffect(()=>{
     fetchdata();
   },[]);
@@ -32,7 +31,7 @@ export default function GifterFeed({username}) {
     <div className='max-feed m-auto'>
       {loading ? <LoadingScreen /> :
       <>
-        {posts && posts.length ? posts.map((post, i)=>{ 
+        {posts && posts.length ? posts.map((post, i)=>{
           return <Post key={`post-${i}`} item={post} />
         })
         : <Nocontent text="No Posts to see" /> }

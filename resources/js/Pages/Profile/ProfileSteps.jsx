@@ -11,6 +11,8 @@ import ChangeVat from "../account/ChangeVat";
 import Popup from "@/Components/Popup";
 import { checkedItem } from "@/includes/Icons";
 import Social from "../Auth/Social";
+import AddBills from "../bills/AddBills";
+import AddMembership from "../membership/AddMembership";
 
 export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
 
@@ -61,10 +63,10 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                 </div>
                                 <div>
                                     <h2 className="text-dark font-bold">
-                                        Complete KYC 
+                                        Complete KYC
                                     </h2>
-                                    <p className="text-gray-500 text-[14px]"> 
-                                        Complete your KYC verification to receive payments. 
+                                    <p className="text-gray-500 text-[14px]">
+                                        Complete your KYC verification to receive payments.
                                     </p>
                                 </div>
                             </div>
@@ -87,7 +89,7 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                 </div>
                                 <div>
                                     <h2 className="text-dark font-bold">
-                                        Add Intro Video    
+                                        Add Intro Video
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
                                         Add a 15 - 30 sec intro video for your
@@ -180,7 +182,7 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                         </div> : ''}
 
                         {/* post_required */}
-                       {status && status.post_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
+                       {/* {status && status.post_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
                             <div className="step-title d-flex max-w-[390px] pe-3">
                                 <div className={`check-icon me-2 pt-1 ${ status && status.post_required == 1 ? "checked" : "" }`} >
                                     <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
@@ -191,12 +193,52 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
                                         You must add 1 post for subscribers, 1
-                                        for memberships and 1 for supporters. 
+                                        for memberships and 1 for supporters.
                                     </p>
                                 </div>
                             </div>
                             <div>
                                 <AddPost text="Add Post" classes="editpoststep" />
+                            </div>
+                        </div> : ""} */}
+
+                        {/* membership_required */}
+                       {status && status.membership_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
+                            <div className="step-title d-flex max-w-[390px] pe-3">
+                                <div className={`check-icon me-2 pt-1 ${ status && status.membership_required == 1 ? "checked" : "" }`} >
+                                    <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
+                                </div>
+                                <div>
+                                    <h2 className="text-dark font-bold">
+                                        Membership Required
+                                    </h2>
+                                    <p className="text-gray-500 text-[14px]">
+                                        You must add 1 membership for your fans.
+                                    </p>
+                                </div>
+                            </div>
+                            <div>
+                                <AddMembership text="Add Membership" classes="edit_membership_step" />
+                            </div>
+                        </div> : ""}
+
+                        {/* bill_required */}
+                       {status && status.bill_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
+                            <div className="step-title d-flex max-w-[390px] pe-3">
+                                <div className={`check-icon me-2 pt-1 ${ status && status.bill_required == 1 ? "checked" : "" }`} >
+                                    <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
+                                </div>
+                                <div>
+                                    <h2 className="text-dark font-bold">
+                                        Bill Required
+                                    </h2>
+                                    <p className="text-gray-500 text-[14px]">
+                                        You must add 1 bill for your fan.
+                                    </p>
+                                </div>
+                            </div>
+                            <div>
+                                <AddBills text="Add Bill" classes="edit_bill_step" />
                             </div>
                         </div> : ""}
 
@@ -212,7 +254,7 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                         VAT settings
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
-                                        Add vat percentage. 
+                                        Add vat percentage.
                                     </p>
                                 </div>
                             </div>
@@ -243,8 +285,7 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                         {/* content */}
                         {status && status.contents !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
                             <div className="step-title d-flex max-w-[390px] pe-3">
-                                <div
-                                    className={`check-icon me-2 pt-1 ${status && status.contents == 1 ? "checked": ""}`} >
+                                <div className={`check-icon me-2 pt-1 ${status && status.contents == 1 ? "checked": ""}`} >
                                    <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
                                 </div>
                                 <div>

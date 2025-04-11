@@ -7,7 +7,7 @@
     <meta name="googlebot" content="index,follow" />
 
     {!! \App\SeoMeta::render() !!}
-    
+
     {{-- <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:title" content="Exclusive Content, Memberships & More!" />
     <meta property="twitter:description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
@@ -29,7 +29,9 @@
     <meta name="description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
     <meta name="keywords"
         content="Exclusive Content, Memberships & More!, Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!, Create Wishlist, Share Wishlist, Add Wishlist, Recieve Gifts, Send Gifts, Fans Funding. The Best Alternative to Amazon Wishlist" />
-
+        <!-- Google Fonts -->
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
     <meta property="og:title" content="Exclusive Content, Memberships & More!" />
     <meta property="og:type" content="video.movie" />
     <meta property="og:url" content="spennypiggy.co" />
@@ -37,6 +39,7 @@
     <meta property="og:site_name" content="spennypiggy.co" />
     <meta property="og:description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes"/>
     <script type="text/javascript" src="//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js"></script>
 
     <script src="https://sdk.canva.com/v1/button.js"></script>
@@ -61,7 +64,7 @@
             }
         }
     </script>
-  
+
   <script async type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -117,7 +120,7 @@
                     "@type": "Answer",
                     "text": "Creators, listen up! The best part? It won't cost you a dime! You pocket the whole 100%. Sure, there might be some tiny conversion costs, but fear not—US, CAD, and UK creators, you're in the clear! Now, here's the scoop for Supporters: there's a service fee, starting at just 8%. But, for those creators craving extra perks, drop £29.99 per month for exclusive features and no service fees for supporters. They just handle the processing fees, making each transaction way cheaper. More money in your pocket, less in fees—win-win! 💸"
                     }
-                }, 
+                },
                 {
                 "@type": "Question",
                 "name": "What currencies do you offer?",
@@ -128,7 +131,7 @@
                 }
             ]
             }
-        </script> 
+        </script>
 
     {{-- @laravelPWA --}}
     @routes

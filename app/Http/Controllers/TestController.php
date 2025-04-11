@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\CurrencyExchange;
+use App\Helpers;
 use App\IpTracker;
 use App\Jobs\FetchSelfTwitterData;
 use App\Mail\Welcome;
@@ -17,12 +18,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
 use App\Jobs\SendIdentityVerificationEmail;
+use Exception;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use Stripe\Balance;
-use Stripe\Stripe;
+use Illuminate\Support\Facades\Response;
 
 class TestController extends Controller
 {
@@ -134,7 +136,7 @@ class TestController extends Controller
     }
 
     /**
-     * Test Tweetter OAuth1.1
+     * Test Twitter OAuth1.1
      */
     public function testX()
     {
@@ -243,4 +245,94 @@ class TestController extends Controller
             return response()->json(['status' => 'error', 'message' => 'An error occurred while sending emails.']);
         }
     }
+
+    // public function handleRyeProductPayment(Request $request)
+    // {
+    //     $orderDetails = RyeCart::with('creator')->where(['cart_id' => $request->cart_id, 'creator_id' => $request->creator_id])->first();
+    //     if ($orderDetails) {
+    //         $amount = $orderDetails->cart['stores'][0]['cartLines'][0]['variant']['price'] ?? 0;
+    //         $currency = 'usd';
+    //         if (isset($orderDetails->cart)) {
+
+    //             $lineItems[] = [
+    //                 // 'price' => $dd->stripe_product_id ?? '',
+    //                 'quantity' => $orderDetails->cart['stores'][0]['cartLines'][0]['quantity'] ?? 1,
+    //                 'price_data' => [
+    //                     'currency' => 'usd',
+    //                     'product' => $orderDetails->cart['stores'][0]['cartLines'][0]['variant']['id'] ?? '',
+    //                     'unit_amount' => $orderDetails->cart['stores'][0]['cartLines'][0]['variant']['price'] ?? 0,
+    //                 ]
+    //             ];
+
+    //             //     'price_data' => [
+    //             //         'currency' => $currency,
+    //             //         'product' => $shop->stripe_product_id,
+    //             //         'unit_amount_decimal' => Helpers::priceFormat($shop->user->default_currency, $total, $currency) * 100
+    //             //     ]
+    //             // ];
+
+    //             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+    //             $sessionCreate = $stripe->checkout->sessions->create([
+    //                 'success_url' => route('rye.success.payment', [$orderDetails->uuid]),
+    //                 'cancel_url' => route('rye.cancel.payment', [$orderDetails->uuid]),
+    //                 'line_items' => $lineItems,
+    //                 'mode' => 'payment',
+    //                 'payment_method_types' => ['card'], // Add this line
+    //                 'payment_intent_data' => [
+    //                     'transfer_data' => [
+    //                         'destination' => $orderDetails->creator->account_id,
+    //                         'amount' => Helpers::priceFormat($orderDetails->user->default_currency, $amount, $currency) * 100,
+    //                     ],
+    //                     'on_behalf_of'  => $orderDetails->creator->account_id,
+    //                 ],
+    //                 'customer_email' => request()->query('email'),
+    //             ]);
+
+    //             // $sessionCreate = $stripe->checkout->sessions->create([
+    //             //     'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
+    //             //     'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
+    //             //     'line_items' => $lineItems,
+    //             //     'mode' => 'payment',
+    //             //     'payment_intent_data' => [
+    //             //         'transfer_data' => [
+    //             //             'destination' => $shop->user->account_id, // Creator's connected account ID
+    //             //             'amount' => Helpers::priceFormat($shop->user->default_currency, $amount, $currency) * 100,
+    //             //         ],
+    //             //         // 'application_fee_amount' => $taxNew * 100,
+    //             //         'on_behalf_of'  => $shop->user->account_id,
+    //             //     ],
+    //             //     'customer_email' =>  request()->query('email'),
+    //             //     // 'currency' => 'usd',
+    //             // ]);
+
+    //             $orderDetails->session_id =  $sessionCreate->id;
+    //             $orderDetails->save();
+
+    //             return response()->json([
+    //                 'status' => true,
+    //                 'url' => $sessionCreate->url
+    //             ]);
+    //         }
+    //     }
+    // }
+
+
+
+
+    // public function createCart(Request $request)
+    // {
+    //     try {
+    //         $user_id = Auth::id();
+    //         RyeCart::create([
+    //             'user_id' => $user_id,
+    //             'creator_id' => $request->creator_id,
+    //             'cart_id' => $request->cart_id,
+    //             'cart_details' => json_encode($request->data, true)
+    //         ]);
+
+    //         return response()->json(['status' => 'success', 'message' => 'Added To Cart']);
+    //     } catch (Exception $e) {
+    //         return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+    //     }
+    // }
 }

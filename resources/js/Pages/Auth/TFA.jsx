@@ -56,7 +56,6 @@ export default function TFA() {
         setVerifying(true);
         const resp = axios.post(`verification-2fa`, { otp: otp.join("") })
         resp.then((resp) => {
-         console.log("resp", resp);
          if (resp.data.status) {
             successAlert(resp.data.msg);
             setBackupCodes(resp.data.codes);
@@ -72,7 +71,6 @@ export default function TFA() {
     const disable2fa = async () => {
         const resp = axios.post(`switch-2fa`, {status:0})
         resp.then((resp) => {
-         console.log("resp", resp);
          if (resp.data.status) {
             successAlert(resp.data.msg);
             setIsTFA(0);
@@ -86,10 +84,10 @@ export default function TFA() {
          console.error("error", _err);
         });
     };
-    
 
 
-    const copyCodes = (codes) => { 
+
+    const copyCodes = (codes) => {
         const codesString = codes.join("\n\n");
         navigator?.clipboard.writeText(codesString);
         successAlert("Backup code copied to clipboard.");
@@ -115,10 +113,10 @@ export default function TFA() {
                                             <p key={index} className="mb-2 text-lg">{code}</p>
                                         ))}
                                         <button className="absolute top-2 right-3 text-[14px] bg-gray-200 px-3 py-1 rounded-lg" onClick={()=>copyCodes(backupCodes)} >Copy</button>
-                                    </div>            
+                                    </div>
                                 </div>
-                                </> 
-                                : 
+                                </>
+                                :
                                 <>
                                     <div className="enableTFA">
                                         <h2 className="font-bold text-xl mb-1">Two Factor Authentication</h2>
@@ -146,7 +144,7 @@ export default function TFA() {
                                                     security code from your autheticator app.
                                                 </li>
                                             </ul>
-                                            <button onClick={getQr} 
+                                            <button onClick={getQr}
                                             className="border-0 pinkbg rounded-2xl px-3 py-2 text-lg text-white m-auto table w-full mt-4 " > Next</button>
                                         </div>
 
@@ -182,10 +180,10 @@ export default function TFA() {
                                             {/* <button className="text-center text-primary my-3 cursor-pointer w-75 m-auto d-table font-normal">Verify with backup code.</button> */}
                                         </div>
                                     </div>
-                                </> 
+                                </>
                             }
                         </>
-                    :  
+                    :
                     <div className="backcodes">
                         <h2 className="font-bold text-xl mb-1">Two Factor Authentication</h2>
                         <p className="text-gray-700 mb-4"> Two-step verification adds an extra layer of protection to your account. After you've turned it on,we'll ask you to enter an additional security code when you sign in. We'll provide this security code only to you. </p>

@@ -11,6 +11,7 @@ use App\Models\BillPayment;
 use App\Models\FanContract;
 use App\Models\MembershipPayment;
 use App\Models\Notification;
+use App\Models\RyeProduct;
 use App\Models\SocialLinks;
 use App\Models\StripePaymentDetail;
 use App\Models\TipGoalsPayment;
@@ -30,6 +31,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -67,9 +69,17 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request)
     {
+        // Log::info($request->ip());
         $request->authenticate();
         $request->session()->regenerate();
         $user = Auth::user();
+
+        $ipAddress = $request->ip();
+        $checkIpExist = $user->ip_address;
+        if (empty($checkIpExist)) {
+            $user->ip_address = $ipAddress;
+            $user->save();
+        }
 
         // $auth = AuthRedirect::create([
         //     "user_id"   =>  $user->id,
@@ -195,7 +205,9 @@ class AuthenticatedSessionController extends Controller
         }
         $arr = array_unique($arr);
         $supporters = count($arr);
-        $notification_count = Notification::where('notifiable_id', $user->id)->where('is_read', 0)->count();
+
+        $authUser = Auth::id();
+        $notification_count = Notification::where('notifiable_id', $authUser)->where('is_read', 0)->count();
 
         if (!empty(request()->query('item'))) {
             $itemdid = request()->query('item');
@@ -489,7 +501,6 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
-
     public function user_bills($username)
     {
         $user = User::where(function ($q) {
@@ -518,6 +529,41 @@ class AuthenticatedSessionController extends Controller
             'message'   =>  'User not found'
         ]);
     }
+
+    public function userGiftItems($username)
+    {
+        $authUser = Auth::user(); // Get the logged-in user
+
+        $user = User::where(function ($q) {
+            $q->whereNot('country', 'GB')->orWhereNull('country');
+        })->firstWhere('username', $username);
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'items'   => [],
+                'message' => 'User not found'
+            ]);
+        }
+
+        // Initialize query for fetching products
+        $query = RyeProduct::where('creator_id', $user->id);
+
+        // If the authenticated user is not the owner, include soft-deleted products
+        if (isset($authUser) && isset($user)) {
+            if ($authUser->id == $user->id) {
+                $query->withTrashed();
+            }
+        }
+
+        $allProducts = $query->get();
+
+        return response()->json([
+            'success' => true,
+            'items'   => $allProducts
+        ]);
+    }
+
 
     public function sociallinks($username)
     {
@@ -581,7 +627,6 @@ class AuthenticatedSessionController extends Controller
         }
     }
 
-
     public function checkUserName($username)
     {
         try {
@@ -622,7 +667,6 @@ class AuthenticatedSessionController extends Controller
 
         return back()->with('error', 'No linked twitter account found.');
     }
-
 
     /**
      * Handle Redirect from cross domain
@@ -671,7 +715,6 @@ class AuthenticatedSessionController extends Controller
         return to_route('user.show', ['username' => $user->username])->with('success', 'Welcome back. Login successfull.');
     }
 
-
     public function updateVat($percent)
     {
         $user = User::where('id', Auth::id())->first();
@@ -684,8 +727,6 @@ class AuthenticatedSessionController extends Controller
             'message'   =>  'Vat updated successfully'
         ]);
     }
-
-
 
     /**
      * Verify 2FA OTP
@@ -769,7 +810,6 @@ class AuthenticatedSessionController extends Controller
         }
     }
 
-
     /**
      * Generating the backup codes for 2fa
      *
@@ -796,7 +836,6 @@ class AuthenticatedSessionController extends Controller
             'backup_codes' => $codes ?? null
         ], 200);
     }
-
 
     /**
      * Sign Contract
