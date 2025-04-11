@@ -440,7 +440,7 @@ export default function AddressForm({
             setLoading(false);
         }
     };
-    const [showDetails, setShowDetails] = useState(false);
+    const [showDetails, setShowDetails] = useState(addressData ? true : false);
 
 
     return (
@@ -456,15 +456,10 @@ export default function AddressForm({
                     </h2>
                 </div>
                 <p className="text-red-500 mb-4 mt-2">
-                    These details will be used to send you the project from
-                    amazon, when someone orders it.
+                These details will be used to ship the gifts directly to your door. These details are kept secure and not shared with the gifter.
                 </p>
             </div>
-
-            
-
             {showDetails ?<div>
-
                 {/* First Name */}
                 <div className="flex items-center mb-3">
                     <label className="w-28 text-grey-500">First Name</label>

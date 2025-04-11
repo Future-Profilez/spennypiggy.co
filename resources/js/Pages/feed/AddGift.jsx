@@ -12,7 +12,7 @@ import AddressForm from "../rye/AddressForm";
 
 export default function AddGift({
     item,
-    classes,
+    classes, text,
     updateState,
     fetch_gifts,
     addressAdded,
@@ -21,8 +21,8 @@ export default function AddGift({
     const { errorsHandling, successAlert, errorAlert } = useAlerts();
     const [loading, setLoading] = useState(false);
     const [title, setTitle] = useState(item?.title || "");
-    // const [hasAdded, setHasAdded] = useState(addressAdded);
-    const [hasAdded, setHasAdded] = useState(false);
+    const [hasAdded, setHasAdded] = useState(addressAdded);
+    // const [hasAdded, setHasAdded] = useState(false);
 
     const handleInput = (e) => {
         setTitle(e.target.value);
@@ -103,13 +103,13 @@ export default function AddGift({
 
     const AddItem = () => (
         <div className="flex items-center">
-            <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px]">
+            <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] min-w-[50px] h-[50px]">
                 <CiGift color="var(--pink)" size="1.5rem" />
             </div>
             <div className="ps-3 text-start">
-                <h2 className="text-md font-normal font-GillSans uppercase">Add a Gift</h2>
+                <h2 className="text-md font-normal font-GillSans uppercase">{text ? text :'Add Surprise Gift'}</h2>
                 <p className="text-sm font-poppins">
-                    Add a gift link or URL from Amazon
+                Add a gift link or URL from Amazon
                 </p>
             </div>
         </div>

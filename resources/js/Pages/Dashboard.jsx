@@ -46,7 +46,8 @@ import 'swiper/css';
 import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 import PriceFormat from "@/includes/PriceFormat";
 import GiftListing from "./rye/GiftListing";
-
+import { FaRegHeart } from "react-icons/fa";
+import { CiGift } from "react-icons/ci";
 
 export default function Dashboard(props) {
 
@@ -284,52 +285,6 @@ export default function Dashboard(props) {
         setIsUpdated(e);
     }
 
-    // const Toggle = () => {
-    //     return  <>
-    //         {IsloggedIn ? (
-    //             <Dropdown className="add-options ">
-    //                 <Dropdown.Toggle
-    //                     className="dropdown-add px-3"
-    //                     variant="success"
-    //                     id="dropdown-basic"
-    //                     dangerouslySetInnerHTML={{__html:addicon}}
-    //                 ></Dropdown.Toggle>
-    //                 <Dropdown.Menu>
-    //                     { auth.user && auth.user.stripe_details_submitted == 1 ?
-    //                         <>
-    //                             <Suspense fallback={"Add Wishlist"}>
-    //                                 <Wishlist
-    //                                     fetchcategories={fetch_categories}
-    //                                     currency={global_currency}
-    //                                     setuped={auth.user &&auth.user.stripe_details_submitted == 1? true : false}
-    //                                     fetchingcats={fetchingcats}
-    //                                     categories={categories}
-    //                                 />
-    //                             </Suspense>
-    //                             <Suspense fallback={"Add Membership"}>
-    //                                 <AddMembership updateState={updateState} />
-    //                             </Suspense>
-    //                             <Suspense fallback={"Add Membership"}>
-    //                                 <AddBills updatebill={updatebill}/>
-    //                             </Suspense>
-    //                             <Suspense fallback={"Add Membership"}>
-    //                                 <AddItem classes="dropdown-item"
-    //                                 product_type="digital_products" title='Add Digital Product' />
-    //                             </Suspense>
-    //                         </>
-    //                     : ''}
-    //                     <Suspense fallback={"Add Post"}>
-    //                         <AddPost updateState={updateState} />
-    //                     </Suspense>
-    //                 </Dropdown.Menu>
-
-    //             </Dropdown>
-    //         ) : (
-    //             ""
-    //         )}
-    //     </>
-    // }
-
 
     const Toggle = () => {
         const [showAdd, setShowAdd]= useState(false);
@@ -341,6 +296,8 @@ export default function Dashboard(props) {
             }
           },[showAdd]);
 
+          const [wishOptions, setWishOptions] = useState(false);
+
         return  <>
             {IsloggedIn ? <>
                 <div onClick={()=>setShowAdd(true)} className="addoption-action cursor-pointer px-3" dangerouslySetInnerHTML={{__html:addicon}} ></div>
@@ -351,27 +308,68 @@ export default function Dashboard(props) {
                             <Suspense fallback={"Loading.."}>
                                 <div className="bg-gray-100 w-full p-6 md:p-10 rounded-3xl shadow-lg z-10">
                                     <h2 className="font-bold text-black  text-xl md:text-2xl mb-4 text-center m-auto ">Add Item to fund your lifestyle.</h2>
-                                    <div className="max-h-[40vh] overflow-y-auto">
-                                        {auth.user && auth.user.stripe_details_submitted == 1 ?
+                                    <div className="max-h-[55vh]  sm:max-h-[40vh] overflow-y-auto">
+                                       
+                                            { wishOptions ?
+                                                <div>
+                                                    <Wishlist text="Cash Gift"
+                                                    fetchcategories={fetch_categories}
+                                                    currency={global_currency}
+                                                    setuped={auth.user &&auth.user.stripe_details_submitted == 1 ? true : false}
+                                                    fetchingcats={fetchingcats}
+                                                    categories={categories} />
+                                                    <div  className="w-full font-bold disabled addop bg-white rounded-xl p-3 mb-2 text-center">
+                                                        <div className=" flex items-center">
+                                                            <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                <CiGift color="var(--pink)" size="1.5rem" />
+                                                            </div>
+                                                            <div className="ps-3 text-start">
+                                                                <h2 className="text-md font-normal font-GillSans uppercase">Add Surprise Gift</h2>
+                                                                <p className="text-sm font-poppins">
+                                                                Lets supporters pick from the 1000’s of Gifts in the Oink Gift Zone
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                </div>
+                                                
+                                            : <div>
+                                            {auth.user && auth.user.stripe_details_submitted == 1 ?
                                             <>
-                                                <Wishlist
-                                                fetchcategories={fetch_categories}
-                                                currency={global_currency}
-                                                setuped={auth.user &&auth.user.stripe_details_submitted == 1 ? true : false}
-                                                fetchingcats={fetchingcats}
-                                                categories={categories} />
-                                                <AddItem  classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
-                                                product_type="digital_products"  />
-                                            <AddPost classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} />
-                                            {ziggy && ziggy.url !== 'https://spennypiggy.co' &&
-                                                <AddGift classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} fetch_gifts={fetch_gifts} addressAdded={auth?.user?.is_creator_address_found} />
-                                            }
-                                            </>
-                                        : '' }
-                                        <AddMembership updateState= {updateState} />
-                                        <AddBills updatebill={updatebill}/>
+                                                
+                                                <div onClick={()=> setWishOptions(true)} className="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center">
+                                                    <div className=" flex items-center">
+                                                        <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                            <FaRegHeart color="var(--pink)" size="1.5rem" />
+                                                        </div>
+                                                        <div className="ps-3 text-start">
+                                                            <h2 className="text-md font-normal font-GillSans uppercase">Add Wish</h2>
+                                                            <p className="text-sm font-poppins">
+                                                                Let fans fund your lifestyle for a reward.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                    <AddItem  classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
+                                                    product_type="digital_products"  />
+                                                    <AddPost classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} />
+                                                
+                                                    {/* {ziggy && ziggy.url !== 'https://spennypiggy.co' && */}
+                                                        <AddGift text="Add Gift " classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} fetch_gifts={fetch_gifts} addressAdded={auth?.user?.is_creator_address_found} />
+                                                    {/* // } */}
+                                                    <AddMembership updateState= {updateState} />
+                                                    <AddBills updatebill={updatebill}/>
+                                                    </>
+                                                : '' }
+                                            </div>}
+
                                     </div>
-                                    <button onClick={()=>setShowAdd(false)} className="m-auto table p-2 mt-3"  >Cancel</button>
+                                    <button onClick={()=>{
+                                        setShowAdd(false);
+                                         setWishOptions(false)
+                                        }} className="m-auto table p-2 mt-3"  >Cancel</button>
                                 </div>
                             </Suspense>
                         </div>
@@ -416,7 +414,7 @@ export default function Dashboard(props) {
 
                         <Userprofile IsloggedIn={IsloggedIn} />
 
-                        {user && user?.role == 1 && IsloggedIn ? <div className="alert bg-info">
+                        {user && user?.role == 1 && IsloggedIn ? <div className="alert p-2 bg-info text-sm">
                             In order to comply with Stripe it is required that you post content for memberships,
                             Bills and subscriptions regularly. Accounts not doing so will be suspended.
                             Please reach out to support for more information.</div>
@@ -442,6 +440,7 @@ export default function Dashboard(props) {
                                                     </Tabs>
                                                     {IsloggedIn ? <Toggle /> : ''}
                                                 </div>
+
                                                 <div className="tabs-containers min-height" >
                                                     {tab == '0' ?
                                                         <Suspense fallback={<LoadingScreen />} >
@@ -452,7 +451,7 @@ export default function Dashboard(props) {
                                                                         {user && goal && user?.stripe_details_submitted == 1 ?
                                                                         <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ""}
 
-                                                                        <div className="box p-2 p-md-4 shadow-voilet rounded-lg mb-4">
+                                                                        <div className="box p-3 p-md-4 shadow-voilet rounded-lg mb-4">
                                                                             <p className="font-bold">About me</p>
                                                                             <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
                                                                                 {(user &&user.bio) ||""}
@@ -631,7 +630,7 @@ export default function Dashboard(props) {
                                                     : "" }
 
                                                     {tab == '6' ?
-                                                     <Suspense fallback={<LoadingScreen />}>
+                                                        <Suspense fallback={<LoadingScreen />}>
                                                      {giftsloading ? (
                                                        <LoadingScreen />
                                                      ) : gifts && gifts.length > 0 ? (
@@ -651,8 +650,7 @@ export default function Dashboard(props) {
                                                          <Nocontent text="Nothing to see." />
                                                        </div>
                                                      )}
-                                                   </Suspense>
-
+                                                        </Suspense>
                                                     : ''}
                                                 </div>
                                         </div>

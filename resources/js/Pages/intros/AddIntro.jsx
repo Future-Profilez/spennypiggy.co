@@ -100,7 +100,7 @@ export default function AddIntro({IsloggedIn, uuid, text, classes, setIntroStatu
       <Popup
         modalclassName="pinkmodal shadow-pink" space="0" size="md" action={close} classes={`w-100`}
         text={<>
-        <div className='isintro cursor-pointer shadow-voilet'>
+        <div className='isintro relative cursor-pointer shadow-voilet'>
           <img
           alt={"image"} useIntersectionObserver={true} effect="blur"
           height={350} src={ introVideo && introVideo.poster_url || wishlistbannerimg} className='' width={400} />
@@ -110,10 +110,9 @@ export default function AddIntro({IsloggedIn, uuid, text, classes, setIntroStatu
             <path d="M40 32.0234L22.72 22.0468V42L40 32.0234Z" fill="black"/>
             </svg>
           </div>
+          {IsloggedIn && introVideo && introVideo.approved !== 1 ? <div className='text-sm mb-0 alert alert-warning text-yellow-900 w-full  absolute z-1 bottom-0 left-0 rounded p-2' >Profile intro video is waiting for approval. Currently only you can see this intro.</div> : ''}
         </div>
-        {IsloggedIn && introVideo && introVideo.approved !== 1 ? <div className='mt-4 alert alert-warning  rounded p-2' >Profile intro video is waiting for approval. Currently only you can see this intro.</div> : ''}
-        </>} 
-        > 
+        </>} > 
           <div className='video-payer-pop' >
             <video playsInline='false' autoPlay src={introVideo && introVideo?.perma_link || ''} controls controlsList='nodownload' />
           </div>
