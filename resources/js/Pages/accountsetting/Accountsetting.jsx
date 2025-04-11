@@ -109,7 +109,7 @@ export default function Accountsetting(props) {
                             {auth && auth?.user?.role == 1 ?
                                 <>
                                     <li>
-                                        <Popup size={"lg"} action={passClose} space='4' modalclassName="pinkmodal" text={"EDIT ADDRESS"} >
+                                        <Popup size={"lg"} action={passClose} space='4' modalclassName="pinkmodal" text={"ADDRESS"} >
                                             <AddressForm isEditPopup={true} setSassClose={setSassClose}/>
                                         </Popup>
                                     </li>
