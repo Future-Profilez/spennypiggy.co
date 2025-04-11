@@ -101,7 +101,7 @@ export default function Social({
                             <ul className=" ps-0  row">
                                 <li className="mb-4 col-md-6">
                                     <label className="mb-2 text-start d-block">
-                                        Twitter
+                                        X (Twitter)
                                     </label>
                                     <input
                                         id="twitter"

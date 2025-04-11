@@ -1036,12 +1036,17 @@ class WishitemController extends Controller
     {
         $creatorId = Auth::id();
         $creatorAddress = CreatorShippingAddress::where('creator_id', $creatorId)->first();
-
+        if (!$creatorAddress) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Creator address not found',
+            ], 404);
+        }
         $creatorAddress->first_name = Crypt::decryptString($creatorAddress->first_name);
         $creatorAddress->last_name = Crypt::decryptString($creatorAddress->last_name);
         $creatorAddress->address_1 = Crypt::decryptString($creatorAddress->address_1);
         $creatorAddress->address_2 = Crypt::decryptString($creatorAddress->address_2);
-        $creatorAddress->city = Crypt::decryptString($creatorAddress->city);
+        $creatorAddress->city =      Crypt::decryptString($creatorAddress->city);
         $creatorAddress->postal_code = Crypt::decryptString($creatorAddress->postal_code);
         $creatorAddress->country_code = Crypt::decryptString($creatorAddress->country_code);
         $creatorAddress->province_code = Crypt::decryptString($creatorAddress->province_code);
