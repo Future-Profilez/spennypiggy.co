@@ -16,7 +16,6 @@ import PriceFormat from "@/includes/PriceFormat";
 import axios from "axios";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 import { FaRegHeart } from "react-icons/fa";
-import ImageGenerationWithAI from "@/Components/ImageGenerationWithAI";
 
 const imageLinks = [
     "901c0a0e-e5de-4d7a-8ac3-de11a4632542",
@@ -35,7 +34,7 @@ export default function Wishlist(props) {
         fetchingcats,
         fetchcategories,
         currency,
-        item,
+        item, text,
         editpop,
         openPop,
         setuped,
@@ -292,9 +291,9 @@ export default function Wishlist(props) {
                     <FaRegHeart color="var(--pink)" size="1.5rem" />
                 </div>
                 <div className="ps-3 text-start">
-                    <h2 className="text-md font-normal font-GillSans uppercase">Add Wish Items</h2>
+                    <h2 className="text-md font-normal font-GillSans uppercase">{text ?text :"Add Wish Item"}</h2>
                     <p className="text-sm font-poppins">
-                        Let fans fund your lifestyle for a reward.
+                        For products you will buy directly
                     </p>
                 </div>
             </div>

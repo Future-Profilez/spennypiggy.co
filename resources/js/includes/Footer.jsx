@@ -118,11 +118,8 @@ export default function Footer(props) {
     return (
         <>
             <Helmet>
-                <script
-                    type="text/javascript"
-                    src="https://app.termly.io/resource-blocker/1f6672bd-7b65-47a4-8a75-d02946c93b2e?autoBlock=on"
-                ></script>
-
+                
+                <script  type="text/javascript"  src="https://app.termly.io/resource-blocker/1f6672bd-7b65-47a4-8a75-d02946c93b2e?autoBlock=on"  ></script> 
                 {/* <script async type="text/javascript" src="https://app.termly.io/embed.min.js" data-auto-block="on" data-website-uuid="ced8ded9-995d-471a-bf54-880b8c679a81" ></script> */}
                 <script
                     async
@@ -148,37 +145,37 @@ export default function Footer(props) {
                                     <li>
                                         <a
                                             target="_blank"
-                                            href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
+                                            href="https://app.termly.io/policy-viewer/policy.html?policyUUID=88583b44-9385-430c-aa79-3c41dc8a167e "
                                         >
-                                            {" "}
-                                            Privacy Policy{" "}
+                                            
+                                            Privacy Policy
                                         </a>
                                     </li>
                                     <li>
                                         <a
                                             target="_blank"
-                                            href="https://app.termly.io/document/cookie-policy/45944c26-6e99-4065-833a-8fa224fb8e20"
+                                            href="https://app.termly.io/policy-viewer/policy.html?policyUUID=f11eb44f-4ddd-4d59-86d1-34c11e3fa80e"
                                         >
-                                            {" "}
-                                            Cookie Policy{" "}
+                                            
+                                            Cookie Policy
                                         </a>
                                     </li>
                                     <li>
                                         <a
                                             target="_blank"
-                                            href="https://app.termly.io/document/acceptable-use/458f5fac-0c41-406f-a02f-b50adff1ec9c"
+                                            href="https://app.termly.io/policy-viewer/policy.html?policyUUID=9a437e57-fcc7-439f-a7e7-96b493a8c50f"
                                         >
-                                            {" "}
-                                            Acceptable Use Policy{" "}
+                                            
+                                            Acceptable Use Policy
                                         </a>
                                     </li>
                                     <li>
                                         <a
                                             target="_blank"
-                                            href="https://app.termly.io/notify/696baafc-17cd-4a28-b758-a8f597cf2ad6"
+                                            href="https://app.termly.io/notify/88583b44-9385-430c-aa79-3c41dc8a167e "
                                         >
-                                            {" "}
-                                            DSAR Form{" "}
+                                            
+                                            DSAR Form
                                         </a>
                                     </li>
                                     <li>
@@ -186,20 +183,37 @@ export default function Footer(props) {
                                             target="_blank"
                                             href="https://intercom.help/spenny-piggy"
                                         >
-                                            {" "}
-                                            FAQ's{" "}
+                                            
+                                            FAQ's
                                         </a>
                                     </li>
                                     <li>
                                         <Link href={route("how-it-works")}>
-                                            {" "}
-                                            How it works{" "}
+                                            
+                                            How it works
                                         </Link>
                                     </li>
                                     <li>
                                         <a href="https://blog.spennypiggy.co">
-                                            {" "}
+                                            
                                             Blog
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a
+                                            target="_blank"
+                                            href="https://app.termly.io/policy-viewer/policy.html?policyUUID=364c168c-44ab-467e-a98a-a22629fc31f8"
+                                        >
+                                            
+                                            Disclaimer
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a
+                                            target="_blank"
+                                            href="https://app.termly.io/policy-viewer/policy.html?policyUUID=a1f91da2-10e4-49e8-88b6-fc716b2645ba"
+                                        >
+                                            Return Policy
                                         </a>
                                     </li>
                                     <li>
@@ -207,22 +221,19 @@ export default function Footer(props) {
                                             target="_blank"
                                             href="https://ucarecdn.com/90485216-9757-4fb8-8002-d45c7ced6c46/"
                                         >
-                                            {" "}
-                                            Terms{" "}
+                                            
+                                            Terms
                                         </a>
                                     </li>
                                     <li>
                                         <Link href={route("promotion-terms")}>
-                                            {" "}
+                                            
                                             Promotion Terms
                                         </Link>
                                     </li>
                                     <li>
-                                        {/* <ContentPrefrences classes="m-auto d-table" />{" "} */}
-                                        <a
-                                            href="#"
-                                            className="termly-display-preferences"
-                                        >
+                                        <a href="#"
+                                            className="termly-display-preferences" >
                                             Consent Preferences
                                         </a>
                                     </li>
