@@ -131,6 +131,7 @@ export default function Footer(props) {
                     src="https://www.googletagmanager.com/gtag/js?id=G-9F1M3QZZB3"
                 ></script>
             </Helmet>
+            {/* Old Code */}
             {/* <div className="whbg">
                 <div id="footer" className="footer">
                     <div className="containerbox">
@@ -253,7 +254,7 @@ export default function Footer(props) {
             </div> */}
 
             {/* New Code Starts here */}
-            <div className="flex justify-end relative bottom-[-10px] z-50 mr-16">
+            <div className="flex justify-end relative bottom-[-10px] z-50 sm:mr-16">
                 <img
                     src={bottomImg}
                     className=""
