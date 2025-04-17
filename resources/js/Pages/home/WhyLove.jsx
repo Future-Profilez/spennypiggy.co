@@ -197,6 +197,7 @@ export default function WhyLove() {
                 </div>
             </div> */}
             <section className="bg-black py-16 px-4 text-center">
+            <div className="container">
                 <h2 className="headingSm shadow-none text-light font-gulfs stroke-none text-center w-full max-w-2xl mx-auto block mb-4">
                     Add Gifts From Any Brand
                 </h2>
@@ -208,19 +209,26 @@ export default function WhyLove() {
                     brands, or any other online store on Shopify or Amazon.
                 </p>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 justify-items-center">
+                <div className="flex flex-wrap justify-center gap-3">
                   {brandLogos.map((brand, index) => (
-                     <div key={index} className="relative w-40 h-40 md:w-44 md:h-44 flex items-center justify-center before:content-[''] before:absolute before:-right-1.5 before:-bottom-1.5 before:w-full before:h-full before:rounded-full before:bg-pink-500">
-                     <div className="relative z-10 w-full h-full bg-white rounded-full flex items-center justify-center">
+                     <div key={index} className="shadow-pink rounded-full h-36 w-36 overflow-hidden  p-4 bg-white">
                        <img
                          src={brand.src}
                          alt={brand.name}
-                         className="max-h-32 md:max-h-36 object-contain"
+                         className="w-full h-full object-contain"
                        />
-                     </div>
+                       {/* <LazyLoadImage
+                            src={brand.src}
+                            alt={brand.name}
+                            className="max-h-32 md:max-h-36 min-h-28 object-contain"
+                            useIntersectionObserver={true}
+                            effect="blur"
+                            width={190}
+                        /> */}
                    </div>                   
                   ))}
                 </div>
+            </div>
             </section>
         </>
     );

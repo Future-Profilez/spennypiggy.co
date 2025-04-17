@@ -10,7 +10,6 @@ import { useState } from 'react';
 import { useEffect } from 'react';
 import Popup from '@/Components/Popup';
 
-
 export default function Hero({auth}) {
 
 

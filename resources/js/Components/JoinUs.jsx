@@ -5,6 +5,7 @@ import youtube from "../../assets/new/youtube.png";
 import twitch from "../../assets/new/twitch.png";
 import tiktok from "../../assets/new/tiktok.png";
 import x from "../../assets/new/x.png";
+import bottomImg from "../../assets/new/joinBottomImage.png";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 
 export default function JoinUs() {
@@ -59,6 +60,13 @@ export default function JoinUs() {
                     </div>
                 </div>
             </section>
+            <div className="flex justify-end relative bottom-[-10px] z-50 sm:mr-16">
+                <img
+                    src={bottomImg}
+                    className=""
+                    alt="Decorative"
+                />
+            </div>
 
             {/* Old Code */}
             {/* <div className="joinus blackbg ">
