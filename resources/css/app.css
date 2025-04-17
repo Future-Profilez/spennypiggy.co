@@ -22,6 +22,7 @@ body{position:relative;font-family:var(--para-font);}
 .text-body{font-family:var(--para-body);}
 .text-CeraGR{font-family:var(--para-font);}
 .font-GillSans{font-family:var(--heading-font);}
+.font-gulfs{font-family:var(--body-font);}
 .font-CeraGR{font-family:var(--para-font);}
 .font-CeraGRBold{font-family:var(--parabold-font);}
 .border-blue{border:2px solid var(--voilet);}
