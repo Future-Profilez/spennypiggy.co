@@ -401,7 +401,6 @@ export default function Header() {
                                             </span>
                                         </Link>
                                     </li> : ''}
-
                                     
                                     { auth?.user?.username ? 
                                     <></>
