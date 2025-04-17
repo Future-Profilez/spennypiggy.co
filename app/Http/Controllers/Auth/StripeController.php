@@ -121,14 +121,14 @@ class StripeController extends Controller
                     "type" => "express",
                     'email' => $user->email,
                     'capabilities' => [
-                        'card_payments' => ['requested' => true],
-                        'transfers' => ['requested' => true],
+                        'card_payments' => ['requested' => $country == 'US'],  // Request only in the US
+                        'transfers' => ['requested' => true], // Always request transfers
                     ],
                     'tos_acceptance' => ['service_agreement' => $country == 'US' ? 'full' : 'recipient'],
                     'business_type' => 'individual',
                     'business_profile' => [
-                        'url'   =>  "https://spennypiggy.co/{$user->username}",
-                        'mcc'   =>  '7278' //'5262'
+                        'url'   => "https://spennypiggy.co/{$user->username}",
+                        'mcc'   => '7278',
                     ],
                     'default_currency' => $currency,
                 ];
@@ -1697,6 +1697,25 @@ class StripeController extends Controller
             return response()->json([
                 'error' => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    public function deleteConnectedAccount($accountId)
+    {
+        try {
+            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET')); // move your secret to .env
+
+            $deleted = $stripe->accounts->delete($accountId, []);
+
+            return response()->json([
+                'message' => 'Connected account deleted successfully.',
+                'deleted' => $deleted,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to delete connected account.',
+                'error' => $e->getMessage(),
+            ], 400);
         }
     }
 }
