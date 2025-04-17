@@ -5,6 +5,7 @@ import {piggynose, piggyface, tipheading, leftleg, rightleg} from '@/includes/Ic
 import { useEffect } from 'react';
 import axios from 'axios';
 import { useAlerts } from '@/Components/Alerts';
+import toast from 'react-hot-toast';
 
 export default function TipInner({classes}) {
 
@@ -47,6 +48,10 @@ export default function TipInner({classes}) {
     setselectegTag(e);
   }
   const customAmount = (e) => {
+    if(e.target.value > 99){
+      toast.error("Maximum amount is 99");
+      return false;
+    }
     setAmount(e.target.value);
     setdefaultAmount(e.target.value);
     setTipQuantity(1);
@@ -116,7 +121,7 @@ export default function TipInner({classes}) {
             <div className="flex flex-wrap grid grid-cols-2 xl:grid-cols-4 gap-3 mb-4 mt-2">
                 <button className={`${ selectegTag == 25 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={()=>customAmountTag(25)}  >{formatMultiPrice(25, global_currency || "GBP")}</button>
                 <button className={`${ selectegTag == 50 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={()=>customAmountTag(50)}  >{formatMultiPrice(50, global_currency || "GBP")}</button>
-                <button className={`${ selectegTag == 100 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={()=>customAmountTag(100)}  >{formatMultiPrice(100, global_currency || "GBP")}</button>
+                <button className={`${ selectegTag == 99 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={()=>customAmountTag(99)}  >{formatMultiPrice(99, global_currency || "GBP")}</button>
                 <button className={`${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={selectCustom} >Custom</button>
             </div>
 
