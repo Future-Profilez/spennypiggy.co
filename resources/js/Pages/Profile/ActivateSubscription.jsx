@@ -42,9 +42,9 @@ export default function ActivateSubscription(props) {
                             <p className='mb-4 text-[18px] text-center'>
                                 Enjoy a <span className='text-green-500 font-bold'>3-days free trial</span> before your monthly subscription begins! Stripe charges £2 a month for this service, and we add a £2 administrator charge due to heightened compliance requirements.
                             </p>
-                            <div className='bg-blue-100 text-blue-800 p-4 rounded-lg text-center mb-4'>
-                                <p className='font-semibold'>Start your subscription today and pay nothing for the first 3 days!</p>
-                            </div>
+                            {/* <div className='bg-blue-100 text-blue-800 p-4 rounded-lg text-center mb-4'> */}
+                                <p className='font-semibold text-center text-green-600 text-lg'>Start your subscription today and pay nothing for the first 3 days!</p>
+                            {/* </div> */}
                         </div>
                         <div className='text-center flex justify-center mb-4'>
                             <LoaderButton onClick={checkTerms}

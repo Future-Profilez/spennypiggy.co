@@ -294,9 +294,9 @@ export default function Dashboard(props) {
             } else {
               document.body.classList.remove('overflow-hidden');
             }
-          },[showAdd]);
+        },[showAdd]);
 
-          const [wishOptions, setWishOptions] = useState(false);
+        const [wishOptions, setWishOptions] = useState(false);
 
         return  <>
             {IsloggedIn ? <>
@@ -335,9 +335,9 @@ export default function Dashboard(props) {
                                                 </div>
                                                 
                                             : <div>
+
                                             {auth.user && auth.user.stripe_details_submitted == 1 ?
-                                            <>
-                                                
+                                                    <>
                                                 <div onClick={()=> setWishOptions(true)} className="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center">
                                                     <div className=" flex items-center">
                                                         <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
@@ -359,10 +359,10 @@ export default function Dashboard(props) {
                                                     {/* {ziggy && ziggy.url !== 'https://spennypiggy.co' && */}
                                                         <AddGift text="Add Gift " classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} fetch_gifts={fetch_gifts} addressAdded={auth?.user?.is_creator_address_found} />
                                                     {/* // } */}
-                                                    <AddMembership updateState= {updateState} />
-                                                    <AddBills updatebill={updatebill}/>
                                                     </>
-                                                : '' }
+                                            : '' }
+                                            <AddMembership updateState= {updateState} />
+                                            <AddBills updatebill={updatebill}/>
                                             </div>}
 
                                     </div>
