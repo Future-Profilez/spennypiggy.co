@@ -113,14 +113,6 @@ class RegisteredUserController extends Controller
             ]);
             $user->refresh();
 
-            if (!empty($request->promo)) {
-                $promocode = PromoCode::whereCode($request->promo)->first();
-                $user->promo_code_id = $promocode->id;
-                $user->save();
-            }
-
-            Auth::login($user);
-
             if ($request->role == 0) {
                 $addressData = [
                     'country' => Crypt::encryptString($request->country),
@@ -137,6 +129,14 @@ class RegisteredUserController extends Controller
                     'address' => $addressJson,
                 ]);
             }
+
+            if (!empty($request->promo)) {
+                $promocode = PromoCode::whereCode($request->promo)->first();
+                $user->promo_code_id = $promocode->id;
+                $user->save();
+            }
+
+            Auth::login($user);
 
             $promocode = PromoCode::whereCode($request->promocode)->first();
             if (!empty($promocode)) {
@@ -241,7 +241,7 @@ class RegisteredUserController extends Controller
         if (!$product) {
             $product = $stripe->products->create([
                 'name' => $productName,
-            ],[
+            ], [
                 'stripe_account' => $user->stripe_id,
             ]);
         }
@@ -334,9 +334,25 @@ class RegisteredUserController extends Controller
         $charge = $paymentIntent->charges->data[0] ?? null;
         $paymentMethod = $charge->payment_method ?? null;
 
-        // Get card billing details if available
         $billingDetails = $charge->billing_details ?? null;
         $address = $billingDetails->address ?? null;
+
+        if ($address) {
+            $encryptedAddress = encrypt(json_encode([
+                'line1' => $address->line1 ?? null,
+                'line2' => $address->line2 ?? null,
+                'city' => $address->city ?? null,
+                'state' => $address->state ?? null,
+                'postal_code' => $address->postal_code ?? null,
+                'country' => $address->country ?? null,
+            ]));
+
+            GifterAddress::updateOrCreate(
+                ['user_id' => $user->id],
+                ['stripe_address' => $encryptedAddress]
+            );
+        }
+
 
         // Find the latest verification record
         $verification = GifterCardVerification::where('user_id', $user->id)
