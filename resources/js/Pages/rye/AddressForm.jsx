@@ -452,11 +452,14 @@ export default function AddressForm({
                         dangerouslySetInnerHTML={{ __html: piggy }}
                     />
                     <h2 className="text-xl font-bold text-dark-500">
-                        Add Your Biiling Address Details
+                        Add Your Billing Address Details
                     </h2>
                 </div>
                 <p className="text-red-500 mb-4 mt-2">
-                These details will be used to ship the gifts directly to your door. These details are kept secure and not shared with the gifter.
+                    Please Triple check your address. These details will be used
+                    to ship the product to you. If these details are not correct
+                    we will NOT be liable for any lost packages.
+                    {/* These details will be used to ship the gifts directly to your door. These details are kept secure and not shared with the gifter. */}
                 </p>
             </div>
             {showDetails ?<div>

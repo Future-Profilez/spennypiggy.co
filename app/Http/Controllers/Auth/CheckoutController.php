@@ -242,16 +242,29 @@ class CheckoutController extends Controller
 
                 $symbol = Currency::where('iso', strtoupper($payment_data->payment->currency))->first();
 
+                // $symbol = Currency::where('iso', strtoupper($stripeid->currency))->first();
+                // if (Auth::check()) {
+                //     $user = Auth::user();
+                $vat_percentage = $dd->owner ? $dd->owner->vat_amount_percentage : 0; // Default to 0 if not set
+                // // }
+
+                $tax = $stripeid->amount_subtotal * config('app.single_tax') / 100;
+
+                // // Calculate VAT if the user has set a percentage
+                $vat_amount = ($stripeid->amount_subtotal + $tax) * $vat_percentage / 100;
+                $amountWithVat = $stripeid->amount_subtotal + $vat_amount;
+                // $amountTotal = $symbol->symbol . $amountWithVat;
+
                 $message = $stripeid->message;
 
                 if (Auth::check()) {
                     if ($dd->wish_item_id == NULL) {
-                        CheckoutUser::dispatch($payment_data, false, $dd, $message, null, $symbol->symbol);
+                        CheckoutUser::dispatch($payment_data, false, $dd, $message, null, $symbol->symbol, $vat_amount);
                     } else {
-                        CheckoutUser::dispatch($payment_data, false, false, $message, null, $symbol->symbol);
+                        CheckoutUser::dispatch($payment_data, false, false, $message, null, $symbol->symbol, $vat_amount);
                     }
                 } else {
-                    CheckoutUser::dispatch($payment_data, true, false, false, $stripeid->name, $symbol->symbol);
+                    CheckoutUser::dispatch($payment_data, true, false, false, $stripeid->name, $symbol->symbol, $vat_amount);
                 }
                 $dd->status = 0;
                 $dd->quantity = 0;

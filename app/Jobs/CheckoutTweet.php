@@ -12,6 +12,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class CheckoutTweet implements ShouldQueue
 {
@@ -32,7 +33,7 @@ class CheckoutTweet implements ShouldQueue
     public function handle(): void
     {
         $user = User::find($this->payment_data->wish->user_id);
-        if(!empty($user->twitter_token->token)) {
+        if (!empty($user->twitter_token->token)) {
             $payload    =   [
                 'name' => $this->payment_data->payment->name ?? "Someone",
                 'amount' => Helpers::getCurrency($this->payment_data->payment->currency) . $this->payment_data->amount,

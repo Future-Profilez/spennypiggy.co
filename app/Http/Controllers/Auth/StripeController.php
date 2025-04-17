@@ -356,11 +356,11 @@ class StripeController extends Controller
 
                 Log::info("come at stripeController 349 line");
 
-                if ($dd->wish_item_id == NULL) {
-                    CheckoutUser::dispatch($payment_data, false, $dd, $message, false);
-                } else {
-                    CheckoutUser::dispatch($payment_data, false, false, $message, false);
-                }
+                // if ($dd->wish_item_id == NULL) {
+                //     CheckoutUser::dispatch($payment_data, false, $dd, $message, false);
+                // } else {
+                //     CheckoutUser::dispatch($payment_data, false, false, $message, false);
+                // }
             }
 
             CheckoutMailToUser::dispatch($stripeid);
@@ -555,7 +555,7 @@ class StripeController extends Controller
                 Log::info("come at stripeController 547 line");
 
                 // $dd->wish_id == NULL
-                CheckoutUser::dispatch($data, true, false, false, $stripeid->name);
+                // CheckoutUser::dispatch($data, true, false, false, $stripeid->name);
             }
 
 
