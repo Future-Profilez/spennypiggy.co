@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->text('address_verification_error')->nullable()->after('is_add_matched');
+            $table->text('address_verification_error')->nullable()->after('is_uk');
+            $table->tinyInteger('profile_status_lock')->default(0)->after('is_uk')->comment('0: locked, 1: unlocked');
         });
     }
 
