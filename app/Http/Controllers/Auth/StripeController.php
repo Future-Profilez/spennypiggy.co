@@ -1357,7 +1357,8 @@ class StripeController extends Controller
             if ($session->payment_status == 'paid') {
                 $sub->stripe_id = $session->subscription;
 
-                $sub->upcoming_payment = Carbon::now()->addMonth();
+                // $sub->upcoming_payment = Carbon::now()->addMonth();
+                $sub->upcoming_payment = Carbon::now()->addDays(3);
                 $sub->save();
 
                 MonthlySubscribedJob::dispatch($sub->email, $sub, 'success');

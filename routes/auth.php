@@ -273,8 +273,6 @@ Route::middleware('auth')->group(function () {
         Route::post('switch-2fa', [ProfileController::class, 'update2faStatus']);
         Route::post('verification-2fa', [ProfileController::class, 'verification2FA']);
 
-
-
         Route::post('/report-content/', [ProfileController::class, 'reportContent'])->name('report-content');
 
         Route::prefix('shop')->group(function () {
@@ -348,24 +346,7 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/send-surprize', [WishitemController::class, 'sendSurprise'])->name('send-surprize');
 
-        Route::get('/how-it-works', function () {
-            return Inertia::render('howitworks/Works');
-        })->name("how-it-works");
 
-
-        Route::get('/terms-and-conditions', function () {
-            return Inertia::render('Terms');
-        })->name("terms-and-conditions");
-
-
-        Route::get('/promotion-terms', function () {
-            return Inertia::render('Promotions');
-        })->name("promotion-terms");
-
-        Route::get('/files/{filename}', function (string $filename) {
-            $fullPath = asset($filename);
-            return Storage::response($fullPath);
-        });
 
         Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status')->withoutMiddleware(VerifyCsrfToken::class);
 
@@ -376,8 +357,6 @@ Route::middleware('auth')->group(function () {
         Route::post('mandatory-status', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status');
 
 
-        Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
-
         Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
             Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay");
             Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
@@ -387,6 +366,28 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
+
+Route::get('/how-it-works', function () {
+    return Inertia::render('howitworks/Works');
+})->name("how-it-works");
+
+
+Route::get('/terms-and-conditions', function () {
+    return Inertia::render('Terms');
+})->name("terms-and-conditions");
+
+
+Route::get('/promotion-terms', function () {
+    return Inertia::render('Promotions');
+})->name("promotion-terms");
+
+Route::get('/files/{filename}', function (string $filename) {
+    $fullPath = asset($filename);
+    return Storage::response($fullPath);
+});
+
+Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
+
 
 /* wishtender */
 Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('leaderboard');
