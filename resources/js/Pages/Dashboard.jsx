@@ -338,19 +338,19 @@ export default function Dashboard(props) {
 
                                             {auth.user && auth.user.stripe_details_submitted == 1 ?
                                                     <>
-                                                <div onClick={()=> setWishOptions(true)} className="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center">
-                                                    <div className=" flex items-center">
-                                                        <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
-                                                            <FaRegHeart color="var(--pink)" size="1.5rem" />
-                                                        </div>
-                                                        <div className="ps-3 text-start">
-                                                            <h2 className="text-md font-normal font-GillSans uppercase">Add Wish</h2>
-                                                            <p className="text-sm font-poppins">
-                                                                Let fans fund your lifestyle for a reward.
-                                                            </p>
+                                                    <div onClick={()=> setWishOptions(true)} className="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center">
+                                                        <div className=" flex items-center">
+                                                            <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                <FaRegHeart color="var(--pink)" size="1.5rem" />
+                                                            </div>
+                                                            <div className="ps-3 text-start">
+                                                                <h2 className="text-md font-normal font-GillSans uppercase">Add Wish</h2>
+                                                                <p className="text-sm font-poppins">
+                                                                    Let fans fund your lifestyle for a reward.
+                                                                </p>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
                                                 
                                                     <AddItem  classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
                                                     product_type="digital_products"  />
