@@ -256,45 +256,48 @@ export default function Header() {
                         </button>
                         <div class="overflow-y-auto overflow-x-hidden flex-grow">
                             <ul class=" flex flex-col pt-8 space-y-1">
-                                <>
-                                    <li>
-                                        <Link
-                                            onClick={toggleClass}
-                                            href={"/account"}
-                                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                        >
-                                            <span class="inline-flex justify-center items-center ml-4">
-                                                <IoSettingsOutline
-                                                    color="#fff"
-                                                    size={"1.2rem"}
-                                                />
-                                            </span>
-                                            <span class="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                My Account
-                                            </span>
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link
-                                            onClick={toggleClass}
-                                            href={`/${
-                                                (auth &&
-                                                    auth?.user?.username) ||
-                                                ""
-                                            }`}
-                                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                        >
-                                            <span class="inline-flex justify-center items-center ml-4">
-                                                <FaHeart
-                                                    color="#fff"
-                                                    size={"1.2rem"}
-                                                />
-                                            </span>
-                                            <span class="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                My Wishlist
-                                            </span>
-                                        </Link>
-                                    </li>
+                                    {auth?.user?.username ?
+                                        <>
+                                            <li>
+                                                <Link
+                                                    onClick={toggleClass}
+                                                    href={"/account"}
+                                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                >
+                                                    <span class="inline-flex justify-center items-center ml-4">
+                                                        <IoSettingsOutline
+                                                            color="#fff"
+                                                            size={"1.2rem"}
+                                                        />
+                                                    </span>
+                                                    <span class="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                        My Account
+                                                    </span>
+                                                </Link>
+                                            </li>
+                                            <li>
+                                                <Link
+                                                    onClick={toggleClass}
+                                                    href={`/${
+                                                        (auth &&
+                                                            auth?.user?.username) ||
+                                                        ""
+                                                    }`}
+                                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                >
+                                                    <span class="inline-flex justify-center items-center ml-4">
+                                                        <FaHeart
+                                                            color="#fff"
+                                                            size={"1.2rem"}
+                                                        />
+                                                    </span>
+                                                    <span class="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                        My Wishlist
+                                                    </span>
+                                                </Link>
+                                            </li>
+                                        </>
+                                    :""}
                                     <li>
                                         <a
                                             href="https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk"
@@ -313,18 +316,15 @@ export default function Header() {
                                             </span>
                                         </a>
                                     </li>
+                                  
 
-                                    {auth &&
-                                    auth.user &&
-                                    auth.user.stripe_details_submitted ==
-                                        "1" ? (
+                                    {auth && auth.user && auth.user.stripe_details_submitted == "1" ? (
                                         <>
                                             <li>
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={`/shop`}
-                                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                                >
+                                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6" >
                                                     <span class="inline-flex justify-center items-center ml-4">
                                                         <FaBasketShopping
                                                             color="#fff"
@@ -332,31 +332,12 @@ export default function Header() {
                                                         />
                                                     </span>
                                                     <span
-                                                        class="ml-2 text-[17px]  tracking-wide truncate text-white"
-                                                    >
+                                                        class="ml-2 text-[17px]  tracking-wide truncate text-white" >
                                                         Shop
                                                     </span>
                                                 </Link>
                                             </li>
-                                            <li>
-                                                <Link
-                                                    onClick={toggleClass}
-                                                    href={"giftstore"}
-                                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                                >
-                                                    <span class="inline-flex justify-center items-center ml-4">
-                                                        <FiGift
-                                                            color="#fff"
-                                                            size={"1.2rem"}
-                                                        />
-                                                    </span>
-                                                    <span
-                                                        class="ml-2 text-[17px] tracking-wide truncate text-white"
-                                                    >
-                                                        Gift Store
-                                                    </span>
-                                                </Link>
-                                            </li>
+                                           
                                             <li>
                                                 <Link
                                                     onClick={toggleClass}
@@ -370,8 +351,7 @@ export default function Header() {
                                                         />
                                                     </span>
                                                     <span
-                                                        class="ml-2 text-[17px]
-                            tracking-wide truncate text-white"
+                                                        class="ml-2 text-[17px] tracking-wide truncate text-white"
                                                     >
                                                         Earnings
                                                     </span>
@@ -390,8 +370,7 @@ export default function Header() {
                                                         />
                                                     </span>
                                                     <span
-                                                        class="ml-2 text-[17px]
-                            tracking-wide truncate text-white"
+                                                        class="ml-2 text-[17px] tracking-wide truncate text-white"
                                                     >
                                                         Membership Dashboard
                                                     </span>
@@ -402,7 +381,8 @@ export default function Header() {
                                         ""
                                     )}
 
-                                    <li>
+
+                                    {auth && auth.user?.username ? <li>
                                         <Link
                                             onClick={toggleClass}
                                             href={`/wish-tracker`}
@@ -415,35 +395,18 @@ export default function Header() {
                                                 />
                                             </span>
                                             <span
-                                                class="ml-2 text-[17px]
-                        tracking-wide truncate text-white"
+                                                class="ml-2 text-[17px] tracking-wide truncate text-white"
                                             >
                                                 Wish tracker
                                             </span>
                                         </Link>
-                                    </li>
-                                </>
-                                <>
-                                    <li>
-                                        <a
-                                            href="https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk"
-                                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                        >
-                                            <span class="inline-flex justify-center items-center ml-4">
-                                                <SlCalender
-                                                    color="#fff"
-                                                    size={"1.2rem"}
-                                                />
-                                            </span>
-                                            <span
-                                                class="ml-2 text-[17px]
-                        tracking-wide truncate text-white"
-                                            >
-                                                Subscription Billing
-                                            </span>
-                                        </a>
-                                    </li>
+                                    </li> : ''}
 
+                                    
+                                    { auth?.user?.username ? 
+                                    <></>
+                                    : 
+                                    <>
                                     <li>
                                         <Link
                                             onClick={toggleClass}
@@ -485,6 +448,8 @@ export default function Header() {
                                             </span>
                                         </Link>
                                     </li>
+                                    </>
+                                    }
 
                                     <li>
                                         <Link
@@ -563,7 +528,6 @@ export default function Header() {
                                             </span>
                                         </Link>
                                     </li>
-                                </>
                                 <div className="bg-[#ff87b8] h-[1px] w-full max-w-[85%] m-auto mt-3"></div>
                                 <ul className="pt-3 text-white ">
                                     <li>
