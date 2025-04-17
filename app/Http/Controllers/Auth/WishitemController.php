@@ -162,6 +162,8 @@ class WishitemController extends Controller
                         "unit_amount_decimal" => $createpriceid * 100
                     ],
                     "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
+                ],[
+                    'stripe_account' => $user->account_id
                 ]);
                 $wish->stripe_product_id = $stripe_client->id;
                 $wish->price_id = $stripe_client->default_price;
@@ -704,6 +706,8 @@ class WishitemController extends Controller
                     'name' => $wishitem->wishname,
                     'images' => [$wishitem->perma_link],
                     "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100],
+                ],[
+                    'stripe_account' => $cart->owner->account_id
                 ]);
                 $priceid = $stripe_client->id;
             } else {
@@ -733,6 +737,8 @@ class WishitemController extends Controller
                     'name' => $wishitem->wishname,
                     'images' => [$wishitem->perma_link],
                     "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" =>  round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100],
+                ],[
+                    'stripe_account' => $wishitem->user->account_id
                 ]);
                 $priceid = $stripe_client->id;
             } else {
@@ -1836,8 +1842,6 @@ class WishitemController extends Controller
         }
     }
 
-
-
     /**
      * rye update buyer identity functionality
      *
@@ -2193,6 +2197,8 @@ class WishitemController extends Controller
             'name' => 'Surprise Gift',
             'images' => ['https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/'],
             "default_price_data" => ["currency" => $owner->default_currency, "unit_amount_decimal" => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100],
+        ], [
+            'stripe_account' => $owner->account_id,
         ]);
 
         if (!Auth::check()) {

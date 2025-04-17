@@ -19,13 +19,14 @@ class Checkout extends Mailable
     public $messages;
     public $anonname;
     public $symbol;
+    public $vat_amount;
 
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($data, $anon, $surprise, $messages, $anonname, $symbol)
+    public function __construct($data, $anon, $surprise, $messages, $anonname, $symbol, $vat_amount)
     {
         $this->data = $data;
         $this->anon = $anon;
@@ -33,8 +34,8 @@ class Checkout extends Mailable
         $this->messages = $messages;
         $this->anonname = $anonname;
         $this->symbol = $symbol;
+        $this->vat_amount = $vat_amount;
 
-        Log::info("data: $this->data");
     }
 
     /**

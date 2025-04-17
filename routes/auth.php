@@ -96,12 +96,12 @@ Route::middleware('auth')->group(function () {
         ->name('verification.email');
 
     Route::middleware('mustCompletedStripeIdentity')->group(function () {
-
-        Route::post('/say-thankyou/{payment_id}', [WishitemController::class, 'sayThanks'])->name('say-thankyou');
-
-        Route::post('move-wish', [WishitemController::class, 'moveWishes'])->name('move-wish');
-
         Route::middleware('mustHaveToVerify')->group(function () {
+
+            // gifter card verification routes
+            Route::get('gifter-card-verification', [RegisteredUserController::class, 'gifterCardVerification'])->name('gifter.card.verification');
+            Route::get('card-verification-success/{id}', [RegisteredUserController::class, 'cardVerificationSuccess'])->name('card.verification.success');
+            Route::get('card-verification-failed/{id}', [RegisteredUserController::class, 'cardVerificationFailed'])->name('card.verification.failed');
 
             Route::get('update-vat/{percent}', [AuthenticatedSessionController::class, 'updateVat'])->name('updateVat');
 
@@ -228,6 +228,10 @@ Route::middleware('auth')->group(function () {
             Route::post('/upload-dalle-image', [ProfileController::class, 'uploadDalleImage'])->name('upload.dalle.image');
         });
 
+        Route::post('/say-thankyou/{payment_id}', [WishitemController::class, 'sayThanks'])->name('say-thankyou');
+
+        Route::post('move-wish', [WishitemController::class, 'moveWishes'])->name('move-wish');
+
         Route::get('/earnings', function () {
             return Inertia::render('earnings/Earnings');
         })->name('earnings-page');
@@ -331,7 +335,6 @@ Route::middleware('auth')->group(function () {
 
         Route::get('anonymous-cart/{deviceId}', [WishitemController::class, 'anonymousCartItems'])->name('anonymous-cart');
 
-        Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
 
         Route::get('/create-checkout-session/{id}', [CheckoutController::class, 'createCheckout'])->name('create.checkout');
 
@@ -382,6 +385,9 @@ Route::middleware('auth')->group(function () {
         });
     });
 });
+
+Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
+
 /* wishtender */
 Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('leaderboard');
 Route::get('first-three-leaderboard/{type?}', [LeaderBoardController::class, 'firstThreeWisher'])->name('first-three-wishes');

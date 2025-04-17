@@ -124,7 +124,7 @@ export default function AddGift({
             classes={`w-full addop bg-white rounded-xl py-2 px-3 ${classes}`}
             text={<AddItem />}
         >
-            {hasAdded ? (
+            {!hasAdded ? (
                 <form onSubmit={submitPost}>
                     <div className="flex align-items-center">
                         <div

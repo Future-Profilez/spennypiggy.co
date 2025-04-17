@@ -124,8 +124,6 @@ class BillsController extends Controller
 
     public function billEdit(Request $request, $id)
     {
-
-
         $validator = Validator::make($request->all(), [
             "name" => [
                 "required",
@@ -187,7 +185,9 @@ class BillsController extends Controller
                         ],
                         "url"   =>  env('APP_URL') . '/' . $user->username,
                     ];
-                    $stripe_client = $stripe->products->create($productPayload);
+                    $stripe_client = $stripe->products->create($productPayload, [
+                        'stripe_account' => $user->account_id, // 🟢 Target the connected account
+                    ]);
                     $bill->price_id = $stripe_client->default_price;
                 } else {
                     $stripe_client = $stripe->products->update($bill->product_id, [

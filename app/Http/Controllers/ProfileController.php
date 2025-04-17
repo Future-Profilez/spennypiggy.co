@@ -125,7 +125,9 @@ class ProfileController extends Controller
 
             $user->name = $request->name;
             $user->username = $request->username;
-            $user->bio = $request->bio;
+            if ($request->bio) {
+                $user->bio = $request->bio;
+            }
             $user->min_surprise_amount = $request->min_surprise_amount ?? 0;
 
             if (!empty($avatar)) {
