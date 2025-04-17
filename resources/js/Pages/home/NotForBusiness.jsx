@@ -1,11 +1,12 @@
-import React from 'react';
-import not1 from '../../../assets/img/not1.png'
-import not2 from '../../../assets/img/not2.png'
-import not3 from '../../../assets/img/not3.png'
-import { LazyLoadImage } from 'react-lazy-load-image-component';
+import React from "react";
+import howitworks1 from "../../../assets/new/howitworks1.png";
+import howitworks2 from "../../../assets/new/howitworks2.png";
+import howitworks3 from "../../../assets/new/howitworks3.png";
+import { LazyLoadImage } from "react-lazy-load-image-component";
 export default function NotForBusiness() {
-  return <>
-  <style>{`
+    return (
+        <>
+            {/* <style>{`
   .conversion { 
     background: #D9EFEA;
   }
@@ -78,6 +79,51 @@ export default function NotForBusiness() {
                     </div>
                 </div>
             </div>
-        </div>
-  </> 
+        </div> */}
+            <section className="bg-black py-16 px-4 text-white">
+                <div className="text-center max-w-2xl mx-auto mb-16">
+                    <h2 className="headingSm shadow-none text-light font-gulfs stroke-none text-3xl md:text-5xl uppercase">
+                        How It Works
+                    </h2>
+                    <p className="mt-4 font-poppins text-base md:text-lg text-[#FFFCFC]">
+                        Setting up your Spenny Piggy Wishlist is a breeze—quick,
+                        simple, and fun! You'll be ready to roll in just 5
+                        minutes!
+                    </p>
+                </div>
+
+                <div className="flex flex-col lg:flex-row items-center justify-center gap-12 max-w-6xl mx-auto">
+                    {/* Left Side - Text & Number */}
+                    <div className="lg:w-1/2  md:text-right relative px-4">
+                        {/* Number badge */}
+                        <div className="lg:mb-4 relative">
+                            <div className="absolute right-0 !top-[-47px] flex items-center justify-center w-10 h-10 bg-pink-500 text-white font-bold rounded-full">
+                                1
+                            </div>
+                        </div>
+                        <h3 className="text-2xl md:text-3xl font-extrabold uppercase font-anton mt-12 lg:mt-0">
+                            Create Your Wishlist
+                        </h3>
+                        <p className="mt-4 text-base md:text-lg text-[#05EFB8]">
+                            Hop on Spenny Piggy, add your faves to your
+                            Wishlist, or create your own storefront to sell
+                            exclusive content, services, or products— and start
+                            sharing your page in no time!
+                        </p>
+                    </div>
+
+                    {/* Right Side - Image */}
+                    <div className="lg:w-1/2 w-full px-4">
+                        <div className="p-2 rounded-[20px] shadow-[0px_2px_2px_0px_#05EFB8]">
+                            <img
+                                src={howitworks2}
+                                alt="Create Wishlist"
+                                className="w-full rounded-[16px]"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </>
+    );
 }

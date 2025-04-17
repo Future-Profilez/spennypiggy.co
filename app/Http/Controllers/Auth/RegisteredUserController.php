@@ -79,20 +79,17 @@ class RegisteredUserController extends Controller
 
         $ip_address = $request->ip();
         $checkIpExist = User::where('ip_address', $ip_address)->exists();
-        if ($checkIpExist) {
-            return redirect()->back()->with('error', "You have already registered with this IP address.");
+        if ($checkIpExist){
+            return redirect()->back()->with('error', "You can not create multiple account with same IP address. You have already registered with this IP address.");
         }
 
-
         $exist = User::where('email', $request->email)->whereNull('deleted_at')->first();
-
         if (!empty($exist)) {
             return redirect()->back()->with('error', "This email already has been taken.");
         }
 
         $email = $request->email;
         $domain = explode('@', $email);
-
         $secure = AllowedDomain::all()->pluck('name')->toArray();
 
         if (!in_array($domain[1], $secure)) {

@@ -54,9 +54,9 @@ Route::get('/membership-dashboard', function () {
 // Route::get('get-all-products', [TestController::class, 'fetchRyeProducts'])->name('get.all.products');
 
 
-Route::get('rey-test', function () {
-    return Inertia::render('ReyTest');
-})->name('rey.test');
+// Route::get('rey-test', function () {
+//     return Inertia::render('ReyTest');
+// })->name('rey.test');
 
 Route::get('get-cart', function () {
     return Inertia::render('GetCart');
