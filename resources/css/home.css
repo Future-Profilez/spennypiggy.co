@@ -225,6 +225,7 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 .qutynum{font-size:16px;width:34px;text-align:center;border-left:1px solid var(--gray);border-right:1px solid var(--gray);display:inline-flex;line-height:23px;}
 .quty button{width:33px;font-size:18px !important;display:flex;}
 .cartlist.shadow-purple{box-shadow:5px 8px 0 0 var(--purple);}
+.shadow-pink{box-shadow:5px 8px 0 0 var(--pink);}
 .stripbox{max-width:741px;width:90%;}
 .stripbox .loginheadbox{border-radius:30px 30px 0 0;}
 .termselect label{color:#676767;font-size:17px;font-style:normal;letter-spacing:-0.28px;line-height:24px;}
@@ -667,6 +668,7 @@ html body .intercom-lightweight-app-launcher{margin-bottom:70px !important;}
 .cartProRtbox{display:inline-flex;width:100%;justify-content:space-between;margin-top:10px;}
 .shadow-yellow{text-shadow:1px 3px 0 var(--yellow);}
 .shadow-voilet{box-shadow:5px 5px 0 0 var(--voilet);}
+.shadow-mint{box-shadow:5px 5px 0 0 var(--mint);}
 .headingMd{font-size:45px !important;line-height:47px !important;}
 .headermain{padding-top:15px;padding-bottom:15px;}
 .closemega{position:absolute;right:31px;top:30px;}
