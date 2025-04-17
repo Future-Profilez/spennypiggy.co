@@ -7,8 +7,8 @@ import LoaderButton from '@/Components/LoaderButton';
 import { useRef } from 'react';
 import axios from 'axios';
 import HCaptcha from '@hcaptcha/react-hcaptcha';
-// const IpRedirection = React.lazy(() => import('@/includes/IpRedirection'));
 import { handleIpRedirection } from '../../includes/useIpRedirection';
+import Countries from '../../includes/Countries';
 
 export default function Register(props) {
     const CheckCircleIcon = () => {
@@ -63,7 +63,7 @@ export default function Register(props) {
         username: '',
         email: '',
         password: '',
-        gender: '',
+        gender: 'he',
         password_confirmation: '',
         promo: '',
         role: type && type === "creator" ? 1 : 0,
@@ -82,7 +82,31 @@ export default function Register(props) {
             setStep(2);
         }
     }
-    // console.log("data",data);
+
+    const [address, setAddressData] = useState({
+        country_code : '',
+        country : '',
+        state : '',
+        city : '',
+        postal_code : '',
+        street_address : '',
+    });
+    const getCountry = (e) => {
+        const c = JSON.parse(e);
+        setAddressData({
+            ...address,
+            country : c.label,
+            country_code : c.code
+        });
+    }
+
+    console.log("address",address)
+    const handleAddressInput = (e) => {
+        setAddressData({
+            ...address,
+            [e.target.name]: e.target.value
+        });
+    }
 
     const termsaccept = () => {
         errorAlert("Please check accept terms & conditions checkbox");
@@ -152,11 +176,15 @@ export default function Register(props) {
             errorAlert("Please verify you are not a robot.")
             return false;
         }
+        if (role !==1 && (address.country === '') ) {
+            errorAlert("Country is required.");
+            return false;
+        }
         if (!checkRef.current.checked) {
             termsaccept();
             return false;
         }
-        post(route('register'), {
+        post(route('register', {...data, ...address}), {
             preserveScroll: true,
             onSuccess: (resp) => {
                 if (resp.props.flash?.success) {
@@ -243,6 +271,8 @@ export default function Register(props) {
         }
     }
 
+     
+
     return (
         <GuestLayout>
             {/* <IpRedirection />/ */}
@@ -308,6 +338,7 @@ export default function Register(props) {
                         <div className={`${step === 2 ? '' : 'd-none'}`} >
                             <form onSubmit={submit} >
                                 <div className='login-step1 '>
+                                    
                                     <div className='row'>
                                         <div className='col-md-6 mb-4 formfield'>
                                             <label>Display Name</label>
@@ -387,33 +418,88 @@ export default function Register(props) {
                                                 <InputError>{errors?.password_confirmation || ''}</InputError>
                                             </div>
                                         </div>
-                                            <div className={`mb-3  ${mypass ? 'd-block' : 'd-none'}`} >
-                                                <div className="pass greybox border-0 p-3" >
-                                                    <div id="msgText">
-                                                        <h3>Password must contain the following:</h3>
-                                                        <p id="letter" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> lowercase</b> letter</p>
-                                                        <p id="capital" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> capital (uppercase)</b> letter</p>
-                                                        <p id="number" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> number</b></p>
-                                                        <p id="special" className="text-grey"><CheckCircleIcon /> &nbsp;Special characters</p>
-                                                        <p id="length" className="text-grey mb-0"><CheckCircleIcon /> &nbsp;Password should minimum 8 characters.</p>
-                                                    </div>
+                                        <div className={`mb-3  ${mypass ? 'd-block' : 'd-none'}`} >
+                                            <div className="pass greybox border-0 p-3" >
+                                                <div id="msgText">
+                                                    <h3>Password must contain the following:</h3>
+                                                    <p id="letter" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> lowercase</b> letter</p>
+                                                    <p id="capital" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> capital (uppercase)</b> letter</p>
+                                                    <p id="number" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> number</b></p>
+                                                    <p id="special" className="text-grey"><CheckCircleIcon /> &nbsp;Special characters</p>
+                                                    <p id="length" className="text-grey mb-0"><CheckCircleIcon /> &nbsp;Password should minimum 8 characters.</p>
                                                 </div>
                                             </div>
+                                        </div>
                                     </div>
 
+                                    {role == 0 && role !== 1 ? 
+                                        <>  
+                                        <p className='border-t mt-3 pt-4 text-grey uppercase text-normal mb-2'>Address Information</p>
+                                            <div className='row'>
+                                                <div className='col-md-12 mb-4 formfield'>
+                                                    <label>street_address</label>
+                                                    <input id="street_address"
+                                                        name="street_address"
+                                                        className="mt-1 block w-full"
+                                                        autoComplete="street_address"
+                                                        onChange={handleAddressInput}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className='col-md-6 mb-4 formfield'>
+                                                    <label>Choose Country</label>
+                                                    <Countries send={getCountry} />
+                                                </div>
+                                                <div className='col-md-6 mb-4 formfield'>
+                                                    <label>State</label>
+                                                    <input id="state" 
+                                                        name="state"
+                                                        className="mt-1 block w-full"
+                                                        autoComplete="state"
+                                                        onChange={handleAddressInput}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className='col-md-6 mb-4 formfield'>
+                                                    <label>City</label>
+                                                    <input id="city"
+                                                        name="city"
+                                                        className="mt-1 block w-full"
+                                                        autoComplete="city"
+                                                        onChange={handleAddressInput}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className='col-md-6 mb-4 formfield'>
+                                                    <label>Postal Code</label>
+                                                    <input id="postal_code"
+                                                        name="postal_code"
+                                                        onChange={handleAddressInput}
+                                                        className="mt-1 block w-full"
+                                                        autoComplete="postal_code"
+                                                        required
+                                                    />
+                                                </div>
+                                                
+                                            </div>
+                                        </> 
+                                        : 
+                                        <>
+                                        </>
+                                    }
+                                    
                                     <div className='promocode mb-4' >
                                         <div className='d-flex align-items-center justify-content-between' >
                                             <label className='mb-2'>Referral (optional) {codevalid ? <span className='text-success text-small' >Code Applied.</span> : ''}</label>
                                         </div>
-                                        <div className='d-flex align-items-center' >
+                                        <div className='d-flex align-items-center relative' >
                                             <input ref={promoinput}
                                             placeholder="Enter Referral Code..." className='form-control ' />
                                             {codevalid ? <div  onClick={removecode}
                                             className={`cursor-pointer ${codevalid ? "mintbg text-dark" : "pinkbg"} promocode-btn ms-2 text-center`}
                                             >Remove</div>
                                                 :
-                                            <div  onClick={checkPromo}
-                                            className={`cursor-pointer ${codevalid ? "mintbg text-dark" : "pinkbg"} promocode-btn ms-2 text-center`}
+                                            <div className='absolute top-2 right-2 cursor-pointer mintbg text-dark promocode-btn ms-2 !py-2 text-center' onClick={checkPromo}
                                             >{ codevalid ? "Applied" : "Apply" }</div>}
                                         </div>
                                     </div>
@@ -428,7 +514,9 @@ export default function Register(props) {
                                         </label>
                                     </div>
 
-                                    <div className='m-auto hcaptcha-wrap d-table mb-3 mt-0 mt-md-3' >
+                                    {role == 0 ? <p className='alert alert-warning text-sm text-center mt-3' >The above matches the details on the bank card they will use. If it doesn’t their account will be suspended.</p> : ''}
+
+                                    <div className='m-auto hcaptcha-wrap d-table mb-2 mt-4  mt-md-3' >
                                         <HCaptcha  ref={captchaRef}
                                         sitekey={props.hcaptchakey || ''}
                                         data-theme="light"
@@ -436,22 +524,13 @@ export default function Register(props) {
                                         onVerify={onVerify}
                                         />
                                     </div>
-
-
-                                    <div className='wishlistbtn  text-center flex justify-center mt-4'>
+                                    <div className='wishlistbtn text-center flex justify-center mt-2'>
                                         <LoaderButton disabled={processing} className='btn-pink w-full lg lg2 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Create Account"}</LoaderButton>
                                     </div>
+
                                 </div>
                             </form>
                         </div>
-                        {/* <div className='m-auto hcaptcha-wrap d-table mb-3 mt-0 mt-md-3' >
-                                        <HCaptcha  ref={captchaRef}
-                                        sitekey={props.hcaptchakey || ''}
-                                        data-theme="light"
-                                        data-size="compact"
-                                        onVerify={onVerify}
-                                        />
-                                    </div> */}
                     </div>
                 </div>
             </div>

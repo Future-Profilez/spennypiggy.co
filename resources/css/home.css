@@ -290,7 +290,7 @@ div#msgText p b{font-weight:700 !important;padding:0 4px;color:#000;}
 .userphoto span{height:auto !important;width:auto !important;display:block !important;}
 .wishbanner img{min-height:230px;}
 .wishtracker-box{max-width:950px;}
-.promocode input,.promocode-btn{border-radius:12px;padding:10px 20px;}
+.promocode input,.promocode-btn {border-radius:12px;padding:14px 22px;}
 .promocode-btn{color:#fff;border-radius:10px;}
 .promoapplied{font-size:16px !important;}
 .loveboxes h3{font-size:24px !important;line-height:31px !important;}
