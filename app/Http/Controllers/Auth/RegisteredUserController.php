@@ -110,6 +110,7 @@ class RegisteredUserController extends Controller
                 'role' => $request->role ?? 0,
                 'creator_category' => $request->creator_category ?? null,
                 'ip_address' => $ip_address,
+                'country' => $request->country_code ?? null,
             ]);
             $user->refresh();
 
