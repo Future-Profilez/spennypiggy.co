@@ -127,6 +127,7 @@ class ProfileController extends Controller
             $user->username = $request->username;
             if ($request->bio) {
                 $user->bio = $request->bio;
+                $user->edit_bio_reason = '';
             }
             $user->min_surprise_amount = $request->min_surprise_amount ?? 0;
 

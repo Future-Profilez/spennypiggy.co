@@ -8,7 +8,8 @@ import { useRef } from "react";
 import Popup from '@/Components/Popup';
 
 export default function Stripe(props) {
-    const { auth, user } = props;
+    const { auth, user, bio_status, social_media_status, user_profile_status } = props;
+    console.log("props",props)
     const checkRef = useRef();
     const { errorAlert } = useAlerts();
     const { data, setData, get, post, processing, errors, reset } = useForm({
@@ -105,40 +106,25 @@ export default function Stripe(props) {
                                 </p>
                             </li>
                         </ul>
+                       
+                        {bio_status == 0 ? <p className="text-yellow-600 mt-2 "> ⚠️ Your bio hasn't been approved yet. Please update it as per the requested guidelines.</p> : ''}
+                        {social_media_status == 0 ? <p className="text-yellow-600 mt-2 "> ⚠️ Please update at least one of your social media handles.</p> : ''}
+                        {user_profile_status == 0 ? <p className="text-yellow-600 mt-2 "> ⚠️ Your profile image hasn't been approved yet.</p> : ''}
+                        
+                        { bio_status == 0 || social_media_status == 0 || user_profile_status == 0 ? 
+                        '' :
+                            <>
+                                <strong className="d-block w-100 pt-3 mb-1">Choose Country</strong>
+                                <Countries send={getCountry} />
+                            </>
+                        }
 
-                        <strong className="d-block w-100 pt-3 mb-1">
-                            Choose Country
-                        </strong>
-                        <Countries send={getCountry} />
-
-                        {/* <div className="termselect mt-4">
-                            <label htmlFor="termaccept">
-                                <p>
-                                    <input
-                                        type="checkbox"
-                                        ref={checkRef}
-                                        id="termaccept"
-                                        name="termaccept"
-                                        value="termaccept"
-                                        required
-                                        onChange={(e) =>
-                                            setData(
-                                                "termaccept",
-                                                e.target.value
-                                            )
-                                        }
-                                    ></input>
-                                    I confirm I will only use Spenny Piggy in line with the ToS and understand my account could be suspended for repeated violations. I also confirm that I will create and post exclusive content in exchange for receiving gifts, donations, subscriptions, memberships and bill payments. I also confirm that nothing on the above prohibited list will be added to my profile.
-                                </p>
-                            </label>
-                        </div> */}
                     </div>
+
                     <div className="text-center flex justify-center mb-4 ">
-
-
                         <Popup modalclass="pinkmodal full stripe-terms shadow-pink ps-0"
                             space="4" size="md"
-                            action={close} classes={`btn-pink lg w-1/2`}
+                            action={close} classes={`btn-pink lg w-1/2 ${ bio_status == 0 || social_media_status == 0 || user_profile_status == 0 ? 'disabled' : ''}`}
                             text={`Accept TERMS`} >
                                 <div className="addgoal" >
                                     <h2 className="text-uppercase font-GillSans pb-4 font-large">Important notice !</h2>
@@ -166,13 +152,8 @@ export default function Stripe(props) {
 
                                     <button className='btn-pink md m-auto mt-4  d-table' onClick={() => { return checkTerms(); }}>Go to Stripe</button>
                                 </div>
-                            </Popup>
-
+                        </Popup>
                     </div>
-
-                    {/* <p className='alert alert-success text-center font-bold my-4' >Thanks for registering! You will soon be able to link your stripe account within the next 5 weeks. As soon as you can we will drop you an e-mail 🤑</p> */}
-
-                    {/* </form> */}
                 </div>
             </div>
         </Authenticated>

@@ -453,7 +453,7 @@ export default function Dashboard(props) {
                                                                             {user?.edit_bio_reason  ?
                                                                                 <div className="mt-3">
                                                                                     <p className="text-red-700">Bio Edit Request</p>
-                                                                                    <p className="text-red-500 text-sm">Reason : {user?.edit_bio_reason }. Please update your bio as per requested.</p>
+                                                                                    <p className="text-red-500 text-sm">Reason : {user?.edit_bio_reason } Please update your bio as per requested.</p>
                                                                                 </div>
                                                                               : ''}
 
