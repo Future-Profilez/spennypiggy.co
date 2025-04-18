@@ -937,10 +937,10 @@ class ProfileController extends Controller
         if ($intro) {
             $total += 1;
         }
-        $post_required = !empty($memPost) && !empty($subPost) && !empty($supPost) ? 1 : 0;
-        if ($post_required) {
-            $total += 1;
-        }
+        // $post_required = !empty($memPost) && !empty($subPost) && !empty($supPost) ? 1 : 0;
+        // if ($post_required) {
+        //     $total += 1;
+        // }
         $member_required = !empty($membership) ? 1 : 0;
         if ($member_required) {
             $total += 1;
@@ -953,10 +953,10 @@ class ProfileController extends Controller
         if ($vat_setting) {
             $total += 1;
         }
-        $payment_connect = $user->stripe_details_submitted ? 1 : 0;
-        if ($payment_connect) {
-            $total += 1;
-        }
+        // $payment_connect = $user->stripe_details_submitted ? 1 : 0;
+        // if ($payment_connect) {
+        //     $total += 1;
+        // }
         $shop = !empty($user->shop) ? 1 : 0;
         if ($shop) {
             $total += 1;
@@ -974,11 +974,11 @@ class ProfileController extends Controller
             'status' => true,
             'basic_profile' => $basic_profile,
             'intro' => $intro,
-            'post_required' => $post_required,
+            // 'post_required' => $post_required,
             'membership_required' => $member_required,
             'bill_required' => $bill_required,
             'vat_setting' => $vat_setting,
-            'payment_connect' => $payment_connect,
+            // 'payment_connect' => $payment_connect,
             'contents' => $contents,
             'auto_tweets' => $auto_tweets,
             'shop' => $shop,

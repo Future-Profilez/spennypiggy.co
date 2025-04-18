@@ -27,11 +27,14 @@ export default function Stripe(props) {
         }
     };
 
+
+    const [connecting, setConnecting] = useState(false);
     const checkTerms = () => {
         if (country == '') {
             errorAlert("Please choose your country.");
             return false;
         }
+        setConnecting(true);
         if (checkRef.current.checked) {
             window.location.href = route("stripe.connect", {
                 step: "init",
@@ -42,6 +45,7 @@ export default function Stripe(props) {
         } else {
             errorAlert("Please check accept terms & conditions checkbox");
             checkRef.current.focus();
+            setConnecting(false);
             return false;
         }
     };
@@ -149,7 +153,7 @@ export default function Stripe(props) {
                                             </p></label>
                                     </div>
 
-                                    <button className='btn-pink md m-auto mt-4  d-table' onClick={() => { return checkTerms(); }}>Go to Stripe</button>
+                                    <button className='btn-pink md m-auto mt-4  d-table' onClick={() => { return checkTerms(); }}>{connecting ? 'Connecting...' : "Go to Stripe"}</button>
                                 </div>
                         </Popup>
                     </div>

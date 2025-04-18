@@ -1,14 +1,10 @@
 import React from "react";
-import footlogo from "../../assets/img/logo.png";
-import { Link, usePage } from "@inertiajs/react";
-import { Helmet } from "react-helmet";
+import { Head, Link } from "@inertiajs/react";
 import { useEffect } from "react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import spennypiggy from "../../assets/img/logo.png";
-// import spennypiggy from "../../assets/img/logo.png";
 
 export default function Footer(props) {
-    const { ziggy } = usePage().props;
     const { auth } = props;
     async function configIntercom() {
         setTimeout(() => {
@@ -116,142 +112,20 @@ export default function Footer(props) {
         confgureGtag();
     }, []);
 
+    const date = new Date();
     return (
         <>
-            <Helmet>
+            <Head>
                 <script
                     type="text/javascript"
                     src="https://app.termly.io/resource-blocker/1f6672bd-7b65-47a4-8a75-d02946c93b2e?autoBlock=on"
                 ></script>
-                {/* <script async type="text/javascript" src="https://app.termly.io/embed.min.js" data-auto-block="on" data-website-uuid="ced8ded9-995d-471a-bf54-880b8c679a81" ></script> */}
                 <script
                     async
                     src="https://www.googletagmanager.com/gtag/js?id=G-9F1M3QZZB3"
                 ></script>
-            </Helmet>
-            {/* Old Code */}
-            {/* <div className="whbg">
-                <div id="footer" className="footer">
-                    <div className="containerbox">
-                        <div className="footlogo py-2 m-auto d-table">
-                            <LazyLoadImage
-                                className="rounded-4 p-3 blackbg "
-                                alt={"image"}
-                                height={"auto"}
-                                src={footlogo}
-                                width={"auto"}
-                            />
-                        </div>
-
-                        <div className="footlinksbox">
-                            <div className="footlinks">
-                                <ul>
-                                    <li>
-                                        <a
-                                            target="_blank"
-                                            href="https://app.termly.io/policy-viewer/policy.html?policyUUID=88583b44-9385-430c-aa79-3c41dc8a167e "
-                                        >
-                                            
-                                            Privacy Policy
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a
-                                            target="_blank"
-                                            href="https://app.termly.io/policy-viewer/policy.html?policyUUID=f11eb44f-4ddd-4d59-86d1-34c11e3fa80e"
-                                        >
-                                            
-                                            Cookie Policy
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a
-                                            target="_blank"
-                                            href="https://app.termly.io/policy-viewer/policy.html?policyUUID=9a437e57-fcc7-439f-a7e7-96b493a8c50f"
-                                        >
-                                            
-                                            Acceptable Use Policy
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a
-                                            target="_blank"
-                                            href="https://app.termly.io/notify/88583b44-9385-430c-aa79-3c41dc8a167e "
-                                        >
-                                            
-                                            DSAR Form
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a
-                                            target="_blank"
-                                            href="https://intercom.help/spenny-piggy"
-                                        >
-                                            
-                                            FAQ's
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <Link href={route("how-it-works")}>
-                                            
-                                            How it works
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <a href="https://blog.spennypiggy.co">
-                                            
-                                            Blog
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a
-                                            target="_blank"
-                                            href="https://app.termly.io/policy-viewer/policy.html?policyUUID=364c168c-44ab-467e-a98a-a22629fc31f8"
-                                        >
-                                            
-                                            Disclaimer
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a
-                                            target="_blank"
-                                            href="https://app.termly.io/policy-viewer/policy.html?policyUUID=a1f91da2-10e4-49e8-88b6-fc716b2645ba"
-                                        >
-                                            Return Policy
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a
-                                            target="_blank"
-                                            href="https://ucarecdn.com/90485216-9757-4fb8-8002-d45c7ced6c46/"
-                                        >
-                                            
-                                            Terms
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <Link href={route("promotion-terms")}>
-                                            
-                                            Promotion Terms
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <a href="#"
-                                            className="termly-display-preferences" >
-                                            Consent Preferences
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="copyright">
-                        Copyright &copy; {new Date().getFullYear()} Spenny Piggy
-                    </div>
-                </div>
-            </div> */}
-
-            {/* New Code Starts here */}
+            </Head>
+            
             <footer className="bg-[#924DFF] text-white pt-10 pb-3 px-6">
                 <div className="max-w-5xl mx-auto">
                     <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
@@ -309,22 +183,21 @@ export default function Footer(props) {
                             </h3>
                             <ul className="space-y-2 font-poppins cursor-pointer">
                                 <li>
-                                    <a href="https://blog.spennypiggy.co">
+                                    <a target="_blank" href="https://blog.spennypiggy.co">
                                         Blog
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="https://app.termly.io/notify/88583b44-9385-430c-aa79-3c41dc8a167e">
+                                    <a target="_blank" href="https://app.termly.io/notify/88583b44-9385-430c-aa79-3c41dc8a167e">
                                         DSAR Form
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="https://app.termly.io/policy-viewer/policy.html?policyUUID=364c168c-44ab-467e-a98a-a22629fc31f8">
+                                    <a target="_blank" href="https://app.termly.io/policy-viewer/policy.html?policyUUID=364c168c-44ab-467e-a98a-a22629fc31f8">
                                         Disclaimer
                                     </a>
                                 </li>
                                 <li>
-                                    {" "}
                                     <a
                                         href="#"
                                         className="termly-display-preferences"
@@ -341,23 +214,18 @@ export default function Footer(props) {
                             </h3>
                             <ul className="space-y-2 font-poppins cursor-pointer">
                                 <li>
-                                <a
-                                        href="#"
-                                        className="intercom-dud02y e11rlguj1"
-                                    >
-                                        Live Chat
-                                    </a></li>
-                                <li><a
-                                            target="_blank"
-                                            href="https://intercom.help/spenny-piggy"
-                                        >
-                                            
+                                    <a className="livechat intercom-dud02y e11rlguj1" > Live Chat</a>
+                                </li>
+                                <li>
+                                    <a target="_blank" href="https://intercom.help/spenny-piggy" >
                                             FAQ's
-                                        </a></li>
-                                <li><Link href={route("promotion-terms")}>
-                                            
-                                            Promotion Terms
-                                        </Link></li>
+                                    </a>
+                                </li>
+                                <li>
+                                    <Link href={route("promotion-terms")}>
+                                        Promotion Terms
+                                    </Link>
+                                </li>
                             </ul>
                         </div>
 
@@ -379,17 +247,19 @@ export default function Footer(props) {
                     </div>
 
                     <div className="flex flex-col items-center mt-4 sm:mt-2 space-y-4 ">
-                        <LazyLoadImage
-                            alt={"image"}
-                            height={70}
-                            useIntersectionObserver={true}
-                            effect="blur"
-                            src={spennypiggy}
-                            width={220}
-                            className="cursor-pointer"
-                        />
+                        <Link href="/">
+                            <LazyLoadImage
+                                alt={"image"}
+                                height={70}
+                                useIntersectionObserver={true}
+                                effect="blur"
+                                src={spennypiggy}
+                                width={220}
+                                className="cursor-pointer"
+                            />
+                        </Link>
                         <p className="text-sm font-poppins">
-                            Copyright © 2025 Spenny Piggy
+                            Copyright © {date && date.getFullYear()} Spenny Piggy
                         </p>
                     </div>
 

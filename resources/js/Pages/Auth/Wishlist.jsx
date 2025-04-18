@@ -303,22 +303,17 @@ export default function Wishlist(props) {
     return (
         <Popup
             modalclassName="pinkmodal full"
-            size="lg"
             action={close}
-            classes={`${
-                editpop
-                    ? "editpop"
-                    : "w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
-            }`}
+            classes={`${ editpop ? "editpop" : "w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center" }`}
             text={customtext || <AddItem />}
         >
-            <div className="editprofileModal  wishlistModal max-h-[90vh] overflow-auto customScrollbar ">
-                <div className="editprofileModalInner">
+            <div className="editprofileModal  wishlistModal  ">
+                <div className="editprofileModalInner ">
                     <h2 className="p-4 text-pink text-start font-GillSans uppercase text-large black-stroke font-semibold mb-1 pe-5">
                         {editpop ? " Edit Wish" : "Add A Wish"}
                     </h2>
-                    <div className="wishinfo border-top pt-0">
-                        <p className="text-danger mb-4 pt-3">
+                    <div className="wishinfo border-top p-4 max-h-[70vh] overflow-auto">
+                        <p className="p-3 mb-4 text-sm text-yellow-800 rounded-lg bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300">
                             When adding items please ensure they are specific
                             i.e Holiday Clothes or New Gym Equipment. Items that
                             are non specific will be rejected and removed. Our

@@ -138,13 +138,7 @@ export default function AddBills(props) {
             size="md"
             action={close}
             classes={
-                classes
-                    ? classes
-                    : `  ${
-                          editpop
-                              ? "editpop"
-                              : "addop w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center"
-                      }`
+                classes ? classes : `  ${editpop? "editpop": "addop w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center"}`
             }
             text={text ? text : <AddItem />}
         >
@@ -154,15 +148,8 @@ export default function AddBills(props) {
                         {isEdit ? "Update Bill" : "Add A Bill"}
                     </h2>
 
-                    <div className="wishinfo border-top">
-                        <p className="text-danger mb-4">
-                            When adding items please ensure they are specific
-                            i.e Holiday Clothes or New Gym Equipment. Items that
-                            are non specific will be rejected and removed. Our
-                            AI blocks adult content but any overly suggestive
-                            images will also be rejected. Please reach out to
-                            support for further clarification.
-                        </p>
+                    <div className="wishinfo border-top p-4 max-h-[70vh] overflow-auto">
+                        
                         <form onSubmit={createBills}>
                             <ul className="ps-0">
                                 <li className="mb-4">
@@ -350,6 +337,16 @@ export default function AddBills(props) {
                                     </div>
                                 </li>
                             </ul>
+
+                            <p className="p-3 mb-4 text-sm text-yellow-800 rounded-lg bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300" role="alert">
+                                When adding items please ensure they are specific
+                                i.e Holiday Clothes or New Gym Equipment. Items that
+                                are non specific will be rejected and removed. Our
+                                AI blocks adult content but any overly suggestive
+                                images will also be rejected. Please reach out to
+                                support for further clarification.
+                            </p>
+
                             <div className="publish text-start">
                                 {isEdit ? (
                                     <LoaderButton

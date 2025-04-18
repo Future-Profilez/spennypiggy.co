@@ -114,47 +114,47 @@ export default function AddPost({item, text, classes, isEdit, updateState, title
                 <h2 className="text-xl font-bold text-dark-500" >{title ? title: "Add Post"}</h2>
             </div>
             
-            <input onChange={handleInput} defaultValue={item?.title || ''} name="title" placeholder="Enter Title ..."
-             className="text-normal form-input border px-3 py-3 text-dark rounded-4 mt-4 text-post-content form-control"/>   
-            <textarea onChange={handleInput} defaultValue={item?.content || ''}  name="content" placeholder="Say Something..." className="text-lg border form-input h-[150px] mt-4 text-post-content form-control" ></textarea>   
-            <div className="chhoseimage mt-4" >
-                <p className="font-bold text-lg text-dark-500 mb-1" >Choose Media</p>
-                <p className="text-grey-500 mb-3" >Choose a image file to attached with your post.</p>
-
-                {item && item.image_url ? 
-                    <>
-                        <div className="default-wish-img border relative mb-1 ">
-                            <img src={item && item.image_url}
+            <div className="mt-1 max-h-[70vh] overflow-y-auto">
+                <input onChange={handleInput} defaultValue={item?.title || ''} name="title" placeholder="Post Title ..."
+                className="text-normal form-input text-lg border px-3 py-3 text-dark rounded-4 mt-4 text-post-content form-control"/>   
+                <textarea onChange={handleInput} defaultValue={item?.content || ''}  name="content" placeholder="Say Something..." className="text-lg border form-input h-[150px] mt-4 text-post-content form-control" ></textarea>   
+                <div className="chhoseimage mt-4 pt-2" >
+                    <p className="text-grey-400 mb-2" >Choose a image file to attached with your post.</p>
+                    {item && item.image_url ? 
+                        <>
+                            <div className="default-wish-img border relative mb-1 ">
+                                <img src={item && item.image_url}
+                                className="img-fluid" />
+                            </div>
+                            <h2 className="w-100 my-2 text-center" >Or</h2>
+                        </>
+                    : ''}
+                    {isAiImage ? 
+                        <div className="default-wish-img border relative mb-2 ">
+                            <img src={isAiImage}
                             className="img-fluid" />
-                        </div>
-                        <h2 className="w-100 my-2 text-center" >Or</h2>
-                    </>
-                : ''}
-                {isAiImage ? 
-                    <div className="default-wish-img border relative mb-2 ">
-                        <img src={isAiImage}
-                        className="img-fluid" />
-                    </div> 
-                : ""}
+                        </div> 
+                    : ""}
 
-                <GlobalUploader ref={uploaderRef} view={false} type="minimal" sendFile={getfile} options={st.post} />
-                <div className="flex justify-center" >
-                    <div>
-                        <h2 className="text-center text-gray-400 py-3" >Or</h2>
-                        <ImageGenerationWithAI update={getAIImage} />
-                    </div> 
+                    <div className="relative">
+                        <GlobalUploader ref={uploaderRef} view={false} type="minimal" sendFile={getfile} options={st.post} />
+                        <div className="absolute top-[14px] right-3">
+                            <ImageGenerationWithAI classes={`button bg-pink d-table text-[10px] d-sm-flex m-auto m-sm-0 hover:opacity-80`} update={getAIImage} />
+                        </div> 
+                    </div>
+                </div>
+
+                <p className="text-grey-500 mb-1 mt-4" >Choose Audience</p>
+                <div className="flex align-center justify-content-center flex-wrap" >
+                    <select id="countries" defaultValue={item?.for_module} onChange={handleInput} name="for_module" className="form-input  
+                    text-md w-full focus:ring-green-50 block ">
+                        <option value="membership">Memberships</option>
+                        <option value="subscription">Subscription</option>
+                        <option value="support">Supporters</option>
+                    </select>
                 </div>
             </div>
 
-            <p className="text-grey-500 mb-1 mt-4" >Choose Audience</p>
-            <div className="flex align-center justify-content-center flex-wrap" >
-                <select id="countries" defaultValue={item?.for_module} onChange={handleInput} name="for_module" className="form-input  
-                text-md w-full focus:ring-green-50 block ">
-                    <option value="membership">Memberships</option>
-                    <option value="subscription">Subscription</option>
-                    <option value="support">Supporters</option>
-                </select>
-            </div>
 
             <LoaderButton onClick={submitPost}
                 disabled={loading}
