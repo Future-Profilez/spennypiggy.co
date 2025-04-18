@@ -56,10 +56,15 @@ export default function EditProfile({ user, global_currency, classes, updateProf
                 }
             },
             onError: (_err) => {
-                console.error(`errors:`);
-                console.table(_err);
+                console.table("profile update error", _err);
                 if(_err.username){
-                    errorAlert(_err.username || "Something went wrong.")
+                    errorAlert(_err.username || "Something went wrong in username.")
+                }
+                if(_err.bio){
+                    errorAlert(_err.bio || "Something went wrong in bio.")
+                }
+                if(_err.name){
+                    errorAlert(_err.name || "Something went wrong in your display name.")
                 }
             }
         });
