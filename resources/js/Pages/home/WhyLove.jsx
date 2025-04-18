@@ -211,7 +211,7 @@ export default function WhyLove() {
 
                 <div className="flex flex-wrap justify-center gap-3">
                   {brandLogos.map((brand, index) => (
-                     <div key={index} className="shadow-pink rounded-full h-36 w-36 overflow-hidden  p-4 bg-white">
+                     <div key={index} className="shadow-pink rounded-full h-24 sm:h-36 w-24 sm:w-36 overflow-hidden  p-4 bg-white">
                        <img
                          src={brand.src}
                          alt={brand.name}

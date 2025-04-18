@@ -31,7 +31,7 @@ export default function JoinUs() {
                     ))}
                 </div>
 
-                <div className="px-3.5 pt-16 pb-20 w-full max-w-5xl bg-gradient-to-br from-[#a557ff] to-[#924dff] rounded-3xl p-10 text-center shadow-lg">
+                <div className="px-3.5 sm:pt-16 sm:pb-20 w-full max-w-5xl bg-gradient-to-br from-[#a557ff] to-[#924dff] rounded-3xl pt-6 sm:p-10 text-center shadow-lg">
                     <h2
                         data-aos="zoom-out-up"
                         className="headingSm font-gulfs text-light shadow-none stroke-none mb-6 text-center"
@@ -40,7 +40,7 @@ export default function JoinUs() {
                     </h2>
                     <p
                         data-aos="zoom-out-up"
-                        className="mb-16 text-center text-wh !text-base font-poppins"
+                        className="mb-4 sm:mb-16 text-center text-wh !text-base font-poppins"
                     >
                         Build your Wishlist, share it with your fans, and get
                         showered with gifts—no waiting, no hassle, just pure

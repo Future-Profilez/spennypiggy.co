@@ -97,21 +97,21 @@ export default function Header() {
                                     />
                                 </svg>
                             </div>
-                            <Link
+                            {/* <Link
                                 className="d-none d-md-block ms-3 text-[30px]"
                                 href={"/leaderboard"}
                             >
                                 🌟
-                            </Link>
+                            </Link> */}
                             <Link
                                 className="d-none d-md-block ms-3"
                                 href={"/giftstore"}
                             >
 
-                                <span className="flex items-center text-[19px] text-white">
-                                    <span className="!text-[21px]">
+                                <span className="flex items-center text-2xl uppercase text-white font-gulfs">
+                                    {/* <span className="!text-[21px]">
                                     🐷
-                                        </span>
+                                        </span> */}
                                     Gift Store</span>
                             </Link>
                         </div>
