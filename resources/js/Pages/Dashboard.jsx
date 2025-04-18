@@ -50,24 +50,18 @@ import { FaRegHeart } from "react-icons/fa";
 import { CiGift } from "react-icons/ci";
 
 export default function Dashboard(props) {
-
+    console.log("its", props);
     const parsePageId = (path) => path.substring(path.lastIndexOf('/') + 1)
     const pageId = parsePageId(window.location.pathname);
-      const { format, formatMultiPrice } = PriceFormat();
-      const {ziggy}=props;
-      console.log("ziggy",ziggy);
+    const { format, formatMultiPrice } = PriceFormat();
+    const {ziggy}=props;
+    console.log("ziggy",ziggy);
 
 
 
     const w = useWidthCount();
     const{auth,user,username,global_currency,itemid}= props;
-
     const [tab, setTab] = useState(0);
-    // useEffect(() => {
-    //     if(pageId == 'shop'){
-    //         setTab(5);
-    //     }
-    // });
     const onTabClick = (e, d) => {
         setTab(d);
     };
@@ -456,6 +450,12 @@ export default function Dashboard(props) {
                                                                             <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
                                                                                 {(user &&user.bio) ||""}
                                                                             </p>
+                                                                            {user?.edit_bio_reason  ?
+                                                                                <div className="mt-3">
+                                                                                    <p className="text-red-700">Bio Edit Request</p>
+                                                                                    <p className="text-red-500 text-sm">Reason : {user?.edit_bio_reason }. Please update your bio as per requested.</p>
+                                                                                </div>
+                                                                              : ''}
 
                                                                             <SocialLinks links={sLinks} />
 
