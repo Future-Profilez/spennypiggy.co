@@ -9,7 +9,6 @@ import Popup from '@/Components/Popup';
 
 export default function Stripe(props) {
     const { auth, user, bio_status, social_media_status, user_profile_status } = props;
-    console.log("props",props)
     const checkRef = useRef();
     const { errorAlert } = useAlerts();
     const { data, setData, get, post, processing, errors, reset } = useForm({
@@ -70,6 +69,7 @@ export default function Stripe(props) {
                             out to support and we can ensure you retain it.
                             Providing none of the Items below are listed:
                         </p>
+
                         <ul className="stripeterms">
                             <li className="py-1 my-1">
                                 ❌ Selling goods or service on your wishlist
@@ -107,12 +107,11 @@ export default function Stripe(props) {
                             </li>
                         </ul>
                        
-                        {bio_status == 0 ? <p className="text-yellow-600 mt-2 "> ⚠️ Your bio hasn't been approved yet. Please update it as per the requested guidelines.</p> : ''}
+                        {bio_status == 0   ? <p className="text-yellow-600 mt-2 "> ⚠️ Your bio hasn't been approved yet. Please update it as per the requested guidelines.</p> : ''}
                         {social_media_status == 0 ? <p className="text-yellow-600 mt-2 "> ⚠️ Please update at least one of your social media handles.</p> : ''}
                         {user_profile_status == 0 ? <p className="text-yellow-600 mt-2 "> ⚠️ Your profile image hasn't been approved yet.</p> : ''}
                         
-                        { bio_status == 0 || social_media_status == 0 || user_profile_status == 0 ? 
-                        '' :
+                        { bio_status == 0 || social_media_status == 0 || user_profile_status == 0 ? ''  :
                             <>
                                 <strong className="d-block w-100 pt-3 mb-1">Choose Country</strong>
                                 <Countries send={getCountry} />
@@ -120,7 +119,7 @@ export default function Stripe(props) {
                         }
 
                     </div>
-
+                    
                     <div className="text-center flex justify-center mb-4 ">
                         <Popup modalclass="pinkmodal full stripe-terms shadow-pink ps-0"
                             space="4" size="md"
@@ -154,6 +153,7 @@ export default function Stripe(props) {
                                 </div>
                         </Popup>
                     </div>
+
                 </div>
             </div>
         </Authenticated>

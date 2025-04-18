@@ -127,7 +127,6 @@ class ProfileController extends Controller
             $user->username = $request->username;
             if ($request->bio) {
                 $user->bio = $request->bio;
-                $user->edit_bio_reason = '';
             }
             $user->min_surprise_amount = $request->min_surprise_amount ?? 0;
 
@@ -147,12 +146,14 @@ class ProfileController extends Controller
 
             if (!empty($request->bio)) {
                 $logs = Logs::where('edited_about_me_id', $user->id)->where('status', 'pending')->first();
-                if (!empty($logs)) {
+                if (!empty($logs)){
                     $logs->status = 'updated';
                     $logs->save();
+                    $user->edit_bio_reason = '';
+                    $user->save();
+                    $user->refresh();
                 }
             }
-
             return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
         }
     }
