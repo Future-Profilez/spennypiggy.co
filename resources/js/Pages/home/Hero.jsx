@@ -2,7 +2,7 @@ import React from 'react'
 import { Link, Head } from "@inertiajs/react";
 import itsfree from "../../../assets/img/itsfree.png";
 import itsfreemob from "../../../assets/img/itsfree-mob.png";
-import herobanner from '../../../assets/img/herobanner.png';
+import herobanner from '../../../assets/new/HeroBg.png';
 import proud from '../../../assets/img/proud.png';
 import TrustBox from './TrustBox';
 import Scrollspy from 'react-scrollspy';
@@ -67,7 +67,7 @@ export default function Hero({auth}) {
               </div>
             </Popup> */}
 
-      <div className="d-block d-lg-none landing-bottom-bar">
+      <div className="block lg:hidden landing-bottom-bar">
         <Scrollspy items={sections} currentClassName="active" offset={-50}>
           <li>
             <a href="#home" className={activeSection === 'home' ? 'active' : ''} onClick={(e) => handleNavItemClick(e, 'home')}>
@@ -96,25 +96,32 @@ export default function Hero({auth}) {
       </div>
 
 
-      <div style={{ backgroundImage:`url(${herobanner})` }}  id="home" className="heroSec position-relative">
+      <div style={{ backgroundImage:`url(${herobanner})` }}  id="home" className="heroSec pb-2 sm:pb-10 position-relative">
         <div className="containerbox">
           <div className="welcome" data-aos="zoom-out" >
-              <div className="welcomeLeft m-auto pt-[100px] pb-[100px] d-table">
-                  <h2 className="text-center welcomeHeading shadow-yellow font-GillSans text-uppercase mb-1">
+              <div className="welcomeLeft m-auto pt-[50px] d-table">
+                  {/* <h2 className="text-center welcomeHeading shadow-yellow font-GillSans text-uppercase mb-1">
                     Oink! Oink! B*tch{" "}
+                  </h2> */}
+                  <h2 className="headingSm shadow-none uppercase text-light font-gulfs stroke-none text-5xl md:text-6xl max-w-3xl mx-auto text-center">
+                    The everything {" "}
+                    <span className='text-5xl md:text-7xl text-[#F94F96]'>wishlist</span>
                   </h2>
-                  <h3 className="text-center text-[25px] text-uppercase text-yellow font-GillSans my-3">
-                      Get Your Lifestyle funded! 🎁
+                  <h3 className="text-center text-xl uppercase text-yellow font-gulfs mt-2 sm:mt-3 mb-2 sm:mb-3">
+                      Built for Creators
+                  </h3>
+                  <h3 className="text-center text-2xl uppercase text-white font-anton mb-3 max-w-3xl">
+                  Want gifts without TMI? Build your privacy-first Wishlist and let your fans spoil you!
                   </h3>
 
                   <div className=" pt-4 wishlistbtn wishlistbtnFixed m-auto d-table">
 
                     {auth?.user?.username
                       ?
-                      <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink py-[8px] px-5 lg log" >
+                      <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="bg-[#E6EA7B] font-anton text-black px-5 py-1 uppercase flex text-center items-center tracking-[1px] justify-center text-lg rounded-[30px] border-[2px] border-yellow transition-all duration-300 ease-in-out" >
                         My Wishlist
                       </Link>
-                      :  <Link href="/register" className="btn-pink wishlistbutton lg px-5 shadow-mint border-mint " > Create  your page </Link>
+                      :  <Link href="/register" className="bg-[#E6EA7B] font-anton text-black px-5 py-1 uppercase flex text-center items-center tracking-[1px] justify-center text-lg rounded-[30px] border-[2px] border-yellow transition-all duration-300 ease-in-out" > Create  your page </Link>
                     }
 
                     <div className='itsfree-tag d-none d-md-block' >
@@ -141,10 +148,10 @@ export default function Hero({auth}) {
               </div>
           </div>
 
-          <div className="proud-banner d-flex  items-center w-full max-w-[500px]" >
+          {/* <div className="proud-banner d-flex  items-center w-full max-w-[500px]" >
             <img  className='object-contain' alt={"image"} src={proud}  />
             <p className='text-white ps-4 pb-3' >*Requires a monthly £4 subscription to cover stripe fees & compliance costs.</p>
-          </div>
+          </div> */}
         </div>
       </div>
     </>

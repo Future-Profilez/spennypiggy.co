@@ -2,7 +2,7 @@ import React from 'react'
 import seek from "../../../assets/img/seeksearch.png";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 
-export default function FunPart({imgbg, textbg, heading, eclasses, text, img, classes, reverse}) {
+export default function FunPart({imgbg, mainbg, textbg, heading, eclasses, text, img, classes, reverse}) {
     return (
         <>
   <style jsx>{`
@@ -22,11 +22,11 @@ export default function FunPart({imgbg, textbg, heading, eclasses, text, img, cl
     }
   `}</style>
 
-  <div className={`${classes} d-flex ${reverse ? "col-reverse" : ''} bg-white d-flex borderbox justify-content-between align-items-center`}>
+  <div className={`${classes} d-flex ${reverse ? "col-reverse" : ''} ${mainbg ? mainbg : 'bg-white'} d-flex borderbox justify-content-between align-items-center`}>
     <div data-aos="flip-down" className={`box-s ${eclasses} ${reverse ? "justify-content-start" : "justify-content-end"} pb-0 w-50`}>
       <div className="image-container">
         <LazyLoadImage
-          alt="image"
+          alt="image" className='max-h-[600px]'
           useIntersectionObserver={true}
           effect="blur"
           src={img || seek}
@@ -35,7 +35,7 @@ export default function FunPart({imgbg, textbg, heading, eclasses, text, img, cl
     </div>
     <div className={`box-e ${reverse ? "justify-content-end" : "justify-content-start"} w-50 p-4 ${textbg}`}>
       <div className='max-width-500'>
-        <h3 className="headingSm shadow-none text-dark stroke-none font-gulfs !text-3xl lg:!text-4xl mb-3" data-aos="flip-down">
+        <h3 className="headingSm shadow-none text-dark stroke-none font-gulfs !text-2xl lg:!text-3xl  xl:!text-4xl mb-3" data-aos="flip-down">
           {heading}
         </h3>
       </div>

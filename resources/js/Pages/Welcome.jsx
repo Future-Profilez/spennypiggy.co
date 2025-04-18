@@ -24,6 +24,7 @@ import { useEffect } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import SitelinksSearchBox from "@/global/SiteLink";
+import PaymentSlider from "./home/PaymentSlider";
 export default function Home({ auth, user }) {
 
     useEffect(()=>{
@@ -39,9 +40,10 @@ export default function Home({ auth, user }) {
     return <>
         <div className="overflow-hidden" >
         <Guest auth={auth.user} user={auth.user}>
-        <LiveBar reps={15} classes={'pb-2 pb-md-0 blackbg barouter'} text={"⚡ Fast & Easy payments through: Apple pay"} />
+        <LiveBar reps={15} classes={'blackbg barouter'} text={"⚡ Fast & Easy payments through: Apple pay"} />
         <Hero auth={auth} />
         <LiveBarSection />
+        <PaymentSlider/>
         {/* <ForCreators /> */}
 
         {/* <FunPart classes={``} 
@@ -82,21 +84,21 @@ export default function Home({ auth, user }) {
 
         <FunPart classes={`border-top-0`} 
         img={fun1} reverse={true}
-        imgbg={`bg-[#05EFB8]`} eclasses={``}
+        mainbg={`bg-[#EFEA7B]`} eclasses={``}
         textbg={`bg-[#EFEA7B]`} 
         heading={`Effortlessly add your dream items, share your page, and get going in minutes!`}
         />
 
         <FunPart classes={`border-top-0`} 
         img={fun2} reverse={false}
-        imgbg={`bg-[#05EFB8]`} eclasses={``}
+        mainbg={`bg-[#F94F96]`} eclasses={``}
         textbg={`bg-[#F94F96]`} 
         heading={`Let your fans spoil you with gifts from any online store!`}
         />
         
         <FunPart classes={`border-top-0`} 
         img={fun3} reverse={true}
-        imgbg={`bg-[#05EFB8]`} eclasses={``}
+        mainbg={`bg-[#EFEA7B]`} eclasses={``}
         textbg={`bg-[#EFEA7B]`} 
         heading={`Build your profile shop! the creative way to sell anything that probably doesn’t have a place on shopify...`}
         />
@@ -116,7 +118,7 @@ export default function Home({ auth, user }) {
                 classes={"py-3 bg-[#E6EA7B]"}
                 textClass={`!text-4xl font-gulfs mb-0 mx-4 text-uppercase`}
                 color={`bg-[#E6EA7B]`}
-                text={"🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨"}
+                text={"❤️ Keep 100% of what you Earn!"}
                 />
         <SitelinksSearchBox />
         </Guest>
