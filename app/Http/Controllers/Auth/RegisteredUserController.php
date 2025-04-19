@@ -308,9 +308,9 @@ class RegisteredUserController extends Controller
      * Handle successful card verification.
      */
     // This method is called when the payment is successful
-    public function cardVerificationSuccess($id)
+    public function cardVerificationSuccess($uuid)
     {
-        $user = User::where('id', $id)->first();
+        $user = User::where('uuid', $uuid)->first();
 
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
@@ -338,7 +338,9 @@ class RegisteredUserController extends Controller
         $billingDetails = $charge->billing_details ?? null;
         $address = $billingDetails->address ?? null;
 
-        if ($address) {
+        $gifterAddress = GifterAddress::where('user_id', $user->id)->whereNotNull('stripe_address')->exists();
+
+        if ($address && !$gifterAddress) {
             $encryptedAddress = encrypt(json_encode([
                 'line1' => $address->line1 ?? null,
                 'line2' => $address->line2 ?? null,
@@ -348,7 +350,7 @@ class RegisteredUserController extends Controller
                 'country' => $address->country ?? null,
             ]));
 
-            GifterAddress::updateOrCreate(
+            GifterAddress::create(
                 ['user_id' => $user->id],
                 ['stripe_address' => $encryptedAddress]
             );
