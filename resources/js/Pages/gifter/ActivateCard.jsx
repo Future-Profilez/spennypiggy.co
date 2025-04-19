@@ -24,13 +24,16 @@ export default function ActivateCard() {
 
     const [loading, setLoading] = useState(false);
     const checkTerms = () => {
+        if(loading)return;
         setLoading(true);
-        axios.get(`card-verification-success/${auth?.uuid}`)
+        axios.get(`card-verification-success/${auth?.user?.uuid}`)
         .then((resp) => {
             console.log("resp",resp?.data);
+            setLoading(false);
         })
         .catch((_err) => {
             console.error("error", _err);
+            setLoading(false);
         });
     };
 
