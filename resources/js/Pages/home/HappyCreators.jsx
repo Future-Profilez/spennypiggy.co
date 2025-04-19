@@ -127,7 +127,7 @@ export default function HappyCreators() {
                         </Swiper>
                     </div>
                 </div>
-              <div class="hidden lg:block absolute bottom-[-106px] left-12">
+              <div class="hidden lg:block absolute bottom-[-122px] lg:left-8 xl:left-[5rem] 2xl:left-[15rem]">
               <img
                     src={faq}
                     className=""

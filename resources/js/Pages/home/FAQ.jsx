@@ -22,7 +22,7 @@ export default function FAQ() {
       "description": "Pick your currency! Creators, you've got the choice between USD or GBP. If you're based in the UK, GBP; for the rest of the world, USD is the go-to. Customize your display currency, and supporters can do the same when making payments. Keeping it simple for everyone! 💲"
     }
   ];
-  
+
   return (
     <>
     <style>{`
@@ -34,7 +34,7 @@ export default function FAQ() {
   `}</style>
     <div id={`faq`} className='faq-section pt-10 pb-5' >
       <div className='container' >
-          <h2 className='headingSm shadow-none font-gulfs stroke-none text-center mb-4 pb-2' >Frequently Asked questions</h2>
+          <h2 className='headingSm shadow-none font-gulfs stroke-none text-center mb-4 lg:!mb-8 pb-2' >Frequently Asked questions</h2>
           <div className='max-width-1100 m-auto d-table' >
               <div className='faqaccordian' >
                   <Accordion defaultActiveKey={0}>
@@ -56,4 +56,4 @@ export default function FAQ() {
     </>
   );
 };
- 
+

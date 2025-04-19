@@ -23,6 +23,12 @@ const logos = [
     { src: PaymentIcon4, alt: 'Stripe' },
     { src: PaymentIcon5, alt: 'Visa' },
     { src: PaymentIcon6, alt: 'Mastercard' },
+    { src: PaymentIcon1, alt: 'Plaid' },
+    { src: PaymentIcon2, alt: 'Apple Pay' },
+    { src: PaymentIcon3, alt: 'Cash App' },
+    { src: PaymentIcon4, alt: 'Stripe' },
+    { src: PaymentIcon5, alt: 'Visa' },
+    { src: PaymentIcon6, alt: 'Mastercard' },
   ];
 
 export default function PaymentSlider() {
