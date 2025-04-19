@@ -356,7 +356,6 @@ class RegisteredUserController extends Controller
             );
         }
 
-
         // Find the latest verification record
         $verification = GifterCardVerification::where('user_id', $user->id)
             ->latest()
