@@ -61,7 +61,6 @@ Route::middleware('guest')->group(function () {
 
     Route::get('forgot-password/{uuid}', [PasswordResetLinkController::class, 'forgotPasswordPage']);
 
-
     Route::post('change-password/{uuid}', [PasswordResetLinkController::class, 'changePassword'])->name('changePassword');
 
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
@@ -102,7 +101,7 @@ Route::middleware('auth')->group(function () {
 
             // gifter card verification routes
             Route::get('gifter-card-verification', [RegisteredUserController::class, 'gifterCardVerification'])->name('gifter.card.verification');
-            Route::get('card-verification-success/{id}', [RegisteredUserController::class, 'cardVerificationSuccess'])->name('card.verification.success');
+            Route::get('card-verification-success/{uuid}', [RegisteredUserController::class, 'cardVerificationSuccess'])->name('card.verification.success');
             Route::get('card-verification-failed/{id}', [RegisteredUserController::class, 'cardVerificationFailed'])->name('card.verification.failed');
 
             Route::get('update-vat/{percent}', [AuthenticatedSessionController::class, 'updateVat'])->name('updateVat');
