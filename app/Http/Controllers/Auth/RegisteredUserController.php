@@ -215,9 +215,9 @@ class RegisteredUserController extends Controller
      */
     public function gifterCardVerification(Request $request)
     {
-        $request->validate([
-            'amount' => 'required|numeric',
-        ]);
+        // $request->validate([
+        //     'amount' => 'required|numeric',
+        // ]);
 
         $user = Auth::user();
 
@@ -242,19 +242,29 @@ class RegisteredUserController extends Controller
         if (!$product) {
             $product = $stripe->products->create([
                 'name' => $productName,
-            ], [
-                'stripe_account' => $user->stripe_id,
             ]);
         }
 
         // Step 3: Currency conversion (1 GBP to requested currency)
         $baseAmountGBP = 1.00;
+        $tax = $baseAmountGBP * 20 / 100; // 20% TAX
+        $vat = ($baseAmountGBP + $tax) * 20 / 100; // 20% VAT
+        $totalAmount = $baseAmountGBP + $vat + $tax; // Total amount in GBP
         $selectedCurrency = $user->default_currency;
-        $convertCurrency = Helpers::priceFormat('gbp', $request->amount, $selectedCurrency);
-        $price = round($convertCurrency, 2, PHP_ROUND_HALF_UP);
+        $price = round($totalAmount, 2, PHP_ROUND_HALF_UP);
         // $convertedAmount = $this->convertCurrency('GBP', $selectedCurrency, $baseAmountGBP); // you need this method
+        $convertCurrency = Helpers::priceFormat('GBP', $price, $selectedCurrency);
+        // $price = round($convertCurrency, 2, PHP_ROUND_HALF_UP);
 
-        $unitAmount = intval($price * 100); // convert to smallest currency unit
+        \Log::info("Converted amount: $convertCurrency");   
+        \Log::info("Selected currency: $selectedCurrency");
+        \Log::info("Base amount in GBP: $baseAmountGBP");
+        \Log::info("Total amount in GBP: $totalAmount");
+        \Log::info("Price in GBP: $price");
+        \Log::info("tax Price: $tax");
+        \Log::info("vat Price: $vat");
+
+        $unitAmount = intval($convertCurrency * 100); // convert to smallest currency unit
 
         // Step 4: Check or create price
         $priceList = $stripe->prices->all([
@@ -276,8 +286,8 @@ class RegisteredUserController extends Controller
 
         // Step 5: Create Checkout Session
         $session = $stripe->checkout->sessions->create([
-            'success_url' => route('card.verification.success', [$user->id]),
-            'cancel_url' => route('card.verification.failed', [$user->id]),
+            'success_url' => route('card.verification.success', [$user->uuid]),
+            'cancel_url' => route('card.verification.failed', [$user->uuid]),
             'mode' => 'payment',
             'customer' => $user->stripe_id,
             'line_items' => [[
@@ -294,7 +304,7 @@ class RegisteredUserController extends Controller
             'currency' => $selectedCurrency,
             'status' => 'pending',
             'payment_details' => null,
-            'payment_method' => 'stripe_checkout',
+            'payment_method' => 'Card',
         ]);
 
         return response()->json([
@@ -328,10 +338,17 @@ class RegisteredUserController extends Controller
                 'message' => 'Stripe session not found.',
             ]);
         }
-
-        // Retrieve payment intent details
-        $paymentIntent = $stripe->paymentIntents->retrieve($session->payment_intent, ['expand' => ['charges.payment_method']]);
-
+        $paymentIntent = $stripe->paymentIntents->retrieve(
+            $session->payment_intent,
+            ['expand' => ['payment_method', 'charges.data.billing_details']]
+        );
+               
+        if (!$paymentIntent) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Payment intent not found.',
+            ]);
+        }        
         $charge = $paymentIntent->charges->data[0] ?? null;
         $paymentMethod = $charge->payment_method ?? null;
 
@@ -387,9 +404,9 @@ class RegisteredUserController extends Controller
     /**
      * Handle card verification failure or cancellation.
      */
-    public function cardVerificationFailed($id)
+    public function cardVerificationFailed($uuid)
     {
-        $user = User::where('id', $id)->first();
+        $user = User::where('uuid', $uuid)->first();
 
         if (!$user) {
             return response()->json([

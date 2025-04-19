@@ -26,8 +26,9 @@ export default function ActivateCard() {
     const checkTerms = () => {
         if(loading)return;
         setLoading(true);
-        axios.get(`card-verification-success/${auth?.user?.uuid}`)
+        axios.get(`gifter-card-verification`)
         .then((resp) => {
+            window.location.href = resp?.data?.checkout_url;
             console.log("resp",resp?.data);
             setLoading(false);
         })
