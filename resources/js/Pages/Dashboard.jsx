@@ -660,6 +660,7 @@ export default function Dashboard(props) {
                         ) : <>
                             <Gifter
                             fetchingLinks={fetchingLinks}
+                            auth={auth}
                             sLinks={sLinks}
                             IsloggedIn={IsloggedIn} />
                         </>

@@ -15,6 +15,7 @@ import { useState } from 'react';
 import GifterFeed from './GifterFeed';
 // import GifterMedia from './GifterMedia';
 import MembershipLists from './MembershipLists';
+import ActivateCard from './ActivateCard';
 
 
 export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
@@ -72,6 +73,7 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
                     id="noanim-tab-example"
                     className="mb-3 justify-content-center" >
                     <Tab eventKey="home" title="About">
+                        <ActivateCard auth={auth}/>
                         <AboutScreen />
                     </Tab>
                     <Tab eventKey="feed" title="Feed">
