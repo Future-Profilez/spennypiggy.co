@@ -28,6 +28,8 @@ export default function ActivateCard() {
                         <span className='mintbg'></span>
                         <span className='bluebg'></span>
                     </div>
+
+                    
                     <div className='py-4'>
                         <div className='stripNote p-3 p-md-4'>
                             <h4 className='text-[30px] font-GillSans text-center text-uppercase mb-3'>Activate Account</h4>

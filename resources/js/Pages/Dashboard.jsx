@@ -377,7 +377,6 @@ export default function Dashboard(props) {
                 <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
                 <div className="wishlistPage blackbg pt-6 pb-0 pb-sm-5 ">
                     <div className="containerbox">
-                         {/* <CanvaButton />  */}
                         <VersionUpdate />
                         <div className="wishbanner relative ">
                         <LazyLoadImage
