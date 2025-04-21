@@ -50,17 +50,14 @@ import { FaRegHeart } from "react-icons/fa";
 import { CiGift } from "react-icons/ci";
 
 export default function Dashboard(props) {
-    console.log("its", props);
+
     const parsePageId = (path) => path.substring(path.lastIndexOf('/') + 1)
     const pageId = parsePageId(window.location.pathname);
     const { format, formatMultiPrice } = PriceFormat();
-    const {ziggy}=props;
-    console.log("ziggy",ziggy);
-
-
 
     const w = useWidthCount();
     const{auth,user,username,global_currency,itemid}= props;
+    console.log("props",props)
     const [tab, setTab] = useState(0);
     const onTabClick = (e, d) => {
         setTab(d);

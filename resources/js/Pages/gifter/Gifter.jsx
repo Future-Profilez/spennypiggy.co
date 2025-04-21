@@ -25,7 +25,7 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
 
   const AboutScreen = () => {
     return <>
-        <div className=" about-sec max-w-3xl m-auto " >
+        <div className=" about-sec  m-auto " >
               <div className={`${user && !user.bio ? "d-nones":""} box shadow-voilet rounded-lg mb-4`} >
                   <p className="font-bold" >About me</p>
                   <p className={`text-muted text-start mt-2 `}>{(user && user.bio) || ""}</p>
@@ -73,8 +73,12 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
                     id="noanim-tab-example"
                     className="mb-3 justify-content-center" >
                     <Tab eventKey="home" title="About">
-                        <ActivateCard auth={auth}/>
-                        <AboutScreen />
+                        <div className='max-w-3xl m-auto'>
+                            {auth?.user?.profile_status_lock !==1 ? <>
+                                <ActivateCard auth={auth}/>
+                            </> : '' }
+                            <AboutScreen />
+                        </div>
                     </Tab>
                     <Tab eventKey="feed" title="Feed">
                         <GifterFeed username={user && user.username || ''} />
@@ -82,9 +86,11 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
                     <Tab eventKey="memberships" title="Memberships">
                         <MembershipLists username={user && user.username || ''}/>
                     </Tab>
-                    {/* <Tab eventKey="media" title="Media">
+                    {/* 
+                    <Tab eventKey="media" title="Media">
                         <GifterMedia username={user && user.username || ''} />
-                    </Tab> */}
+                    </Tab>
+                    */}
                 </Tabs>
             </div>
             </>
