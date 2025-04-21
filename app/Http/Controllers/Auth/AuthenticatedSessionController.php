@@ -230,10 +230,7 @@ class AuthenticatedSessionController extends Controller
         SeoMeta::addTag('meta', ['property' => 'twitter:image:src', 'content' => $image]);
         SeoMeta::addTag('meta', ['property' => 'og:image', 'content' => $image]);
 
-        $cardVerification = GifterCardVerification::where('user_id', $user->id)->where('status', 'success')->exists();
-
         return Inertia::render('Dashboard', [
-            'cardVerification' => $cardVerification,
             "username" => $username,
             "user" => $user,
             "itemid" => $itemdid,
