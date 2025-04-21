@@ -25,6 +25,7 @@ use App\Models\PromoCode;
 use App\Models\Referal;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 use Stripe\StripeClient;
 
 class RegisteredUserController extends Controller
@@ -215,6 +216,7 @@ class RegisteredUserController extends Controller
      */
     public function gifterCardVerification(Request $request)
     {
+        $currency = strtolower($request->cookie("currency", "GBP"));
         // $request->validate([
         //     'amount' => 'required|numeric',
         // ]);
@@ -250,19 +252,19 @@ class RegisteredUserController extends Controller
         $tax = $baseAmountGBP * 20 / 100; // 20% TAX
         $vat = ($baseAmountGBP + $tax) * 20 / 100; // 20% VAT
         $totalAmount = $baseAmountGBP + $vat + $tax; // Total amount in GBP
-        $selectedCurrency = $user->default_currency;
+        $selectedCurrency = $currency;
         $price = round($totalAmount, 2, PHP_ROUND_HALF_UP);
         // $convertedAmount = $this->convertCurrency('GBP', $selectedCurrency, $baseAmountGBP); // you need this method
         $convertCurrency = Helpers::priceFormat('GBP', $price, $selectedCurrency);
         // $price = round($convertCurrency, 2, PHP_ROUND_HALF_UP);
 
-        \Log::info("Converted amount: $convertCurrency");
-        \Log::info("Selected currency: $selectedCurrency");
-        \Log::info("Base amount in GBP: $baseAmountGBP");
-        \Log::info("Total amount in GBP: $totalAmount");
-        \Log::info("Price in GBP: $price");
-        \Log::info("tax Price: $tax");
-        \Log::info("vat Price: $vat");
+        // Log::info("Converted amount: $convertCurrency");
+        // Log::info("Selected currency: $selectedCurrency");
+        // Log::info("Base amount in GBP: $baseAmountGBP");
+        // Log::info("Total amount in GBP: $totalAmount");
+        // Log::info("Price in GBP: $price");
+        // Log::info("tax Price: $tax");
+        // Log::info("vat Price: $vat");
 
         $unitAmount = intval($convertCurrency * 100); // convert to smallest currency unit
 
@@ -389,15 +391,7 @@ class RegisteredUserController extends Controller
             $verification->save();
         }
 
-        return redirect()->route('user.show', ['username' => $user->username])->with([
-            'status' => true,
-            'message' => 'Payment verified successfully.',
-            'payment_info' => [
-                'address' => $address,
-                'card_brand' => $paymentMethod?->card?->brand,
-                'last4' => $paymentMethod?->card?->last4,
-            ],
-        ]);
+        return redirect()->route('user.show', ['username' => $user->username])->with('success', "Payment Card verification successfully.");
 
 
         // return response()->json([
