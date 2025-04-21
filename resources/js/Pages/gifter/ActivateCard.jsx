@@ -58,14 +58,13 @@ export default function ActivateCard() {
                             <div className='stripNote p-3 p-md-4'>
                                 <h4 className='text-[25px] font-GillSans text-yellow-600 text-center text-uppercase mb-3'>Verification Pending</h4>
                                 <p className='mb-1 text-[18px] text-center max-w-[400px] m-auto'>Admin will now confirm that you are a Verified person. Please check back in 1-2 hours</p>
+                                {auth?.user?.address_verification_error ? 
+                                    <div className="mt-4 text-center">
+                                        <strong className="text-red-600">Verification Rejected</strong>
+                                        <p className="text-red-600">{auth?.user?.address_verification_error}</p>
+                                    </div> 
+                                : ''}
                             </div>
-                            {/* <div className='text-center flex justify-center mb-2'>
-                                <LoaderButton 
-                                onClick={checkTerms}
-                                disabled={loading}
-                                className={'p-3 lg'}
-                                spinnerClassName="fill-red-600"> Activate Account</LoaderButton>
-                            </div> */}
                         </div> 
                     : "" }
 
