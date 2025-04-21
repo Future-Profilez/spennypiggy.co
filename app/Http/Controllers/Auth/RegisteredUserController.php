@@ -372,14 +372,16 @@ class RegisteredUserController extends Controller
         $gifterAddress = GifterAddress::where('user_id', $user->id)->whereNotNull('stripe_address')->exists();
 
         if ($address && !$gifterAddress) {
-            $encryptedAddress = encrypt(json_encode([
+            $encryptedAddress = [
                 'line1' => $address->line1 ?? null,
                 'line2' => $address->line2 ?? null,
                 'city' => $address->city ?? null,
                 'state' => $address->state ?? null,
                 'postal_code' => $address->postal_code ?? null,
                 'country' => $address->country ?? null,
-            ]));
+            ];
+
+            $encryptedAddress = Crypt::encryptString($encryptedAddress);
 
             GifterAddress::create(
                 ['user_id' => $user->id],
