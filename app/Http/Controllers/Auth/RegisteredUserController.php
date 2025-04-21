@@ -396,6 +396,10 @@ class RegisteredUserController extends Controller
             $verification->save();
         }
 
+        Auth::user()->update([
+            'profile_status_lock' => 1,
+        ]);
+
         return redirect()->route('user.show', ['username' => $user->username])->with('success', "Payment Card verification successfully.");
 
 
