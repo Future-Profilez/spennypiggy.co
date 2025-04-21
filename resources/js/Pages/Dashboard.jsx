@@ -303,7 +303,7 @@ export default function Dashboard(props) {
                                 <div className="bg-gray-100 w-full p-6 md:p-10 rounded-3xl shadow-lg z-10">
                                     <h2 className="font-bold text-black  text-xl md:text-2xl mb-4 text-center m-auto ">Add Item to fund your lifestyle.</h2>
                                     <div className="max-h-[55vh]  sm:max-h-[40vh] overflow-y-auto">
-                                       
+
                                             { wishOptions ?
                                                 <div>
                                                     <Wishlist text="Cash Gift"
@@ -325,9 +325,9 @@ export default function Dashboard(props) {
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    
+
                                                 </div>
-                                                
+
                                             : <div>
 
                                             {auth.user && auth.user.stripe_details_submitted == 1 ?
@@ -345,11 +345,11 @@ export default function Dashboard(props) {
                                                             </div>
                                                         </div>
                                                     </div>
-                                                
+
                                                     <AddItem  classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
                                                     product_type="digital_products"  />
                                                     <AddPost classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} />
-                                                
+
                                                     {/* {ziggy && ziggy.url !== 'https://spennypiggy.co' && */}
                                                         <AddGift text="Add Gift " classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} fetch_gifts={fetch_gifts} addressAdded={auth?.user?.is_creator_address_found} />
                                                     {/* // } */}

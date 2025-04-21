@@ -79,7 +79,7 @@ class RegisteredUserController extends Controller
 
         $ip_address = $request->ip();
         $checkIpExist = User::where('ip_address', $ip_address)->exists();
-        if ($checkIpExist){
+        if ($checkIpExist) {
             return redirect()->back()->with('error', "You can not create multiple account with same IP address. You have already registered with this IP address.");
         }
 
@@ -256,7 +256,7 @@ class RegisteredUserController extends Controller
         $convertCurrency = Helpers::priceFormat('GBP', $price, $selectedCurrency);
         // $price = round($convertCurrency, 2, PHP_ROUND_HALF_UP);
 
-        \Log::info("Converted amount: $convertCurrency");   
+        \Log::info("Converted amount: $convertCurrency");
         \Log::info("Selected currency: $selectedCurrency");
         \Log::info("Base amount in GBP: $baseAmountGBP");
         \Log::info("Total amount in GBP: $totalAmount");
@@ -342,13 +342,13 @@ class RegisteredUserController extends Controller
             $session->payment_intent,
             ['expand' => ['payment_method', 'charges.data.billing_details']]
         );
-               
+
         if (!$paymentIntent) {
             return response()->json([
                 'status' => false,
                 'message' => 'Payment intent not found.',
             ]);
-        }        
+        }
         $charge = $paymentIntent->charges->data[0] ?? null;
         $paymentMethod = $charge->payment_method ?? null;
 
@@ -389,7 +389,7 @@ class RegisteredUserController extends Controller
             $verification->save();
         }
 
-        return response()->json([
+        return redirect()->route('user.show', ['username' => $user->username])->with([
             'status' => true,
             'message' => 'Payment verified successfully.',
             'payment_info' => [
@@ -398,6 +398,17 @@ class RegisteredUserController extends Controller
                 'last4' => $paymentMethod?->card?->last4,
             ],
         ]);
+
+
+        // return response()->json([
+        //     'status' => true,
+        //     'message' => 'Payment verified successfully.',
+        //     'payment_info' => [
+        //         'address' => $address,
+        //         'card_brand' => $paymentMethod?->card?->brand,
+        //         'last4' => $paymentMethod?->card?->last4,
+        //     ],
+        // ]);
     }
 
     /**

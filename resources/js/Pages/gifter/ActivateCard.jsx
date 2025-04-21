@@ -44,18 +44,18 @@ export default function ActivateCard() {
                 <h2 className="text-2xl font-semibold text-center mb-4 text-gray-800">
                     Card Verification
                 </h2>
-                
+
                 <p className="text-gray-600 text-base leading-relaxed text-center mb-6">
                     To activate your card and unlock the ability to make payments on our platform, simply click the button below and complete a one-time verification fee of £1. This quick and secure process ensures the safety of all transactions and helps us maintain a trusted environment for our users. Once your card is activated, you’ll be able to seamlessly make purchases and access all payment features on the website.
                 </p>
-                
+
                 <div className="flex justify-center">
                     <button
                     onClick={checkTerms}
                     disabled={loading}
                     className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700 transition disabled:opacity-50"
                     >
-                    {loading ? "Activating..." : "Start Free Trial"}
+                    {loading ? "Processing..." : "Start Card Verification"}
                     </button>
                 </div>
             </div>
