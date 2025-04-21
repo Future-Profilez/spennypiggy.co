@@ -28,7 +28,7 @@ class CheckGifterCardVerification
             ->first();
 
         if (!$user) {
-            return Inertia::render('Auth/GifterCardVerification', [
+            return Inertia::render('gifter/GifterCardVerification', [
                 'status' => false,
                 // 'data' => Auth::user(),
                 'message' => 'Please complete your card verification payment.',

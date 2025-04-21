@@ -147,8 +147,7 @@ export default function Accountsetting(props) {
                             : ''}
 
                             <li>
-                                <div className='notification uppercase'>
-                                Receive e-mail notifications
+                                <div className='notification uppercase'> Receive e-mail notifications
                                     <label className="toggle-switch">
                                         <input id='notification_handle' checked={emailEnabled}
                                          type="checkbox" onChange={switchNotification}  />

@@ -121,9 +121,7 @@ export default function Stripe(props) {
                                 <Countries send={getCountry} />
                             </>
                         }
-
                     </div>
-                    
                     <div className="text-center flex justify-center mb-4 ">
                         <Popup modalclass="pinkmodal full stripe-terms shadow-pink ps-0"
                             space="4" size="md"
@@ -144,7 +142,6 @@ export default function Stripe(props) {
                                     <p className='mb-1 text-[17px]'>Please ensure you create an <b>Membership</b> and <b>Bill</b> for your fans. </p>
                                     {/* <p className='mb-1 text-[17px]'>That is a minimum of 2 posts per month.</p> */}
                                     <p className='mb-1 text-[17px]'>Oink! Oink! 🐷</p>
-
                                     <div className='termselect mt-4'>
                                         <label htmlFor="termaccept">
                                             <p className='text-[15px]' ><input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept"
@@ -152,12 +149,10 @@ export default function Stripe(props) {
                                                 I confirm I will only use Spenny Piggy in line with the ToS and understand my account could be suspended for repeated violations. I also confirm that I will create and post exclusive content in exchange for receiving gifts, donations, subscriptions, memberships and bill payments. I also confirm that nothing on the above prohibited list will be added to my profile.
                                             </p></label>
                                     </div>
-
                                     <button className='btn-pink md m-auto mt-4  d-table' onClick={() => { return checkTerms(); }}>{connecting ? 'Connecting...' : "Go to Stripe"}</button>
                                 </div>
                         </Popup>
                     </div>
-
                 </div>
             </div>
         </Authenticated>
