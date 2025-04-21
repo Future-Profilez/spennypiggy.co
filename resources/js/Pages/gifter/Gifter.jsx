@@ -74,7 +74,7 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
                     className="mb-3 justify-content-center" >
                     <Tab eventKey="home" title="About">
                         <div className='max-w-3xl m-auto'>
-                            {auth?.user?.profile_status_lock !==1 ? <>
+                            {auth?.user?.profile_status_lock !== 2 ? <>
                                 <ActivateCard auth={auth}/>
                             </> : '' }
                             <AboutScreen />
