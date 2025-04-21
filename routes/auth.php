@@ -24,6 +24,7 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WishtenderController;
+use App\Http\Middleware\CheckGifterCardVerification;
 use App\Http\Middleware\VerifyCsrfToken;
 use App\Models\Logs;
 use App\Models\SocialLinks;
@@ -76,7 +77,6 @@ Route::middleware('guest')->group(function () {
 
 Route::post('stripe/identity/verify', [StripeController::class, 'createVerificationSession'])->name('stripe.identity.verify');
 
-
 Route::get('discover', function () {
     return Inertia::render('discover/Discover');
 })->name("discover");
@@ -84,7 +84,6 @@ Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class,
 Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');
 Route::get('discover/creators/categories', [WishitemController::class, 'all_creators_categories'])->name('allcreators_categories');
 // Route::get('discover/creators_videos', [WishitemController::class, 'discover_creators_videos'])->name('discover_videos');save_social_links
-
 
 Route::middleware('auth')->group(function () {
 
@@ -96,7 +95,7 @@ Route::middleware('auth')->group(function () {
     Route::get('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
         ->name('verification.email');
 
-    Route::middleware('mustCompletedStripeIdentity')->group(function () {
+    Route::middleware(['mustCompletedStripeIdentity'])->group(function () {
         Route::middleware('mustHaveToVerify')->group(function () {
 
             // gifter card verification routes
@@ -167,7 +166,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/read-status/{payment_id}/{type}', [WishitemController::class, 'readStatus'])->name('read-status');
 
             Route::get('/stripe', function () {
-                return Inertia::render('stripe/Stripe',[
+                return Inertia::render('stripe/Stripe', [
                     'social_media_status' => SocialLinks::where('user_id', Auth::user()->id)->exists() ? 1 : 0,
                     'user_profile_status' => Auth::user()->avatar_approved,
                     'bio_status' => !empty(Auth::user()->bio) ? 1 : 0,
@@ -212,7 +211,6 @@ Route::middleware('auth')->group(function () {
                 Route::post('comment/{uuid}', [PostsController::class, 'commentOnPost'])->name('comment');
                 Route::post('comment-reply/{comment_uid}', [PostsController::class, 'replyOnComment'])->name('comment-reply');
             });
-
 
             Route::prefix("bill")->name("bill.")->group(function () {
                 Route::post('save', [BillsController::class, 'billSave'])->name('save');
@@ -282,7 +280,7 @@ Route::middleware('auth')->group(function () {
 
         Route::prefix('shop')->group(function () {
             Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
-            Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class, 'singleShopList'])->name('single-shop-list');
+            Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class, 'singleShopList'])->name('single-shop-list')->middleware('mustCompletedCardVerification');
             Route::match(['get', 'post'], '/buy/{uuid}/{varient_id}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item');
             Route::post('/answer-to-payment/{payment_id}', [ShopsController::class, 'answerPayment'])->name('answerPayment');
             Route::get('/success-payment/{uuid}', [ShopsController::class, 'successPayment'])->name('shop.success-payment');
@@ -324,7 +322,7 @@ Route::middleware('auth')->group(function () {
         Route::get('delete-creator-products/{uuid}', [WishitemController::class, 'deleteAndRestoredRyeProduct'])->name('delete.creator.products');
         Route::post('create-cart', [WishitemController::class, 'createCart'])->name('create.cart');
         Route::get('check-cart-exist/{creator_id}', [WishitemController::class, 'checkCartExist'])->name('check.cart.exist');
-        Route::post('handle-rye-product-payment', [WishitemController::class, 'handleRyeProductPayment'])->name('handle.rye.product.payment');
+        Route::post('handle-rye-product-payment', [WishitemController::class, 'handleRyeProductPayment'])->name('handle.rye.product.payment')->middleware('mustCompletedCardVerification');
         Route::get('remove-cart/{cart_id}', [WishitemController::class, 'removeCart'])->name('remove.cart');
         Route::get('get-cart-details', [WishitemController::class, 'getCartDetails'])->name('get.cart.details');
         Route::get('rye-success-payment/{uuid}/{orderUuid}', [WishitemController::class, 'ryeSuccessPayment'])->name('rye.success.payment');
@@ -334,7 +332,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/clear-cart/{device_id}/{ownerid}', [WishitemController::class, 'clearCart'])->name('clear-cart');
 
-        Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
+        Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart')->middleware(['mustCompletedCardVerification','mustCompletedCardVerification']);
 
         Route::get('anonymous-cart/{deviceId}', [WishitemController::class, 'anonymousCartItems'])->name('anonymous-cart');
 
@@ -351,8 +349,6 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/send-surprize', [WishitemController::class, 'sendSurprise'])->name('send-surprize');
 
-
-
         Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status')->withoutMiddleware(VerifyCsrfToken::class);
 
         Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status')->withoutMiddleware(VerifyCsrfToken::class);
@@ -360,7 +356,6 @@ Route::middleware('auth')->group(function () {
         Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-status')->withoutMiddleware(VerifyCsrfToken::class);
 
         Route::post('mandatory-status', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status');
-
 
         Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
             Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay");
@@ -446,7 +441,7 @@ Route::get('/user_shop_category/{username}', [AuthenticatedSessionController::cl
 
 
 Route::prefix("wish")->name("wish.")->group(function () {
-    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name("subscribe.checkout");
+    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name("subscribe.checkout")->middleware('mustCompletedCardVerification');
     Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleSubscription'])->name('subscribe.handle');
 });
 
@@ -458,12 +453,12 @@ Route::get('payment/thankyou/{username}', function ($username) {
 })->name("thank-you");
 
 Route::prefix("membership")->name("membership.")->group(function () {
-    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->name("checkout");
+    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->name("checkout")->middleware('mustCompletedCardVerification');
     Route::get('/handle/{uuid}/{status}', [MembershipController::class, 'handlePayment'])->name('handle');
 });
 
 Route::prefix("bill")->name("bill.")->group(function () {
-    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [BillsController::class, 'buyBill'])->name("checkout");
+    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [BillsController::class, 'buyBill'])->name("checkout")->middleware('mustCompletedCardVerification');
     Route::get('/handle/{uuid}/{status}', [BillsController::class, 'handlePayment'])->name('handle');
 });
 

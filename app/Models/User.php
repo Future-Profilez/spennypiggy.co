@@ -264,4 +264,9 @@ class User extends Authenticatable
     {
         return $this->hasOne(CreatorShippingAddress::class, 'creator_id', 'id');
     }
+
+    public function gifterCardVerification()
+    {
+        return $this->hasOne(GifterCardVerification::class, 'user_id');
+    }
 }

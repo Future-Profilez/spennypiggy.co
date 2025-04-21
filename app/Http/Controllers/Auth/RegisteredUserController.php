@@ -299,15 +299,23 @@ class RegisteredUserController extends Controller
             'payment_method_types' => ['card'],
         ]);
 
-        // Optional: store record if needed
-        $verification = GifterCardVerification::create([
-            'user_id' => $user->id,
-            'amount' => $baseAmountGBP,
-            'currency' => $selectedCurrency,
-            'status' => 'pending',
-            'payment_details' => null,
-            'payment_method' => 'Card',
-        ]);
+        $verification = GifterCardVerification::where('user_id', $user->id)
+            ->latest()
+            ->first();
+        if ($verification) {
+            $verification->status = 'pending';
+            $verification->payment_details = null;
+            $verification->save();
+        } else {
+            GifterCardVerification::create([
+                'user_id' => $user->id,
+                'amount' => $baseAmountGBP,
+                'currency' => $selectedCurrency,
+                'status' => 'pending',
+                'payment_details' => null,
+                'payment_method' => 'Card',
+            ]);
+        }
 
         return response()->json([
             'status' => true,
@@ -352,7 +360,7 @@ class RegisteredUserController extends Controller
             ]);
         }
         $charge = $paymentIntent->charges->data[0] ?? null;
-        $paymentMethod = $charge->payment_method ?? null;
+        // $paymentMethod = $charge->payment_method ?? null;
 
         $billingDetails = $charge->billing_details ?? null;
         $address = $billingDetails->address ?? null;
@@ -383,10 +391,7 @@ class RegisteredUserController extends Controller
         if ($verification) {
             $verification->status = 'success';
             $verification->payment_details = json_encode([
-                'payment_intent' => $session->payment_intent,
-                'billing_address' => $address,
-                'card_last4' => $paymentMethod?->card?->last4,
-                'card_brand' => $paymentMethod?->card?->brand,
+                'payment_intent' => $session,
             ]);
             $verification->save();
         }

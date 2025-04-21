@@ -22,6 +22,7 @@ use App\Mail\CheckError;
 use App\Mail\CommandFailed;
 use App\Models\BillPayment;
 use App\Models\CreatorShippingAddress;
+use App\Models\GifterCardVerification;
 use App\Models\Logs;
 use App\Models\MembershipPayment;
 use App\Models\ProductOrderDetail;
@@ -162,7 +163,7 @@ class WishitemController extends Controller
                         "unit_amount_decimal" => $createpriceid * 100
                     ],
                     "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
-                ],[
+                ], [
                     'stripe_account' => $user->account_id
                 ]);
                 $wish->stripe_product_id = $stripe_client->id;
@@ -706,7 +707,7 @@ class WishitemController extends Controller
                     'name' => $wishitem->wishname,
                     'images' => [$wishitem->perma_link],
                     "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100],
-                ],[
+                ], [
                     'stripe_account' => $cart->owner->account_id
                 ]);
                 $priceid = $stripe_client->id;
@@ -737,7 +738,7 @@ class WishitemController extends Controller
                     'name' => $wishitem->wishname,
                     'images' => [$wishitem->perma_link],
                     "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" =>  round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100],
-                ],[
+                ], [
                     'stripe_account' => $wishitem->user->account_id
                 ]);
                 $priceid = $stripe_client->id;

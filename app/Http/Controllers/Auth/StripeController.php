@@ -926,6 +926,18 @@ class StripeController extends Controller
 
     public function tipToJar(Request $request, $creator_uid)
     {
+        $user = Auth::user();
+        $checkCardVerification = User::where('id', Auth::id())->where('role', 0)
+        ->whereHas('gifterCardVerification', function ($q) use ($user) {
+            $q->where('user_id', $user->id)->where('status', 'success');
+        })->first();
+
+        if (empty($checkCardVerification)) {
+            return response()->json([
+                'status' => false,
+                'msg' => "You must have to activate your account before making any payment."
+            ]);
+        }
 
         $creator = User::where('uuid', $creator_uid)->first();
 
