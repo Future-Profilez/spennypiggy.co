@@ -23,6 +23,7 @@ use App\Models\GifterAddress;
 use App\Models\GifterCardVerification;
 use App\Models\PromoCode;
 use App\Models\Referal;
+use App\Models\UserVerificationStatus;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
@@ -116,21 +117,17 @@ class RegisteredUserController extends Controller
             $user->refresh();
 
             if ($request->role == 0) {
-                $addressData = [
-                    'country' => Crypt::encryptString($request->country),
-                    'street_address' => Crypt::encryptString($request->street_address),
-                    'city' => Crypt::encryptString($request->city),
-                    'state' => Crypt::encryptString($request->state),
-                    'postal_code' => Crypt::encryptString($request->postal_code),
-                ];
-                // Convert to JSON format
-                $addressJson = json_encode($addressData, true);
-
                 GifterAddress::create([
                     'user_id' => $user->id,
-                    'address' => $addressJson,
+                    'country' => $request->country,
+                    'street_address' => $request->street_address,
+                    'city' => $request->city,
+                    'state' => $request->state,
+                    'postal_code' => $request->postal_code,
                 ]);
             }
+
+            UserVerificationStatus::where('user_id', $user->id)->where('role', $user->role)->update(['address_status' => 0]);
 
             if (!empty($request->promo)) {
                 $promocode = PromoCode::whereCode($request->promo)->first();

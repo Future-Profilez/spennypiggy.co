@@ -8,6 +8,7 @@ use App\Jobs\CheckProfilePhotosAdult;
 use App\Jobs\SendIntroMailAdmin;
 use App\Models\BillPayment;
 use App\Models\Bills;
+use App\Models\GifterCardVerification;
 use App\Models\Logs;
 use App\Models\Membership;
 use App\Models\MembershipPayment;
@@ -22,6 +23,7 @@ use App\Models\ShopCategory;
 use App\Models\ShopPayment;
 use App\Models\ShopShippingInfo;
 use App\Models\ShopVarients;
+use App\Models\SocialLinks;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\TipGoal;
@@ -32,6 +34,7 @@ use App\Models\UserCategory;
 use App\Models\UserDocuments;
 use App\Models\UserIntro;
 use App\Models\UserShopCategories;
+use App\Models\UserVerificationStatus;
 use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
@@ -42,6 +45,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -146,13 +150,21 @@ class ProfileController extends Controller
 
             if (!empty($request->bio)) {
                 $logs = Logs::where('edited_about_me_id', $user->id)->where('status', 'pending')->first();
-                if (!empty($logs)){
+                if (!empty($logs)) {
                     $logs->status = 'updated';
                     $logs->save();
                     $user->edit_bio_reason = '';
                     $user->save();
                     $user->refresh();
                 }
+
+                UserVerificationStatus::UpdateOrCreate([
+                    'user_id' => $user->id,
+                    'role' => $user->role,
+                ], [
+                    'role' => $user->role,
+                    'bio_status' => !empty($request->bio) ? 0 : null,
+                ]);
             }
             return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
         }
@@ -329,7 +341,6 @@ class ProfileController extends Controller
 
         return Redirect::to('/');
     }
-
 
     /**
      * On or off the notification mails.
