@@ -33,6 +33,7 @@ class User extends Authenticatable
         'role',
         'username',
         'country',
+        'bio',
         'gender',
         'password',
         'uuid',
