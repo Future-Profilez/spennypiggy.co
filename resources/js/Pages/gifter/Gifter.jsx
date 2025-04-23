@@ -80,16 +80,16 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
                             <AboutScreen />
                         </div>
                     </Tab>
+
                     <Tab eventKey="feed" title="Feed">
                         <GifterFeed username={user && user.username || ''} />
                     </Tab>
                     <Tab eventKey="memberships" title="Memberships">
                         <MembershipLists username={user && user.username || ''}/>
                     </Tab>
-                    {/* 
-                    <Tab eventKey="media" title="Media">
-                        <GifterMedia username={user && user.username || ''} />
-                    </Tab>
+                    {/* <Tab eventKey="media" title="Media">
+                            <GifterMedia username={user && user.username || ''} />
+                        </Tab>
                     */}
                 </Tabs>
             </div>

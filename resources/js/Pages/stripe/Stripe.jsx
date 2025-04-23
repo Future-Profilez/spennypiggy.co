@@ -112,7 +112,7 @@ export default function Stripe(props) {
 
                         {auth?.user?.profile_status_lock !== 1 &&
                             <div className="alert alert-warning mt-3">
-                                {verification_status?.bio_status == 0 ? <p className="text-yellow-600 "> ⚠️ Your bio hasn't been approved yet. Please update it as per the requested guidelines.</p> : ''}
+                                {verification_status?.bio_status == 0 ? <p className="text-yellow-600 "> ⚠️ Your bio hasn't been approved yet.</p> : ''}
                                 {verification_status?.social_status == null ? <p className="text-yellow-600 mt-2 "> ⚠️ Please update at least one of your social media handles.</p> : ''}
                                 {verification_status?.social_status == 0 ? <p className="text-yellow-600 mt-2 "> ⚠️ Your social media handles are not approved yet.</p> : ''}
                                 {auth?.user?.avatar == null ? <p className="text-yellow-600 mt-2 "> ⚠️ Please update your profile picture before activating your account.</p> : ''}
@@ -121,7 +121,7 @@ export default function Stripe(props) {
                         }
 
                         {auth?.user?.profile_status_lock !== 1 ?
-                            <p className="text-red-500 text-lg">Your profile is under review. Please check back within 1-2 hours.</p> 
+                            <p className="text-red-500 text-lg">Your profile is under review. Please complete above steps to get verified and check back within 1-2 hours.</p> 
                         : ''}
 
                         {verification_status?.bio_status == 1 && verification_status?.social_status == 1 &&  auth?.user?.avatar_approved == 1 ?
