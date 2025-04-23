@@ -41,9 +41,6 @@ import ProfileSteps from "./Profile/ProfileSteps";
 import ProfileProductLists from "./shop/profile/ProfileProductLists";
 import AddItem from "./shop/AddItem";
 import AddGift from "./feed/AddGift";
-import { Swiper, SwiperSlide } from 'swiper/react';
-import 'swiper/css';
-import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 import PriceFormat from "@/includes/PriceFormat";
 import GiftListing from "./rye/GiftListing";
 import { FaRegHeart } from "react-icons/fa";
@@ -54,7 +51,6 @@ export default function Dashboard(props) {
     const parsePageId = (path) => path.substring(path.lastIndexOf('/') + 1)
     const pageId = parsePageId(window.location.pathname);
     const { format, formatMultiPrice } = PriceFormat();
-
     const w = useWidthCount();
     const{auth,user,username,global_currency,itemid}= props;
     console.log("props",props)
