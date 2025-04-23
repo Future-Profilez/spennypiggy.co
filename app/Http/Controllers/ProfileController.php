@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Helpers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Jobs\CheckProfilePhotosAdult;
+use App\Jobs\SendBioSocialUpdateEmail;
+use App\Jobs\SendBioSocialUpdateMail;
 use App\Jobs\SendIntroMailAdmin;
 use App\Models\BillPayment;
 use App\Models\Bills;
@@ -130,6 +132,27 @@ class ProfileController extends Controller
             $user->name = $request->name;
             $user->username = $request->username;
             if ($request->bio) {
+
+                UserVerificationStatus::UpdateOrCreate([
+                    'user_id' => $user->id,
+                    'role' => $user->role,
+                ], [
+                    'role' => $user->role,
+                    'bio_status' => !empty($request->bio) ? 0 : null,
+                ]);
+
+                $updatedFields = [
+                    'bio' => $request->bio !== $user->bio,
+                    'social' => $request->social_handle !== $user->social_handle,
+                ];
+                Log::info($request->bio);
+                Log::info($user->bio);
+
+                Log::info('Updated fields:', $updatedFields);
+
+                if ($updatedFields['bio'] || $updatedFields['social']) {
+                    dispatch(new SendBioSocialUpdateEmail($user, $updatedFields));
+                }
                 $user->bio = $request->bio;
             }
             $user->min_surprise_amount = $request->min_surprise_amount ?? 0;
@@ -153,18 +176,11 @@ class ProfileController extends Controller
                 if (!empty($logs)) {
                     $logs->status = 'updated';
                     $logs->save();
+
                     $user->edit_bio_reason = '';
                     $user->save();
                     $user->refresh();
                 }
-
-                UserVerificationStatus::UpdateOrCreate([
-                    'user_id' => $user->id,
-                    'role' => $user->role,
-                ], [
-                    'role' => $user->role,
-                    'bio_status' => !empty($request->bio) ? 0 : null,
-                ]);
             }
             return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
         }

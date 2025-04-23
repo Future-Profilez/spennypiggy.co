@@ -19,4 +19,9 @@ class UserVerificationStatus extends Model
         'address_status',
         'address_verification_error',
     ];
+
+    protected $hidden = [
+        'created_at',
+        'updated_at',
+    ];
 }

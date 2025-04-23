@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Helpers;
 use App\Http\Controllers\Controller;
+use App\Jobs\SendBioSocialUpdateEmail;
 use App\Models\GifterCardVerification;
 use App\Models\Membership;
 use App\Models\SocialLinks;
@@ -80,6 +81,19 @@ class SocialLinksController extends Controller
                         'social_status' => $socialCheck ? 0 : null,
                     ]
                 );
+
+                $updatedFields = [
+                    'bio' => false,
+                    'social' => true,
+                ];
+
+                Log::info('Updated fields:', $updatedFields);
+
+                if ($updatedFields['bio'] || $updatedFields['social']) {
+                    dispatch(new SendBioSocialUpdateEmail(Auth::user(), $updatedFields));
+                }
+
+
             }
 
 
