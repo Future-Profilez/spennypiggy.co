@@ -166,11 +166,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/read-status/{payment_id}/{type}', [WishitemController::class, 'readStatus'])->name('read-status');
 
             Route::get('/stripe', function () {
-                return Inertia::render('stripe/Stripe', [
-                    'social_media_status' => SocialLinks::where('user_id', Auth::user()->id)->exists() ? 1 : 0,
-                    'user_profile_status' => Auth::user()->avatar_approved,
-                    'bio_status' => !empty(Auth::user()->bio) ? 1 : 0,
-                ]);
+                return Inertia::render('stripe/Stripe');
             })->middleware(['auth', 'verified'])->name('stripe');
 
             Route::get('/pin-item/{wish_id}/', [WishitemController::class, 'pinItem'])->name('pin-item');

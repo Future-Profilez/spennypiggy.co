@@ -103,6 +103,20 @@ class RegisteredUserController extends Controller
             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         } else {
+
+            $randomBio = null;
+            if ($request->role == 1) {
+                $defaultBios = [
+                    "I haven’t written my bio yet, but you can still spoil me 😘",
+                    "No bio. Just vibes… and a wishlist 💅",
+                    "Still working on my About Me. In the meantime… gifts welcome 🛍️",
+                    "Bio coming soon. But like, feel free to click that wishlist link.",
+                    "New here. Wishlist isn’t 💸"
+                ];
+
+                $randomBio = $defaultBios[array_rand($defaultBios)];
+            }
+
             $user = User::create([
                 'name' => $request->name,
                 'email' => strtolower($request->email),
@@ -113,8 +127,16 @@ class RegisteredUserController extends Controller
                 'creator_category' => $request->creator_category ?? null,
                 'ip_address' => $ip_address,
                 'country' => $request->country_code ?? null,
+                'bio' => $randomBio, // Here goes the random bio
             ]);
             $user->refresh();
+
+            if ($request->role == 1) {
+                UserVerificationStatus::create(
+                    ['user_id' => $user->id, 'role' => $request->role, 'bio_status' => 1]
+                );
+            }
+
 
             if ($request->role == 0) {
                 GifterAddress::create([
