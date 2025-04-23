@@ -29,7 +29,6 @@ export default function ActivateCard() {
                         <span className='bluebg'></span>
                     </div>
 
-
                     {auth?.user?.profile_status_lock == 0 ?
                         <div className='py-4'>
                             <div className='stripNote p-3 p-md-4'>

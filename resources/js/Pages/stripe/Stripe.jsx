@@ -8,7 +8,11 @@ import { useRef } from "react";
 import Popup from '@/Components/Popup';
 
 export default function Stripe(props) {
-    const { auth, user, bio_status, social_media_status, user_profile_status } = props;
+    const { auth, user, 
+        bio_status, social_media_status, user_profile_status
+     } = props;
+     const verification_status = auth && auth.verification_status;
+     console.log("props",props);
     const checkRef = useRef();
     const { errorAlert } = useAlerts();
     const { data, setData, get, post, processing, errors, reset } = useForm({
@@ -61,18 +65,13 @@ export default function Stripe(props) {
                     </div>
                     {/* <form onSubmit={connectStripe}> */}
                     <div className="stripNote p-3 p-md-4">
+
                         <h4 className="font-bold mb-2 text-uppercase">
                             The following rules are required by our payment
                             processors to prevent rejection of your account.
                         </h4>
 
-                        <p className="mb-4">
-                            Stripe allows adult creators to use Spenny Piggy to
-                            process gifts within our terms of service. If stripe
-                            try to shut down your account for any reason, reach
-                            out to support and we can ensure you retain it.
-                            Providing none of the Items below are listed:
-                        </p>
+                        <p className="mb-4"> Stripe allows adult creators to use Spenny Piggy to process gifts within our terms of service. If stripe try to shut down your account for any reason, reach out to support and we can ensure you retain it. Providing none of the Items below are listed: </p>
 
                         <ul className="stripeterms">
                             <li className="py-1 my-1">
@@ -110,48 +109,60 @@ export default function Stripe(props) {
                                 </p>
                             </li>
                         </ul>
-                       
-                        {bio_status == 0   ? <p className="text-yellow-600 mt-2 "> ⚠️ Your bio hasn't been approved yet. Please update it as per the requested guidelines.</p> : ''}
-                        {social_media_status == 0 ? <p className="text-yellow-600 mt-2 "> ⚠️ Please update at least one of your social media handles.</p> : ''}
-                        {user_profile_status == 0 ? <p className="text-yellow-600 mt-2 "> ⚠️ Your profile image hasn't been approved yet.</p> : ''}
-                        
-                        { bio_status == 0 || social_media_status == 0 || user_profile_status == 0 ? ''  :
+
+                        {auth?.user?.profile_status_lock !== 1 &&
+                            <div className="alert alert-warning mt-3">
+                                {verification_status?.bio_status == 0 ? <p className="text-yellow-600 "> ⚠️ Your bio hasn't been approved yet. Please update it as per the requested guidelines.</p> : ''}
+                                {verification_status?.social_status == null ? <p className="text-yellow-600 mt-2 "> ⚠️ Please update at least one of your social media handles.</p> : ''}
+                                {verification_status?.social_status == 0 ? <p className="text-yellow-600 mt-2 "> ⚠️ Your social media handles are not approved yet.</p> : ''}
+                                {auth?.user?.avatar == null ? <p className="text-yellow-600 mt-2 "> ⚠️ Please update your profile picture before activating your account.</p> : ''}
+                                {auth?.user?.avatar && auth?.user?.avatar_approved == 0 ? <p className="text-yellow-600 mt-2 "> ⚠️ Your profile image hasn't been approved yet.</p> : ''}
+                            </div>
+                        }
+
+                        {auth?.user?.profile_status_lock !== 1 ?
+                            <p className="text-red-500 text-lg">Your profile is under review. Please check back within 1-2 hours.</p> 
+                        : ''}
+
+                        {verification_status?.bio_status == 1 && verification_status?.social_status == 1 &&  auth?.user?.avatar_approved == 1 ?
                             <>
                                 <strong className="d-block w-100 pt-3 mb-1">Choose Country</strong>
                                 <Countries send={getCountry} />
-                            </>
-                        }
-                    </div>
-                    <div className="text-center flex justify-center mb-4 ">
-                        <Popup modalclass="pinkmodal full stripe-terms shadow-pink ps-0"
-                            space="4" size="md"
-                            action={close} classes={`btn-pink lg w-1/2 ${ bio_status == 0 || social_media_status == 0 || user_profile_status == 0 ? 'disabled' : ''}`}
-                            text={`Accept TERMS`} >
-                                <div className="addgoal" >
-                                    <h2 className="text-uppercase font-GillSans pb-4 font-large">Important notice !</h2>
+                                <div className="text-center flex justify-center mb-4 ">
+                                    <Popup modalclass="pinkmodal full stripe-terms shadow-pink ps-0"
+                                        space="4" size="md"
+                                        action={close} classes={`btn-pink mt-4 lg w-1/2 ${ bio_status == 0 || social_media_status == 0 || user_profile_status == 0 ? 'disabled' : ''}`}
+                                        text={`Accept TERMS`} >
+                                            <div className="addgoal" >
+                                                <h2 className="text-uppercase font-GillSans pb-4 font-large">Important notice !</h2>
 
-                                    <p className='mb-2'><strong>Oink! @{auth && auth.user && auth.user.username}</strong></p>
-                                    <p className='mb-2' > To comply with Stripes new rules, you must be posting exclusive content in:</p>
+                                                <p className='mb-2'><strong>Oink! @{auth && auth.user && auth.user.username}</strong></p>
+                                                <p className='mb-2' > To comply with Stripes new rules, you must be posting exclusive content in:</p>
 
-                                    <div className='d-block py-3' >
-                                        <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >Membership</h2>
-                                        <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >Bill</h2>
-                                        {/* <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >FOR Members</h2> */}
-                                    </div>
+                                                <div className='d-block py-3' >
+                                                    <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >Membership</h2>
+                                                    <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >Bill</h2>
+                                                    {/* <h2 className='font-GillSans text-[20px] text-uppercase mb-2 w-full' >FOR Members</h2> */}
+                                                </div>
 
-                                    <p className='mb-1 text-[17px]'>Please ensure you create an <b>Membership</b> and <b>Bill</b> for your fans. </p>
-                                    {/* <p className='mb-1 text-[17px]'>That is a minimum of 2 posts per month.</p> */}
-                                    <p className='mb-1 text-[17px]'>Oink! Oink! 🐷</p>
-                                    <div className='termselect mt-4'>
-                                        <label htmlFor="termaccept">
-                                            <p className='text-[15px]' ><input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept"
-                                                required onChange={(e) => setData("termaccept", e.target.value)}></input>
-                                                I confirm I will only use Spenny Piggy in line with the ToS and understand my account could be suspended for repeated violations. I also confirm that I will create and post exclusive content in exchange for receiving gifts, donations, subscriptions, memberships and bill payments. I also confirm that nothing on the above prohibited list will be added to my profile.
-                                            </p></label>
-                                    </div>
-                                    <button className='btn-pink md m-auto mt-4  d-table' onClick={() => { return checkTerms(); }}>{connecting ? 'Connecting...' : "Go to Stripe"}</button>
+                                                <p className='mb-1 text-[17px]'>Please ensure you create an <b>Membership</b> and <b>Bill</b> for your fans. </p>
+                                                {/* <p className='mb-1 text-[17px]'>That is a minimum of 2 posts per month.</p> */}
+                                                <p className='mb-1 text-[17px]'>Oink! Oink! 🐷</p>
+                                                <div className='termselect mt-4'>
+                                                    <label htmlFor="termaccept">
+                                                        <p className='text-[15px]' ><input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept"
+                                                            required onChange={(e) => setData("termaccept", e.target.value)}></input>
+                                                            I confirm I will only use Spenny Piggy in line with the ToS and understand my account could be suspended for repeated violations. I also confirm that I will create and post exclusive content in exchange for receiving gifts, donations, subscriptions, memberships and bill payments. I also confirm that nothing on the above prohibited list will be added to my profile.
+                                                        </p></label>
+                                                </div>
+                                                <button className='btn-pink md m-auto mt-4  d-table' onClick={() => { return checkTerms(); }}>{connecting ? 'Connecting...' : "Go to Stripe"}</button>
+                                            </div>
+                                    </Popup>
                                 </div>
-                        </Popup>
+                            </>
+                            : ''
+                        }
+
                     </div>
                 </div>
             </div>
