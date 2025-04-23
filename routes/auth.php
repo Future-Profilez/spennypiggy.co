@@ -429,7 +429,7 @@ Route::get('posts/{username}', [AuthenticatedSessionController::class, 'user_pos
 
 Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('user.posts.comments');
 
-Route::get('/{username}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show')->middleware('mustCompletedStripeIdentity');
+Route::get('/{username}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
 Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');
 Route::get('/items/{username}/{category_id?}', [AuthenticatedSessionController::class, 'userItems'])->name('user.items');
 Route::get('/user_category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.category');
