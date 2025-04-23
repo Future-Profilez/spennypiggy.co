@@ -65,14 +65,13 @@ export default function Stripe(props) {
                     </div>
                     {/* <form onSubmit={connectStripe}> */}
                     <div className="stripNote p-3 p-md-4">
+
                         <h4 className="font-bold mb-2 text-uppercase">
                             The following rules are required by our payment
                             processors to prevent rejection of your account.
                         </h4>
 
-                        <p className="mb-4">
-                            Stripe allows adult creators to use Spenny Piggy to process gifts within our terms of service. If stripe try to shut down your account for any reason, reach out to support and we can ensure you retain it. Providing none of the Items below are listed:
-                        </p>
+                        <p className="mb-4"> Stripe allows adult creators to use Spenny Piggy to process gifts within our terms of service. If stripe try to shut down your account for any reason, reach out to support and we can ensure you retain it. Providing none of the Items below are listed: </p>
 
                         <ul className="stripeterms">
                             <li className="py-1 my-1">
@@ -110,7 +109,7 @@ export default function Stripe(props) {
                                 </p>
                             </li>
                         </ul>
-                       
+
                         {auth?.user?.profile_status_lock !== 1 &&
                             <div className="alert alert-warning mt-3">
                                 {verification_status?.bio_status == 0 ? <p className="text-yellow-600 "> ⚠️ Your bio hasn't been approved yet. Please update it as per the requested guidelines.</p> : ''}
