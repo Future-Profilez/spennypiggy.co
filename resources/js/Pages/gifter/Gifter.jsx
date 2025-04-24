@@ -29,6 +29,14 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
               <div className={`${user && !user.bio ? "d-nones":""} box shadow-voilet rounded-lg mb-4`} >
                   <p className="font-bold" >About me</p>
                   <p className={`text-muted text-start mt-2 `}>{(user && user.bio) || ""}</p>
+                  
+                  {user?.edit_bio_reason  ?
+                    <div className="mt-3">
+                        <p className="text-red-700">Bio Edit Request</p>
+                        <p className="text-red-500 text-sm">Reason : {user?.edit_bio_reason } Please update your bio as per requested.</p>
+                    </div>
+                    : ''}
+
                   <SocialLinks links={sLinks} />
                   {IsloggedIn ? <div className="addsocial flex">
                     <ul>
