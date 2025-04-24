@@ -107,7 +107,7 @@ export default function Membership() {
         </div>
 
     </div> */}
-    <section className="bg-black text-white py-16 px-4 text-center">
+    <section data-aos="zoom-out-up" className="bg-black text-white py-16 px-4 text-center">
       <div className="flex justify-center mb-6">
         <img src={support} alt="Pig Mascot" className="w-24 h-24 object-contain" />
       </div>

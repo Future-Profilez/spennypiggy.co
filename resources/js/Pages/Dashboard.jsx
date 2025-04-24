@@ -329,7 +329,7 @@ export default function Dashboard(props) {
 
                                             {auth.user && auth.user.stripe_details_submitted == 1 ?
                                                     <>
-                                                    <div onClick={()=> setWishOptions(true)} className="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center">
+                                                    <div onClick={()=> setWishOptions(true)} className="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center cursor-pointer">
                                                         <div className=" flex items-center">
                                                             <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                                                                 <FaRegHeart color="var(--pink)" size="1.5rem" />
