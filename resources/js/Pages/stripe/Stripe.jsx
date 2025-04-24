@@ -9,7 +9,7 @@ import Popup from '@/Components/Popup';
 
 export default function Stripe(props) {
     const { auth, user, 
-        bio_status, social_media_status, user_profile_status
+        bills_count, membership_count
      } = props;
      const verification_status = auth && auth.verification_status;
      console.log("props",props);
@@ -117,17 +117,19 @@ export default function Stripe(props) {
                                 {verification_status?.social_status == 0 ? <p className="text-yellow-600 mt-2 "> ⚠️ Your social media handles are not approved yet.</p> : ''}
                                 {auth?.user?.avatar == null ? <p className="text-yellow-600 mt-2 "> ⚠️ Please update your profile picture before activating your account.</p> : ''}
                                 {auth?.user?.avatar && auth?.user?.avatar_approved == 0 ? <p className="text-yellow-600 mt-2 "> ⚠️ Your profile image hasn't been approved yet.</p> : ''}
+                                {bills_count < 1 ? <p className="text-yellow-600 mt-2 "> ⚠️ Please add atleast one bill before activating your account.</p> : ''}
+                                {bills_count < 1 ? <p className="text-yellow-600 mt-2 "> ⚠️ Please add atleast one membership before activating your account.</p> : ''}
                             </div>
-                        }
+                         }
 
-                        {auth?.user?.profile_status_lock == 2 ?
-                            <p className="text-red-500 text-lg">Your profile is under review. Please complete above steps to get verified and check back within 1-2 hours.</p> 
+                        {auth?.user?.profile_status_lock !== 2 ?
+                            <p className="text-red-500 text-lg">Your profile will go under verification. Please complete above steps to get verified and check back within 1-2 hours.</p> 
                         : ''}
 
                         {auth?.user?.profile_status_lock == 0 && auth?.user?.profile_reject_reason ?
                             <div className="mt-4 alert alert-danger">
-                            <h2 className="text-red-600 text-xl">Application Rejected</h2>
-                            <p className="text-red-500 text-lg">{auth?.user?.profile_reject_reason}</p> 
+                             <h2 className="text-red-600 text-xl">Application Rejected</h2>
+                             <p className="text-red-500 text-lg">{auth?.user?.profile_reject_reason}</p> 
                             </div>
                         :'' }
 
@@ -138,7 +140,7 @@ export default function Stripe(props) {
                                 <div className="text-center flex justify-center mb-4 ">
                                     <Popup modalclass="pinkmodal full stripe-terms shadow-pink ps-0"
                                         space="4" size="md"
-                                        action={close} classes={`btn-pink mt-4 lg w-1/2 ${ bio_status == 0 || social_media_status == 0 || user_profile_status == 0 ? 'disabled' : ''}`}
+                                        action={close} classes={`btn-pink mt-4 lg w-1/2`}
                                         text={`Accept TERMS`} >
                                             <div className="addgoal" >
                                                 <h2 className="text-uppercase font-GillSans pb-4 font-large">Important notice !</h2>

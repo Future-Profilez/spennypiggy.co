@@ -26,7 +26,9 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WishtenderController;
 use App\Http\Middleware\CheckGifterCardVerification;
 use App\Http\Middleware\VerifyCsrfToken;
+use App\Models\Bills;
 use App\Models\Logs;
+use App\Models\Membership;
 use App\Models\SocialLinks;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
@@ -41,6 +43,7 @@ use App\Uploadcare;
 use Illuminate\Support\Facades\Http;
 use App\SeoMeta;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Request;
 
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
@@ -146,28 +149,29 @@ Route::middleware('auth')->group(function () {
             Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
 
             Route::get('unlink-twitter', [AuthenticatedSessionController::class, 'unlinkTwitter'])->name('unlink-twitter');
-
             Route::get('wish-tracker', [WishitemController::class, 'wishtrackerItems'])->name('wish-tracker');
-
             Route::get('user-tips', [WishitemController::class, 'userTips'])->name('user-tips');
-
             Route::get('bill-tracker', [WishitemController::class, 'billTracker'])->name('bill-tracker');
-
             Route::get('membership-tracker', [WishitemController::class, 'membershipTracker'])->name('membership.tracker');
-
             Route::get('shop-tracker', [WishitemController::class, 'shopTracker'])->name('shop.tracker');
-
             Route::get('subscriptions', [WishitemController::class, 'creatorSubscriptions'])->name('subscriptions');
-
             Route::get('subscribed', [WishitemController::class, 'userSubscribed'])->name('subscribed');
-
             Route::get('cancel-subscription/{subscription_id}', [WishitemController::class, 'cancelSubscription'])->name('cancel-subscription');
-
             Route::get('/read-status/{payment_id}/{type}', [WishitemController::class, 'readStatus'])->name('read-status');
 
-            Route::get('/stripe', function () {
-                return Inertia::render('stripe/Stripe');
+
+            Route::get('/stripe', function (Request $request) {
+                $auth = Auth::user();
+                $bills = Bills::where('user_id', $auth->id)->where('approved', 1)->count();
+                $membership = Membership::where('user_id', $auth->id)->where('approved', 1)->count();
+                return Inertia::render('stripe/Stripe', [
+                    'bills_count' => $bills,
+                    'membership_count' => $membership
+                ]);
             })->middleware(['auth', 'verified'])->name('stripe');
+
+
+
 
             Route::get('/pin-item/{wish_id}/', [WishitemController::class, 'pinItem'])->name('pin-item');
 

@@ -29,10 +29,15 @@ export default function ProfileProductLists({profileuser, updateItems}) {
    }, []);
 
   return <>
-      <div className='grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3' >
-         {lists &&  lists.map((item, index) => <ProfileProduct key={index} item={item} />)}
-      </div>
-      {loading ? <LoadingScreen /> : "" }
-      {!loading && lists && lists.length < 1 ? <Nocontent text="Nothing to see" /> : ""}
+  {lists && lists.length ?
+      <>
+         {loading ? <LoadingScreen /> : 
+            <div className='grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3' >
+               {lists && lists.map((item, index) => <ProfileProduct key={index} item={item} />)}
+            </div> 
+         }
+      </>
+      :  <Nocontent text="Nothing to see" />
+   }
   </>
 }
