@@ -118,7 +118,7 @@ export default function Stripe(props) {
                                 {auth?.user?.avatar == null ? <p className="text-yellow-600 mt-2 "> ⚠️ Please update your profile picture before activating your account.</p> : ''}
                                 {auth?.user?.avatar && auth?.user?.avatar_approved == 0 ? <p className="text-yellow-600 mt-2 "> ⚠️ Your profile image hasn't been approved yet.</p> : ''}
                                 {bills_count < 1 ? <p className="text-yellow-600 mt-2 "> ⚠️ Please add atleast one bill before activating your account.</p> : ''}
-                                {bills_count < 1 ? <p className="text-yellow-600 mt-2 "> ⚠️ Please add atleast one membership before activating your account.</p> : ''}
+                                {membership_count < 1 ? <p className="text-yellow-600 mt-2 "> ⚠️ Please add atleast one membership before activating your account.</p> : ''}
                             </div>
                          }
 
