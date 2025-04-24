@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\Logs;
 use App\Models\MonthlyCharge;
 use App\Models\SocialLinks;
+use App\Models\UserVerificationStatus;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,55 +20,6 @@ class CheckStripeIdentityVerification
      * @param  \Closure  $next
      * @return mixed
      */
-    // public function handle(Request $request, Closure $next)
-    // {
-    //     $user = Auth::user();
-
-    //     if (!$user || $user->role !== 1 || $user->avatar_approved !== 1) {
-    //         return $next($request);
-    //     }
-
-    //     // Check for pending about me edits
-    //     $hasPendingEdit = Logs::where('edited_about_me_id', $user->id)
-    //         ->where('status', 'pending')
-    //         ->exists();
-
-    //     if ($hasPendingEdit) {
-    //         return $next($request);
-    //     }
-
-    //     // Check for at least one filled social link
-    //     $hasSocialLinks = SocialLinks::where('user_id', $user->id)
-    //         ->where(function ($query) {
-    //             $query->whereNotNull('twitter')
-    //                 ->orWhereNotNull('instagram')
-    //                 ->orWhereNotNull('tumblr')
-    //                 ->orWhereNotNull('twitch')
-    //                 ->orWhereNotNull('facebook');
-    //         })
-    //         ->exists();
-
-    //     if (!$hasSocialLinks) {
-    //         return $next($request);
-    //     }
-
-    //     // Check if user has an active paid subscription
-    //     $isSubscribed = MonthlyCharge::where('user_id', $user->id)
-    //         ->where('status', 'paid')
-    //         ->exists();
-    //     // dd($isSubscribed);
-
-    //     if ($isSubscribed) {
-    //         return Inertia::render('Auth/StripeIdentity', [
-    //             'status' => false,
-    //             'data' => $user,
-    //             'message' => 'Please complete your Stripe identity verification.',
-    //         ]);
-    //     }
-
-    //     return $next($request);
-    // }
-
     public function handle(Request $request, Closure $next)
     {
         $user = Auth::user();
@@ -76,35 +28,70 @@ class CheckStripeIdentityVerification
             return $next($request);
         }
 
-        $logs = Logs::where('edited_about_me_id', $user->id)->where('status', 'pending')->exists();
+        $isBioSocialVerified = UserVerificationStatus::where('user_id', $user->id)
+            ->where('bio_status', 1)
+            ->where('social_status', 1)
+            ->where('address_status', 1)
+            ->exists();
 
-        $socialLink = SocialLinks::where('user_id', $user->id)->where(function ($q) {
-            $q->where('twitter', '!=', null)
-                ->orWhere('instagram', '!=', '')
-                ->orWhere('tumblr', '!=', '')
-                ->orWhere('twitch', '!=', '')
-                ->orWhere('facebook', '!=', '');
-        })->exists();
+        $hasPaidSubscription = MonthlyCharge::where('user_id', $user->id)
+            ->where('status', 'paid')
+            ->exists();
 
-        if ($user && $user->role == 1 && $user->identity_status == 0 && $user->avatar_approved == 1 && empty($logs) && !empty($socialLink)) {
+        $needsIdentityVerification = $user->role == 1
+            && $user->identity_status == 0
+            && $user->avatar_approved == 1
+            && $isBioSocialVerified
+            && $hasPaidSubscription;
 
-            $subscriptionCheck = MonthlyCharge::where('user_id', $user->id)
-                ->where('status', 'paid')
-                ->exists();
-
-            // Check if the user's identity_status is not verified (0)
-            if ($subscriptionCheck) {
-                // dd($user);
-                // Redirect to the Stripe identity verification page
-                return Inertia::render('Auth/StripeIdentity', [
-                    'status' => false,
-                    'data' => $user,
-                    'message' => 'Please complete your Stripe identity verification.',
-                ]);
-            }
+        if ($needsIdentityVerification) {
+            return Inertia::render('Auth/StripeIdentity', [
+                'status' => false,
+                'data' => $user,
+                'message' => 'Please complete your Stripe identity verification.',
+            ]);
         }
 
-        // If verified, allow the request to proceed
         return $next($request);
     }
+
+    // public function handle(Request $request, Closure $next)
+    // {
+    //     $user = Auth::user();
+
+    //     if (!$user) {
+    //         return $next($request);
+    //     }
+
+    //     // $socialLink = SocialLinks::where('user_id', $user->id)->where(function ($q) {
+    //     //     $q->where('twitter', '!=', null)
+    //     //         ->orWhere('instagram', '!=', '')
+    //     //         ->orWhere('tumblr', '!=', '')
+    //     //         ->orWhere('twitch', '!=', '')
+    //     //         ->orWhere('facebook', '!=', '');
+    //     // })->exists();
+
+    //     $bioSocialStatus = UserVerificationStatus::where('user_id', $user->id)->where('bio_status', 1)->where('social_status', 1)->where('address_status', 1)->exists();
+
+    //     if ($user && $user->role == 1 && $user->identity_status == 0 && $user->avatar_approved == 1 && $bioSocialStatus) {
+
+    //         $subscriptionCheck = MonthlyCharge::where('user_id', $user->id)
+    //             ->where('status', 'paid')
+    //             ->exists();
+
+    //         // Check if the user's identity_status is not verified (0)
+    //         if ($subscriptionCheck) {
+    //             // dd($user);
+    //             // Redirect to the Stripe identity verification page
+    //             return Inertia::render('Auth/StripeIdentity', [
+    //                 'status' => false,
+    //                 'data' => $user,
+    //                 'message' => 'Please complete your Stripe identity verification.',
+    //             ]);
+    //         }
+    //     }
+
+    //     // If verified, allow the request to proceed
+    //     return $next($request);
+    // }
 }
