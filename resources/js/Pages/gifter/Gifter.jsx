@@ -22,7 +22,7 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
 
   const { auth, user, itemid  } = usePage().props;
   const [tab, setTab] = useState("home");
-  const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
+//   const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
 
   const AboutScreen = () => {
     return <>

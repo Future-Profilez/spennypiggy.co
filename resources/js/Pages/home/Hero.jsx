@@ -118,26 +118,30 @@ export default function Hero({auth}) {
 
                     {auth?.user?.username
                       ?
-                      <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="bg-[#E6EA7B] font-anton text-black px-5 py-1 uppercase flex text-center items-center tracking-[1px] justify-center text-lg rounded-[30px] border-[2px] border-yellow transition-all duration-300 ease-in-out" >
+                      <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink py-[8px] px-5 lg log" >
                         My Wishlist
                       </Link>
-                      :  <Link href="/register" className="bg-[#E6EA7B] font-anton text-black px-5 py-1 uppercase flex text-center items-center tracking-[1px] justify-center text-lg rounded-[30px] border-[2px] border-yellow transition-all duration-300 ease-in-out" > Create  your page </Link>
+                      :  <Link href="/register" 
+                      // className="bg-[#E6EA7B] font-anton text-black px-5 py-1 uppercase flex text-center items-center tracking-[1px] justify-center text-lg rounded-[30px] border-[2px] border-yellow transition-all duration-300 ease-in-out" 
+                      className="btn-pink wishlistbutton lg px-5 shadow-mint border-mint">
+                          Create  your page 
+                         </Link>
                     }
 
-                    <div className='itsfree-tag d-none d-md-block' >
+                    <div className='absolute top-[35px] -right-[77%] max-w-[300px] hidden md:block' >
                       <img alt={"image"}  className=' '
                         src={itsfree}
                       />
                     </div>
-                    <div className='itsfree-tag d-block d-md-none' >
+                    <div className='itsfree-tag block md:hidden' >
                       <img alt={"image"}  className=' '
                         src={itsfreemob}
                       />
                     </div>
                   </div>
-                  <div className='mt-5 mt-md-1 pt-3 pt-md-4 pt-md-0 d-flex justify-content-center' >
+                  <div className="mt-7 md:mt-1 flex justify-center pt-4 md:pt-0">
                     <TrustBox />
-                  </div>
+                </div>
 
                   {/* <div className="mt-4 pt-2 gifts-links text-white ps-0 ">
                   Proudly 🏳️‍🌈 Owned

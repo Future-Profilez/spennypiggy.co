@@ -15,7 +15,7 @@ import store from "./Pages/redux/Store";
 
 createInertiaApp({
     title: (title) =>
-        `${title || "Spenny Piggy"} - Financial Gifts, Exclusive Content & Memberships`,
+        `${title || "Spenny Piggy"} - The Everything Wishlist - Gifts, Memberships, Exclusive Content & More.`,
     resolve: (name) =>
         resolvePageComponent(
             `./Pages/${name}.jsx`,

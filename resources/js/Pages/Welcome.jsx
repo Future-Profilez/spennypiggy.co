@@ -40,7 +40,7 @@ export default function Home({ auth, user }) {
     return <>
         <div className="overflow-hidden" >
         <Guest auth={auth.user} user={auth.user}>
-        <LiveBar reps={15} classes={'blackbg barouter'} text={"⚡ Fast & Easy payments through: Apple pay"} />
+        <LiveBar reps={15} classes={'blackbg barouter'} text={"🤑 Keep 100% of what you earn! ⚡️Fast & Easy Payment’s through 🍎 Pay! "} />
         <Hero auth={auth} />
         <LiveBarSection />
         <PaymentSlider/>
@@ -118,7 +118,11 @@ export default function Home({ auth, user }) {
                 classes={"py-3 bg-[#E6EA7B]"}
                 textClass={`!text-4xl font-gulfs mb-0 mx-4 text-uppercase`}
                 color={`bg-[#E6EA7B]`}
-                text={"❤️ Keep 100% of what you Earn!"}
+                text={
+                    <>
+                      ❤️ Keep <span className="text-[#F94F96]">100%</span> of what you Earn!
+                    </>
+                  }
                 />
         <SitelinksSearchBox />
         </Guest>
