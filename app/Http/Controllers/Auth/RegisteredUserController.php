@@ -23,6 +23,7 @@ use App\Models\GifterAddress;
 use App\Models\GifterCardVerification;
 use App\Models\PromoCode;
 use App\Models\Referal;
+use App\Models\UserVerificationStatus;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
@@ -102,6 +103,20 @@ class RegisteredUserController extends Controller
             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         } else {
+
+            $randomBio = null;
+            if ($request->role == 1) {
+                $defaultBios = [
+                    "I haven’t written my bio yet, but you can still spoil me 😘",
+                    "No bio. Just vibes… and a wishlist 💅",
+                    "Still working on my About Me. In the meantime… gifts welcome 🛍️",
+                    "Bio coming soon. But like, feel free to click that wishlist link.",
+                    "New here. Wishlist isn’t 💸"
+                ];
+
+                $randomBio = $defaultBios[array_rand($defaultBios)];
+            }
+
             $user = User::create([
                 'name' => $request->name,
                 'email' => strtolower($request->email),
@@ -112,25 +127,29 @@ class RegisteredUserController extends Controller
                 'creator_category' => $request->creator_category ?? null,
                 'ip_address' => $ip_address,
                 'country' => $request->country_code ?? null,
+                'bio' => $randomBio, // Here goes the random bio
             ]);
             $user->refresh();
 
-            if ($request->role == 0) {
-                $addressData = [
-                    'country' => Crypt::encryptString($request->country),
-                    'street_address' => Crypt::encryptString($request->street_address),
-                    'city' => Crypt::encryptString($request->city),
-                    'state' => Crypt::encryptString($request->state),
-                    'postal_code' => Crypt::encryptString($request->postal_code),
-                ];
-                // Convert to JSON format
-                $addressJson = json_encode($addressData, true);
+            if ($request->role == 1) {
+                UserVerificationStatus::create(
+                    ['user_id' => $user->id, 'role' => $request->role, 'bio_status' => 1]
+                );
+            }
 
+
+            if ($request->role == 0) {
                 GifterAddress::create([
                     'user_id' => $user->id,
-                    'address' => $addressJson,
+                    'country' => $request->country,
+                    'street_address' => $request->street_address,
+                    'city' => $request->city,
+                    'state' => $request->state,
+                    'postal_code' => $request->postal_code,
                 ]);
             }
+
+            UserVerificationStatus::where('user_id', $user->id)->where('role', $user->role)->update(['address_status' => 0]);
 
             if (!empty($request->promo)) {
                 $promocode = PromoCode::whereCode($request->promo)->first();

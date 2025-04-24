@@ -26,7 +26,9 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WishtenderController;
 use App\Http\Middleware\CheckGifterCardVerification;
 use App\Http\Middleware\VerifyCsrfToken;
+use App\Models\Bills;
 use App\Models\Logs;
+use App\Models\Membership;
 use App\Models\SocialLinks;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
@@ -41,6 +43,7 @@ use App\Uploadcare;
 use Illuminate\Support\Facades\Http;
 use App\SeoMeta;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Request;
 
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
@@ -146,32 +149,29 @@ Route::middleware('auth')->group(function () {
             Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
 
             Route::get('unlink-twitter', [AuthenticatedSessionController::class, 'unlinkTwitter'])->name('unlink-twitter');
-
             Route::get('wish-tracker', [WishitemController::class, 'wishtrackerItems'])->name('wish-tracker');
-
             Route::get('user-tips', [WishitemController::class, 'userTips'])->name('user-tips');
-
             Route::get('bill-tracker', [WishitemController::class, 'billTracker'])->name('bill-tracker');
-
             Route::get('membership-tracker', [WishitemController::class, 'membershipTracker'])->name('membership.tracker');
-
             Route::get('shop-tracker', [WishitemController::class, 'shopTracker'])->name('shop.tracker');
-
             Route::get('subscriptions', [WishitemController::class, 'creatorSubscriptions'])->name('subscriptions');
-
             Route::get('subscribed', [WishitemController::class, 'userSubscribed'])->name('subscribed');
-
             Route::get('cancel-subscription/{subscription_id}', [WishitemController::class, 'cancelSubscription'])->name('cancel-subscription');
-
             Route::get('/read-status/{payment_id}/{type}', [WishitemController::class, 'readStatus'])->name('read-status');
 
-            Route::get('/stripe', function () {
+
+            Route::get('/stripe', function (Request $request) {
+                $auth = Auth::user();
+                $bills = Bills::where('user_id', $auth->id)->where('approved', 1)->count();
+                $membership = Membership::where('user_id', $auth->id)->where('approved', 1)->count();
                 return Inertia::render('stripe/Stripe', [
-                    'social_media_status' => SocialLinks::where('user_id', Auth::user()->id)->exists() ? 1 : 0,
-                    'user_profile_status' => Auth::user()->avatar_approved,
-                    'bio_status' => !empty(Auth::user()->bio) ? 1 : 0,
+                    'bills_count' => $bills,
+                    'membership_count' => $membership
                 ]);
             })->middleware(['auth', 'verified'])->name('stripe');
+
+
+
 
             Route::get('/pin-item/{wish_id}/', [WishitemController::class, 'pinItem'])->name('pin-item');
 
@@ -433,7 +433,7 @@ Route::get('posts/{username}', [AuthenticatedSessionController::class, 'user_pos
 
 Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('user.posts.comments');
 
-Route::get('/{username}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show')->middleware('mustCompletedStripeIdentity');
+Route::get('/{username}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
 Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');
 Route::get('/items/{username}/{category_id?}', [AuthenticatedSessionController::class, 'userItems'])->name('user.items');
 Route::get('/user_category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.category');

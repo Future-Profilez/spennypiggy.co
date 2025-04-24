@@ -116,10 +116,10 @@ export default function Footer(props) {
     return (
         <>
             <Head>
-                <script
+                {/* <script
                     type="text/javascript"
                     src="https://app.termly.io/resource-blocker/1f6672bd-7b65-47a4-8a75-d02946c93b2e?autoBlock=on"
-                ></script>
+                ></script> */}
                 <script
                     async
                     src="https://www.googletagmanager.com/gtag/js?id=G-9F1M3QZZB3"

@@ -41,23 +41,14 @@ import ProfileSteps from "./Profile/ProfileSteps";
 import ProfileProductLists from "./shop/profile/ProfileProductLists";
 import AddItem from "./shop/AddItem";
 import AddGift from "./feed/AddGift";
-import { Swiper, SwiperSlide } from 'swiper/react';
-import 'swiper/css';
-import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 import PriceFormat from "@/includes/PriceFormat";
 import GiftListing from "./rye/GiftListing";
 import { FaRegHeart } from "react-icons/fa";
 import { CiGift } from "react-icons/ci";
 
 export default function Dashboard(props) {
-
-    const parsePageId = (path) => path.substring(path.lastIndexOf('/') + 1)
-    const pageId = parsePageId(window.location.pathname);
-    const { format, formatMultiPrice } = PriceFormat();
-
     const w = useWidthCount();
     const{auth,user,username,global_currency,itemid}= props;
-    console.log("props",props)
     const [tab, setTab] = useState(0);
     const onTabClick = (e, d) => {
         setTab(d);
@@ -84,8 +75,6 @@ export default function Dashboard(props) {
         setGiftsLoading(true);
         axios.get(`/gift-items/${username}`, { signal })
         .then((resp) => {
-            // console.log("resp",resp?.data);
-            // let details=JSON.parse(resp?.data?.items[0]?.details);
             setGifts(resp?.data?.items);
             setGiftsLoading(false);
         }).catch((_err) => {
@@ -102,22 +91,20 @@ export default function Dashboard(props) {
             setSelectedCat('');
         }
         fetch(`/items/${username}${cat ? `/${cat}` : ""}`)
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then((data) => {
-                setLoading(false);
-                const result = data && data.items;
-                setIts(result);
-            })
-            .catch((error) => {
-                console.error("error", error);
-                setLoading(false);
-            });
-        // }
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then((data) => {
+            setLoading(false);
+            const result = data && data.items;
+            setIts(result);
+        }).catch((error) => {
+            console.error("error", error);
+            setLoading(false);
+        });
     };
 
     useEffect(() => {
@@ -417,9 +404,7 @@ export default function Dashboard(props) {
 
                                         <div className="inlinetab">
                                                 <div className="newnav-tabs d-flex items-center justify-between mb-4 ">
-                                                    <Tabs activeTab={tab}
-                                                    onTabClick={onTabClick}
-                                                    hideNavBtnsOnMobile={false} >
+                                                    <Tabs activeTab={tab} onTabClick={onTabClick} hideNavBtnsOnMobile={false} >
                                                         <Tab key="0">About</Tab>
                                                         <Tab key="1" >Wishes</Tab>
                                                         <Tab key="2" >Feed</Tab>

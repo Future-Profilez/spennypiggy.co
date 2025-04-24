@@ -24,6 +24,7 @@ export default function StripeIdentity({ data }) {
             const { data: response } = await axios.post(route("stripe.identity.verify"));
             if (response.url) {
                 window.location.href = response.url;
+                successAlert("Redirecting to Stripe for identity verification...");
             } else {
                 errorAlert("Unexpected response from the server. Please try again later.");
             }
