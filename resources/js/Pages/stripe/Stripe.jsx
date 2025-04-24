@@ -110,7 +110,7 @@ export default function Stripe(props) {
                             </li>
                         </ul>
 
-                        {auth?.user?.profile_status_lock !== 1 &&
+                        {auth?.user?.profile_status_lock !== 2 &&
                             <div className="alert alert-warning mt-3">
                                 {verification_status?.bio_status == 0 ? <p className="text-yellow-600 "> ⚠️ Your bio hasn't been approved yet.</p> : ''}
                                 {verification_status?.social_status == null ? <p className="text-yellow-600 mt-2 "> ⚠️ Please update at least one of your social media handles.</p> : ''}
@@ -120,11 +120,18 @@ export default function Stripe(props) {
                             </div>
                         }
 
-                        {auth?.user?.profile_status_lock !== 1 ?
+                        {auth?.user?.profile_status_lock == 2 ?
                             <p className="text-red-500 text-lg">Your profile is under review. Please complete above steps to get verified and check back within 1-2 hours.</p> 
                         : ''}
 
-                        {verification_status?.bio_status == 1 && verification_status?.social_status == 1 &&  auth?.user?.avatar_approved == 1 ?
+                        {auth?.user?.profile_status_lock == 0 && auth?.user?.profile_reject_reason ?
+                            <div className="mt-4 alert alert-danger">
+                            <h2 className="text-red-600 text-xl">Application Rejected</h2>
+                            <p className="text-red-500 text-lg">{auth?.user?.profile_reject_reason}</p> 
+                            </div>
+                        :'' }
+
+                        {auth?.user?.profile_status_lock == 2 ?
                             <>
                                 <strong className="d-block w-100 pt-3 mb-1">Choose Country</strong>
                                 <Countries send={getCountry} />

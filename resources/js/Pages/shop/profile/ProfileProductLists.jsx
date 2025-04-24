@@ -33,6 +33,6 @@ export default function ProfileProductLists({profileuser, updateItems}) {
          {lists &&  lists.map((item, index) => <ProfileProduct key={index} item={item} />)}
       </div>
       {loading ? <LoadingScreen /> : "" }
-      {!loading && lists.length < 1 ? <Nocontent text="Nothing to see" /> : ""}
+      {!loading && lists && lists.length < 1 ? <Nocontent text="Nothing to see" /> : ""}
   </>
 }
