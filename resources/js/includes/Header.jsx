@@ -211,7 +211,7 @@ export default function Header() {
                                     Login
                                 </Link>
                                 <Link
-                                    href={route("login")}
+                                    href={route("register")}
                                     // className="btn-pink sm text-uppercase bg-none px-4 mx-3 d-none d-xl-flex"
                                     className="hidden xl:block bg-[#F94F96] text-white uppercase text-lg  font-gulfs rounded-full px-4 py-2"
                                 >
