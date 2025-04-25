@@ -323,11 +323,11 @@ export default function AddItem(props) {
 
             const ships = updatedShipping()
             if ( physical && ships.length < 1) {
-                errorAlert("Please add atleast one shipping method");
+                errorAlert("Please add at least one shipping method");
                 return false;
             }
             if ( physical && vars.length < 1) {
-                errorAlert("Please add atleast one variant");
+                errorAlert("Please add at least one variant");
                 return false;
             }
 

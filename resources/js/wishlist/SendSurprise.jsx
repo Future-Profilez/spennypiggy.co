@@ -30,7 +30,7 @@ export default function SendSurprise({auth, owner}) {
    const sendSurprize = (e) => {
       e.preventDefault();
       if(data.amount < 5){
-         errorAlert(`Please tip atleast ${formatMultiPrice(5)}.`);
+         errorAlert(`Please tip at least ${formatMultiPrice(5)}.`);
          return false;
       }
       if(!data.amount){
