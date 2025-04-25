@@ -113,9 +113,7 @@ export default function Hero({auth}) {
                   <h3 className="text-center text-2xl uppercase text-white font-anton mb-3 max-w-3xl">
                   Want gifts without TMI? Build your privacy-first Wishlist and let your fans spoil you!
                   </h3>
-
                   <div className=" pt-4 wishlistbtn wishlistbtnFixed m-auto d-table">
-
                     {auth?.user?.username
                       ?
                       <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink py-[8px] px-5 lg log" >
