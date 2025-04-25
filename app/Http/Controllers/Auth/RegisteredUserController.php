@@ -133,12 +133,22 @@ class RegisteredUserController extends Controller
 
             if ($request->role == 1) {
                 UserVerificationStatus::create(
-                    ['user_id' => $user->id, 'role' => $request->role, 'bio_status' => 1]
+                    ['user_id' => $user->id, 'role' => $request->role, 'bio_status' => 1, 'address_status' => 0]
                 );
             }
 
 
             if ($request->role == 0) {
+                UserVerificationStatus::create(
+                    [
+                        'user_id' => $user->id,
+                        'role' => $request->role,
+                        'bio_status' => 1,
+                        'social_status' => 1,
+                        'address_status' => 0
+                    ]
+                );
+
                 GifterAddress::create([
                     'user_id' => $user->id,
                     'country' => $request->country,
@@ -149,7 +159,7 @@ class RegisteredUserController extends Controller
                 ]);
             }
 
-            UserVerificationStatus::where('user_id', $user->id)->where('role', $user->role)->update(['address_status' => 0]);
+            // UserVerificationStatus::where('user_id', $user->id)->where('role', $user->role)->update(['address_status' => 0]);
 
             if (!empty($request->promo)) {
                 $promocode = PromoCode::whereCode($request->promo)->first();
@@ -236,15 +246,10 @@ class RegisteredUserController extends Controller
     public function gifterCardVerification(Request $request)
     {
         $currency = strtolower($request->cookie("currency", "GBP"));
-        // $request->validate([
-        //     'amount' => 'required|numeric',
-        // ]);
-
         $user = Auth::user();
-
         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
-        // Step 1: Create customer if not exists
+        // Step 1: Ensure Stripe customer
         if (empty($user->stripe_id)) {
             $stripeCustomer = $stripe->customers->create([
                 'email' => $user->email,
@@ -254,91 +259,64 @@ class RegisteredUserController extends Controller
             $user->save();
         }
 
-        // Step 2: Ensure product exists
-        $productName = 'Gifter Card Verification';
-        $productList = $stripe->products->all(['limit' => 100]);
+        // Step 2: Get base price (from fixed product in Stripe)
+        $productId = env('GIFTER_VERIFY_PRODUCT_ID');
 
-        $product = collect($productList->data)->firstWhere('name', $productName);
-
-        if (!$product) {
-            $product = $stripe->products->create([
-                'name' => $productName,
-            ]);
-        }
-
-        // Step 3: Currency conversion (1 GBP to requested currency)
-        $baseAmountGBP = 1.00;
-        $tax = $baseAmountGBP * 20 / 100; // 20% TAX
-        $vat = ($baseAmountGBP + $tax) * 20 / 100; // 20% VAT
-        $totalAmount = $baseAmountGBP + $vat + $tax; // Total amount in GBP
-        $selectedCurrency = $currency;
-        $price = round($totalAmount, 2, PHP_ROUND_HALF_UP);
-        // $convertedAmount = $this->convertCurrency('GBP', $selectedCurrency, $baseAmountGBP); // you need this method
-        $convertCurrency = Helpers::priceFormat('GBP', $price, $selectedCurrency);
-        // $price = round($convertCurrency, 2, PHP_ROUND_HALF_UP);
-
-        // Log::info("Converted amount: $convertCurrency");
-        // Log::info("Selected currency: $selectedCurrency");
-        // Log::info("Base amount in GBP: $baseAmountGBP");
-        // Log::info("Total amount in GBP: $totalAmount");
-        // Log::info("Price in GBP: $price");
-        // Log::info("tax Price: $tax");
-        // Log::info("vat Price: $vat");
-
-        $unitAmount = intval($convertCurrency * 100); // convert to smallest currency unit
-
-        // Step 4: Check or create price
         $priceList = $stripe->prices->all([
-            'product' => $product->id,
+            'product' => $productId,
             'active' => true,
+            'limit' => 10,
         ]);
 
-        $price = collect($priceList->data)->firstWhere(function ($price) use ($unitAmount, $selectedCurrency) {
-            return $price->unit_amount == $unitAmount && $price->currency === $selectedCurrency;
-        });
+        $basePrice = collect($priceList->data)->firstWhere('currency', 'gbp');
 
-        if (!$price) {
-            $price = $stripe->prices->create([
-                'unit_amount' => $unitAmount,
-                'currency' => $selectedCurrency,
-                'product' => $product->id,
-            ]);
+        if (!$basePrice) {
+            return response()->json(['status' => false, 'message' => 'Base GBP price not found.'], 404);
         }
 
-        // Step 5: Create Checkout Session
+        $baseAmount = $basePrice->unit_amount / 100; // Convert to major unit (e.g. 1 GBP)
+
+        // Step 3: Add tax (20%) and VAT (20% on subtotal)
+        $tax = $baseAmount * 0.20;
+        $subtotal = $baseAmount + $tax;
+        $vat = $subtotal * 0.20;
+        $finalAmount = $subtotal + $vat;
+
+        // Step 4: Convert to selected currency
+        $convertedAmount = Helpers::priceFormat('gbp', $finalAmount, $currency);
+        $finalUnitAmount = intval(round($convertedAmount * 100)); // in smallest unit
+
+        // Step 5: Create Checkout Session with inline amount (not linked to Stripe price object)
         $session = $stripe->checkout->sessions->create([
             'success_url' => route('card.verification.success', [$user->uuid]),
             'cancel_url' => route('card.verification.failed', [$user->uuid]),
             'mode' => 'payment',
             'customer' => $user->stripe_id,
             'line_items' => [[
-                'price' => $price->id,
+                'price_data' => [
+                    'currency' => $currency,
+                    'product' => $productId,
+                    'unit_amount' => $finalUnitAmount,
+                ],
                 'quantity' => 1,
             ]],
             'payment_method_types' => ['card'],
         ]);
 
-        $verification = GifterCardVerification::where('user_id', $user->id)
-            ->latest()
-            ->first();
-        if ($verification) {
-            $verification->status = 'pending';
-            $verification->payment_details = null;
-            $verification->save();
-        } else {
-            GifterCardVerification::create([
-                'user_id' => $user->id,
-                'amount' => $baseAmountGBP,
-                'currency' => $selectedCurrency,
+        // Step 6: Update or create verification record
+        $verification = GifterCardVerification::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'amount' => $baseAmount,
+                'currency' => $currency,
                 'status' => 'pending',
                 'payment_details' => null,
                 'payment_method' => 'Card',
-            ]);
-        }
+            ]
+        );
 
-        Auth::user()->update([
-            'profile_status_lock' => 1,
-        ]);
+        // Step 7: Lock profile
+        $user->update(['profile_status_lock' => 1]);
 
         return response()->json([
             'status' => true,
@@ -362,6 +340,7 @@ class RegisteredUserController extends Controller
             'customer' => $user->stripe_id,
             'limit' => 1,
         ]);
+        Log::info(json_encode($sessions, true));
 
         $session = $sessions->data[0] ?? null;
 
@@ -371,22 +350,9 @@ class RegisteredUserController extends Controller
                 'message' => 'Stripe session not found.',
             ]);
         }
-        $paymentIntent = $stripe->paymentIntents->retrieve(
-            $session->payment_intent,
-            ['expand' => ['payment_method', 'charges.data.billing_details']]
-        );
 
-        if (!$paymentIntent) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Payment intent not found.',
-            ]);
-        }
-        $charge = $paymentIntent->charges->data[0] ?? null;
-        // $paymentMethod = $charge->payment_method ?? null;
-
-        $billingDetails = $charge->billing_details ?? null;
-        $address = $billingDetails->address ?? null;
+        // $billingDetails = $charge->billing_details;
+        $address = $session->customer_details->address ?? null;
 
         $gifterAddress = GifterAddress::where('user_id', $user->id)->whereNotNull('stripe_address')->exists();
 
@@ -400,11 +366,12 @@ class RegisteredUserController extends Controller
                 'country' => $address->country ?? null,
             ];
 
-            $encryptedAddress = Crypt::encryptString($encryptedAddress);
+            $encryptedJson = json_encode($encryptedAddress);
+            // $encryptedJson = Crypt::encryptString(json_encode($encryptedAddress));
 
-            GifterAddress::create(
-                ['user_id' => $user->id],
-                ['stripe_address' => $encryptedAddress]
+            $gifterAddress = GifterAddress::updateOrCreate(
+                ['user_id' => $user->id],  // Match user by their ID
+                ['stripe_address' => $encryptedJson]  // Update the stripe_address column
             );
         }
 
@@ -422,17 +389,6 @@ class RegisteredUserController extends Controller
         }
 
         return redirect()->route('user.show', ['username' => $user->username])->with('success', "Payment Card verification successfully.");
-
-
-        // return response()->json([
-        //     'status' => true,
-        //     'message' => 'Payment verified successfully.',
-        //     'payment_info' => [
-        //         'address' => $address,
-        //         'card_brand' => $paymentMethod?->card?->brand,
-        //         'last4' => $paymentMethod?->card?->last4,
-        //     ],
-        // ]);
     }
 
     /**

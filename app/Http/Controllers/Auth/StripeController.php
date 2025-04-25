@@ -1730,4 +1730,17 @@ class StripeController extends Controller
             ], 400);
         }
     }
+
+    public function makeProductId($price)
+    {
+        $product = StripeControl::createProduct([
+            'name' => 'Gifter Card Verification',
+            'images' => ["https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/"],
+            "default_price_data" => ["currency" => 'gbp', "unit_amount_decimal" => $price * 100],
+        ]);
+
+        return response()->json([
+            'product_id' => $product->id,
+        ]);
+    }
 }

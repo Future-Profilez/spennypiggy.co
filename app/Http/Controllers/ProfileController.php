@@ -248,9 +248,11 @@ class ProfileController extends Controller
             $q->where('user_id', $user->id);
         })->orWhereHas('editedAboutMe', function ($q) use ($user) {
             $q->where('id', $user->id);
-        })->orWhereHas('editedUserCategory', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->orWhereHas('removeBill', function ($q) use ($user) {
+        })
+        // ->orWhereHas('editedUserCategory', function ($q) use ($user) {
+        //     $q->where('user_id', $user->id);
+        // })
+        ->orWhereHas('removeBill', function ($q) use ($user) {
             $q->where('user_id', $user->id);
         })->orWhereHas('editedBill', function ($q) use ($user) {
             $q->where('user_id', $user->id);

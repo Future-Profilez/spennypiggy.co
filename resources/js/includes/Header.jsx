@@ -38,7 +38,7 @@ export default function Header() {
         setActive(!isActive);
         setTimeout(() => {
             setShows(!isActive);
-        },300);
+        }, 300);
     };
 
     const cart = useSelector((state) => state.data.cart.cart);
@@ -82,7 +82,7 @@ export default function Header() {
                                 className="  menu-toggle cursor-pointer cartLink position-relative"
                                 onClick={toggleClass}
                             >
-                               <svg
+                                <svg
                                     width="49"
                                     height="48"
                                     viewBox="0 0 49 48"
@@ -108,12 +108,12 @@ export default function Header() {
                                 className="d-none d-md-block ms-3"
                                 href={"/giftstore"}
                             >
-
                                 <span className="flex items-center text-xl uppercase text-white font-gulfs">
                                     {/* <span className="!text-[21px]">
                                     🐷
                                         </span> */}
-                                    Gift Store</span>
+                                    Gift Store
+                                </span>
                             </Link>
                         </div>
 
@@ -133,10 +133,10 @@ export default function Header() {
                         <div className="leftspaces cartLogin">
                             {/* {auth && auth.user && auth.user.stripe_details_submitted == "1" ? ( "" ) :
                                 router.page && router.page && router.page.component == "Dashboard" ? ( */}
-                                <ChangeCurrency
-                                    defaultvalue={global_currency}
-                                    changer={true}
-                                />
+                            <ChangeCurrency
+                                defaultvalue={global_currency}
+                                changer={true}
+                            />
 
                             {auth && auth.user ? <Notifications /> : ""}
 
@@ -162,21 +162,26 @@ export default function Header() {
                                         </g>
                                         <defs>
                                             <clipPath id="clip0_1439_828">
-                                                <rect width="36" height="36" fill="white" />
+                                                <rect
+                                                    width="36"
+                                                    height="36"
+                                                    fill="white"
+                                                />
                                             </clipPath>
                                         </defs>
                                     </svg>
                                 </div>
                             </Link>
 
-                            <Link
-                                href={route("cart")}
-                                as="button"
-                                className="cartLink d-flex me-3 position-relative"
-                            >
-                                <div className="bg-[#F94F96] rounded-full w-12 h-12 flex items-center justify-center">
-                                    {/* Old Svg */}
-                                    {/* <svg
+                            {auth?.user && (
+                                <Link
+                                    href={route("cart")}
+                                    as="button"
+                                    className="cartLink d-flex me-3 position-relative"
+                                >
+                                    <div className="bg-[#F94F96] rounded-full w-12 h-12 flex items-center justify-center">
+                                        {/* Old Svg */}
+                                        {/* <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     width="36"
                                     height="36"
@@ -188,37 +193,41 @@ export default function Header() {
                                     fill="#ffff"
                                     />
                                     </svg> */}
-                                    <LiaShoppingCartSolid size={32} color="#ffffff" />
-                                </div>
+                                        <LiaShoppingCartSolid
+                                            size={32}
+                                            color="#ffffff"
+                                        />
+                                    </div>
 
-                                {count ? (
-                                    <span className="site-counter d-block">
-                                        {cart}
-                                    </span>
-                                ) : (
-                                    ""
-                                )}
-                            </Link>
+                                    {count ? (
+                                        <span className="site-counter d-block">
+                                            {cart}
+                                        </span>
+                                    ) : (
+                                        ""
+                                    )}
+                                </Link>
+                            )}
                             {auth?.user?.username || false ? (
                                 ""
                             ) : (
                                 <div className="hidden lg:flex gap-2">
-                                <Link
-                                    href={route("login")}
-                                    // className="btn-pink sm text-uppercase bg-none px-4 mx-3 d-none d-xl-flex"
-                                    className="bg-white uppercase text-lg  font-gulfs rounded-full px-4 py-2"
-                                >
-                                    Login
-                                </Link>
-                                <Link
-                                    href={route("register")}
-                                    // className="btn-pink sm text-uppercase bg-none px-4 mx-3 d-none d-xl-flex"
-                                    className="hidden xl:block bg-[#F94F96] text-white uppercase text-lg  font-gulfs rounded-full px-4 py-2"
-                                >
-                                    {" "}
-                                    Sign Up{" "}
-                                </Link>
-                             </div>
+                                    <Link
+                                        href={route("login")}
+                                        // className="btn-pink sm text-uppercase bg-none px-4 mx-3 d-none d-xl-flex"
+                                        className="bg-white uppercase text-lg  font-gulfs rounded-full px-4 py-2"
+                                    >
+                                        Login
+                                    </Link>
+                                    <Link
+                                        href={route("register")}
+                                        // className="btn-pink sm text-uppercase bg-none px-4 mx-3 d-none d-xl-flex"
+                                        className="hidden xl:block bg-[#F94F96] text-white uppercase text-lg  font-gulfs rounded-full px-4 py-2"
+                                    >
+                                        {" "}
+                                        Sign Up{" "}
+                                    </Link>
+                                </div>
                             )}
                             <div
                                 className="d-block d-md-none menu-toggle cursor-pointer cartLink position-relative"
@@ -318,9 +327,7 @@ export default function Header() {
                                                     size={"1.2rem"}
                                                 />
                                             </span>
-                                            <span
-                                                class="ml-2 text-[17px] tracking-wide truncate text-white"
-                                            >
+                                            <span class="ml-2 text-[17px] tracking-wide truncate text-white">
                                                 Subscription Billing
                                             </span>
                                         </a>
@@ -343,9 +350,7 @@ export default function Header() {
                                                             size={"1.2rem"}
                                                         />
                                                     </span>
-                                                    <span
-                                                        class="ml-2 text-[17px]  tracking-wide truncate text-white"
-                                                    >
+                                                    <span class="ml-2 text-[17px]  tracking-wide truncate text-white">
                                                         Shop
                                                     </span>
                                                 </Link>
@@ -362,9 +367,7 @@ export default function Header() {
                                                             size={"1.2rem"}
                                                         />
                                                     </span>
-                                                    <span
-                                                        class="ml-2 text-[17px] tracking-wide truncate text-white"
-                                                    >
+                                                    <span class="ml-2 text-[17px] tracking-wide truncate text-white">
                                                         Gift Store
                                                     </span>
                                                 </Link>
@@ -455,39 +458,47 @@ export default function Header() {
                                     </a>
                                 </li>
 
-
-                                {auth?.user?.username ==! null ? 
+                                {auth?.user?.username == !null ? (
                                     <>
                                         <li>
                                             <Link
                                                 onClick={toggleClass}
                                                 href={route("register")}
-                                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6" >
+                                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                            >
                                                 <span class="inline-flex justify-center items-center ml-4">
-                                                    <FaUserAlt color="#fff" size={"1.2rem"} /></span>
-                                                <span class="ml-2 text-[17px] tracking-wide truncate text-white" > Sign Up </span>
+                                                    <FaUserAlt
+                                                        color="#fff"
+                                                        size={"1.2rem"}
+                                                    />
+                                                </span>
+                                                <span class="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                    {" "}
+                                                    Sign Up{" "}
+                                                </span>
                                             </Link>
                                         </li>
                                         <li>
                                             <Link
                                                 onClick={toggleClass}
                                                 href={route("login")}
-                                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6" >
+                                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                            >
                                                 <span class="inline-flex justify-center items-center ml-4">
                                                     <IoIosUnlock
-                                                    color="#fff"
-                                                    size={"1.2rem"} />
+                                                        color="#fff"
+                                                        size={"1.2rem"}
+                                                    />
                                                 </span>
-                                                <span class="ml-2 text-[17px] tracking-wide truncate text-white" >
-                                                    Login 
+                                                <span class="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                    Login
                                                 </span>
                                             </Link>
                                         </li>
-                                    </> 
-                                : ''}
-
-
-
+                                    </>
+                                ) : (
+                                    ""
+                                )}
 
                                 <li>
                                     <Link
@@ -521,8 +532,7 @@ export default function Header() {
                                                 size={"1.2rem"}
                                             />
                                         </span>
-                                        <span
-                                            class="ml-2 text-[17px] tracking-wide truncate text-white">
+                                        <span class="ml-2 text-[17px] tracking-wide truncate text-white">
                                             Gift Store
                                         </span>
                                     </Link>
@@ -539,9 +549,7 @@ export default function Header() {
                                                 size={"1.2rem"}
                                             />
                                         </span>
-                                        <span
-                                            class="ml-2 text-[17px] tracking-wide truncate text-white"
-                                        >
+                                        <span class="ml-2 text-[17px] tracking-wide truncate text-white">
                                             {" "}
                                             How it works
                                         </span>
@@ -560,8 +568,7 @@ export default function Header() {
                                                 size={"1.2rem"}
                                             />
                                         </span>
-                                        <span
-                                            class="ml-2 text-[17px] tracking-wide truncate text-white" >
+                                        <span class="ml-2 text-[17px] tracking-wide truncate text-white">
                                             Need help ?
                                         </span>
                                     </Link>
