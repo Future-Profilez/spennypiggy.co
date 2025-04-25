@@ -169,6 +169,7 @@ export default function NotForBusiness() {
                     data?.map((item, index) => (
                         <div
                             key={index}
+                            data-aos="zoom-out-up"
                             className="flex flex-col lg:flex-row items-center justify-center gap-12 max-w-6xl mx-auto mb-10"
                         >
                             <div className="lg:w-1/2  md:text-right relative px-4">

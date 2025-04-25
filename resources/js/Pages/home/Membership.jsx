@@ -107,7 +107,7 @@ export default function Membership() {
         </div>
 
     </div> */}
-    <section className="bg-black text-white py-16 px-4 text-center">
+    <section  className="bg-black text-white py-16 px-4 text-center">
       <div className="flex justify-center mb-6">
         <img src={support} alt="Pig Mascot" className="w-24 h-24 object-contain" />
       </div>
@@ -115,9 +115,9 @@ export default function Membership() {
       <h2 className="headingSm shadow-none text-light font-gulfs stroke-none text-3xl md:text-4xl uppercase mb-6 max-w-3xl mx-auto text-center">
         Supporting Creators! Empowering Gifters! Made for Everyone!
       </h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
+      <div data-aos="zoom-out-up" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
         {supportData.map((item, index) => (
-          <div key={index} className="flex flex-col items-center text-center">
+          <div  key={index} className="flex flex-col items-center text-center">
           <div className={`relative w-32 md:w-44 lg:w-56 h-20 md:h-28 lg:h-36 ${item.bg} rounded-2xl flex items-center justify-center`}>
             <div className="absolute w-16 md:w-24 lg:w-28 h-16 md:h-24 lg:h-28 bg-white/20 rounded-full" />
             <div className="relative z-10 text-white">
@@ -125,11 +125,11 @@ export default function Membership() {
             </div>
           </div>
         
-          <h3 className="mt-3 leading-tight md:leading-relaxed text-lg md:text-xl uppercase font-gulfs">
+          <h3 className="mt-3 leading-tight md:leading-[1.35rem] text-lg md:text-xl uppercase font-gulfs">
             {item.title}
           </h3>
         
-          <p className="mt-1 text-sm text-white leading-tight sm:leading-normal max-w-[17rem] font-poppins">
+          <p className="mt-1 md:mt-1.5 text-sm text-white leading-tight sm:leading-normal max-w-[17rem] font-poppins">
             {item.description}
           </p>
         </div>        

@@ -8,7 +8,6 @@ export default function ActivateCard() {
 
     const {auth} = usePage().props;
     const verification_status = auth && auth.verification_status;
-    console.log("verification_status",verification_status)
     const [loading, setLoading] = useState(false);
     const checkTerms = () => {
         if(loading) return;
@@ -30,18 +29,7 @@ export default function ActivateCard() {
                         <span className='mintbg'></span>
                         <span className='bluebg'></span>
                     </div>
-
                     
-                    {auth?.user?.profile_status_lock !== 2 &&
-                        <div className=" p-4">
-                            {verification_status?.bio_status == 0 ? <p className="text-yellow-600 text-center "> ⚠️ Your bio hasn't been approved yet.</p> : ''}
-                            {verification_status?.social_status == null ? <p className="text-yellow-600 mt-2 text-center "> ⚠️ Please update at least one of your social media handles.</p> : ''}
-                            {verification_status?.social_status == 0 ? <p className="text-yellow-600 mt-2 text-center "> ⚠️ Your social media handles are not approved yet.</p> : ''}
-                            {auth?.user?.avatar == null ? <p className="text-yellow-600 mt-2 text-center "> ⚠️ Please update your profile picture before activating your account.</p> : ''}
-                            {auth?.user?.avatar && auth?.user?.avatar_approved == 0 ? <p className=" text-center text-yellow-600 mt-2 "> ⚠️ Your profile image hasn't been approved yet.</p> : ''}
-                        </div>
-                    }
-
                     {auth?.user?.profile_status_lock == 0 ?
                         <div className='py-4'>
                             <div className='stripNote p-3 p-md-4'>
@@ -56,8 +44,6 @@ export default function ActivateCard() {
                                 : ''}
                             </div>
 
-                            
-
                             <div className='text-center flex justify-center mb-2'>
                                 <LoaderButton 
                                 onClick={checkTerms}
@@ -65,7 +51,6 @@ export default function ActivateCard() {
                                 className={'p-3 lg'}
                                 spinnerClassName="fill-red-600">
                                     {auth?.user?.profile_reject_reason ? "Re-Activate Account" :'Activate Account'} 
-                                
                                 </LoaderButton>
                             </div>
                             <p className="p-2 text-center text-red-600">Please use the card with same address as you have used for your account. </p>

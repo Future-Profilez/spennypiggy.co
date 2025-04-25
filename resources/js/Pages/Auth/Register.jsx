@@ -9,6 +9,8 @@ import axios from 'axios';
 import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { handleIpRedirection } from '../../includes/useIpRedirection';
 import Countries from '../../includes/Countries';
+import Popup from '@/Components/Popup';
+import toast from 'react-hot-toast';
 
 export default function Register(props) {
     const CheckCircleIcon = () => {
@@ -16,6 +18,7 @@ export default function Register(props) {
     }
     const captchaRef = useRef(null);
     const checkRef = useRef();
+    const gifterref = useRef();
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const lowerLetter = /[a-z]/g;
     const capitalLetter = /[A-Z]/g;
@@ -56,8 +59,6 @@ export default function Register(props) {
     // Extract query parameters from the URL
     const params = new URLSearchParams(url.split('?')[1]); // Extract the query string
     const type = params.get('type'); // Get the 'type' parameter
-    // console.log("type",type);
-
     const { data, setData, post, get, processing, errors, reset } = useForm({
         name: '',
         username: '',
@@ -99,8 +100,7 @@ export default function Register(props) {
             country_code : c.code
         });
     }
-
-    console.log("address",address)
+ 
     const handleAddressInput = (e) => {
         setAddressData({
             ...address,
@@ -108,11 +108,6 @@ export default function Register(props) {
         });
     }
 
-    const termsaccept = () => {
-        errorAlert("Please check accept terms & conditions checkbox");
-        checkRef.current.focus();
-        return false;
-    }
 
     const [validMsg, setValidMsg] = useState('');
     const [usernameValid, setUsernameValid] = useState(null);
@@ -170,8 +165,21 @@ export default function Register(props) {
         }
     }
 
+    const [hasPop, setHasPop] = useState(false);
+    const hasNotifiedRef = useRef();
+    const accepted = () => {
+        if(hasNotifiedRef && !hasNotifiedRef.current?.checked){
+            errorAlert("Please check and accept the terms and conditions.");
+            hasNotifiedRef.current.focus();
+            return false;
+        } else {
+            setHasPop(false)
+            submit();
+        }
+    }
+
     const submit = (e) => {
-        e.preventDefault();
+        e && e.preventDefault();
         if (!verified) {
             errorAlert("Please verify you are not a robot.")
             return false;
@@ -180,10 +188,33 @@ export default function Register(props) {
             errorAlert("Country is required.");
             return false;
         }
+
         if (!checkRef.current.checked) {
-            termsaccept();
+            errorAlert("Please check accept terms & conditions checkbox");
+            checkRef.current.focus();
             return false;
         }
+
+        
+        if (role == 0 && !gifterref.current.checked) {
+            errorAlert("Please accept all terms and conditions.");
+            gifterref.current.focus();
+            return false;
+        }
+
+        if( role == 0 && hasNotifiedRef && !hasNotifiedRef?.current?.checked){
+            setHasPop(true);
+            setTimeout(()=>{
+                setHasPop();
+            },[]);
+            return false;
+        }
+        // if (role == 0 && !hasNotifiedRef.current.checked) {
+        //     errorAlert("Please check and accept the terms and conditions.");
+        //     hasNotifiedRef.current.focus();
+        //     return false;
+        // }
+
         post(route('register', {...data, ...address}), {
             preserveScroll: true,
             onSuccess: (resp) => {
@@ -202,7 +233,6 @@ export default function Register(props) {
             }
         });
     };
-
 
     const promoinput = useRef();
     const [codevalid, setCodeValid] = useState(false);
@@ -271,8 +301,7 @@ export default function Register(props) {
         }
     }
 
-     
-
+    
     return (
         <GuestLayout>
             {/* <IpRedirection />/ */}
@@ -512,9 +541,19 @@ export default function Register(props) {
                                                 By signing up you agree to our <a className='text-voilet font-bold' target='_blank' href={route('terms-and-conditions')} >Terms & Conditions</a>  and <a className='text-voilet font-bold' target='_blank' href={'https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6'} >Privacy Policy,</a>  and confirm that you are at least 18. years old. Pages that break our terms will be unpublished.
                                             </p>
                                         </label>
+                                        {role == 0 ?
+                                            <>
+                                                <label htmlFor="gifterCheck">
+                                                    <p className='tersms-accept mt-3' >
+                                                        <input type="checkbox" ref={gifterref} id="gifterCheck" name="gifterCheck" value="gifterCheck"
+                                                        required ></input>
+                                                        The above matches the details on the bank card they will use. If it doesn’t their account will be suspended.
+                                                    </p>
+                                                </label>
+                                            </>
+                                            : ''
+                                        }
                                     </div>
-
-                                    {role == 0 ? <p className='alert alert-warning text-sm text-center mt-3' >The above matches the details on the bank card they will use. If it doesn’t their account will be suspended.</p> : ''}
 
                                     <div className='m-auto hcaptcha-wrap d-table mb-2 mt-4  mt-md-3' >
                                         <HCaptcha  ref={captchaRef}
@@ -524,7 +563,31 @@ export default function Register(props) {
                                         onVerify={onVerify}
                                         />
                                     </div>
+                                     
                                     <div className='wishlistbtn text-center flex justify-center mt-2'>
+                                        <Popup action={hasPop} modalclass=" full stripe-terms shadow-pink ps-0"
+                                            space="4" size="md"
+                                            classes={`hidden`}
+                                            text={`Create Account`} >
+                                                <div className="addgoal" >
+                                                    <h2 className="text-uppercase font-GillSans pb-4 font-large">Important notice !</h2>
+                                                    <p className='mb-2' > You must not use any other individual’s information. Only a single account can be used with the information you confirm to us.  </p>
+                                                    <ol className='d-block py-3' >
+                                                        <li className='font-bold  text-[16px] mb-2 w-full' >1. First and Last name </li>
+                                                        <li className='font-bold  text-[16px] mb-2 w-full' >2. Address registered for the bank card that will be used during checkouts </li>
+                                                        <li className='font-bold  text-[16px] mb-2 w-full' >3. The e-mail used during checkouts. </li>
+                                                    </ol>
+                                                    <div className='termselect mt-4 mb-4'>
+                                                        <label htmlFor="termaccept">
+                                                            <p className='text-[15px]' ><input type="checkbox" ref={hasNotifiedRef} id="hasNotified" name="hasNotified" value="hasNotified"
+                                                                required ></input>
+                                                                I confirm that the above details are correct and the only details I will use. If I use other information than the above. My account will be suspended. If I need to update any details, I will contact support via live chat who can update my account.  
+                                                            </p>
+                                                        </label>
+                                                    </div>
+                                                    <LoaderButton onClick={accepted} disabled={processing} className='btn-pink w-full lg lg2 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Accept Terms"}</LoaderButton>
+                                                </div>
+                                        </Popup>  
                                         <LoaderButton disabled={processing} className='btn-pink w-full lg lg2 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Create Account"}</LoaderButton>
                                     </div>
 

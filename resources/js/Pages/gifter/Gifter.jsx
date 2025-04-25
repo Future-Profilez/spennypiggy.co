@@ -22,6 +22,7 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
 
   const { auth, user, itemid  } = usePage().props;
   const [tab, setTab] = useState("home");
+//   const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
 
   const AboutScreen = () => {
     return <>
@@ -30,7 +31,7 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
                   <p className="font-bold" >About me</p>
                   <p className={`text-muted text-start mt-2 `}>{(user && user.bio) || ""}</p>
                   
-                  {user?.edit_bio_reason  ?
+                  {IsloggedIn && user?.edit_bio_reason  ?
                     <div className="mt-3">
                         <p className="text-red-700">Bio Edit Request</p>
                         <p className="text-red-500 text-sm">Reason : {user?.edit_bio_reason } Please update your bio as per requested.</p>

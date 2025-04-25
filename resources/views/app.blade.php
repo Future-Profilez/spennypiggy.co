@@ -9,7 +9,7 @@
     {!! \App\SeoMeta::render() !!}
 
     {{-- <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:title" content="Exclusive Content, Memberships & More!" />
+    <meta property="twitter:title" content="Spenny Piggy - The Everything Wishlist - Gifts, Memberships, Exclusive Content & More." />
     <meta property="twitter:description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
     <meta property="twitter:image" content="{{ URL::asset('/siteicon.png') }}" />
     <meta property="twitter:site" content="@spennypiggy" />

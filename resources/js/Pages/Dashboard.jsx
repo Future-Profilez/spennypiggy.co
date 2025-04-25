@@ -316,7 +316,7 @@ export default function Dashboard(props) {
 
                                             {auth.user && auth.user.stripe_details_submitted == 1 ?
                                                     <>
-                                                    <div onClick={()=> setWishOptions(true)} className="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center">
+                                                    <div onClick={()=> setWishOptions(true)} className="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center cursor-pointer">
                                                         <div className=" flex items-center">
                                                             <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                                                                 <FaRegHeart color="var(--pink)" size="1.5rem" />
@@ -431,7 +431,7 @@ export default function Dashboard(props) {
                                                                             <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
                                                                                 {(user &&user.bio) ||""}
                                                                             </p>
-                                                                            {user?.edit_bio_reason  ?
+                                                                            {IsloggedIn && user?.edit_bio_reason  ?
                                                                                 <div className="mt-3">
                                                                                     <p className="text-red-700">Bio Edit Request</p>
                                                                                     <p className="text-red-500 text-sm">Reason : {user?.edit_bio_reason } Please update your bio as per requested.</p>
