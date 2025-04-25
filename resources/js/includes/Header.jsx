@@ -462,34 +462,23 @@ export default function Header() {
                                             <Link
                                                 onClick={toggleClass}
                                                 href={route("register")}
-                                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                            >
+                                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6" >
                                                 <span class="inline-flex justify-center items-center ml-4">
-                                                    <FaUserAlt
-                                                        color="#fff"
-                                                        size={"1.2rem"}
-                                                    /></span>
-                                                <span class="ml-2 text-[17px] tracking-wide truncate text-white" >
-                                                    Sign Up
-                                                </span>
+                                                    <FaUserAlt color="#fff" size={"1.2rem"} /></span>
+                                                <span class="ml-2 text-[17px] tracking-wide truncate text-white" > Sign Up </span>
                                             </Link>
                                         </li>
                                         <li>
                                             <Link
                                                 onClick={toggleClass}
                                                 href={route("login")}
-                                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                            >
+                                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6" >
                                                 <span class="inline-flex justify-center items-center ml-4">
                                                     <IoIosUnlock
-                                                        color="#fff"
-                                                        size={"1.2rem"}
-                                                    />
+                                                    color="#fff"
+                                                    size={"1.2rem"} />
                                                 </span>
-                                                <span
-                                                    class="ml-2 text-[17px]
-                            tracking-wide truncate text-white"
-                                                >
+                                                <span class="ml-2 text-[17px] tracking-wide truncate text-white" >
                                                     Login 
                                                 </span>
                                             </Link>
