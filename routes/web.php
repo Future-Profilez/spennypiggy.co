@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TestController;
+use App\StripeControl;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
@@ -81,6 +82,8 @@ Route::get('/giftstore', function () {
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
 
 Route::get('send-identity-verification-failed-emails', [TestController::class, 'sendFailedVerificationEmails']);
+
+Route::get('create-product/{price}', [StripeController::class, 'makeProductId'])->name('create.product');
 
 //check referal code
 Route::get('check-coupon-code/{code}', [RegisteredUserController::class, 'checkCouponCode'])->name('checkCouponCode');

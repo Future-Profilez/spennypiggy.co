@@ -443,7 +443,7 @@ export default function Header() {
                                 </li>
 
 
-                                {auth?.user?.username ==! null ? 
+                                {auth?.user?.username ==! null ?
                                     <>
                                         <li>
                                             <Link
@@ -481,7 +481,7 @@ export default function Header() {
                                                 </span>
                                             </Link>
                                         </li>
-                                    </> 
+                                    </>
                                 : ''}
 
 

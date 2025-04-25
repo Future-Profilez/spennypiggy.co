@@ -19,7 +19,7 @@ class GifterAddress extends Model
         'city',
         'state',
         'postal_code',
-        'stripe_address'
+        'stripe_address',
     ];
 
     public function country(): Attribute
