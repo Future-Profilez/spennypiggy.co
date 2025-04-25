@@ -1087,13 +1087,13 @@ class WishitemController extends Controller
             $user->save();
         }
 
-        $request->validate([
-            'country' => 'required|string',
-            'street_address' => 'required|string',
-            'city' => 'required|string',
-            'state' => 'required|string',
-            'postal_code' => 'required|integer|digits_between:4,8',
-        ]);
+        // $request->validate([
+        //     'country' => 'required|string',
+        //     'street_address' => 'required|string',
+        //     'city' => 'required|string',
+        //     'state' => 'required|string',
+        //     'postal_code' => 'required|integer|digits_between:4,8',
+        // ]);
 
         try {
             $orderDetails = RyeCart::with('creator', 'user')->where([
@@ -1161,15 +1161,16 @@ class WishitemController extends Controller
                 ], 422);
             }
 
-            $addressData = [
-                'country' => $request->country,
-                'street_address' => $request->street_address,
-                'city' => $request->city,
-                'state' => $request->state,
-                'postal_code' => $request->postal_code,
-            ];
+            // $addressData = [
+            //     'country' => $request->country,
+            //     'street_address' => $request->street_address,
+            //     'city' => $request->city,
+            //     'state' => $request->state,
+            //     'postal_code' => $request->postal_code,
+            // ];
             // Convert to JSON format
-            $addressJson = json_encode($addressData, true);
+            $addressJson = null;
+            // $addressJson = json_encode($addressData, true);
 
             $ryeProductPayment = new RyeProductPayment();
             $ryeProductPayment->user_id = Auth::id();

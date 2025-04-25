@@ -513,44 +513,9 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                         Your personal email and name will be
                                         private.
                                     </p> */}
-
-                                    <label
-                                        htmlFor="agreeterms"
-                                        className="text-start"
-                                    >
-                                        <input
-                                            onChange={(e) =>
-                                                setIsChecked(e.target.checked)
-                                            }
-                                            type="checkbox"
-                                            id="agreeterms"
-                                            name="agreeterm"
-                                            className="me-2"
-                                            value="agreeterm"
-                                        ></input>
-                                        I understand I am paying the creator
-                                        directly and I agree to the{" "}
-                                        <Link
-                                            target="_blank"
-                                            className="text-voilet"
-                                            href={route("terms-and-conditions")}
-                                        >
-                                            Terms of Service
-                                        </Link>{" "}
-                                        and{" "}
-                                        <a
-                                            className="text-voilet"
-                                            target="_blank"
-                                            href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
-                                        >
-                                            {" "}
-                                            Privacy Policy{" "}
-                                        </a>{" "}
-                                        and the following statements:
-                                    </label>
                                     {/* Form fields starts here */}
                                     <p className="py-2">
-                                    Please fill the below information. It will be used while
+                                     The below information will be used while
                                     sending your gift to <strong> {cartsItems?.creator?.name || ""} </strong>.
                                     </p>
                                     <div className="form-field mb-3">
@@ -610,6 +575,40 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                         </div>
                                     </div> */}
                                     {/* Form fields ends here */}
+                                    <label
+                                        htmlFor="agreeterms"
+                                        className="text-start"
+                                    >
+                                        <input
+                                            onChange={(e) =>
+                                                setIsChecked(e.target.checked)
+                                            }
+                                            type="checkbox"
+                                            id="agreeterms"
+                                            name="agreeterm"
+                                            className="me-2"
+                                            value="agreeterm"
+                                        ></input>
+                                        I understand I am paying the creator
+                                        directly and I agree to the{" "}
+                                        <Link
+                                            target="_blank"
+                                            className="text-voilet"
+                                            href={route("terms-and-conditions")}
+                                        >
+                                            Terms of Service
+                                        </Link>{" "}
+                                        and{" "}
+                                        <a
+                                            className="text-voilet"
+                                            target="_blank"
+                                            href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
+                                        >
+                                            {" "}
+                                            Privacy Policy{" "}
+                                        </a>{" "}
+                                        and the following statements:
+                                    </label>
                                     <div className="tearmlist ps-3">
                                         <ul className="ps-0">
                                             <li>
