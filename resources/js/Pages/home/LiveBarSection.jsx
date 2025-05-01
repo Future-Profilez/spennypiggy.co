@@ -19,7 +19,7 @@ export default function LiveBarSection() {
       src={HeroWishlistImage}
       alt="Wishlist image"
       />
-    <p className='uppercase text-center mt-1.5 text-white font-poppins text-[10px]'>*3 days Free trial and then requires a monthly £4 payment to cover stripe fees and compliance costs. </p>
+    <p className='uppercase text-center mt-1.5 text-white font-poppins text-[10px] xl:text-[15px]'>*3 days Free trial and then requires a monthly £4 payment to cover stripe fees and compliance costs. </p>
     {/* <div className='d-flex flex-wrap justify-content-center mt-4 align-items-center creators-platforms' >
         <div data-aos="zoom-in" className='px-4 py-2' >
           <LazyLoadImage
