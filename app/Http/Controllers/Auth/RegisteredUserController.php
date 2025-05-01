@@ -245,48 +245,47 @@ class RegisteredUserController extends Controller
      */
     public function gifterCardVerification(Request $request)
     {
-        $currency = strtolower($request->cookie("currency", "GBP"));
+        $currency = strtoupper($request->cookie("currency", "GBP"));
         $user = Auth::user();
         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
-        // Step 1: Ensure Stripe customer
+        // Ensure Stripe customer
         if (empty($user->stripe_id)) {
-            $stripeCustomer = $stripe->customers->create([
+            $customer = $stripe->customers->create([
                 'email' => $user->email,
                 'name' => $user->name,
             ]);
-            $user->stripe_id = $stripeCustomer->id;
+            $user->stripe_id = $customer->id;
             $user->save();
         }
 
-        // Step 2: Get base price (from fixed product in Stripe)
-        $productId = env('GIFTER_VERIFY_PRODUCT_ID');
+        // Step 1: Check existing verification
+        $existingSuccess = GifterCardVerification::where('user_id', $user->id)->where('status', 'success')->first();
+        GifterCardVerification::where('user_id', $user->id)->where('status', 'pending')->delete();
 
-        $priceList = $stripe->prices->all([
-            'product' => $productId,
-            'active' => true,
-            'limit' => 10,
-        ]);
-
-        $basePrice = collect($priceList->data)->firstWhere('currency', 'gbp');
-
-        if (!$basePrice) {
-            return response()->json(['status' => false, 'message' => 'Base GBP price not found.'], 404);
+        if ($existingSuccess) {
+            // Already verified
+            $user->update(['profile_status_lock' => 1]);
+            return response()->json([
+                'status' => false,
+                'message' => 'You have already completed verification.',
+            ]);
         }
 
-        $baseAmount = $basePrice->unit_amount / 100; // Convert to major unit (e.g. 1 GBP)
+        // Static base amount in GBP
+        $baseAmount = 1.00;
 
-        // Step 3: Add tax (20%) and VAT (20% on subtotal)
+        // Add tax (20%) and VAT (20%)
         $tax = $baseAmount * 0.20;
         $subtotal = $baseAmount + $tax;
         $vat = $subtotal * 0.20;
         $finalAmount = $subtotal + $vat;
 
-        // Step 4: Convert to selected currency
+        // Convert final amount to selected currency
         $convertedAmount = Helpers::priceFormat('gbp', $finalAmount, $currency);
-        $finalUnitAmount = intval(round($convertedAmount * 100)); // in smallest unit
+        $finalUnitAmount = intval(round($convertedAmount * 100)); // in smallest currency unit
 
-        // Step 5: Create Checkout Session with inline amount (not linked to Stripe price object)
+        // Create Stripe Checkout session
         $session = $stripe->checkout->sessions->create([
             'success_url' => route('card.verification.success', [$user->uuid]),
             'cancel_url' => route('card.verification.failed', [$user->uuid]),
@@ -295,7 +294,7 @@ class RegisteredUserController extends Controller
             'line_items' => [[
                 'price_data' => [
                     'currency' => $currency,
-                    'product' => $productId,
+                    'product' => env('GIFTER_VERIFY_PRODUCT_ID'),
                     'unit_amount' => $finalUnitAmount,
                 ],
                 'quantity' => 1,
@@ -303,7 +302,7 @@ class RegisteredUserController extends Controller
             'payment_method_types' => ['card'],
         ]);
 
-        // Step 6: Update or create verification record
+        // Create/update verification record
         $verification = GifterCardVerification::updateOrCreate(
             ['user_id' => $user->id],
             [
@@ -315,7 +314,7 @@ class RegisteredUserController extends Controller
             ]
         );
 
-        // Step 7: Lock profile
+        // Lock profile
         $user->update(['profile_status_lock' => 1]);
 
         return response()->json([
@@ -324,6 +323,93 @@ class RegisteredUserController extends Controller
             'verification' => $verification,
         ]);
     }
+
+    // public function gifterCardVerification(Request $request)
+    // {
+    //     $currency = strtolower($request->cookie("currency", "GBP"));
+    //     $user = Auth::user();
+    //     $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+
+    //     // Step 1: Ensure Stripe customer
+    //     if (empty($user->stripe_id)) {
+    //         $stripeCustomer = $stripe->customers->create([
+    //             'email' => $user->email,
+    //             'name' => $user->name,
+    //         ]);
+    //         $user->stripe_id = $stripeCustomer->id;
+    //         $user->save();
+    //     }
+
+    //     // Step 2: Get base price (from fixed product in Stripe)
+    //     $productId = env('GIFTER_VERIFY_PRODUCT_ID');
+
+    //     $priceList = $stripe->prices->all([
+    //         'product' => $productId,
+    //         'active' => true,
+    //         'limit' => 10,
+    //     ]);
+
+    //     Log::info("Price List: ");
+    //     Log::info(json_encode($priceList, true));
+
+    //     $basePrice = collect($priceList->data)->firstWhere('currency', 'gbp');
+
+    //     if (!$basePrice) {
+    //         return response()->json(['status' => false, 'message' => 'Base GBP price not found.'], 404);
+    //     }
+
+    //     $baseAmount = $basePrice->unit_amount / 100; // Convert to major unit (e.g. 1 GBP)
+
+    //     // Step 3: Add tax (20%) and VAT (20% on subtotal)
+    //     $tax = $baseAmount * 0.20;
+    //     $subtotal = $baseAmount + $tax;
+    //     $vat = $subtotal * 0.20;
+    //     $finalAmount = $subtotal + $vat;
+
+    //     Log::info("Base Amount: $baseAmount, Tax: $tax, Subtotal: $subtotal, VAT: $vat, Final Amount: $finalAmount");
+
+    //     // Step 4: Convert to selected currency
+    //     $convertedAmount = Helpers::priceFormat('gbp', $finalAmount, $currency);
+    //     $finalUnitAmount = intval(round($convertedAmount * 100)); // in smallest unit
+
+    //     // Step 5: Create Checkout Session with inline amount (not linked to Stripe price object)
+    //     $session = $stripe->checkout->sessions->create([
+    //         'success_url' => route('card.verification.success', [$user->uuid]),
+    //         'cancel_url' => route('card.verification.failed', [$user->uuid]),
+    //         'mode' => 'payment',
+    //         'customer' => $user->stripe_id,
+    //         'line_items' => [[
+    //             'price_data' => [
+    //                 'currency' => $currency,
+    //                 'product' => $productId,
+    //                 'unit_amount' => $finalUnitAmount,
+    //             ],
+    //             'quantity' => 1,
+    //         ]],
+    //         'payment_method_types' => ['card'],
+    //     ]);
+
+    //     // Step 6: Update or create verification record
+    //     $verification = GifterCardVerification::updateOrCreate(
+    //         ['user_id' => $user->id],
+    //         [
+    //             'amount' => $baseAmount,
+    //             'currency' => $currency,
+    //             'status' => 'pending',
+    //             'payment_details' => null,
+    //             'payment_method' => 'Card',
+    //         ]
+    //     );
+
+    //     // Step 7: Lock profile
+    //     $user->update(['profile_status_lock' => 1]);
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'checkout_url' => $session->url,
+    //         'verification' => $verification,
+    //     ]);
+    // }
 
     /**
      * Handle successful card verification.
