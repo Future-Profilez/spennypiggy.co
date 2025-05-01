@@ -37,7 +37,6 @@ class BillPayment extends Model
 
     protected $appends = [
         'sender',
-        'final_amount',
     ];
 
     public static function boot()
@@ -63,32 +62,6 @@ class BillPayment extends Model
             }
         }
         return $sender;
-    }
-
-
-    public function getFinalAmountAttribute()
-    {
-        $amount = $this->amount;
-
-        // Accessing the related 'wish' model
-        $bill = $this->bill;
-
-        // Ensure $wish is not null
-        if ($bill && $bill->user && $bill->user->vat_amount_percentage && $bill->user->vat_amount_percentage > 0) {
-            $amount = $bill->price;
-            $vat = $bill->user->vat_amount_percentage; // Assuming 'vat' is a property or method in the WishItem model
-            $tax = $amount * config('app.bill_tax_plaid') / 100; // Assuming 'vat' is a property or method in the WishItem model
-            $totalAmount = $amount + $tax;
-            $finalAmount = $amount + ($totalAmount * $vat / 100);
-            if ($this->payment && $this->payment->currency == 'EUR') {
-                $finalAmount = Helpers::priceFormat('GBP', $finalAmount, strtoupper($this->payment->currency));
-                return $finalAmount;
-            }
-            return $finalAmount;
-        }
-
-        // If 'wish' is null, return the original amount
-        return $amount;
     }
 
 }

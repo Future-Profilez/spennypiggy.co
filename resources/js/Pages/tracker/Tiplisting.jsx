@@ -80,7 +80,7 @@ export default function Tiplisting({ auth }) {
                     ) : (
                       <div className="identity text-success text-nowrap">
                         +
-                        {formatMultiPrice(g.final_amount * (+g.quantity || 1),g?.tip_goal?.currency || g?.currency || 'gbp')}
+                        {formatMultiPrice(g.amount * (+g.quantity || 1),g?.tip_goal?.currency || g?.currency || 'gbp')}
                       </div>
                     )}
                     <p className="text-[13px] text-right">

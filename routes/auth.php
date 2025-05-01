@@ -358,7 +358,7 @@ Route::middleware('auth')->group(function () {
         Route::post('mandatory-status', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status');
 
         Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
-            Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay");
+            Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay")->middleware('mustCompletedCardVerification');
             Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
         });
     });

@@ -34,7 +34,6 @@ class StripePaymentItems extends Model
     protected $appends = [
         'sender',
         'message_url',
-        'final_amount',
     ];
 
     protected $hidden   =   [
@@ -94,30 +93,5 @@ class StripePaymentItems extends Model
         }
 
         return $url;
-    }
-
-    public function getFinalAmountAttribute()
-    {
-        $amount = $this->amount;
-
-        // Accessing the related 'wish' model
-        $wish = $this->wish;
-
-        // Ensure $wish is not null
-        if ($wish && $wish->user && $wish->user->vat_amount_percentage && $wish->user->vat_amount_percentage > 0) {
-            $amount = $wish->price;
-            $vat = $wish->user->vat_amount_percentage; // Assuming 'vat' is a property or method in the WishItem model
-            $tax = $amount * config('app.single_tax') / 100; // Assuming 'vat' is a property or method in the WishItem model
-            $totalAmount = $amount + $tax;
-            $finalAmount = $amount + ($totalAmount * $vat / 100);
-            if ($this->payment && $this->payment->currency == 'EUR') {
-                $finalAmount = Helpers::priceFormat('GBP', $finalAmount, strtoupper($this->payment->currency));
-                return $finalAmount;
-            }
-            return $finalAmount;
-        }
-
-        // If 'wish' is null, return the original amount
-        return $amount;
     }
 }

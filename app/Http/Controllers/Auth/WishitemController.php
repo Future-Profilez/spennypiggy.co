@@ -2623,28 +2623,28 @@ class WishitemController extends Controller
      */
     public function userTips()
     {
-        $userId = Auth::id(); // Use the user ID directly
+        $userId = Auth::id();
 
-        // Retrieve TipGoalsPayment records where either the payment's user_id matches or related tipGoal's user_id matches
-        $userTips = TipGoalsPayment::with('tipGoal.user') // Eager load the user relationship in tipGoal
-            ->where('user_id', $userId)
+        $userTips = TipGoalsPayment::with(['user', 'creator'])
+            ->where(function ($query) use ($userId) {
+                $query->where('creator_id', $userId)
+                    ->orWhere('user_id', $userId);
+            })
             ->whereIn('status', ['paid', 'cancelled'])
-            ->orWhereHas('tipGoal', function ($q) use ($userId) {
-                $q->where('user_id', $userId);
-            })->latest()
+            ->latest()
             ->get();
 
-        // Map each tip and add owner property dynamically
-        $tips = $userTips->map(function ($tip) {
-            $tip->setAttribute('owner', $tip->creator ?? null); // Dynamically set the 'owner' attribute
-            return $tip;
+        // Optionally add 'owner' property
+        $userTips->each(function ($tip) {
+            $tip->owner = $tip->creator;
         });
 
         return response()->json([
             'status' => true,
-            'tips' => $tips,
+            'tips' => $userTips,
         ]);
     }
+
 
     /**
      * Enable disable the auto tweet
@@ -2795,11 +2795,13 @@ class WishitemController extends Controller
             ->get();
 
         $membership_payments->map(function ($q) {
-            $q->user_data = [
-                'name' => $q->user->name,
-                'avatar' => $q->user->avatar_url,
-                'uuid' => $q->user->uuid
-            ];
+            if ($q->user) {
+                $q->user_data = [
+                    'name' => $q->user->name,
+                    'avatar' => $q->user->avatar_url,
+                    'uuid' => $q->user->uuid
+                ];
+            }
             return $q;
         });
 

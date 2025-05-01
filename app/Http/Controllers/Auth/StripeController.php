@@ -818,10 +818,8 @@ class StripeController extends Controller
         // ]);
     }
 
-
     public function subscriptionStatus(Request $request)
     {
-
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
         // This is your Stripe CLI webhook secret for testing your endpoint locally.
@@ -912,7 +910,6 @@ class StripeController extends Controller
         return true;
     }
 
-
     public function cancelSubs($uuid)
     {
         $subs = WishItemSubscription::where('uuid', $uuid)->first();
@@ -922,7 +919,6 @@ class StripeController extends Controller
         StripeControl::cancelSubscription($subs->stripe_id);
         return to_route('user.show', ['username' => $subs->wish_item->user->username])->with('success', "Subscription is cancelled for wish {$subs->wish_item->wishname}.");
     }
-
 
     public function tipToJar(Request $request, $creator_uid)
     {
@@ -1098,7 +1094,6 @@ class StripeController extends Controller
         // ]);
     }
 
-
     /**
      * Handle Checkout Session
      *
@@ -1166,7 +1161,6 @@ class StripeController extends Controller
         //     'status'    =>  $status
         // ]);
     }
-
 
     /**
      * Deleting the stripe account through user.
