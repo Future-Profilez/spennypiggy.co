@@ -6,7 +6,7 @@ import { usePage } from '@inertiajs/react';
 
 export default function MyGoal({goal, IsloggedIn}) {
 
-  const { auth } = usePage().props;
+  const { user } = usePage().props;
   const [showEarning, setShowEarning] = useState(user && user.show_piggy_bank == 1 ? true : false );
   const { formatMultiPrice } = PriceFormat();
   const getPercentage = (actual, paid) => {
