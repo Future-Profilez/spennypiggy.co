@@ -2551,9 +2551,7 @@ class WishitemController extends Controller
             $q->where('user_id', $user->id);
         })->where('status', 'paid')->sum('amount');
 
-        $wish_payment = StripePaymentItems::whereHas('wish', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->where('status', 'paid')->sum('amount');
+        $wish_payment = StripePaymentDetail::where('owner_id', $user->id)->where('payment_status', 'paid')->sum('amount_subtotal');
 
         $sub_payment = WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
             $q->where('user_id', $user->id);
