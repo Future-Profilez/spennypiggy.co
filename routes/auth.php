@@ -360,11 +360,11 @@ Route::middleware('auth')->group(function () {
         Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
             Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay");
             Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
-            Route::get('/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');
         });
     });
 });
 
+Route::get('tip-jar/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');
 Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
 
 Route::get('/how-it-works', function () {
