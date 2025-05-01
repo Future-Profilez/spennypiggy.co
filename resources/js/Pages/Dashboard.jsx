@@ -423,7 +423,7 @@ export default function Dashboard(props) {
                                                                 <div className="col-md-6  h-auto">
                                                                     <div className="about-sticky" >
 
-                                                                        {user && goal && user?.stripe_details_submitted === 1 ?
+                                                                        {user && goal && user?.stripe_details_submitted == '1' ?
                                                                             <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> 
                                                                         : ""}
 
