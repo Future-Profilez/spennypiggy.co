@@ -928,11 +928,11 @@ class StripeController extends Controller
     {
         $user = Auth::user();
         $checkCardVerification = User::where('id', Auth::id())->where('role', 0)
-        ->whereHas('gifterCardVerification', function ($q) use ($user) {
-            $q->where('user_id', $user->id)->where('status', 'success');
-        })->first();
+            ->whereHas('gifterCardVerification', function ($q) use ($user) {
+                $q->where('user_id', $user->id)->where('status', 'success');
+            })->first();
 
-        if (empty($checkCardVerification)) {
+        if (empty($checkCardVerification) && $user->role == 0) {
             return response()->json([
                 'status' => false,
                 'msg' => "You must have to activate your account before making any payment."
