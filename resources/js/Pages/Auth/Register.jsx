@@ -578,8 +578,9 @@ export default function Register(props) {
                                                         <li className='font-bold  text-[16px] mb-2 w-full' >3. The e-mail used during checkouts. </li>
                                                     </ol>
                                                     <div className='termselect mt-4 mb-4'>
-                                                        <label htmlFor="termaccept">
-                                                            <p className='text-[15px]' ><input type="checkbox" ref={hasNotifiedRef} id="hasNotified" name="hasNotified" value="hasNotified"
+                                                        <label htmlFor="hasNotified">
+                                                            <p className='text-[15px]' >
+                                                                <input type="checkbox" ref={hasNotifiedRef} id="hasNotified" name="hasNotified" value="hasNotified"
                                                                 required ></input>
                                                                 I confirm that the above details are correct and the only details I will use. If I use other information than the above. My account will be suspended. If I need to update any details, I will contact support via live chat who can update my account.  
                                                             </p>
