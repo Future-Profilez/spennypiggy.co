@@ -47,6 +47,7 @@ import { FaRegHeart } from "react-icons/fa";
 import { CiGift } from "react-icons/ci";
 
 export default function Dashboard(props) {
+    console.log("props",props)
     const w = useWidthCount();
     const{auth,user,username,global_currency,itemid}= props;
     const [tab, setTab] = useState(0);
