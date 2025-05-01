@@ -2540,27 +2540,26 @@ class WishitemController extends Controller
         $user = User::where('uuid', $uuid)->first();
         // TipGoal::where('status', 1)->where('completed', 0)->where('completed_at', '<', Carbon::now())->update(['completed' => 1]);
 
-        // $goal = TipGoal::whereHas('user', function ($q) use ($uuid) {
-        //     $q->where('uuid', $uuid);
-        // })->where('completed', 0)->first();
+        $goalPayment = TipGoalsPayment::where('creator_id', $user->id)->where('status', 'paid')->sum('amount');
+
         $arr = [];
         $bill_payment = BillPayment::whereHas('bill', function ($q) use ($user) {
             $q->where('user_id', $user->id);
-        })->sum('amount');
+        })->where('status', 'paid')->sum('amount');
 
         $mem_payment = MembershipPayment::whereHas('membership', function ($q) use ($user) {
             $q->where('user_id', $user->id);
-        })->sum('amount');
+        })->where('status', 'paid')->sum('amount');
 
         $wish_payment = StripePaymentItems::whereHas('wish', function ($q) use ($user) {
             $q->where('user_id', $user->id);
-        })->sum('amount');
+        })->where('status', 'paid')->sum('amount');
 
         $sub_payment = WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
             $q->where('user_id', $user->id);
-        })->sum('amount');
+        })->where('status', 'paid')->sum('amount');
 
-        $total_earnings = $bill_payment + $mem_payment + $wish_payment + $sub_payment;
+        $total_earnings = $goalPayment + $bill_payment + $mem_payment + $wish_payment + $sub_payment;
 
         if ($total_earnings < 100) {
             $target = 100;

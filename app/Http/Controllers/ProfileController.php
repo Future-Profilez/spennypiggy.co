@@ -122,9 +122,16 @@ class ProfileController extends Controller
             $request->validate([
                 'name' => ['string', 'max:255'],
                 'username' => ['string', 'lowercase', 'max:20', Rule::unique('users')->ignore($user->id)],
-                'bio' => ['sometimes', 'max:255'],
-                'tags' => ['sometimes', 'max:255'],
+                'bio' => ['nullable', 'string', 'max:255'], // updated
+                'tags' => ['nullable', 'string', 'max:255'], // same fix
             ]);
+
+            // $request->validate([
+            //     'name' => ['string', 'max:255'],
+            //     'username' => ['string', 'lowercase', 'max:20', Rule::unique('users')->ignore($user->id)],
+            //     'bio' => ['sometimes', 'max:255'],
+            //     'tags' => ['sometimes', 'max:255'],
+            // ]);
             $avatar = $request->avatar;
             $cover = $request->cover;
 
@@ -248,24 +255,24 @@ class ProfileController extends Controller
         })->orWhereHas('editedAboutMe', function ($q) use ($user) {
             $q->where('id', $user->id);
         })
-        // ->orWhereHas('editedUserCategory', function ($q) use ($user) {
-        //     $q->where('user_id', $user->id);
-        // })
-        ->orWhereHas('removeBill', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->orWhereHas('editedBill', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->orWhereHas('removeMembership', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->orWhereHas('editedMembership', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->orWhereHas('editedWish', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->orWhereHas('suspendedUser', function ($q) use ($user) {
-            $q->where('id', $user->id);
-        })->orWhereHas('deletedUser', function ($q) use ($user) {
-            $q->where('id', $user->id);
-        })->delete();
+            // ->orWhereHas('editedUserCategory', function ($q) use ($user) {
+            //     $q->where('user_id', $user->id);
+            // })
+            ->orWhereHas('removeBill', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->orWhereHas('editedBill', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->orWhereHas('removeMembership', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->orWhereHas('editedMembership', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->orWhereHas('editedWish', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->orWhereHas('suspendedUser', function ($q) use ($user) {
+                $q->where('id', $user->id);
+            })->orWhereHas('deletedUser', function ($q) use ($user) {
+                $q->where('id', $user->id);
+            })->delete();
 
         MembershipPayment::where('user_id', $user->id)->orWhereHas('membership', function ($q) use ($user) {
             $q->where('user_id', $user->id);
