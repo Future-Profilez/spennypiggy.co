@@ -105,7 +105,6 @@ class ProfileController extends Controller
      */
     public function updateProfile(Request $request)
     {
-
         $user = User::where('id', Auth::id())->where(function ($q) {
             $q->whereNot('country', 'GB')->orWhereNull('country');
         })->first();
