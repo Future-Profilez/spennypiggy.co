@@ -99,23 +99,21 @@ export default function Hero({auth}) {
       <div style={{ backgroundImage:`url(${herobanner})` }}  id="home" className="heroSec pb-2 sm:pb-10 position-relative">
         <div className="containerbox">
           <div className="welcome" data-aos="zoom-out" >
-              <div className="welcomeLeft m-auto pt-[50px] d-table">
+              <div className="welcomeLeft m-auto pt-[50px] xl:pt-[80px] d-table">
                   {/* <h2 className="text-center welcomeHeading shadow-yellow font-GillSans text-uppercase mb-1">
                     Oink! Oink! B*tch{" "}
                   </h2> */}
-                  <h2 className="headingSm shadow-none uppercase text-light font-gulfs stroke-none text-5xl md:text-6xl max-w-3xl mx-auto text-center">
+                  <h2 className=" headingSm shadow-none uppercase text-light font-gulfs stroke-none text-5xl md:text-6xl  xl:text-7xl max-w-3xl mx-auto text-center">
                     The everything {" "}
-                    <span className='text-5xl md:text-7xl text-[#F94F96]'>wishlist</span>
+                    <div className='text-5xl md:text-7xl xl:text-8xl text-[#F94F96]'>wishlist</div>
                   </h2>
                   <h3 className="text-center text-xl uppercase text-yellow font-gulfs mt-2 sm:mt-3 mb-2 sm:mb-3">
                       Built for Creators
                   </h3>
-                  <h3 className="text-center text-2xl uppercase text-white font-anton mb-3 max-w-3xl">
+                  <h3 className="text-center text-2xl uppercase text-white font-anton mb-3 max-w-[600px]">
                   Want gifts without TMI? Build your privacy-first Wishlist and let your fans spoil you!
                   </h3>
-
                   <div className=" pt-4 wishlistbtn wishlistbtnFixed m-auto d-table">
-
                     {auth?.user?.username
                       ?
                       <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink py-[8px] px-5 lg log" >

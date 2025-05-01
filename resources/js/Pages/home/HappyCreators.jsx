@@ -90,7 +90,7 @@ export default function HappyCreators() {
                 </div>
             </div> */}
 
-            <div id="reviews" className="happycreator pt-12 pb-4 lg:pb-12 relative">
+            <div id="reviews" className="happycreator pt-12 pb-4 lg:pb-12 ">
                 <div className="containerbox">
                     <h2 className="headingSm shadow-none text-light mb-6 font-gulfs stroke-none text-center max-width-1000 mx-auto block">
                         Happy Creators
@@ -127,13 +127,17 @@ export default function HappyCreators() {
                         </Swiper>
                     </div>
                 </div>
-              <div class="hidden lg:block absolute bottom-[-122px] lg:left-8 xl:left-[5rem] 2xl:left-[15rem]">
-              <img
-                    src={faq}
-                    className=""
-                    alt="Decorative"
-                />
+            <div  className="containerbox relative !mb-[-160px]">
+              <div class="hidden lg:block relative bottom-[60px] 
+              left-0
+              ">
+                <img
+                        src={faq}
+                        className=""
+                        alt="Decorative"
+                    />
               </div>
+            </div>
             </div>
         </>
     );
