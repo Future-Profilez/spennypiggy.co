@@ -96,7 +96,7 @@ class LeaderBoardController extends Controller
         $currentWeekEndDate = Carbon::now()->endOfWeek();
         $currentDate = Carbon::today()->format('Y-m-d');
 
-        $users = User::where('stripe_details_submitted', 1)->where('country', '!=', 'GB')->with(['paymentitems', 'subscriptions', 'tip_goal_payment', 'membership_payments', 'bill_payments', 'shop_payments'])
+        $users = User::where('stripe_details_submitted', 1)->where('suspended_account', 0)->where('country', '!=', 'GB')->with(['paymentitems', 'subscriptions', 'tip_goal_payment', 'membership_payments', 'bill_payments', 'shop_payments'])
             ->withCount([
                 'paymentitems as total_payments' => function ($query) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
                     $query->select(DB::raw("COALESCE(SUM(amount), 0)"))->where('stripe_payment_details.payment_status', 'paid');

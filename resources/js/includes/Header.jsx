@@ -212,24 +212,6 @@ export default function Header() {
                                 ""
                             ) : (
                                 <div className="hidden lg:flex gap-2">
-<<<<<<< HEAD
-                                    <Link
-                                        href={route("login")}
-                                        // className="btn-pink sm text-uppercase bg-none px-4 mx-3 d-none d-xl-flex"
-                                        className="bg-white uppercase text-lg  font-gulfs rounded-full px-4 py-2"
-                                    >
-                                        Login
-                                    </Link>
-                                    <Link
-                                        href={route("login")}
-                                        // className="btn-pink sm text-uppercase bg-none px-4 mx-3 d-none d-xl-flex"
-                                        className="hidden xl:block bg-[#F94F96] text-white uppercase text-lg  font-gulfs rounded-full px-4 py-2"
-                                    >
-                                        {" "}
-                                        Sign Up{" "}
-                                    </Link>
-                                </div>
-=======
                                 <Link
                                     href={route("login")}
                                     // className="btn-pink sm text-uppercase bg-none px-4 mx-3 d-none d-xl-flex"
@@ -246,7 +228,6 @@ export default function Header() {
                                     Sign Up{" "}
                                 </Link>
                              </div>
->>>>>>> 42d92bfd27c28c277dc85a52880b9fad39ba2773
                             )}
                             <div
                                 className="d-block d-md-none menu-toggle cursor-pointer cartLink position-relative"
