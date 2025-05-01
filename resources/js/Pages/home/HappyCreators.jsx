@@ -127,17 +127,12 @@ export default function HappyCreators() {
                         </Swiper>
                     </div>
                 </div>
-            <div  className="containerbox relative !mb-[-160px]">
-              <div class="hidden lg:block relative bottom-[60px] 
-              left-0
-              ">
-                <img
-                        src={faq}
-                        className=""
-                        alt="Decorative"
-                    />
-              </div>
-            </div>
+                <div  className="containerbox relative !mb-[-160px]">
+                    <div class="hidden lg:block relative bottom-[60px] 
+                    left-0 ">
+                        <img src={faq} className="" alt="Decorative" />
+                    </div>
+                </div>
             </div>
         </>
     );

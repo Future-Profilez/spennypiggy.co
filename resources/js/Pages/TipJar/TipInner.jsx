@@ -187,11 +187,11 @@ export default function TipInner({classes}) {
                 </label>
                 <p className="text-muted text-small mt-1 mb-3" >Your personal email and name will be private.</p>
             </div>
-            <button onClick={send} className={`inline-flex items-center px-4 border shadow-black
-               rounded-[30px] btn-pink md justify-content-center  border-0
+            <button disabled={loading} onClick={send} className={`items-center px-4  shadow-black
+               rounded-[30px] btn-pink md justify-content-center   
               ease-in-out duration-150 flex button text-center w-100
               font-CeraGR mx-auto ${checkRef.current && checkRef.current.checked ? '' :'disabled'}`}
-               > {processing ? "Processing" : 'Support Me'} </button>
+               > {loading ? "Processing" : 'Support Me'} </button>
             {/* <div className='securestripe text-center mt-3' >
               🔒 Secured via <b>Stripe</b>
             </div> */}
