@@ -31,7 +31,7 @@ export default function MyGoal({goal, IsloggedIn}) {
         <ProgressBar now={goal?.fullfilled}  max={goal?.target} />
 
         {/* {IsloggedIn ? <p className='text-muted text-small mt-2' >{formatMultiPrice(goal?.fullfilled, goal?.currency)} earned.</p> : ''} */}
-        {showEarning ? <p className='text-muted text-small mt-2' >{formatMultiPrice(goal?.fullfilled, goal?.currency)} earned.</p> : ''}
+        {showEarning || IsloggedIn ? <p className='text-muted text-small mt-2' >{formatMultiPrice(goal?.fullfilled, goal?.currency)} earned.</p> : ''}
       </div>
     </div>
     </>
