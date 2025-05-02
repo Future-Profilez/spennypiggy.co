@@ -129,7 +129,7 @@ export default function Notifications() {
                         </div>
                       }
                       <div className="me-3 text-sm font-normal">
-                          <div className={` text-[16px] font-normal ${n && n.is_read ? "text-gray-500" : "text-gray-900" }`}>{n && n.notification}</div>
+                          <div className={` capitalize text-[16px] font-normal ${n && n.is_read ? "text-gray-500" : "text-gray-900" }`}>{n && n.notification}</div>
                           <span className="text-xs font-medium text-blue-600 dark:text-blue-500"> <TimeFormat dateString={n && n.created_at} /> </span>
                       </div>
                     </div>

@@ -10,7 +10,7 @@ export default function SendTip(props) {
             space="0" size="md" action={close}
             classes={`btn-pink mt-3 fillbankbtn sm px-3 my-2`}
             text={`Fill my Piggy Bank`} >
-                <TipInner />
+                <TipInner idd={2} />
             </Popup>
         </>
     );
