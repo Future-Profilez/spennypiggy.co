@@ -51,15 +51,6 @@ class Helpers
         $gbp_price = $amount / $def->conversion_rate;
 
         $prof_cur_price = $prof->conversion_rate * $gbp_price;
-        \Log::info('Price Format', [
-            'currency1' => $currency1,
-            'amount' => $amount,
-            'currency2' => $currency2,
-            'def' => $def,
-            'prof' => $prof,
-            'gbp_price' => $gbp_price,
-            'prof_cur_price' => $prof_cur_price,
-        ]);
 
         return round($prof_cur_price, 2, PHP_ROUND_HALF_UP);
     }

@@ -296,7 +296,7 @@ export default function Header() {
                                                 />
                                             </span>
                                             <span class="ml-2 text-[17px] tracking-wide truncate text-white">
-                                            {auth?.user?.role == 1 ? "My Wishlist" : "My Page" } 
+                                            {auth?.user?.role == 1 ? "My Wishlist" : "My Page" }
                                             </span>
                                         </Link>
                                     </li>

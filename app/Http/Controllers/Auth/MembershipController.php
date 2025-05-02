@@ -430,45 +430,6 @@ class MembershipController extends Controller
                     'description'   => "Membership for {$membership->level} of {$membership->user->username}."
                 ];
             }
-            // if ($currency == strtolower($membership->currency)) {
-            //     $items = [
-            //         "price"     =>  $membership->price_id,
-            //         'quantity'  =>  1,
-            //     ];
-            // } else {
-
-            //         $items  =   [
-            //             'quantity'      =>  1,
-            //             'price_data'    =>   [
-            //                 'currency'  =>  $currency,
-            //                 'product'   =>  $membership->product_id,
-            //                 'unit_amount_decimal'   =>  $unit_amount,
-            //                 'recurring' =>  [
-            //                     'interval'  =>  StripeControl::$periods['monthly'],
-            //                     'interval_count'    =>  1
-            //                 ]
-            //             ]
-            //         ];
-
-
-            // }
-            // $payload = [
-            //     "mode"  =>  'subscription',
-            //     "currency"  =>  strtolower($request->cookie("currency", "GBP")),
-            //     'line_items' =>  [$items],
-            //     'subscription_data' =>  [
-            //         'application_fee_percent'   =>  $fee_per,
-            //         'transfer_data' => [
-            //             'destination' => $membership->user->account_id, // Creator's connected account ID
-            //         ],
-            //         'on_behalf_of'  => $membership->user->account_id,
-            //         // 'cancel_at_period_end'  =>  $reccure == 'onetime',
-            //         'description'   => "Membership for {$membership->level} of {$membership->user->username}."
-            //     ],
-            //     'customer_email'    =>  $request->email,
-            //     'success_url'       =>  route('membership.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
-            //     'cancel_url'       =>  route('membership.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
-            // ];
 
             try {
                 $session = StripeControl::createCheckoutSession($payload);
@@ -481,11 +442,6 @@ class MembershipController extends Controller
                 $sub->delete();
                 return back()->with('error', $e->getMessage());
             }
-            // return response()->json([
-            //     'success'   => true,
-            //     'session'   => $session
-            // ]);
-
 
         }
 
