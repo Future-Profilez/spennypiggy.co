@@ -2704,7 +2704,7 @@ class WishitemController extends Controller
         }
         return response()->json([
             'status' => true,
-            'msg' => "Wish payment shared on twitter."
+            'msg' => "Gift items has been shared on twitter."
         ]);
     }
 

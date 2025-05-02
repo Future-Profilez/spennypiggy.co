@@ -20,49 +20,49 @@ const supportData = [
     title: "Posts",
     description: "Share your creative journey with blog posts, videos and more!",
     bg: "bg-[#8C52FF]",
-    icon: <FaGamepad size={32} className="text-white" />,
+    icon: <FaGamepad size={70} className="text-white" />,
   },
   {
     title: "Rewards",
     description:
       "Let Supporters unlock exclusive posts, member-only products and more.",
     bg: "bg-[#D9DE62]",
-    icon: <FaAward size={32} className="text-[#8C52FF]" />,
+    icon: <FaAward size={70} className="text-[#8C52FF]" />,
   },
   {
     title: "Commissions & Services",
     description:
       "Let Supporters buy unique work or pay for direct access to you.",
     bg: "bg-[#1AD1A6]",
-    icon: <FaHandshake size={32} className="text-[#08654F]" />,
+    icon: <FaHandshake size={70} className="text-[#08654F]" />,
   },
   {
     title: "Membership Tiers",
     description:
       "Let fans support you monthly with Spenny Piggy Memberships.",
     bg: "bg-[#8C52FF]",
-    icon: <FaUsers size={32} className="text-white" />,
+    icon: <FaUsers size={70} className="text-white" />,
   },
   {
     title: "Wishes",
     description:
       "Let supporters send you surprise gifts, cash gifts and gifts shipped directly to your door!",
     bg: "bg-[#D9DE62]",
-    icon: <FaGift size={32} className="text-[#8C52FF]" />,
+    icon: <FaGift size={70} className="text-[#8C52FF]" />,
   },
   {
     title: "The Leaderboard",
     description:
       "Showcase your supporters contributions directly on your page and site wide.",
     bg: "bg-[#1AD1A6]",
-    icon: <FaCrown size={32} className="text-[#08654F]" />,
+    icon: <FaCrown size={70} className="text-[#08654F]" />,
   },
   {
     title: "Profile Intro Video",
     description:
       "Showcase a profile introduction video, making your page as unique as you are!",
     bg: "bg-[#8C52FF]",
-    icon: <FaVideo size={32} className="text-white" />,
+    icon: <FaVideo size={70} className="text-white" />,
   },
   {
     title: "Monthly Bills",
@@ -108,6 +108,7 @@ export default function Membership() {
 
     </div> */}
     <section  id='features' className="bg-black text-white py-16 px-4 text-center">
+    <div   className="containerbox">
       <div className="flex justify-center mb-6">
         <img src={support} alt="Pig Mascot" className="w-24 h-24 object-contain" />
       </div>
@@ -118,8 +119,8 @@ export default function Membership() {
       <div data-aos="zoom-out-up" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
         {supportData.map((item, index) => (
           <div  key={index} className="flex flex-col items-center text-center">
-          <div className={`relative w-32 md:w-44 lg:w-56 h-20 md:h-28 lg:h-36 ${item.bg} rounded-2xl flex items-center justify-center`}>
-            <div className="absolute w-16 md:w-24 lg:w-28 h-16 md:h-24 lg:h-28 bg-white/20 rounded-full" />
+          <div className={`relative w-full max-w-[250px] min-h-[150px] ${item.bg} rounded-2xl flex items-center justify-center`}>
+          <div className="absolute bg-white/20 rounded-full" />
             <div className="relative z-10 text-white">
               {item.icon}
             </div>
@@ -135,6 +136,7 @@ export default function Membership() {
         </div>        
         ))}
       </div>
+    </div>
     </section>
     </>
   )

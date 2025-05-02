@@ -118,11 +118,11 @@ export default function TipInner({classes}) {
                 </div>
             </div>
 
-            <div className="flex flex-wrap grid grid-cols-2 xl:grid-cols-4 gap-3 mb-4 mt-2">
-                <button className={`${ selectegTag == 25 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={()=>customAmountTag(25)}  >{formatMultiPrice(25, global_currency || "GBP")}</button>
-                <button className={`${ selectegTag == 50 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={()=>customAmountTag(50)}  >{formatMultiPrice(50, global_currency || "GBP")}</button>
-                <button className={`${ selectegTag == 99 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={()=>customAmountTag(99)}  >{formatMultiPrice(99, global_currency || "GBP")}</button>
-                <button className={`${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={selectCustom} >Custom</button>
+            <div className="flex flex-wrap gap-2 mb-4 mt-2">
+                <button className={`text-sm ${ selectegTag == 25 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={()=>customAmountTag(25)}  >{formatMultiPrice(25, global_currency || "GBP")}</button>
+                <button className={`text-sm ${ selectegTag == 50 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={()=>customAmountTag(50)}  >{formatMultiPrice(50, global_currency || "GBP")}</button>
+                <button className={`text-sm ${ selectegTag == 99 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={()=>customAmountTag(99)}  >{formatMultiPrice(99, global_currency || "GBP")}</button>
+                <button className={`text-sm ${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={selectCustom} >Custom</button>
             </div>
 
             {selectegTag === 'custom' ? <div className="form-field mb-4 ">

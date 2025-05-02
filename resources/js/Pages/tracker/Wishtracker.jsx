@@ -20,7 +20,7 @@ import MembershipTracker from './MembershipTracker';
 import { TimeFormat } from '@/includes/TimeFormat';
 import GlobalCheckout from '../checkout/GlobalCheckout';
 import ShopTracker from './Shoptracker';
-const defaultsec = 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/';
+const defaultsec = 'https://ucarecdn.com/55965522-e075-4ef3-8afc-195dacbf267b/';
 
 export default function Wishtracker(props) {
     const { auth, user, tracks, user_subs, creator_subs, shop_payment } = props;

@@ -99,7 +99,7 @@ export default function Header() {
                                 </svg>
                             </div>
                             <Link
-                                className="d-none d-md-block ms-3 text-[30px]"
+                                className="d-none d-md-block focus:border-0 ms-3 text-[30px]"
                                 href={"/leaderboard"}
                             >
                                 🌟
@@ -296,7 +296,7 @@ export default function Header() {
                                                 />
                                             </span>
                                             <span class="ml-2 text-[17px] tracking-wide truncate text-white">
-                                            {auth?.user?.role == 1 ? "My Wishlist" : "My Page" } 
+                                            {auth?.user?.role == 1 ? "My Wishlist" : "My Profile" } 
                                             </span>
                                         </Link>
                                     </li>

@@ -477,7 +477,7 @@ button.close-btn{position:absolute;right:20px;top:20px;z-index:2;background:#fff
 .isintro span,.isintro span img,.isintro img{height:auto !important;max-height:300px;min-height:200px;display:block !important;}
 .font-large{font-size:19px;line-height:28px;}
 .tipheading span{font-size:26px;display:inline-block;}
-.new-wish-cats .wish-tags{padding:5px 20px;border-radius:10px;color:#a1a1a1;background:#141414;}
+.new-wish-cats .wish-tags{padding:5px 20px;border-radius:10px;color:#a1a1a1;background:#1b1b1b;}
 .new-wish-cats .wish-tags.active{background:var(--pink);color:#fff;}
 .new-wish-cats .wish-tags.edit{background:var(--mint);color:#000;}
 .cats_edit input{border:1px solid #ccc;border-radius:10px;padding:7px 10px;}
