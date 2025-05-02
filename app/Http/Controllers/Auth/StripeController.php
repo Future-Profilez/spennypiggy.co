@@ -663,6 +663,7 @@ class StripeController extends Controller
                 $price += $vat_percentage_amount;
             }
             $amount_per = round(($price / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
+
             // if ($currency == strtolower($wish->currency)) {
             //     $items = [
             //         "price" =>  $wish->price_id,
@@ -677,6 +678,16 @@ class StripeController extends Controller
             $adminFee = config('app.administration_fee');
             $adminFee =   Helpers::priceFormat('GBP', $adminFee, $currency);
             $total_unit_amount = $unit_amount + $adminFee;
+
+            Log::info("unit_amount: " . $unit_amount);
+            Log::info("total_unit_amount: " . $total_unit_amount);
+            Log::info("currency: " . $currency);
+            Log::info("wish->stripe_product_id: " . $wish->stripe_product_id);
+            Log::info("wish->currency: " . $wish->currency);
+            Log::info("wish->price_id: " . $wish->price_id);
+            Log::info("wish->price: " . $wish->price);
+            Log::info("wish->tax_amount: " . $wish->tax_amount);
+            Log::info("amount_per: " . $amount_per);
 
             $items  =   [
                 'quantity'      =>  1,

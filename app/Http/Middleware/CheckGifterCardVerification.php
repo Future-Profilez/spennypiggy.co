@@ -28,9 +28,23 @@ class CheckGifterCardVerification
             ->first();
         if ($user_id->role == 0) {
             if (!$user) {
+                $gifterCardVerification = User::where('id', $user_id->id)
+                    ->where('role', 0)
+                    ->whereHas('gifterCardVerification', function ($query) use ($user_id) {
+                        $query->where('user_id', $user_id->id);
+                    })
+                    ->with('gifterCardVerification') // eager load the related model
+                    ->first();
+
+                $status = false;
+                if ($gifterCardVerification && $gifterCardVerification->gifterCardVerification) {
+                    $verificationStatus = $gifterCardVerification->gifterCardVerification->status;
+                    $status = $verificationStatus === 'success';
+                }
+
                 return Inertia::render('gifter/GifterCardVerification', [
+                    'gifterCardVerification' => $status,
                     'status' => false,
-                    // 'data' => Auth::user(),
                     'message' => 'Please complete your card verification payment.',
                 ]);
             }
