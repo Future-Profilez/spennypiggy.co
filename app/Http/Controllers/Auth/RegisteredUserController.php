@@ -314,9 +314,6 @@ class RegisteredUserController extends Controller
             ]
         );
 
-        // Lock profile
-        $user->update(['profile_status_lock' => 1]);
-
         return response()->json([
             'status' => true,
             'checkout_url' => $session->url,
@@ -473,6 +470,9 @@ class RegisteredUserController extends Controller
             ]);
             $verification->save();
         }
+
+        // pending profile
+        $user->update(['profile_status_lock' => 1]);
 
         return redirect()->route('user.show', ['username' => $user->username])->with('success', "Payment Card verification successfully.");
     }

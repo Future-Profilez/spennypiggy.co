@@ -12,6 +12,7 @@ const Nocontent = React.lazy(() => import('@/includes/Nocontent'));
 
 export default function Cart(props) {
 
+    console.log("cart props", props);
     const deviceid = DeviceID();
     const { auth, user, carts } = props;
     const [ cartsItems, setCartItems ] = useState(carts);
