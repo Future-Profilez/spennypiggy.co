@@ -1010,6 +1010,7 @@ class StripeController extends Controller
             // if($price < $min_amount){
             //     return redirect()->back()->with("error", "Enter minimum $user_amount amount.");
             // }
+            $isZeroDecimalCurrency = in_array(strtolower($currency), ['jpy', 'krw', 'vnd']);
 
             $amount = $request->amount;
             $adminFeeAmount = config('app.administration_fee', 1); // Administration fee percentage
@@ -1019,7 +1020,7 @@ class StripeController extends Controller
             $tax = round(($price * config('app.jar_tax') / 100), 2, PHP_ROUND_HALF_UP);
             $adminFeeForStoreDB = Helpers::priceFormat('GBP', $adminFeeAmount, $creator->default_currency);
             $totalTaxForDB = $tax + $adminFeeForStoreDB;
-            $totalAmountForStoreDB = $price + $totalTaxForDB;
+            $totalAmountForStoreDB = round($price + $totalTaxForDB);
 
             // define variable to show and pay on payment page
             $taxPercentage = config('app.jar_tax'); // Tax percentage
@@ -1027,12 +1028,20 @@ class StripeController extends Controller
             $taxAmount = round(($amount * $taxPercentage / 100), 2, PHP_ROUND_HALF_UP); // Tax based on combined percentage
             $totalTaxForPay = $taxAmount + $adminFeeForPay;
             $totalPrice = round($amount + $totalTaxForPay, 2, PHP_ROUND_HALF_UP);
+            $roundTotalPrice = round($amount + $totalTaxForPay);
+
+
+            $unitAmount = $isZeroDecimalCurrency
+                ? round($roundTotalPrice) // totalPrice is already in user currency
+                : round($totalPrice * 100); // e.g. for USD/GBP
+
+            $amountToTransfer = $isZeroDecimalCurrency ? intval($amount) : round($amount * 100);
 
             try {
                 $stripe_client = StripeControl::createProduct([
                     'name' => $goal->name ?? 'Support-creator',
                     'images' => ["https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/"],
-                    "default_price_data" => ["currency" => strtolower($creator->default_currency), "unit_amount_decimal" => $totalAmountForStoreDB * 100],
+                    "default_price_data" => ["currency" => strtolower($creator->default_currency), "unit_amount_decimal" => $totalPrice * 100],
                 ]);
             } catch (Exception $e) {
                 return response()->json([
@@ -1064,15 +1073,16 @@ class StripeController extends Controller
                         'price_data' => [
                             'currency' => $currency,
                             'product' => $stripe_client->id,
-                            'unit_amount_decimal' => $totalPrice * 100
+                            'unit_amount_decimal' => $unitAmount,
                         ]
                     ]
                 ],
                 'payment_intent_data' => [
                     'transfer_data' => [
                         'destination' => $creator->account_id, // Creator's connected account ID
+                        'amount' => $amountToTransfer,
                     ],
-                    'application_fee_amount' => $totalTaxForPay * 100,
+                    // 'application_fee_amount' => $totalTaxForPay * 100,
                     // 'on_behalf_of'  => $creator->account_id,
                     'description' => "Supporter Membership Payment."
                 ],
