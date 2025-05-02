@@ -5,8 +5,8 @@ import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
 import ActivateCard from "./ActivateCard";
 
-export default function GifterCardVerification({ auth }) {
-    console.log("auth",auth)
+export default function GifterCardVerification({ auth, gifterCardVerification}) {
+    console.log("gifterCardVerificationssssssssssss", gifterCardVerification);
     const user = auth?.user || null;
     const [loading, setLoading] = useState(false);
     const { successAlert, errorAlert } = useAlerts();
@@ -14,14 +14,20 @@ export default function GifterCardVerification({ auth }) {
     const handlePaymentRedirect = async () => {
         setLoading(true);
         try {
-            const { data: response } = await axios.get(route("card.verification.payment"));
+            const { data: response } = await axios.get(
+                route("card.verification.payment")
+            );
             if (response.url) {
                 window.location.href = response.url;
             } else {
-                errorAlert("Unexpected response from the server. Please try again later.");
+                errorAlert(
+                    "Unexpected response from the server. Please try again later."
+                );
             }
         } catch (err) {
-            const errorMessage = err.response?.data?.error || "Unable to connect to the server. Please check your network and try again.";
+            const errorMessage =
+                err.response?.data?.error ||
+                "Unable to connect to the server. Please check your network and try again.";
             errorAlert(errorMessage);
         } finally {
             setLoading(false);
