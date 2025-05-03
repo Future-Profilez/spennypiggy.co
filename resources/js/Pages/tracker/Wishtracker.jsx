@@ -20,7 +20,7 @@ import MembershipTracker from './MembershipTracker';
 import { TimeFormat } from '@/includes/TimeFormat';
 import GlobalCheckout from '../checkout/GlobalCheckout';
 import ShopTracker from './Shoptracker';
-const defaultsec = 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/';
+const defaultsec = 'https://ucarecdn.com/55965522-e075-4ef3-8afc-195dacbf267b/';
 
 export default function Wishtracker(props) {
     const { auth, user, tracks, user_subs, creator_subs, shop_payment } = props;
@@ -130,7 +130,7 @@ export default function Wishtracker(props) {
                     <div className="identity text-success text-nowrap">
                       +
                       {formatMultiPrice(
-                        n.final_amount * (+n.quantity || 1),
+                        n.amount * (+n.quantity || 1),
                         n.payment.currency
                       )}
                     </div>
@@ -243,7 +243,7 @@ export default function Wishtracker(props) {
                 ) : (
                   ''
                 )}
-                <p className="mt-3 mb-2">Exclusive Rewards </p>
+                {/* <p className="mt-3 mb-2">Exclusive Rewards </p>
                 {n && n.message_url ? (
                   <div className="message-media my-2">
                     <LazyLoadImage
@@ -257,7 +257,7 @@ export default function Wishtracker(props) {
                   </div>
                 ) : (
                   ''
-                )}
+                )} */}
 
                 {/* {msgSent ? <div className="msgSent my-2 p-1" >
                                     <p className="mt-2" >Thank you note : </p>

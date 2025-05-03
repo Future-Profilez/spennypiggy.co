@@ -2,30 +2,46 @@ import React from 'react'
 import seek from "../../../assets/img/seeksearch.png";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 
-export default function FunPart({imgbg, textbg, heading, eclasses, text, img, classes, reverse}) {
+export default function FunPart({imgbg, mainbg, textbg, heading, eclasses, text, img, classes, reverse}) {
     return (
         <>
-            <style jsx >{`
-                .box-s {  border-${reverse ? "right" : "left"}:2px solid #000;}
-            `}</style>
+  <style jsx>{`
+    .box-s {
+      border-${reverse ? "right" : "left"}: 2px solid #000;
+      overflow: hidden; /* Prevent image from spilling out */
+    }
+    .image-container {
+      width: 100%;
+      height: 100%;
+    }
+    .image-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: transparent !important; /* Remove image background if any */
+    }
+  `}</style>
 
-            <div className={`${classes} d-flex ${reverse ? "col-reverse" : ''} bg-white d-flex borderbox justify-content-between align-items-center`}>
-                <div data-aos="flip-down"  className={`box-s ${eclasses} ${reverse ? "justify-content-start" : "justify-content-end"} p-5 pb-0 w-50 ${imgbg} `}>
-                    <LazyLoadImage  
-                    alt={"image"} useIntersectionObserver={true} effect="blur"
-                    height={326} 
-                    src={img || seek }
-                    width={468} />
-                </div>
-                <div  className={`box-e ${reverse ? "justify-content-end" : "justify-content-start"} w-50 p-4 ${textbg} `}>
-                    <div className='max-width-500'  >
-                    <h3 className="headingSm shadow-none text-dark stroke-none mb-3"  data-aos="flip-down" > {heading} </h3>
-                    <p className="text-CeraGR"  data-aos="flip-down" >
-                    {text}
-                    </p>
-                    </div>
-                </div>
-            </div>
-        </>
+  <div className={`${classes} d-flex ${reverse ? "col-reverse" : ''} ${mainbg ? mainbg : 'bg-white'} d-flex borderbox justify-content-between align-items-center`}>
+    <div data-aos="flip-down" className={`box-s ${eclasses} ${reverse ? "justify-content-start" : "justify-content-end"} pb-0 w-50`}>
+      <div className="image-container">
+        <LazyLoadImage
+          alt="image" className='max-h-[600px]'
+          useIntersectionObserver={true}
+          effect="blur"
+          src={img || seek}
+        />
+      </div>
+    </div>
+    <div className={`box-e ${reverse ? "justify-content-end" : "justify-content-start"} w-50 p-4 ${textbg}`}>
+      <div className='max-width-500'>
+        <h3 className="headingSm shadow-none text-dark stroke-none font-gulfs !text-2xl lg:!text-3xl  xl:!text-4xl mb-3" data-aos="flip-down">
+          {heading}
+        </h3>
+      </div>
+    </div>
+  </div>
+</>
+
     )
 }

@@ -323,11 +323,11 @@ export default function AddItem(props) {
 
             const ships = updatedShipping()
             if ( physical && ships.length < 1) {
-                errorAlert("Please add atleast one shipping method");
+                errorAlert("Please add at least one shipping method");
                 return false;
             }
             if ( physical && vars.length < 1) {
-                errorAlert("Please add atleast one variant");
+                errorAlert("Please add at least one variant");
                 return false;
             }
 
@@ -424,8 +424,8 @@ export default function AddItem(props) {
                         <AiOutlineShop color="var(--pink)" size="1.5rem" />
                     </div>
                     <div className="ps-3 text-start">
-                        <h2 className="text-md">Sell Something</h2>
-                        <p className="text-sm font-normal">
+                        <h2 className="text-md font-normal font-GillSans uppercase ">Sell Something</h2>
+                        <p className="text-sm font-poppins">
                             Sell digital or physical items from your page
                         </p>
                     </div>

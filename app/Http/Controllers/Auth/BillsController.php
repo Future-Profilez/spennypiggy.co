@@ -124,8 +124,6 @@ class BillsController extends Controller
 
     public function billEdit(Request $request, $id)
     {
-
-
         $validator = Validator::make($request->all(), [
             "name" => [
                 "required",
@@ -187,7 +185,9 @@ class BillsController extends Controller
                         ],
                         "url"   =>  env('APP_URL') . '/' . $user->username,
                     ];
-                    $stripe_client = $stripe->products->create($productPayload);
+                    $stripe_client = $stripe->products->create($productPayload, [
+                        'stripe_account' => $user->account_id, // 🟢 Target the connected account
+                    ]);
                     $bill->price_id = $stripe_client->default_price;
                 } else {
                     $stripe_client = $stripe->products->update($bill->product_id, [
@@ -255,6 +255,19 @@ class BillsController extends Controller
     {
         try {
 
+            $user = Auth::user(); // or $requestingUser if handling guests
+
+            if (empty($user->stripe_id)) {
+                $stripeCustomer = \Stripe\Customer::create([
+                    'email' => $user->email,
+                    'name' => $user->name ?? null,
+                ]);
+
+                $user->stripe_id = $stripeCustomer->id;
+                $user->save();
+            }
+
+
             $bill = Bills::whereUuid($uuid)->with('user')->first();
 
             if (Auth::check() && ($bill->user_id == Auth::id())) {
@@ -266,9 +279,12 @@ class BillsController extends Controller
             }
 
             $vat_percentage_amount = 0;
+            $vat_percentage_amounts = 0;
             $currency   =   strtolower($request->cookie("currency", "GBP"));
             $price = round($bill->price, 2, PHP_ROUND_HALF_UP);
             $tax = round($bill->tax_amount, 2, PHP_ROUND_HALF_UP);
+
+
 
             // $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
             if (!empty($bill->user->vat_amount_percentage)) {
@@ -314,6 +330,13 @@ class BillsController extends Controller
                     'anonymous'      => $request->anonymous ?? 0
                 ]);
 
+                // payment currency conversion
+                $paymentUnitAmount = Helpers::priceFormat($bill->currency, $price, $currency) * 100;
+                $paymentTax = Helpers::priceFormat($bill->currency, $tax, $currency) * 100;
+                if (!empty($bill->user->vat_amount_percentage)) {
+                    $vat_percentage_amounts = ($paymentUnitAmount + $paymentTax) * $bill->user->vat_amount_percentage / 100;
+                }
+
                 // $transfering_amount = Helpers::priceFormat($bill->currency, $price, $currency) * 100;
                 $price += $vat_percentage_amount;
                 $amount_per = round(($price / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
@@ -340,7 +363,7 @@ class BillsController extends Controller
                 $payload    =   [
                     "currency"  =>  $currency,
                     'line_items' =>  [$items],
-                    'customer_email'    =>  $request->email,
+                    'customer' => $user->stripe_id,
                     'success_url'       =>  route('bill.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
                     'cancel_url'       =>  route('bill.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
                 ];
@@ -386,8 +409,6 @@ class BillsController extends Controller
             return to_route('user.show', ['username' => $bill->user->username])->with('error', $e->getMessage());
         }
     }
-
-
 
     /**
      * Handle Checkout Session

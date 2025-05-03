@@ -359,6 +359,8 @@ class ShopsController extends Controller
                             'images' => [$shop->perma_link],
                             "default_price" => $shop->price_id,
                             // "url" => $request->item_url ?? null
+                        ],[
+                            'stripe_account' => $user->account_id,
                         ]);
                     } else {
                         $stripe_client = StripeControl::createProduct($productPayload);

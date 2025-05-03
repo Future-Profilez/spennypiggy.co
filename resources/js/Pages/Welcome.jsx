@@ -12,6 +12,9 @@ const HappyCreators = React.lazy(() => import('./home/HappyCreators'));
 const JoinUs = React.lazy(() => import('@/Components/JoinUs'));
 import seek from "../../assets/img/seeksearch.png";
 import fill from "../../assets/img/fillbank.png";
+import fun1 from "../../assets/new/Fun1.png";
+import fun2 from "../../assets/new/Fun2.png";
+import fun3 from "../../assets/new/Fun3.png";
 import commingsoon from "../../assets/img/commingsoon.png";
 import lockprofile from "../../assets/img/lockprofile.png";
 import Membership from "./home/Membership";
@@ -21,6 +24,7 @@ import { useEffect } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import SitelinksSearchBox from "@/global/SiteLink";
+import PaymentSlider from "./home/PaymentSlider";
 export default function Home({ auth, user }) {
 
     useEffect(()=>{
@@ -35,44 +39,40 @@ export default function Home({ auth, user }) {
 
     return <>
         <div className="overflow-hidden" >
-        <LiveBar reps={15} classes={'pb-2 pb-md-0 blackbg barouter'} text={"🚨 KEEP 100% OF EVERYTHING YOU EARN 🚨"} />
         <Guest auth={auth.user} user={auth.user}>
+        <LiveBar reps={15} classes={'blackbg barouter'} text={"🤑 Keep 100% of what you earn! ⚡️Fast & Easy Payment’s through 🍎 Pay! "} />
         <Hero auth={auth} />
         <LiveBarSection />
-        <ForCreators />
+        <PaymentSlider/>
+        {/* <ForCreators /> */}
 
-        <FunPart classes={``} 
+        {/* <FunPart classes={``} 
         img={seek} 
         imgbg={`bluebg`} 
         textbg={`lightpink-50`}
         heading={`Seek & Search`}
         text={`Looking for your favorite creator or their wishlist? Seek & Search makes it easy. Whether you're eager to support your beloved content creators or find the perfect gift, our intuitive search feature lets you quickly locate creators or their wishlists with just a few clicks. Dive into the world of creativity and generosity today with Seek & Search!`}
-        />
+        /> */}
 
 
-        <FunPart classes={`border-top-0`} 
+        {/* <FunPart classes={`border-top-0`} 
         img={fill} reverse={true}
         imgbg={`pinkbg`} eclasses={``}
         textbg={`lightyellow`} 
         heading={`Receive Support with 100% payout`}
         text={`All Creators on Spenny Piggy receive 100%, and the profile piggy bank provides a fast and easy way for fans to directly support you!`}
-        />
+        /> */}
 
-
-        <Membership />
-
-
-
-        <FunPart classes={``} 
+        {/* <FunPart classes={``} 
         img={commingsoon} 
         imgbg={`mintbg`} 
         textbg={`lightpink-50`}
         heading={`Your Profile Shop, the creative way to sell`}
         text={`Think ebooks, art commissions, 1-1 zoom calls and everything else in between. Anything that probably doesn’t have a place on shopify, Your profile shop is the place to start selling direct to your fans whilst enhancing your earnings potential.`}
-        />
+        /> */}
 
 
-        <FunPart classes={`border-top-0`} 
+        {/* <FunPart classes={`border-top-0`} 
         img={lockprofile} reverse={true}
         imgbg={`yellowbg`} eclasses={``}
         textbg={`lightyellow`} 
@@ -80,7 +80,30 @@ export default function Home({ auth, user }) {
         text={`All the data on Spenny Piggy is hosted on Google Servers in the UK.
         All of your data on Spenny Piggy is secured by TLS (SSL) 256-bit encryption.
         All the creator & Fan information stays private and is not shared between parties. `}
+        /> */}
+
+        <FunPart classes={`border-top-0`} 
+        img={fun1} reverse={true}
+        mainbg={`bg-[#EFEA7B]`} eclasses={``}
+        textbg={`bg-[#EFEA7B]`} 
+        heading={`Effortlessly add your dream items, share your page, and get going in minutes!`}
         />
+
+        <FunPart classes={`border-top-0`} 
+        img={fun2} reverse={false}
+        mainbg={`bg-[#F94F96]`} eclasses={``}
+        textbg={`bg-[#F94F96]`} 
+        heading={`Let your fans spoil you with gifts from any online store!`}
+        />
+        
+        <FunPart classes={`border-top-0`} 
+        img={fun3} reverse={true}
+        mainbg={`bg-[#EFEA7B]`} eclasses={``}
+        textbg={`bg-[#EFEA7B]`} 
+        heading={`Build your profile shop! the creative way to sell anything that probably doesn’t have a place on shopify...`}
+        />
+
+        <Membership />
 
         <NotForBusiness />
 
@@ -90,6 +113,17 @@ export default function Home({ auth, user }) {
         <FAQ />
 
         <JoinUs />
+        <LiveBar
+                reps={15}
+                classes={"py-3 bg-[#E6EA7B]"}
+                textClass={`!text-4xl font-gulfs mb-0 mx-4 text-uppercase`}
+                color={`bg-[#E6EA7B]`}
+                text={
+                    <>
+                      ❤️ Keep <span className="text-[#F94F96]">100%</span> of what you Earn!
+                    </>
+                  }
+                />
         <SitelinksSearchBox />
         </Guest>
         </div>

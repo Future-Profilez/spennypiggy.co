@@ -13,21 +13,31 @@ import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
 import { useState } from 'react';
 import GifterFeed from './GifterFeed';
-import GifterMedia from './GifterMedia';
+// import GifterMedia from './GifterMedia';
 import MembershipLists from './MembershipLists';
- 
+import ActivateCard from './ActivateCard';
+
 
 export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
 
   const { auth, user, itemid  } = usePage().props;
   const [tab, setTab] = useState("home");
+//   const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
 
-  const AboutScreen = () => { 
+  const AboutScreen = () => {
     return <>
-        <div className=" about-sec max-w-3xl m-auto " >
+        <div className=" about-sec  m-auto " >
               <div className={`${user && !user.bio ? "d-nones":""} box shadow-voilet rounded-lg mb-4`} >
                   <p className="font-bold" >About me</p>
                   <p className={`text-muted text-start mt-2 `}>{(user && user.bio) || ""}</p>
+                  
+                  {IsloggedIn && user?.edit_bio_reason  ?
+                    <div className="mt-3">
+                        <p className="text-red-700">Bio Edit Request</p>
+                        <p className="text-red-500 text-sm">Reason : {user?.edit_bio_reason } Please update your bio as per requested.</p>
+                    </div>
+                    : ''}
+
                   <SocialLinks links={sLinks} />
                   {IsloggedIn ? <div className="addsocial flex">
                     <ul>
@@ -41,7 +51,7 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
                     </ul>
                 </div> : ''}
               </div>
-          
+
               <GifterTips />
               <GifterItems IsloggedIn={IsloggedIn} />
               <GifterSubscriptions IsloggedIn={IsloggedIn} />
@@ -72,20 +82,27 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
                     id="noanim-tab-example"
                     className="mb-3 justify-content-center" >
                     <Tab eventKey="home" title="About">
-                        <AboutScreen />
+                        <div className='max-w-3xl m-auto'>
+                            {auth?.user?.profile_status_lock !== 2 ? <>
+                                <ActivateCard auth={auth}/>
+                            </> : '' }
+                            <AboutScreen />
+                        </div>
                     </Tab>
+
                     <Tab eventKey="feed" title="Feed">
                         <GifterFeed username={user && user.username || ''} />
                     </Tab>
                     <Tab eventKey="memberships" title="Memberships">
                         <MembershipLists username={user && user.username || ''}/>
                     </Tab>
-                    <Tab eventKey="media" title="Media">
-                        <GifterMedia username={user && user.username || ''} />
-                    </Tab>
+                    {/* <Tab eventKey="media" title="Media">
+                            <GifterMedia username={user && user.username || ''} />
+                        </Tab>
+                    */}
                 </Tabs>
             </div>
-            </> 
+            </>
           : <AboutScreen /> }
         </div>
     </>

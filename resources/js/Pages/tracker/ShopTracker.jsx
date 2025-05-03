@@ -7,7 +7,7 @@ import Nocontent from "@/includes/Nocontent";
 import userphoto from "../../../assets/img/userphoto.png";
 import Avatar from "@/includes/Avatar";
 import { TimeFormat } from "@/includes/TimeFormat";
-const defaultsec = "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/";
+const defaultsec = "https://ucarecdn.com/55965522-e075-4ef3-8afc-195dacbf267b/";
 
 export default function ShopTracker() {
     const { formatMultiPrice } = PriceFormat();

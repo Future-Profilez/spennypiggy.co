@@ -25,7 +25,7 @@ export default function TopEarnWishes() {
     });
   };
 
-  useEffect(()=>{ 
+  useEffect(()=>{
     fetchingStats();
   },[]);
 

@@ -33,6 +33,7 @@ class User extends Authenticatable
         'role',
         'username',
         'country',
+        'bio',
         'gender',
         'password',
         'uuid',
@@ -42,6 +43,8 @@ class User extends Authenticatable
         'identity_verified_at',
         'identity_verification_error',
         'identity_verification_details',
+        'ip_address',
+        'profile_status_lock',
     ];
 
     public static function boot()
@@ -205,7 +208,6 @@ class User extends Authenticatable
         return $this->hasOne(SocialLinks::class, 'user_id');
     }
 
-
     public function memberships()
     {
         return $this->hasMany(Membership::class, 'user_id');
@@ -238,7 +240,6 @@ class User extends Authenticatable
         return false;
     }
 
-
     public function intro()
     {
         return $this->hasOne(UserIntro::class, 'user_id');
@@ -264,5 +265,10 @@ class User extends Authenticatable
     public function creatorShippingAddress()
     {
         return $this->hasOne(CreatorShippingAddress::class, 'creator_id', 'id');
+    }
+
+    public function gifterCardVerification()
+    {
+        return $this->hasOne(GifterCardVerification::class, 'user_id');
     }
 }

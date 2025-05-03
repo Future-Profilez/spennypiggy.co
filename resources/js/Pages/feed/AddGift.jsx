@@ -12,7 +12,7 @@ import AddressForm from "../rye/AddressForm";
 
 export default function AddGift({
     item,
-    classes,
+    classes, text,
     updateState,
     fetch_gifts,
     addressAdded,
@@ -22,6 +22,7 @@ export default function AddGift({
     const [loading, setLoading] = useState(false);
     const [title, setTitle] = useState(item?.title || "");
     const [hasAdded, setHasAdded] = useState(addressAdded);
+    // const [hasAdded, setHasAdded] = useState(false);
 
     const handleInput = (e) => {
         setTitle(e.target.value);
@@ -41,6 +42,12 @@ export default function AddGift({
     const submitPost = async (e) => {
         e.preventDefault();
         setLoading(true);
+
+        if (!title.includes("www.amazon")) {
+            errorAlert("Only Amazon products are supported");
+            setLoading(false);
+            return;
+        }
 
         try {
             // Get the shopper's IP
@@ -67,7 +74,11 @@ export default function AddGift({
                     marketplace: "AMAZON",
                 },
             });
-
+            if (!productData) {
+                errorAlert("Product not found");
+                setLoading(false);
+                return;
+            }
             // Send the fetched product data to your API
             const response = await axios.post(route("create.creator.product"), {
                 url: productData,
@@ -92,13 +103,13 @@ export default function AddGift({
 
     const AddItem = () => (
         <div className="flex items-center">
-            <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px]">
+            <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] min-w-[50px] h-[50px]">
                 <CiGift color="var(--pink)" size="1.5rem" />
             </div>
             <div className="ps-3 text-start">
-                <h2 className="text-md">Add a Gift</h2>
-                <p className="text-sm font-normal">
-                    Add a gift link or URL from Amazon
+                <h2 className="text-md font-normal font-GillSans uppercase">{text ? text :'Add Surprise Gift'}</h2>
+                <p className="text-sm font-poppins">
+                Add a gift link or URL from Amazon
                 </p>
             </div>
         </div>
@@ -113,7 +124,7 @@ export default function AddGift({
             classes={`w-full addop bg-white rounded-xl py-2 px-3 ${classes}`}
             text={<AddItem />}
         >
-            {hasAdded ? (
+            {!hasAdded ? (
                 <form onSubmit={submitPost}>
                     <div className="flex align-items-center">
                         <div
@@ -145,168 +156,7 @@ export default function AddGift({
                     </LoaderButton>
                 </form>
             ) : (
-                // <form
-                //     onSubmit={handleSubmit}
-                //     className="overflow-auto max-h-[70vh]"
-                // >
-                //     <div className="flex flex-col align-items-center">
-                //         <div className="flex align-items-center">
-                //             <div
-                //                 className={`gift-icon me-2 voilet`}
-                //                 dangerouslySetInnerHTML={{ __html: piggy }}
-                //             />
-                //             <h2 className="text-xl font-bold text-dark-500">
-                //                 Add Your Biiling Address Details
-                //             </h2>
-                //         </div>
-                //         <p className="text-red-500">
-                //             These details will be used to send you the project
-                //             from amazon, when someone orders it.
-                //         </p>
-                //     </div>
-
-                //     <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-3 mt-4">
-                //         <div className="flex flex-col w-full">
-                //             <p className="text-grey-500 mb-1">
-                //                 Enter your First Name here
-                //             </p>
-                //             <input
-                //                 onChange={handleChange}
-                //                 value={formData.first_name}
-                //                 name="first_name"
-                //                 placeholder="First Name"
-                //                 className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                //                 required
-                //             />
-                //         </div>
-                //         <div className="flex flex-col w-full">
-                //             <p className="text-grey-500 mb-1">
-                //                 Enter your Last Name here
-                //             </p>
-                //             <input
-                //                 onChange={handleChange}
-                //                 value={formData.last_name}
-                //                 name="last_name"
-                //                 placeholder="Last Name"
-                //                 className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                //                 required
-                //             />
-                //         </div>
-                //     </div>
-                //     <p className="text-grey-500 mb-1 mt-2">
-                //         Enter your Phone Number here
-                //     </p>
-                //     <input
-                //         onChange={(e) => {
-                //             if (
-                //                 e.target.value.length <= 10 &&
-                //                 /^[0-9]*$/.test(e.target.value)
-                //             ) {
-                //                 handleChange(e);
-                //             }
-                //         }}
-                //         value={formData.phone}
-                //         name="phone"
-                //         type="text"
-                //         maxLength="10"
-                //         placeholder="Phone"
-                //         className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control mb-3"
-                //         required
-                //     />
-                //     <div className="my-2">
-                //         <p className="text-grey-500 mb-1">
-                //             Enter your Address details below
-                //         </p>
-                //         <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 ">
-                //             <div className="flex flex-col w-full">
-                //                 <input
-                //                     onChange={handleChange}
-                //                     value={formData.address_1}
-                //                     name="address_1"
-                //                     placeholder="Address 1"
-                //                     className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                //                     required
-                //                 />
-                //             </div>
-                //             <div className="flex flex-col w-full">
-                //                 {/* <p className="text-grey-500 mb-1">
-                //                 Enter your Last Name here
-                //             </p> */}
-                //                 <input
-                //                     onChange={handleChange}
-                //                     value={formData.address_2}
-                //                     name="address_2"
-                //                     placeholder="Address 2"
-                //                     className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                //                     required
-                //                 />
-                //             </div>
-                //         </div>
-                //     </div>
-                //     <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mt-3">
-                //         <input
-                //             onChange={handleChange}
-                //             value={formData.city}
-                //             name="city"
-                //             placeholder="City"
-                //             className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                //             required
-                //         />
-                //         <input
-                //             onChange={(e) => {
-                //                 if (e.target.value.length <= 3) {
-                //                     handleChange(e);
-                //                 }
-                //             }}
-                //             value={formData.province_code}
-                //             name="province_code"
-                //             placeholder="Province Code"
-                //             className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                //             required
-                //         />
-                //         {/* <Countries
-                //             send={handleChange}
-                //             className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                //         /> */}
-                //         <select
-                //             onChange={getCountry}
-                //             name="country_code"
-                //             className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                //             required
-                //         >
-                //             <option value="" disabled selected>
-                //                 Choose
-                //             </option>
-                //             {updated &&
-                //                 updated.map((c, i) => (
-                //                     <option key={`country-${i}`} value={c.code}>
-                //                         {c.label}
-                //                     </option>
-                //                 ))}
-                //         </select>
-                //         <input
-                //             onChange={handleChange}
-                //             type="number"
-                //             value={formData.postal_code}
-                //             name="postal_code"
-                //             placeholder="Postal Code"
-                //             className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                //             required
-                //         />
-                //     </div>
-
-                //     <LoaderButton
-                //         type="submit"
-                //         disabled={loading}
-                //         className="flex btn-pink lg mt-4 w-full "
-                //         spinnerClassName="fill-red-600"
-                //     >
-                //         {loading ? "Adding..." : "Add Details"}
-                //     </LoaderButton>
-                // </form>
-                <AddressForm 
-                setHasAdded={setHasAdded}
-                />
+                <AddressForm setHasAdded={setHasAdded} />
             )}
         </Popup>
     );

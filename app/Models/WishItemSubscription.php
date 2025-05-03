@@ -26,6 +26,7 @@ class WishItemSubscription extends Model
         'vat_tax_amount',
         'recurring_for',
         'recurring_type',
+        'payment_method',
         'surprise_message',
         'anonymous',
         'end',

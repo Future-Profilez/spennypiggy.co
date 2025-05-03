@@ -8,9 +8,11 @@ use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TestController;
+use App\StripeControl;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -23,6 +25,14 @@ use Inertia\Inertia;
 | routes are loaded by the RouteServiceProvider within a group which
 | contains the "web" middleware group. Now create something great!
 */
+
+Route::get('/send-test-mail', function () {
+    Mail::raw('This is a test email. If you are seeing this, your mail configuration is working!', function ($message) {
+        $message->to('prem@futureprofilez.com')
+            ->subject('Test Email');
+    });
+    return 'Test email sent!';
+});
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -45,9 +55,9 @@ Route::get('/membership-dashboard', function () {
 // Route::get('get-all-products', [TestController::class, 'fetchRyeProducts'])->name('get.all.products');
 
 
-Route::get('rey-test', function () {
-    return Inertia::render('ReyTest');
-})->name('rey.test');
+// Route::get('rey-test', function () {
+//     return Inertia::render('ReyTest');
+// })->name('rey.test');
 
 Route::get('get-cart', function () {
     return Inertia::render('GetCart');
@@ -56,7 +66,10 @@ Route::get('get-cart', function () {
 Route::post('rye-webhook', [WishitemController::class, 'handleWebhook'])->name('rye.webhook');
 
 
-Route::post('handle-rye-product-payment', [WishitemController::class, 'handleRyeProductPayment'])->name('handle.rye.product.payment');
+// GiftStore Route
+Route::get('/giftstore', function () {
+    return Inertia::render('rye/GiftStore');
+})->name('giftStore');
 
 
 // Route::post('test-stripe', function (Request $request) {
@@ -69,6 +82,8 @@ Route::post('handle-rye-product-payment', [WishitemController::class, 'handleRye
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
 
 Route::get('send-identity-verification-failed-emails', [TestController::class, 'sendFailedVerificationEmails']);
+
+Route::get('create-product/{price}', [StripeController::class, 'makeProductId'])->name('create.product');
 
 //check referal code
 Route::get('check-coupon-code/{code}', [RegisteredUserController::class, 'checkCouponCode'])->name('checkCouponCode');

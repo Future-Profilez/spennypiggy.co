@@ -41,30 +41,16 @@ import ProfileSteps from "./Profile/ProfileSteps";
 import ProfileProductLists from "./shop/profile/ProfileProductLists";
 import AddItem from "./shop/AddItem";
 import AddGift from "./feed/AddGift";
-import { Swiper, SwiperSlide } from 'swiper/react';
-import 'swiper/css';
-import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 import PriceFormat from "@/includes/PriceFormat";
 import GiftListing from "./rye/GiftListing";
-
+import { FaRegHeart } from "react-icons/fa";
+import { CiGift } from "react-icons/ci";
 
 export default function Dashboard(props) {
-
-    const parsePageId = (path) => path.substring(path.lastIndexOf('/') + 1)
-    const pageId = parsePageId(window.location.pathname);
-      const { format, formatMultiPrice } = PriceFormat();
-
-
-
+    console.log("props",props)
     const w = useWidthCount();
     const{auth,user,username,global_currency,itemid}= props;
-
     const [tab, setTab] = useState(0);
-    // useEffect(() => {
-    //     if(pageId == 'shop'){
-    //         setTab(5);
-    //     }
-    // });
     const onTabClick = (e, d) => {
         setTab(d);
     };
@@ -90,8 +76,6 @@ export default function Dashboard(props) {
         setGiftsLoading(true);
         axios.get(`/gift-items/${username}`, { signal })
         .then((resp) => {
-            // console.log("resp",resp?.data);
-            // let details=JSON.parse(resp?.data?.items[0]?.details);
             setGifts(resp?.data?.items);
             setGiftsLoading(false);
         }).catch((_err) => {
@@ -108,22 +92,20 @@ export default function Dashboard(props) {
             setSelectedCat('');
         }
         fetch(`/items/${username}${cat ? `/${cat}` : ""}`)
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then((data) => {
-                setLoading(false);
-                const result = data && data.items;
-                setIts(result);
-            })
-            .catch((error) => {
-                console.error("error", error);
-                setLoading(false);
-            });
-        // }
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then((data) => {
+            setLoading(false);
+            const result = data && data.items;
+            setIts(result);
+        }).catch((error) => {
+            console.error("error", error);
+            setLoading(false);
+        });
     };
 
     useEffect(() => {
@@ -282,52 +264,6 @@ export default function Dashboard(props) {
         setIsUpdated(e);
     }
 
-    // const Toggle = () => {
-    //     return  <>
-    //         {IsloggedIn ? (
-    //             <Dropdown className="add-options ">
-    //                 <Dropdown.Toggle
-    //                     className="dropdown-add px-3"
-    //                     variant="success"
-    //                     id="dropdown-basic"
-    //                     dangerouslySetInnerHTML={{__html:addicon}}
-    //                 ></Dropdown.Toggle>
-    //                 <Dropdown.Menu>
-    //                     { auth.user && auth.user.stripe_details_submitted == 1 ?
-    //                         <>
-    //                             <Suspense fallback={"Add Wishlist"}>
-    //                                 <Wishlist
-    //                                     fetchcategories={fetch_categories}
-    //                                     currency={global_currency}
-    //                                     setuped={auth.user &&auth.user.stripe_details_submitted == 1? true : false}
-    //                                     fetchingcats={fetchingcats}
-    //                                     categories={categories}
-    //                                 />
-    //                             </Suspense>
-    //                             <Suspense fallback={"Add Membership"}>
-    //                                 <AddMembership updateState={updateState} />
-    //                             </Suspense>
-    //                             <Suspense fallback={"Add Membership"}>
-    //                                 <AddBills updatebill={updatebill}/>
-    //                             </Suspense>
-    //                             <Suspense fallback={"Add Membership"}>
-    //                                 <AddItem classes="dropdown-item"
-    //                                 product_type="digital_products" title='Add Digital Product' />
-    //                             </Suspense>
-    //                         </>
-    //                     : ''}
-    //                     <Suspense fallback={"Add Post"}>
-    //                         <AddPost updateState={updateState} />
-    //                     </Suspense>
-    //                 </Dropdown.Menu>
-
-    //             </Dropdown>
-    //         ) : (
-    //             ""
-    //         )}
-    //     </>
-    // }
-
 
     const Toggle = () => {
         const [showAdd, setShowAdd]= useState(false);
@@ -337,7 +273,9 @@ export default function Dashboard(props) {
             } else {
               document.body.classList.remove('overflow-hidden');
             }
-          },[showAdd]);
+        },[showAdd]);
+
+        const [wishOptions, setWishOptions] = useState(false);
 
         return  <>
             {IsloggedIn ? <>
@@ -345,27 +283,72 @@ export default function Dashboard(props) {
                 {showAdd ?
                     <div className="bg-[#0001] rounded-xl position-fixed shadow-lg z-[99999999999999999999] flex justify-center items-center
                      top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full">
-                        <div className="w-full max-w-[550px] px-3">
+                        <div className="w-full max-w-[550px]  px-3">
                             <Suspense fallback={"Loading.."}>
                                 <div className="bg-gray-100 w-full p-6 md:p-10 rounded-3xl shadow-lg z-10">
                                     <h2 className="font-bold text-black  text-xl md:text-2xl mb-4 text-center m-auto ">Add Item to fund your lifestyle.</h2>
-                                    {auth.user && auth.user.stripe_details_submitted == 1 ?
-                                        <>
-                                            <Wishlist
-                                            fetchcategories={fetch_categories}
-                                            currency={global_currency}
-                                            setuped={auth.user &&auth.user.stripe_details_submitted == 1 ? true : false}
-                                            fetchingcats={fetchingcats}
-                                            categories={categories} />
-                                            <AddMembership updateState={updateState} />
+                                    <div className="max-h-[55vh]  sm:max-h-[40vh] overflow-y-auto">
+
+                                            { wishOptions ?
+                                                <div>
+                                                    <Wishlist text="Cash Gift"
+                                                    fetchcategories={fetch_categories}
+                                                    currency={global_currency}
+                                                    setuped={auth.user &&auth.user.stripe_details_submitted == 1 ? true : false}
+                                                    fetchingcats={fetchingcats}
+                                                    categories={categories} />
+                                                    <div  className="w-full font-bold disabled addop bg-white rounded-xl p-3 mb-2 text-center">
+                                                        <div className=" flex items-center">
+                                                            <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                <CiGift color="var(--pink)" size="1.5rem" />
+                                                            </div>
+                                                            <div className="ps-3 text-start">
+                                                                <h2 className="text-md font-normal font-GillSans uppercase">Add Surprise Gift</h2>
+                                                                <p className="text-sm font-poppins">
+                                                                Lets supporters pick from the 1000’s of Gifts in the Oink Gift Zone
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                </div>
+
+                                            : <div>
+
+                                            {auth.user && auth.user.stripe_details_submitted == 1 ?
+                                                    <>
+                                                    <div onClick={()=> setWishOptions(true)} className="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center cursor-pointer">
+                                                        <div className=" flex items-center">
+                                                            <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                <FaRegHeart color="var(--pink)" size="1.5rem" />
+                                                            </div>
+                                                            <div className="ps-3 text-start">
+                                                                <h2 className="text-md font-normal font-GillSans uppercase">Add Wish</h2>
+                                                                <p className="text-sm font-poppins">
+                                                                    Let fans fund your lifestyle for a reward.
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <AddItem  classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
+                                                    product_type="digital_products"  />
+                                                    <AddPost classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} />
+
+                                                    {/* {ziggy && ziggy.url !== 'https://spennypiggy.co' && */}
+                                                        <AddGift text="Add Gift " classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} fetch_gifts={fetch_gifts} addressAdded={auth?.user?.is_creator_address_found} />
+                                                    {/* // } */}
+                                                    </>
+                                            : '' }
+                                            <AddMembership updateState= {updateState} />
                                             <AddBills updatebill={updatebill}/>
-                                            <AddItem  classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
-                                            product_type="digital_products"  />
-                                        </>
-                                    : '' }
-                                    <AddPost classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} />
-                                    <AddGift classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} fetch_gifts={fetch_gifts} addressAdded={auth?.user?.is_creator_address_found} />
-                                    <button onClick={()=>setShowAdd(false)} className="m-auto table p-2 mt-3"  >Cancel</button>
+                                            </div>}
+
+                                    </div>
+                                    <button onClick={()=>{
+                                        setShowAdd(false);
+                                         setWishOptions(false)
+                                        }} className="m-auto table p-2 mt-3"  >Cancel</button>
                                 </div>
                             </Suspense>
                         </div>
@@ -382,7 +365,6 @@ export default function Dashboard(props) {
                 <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
                 <div className="wishlistPage blackbg pt-6 pb-0 pb-sm-5 ">
                     <div className="containerbox">
-                         {/* <CanvaButton />  */}
                         <VersionUpdate />
                         <div className="wishbanner relative ">
                         <LazyLoadImage
@@ -410,7 +392,7 @@ export default function Dashboard(props) {
 
                         <Userprofile IsloggedIn={IsloggedIn} />
 
-                        {user && user?.role == 1 && IsloggedIn ? <div className="alert bg-info">
+                        {user && user?.role == 1 && IsloggedIn ? <div className="alert p-2 bg-info text-sm">
                             In order to comply with Stripe it is required that you post content for memberships,
                             Bills and subscriptions regularly. Accounts not doing so will be suspended.
                             Please reach out to support for more information.</div>
@@ -423,9 +405,7 @@ export default function Dashboard(props) {
 
                                         <div className="inlinetab">
                                                 <div className="newnav-tabs d-flex items-center justify-between mb-4 ">
-                                                    <Tabs activeTab={tab}
-                                                    onTabClick={onTabClick}
-                                                    hideNavBtnsOnMobile={false} >
+                                                    <Tabs activeTab={tab} onTabClick={onTabClick} hideNavBtnsOnMobile={false} >
                                                         <Tab key="0">About</Tab>
                                                         <Tab key="1" >Wishes</Tab>
                                                         <Tab key="2" >Feed</Tab>
@@ -436,6 +416,7 @@ export default function Dashboard(props) {
                                                     </Tabs>
                                                     {IsloggedIn ? <Toggle /> : ''}
                                                 </div>
+
                                                 <div className="tabs-containers min-height" >
                                                     {tab == '0' ?
                                                         <Suspense fallback={<LoadingScreen />} >
@@ -443,14 +424,21 @@ export default function Dashboard(props) {
                                                                 <div className="col-md-6  h-auto">
                                                                     <div className="about-sticky" >
 
-                                                                        {user && goal && user?.stripe_details_submitted == 1 ?
-                                                                        <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> : ""}
+                                                                        {user && goal && user?.stripe_details_submitted == '1' ?
+                                                                            <MyGoal IsloggedIn={IsloggedIn} goal={goal} /> 
+                                                                        : ""}
 
-                                                                        <div className="box p-2 p-md-4 shadow-voilet rounded-lg mb-4">
+                                                                        <div className="box p-3 p-md-4 shadow-voilet rounded-lg mb-4">
                                                                             <p className="font-bold">About me</p>
                                                                             <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
                                                                                 {(user &&user.bio) ||""}
                                                                             </p>
+                                                                            {IsloggedIn && user?.edit_bio_reason  ?
+                                                                                <div className="mt-3">
+                                                                                    <p className="text-red-700">Bio Edit Request</p>
+                                                                                    <p className="text-red-500 text-sm">Reason : {user?.edit_bio_reason } Please update your bio as per requested.</p>
+                                                                                </div>
+                                                                              : ''}
 
                                                                             <SocialLinks links={sLinks} />
 
@@ -616,23 +604,28 @@ export default function Dashboard(props) {
                                                     {tab == '5' ?
                                                         <Suspense fallback={<LoadingScreen />} >
                                                             {IsloggedIn || user?.stripe_details_submitted == 1 ? (
-                                                                 <ProfileProductLists  profileuser={user} />
-                                                            ) : (
+                                                                 <ProfileProductLists profileuser={user} IsloggedIn={IsloggedIn} />
+                                                            ) : 
                                                                 <PaymentUnActivated  heading={`Bills not activated yet. `}
                                                                 subheading={`Until they activate their bills, this user won't be able to receive gifts.`} />
-                                                            )}
+                                                            }
                                                         </Suspense>
                                                     : "" }
 
                                                     {tab == '6' ?
-                                                     <Suspense fallback={<LoadingScreen />}>
+                                                        <Suspense fallback={<LoadingScreen />}>
                                                      {giftsloading ? (
                                                        <LoadingScreen />
                                                      ) : gifts && gifts.length > 0 ? (
                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
                                                          {gifts.map((gift) => {
                                                            const details = JSON.parse(gift.details); // Parse the details JSON
-                                                           return <GiftListing key={gift.id} gift={gift} details={details} user={user} IsloggedIn={IsloggedIn} fetch_gifts={fetch_gifts} auth={auth} />;
+                                                           return(
+                                                            <>
+                                                            {(IsloggedIn || gift?.deleted_at === null) &&
+                                                           <GiftListing key={gift.id} gift={gift} details={details} user={user} IsloggedIn={IsloggedIn} fetch_gifts={fetch_gifts} auth={auth} />}
+                                                           </>
+                                                        );
                                                          })}
                                                        </div>
                                                      ) : (
@@ -640,8 +633,7 @@ export default function Dashboard(props) {
                                                          <Nocontent text="Nothing to see." />
                                                        </div>
                                                      )}
-                                                   </Suspense>
-
+                                                        </Suspense>
                                                     : ''}
                                                 </div>
                                         </div>
@@ -651,6 +643,7 @@ export default function Dashboard(props) {
                         ) : <>
                             <Gifter
                             fetchingLinks={fetchingLinks}
+                            auth={auth}
                             sLinks={sLinks}
                             IsloggedIn={IsloggedIn} />
                         </>

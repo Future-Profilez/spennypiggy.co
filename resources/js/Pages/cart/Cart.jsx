@@ -12,11 +12,12 @@ const Nocontent = React.lazy(() => import('@/includes/Nocontent'));
 
 export default function Cart(props) {
 
+    console.log("cart props", props);
     const deviceid = DeviceID();
     const { auth, user, carts } = props;
     const [ cartsItems, setCartItems ] = useState(carts);
     const [loading, setLoading]= useState(false);
-    const fetchCartItem = (e) => { 
+    const fetchCartItem = (e) => {
         setLoading(true);
         Axios.get(`anonymous-cart/${deviceid}`).then(resp => {
             setCartItems(resp.data.carts);
@@ -36,6 +37,7 @@ export default function Cart(props) {
     return (
         <Authenticated auth={auth.user} user={user}>
             <Head title={"Cart"} />
+            <CartListing/>
             <div className="blackbg">
                 <div className="container pb-5 ">
                     <h2 className="text-bl font-GillSans pt-5 pt-3 pb-0 text-center text-2xl uppercase text-white">Cart</h2>
@@ -58,7 +60,7 @@ export default function Cart(props) {
                     </>}
                 </div>
             </div>
-            <CartListing/>
+
         </Authenticated>
     );
 }

@@ -5,8 +5,9 @@ import {piggynose, piggyface, tipheading, leftleg, rightleg} from '@/includes/Ic
 import { useEffect } from 'react';
 import axios from 'axios';
 import { useAlerts } from '@/Components/Alerts';
+import toast from 'react-hot-toast';
 
-export default function TipInner({classes}) {
+export default function TipInner({classes, idd}) {
 
   const { global_currency, auth, user } = usePage().props;
   const checkRef = useRef();
@@ -47,6 +48,10 @@ export default function TipInner({classes}) {
     setselectegTag(e);
   }
   const customAmount = (e) => {
+    if(e.target.value > 99){
+      toast.error("Maximum amount is 99");
+      return false;
+    }
     setAmount(e.target.value);
     setdefaultAmount(e.target.value);
     setTipQuantity(1);
@@ -116,7 +121,7 @@ export default function TipInner({classes}) {
             <div className="flex flex-wrap grid grid-cols-2 xl:grid-cols-4 gap-3 mb-4 mt-2">
                 <button className={`${ selectegTag == 25 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={()=>customAmountTag(25)}  >{formatMultiPrice(25, global_currency || "GBP")}</button>
                 <button className={`${ selectegTag == 50 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={()=>customAmountTag(50)}  >{formatMultiPrice(50, global_currency || "GBP")}</button>
-                <button className={`${ selectegTag == 100 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={()=>customAmountTag(100)}  >{formatMultiPrice(100, global_currency || "GBP")}</button>
+                <button className={`${ selectegTag == 99 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={()=>customAmountTag(99)}  >{formatMultiPrice(99, global_currency || "GBP")}</button>
                 <button className={`${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={selectCustom} >Custom</button>
             </div>
 
@@ -158,11 +163,11 @@ export default function TipInner({classes}) {
             }
 
             <div className='termselect mt-3 mb-3'>
-                <label htmlFor="termaccept">
+                <label htmlFor={`termaccept${idd || 1}`}>
                   <p className='text-small text-dark font-normal' >
                     <input className='cursor-pointer'
                     type="checkbox" ref={checkRef}
-                    id="termaccept"  name="termaccept"
+                    id={`termaccept${idd || 1}`}  name="termaccept"
                     value="termaccept" required
                     onChange={(e) => setData("termaccept", e.target.value)}></input>
                       By supporting me, you agree that this support is a gift and as a thank you, you get access to my profile feed and supporter only posts. To view these, you will need to create an account with the e-mail you used to send the support, as effectively you are purchasing a supporter Membership attached to your e-mail for 30 days.
@@ -182,11 +187,11 @@ export default function TipInner({classes}) {
                 </label>
                 <p className="text-muted text-small mt-1 mb-3" >Your personal email and name will be private.</p>
             </div>
-            <button onClick={send} className={`inline-flex items-center px-4 border shadow-black
-               rounded-[30px] btn-pink md justify-content-center  border-0
+            <button disabled={loading} onClick={send} className={`items-center px-4  shadow-black
+               rounded-[30px] btn-pink md justify-content-center   
               ease-in-out duration-150 flex button text-center w-100
               font-CeraGR mx-auto ${checkRef.current && checkRef.current.checked ? '' :'disabled'}`}
-               > {processing ? "Processing" : 'Support Me'} </button>
+               > {loading ? "Processing" : 'Support Me'} </button>
             {/* <div className='securestripe text-center mt-3' >
               🔒 Secured via <b>Stripe</b>
             </div> */}

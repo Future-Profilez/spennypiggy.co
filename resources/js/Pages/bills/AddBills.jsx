@@ -31,13 +31,13 @@ export default function AddBills(props) {
     const { formatMultiPrice } = PriceFormat();
     const BillsImages = [
         "901c0a0e-e5de-4d7a-8ac3-de11a4632542",
-        "ca1392cd-d81e-4e00-b106-55fcba62bc84",
+        "6d5506b2-7361-4c58-8f1b-dfe1e196885a",
         "467f7ad0-e397-45fe-be22-a6e8e8afe9fa",
         "897b3ec3-63f8-42c0-83b3-a3a9a1b90b7c",
-        "be9060ab-1a76-452f-b805-1c71d9af4fb7", // first
-        "01bbc3bd-7e79-4dc0-817c-2c260da43c20",
-        "f0c45dc9-cc56-4955-a406-7527004a1373",
-        "4c42426a-1396-49e2-8b46-2381a2ae5d7b",
+        "55965522-e075-4ef3-8afc-195dacbf267b", // first
+        "bcd5dc1e-a97f-4f76-aa93-511c997ff2f0",
+        "7490cf45-09a0-427d-abb7-568d98edf344",
+        "59cf9a4a-6a4d-4297-915d-513847681f29",
     ];
 
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -121,8 +121,8 @@ export default function AddBills(props) {
                     <SlCalender color="var(--pink)" size="1.5rem" />
                 </div>
                 <div className="ps-3 text-start">
-                    <h2 className="text-md">Add Bills</h2>
-                    <p className="text-sm font-normal">
+                    <h2 className="text-md font-normal font-GillSans uppercase">Add Bills</h2>
+                    <p className="text-sm font-poppins">
                         Get those pesky bills paid with exclusive content
                     </p>
                 </div>
@@ -138,13 +138,7 @@ export default function AddBills(props) {
             size="md"
             action={close}
             classes={
-                classes
-                    ? classes
-                    : `  ${
-                          editpop
-                              ? "editpop"
-                              : "addop w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center"
-                      }`
+                classes ? classes : `  ${editpop? "editpop": "addop w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center"}`
             }
             text={text ? text : <AddItem />}
         >
@@ -154,15 +148,8 @@ export default function AddBills(props) {
                         {isEdit ? "Update Bill" : "Add A Bill"}
                     </h2>
 
-                    <div className="wishinfo border-top">
-                        <p className="text-danger mb-4">
-                            When adding items please ensure they are specific
-                            i.e Holiday Clothes or New Gym Equipment. Items that
-                            are non specific will be rejected and removed. Our
-                            AI blocks adult content but any overly suggestive
-                            images will also be rejected. Please reach out to
-                            support for further clarification.
-                        </p>
+                    <div className="wishinfo border-top p-4 max-h-[70vh] overflow-auto">
+                        
                         <form onSubmit={createBills}>
                             <ul className="ps-0">
                                 <li className="mb-4">
@@ -350,6 +337,16 @@ export default function AddBills(props) {
                                     </div>
                                 </li>
                             </ul>
+
+                            <p className="p-3 mb-4 text-sm text-yellow-800 rounded-lg bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300" role="alert">
+                                When adding items please ensure they are specific
+                                i.e Holiday Clothes or New Gym Equipment. Items that
+                                are non specific will be rejected and removed. Our
+                                AI blocks adult content but any overly suggestive
+                                images will also be rejected. Please reach out to
+                                support for further clarification.
+                            </p>
+
                             <div className="publish text-start">
                                 {isEdit ? (
                                     <LoaderButton

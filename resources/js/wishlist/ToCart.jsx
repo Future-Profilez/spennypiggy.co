@@ -62,9 +62,7 @@ export default function ToCart({
         // }
 
         setLoading(true);
-        axios
-            .get(
-                `/add-to-cart/${uuid}/${deviceID}${
+        axios.get(`/add-to-cart/${uuid}/${deviceID}${
                     sub ? `/${sub}` : "/onetime"
                 }${amount ? `/${amount}/` : ""}`
             )

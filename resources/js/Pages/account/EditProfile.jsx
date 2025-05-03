@@ -26,7 +26,7 @@ export default function EditProfile({ user, global_currency, classes, updateProf
         setCoverImage(e.cdnUrl);
         setData('cover', e);
     }
- 
+
     const [username, setUsername] = useState(user?.username);
 
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -56,10 +56,15 @@ export default function EditProfile({ user, global_currency, classes, updateProf
                 }
             },
             onError: (_err) => {
-                console.error(`errors:`);
-                console.table(_err);
+                console.table("profile update error", _err);
                 if(_err.username){
-                    errorAlert(_err.username || "Something went wrong.")
+                    errorAlert(_err.username || "Something went wrong in username.")
+                }
+                if(_err.bio){
+                    errorAlert(_err.bio || "Something went wrong in bio.")
+                }
+                if(_err.name){
+                    errorAlert(_err.name || "Something went wrong in your display name.")
                 }
             }
         });
@@ -68,7 +73,7 @@ export default function EditProfile({ user, global_currency, classes, updateProf
     const defaultCurrency = user.default_currency;
 
     return (
-        <Popup modalclass='pinkmodal editprofile full' size='md' action={close} 
+        <Popup modalclass='pinkmodal editprofile full' size='md' action={close}
             text={<> Update Profile </>}
             classes={`${classes ? classes : "button bg-pink d-table d-sm-flex m-auto m-sm-0"}`} >
             <div className='editprofileHead'>
@@ -78,7 +83,7 @@ export default function EditProfile({ user, global_currency, classes, updateProf
                 <div className='mainprofile mb-5 position-relative w-100 '>
                     <div className='profilePhotoImg cover'>
                         <img src={coverImage ? coverImage : (user?.cover_url || coverimage)} alt='img' />
-                        <UpdateAvatar type="cover" getImageUID={getCoverUID} 
+                        <UpdateAvatar type="cover" getImageUID={getCoverUID}
                         text={<> <button className='editbtn'> <img src={editicon} alt="img" /> </button> </>} />
                     </div>
                     <div className='profilePhotoImg dp'>
@@ -101,7 +106,7 @@ export default function EditProfile({ user, global_currency, classes, updateProf
                         </li>
 
                         <li><strong className='d-block text-start mb-4' >Profile URL : {window.location.href}</strong></li>
-                        
+
                         <li className="mb-3">
                             <label className="mb-1">Bio</label>
                             <textarea defaultValue={user?.bio || ''}
@@ -109,7 +114,7 @@ export default function EditProfile({ user, global_currency, classes, updateProf
                                 name="bio" className="form-input px-2 py-2 border w-full rounded-md"
                                 placeholder='Bio' />
                         </li>
-                   
+
                         {/* <li className="mb-3">
                             <label className="mb-1">Minimum surprise gift amount</label>
                             <div className='currency-wrapper position-relative' >
@@ -119,8 +124,8 @@ export default function EditProfile({ user, global_currency, classes, updateProf
                                 className="form-input px-2 py-2 border w-full rounded-md" />
                             </div>
                             <p className="mt-1">
-                                The Minimum amount is set 
-                                to {formatMultiPrice(user?.min_surprise_amount || 0,  defaultCurrency )}. 
+                                The Minimum amount is set
+                                to {formatMultiPrice(user?.min_surprise_amount || 0,  defaultCurrency )}.
                             </p>
                         </li> */}
 

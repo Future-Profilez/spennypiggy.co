@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Helpers;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -40,7 +41,7 @@ class  TipGoalsPayment extends Model
     ];
 
     protected $appends = [
-        'sender'
+        'sender',
     ];
 
     public static function boot()

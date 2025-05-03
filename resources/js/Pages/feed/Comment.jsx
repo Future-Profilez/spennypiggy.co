@@ -30,12 +30,12 @@ export default function Comment({c, update, updateComments}) {
                   </div>
                 </div>
                 <div className="flex justify-start items-center text-xs w-full">
-                  <div className="font-semibold text-gray-700 px-2 flex items-center justify-center space-x-1">
+                  <div className="font-semibold text-gray-700 pe-2 flex items-center justify-center space-x-1">
                     <button onClick={()=>sethandleReply(true)} href="#" className="hover:underline"> 
                       <p className='text-small' >Reply</p>
                     </button>
                     <p className="self-center mx-2">.</p>
-                    <a href="#" className="hover:underline">
+                    <a className="hover:underline pointer-none">
                       <p className='text-small' ><TimeFormat dateString={item.created_at || ''} /></p>
                     </a>
                   </div>

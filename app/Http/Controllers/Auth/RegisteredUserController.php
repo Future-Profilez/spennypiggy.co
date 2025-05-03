@@ -19,9 +19,15 @@ use Inertia\Response;
 use Ramsey\Uuid\Uuid;
 use App\Jobs\WelcomeUser;
 use App\Models\AllowedDomain;
+use App\Models\GifterAddress;
+use App\Models\GifterCardVerification;
 use App\Models\PromoCode;
 use App\Models\Referal;
+use App\Models\UserVerificationStatus;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
+use Stripe\StripeClient;
 
 class RegisteredUserController extends Controller
 {
@@ -63,19 +69,33 @@ class RegisteredUserController extends Controller
             'role' => ['required'],
         ]);
 
-        $exist = User::where('email',$request->email)->whereNull('deleted_at')->first();
-
-        if(!empty($exist)){
-            return redirect()->back()->with('error',"This email already has been taken.");
+        if ($request->role == 0) {
+            $request->validate([
+                'country' => 'required|string',
+                'street_address' => 'required|string|min:20',
+                'city' => 'required|string',
+                'state' => 'required|string',
+                'postal_code' => 'required|integer|digits_between:4,8',
+            ]);
         }
 
-        $email = strtolower($request->email);
-        $domain = explode('@', $email);
+        $ip_address = $request->ip();
+        $checkIpExist = User::where('ip_address', $ip_address)->exists();
+        if ($checkIpExist) {
+            return redirect()->back()->with('error', "You can not create multiple account with same IP address. You have already registered with this IP address.");
+        }
 
+        $exist = User::where('email', $request->email)->whereNull('deleted_at')->first();
+        if (!empty($exist)) {
+            return redirect()->back()->with('error', "This email already has been taken.");
+        }
+
+        $email = $request->email;
+        $domain = explode('@', $email);
         $secure = AllowedDomain::all()->pluck('name')->toArray();
 
         if (!in_array($domain[1], $secure)) {
-            return redirect()->back()->with('error',"Invalid Email Id.");
+            return redirect()->back()->with('error', "Invalid Email Id.");
         }
 
         $checkdata = Helpers::checkBlockData($request);
@@ -83,6 +103,20 @@ class RegisteredUserController extends Controller
             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         } else {
+
+            $randomBio = null;
+            if ($request->role == 1) {
+                $defaultBios = [
+                    "I haven’t written my bio yet, but you can still spoil me 😘",
+                    "No bio. Just vibes… and a wishlist 💅",
+                    "Still working on my About Me. In the meantime… gifts welcome 🛍️",
+                    "Bio coming soon. But like, feel free to click that wishlist link.",
+                    "New here. Wishlist isn’t 💸"
+                ];
+
+                $randomBio = $defaultBios[array_rand($defaultBios)];
+            }
+
             $user = User::create([
                 'name' => $request->name,
                 'email' => strtolower($request->email),
@@ -91,10 +125,43 @@ class RegisteredUserController extends Controller
                 'password' => Hash::make($request->password),
                 'role' => $request->role ?? 0,
                 'creator_category' => $request->creator_category ?? null,
+                'ip_address' => $ip_address,
+                'country' => $request->country_code ?? null,
+                'bio' => $randomBio, // Here goes the random bio
             ]);
             $user->refresh();
 
-            if(!empty($request->promo)){
+            if ($request->role == 1) {
+                UserVerificationStatus::create(
+                    ['user_id' => $user->id, 'role' => $request->role, 'bio_status' => 1, 'address_status' => 0]
+                );
+            }
+
+
+            if ($request->role == 0) {
+                UserVerificationStatus::create(
+                    [
+                        'user_id' => $user->id,
+                        'role' => $request->role,
+                        'bio_status' => 1,
+                        'social_status' => 1,
+                        'address_status' => 0
+                    ]
+                );
+
+                GifterAddress::create([
+                    'user_id' => $user->id,
+                    'country' => $request->country,
+                    'street_address' => $request->street_address,
+                    'city' => $request->city,
+                    'state' => $request->state,
+                    'postal_code' => $request->postal_code,
+                ]);
+            }
+
+            // UserVerificationStatus::where('user_id', $user->id)->where('role', $user->role)->update(['address_status' => 0]);
+
+            if (!empty($request->promo)) {
                 $promocode = PromoCode::whereCode($request->promo)->first();
                 $user->promo_code_id = $promocode->id;
                 $user->save();
@@ -122,7 +189,6 @@ class RegisteredUserController extends Controller
             }
         }
     }
-
 
     // public function verification()
     // {
@@ -170,4 +236,359 @@ class RegisteredUserController extends Controller
             ]);
         }
     }
+
+    /**
+     * Check if email available
+     *
+     * @param Request $request
+     * @return Response
+     */
+    public function gifterCardVerification(Request $request)
+    {
+        $currency = strtoupper($request->cookie("currency", "GBP"));
+        $user = Auth::user();
+        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+
+        // Ensure Stripe customer
+        if (empty($user->stripe_id)) {
+            $customer = $stripe->customers->create([
+                'email' => $user->email,
+                'name' => $user->name,
+            ]);
+            $user->stripe_id = $customer->id;
+            $user->save();
+        }
+
+        // Step 1: Check existing verification
+        $existingSuccess = GifterCardVerification::where('user_id', $user->id)->where('status', 'success')->first();
+        GifterCardVerification::where('user_id', $user->id)->where('status', 'pending')->delete();
+
+        if ($existingSuccess) {
+            // Already verified
+            $user->update(['profile_status_lock' => 1]);
+            return response()->json([
+                'status' => false,
+                'message' => 'You have already completed verification.',
+            ]);
+        }
+
+        // Static base amount in GBP
+        $baseAmount = 1.00;
+
+        // Add tax (20%) and VAT (20%)
+        $tax = $baseAmount * 0.20;
+        $subtotal = $baseAmount + $tax;
+        $vat = $subtotal * 0.20;
+        $finalAmount = $subtotal + $vat;
+
+        // Convert final amount to selected currency
+        $convertedAmount = Helpers::priceFormat('gbp', $finalAmount, $currency);
+        $finalUnitAmount = intval(round($convertedAmount * 100)); // in smallest currency unit
+
+        // Create Stripe Checkout session
+        $session = $stripe->checkout->sessions->create([
+            'success_url' => route('card.verification.success', [$user->uuid]),
+            'cancel_url' => route('card.verification.failed', [$user->uuid]),
+            'mode' => 'payment',
+            'customer' => $user->stripe_id,
+            'line_items' => [[
+                'price_data' => [
+                    'currency' => $currency,
+                    'product' => env('GIFTER_VERIFY_PRODUCT_ID'),
+                    'unit_amount' => $finalUnitAmount,
+                ],
+                'quantity' => 1,
+            ]],
+            'payment_method_types' => ['card'],
+        ]);
+
+        // Create/update verification record
+        $verification = GifterCardVerification::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'amount' => $baseAmount,
+                'currency' => $currency,
+                'status' => 'pending',
+                'payment_details' => null,
+                'payment_method' => 'Card',
+            ]
+        );
+
+        return response()->json([
+            'status' => true,
+            'checkout_url' => $session->url,
+            'verification' => $verification,
+        ]);
+    }
+
+    // public function gifterCardVerification(Request $request)
+    // {
+    //     $currency = strtolower($request->cookie("currency", "GBP"));
+    //     $user = Auth::user();
+    //     $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+
+    //     // Step 1: Ensure Stripe customer
+    //     if (empty($user->stripe_id)) {
+    //         $stripeCustomer = $stripe->customers->create([
+    //             'email' => $user->email,
+    //             'name' => $user->name,
+    //         ]);
+    //         $user->stripe_id = $stripeCustomer->id;
+    //         $user->save();
+    //     }
+
+    //     // Step 2: Get base price (from fixed product in Stripe)
+    //     $productId = env('GIFTER_VERIFY_PRODUCT_ID');
+
+    //     $priceList = $stripe->prices->all([
+    //         'product' => $productId,
+    //         'active' => true,
+    //         'limit' => 10,
+    //     ]);
+
+    //     Log::info("Price List: ");
+    //     Log::info(json_encode($priceList, true));
+
+    //     $basePrice = collect($priceList->data)->firstWhere('currency', 'gbp');
+
+    //     if (!$basePrice) {
+    //         return response()->json(['status' => false, 'message' => 'Base GBP price not found.'], 404);
+    //     }
+
+    //     $baseAmount = $basePrice->unit_amount / 100; // Convert to major unit (e.g. 1 GBP)
+
+    //     // Step 3: Add tax (20%) and VAT (20% on subtotal)
+    //     $tax = $baseAmount * 0.20;
+    //     $subtotal = $baseAmount + $tax;
+    //     $vat = $subtotal * 0.20;
+    //     $finalAmount = $subtotal + $vat;
+
+    //     Log::info("Base Amount: $baseAmount, Tax: $tax, Subtotal: $subtotal, VAT: $vat, Final Amount: $finalAmount");
+
+    //     // Step 4: Convert to selected currency
+    //     $convertedAmount = Helpers::priceFormat('gbp', $finalAmount, $currency);
+    //     $finalUnitAmount = intval(round($convertedAmount * 100)); // in smallest unit
+
+    //     // Step 5: Create Checkout Session with inline amount (not linked to Stripe price object)
+    //     $session = $stripe->checkout->sessions->create([
+    //         'success_url' => route('card.verification.success', [$user->uuid]),
+    //         'cancel_url' => route('card.verification.failed', [$user->uuid]),
+    //         'mode' => 'payment',
+    //         'customer' => $user->stripe_id,
+    //         'line_items' => [[
+    //             'price_data' => [
+    //                 'currency' => $currency,
+    //                 'product' => $productId,
+    //                 'unit_amount' => $finalUnitAmount,
+    //             ],
+    //             'quantity' => 1,
+    //         ]],
+    //         'payment_method_types' => ['card'],
+    //     ]);
+
+    //     // Step 6: Update or create verification record
+    //     $verification = GifterCardVerification::updateOrCreate(
+    //         ['user_id' => $user->id],
+    //         [
+    //             'amount' => $baseAmount,
+    //             'currency' => $currency,
+    //             'status' => 'pending',
+    //             'payment_details' => null,
+    //             'payment_method' => 'Card',
+    //         ]
+    //     );
+
+    //     // Step 7: Lock profile
+    //     $user->update(['profile_status_lock' => 1]);
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'checkout_url' => $session->url,
+    //         'verification' => $verification,
+    //     ]);
+    // }
+
+    /**
+     * Handle successful card verification.
+     */
+    // This method is called when the payment is successful
+    public function cardVerificationSuccess($uuid)
+    {
+        $user = User::where('uuid', $uuid)->first();
+
+        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+
+        // Optionally, retrieve the latest checkout session for this customer
+        $sessions = $stripe->checkout->sessions->all([
+            'customer' => $user->stripe_id,
+            'limit' => 1,
+        ]);
+        Log::info(json_encode($sessions, true));
+
+        $session = $sessions->data[0] ?? null;
+
+        if (!$session) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Stripe session not found.',
+            ]);
+        }
+
+        // $billingDetails = $charge->billing_details;
+        $address = $session->customer_details->address ?? null;
+
+        $gifterAddress = GifterAddress::where('user_id', $user->id)->whereNotNull('stripe_address')->exists();
+
+        if ($address && !$gifterAddress) {
+            $encryptedAddress = [
+                'line1' => $address->line1 ?? null,
+                'line2' => $address->line2 ?? null,
+                'city' => $address->city ?? null,
+                'state' => $address->state ?? null,
+                'postal_code' => $address->postal_code ?? null,
+                'country' => $address->country ?? null,
+            ];
+
+            $encryptedJson = json_encode($encryptedAddress);
+            // $encryptedJson = Crypt::encryptString(json_encode($encryptedAddress));
+
+            $gifterAddress = GifterAddress::updateOrCreate(
+                ['user_id' => $user->id],  // Match user by their ID
+                ['stripe_address' => $encryptedJson]  // Update the stripe_address column
+            );
+        }
+
+        // Find the latest verification record
+        $verification = GifterCardVerification::where('user_id', $user->id)
+            ->latest()
+            ->first();
+
+        if ($verification) {
+            $verification->status = 'success';
+            $verification->payment_details = json_encode([
+                'payment_intent' => $session,
+            ]);
+            $verification->save();
+        }
+
+        // pending profile
+        $user->update(['profile_status_lock' => 1]);
+
+        return redirect()->route('user.show', ['username' => $user->username])->with('success', "Payment Card verification successfully.");
+    }
+
+    /**
+     * Handle card verification failure or cancellation.
+     */
+    public function cardVerificationFailed($uuid)
+    {
+        $user = User::where('uuid', $uuid)->first();
+
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found.',
+            ]);
+        }
+
+        // Update the latest verification record for the user
+        $verification = GifterCardVerification::where('user_id', $user->id)
+            ->latest()
+            ->first();
+
+        if ($verification) {
+            $verification->status = 'failed';
+            $verification->payment_details = json_encode([
+                'reason' => 'User canceled the Stripe Checkout session',
+            ]);
+            $verification->save();
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Card verification failed or was canceled by the user.',
+        ]);
+    }
+
+    // public function gifterCardVerification(Request $request)
+    // {
+    //     $request->validate([
+    //         'amount' => 'required|numeric',
+    //     ]);
+
+    //     $user = Auth::user();
+
+    //     if (empty($user->stripe_id)) {
+    //         $stripeCustomer = \Stripe\Customer::create([
+    //             'email' => $user->email,
+    //             'name' => $user->name ?? null,
+    //         ]);
+
+    //         $user->stripe_id = $stripeCustomer->id;
+    //         $user->save();
+    //     }
+
+    //     $convertCurrency = Helpers::priceFormat('gbp', $request->amount, $user->default_currency);
+    //     $price = round($convertCurrency, 2, PHP_ROUND_HALF_UP);
+
+    //     $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+
+    //     $lineItems[] = [
+    //         'quantity' => 1,
+    //         'price_data' => [
+    //             'currency' => $user->default_currency,
+    //             'unit_amount' => $price * 100,
+    //             'product_data' => [
+    //                 'name' => 'Gifter Card Verification',
+    //             ],
+    //         ],
+    //     ];
+
+    //     // $successUrl = route('card.verification.success', [
+    //     //     'uuid' => $ryeProductPayment->uuid,
+    //     //     'orderUuid' => $orderDetails->uuid
+    //     // ]);
+
+    //     $sessionCreate = $stripe->checkout->sessions->create([
+    //         'success_url' => route('card.verification.success', [$user->uuid]), // Include correct parameters
+    //         'cancel_url' => route('card.verification.failed', [$user->uuid]),
+    //         'line_items' => $lineItems,
+    //         'mode' => 'payment',
+    //         'payment_method_types' => ['card'],
+    //         'payment_intent_data' => [
+    //             'transfer_data' => [
+    //                 'destination' => $orderDetails->creator->account_id,
+    //                 'amount' => $totalAmount,
+    //             ],
+    //             'on_behalf_of' => $orderDetails->creator->account_id,
+    //             'metadata' => [
+    //                 'order_id' => $orderDetails->id,
+    //                 'user_id' => $orderDetails->user->id,
+    //                 'creator_id' => $orderDetails->creator->id,
+    //                 'payment_type' => 'product_purchase'
+    //             ],
+    //         ],
+    //         'customer_email' => $orderDetails->user->email,
+    //         'metadata' => [
+    //             'order_id' => $orderDetails->id,
+    //             'user_email' => $orderDetails->user->email,
+    //             'payment_source' => 'website',
+    //         ],
+    //     ]);
+
+    //     $verification = GifterCardVerification::create([
+    //         'user_id' => $user->id,
+    //         'amount' => $request->amount,
+    //         'currency' => $request->currency,
+    //         'status' => $request->status,
+    //         'payment_details' => json_encode($request->payment_details),
+    //         'payment_method' => $request->payment_method,
+    //     ]);
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'Gifter card verification created successfully.',
+    //         'data' => $verification,
+    //     ]);
+    // }
 }

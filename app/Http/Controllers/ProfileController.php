@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Helpers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Jobs\CheckProfilePhotosAdult;
+use App\Jobs\SendBioSocialUpdateEmail;
+use App\Jobs\SendBioSocialUpdateMail;
 use App\Jobs\SendIntroMailAdmin;
 use App\Models\BillPayment;
 use App\Models\Bills;
+use App\Models\GifterCardVerification;
 use App\Models\Logs;
 use App\Models\Membership;
 use App\Models\MembershipPayment;
@@ -22,6 +25,7 @@ use App\Models\ShopCategory;
 use App\Models\ShopPayment;
 use App\Models\ShopShippingInfo;
 use App\Models\ShopVarients;
+use App\Models\SocialLinks;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\TipGoal;
@@ -32,6 +36,7 @@ use App\Models\UserCategory;
 use App\Models\UserDocuments;
 use App\Models\UserIntro;
 use App\Models\UserShopCategories;
+use App\Models\UserVerificationStatus;
 use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
@@ -42,6 +47,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -58,7 +64,8 @@ class ProfileController extends Controller
 
     protected $uploadcareApi;
 
-    public function __construct() {
+    public function __construct()
+    {
         $authUrlConfig = new AuthUrlConfig('ucarecdn.com', new AkamaiToken(env('UPLOADCARE_SECRET_KEY'), 300));
         $config = Configuration::create(env('UPLOADCARE_PUBLIC_KEY'), env('UPLOADCARE_SECRET_KEY'))->setAuthUrlConfig($authUrlConfig);
         $this->uploadcareApi = new Api($config);
@@ -98,7 +105,6 @@ class ProfileController extends Controller
      */
     public function updateProfile(Request $request)
     {
-
         $user = User::where('id', Auth::id())->where(function ($q) {
             $q->whereNot('country', 'GB')->orWhereNull('country');
         })->first();
@@ -116,23 +122,53 @@ class ProfileController extends Controller
             $request->validate([
                 'name' => ['string', 'max:255'],
                 'username' => ['string', 'lowercase', 'max:20', Rule::unique('users')->ignore($user->id)],
-                'bio' => ['sometimes', 'max:255'],
-                'tags' => ['sometimes', 'max:255'],
+                'bio' => ['nullable', 'string', 'max:255'], // updated
+                'tags' => ['nullable', 'string', 'max:255'], // same fix
             ]);
+
+            // $request->validate([
+            //     'name' => ['string', 'max:255'],
+            //     'username' => ['string', 'lowercase', 'max:20', Rule::unique('users')->ignore($user->id)],
+            //     'bio' => ['sometimes', 'max:255'],
+            //     'tags' => ['sometimes', 'max:255'],
+            // ]);
             $avatar = $request->avatar;
             $cover = $request->cover;
 
             $user->name = $request->name;
             $user->username = $request->username;
-            $user->bio = $request->bio;
+            if ($request->bio) {
+
+                UserVerificationStatus::UpdateOrCreate([
+                    'user_id' => $user->id,
+                    'role' => $user->role,
+                ], [
+                    'role' => $user->role,
+                    'bio_status' => !empty($request->bio) ? 0 : null,
+                ]);
+
+                $updatedFields = [
+                    'bio' => $request->bio !== $user->bio,
+                    'social' => $request->social_handle !== $user->social_handle,
+                ];
+                Log::info($request->bio);
+                Log::info($user->bio);
+
+                Log::info('Updated fields:', $updatedFields);
+
+                if ($updatedFields['bio'] || $updatedFields['social']) {
+                    dispatch(new SendBioSocialUpdateEmail($user, $updatedFields));
+                }
+                $user->bio = $request->bio;
+            }
             $user->min_surprise_amount = $request->min_surprise_amount ?? 0;
 
-            if(!empty($avatar)){
+            if (!empty($avatar)) {
                 $user->avatar = $avatar['uuid'] ?? null;
                 $user->avatar_approved = 0;
                 $user->avatar_cdn_modifier = $avatar['cdnUrlModifiers'] ?? null;
             }
-            if(!empty($cover)){
+            if (!empty($cover)) {
                 $user->cover = $cover['uuid'] ?? null;
                 $user->cover_approved = 0;
                 $user->cover_cdn_modifier = $cover['cdnUrlModifiers'] ?? null;
@@ -141,14 +177,17 @@ class ProfileController extends Controller
             $user->save();
             $user->refresh();
 
-            if(!empty($request->bio)){
-                $logs = Logs::where('edited_about_me_id',$user->id)->where('status','pending')->first();
-                if(!empty($logs)){
+            if (!empty($request->bio)) {
+                $logs = Logs::where('edited_about_me_id', $user->id)->where('status', 'pending')->first();
+                if (!empty($logs)) {
                     $logs->status = 'updated';
                     $logs->save();
+
+                    $user->edit_bio_reason = '';
+                    $user->save();
+                    $user->refresh();
                 }
             }
-
             return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
         }
     }
@@ -165,150 +204,152 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
-        $bills = BillPayment::where('user_id',$user->id)->where('status','paid')->get();
+        $bills = BillPayment::where('user_id', $user->id)->where('status', 'paid')->get();
 
-        if(!empty($bills)){
-            foreach($bills as $bill){
+        if (!empty($bills)) {
+            foreach ($bills as $bill) {
                 StripeControl::cancelSubscription($bill->stripe_id);
             }
         }
 
-        $members = MembershipPayment::where('user_id',$user->id)->where('status','paid')->get();
+        $members = MembershipPayment::where('user_id', $user->id)->where('status', 'paid')->get();
 
-        if(!empty($members)){
-            foreach($members as $member){
+        if (!empty($members)) {
+            foreach ($members as $member) {
                 StripeControl::cancelSubscription($member->stripe_id);
             }
         }
 
-        $wishSubs = WishItemSubscription::where('user_id',$user->id)->where('status','paid')->get();
+        $wishSubs = WishItemSubscription::where('user_id', $user->id)->where('status', 'paid')->get();
 
-        if(!empty($wishSubs)){
-            foreach($wishSubs as $sub){
+        if (!empty($wishSubs)) {
+            foreach ($wishSubs as $sub) {
                 StripeControl::cancelSubscription($sub->stripe_id);
             }
         }
 
-        $monthlyCharges = MonthlyCharge::where('user_id',$user->id)->where('status','paid')->get();
+        $monthlyCharges = MonthlyCharge::where('user_id', $user->id)->where('status', 'paid')->get();
 
-        if(!empty($monthlyCharges)){
-            foreach($monthlyCharges as $charge){
+        if (!empty($monthlyCharges)) {
+            foreach ($monthlyCharges as $charge) {
                 StripeControl::cancelSubscription($charge->stripe_id);
             }
         }
 
-        BillPayment::whereHas('bill',function($q)use($user){
-            $q->where('user_id',$user->id);
-        })->orWhere('user_id',$user->id)->delete();
+        BillPayment::whereHas('bill', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->orWhere('user_id', $user->id)->delete();
 
-        Bills::where('user_id',$user->id)->delete();
+        Bills::where('user_id', $user->id)->delete();
 
-        Logs::whereHas('removeWish',function($q)use($user){
-            $q->where('user_id',$user->id);
-        })->orWhereHas('removePost',function($q)use($user){
-            $q->where('user_id',$user->id);
-        })->orWhereHas('removeShop',function($q)use($user){
-            $q->where('user_id',$user->id);
-        })->orWhereHas('editedShop',function($q)use($user){
-            $q->where('user_id',$user->id);
-        })->orWhereHas('editedPost',function($q)use($user){
-            $q->where('user_id',$user->id);
-        })->orWhereHas('editedAboutMe',function($q)use($user){
-            $q->where('id',$user->id);
-        })->orWhereHas('editedUserCategory',function($q)use($user){
-            $q->where('user_id',$user->id);
-        })->orWhereHas('removeBill',function($q)use($user){
-            $q->where('user_id',$user->id);
-        })->orWhereHas('editedBill',function($q)use($user){
-            $q->where('user_id',$user->id);
-        })->orWhereHas('removeMembership',function($q)use($user){
-            $q->where('user_id',$user->id);
-        })->orWhereHas('editedMembership',function($q)use($user){
-            $q->where('user_id',$user->id);
-        })->orWhereHas('editedWish',function($q)use($user){
-            $q->where('user_id',$user->id);
-        })->orWhereHas('suspendedUser',function($q)use($user){
-            $q->where('id',$user->id);
-        })->orWhereHas('deletedUser',function($q)use($user){
-            $q->where('id',$user->id);
+        Logs::whereHas('removeWish', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->orWhereHas('removePost', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->orWhereHas('removeShop', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->orWhereHas('editedShop', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->orWhereHas('editedPost', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->orWhereHas('editedAboutMe', function ($q) use ($user) {
+            $q->where('id', $user->id);
+        })
+            // ->orWhereHas('editedUserCategory', function ($q) use ($user) {
+            //     $q->where('user_id', $user->id);
+            // })
+            ->orWhereHas('removeBill', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->orWhereHas('editedBill', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->orWhereHas('removeMembership', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->orWhereHas('editedMembership', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->orWhereHas('editedWish', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->orWhereHas('suspendedUser', function ($q) use ($user) {
+                $q->where('id', $user->id);
+            })->orWhereHas('deletedUser', function ($q) use ($user) {
+                $q->where('id', $user->id);
+            })->delete();
+
+        MembershipPayment::where('user_id', $user->id)->orWhereHas('membership', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
         })->delete();
 
-        MembershipPayment::where('user_id',$user->id)->orWhereHas('membership',function($q)use($user){
-            $q->where('user_id',$user->id);
-        })->delete();
+        Membership::where('user_id', $user->id)->delete();
 
-        Membership::where('user_id',$user->id)->delete();
+        MonthlyCharge::where('user_id', $user->id)->delete();
 
-        MonthlyCharge::where('user_id',$user->id)->delete();
+        Notification::where('user_id', $user->id)->orWhere('notifiable_id', $user->id)->delete();
 
-        Notification::where('user_id',$user->id)->orWhere('notifiable_id',$user->id)->delete();
+        PostLike::whereHas('post', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->orWhere('user_id', $user->id)->delete();
 
-        PostLike::whereHas('post',function($q)use($user){
-            $q->where('user_id',$user->id);
-        })->orWhere('user_id',$user->id)->delete();
-
-        PostCommentReplies::whereHas('post_comment',function($q)use($user){
-            $q->where('user_id',$user->id)->whereHas('post',function($que)use($user){
-                $que->where('user_id',$user->id);
+        PostCommentReplies::whereHas('post_comment', function ($q) use ($user) {
+            $q->where('user_id', $user->id)->whereHas('post', function ($que) use ($user) {
+                $que->where('user_id', $user->id);
             });
-        })->orWhere('user_id',$user->id)->delete();
+        })->orWhere('user_id', $user->id)->delete();
 
-        PostComment::whereHas('post',function($que)use($user){
-            $que->where('user_id',$user->id);
-        })->orWhere('user_id',$user->id)->delete();
+        PostComment::whereHas('post', function ($que) use ($user) {
+            $que->where('user_id', $user->id);
+        })->orWhere('user_id', $user->id)->delete();
 
-        Post::where('user_id',$user->id)->delete();
+        Post::where('user_id', $user->id)->delete();
 
-        ShopVarients::whereHas('shop',function($q)use($user){
-            $q->where('user_id',$user->id);
+        ShopVarients::whereHas('shop', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
         })->delete();
 
-        ShopShippingInfo::whereHas('shop',function($q)use($user){
-            $q->where('user_id',$user->id);
+        ShopShippingInfo::whereHas('shop', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
         })->delete();
 
-        ShopPayment::where('user_id',$user->id)->orWhereHas('shop',function($q)use($user){
-            $q->where('user_id',$user->id);
+        ShopPayment::where('user_id', $user->id)->orWhereHas('shop', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
         })->delete();
 
-        ShopCategory::whereHas('shop',function($q)use($user){
-            $q->where('user_id',$user->id);
+        ShopCategory::whereHas('shop', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
         })->delete();
 
-        Shop::where('user_id',$user->id)->delete();
+        Shop::where('user_id', $user->id)->delete();
 
-        StripePaymentItems::whereHas('payment',function($q)use($user){
-            $q->where('user_id',$user->id)->orWhere('owner_id',$user->id);
+        StripePaymentItems::whereHas('payment', function ($q) use ($user) {
+            $q->where('user_id', $user->id)->orWhere('owner_id', $user->id);
         })->delete();
 
-        StripePaymentDetail::where('user_id',$user->id)->orWhere('owner_id',$user->id)->delete();
+        StripePaymentDetail::where('user_id', $user->id)->orWhere('owner_id', $user->id)->delete();
 
-        TipGoal::where('user_id',$user->id)->delete();
+        TipGoal::where('user_id', $user->id)->delete();
 
-        TipGoalsPayment::where('user_id',$user->id)->orWhere('creator_id',$user->id)->delete();
+        TipGoalsPayment::where('user_id', $user->id)->orWhere('creator_id', $user->id)->delete();
 
-        UserCart::where('user_id',$user->id)->orWhere('owner_id',$user->id)->delete();
+        UserCart::where('user_id', $user->id)->orWhere('owner_id', $user->id)->delete();
 
-        UserCategory::where('user_id',$user->id)->delete();
+        UserCategory::where('user_id', $user->id)->delete();
 
         // UserDocuments::where('user_id',$user->id)->delete();
 
-        UserIntro::where('user_id',$user->id)->delete();
+        UserIntro::where('user_id', $user->id)->delete();
 
-        UserShopCategories::where('user_id',$user->id)->delete();
+        UserShopCategories::where('user_id', $user->id)->delete();
 
-        WishCategory::whereHas('wish',function($q)use($user){
-            $q->where('user_id',$user->id);
+        WishCategory::whereHas('wish', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
         })->delete();
 
-        WishItemSubscription::where('user_id',$user->id)->orWhereHas('wish_item',function($q)use($user){
-            $q->where('user_id',$user->id);
+        WishItemSubscription::where('user_id', $user->id)->orWhereHas('wish_item', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
         })->delete();
 
-        WishItem::where('user_id',$user->id)->delete();
+        WishItem::where('user_id', $user->id)->delete();
 
 
-        if(!empty($user->account_id)){
+        if (!empty($user->account_id)) {
             StripeControl::deleteAccount($user->account_id);
             $user->account_id = NULL;
             $user->stripe_details_submitted = 0;
@@ -325,18 +366,16 @@ class ProfileController extends Controller
         return Redirect::to('/');
     }
 
-
     /**
      * On or off the notification mails.
      */
     public function notificationSwitch()
     {
-        $user = User::where('id',Auth::id())->first();
-        if($user->notification_send == 0){
+        $user = User::where('id', Auth::id())->first();
+        if ($user->notification_send == 0) {
             $user->notification_send == 1;
             $status = 'Enabled';
-        }
-        else{
+        } else {
             $user->notification_send == 0;
             $status = 'Disabled';
         }
@@ -350,8 +389,9 @@ class ProfileController extends Controller
     }
 
 
-    public function checkAdultContent($uuid){
-        $rest_words = ['Adult', '18+', 'Pornographic', 'xxx', 'nsfw','NSFW','XXX', 'Blood', 'Brutality', 'Explicit', 'Mature', 'Weapons', 'Aggression', 'Combat', 'Sexual', 'Porn', 'Fucking','Graphic'];
+    public function checkAdultContent($uuid)
+    {
+        $rest_words = ['Adult', '18+', 'Pornographic', 'xxx', 'nsfw', 'NSFW', 'XXX', 'Blood', 'Brutality', 'Explicit', 'Mature', 'Weapons', 'Aggression', 'Combat', 'Sexual', 'Porn', 'Fucking', 'Graphic'];
 
 
         //For avatar adult check.
@@ -367,7 +407,7 @@ class ProfileController extends Controller
         $response = Http::withHeaders([
             'Accept' => 'application/vnd.uploadcare-v0.7+json',
             'Authorization' => 'Uploadcare.Simple ' . env('UPLOADCARE_PUBLIC_KEY') . ':' . env('UPLOADCARE_SECRET_KEY'),
-        ])->get("https://api.uploadcare.com/files/". $uuid ."/?include=appdata");
+        ])->get("https://api.uploadcare.com/files/" . $uuid . "/?include=appdata");
 
         $data = $response->json();
         $tags = [];
@@ -375,7 +415,7 @@ class ProfileController extends Controller
             $tags = $data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'];
         }
 
-        if(empty($tags)){
+        if (empty($tags)) {
             return response()->json([
                 'status' => true,
                 'msg' => 'Success.'
@@ -407,7 +447,8 @@ class ProfileController extends Controller
      *
      * @return mixed
      */
-    public function saveIntroVideo(Request $request){
+    public function saveIntroVideo(Request $request)
+    {
         $request->validate([
             'media' => [
                 'required',
@@ -416,18 +457,16 @@ class ProfileController extends Controller
 
         $media = $request->media;
 
-        $intro = UserIntro::where('user_id',Auth::id())->first();
+        $intro = UserIntro::where('user_id', Auth::id())->first();
 
-        if(empty($intro)){
+        if (empty($intro)) {
             $intro = UserIntro::create([
                 'uuid' => $media['uuid'],
                 'user_id' => Auth::id(),
                 'height' => $media['videoInfo']['video']['height'],
                 'width' => $media['videoInfo']['video']['width'],
             ]);
-        }
-        else
-        {
+        } else {
             $intro->uuid = $media['uuid'];
             $intro->height = $media['videoInfo']['video']['height'];
             $intro->width = $media['videoInfo']['video']['width'];
@@ -453,7 +492,8 @@ class ProfileController extends Controller
      *
      * @return JsonResponse
      */
-    public function getIntroVideo(){
+    public function getIntroVideo()
+    {
         $intro = UserIntro::firstWhere(Auth::id());
 
         return response()->json([
@@ -469,8 +509,9 @@ class ProfileController extends Controller
      * @param $uuid uuid of the intro video
      * @return JsonResponse
      */
-    public function getIntroById($id){
-        if(Auth::id() == $id){
+    public function getIntroById($id)
+    {
+        if (Auth::id() == $id) {
             $intro = UserIntro::where('user_id', $id)->first();
             return response()->json([
                 'status' => true,
@@ -492,7 +533,8 @@ class ProfileController extends Controller
      *
      * @return JsonResponse
      */
-    public function removeIntro(){
+    public function removeIntro()
+    {
         $intro = UserIntro::whereUserId(Auth::id())->first();
         $intro->delete();
 
@@ -503,7 +545,8 @@ class ProfileController extends Controller
     }
 
 
-    public function gifterWishitems($username){
+    public function gifterWishitems($username)
+    {
         $user = User::where('username', $username)->first();
 
         $wishes = StripePaymentItems::whereHas('payment', function ($query) use ($user) {
@@ -529,7 +572,7 @@ class ProfileController extends Controller
             ];
 
 
-            if(!empty($value->wish)){
+            if (!empty($value->wish)) {
                 $trackData[$key]['wish'] = [
                     'wishname' => $value->wish->wishname,
                     'subscription' => $value->wish->subscription,
@@ -560,11 +603,11 @@ class ProfileController extends Controller
             "total" => $wishes->total() ?? null,
             "per_page" => $wishes->perPage() ?? null,
         ]);
-
     }
 
 
-    public function gifterSubs($username){
+    public function gifterSubs($username)
+    {
         $user = User::where('username', $username)->first();
 
         $user_subs = WishItemSubscription::where('user_id', $user->id)->with(['wish_item', 'wish_item.user'])->paginate(30);
@@ -588,7 +631,7 @@ class ProfileController extends Controller
             ];
 
 
-            if(!empty($value->wish_item)){
+            if (!empty($value->wish_item)) {
                 $trackData[$key]['wish'] = [
                     'wishname' => $value->wish_item->wishname,
                     'subscription' => $value->wish_item->subscription,
@@ -612,7 +655,8 @@ class ProfileController extends Controller
 
 
 
-    public function gifterTips($username){
+    public function gifterTips($username)
+    {
         $user = User::where('username', $username)->first();
 
         $user_tips = TipGoalsPayment::where('user_id', $user->id)->with('tipGoal')->paginate(30);
@@ -635,14 +679,13 @@ class ProfileController extends Controller
             ];
 
 
-            if(!empty($value->tipGoal)){
+            if (!empty($value->tipGoal)) {
                 $trackData[$key]['tipGoal'] = [
                     'name' => $value->tipGoal->name,
                     'description' => $value->tipGoal->description,
                     'fullfilled' => $value->tipGoal->fullfilled,
                 ];
             }
-
         }
 
         return response()->json([
@@ -656,7 +699,8 @@ class ProfileController extends Controller
     }
 
 
-    public function gifterMemberships($username){
+    public function gifterMemberships($username)
+    {
         $user = User::where('username', $username)->first();
 
         $user_member = MembershipPayment::where('user_id', $user->id)->with(['membership', 'membership.user'])->paginate(30);
@@ -679,14 +723,13 @@ class ProfileController extends Controller
             ];
 
 
-            if(!empty($value->membership)){
+            if (!empty($value->membership)) {
                 $trackData[$key]['membership'] = [
                     'level' => $value->membership->level,
                     'perma_link' => $value->membership->perma_link,
                     'rewards' => $value->membership->rewards,
                 ];
             }
-
         }
 
         return response()->json([
@@ -700,7 +743,8 @@ class ProfileController extends Controller
     }
 
 
-    public function gifterThanksMessages($username){
+    public function gifterThanksMessages($username)
+    {
         $user = User::where('username', $username)->first();
 
         $wishes = StripePaymentItems::whereHas('payment', function ($query) use ($user) {
@@ -725,7 +769,7 @@ class ProfileController extends Controller
             ];
 
 
-            if(!empty($value->wish)){
+            if (!empty($value->wish)) {
                 $trackData[$key]['wish'] = [
                     'wishname' => $value->wish->wishname,
                     'subscription' => $value->wish->subscription,
@@ -745,62 +789,63 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function gifterAccessPosts($username){
+    public function gifterAccessPosts($username)
+    {
         $user = User::where('username', $username)->first();
 
         $data = [];
-        $subscription = WishItem::where('subscription',1)->whereHas('wishItemsSubscription',function($qu)use($user){
-            $qu->where('recurring_for','continue')->where(function($que){
-                $que->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now());
-            })->where(function($q) use($user){
-                $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
+        $subscription = WishItem::where('subscription', 1)->whereHas('wishItemsSubscription', function ($qu) use ($user) {
+            $qu->where('recurring_for', 'continue')->where(function ($que) {
+                $que->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now());
+            })->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
             });
         })->pluck('user_id');
 
-        $bills = Bills::whereHas('payments',function($qu)use($user){
-            $qu->where(function($que){
-                $que->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now());
-            })->where(function($q) use($user){
-                $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
+        $bills = Bills::whereHas('payments', function ($qu) use ($user) {
+            $qu->where(function ($que) {
+                $que->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now());
+            })->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
             });
         })->pluck('user_id');
 
-        $mem = Membership::whereHas('payments',function($q) use($user){
-            $q->where('recurring_type','!=','lifetime')->where(function($que){
-                $que->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now());
-            })->where(function($q) use($user){
-                $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
+        $mem = Membership::whereHas('payments', function ($q) use ($user) {
+            $q->where('recurring_type', '!=', 'lifetime')->where(function ($que) {
+                $que->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now());
+            })->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
             });
         })->pluck('user_id');
 
-        $lifetime = Membership::whereHas('payments',function($q) use($user){
-            $q->where(function($que){
-                $que->where('created_at','<=',Carbon::now())->where('upcoming_payment','>=',Carbon::now());
-            })->where(function($q) use($user){
-                $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
+        $lifetime = Membership::whereHas('payments', function ($q) use ($user) {
+            $q->where(function ($que) {
+                $que->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now());
+            })->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
             });
         })->pluck('user_id');
 
 
-        $tip = TipGoalsPayment::where(function($q) use($user){
-            $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
+        $tip = TipGoalsPayment::where(function ($q) use ($user) {
+            $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
         })->pluck('creator_id');
 
-        $posts = Post::whereNotNull('image')->with('user')->where(function($query)use($tip,$lifetime,$mem,$subscription,$bills){
-            $query->where(function($qu) use($tip){
-                $qu->whereIn('user_id',$tip)->where('for_module','support');
-            })->orWhere(function($qu) use($lifetime,$mem){
-                $qu->where(function($q)use($lifetime,$mem){
-                    $q->whereIn('user_id',$lifetime)->orWhereIn('user_id',$mem);
-                })->where('for_module','membership');
-            })->orWhere(function($qu) use($subscription,$bills){
-                $qu->where(function($q)use($subscription,$bills){
-                    $q->whereIn('user_id',$subscription)->orWhereIn('user_id',$bills);
-                })->where('for_module','subscription');
+        $posts = Post::whereNotNull('image')->with('user')->where(function ($query) use ($tip, $lifetime, $mem, $subscription, $bills) {
+            $query->where(function ($qu) use ($tip) {
+                $qu->whereIn('user_id', $tip)->where('for_module', 'support');
+            })->orWhere(function ($qu) use ($lifetime, $mem) {
+                $qu->where(function ($q) use ($lifetime, $mem) {
+                    $q->whereIn('user_id', $lifetime)->orWhereIn('user_id', $mem);
+                })->where('for_module', 'membership');
+            })->orWhere(function ($qu) use ($subscription, $bills) {
+                $qu->where(function ($q) use ($subscription, $bills) {
+                    $q->whereIn('user_id', $subscription)->orWhereIn('user_id', $bills);
+                })->where('for_module', 'subscription');
             });
-        })->where('approved',1)->orderBy('created_at','DESC')->paginate(40);
+        })->where('approved', 1)->orderBy('created_at', 'DESC')->paginate(40);
 
-        $posts->map(function($q){
+        $posts->map(function ($q) {
             $q->is_lock = 0;
             return $q;
         });
@@ -815,15 +860,16 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function gifterMedia($username){
+    public function gifterMedia($username)
+    {
         $user = User::where('username', $username)->first();
 
         $categorizedPayments = [];
 
-        $payment = StripePaymentItems::whereHas('wish',function($q){
+        $payment = StripePaymentItems::whereHas('wish', function ($q) {
             $q->whereNotNull('reward');
-        })->whereHas('payment',function($q)use($user){
-            $q->where('user_id',$user->id);
+        })->whereHas('payment', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
         })->get();
 
 
@@ -853,12 +899,13 @@ class ProfileController extends Controller
     }
 
 
-    public function gifterSubscription($username){
+    public function gifterSubscription($username)
+    {
         $user = User::where('username', $username)->first();
 
-        $user_subs = WishItemSubscription::where(function($q) use($user){
-            $q->where('user_id',$user->id)->orWhere('guest_email',$user->email);
-        })->with(['wish_item', 'wish_item.user'])->where('status','paid')->paginate(30);
+        $user_subs = WishItemSubscription::where(function ($q) use ($user) {
+            $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
+        })->with(['wish_item', 'wish_item.user'])->where('status', 'paid')->paginate(30);
 
         $trackData = [];
         foreach ($user_subs as $key => $value) {
@@ -878,14 +925,13 @@ class ProfileController extends Controller
             ];
 
 
-            if(!empty($value->wish_item)){
+            if (!empty($value->wish_item)) {
                 $trackData[$key]['wish_item'] = [
                     'name' => $value->wish_item->wishname,
                     'perma_link' => $value->wish_item->perma_link,
                 ];
                 $trackData[$key]['media_url'] = $value->recurring_for == 'onetime' ? $value->wish_item->reward_url : false;
             }
-
         }
 
         return response()->json([
@@ -899,51 +945,63 @@ class ProfileController extends Controller
     }
 
 
-    public function profileStepsStatus(){
+    public function profileStepsStatus()
+    {
         $user = User::where('id', Auth::id())->first();
 
-        $memPost = Post::where('user_id',$user->id)->where('for_module','membership')->first();
-        $subPost = Post::where('user_id',$user->id)->where('for_module','subscription')->first();
-        $supPost = Post::where('user_id',$user->id)->where('for_module','support')->first();
+        $memPost = Post::where('user_id', $user->id)->where('for_module', 'membership')->first();
+        $subPost = Post::where('user_id', $user->id)->where('for_module', 'subscription')->first();
+        $supPost = Post::where('user_id', $user->id)->where('for_module', 'support')->first();
+
+        $membership = Membership::where('user_id', $user->id)->where('deleted_at', null)->where('status', 1)->whereIn('approved', [0, 1])->first();
+        $bill = Bills::where('user_id', $user->id)->where('deleted_at', null)->where('status', 1)->whereIn('approved', [0, 1])->first();
 
         $total = 0;
 
         $basic_profile = empty($user->avatar) || empty($user->bio) || empty($user->cover) ? 0 : 1;
-        if($basic_profile){
+        if ($basic_profile) {
             $total += 1;
         }
 
         $social_links = empty($user->social_links) ? 0 : 1;
-        if($social_links){
+        if ($social_links) {
             $total += 1;
         }
-        $userIntro = UserIntro::where('user_id',$user->id)->first();
+        $userIntro = UserIntro::where('user_id', $user->id)->first();
         $intro = !empty($userIntro) ? 1 : 0;
-        if($intro){
+        if ($intro) {
             $total += 1;
         }
-        $post_required = !empty($memPost) && !empty($subPost) && !empty($supPost) ? 1 : 0;
-        if($post_required){
+        // $post_required = !empty($memPost) && !empty($subPost) && !empty($supPost) ? 1 : 0;
+        // if ($post_required) {
+        //     $total += 1;
+        // }
+        $member_required = !empty($membership) ? 1 : 0;
+        if ($member_required) {
+            $total += 1;
+        }
+        $bill_required = !empty($bill) ? 1 : 0;
+        if ($bill_required) {
             $total += 1;
         }
         $vat_setting = !empty($user->vat_amount_percentage) ? 1 : 0;
-        if($vat_setting){
+        if ($vat_setting) {
             $total += 1;
         }
-        $payment_connect = $user->stripe_details_submitted ? 1 : 0;
-        if($payment_connect){
-            $total += 1;
-        }
+        // $payment_connect = $user->stripe_details_submitted ? 1 : 0;
+        // if ($payment_connect) {
+        //     $total += 1;
+        // }
         $shop = !empty($user->shop) ? 1 : 0;
-        if($shop){
+        if ($shop) {
             $total += 1;
         }
         $contents = !empty($user->wishItems) && !empty($user->memberships) && !empty($user->bills) ? 1 : 0;
-        if($contents){
+        if ($contents) {
             $total += 1;
         }
         $auto_tweets = $user->auto_tweet;
-        if($auto_tweets){
+        if ($auto_tweets) {
             $total += 1;
         }
 
@@ -951,9 +1009,11 @@ class ProfileController extends Controller
             'status' => true,
             'basic_profile' => $basic_profile,
             'intro' => $intro,
-            'post_required' => $post_required,
+            // 'post_required' => $post_required,
+            'membership_required' => $member_required,
+            'bill_required' => $bill_required,
             'vat_setting' => $vat_setting,
-            'payment_connect' => $payment_connect,
+            // 'payment_connect' => $payment_connect,
             'contents' => $contents,
             'auto_tweets' => $auto_tweets,
             'shop' => $shop,
@@ -967,11 +1027,12 @@ class ProfileController extends Controller
      * Get the list of notifications
      *
      * @return JsonResponse
-    */
-    public function getNotifications(){
+     */
+    public function getNotifications()
+    {
         $user = User::where('id', Auth::id())->first();
 
-        $notifications = Notification::where('notifiable_id',$user->id)->with('user')->orderBy('created_at','DESC')->paginate(30);
+        $notifications = Notification::where('notifiable_id', $user->id)->with('user')->orderBy('created_at', 'DESC')->paginate(30);
         return response()->json([
             'status' => true,
             'notifications' => $notifications->items(),
@@ -982,32 +1043,33 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function markRead(){
+    public function markRead()
+    {
         $user = User::where('id', Auth::id())->first();
 
-        Notification::where('notifiable_id',$user->id)->where('is_read',0)->update(['is_read' => 1]);
+        Notification::where('notifiable_id', $user->id)->where('is_read', 0)->update(['is_read' => 1]);
 
         return response()->json([
-           'status' => true,
-           'message' => "Notifications marked as read."
+            'status' => true,
+            'message' => "Notifications marked as read."
         ]);
     }
 
 
 
-    public function piggyBankSetting(){
+    public function piggyBankSetting()
+    {
         $user = User::where('id', Auth::id())->first();
 
-        if($user->show_piggy_bank == 0){
+        if ($user->show_piggy_bank == 0) {
             $user->show_piggy_bank = 1;
-        }
-        else{
+        } else {
             $user->show_piggy_bank = 0;
         }
         $user->save();
         return response()->json([
-           'status' => true,
-           'message' => 'Piggy Bank Settings Updated.'
+            'status' => true,
+            'message' => 'Piggy Bank Settings Updated.'
         ]);
     }
 

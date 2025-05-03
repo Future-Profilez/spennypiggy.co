@@ -35,6 +35,7 @@ class CheckoutUser implements ShouldQueue
     public $message;
     public $anonname;
     public $symbol;
+    public $vat_amount;
 
     /**
      * Create a new job instance.
@@ -43,7 +44,7 @@ class CheckoutUser implements ShouldQueue
      * @param bool $social = false
      * @return void
      */
-    public function __construct($payment, $anon, $surprise, $message, $anonname = null,$symbol)
+    public function __construct($payment, $anon, $surprise, $message, $anonname = null, $symbol, $vat_amount)
     {
         $this->payment = $payment;
         $this->anon = $anon;
@@ -51,6 +52,7 @@ class CheckoutUser implements ShouldQueue
         $this->message = $message;
         $this->anonname = $anonname;
         $this->symbol = $symbol;
+        $this->vat_amount = $vat_amount;
     }
 
     /**
@@ -60,8 +62,8 @@ class CheckoutUser implements ShouldQueue
      */
     public function handle()
     {
-        if((isset($this->payment->payment->user) && $this->payment->payment->user->notification_send == 1) || (empty($this->payment->payment->user))){
-            EmailService::checkOutUser($this->payment, $this->anon, $this->surprise, $this->message, $this->anonname,$this->symbol);
+        if ((isset($this->payment->payment->user) && $this->payment->payment->user->notification_send == 1) || (empty($this->payment->payment->user))) {
+            EmailService::checkOutUser($this->payment, $this->anon, $this->surprise, $this->message, $this->anonname, $this->symbol, $this->vat_amount);
         }
     }
 }

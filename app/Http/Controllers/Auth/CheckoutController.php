@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
+use Stripe\Stripe;
 
 class CheckoutController extends Controller
 {
@@ -31,6 +32,19 @@ class CheckoutController extends Controller
     /* create checkout */
     public function createCheckout($id)
     {
+        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+        $user = Auth::user(); // or $requestingUser if handling guests
+
+        if (empty($user->stripe_id)) {
+            $stripeCustomer = \Stripe\Customer::create([
+                'email' => $user->email,
+                'name' => $user->name ?? null,
+            ]);
+
+            $user->stripe_id = $stripeCustomer->id;
+            $user->save();
+        }
+
         // Email notification on success
         // $now = Carbon::now()->format('h:i A d-m-Y');
         // $emailSubject = "Wish Payment Initiation Start - $now";
@@ -101,7 +115,12 @@ class CheckoutController extends Controller
                 $transfer_amount += $ConvertedAmount * $dd->quantity;
             }
 
-            $transfering_amount = $transfer_amount + $showAdminsFees;
+            $transfering_amount = $transfer_amount;
+
+            Log::info("Transfer Amount: $transfering_amount");
+            Log::info("Subtotal: $subtotal");
+            Log::info("Tax: $taxNew");
+            Log::info("Total Amount: $new_total_amount");
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
@@ -137,6 +156,7 @@ class CheckoutController extends Controller
                 'user_id' => Auth::id() ?? null,
                 'owner_id' => $getdata[0]->owner->id,
                 'name' => request()->query('from') ?? '',
+                'guest_email' => request()->query('email') ?? '',
                 'message' => $message ?? '',
                 'anonymous' => request()->query('anonymous') ?? 0,
                 'session_created' => $sessionCreate->created,
@@ -227,15 +247,29 @@ class CheckoutController extends Controller
 
                 $symbol = Currency::where('iso', strtoupper($payment_data->payment->currency))->first();
 
+                // $symbol = Currency::where('iso', strtoupper($stripeid->currency))->first();
+                // if (Auth::check()) {
+                //     $user = Auth::user();
+                $vat_percentage = $dd->owner ? $dd->owner->vat_amount_percentage : 0; // Default to 0 if not set
+                // // }
+
+                $tax = $stripeid->amount_subtotal * config('app.single_tax') / 100;
+
+                // // Calculate VAT if the user has set a percentage
+                $vat_amount = ($stripeid->amount_subtotal + $tax) * $vat_percentage / 100;
+                $amountWithVat = $stripeid->amount_subtotal + $vat_amount;
+                // $amountTotal = $symbol->symbol . $amountWithVat;
+
                 $message = $stripeid->message;
+
                 if (Auth::check()) {
                     if ($dd->wish_item_id == NULL) {
-                        CheckoutUser::dispatch($payment_data, false, $dd, $message, null, $symbol->symbol);
+                        CheckoutUser::dispatch($payment_data, false, $dd, $message, null, $symbol->symbol, $vat_amount);
                     } else {
-                        CheckoutUser::dispatch($payment_data, false, false, $message, null, $symbol->symbol);
+                        CheckoutUser::dispatch($payment_data, false, false, $message, null, $symbol->symbol, $vat_amount);
                     }
                 } else {
-                    CheckoutUser::dispatch($payment_data, true, false, false, $stripeid->name, $symbol->symbol);
+                    CheckoutUser::dispatch($payment_data, true, false, false, $stripeid->name, $symbol->symbol, $vat_amount);
                 }
                 $dd->status = 0;
                 $dd->quantity = 0;

@@ -4,11 +4,16 @@ namespace App\Http\Controllers\Auth;
 
 use App\Helpers;
 use App\Http\Controllers\Controller;
+use App\Jobs\SendBioSocialUpdateEmail;
+use App\Models\GifterCardVerification;
+use App\Models\Membership;
 use App\Models\SocialLinks;
 use App\Models\User;
+use App\Models\UserVerificationStatus;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
 
@@ -16,59 +21,93 @@ class SocialLinksController extends Controller
 {
     public function saveSocialLinks(Request $request)
     {
-        $user = User::where('id', Auth::id())->first();
+        $redirectUrl = $request->redirect_url;
+        $userId = Auth::id();
+
         try {
-            $checkdata = Helpers::checkBlockData($request);
-            if ($checkdata == 1) {
-                return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
-             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
-            } else {
-                $sociallinks = SocialLinks::where('user_id', Auth::id())->first();
-                if (!empty($sociallinks)) {
-                    $links = SocialLinks::where('user_id', Auth::id())->update([
-                        'whoyouinto' => $request->whoyouinto ?? '',
-                        'twitter' => $request->twitter ?? $sociallinks->twitter,
-                        'instagram' => $request->instagram ?? $sociallinks->instagram,
-                        'facebook' => $request->facebook ?? $sociallinks->facebook,
-                        'youtube' => $request->youtube ?? $sociallinks->youtube,
-                        'twitch' => $request->twitch ?? $sociallinks->twitch,
-                        'tumblr' => $request->tumblr ?? $sociallinks->tumblr,
-                        'reddit' => $request->reddit ?? $sociallinks->reddit,
-                        'discord' => $request->discord ?? $sociallinks->discord,
-                        'onlyfans' => $request->onlyfans ?? $sociallinks->onlyfans,
-                        'loyalfans' => $request->loyalfans ?? $sociallinks->loyalfans,
-                        'fansly' => $request->fansly ?? $sociallinks->fansly,
-                        'manyvids' => $request->manyvids ?? $sociallinks->manyvids,
-                        'other' => $request->other ?? $sociallinks->other,
-                        'updated_at' => Carbon::now(),
-                    ]);
-                    return redirect(route("user.show", ["username" => $user->username]))->with('success', "Social links updated successfully.");
-                } else {
-                    $links =  SocialLinks::create([
-                        'uuid' => Uuid::uuid4(),
-                        'user_id' => Auth::id(),
-                        'whoyouinto' => $request->whoyouinto ?? null,
-                        'twitter' => $request->twitter ?? null,
-                        'instagram' => $request->instagram ?? null,
-                        'facebook' => $request->facebook ?? null,
-                        'youtube' => $request->youtube ?? null,
-                        'twitch' => $request->twitch ?? null,
-                        'tumblr' => $request->tumblr ?? null,
-                        'reddit' => $request->reddit ?? null,
-                        'discord' => $request->discord ?? null,
-                        'onlyfans' => $request->onlyfans ?? null,
-                        'loyalfans' => $request->loyalfans ?? null,
-                        'fansly' => $request->fansly ?? null,
-                        'manyvids' => $request->manyvids ?? null,
-                        'other' => $request->other ?? null,
-                        'created_at' => Carbon::now(),
-                        'updated_at' => Carbon::now(),
-                    ]);
-                    return redirect(route("user.show", ["username" => $user->username]))->with('success', "Social links added successfully.");
-                }
+            if (Helpers::checkBlockData($request) === 1) {
+                return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute, dick, goddess, master, mistress, 😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
             }
+
+            $data = [
+                'whoyouinto' => $request->whoyouinto,
+                'twitter'    => $request->twitter,
+                'instagram'  => $request->instagram,
+                'facebook'   => $request->facebook,
+                'youtube'    => $request->youtube,
+                'twitch'     => $request->twitch,
+                'tumblr'     => $request->tumblr,
+                'reddit'     => $request->reddit,
+                'discord'    => $request->discord,
+                'onlyfans'   => $request->onlyfans,
+                'loyalfans'  => $request->loyalfans,
+                'fansly'     => $request->fansly,
+                'manyvids'   => $request->manyvids,
+                'other'      => $request->other,
+                'updated_at' => now(),
+            ];
+
+            // Add UUID and created_at only if creating
+            $socialLink = SocialLinks::updateOrCreate(
+                ['user_id' => $userId],
+                array_merge($data, [
+                    'uuid'       => Uuid::uuid4(),
+                    'created_at' => now(),
+                ])
+            );
+
+
+            $socialCheck = SocialLinks::whereUserId($userId)
+                ->where(function ($q) {
+                    $q->where('twitter', '!=', null)
+                        ->orWhere('instagram', '!=', null)
+                        ->orWhere('facebook', '!=', null)
+                        ->orWhere('twitch', '!=', null)
+                        ->orWhere('tumblr', '!=', null)
+                        ->orWhere('reddit', '!=', null);
+                })
+                ->exists();
+
+            $role = Auth::user()->role;
+
+            if ($socialCheck) {
+                UserVerificationStatus::updateOrCreate(
+                    [
+                        'user_id' => $userId,
+                        'role' => $role,
+                    ],
+                    [
+                        'role' => $role,
+                        'social_status' => $socialCheck ? 0 : null,
+                    ]
+                );
+
+                $updatedFields = [
+                    'bio' => false,
+                    'social' => true,
+                ];
+
+                Log::info('Updated fields:', $updatedFields);
+
+                if ($updatedFields['bio'] || $updatedFields['social']) {
+                    dispatch(new SendBioSocialUpdateEmail(Auth::user(), $updatedFields));
+                }
+
+
+            }
+
+
+            return response([
+                'status'  => 200,
+                'message' => "Social links updated successfully.",
+                'url'     => $redirectUrl ?? null,
+            ]);
         } catch (\Throwable $th) {
-            throw $th;
+            Log::error('Failed to save social links', ['error' => $th->getMessage()]);
+            return response([
+                'status'  => 500,
+                'message' => 'An error occurred while saving social links.',
+            ]);
         }
     }
 }

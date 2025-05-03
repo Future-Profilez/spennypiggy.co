@@ -22,6 +22,7 @@ use App\Mail\CheckError;
 use App\Mail\CommandFailed;
 use App\Models\BillPayment;
 use App\Models\CreatorShippingAddress;
+use App\Models\GifterCardVerification;
 use App\Models\Logs;
 use App\Models\MembershipPayment;
 use App\Models\ProductOrderDetail;
@@ -51,6 +52,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -161,6 +163,8 @@ class WishitemController extends Controller
                         "unit_amount_decimal" => $createpriceid * 100
                     ],
                     "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
+                ], [
+                    'stripe_account' => $user->account_id
                 ]);
                 $wish->stripe_product_id = $stripe_client->id;
                 $wish->price_id = $stripe_client->default_price;
@@ -203,9 +207,9 @@ class WishitemController extends Controller
                     "sometimes",
                     "nullable"
                 ],
-                'reward_file' => [
-                    'required'
-                ],
+                // 'reward_file' => [
+                //     'required'
+                // ],
                 "subscription" => [
                     "required",
                     "integer",
@@ -264,7 +268,8 @@ class WishitemController extends Controller
             'currency' => $user->default_currency,
             'item_url' => $request->item_url != "" ? $request->item_url : null,
             'thumbnail' => $request->thumbnail ?? null,
-            'reward' => $request->reward_file ?? null,
+            'reward' => null,
+            // 'reward' => $request->reward_file ?? null,
             "ai_generated" => $request->ai_generated,
             'subscription' => $request->subscription,
             'subscription_period' => $request->subscription_period ?? null,
@@ -702,6 +707,8 @@ class WishitemController extends Controller
                     'name' => $wishitem->wishname,
                     'images' => [$wishitem->perma_link],
                     "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100],
+                ], [
+                    'stripe_account' => $cart->owner->account_id
                 ]);
                 $priceid = $stripe_client->id;
             } else {
@@ -731,6 +738,8 @@ class WishitemController extends Controller
                     'name' => $wishitem->wishname,
                     'images' => [$wishitem->perma_link],
                     "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" =>  round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100],
+                ], [
+                    'stripe_account' => $wishitem->user->account_id
                 ]);
                 $priceid = $stripe_client->id;
             } else {
@@ -759,8 +768,72 @@ class WishitemController extends Controller
         }
     }
 
-
     /*x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x******x******x*****x******x*****x*****x******x******x******x******x******x*****x
+     *
+     * Rye create rye product and store in the database
+     *
+     * @return Response
+     */
+    public function createRyeProduct(Request $request)
+    {
+        $request->validate([
+            'url' => 'required',
+        ]);
+        // Extract the URL from the request (assuming it's passed as a query parameter)
+        $url = $request->input('url');  // You can change this as per your need
+        $checkProductId = RyeProduct::where('creator_id', Auth::id())->where('product_id', $url['id'])->exists();
+        // dd($url);
+        if ($checkProductId) {
+            return response()->json(['status' => false, 'message' => 'Product Already Added.']);
+        }
+
+        // Create a new product on Stripe
+        $productPayload = [
+            "name"  =>  $url['title'],
+            "images" => [$url['images'][0]['url']],
+            "default_price_data"    =>  [
+                "currency"  =>  $url['price']['currency'],
+                "unit_amount_decimal"   => $url['price']['value'],
+            ],
+            "url"   => env('APP_URL') . "/gift-item/$url[id]",
+        ];
+
+        $product = StripeControl::createProduct($productPayload);
+        $ryeProducts = new RyeProduct();
+        $ryeProducts->creator_id = Auth::id();
+        $ryeProducts->product_id = $url['id'];
+        $ryeProducts->stripe_product_id = $product->id;
+        $ryeProducts->details = json_encode($url, true);
+        if ($ryeProducts->save()) {
+            return response()->json(['status' => true, 'message' => 'Product Added Successfully.']);
+        }
+    }
+
+    /**
+     * rye delete and restore product from database
+     *
+     */
+    public function deleteAndRestoredRyeProduct($uuid)
+    {
+        // Find the product, including soft-deleted ones
+        $ryeProduct = RyeProduct::withTrashed()->where('uuid', $uuid)->where('creator_id', Auth::id())->first();
+
+        if (!$ryeProduct) {
+            return response()->json(['status' => false, 'message' => 'Product not found']);
+        }
+
+        if ($ryeProduct->trashed()) {
+            // If the product is deleted, restore it
+            $ryeProduct->restore();
+            return response()->json(['status' => true, 'message' => 'Product Enabled successfully']);
+        } else {
+            // Otherwise, soft delete it
+            $ryeProduct->delete();
+            return response()->json(['status' => true, 'message' => 'Product Disabled successfully']);
+        }
+    }
+
+    /**
      *
      * Rye product functionality starts
      *
@@ -855,6 +928,9 @@ class WishitemController extends Controller
 
         $cartDetails = RyeCart::with('creator')->where('user_id', Auth::id())
             ->select(['cart_id', 'creator_id', 'cart_details'])
+
+
+
             ->get()
             ->map(function ($cart) {
                 // Decode the JSON data in cart_details
@@ -902,46 +978,46 @@ class WishitemController extends Controller
      *
      * @return Response
      */
+    private function safeEncrypt(?string $value): ?string
+    {
+        return $value ? Crypt::encryptString($value) : null;
+    }
+
     public function creatorStoreAddress(Request $request)
     {
         try {
-            // Validate incoming request based on database schema
             $validatedData = $request->validate([
                 'first_name'     => 'nullable|string|max:255',
                 'last_name'      => 'nullable|string|max:255',
-                'phone'          => 'nullable|digits_between:8,15', // Ensures phone is numeric & valid length
+                'phone'          => 'nullable|digits_between:8,15',
                 'address_1'      => 'nullable|string|max:255',
                 'address_2'      => 'nullable|string|max:255',
                 'city'           => 'nullable|string|max:255',
-                'province_code'  => 'nullable|size:3',  // Exactly 3 characters
-                'country_code'   => 'nullable|size:2',  // Exactly 2 characters (ISO country codes)
-                'postal_code'    => 'nullable|digits_between:4,10', // Ensures postal code is numeric & valid length
+                'province_code'  => 'nullable|size:2',
+                'country_code'   => 'nullable|size:2',
+                'postal_code'    => 'nullable|digits_between:4,10',
             ]);
 
-            // Get the authenticated creator's ID
             $creatorId = Auth::id();
 
-            // Update or create an address for the creator
-            $creatorAddress = CreatorShippingAddress::updateOrCreate(
-                ['creator_id' => $creatorId],  // Search criteria
-                [ // Values to insert/update
-                    'first_name'    => $validatedData['first_name'],
-                    'last_name'     => $validatedData['last_name'],
-                    'phone'         => $validatedData['phone'],
-                    'address_1'     => $validatedData['address_1'],
-                    'address_2'     => $validatedData['address_2'] ?? null,
-                    'city'          => $validatedData['city'],
-                    'province_code' => $validatedData['province_code'] ?? null,
-                    'country_code'  => $validatedData['country_code'],
-                    'postal_code'   => $validatedData['postal_code'],
+            CreatorShippingAddress::updateOrCreate(
+                ['creator_id' => $creatorId],
+                [
+                    'first_name'    => $this->safeEncrypt($validatedData['first_name'] ?? null),
+                    'last_name'     => $this->safeEncrypt($validatedData['last_name'] ?? null),
+                    'phone'         => $this->safeEncrypt($validatedData['phone'] ?? null),
+                    'address_1'     => $this->safeEncrypt($validatedData['address_1'] ?? null),
+                    'address_2'     => $this->safeEncrypt($validatedData['address_2'] ?? null),
+                    'city'          => $this->safeEncrypt($validatedData['city'] ?? null),
+                    'province_code' => $this->safeEncrypt($validatedData['province_code'] ?? null),
+                    'country_code'  => $this->safeEncrypt($validatedData['country_code'] ?? null),
+                    'postal_code'   => $this->safeEncrypt($validatedData['postal_code'] ?? null),
                 ]
             );
 
-            // Return success response
             return response()->json([
                 'status'  => true,
                 'message' => 'Address stored successfully',
-                'data'    => $creatorAddress,
             ], 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -967,6 +1043,21 @@ class WishitemController extends Controller
     {
         $creatorId = Auth::id();
         $creatorAddress = CreatorShippingAddress::where('creator_id', $creatorId)->first();
+        if (!$creatorAddress) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Creator address not found',
+            ], 404);
+        }
+        $creatorAddress->first_name = Crypt::decryptString($creatorAddress->first_name);
+        $creatorAddress->last_name = Crypt::decryptString($creatorAddress->last_name);
+        $creatorAddress->address_1 = Crypt::decryptString($creatorAddress->address_1);
+        $creatorAddress->address_2 = Crypt::decryptString($creatorAddress->address_2);
+        $creatorAddress->city =      Crypt::decryptString($creatorAddress->city);
+        $creatorAddress->postal_code = Crypt::decryptString($creatorAddress->postal_code);
+        $creatorAddress->country_code = Crypt::decryptString($creatorAddress->country_code);
+        $creatorAddress->province_code = Crypt::decryptString($creatorAddress->province_code);
+        $creatorAddress->phone = Crypt::decryptString($creatorAddress->phone);
 
         return response()->json([
             'status' => true,
@@ -983,6 +1074,26 @@ class WishitemController extends Controller
     public function handleRyeProductPayment(Request $request)
     {
         Log::info('Rye Product Payment Request', ['request' => $request->all()]);
+
+        $user = Auth::user(); // or $requestingUser if handling guests
+
+        if (empty($user->stripe_id)) {
+            $stripeCustomer = \Stripe\Customer::create([
+                'email' => $user->email,
+                'name' => $user->name ?? null,
+            ]);
+
+            $user->stripe_id = $stripeCustomer->id;
+            $user->save();
+        }
+
+        // $request->validate([
+        //     'country' => 'required|string',
+        //     'street_address' => 'required|string',
+        //     'city' => 'required|string',
+        //     'state' => 'required|string',
+        //     'postal_code' => 'required|integer|digits_between:4,8',
+        // ]);
 
         try {
             $orderDetails = RyeCart::with('creator', 'user')->where([
@@ -1050,31 +1161,28 @@ class WishitemController extends Controller
                 ], 422);
             }
 
+            // $addressData = [
+            //     'country' => $request->country,
+            //     'street_address' => $request->street_address,
+            //     'city' => $request->city,
+            //     'state' => $request->state,
+            //     'postal_code' => $request->postal_code,
+            // ];
+            // Convert to JSON format
+            $addressJson = null;
+            // $addressJson = json_encode($addressData, true);
+
             $ryeProductPayment = new RyeProductPayment();
             $ryeProductPayment->user_id = Auth::id();
             $ryeProductPayment->currency = $currency;
             $ryeProductPayment->amount = $totalAmount / 100;
             $ryeProductPayment->payment_method = 'card';
+            $ryeProductPayment->shipping_address = $addressJson;
             $ryeProductPayment->customer_email = $orderDetails->user->email;
             $ryeProductPayment->save();
 
-            // $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-            // $sessionCreate = $stripe->checkout->sessions->create([
-            //     'success_url' => route('rye.success.payment', [$ryeProductPayment->uuid]),
-            //     'cancel_url' => route('rye.cancel.payment', [$ryeProductPayment->uuid]),
-            //     'line_items' => $lineItems,
-            //     'mode' => 'payment',
-            //     'payment_method_types' => ['card'],
-            //     'payment_intent_data' => [
-            //         'transfer_data' => [
-            //             'destination' => $orderDetails->creator->account_id,
-            //         ],
-            //         'on_behalf_of' => $orderDetails->creator->account_id,
-            //     ],
-            //     'customer_email' => $orderDetails->user->email,
-            // ]);
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-            // Create Stripe checkout session
+
             // Create Stripe checkout session
             $successUrl = route('rye.success.payment', [
                 'uuid' => $ryeProductPayment->uuid,
@@ -1093,11 +1201,20 @@ class WishitemController extends Controller
                         'amount' => $totalAmount,
                     ],
                     'on_behalf_of' => $orderDetails->creator->account_id,
+                    'metadata' => [
+                        'order_id' => $orderDetails->id,
+                        'user_id' => $orderDetails->user->id,
+                        'creator_id' => $orderDetails->creator->id,
+                        'payment_type' => 'product_purchase'
+                    ],
                 ],
                 'customer_email' => $orderDetails->user->email,
+                'metadata' => [
+                    'order_id' => $orderDetails->id,
+                    'user_email' => $orderDetails->user->email,
+                    'payment_source' => 'website',
+                ],
             ]);
-
-
 
             RyeProductPayment::whereUuid($ryeProductPayment->uuid)->update(['payment_metadata' => json_encode($sessionCreate)]);
 
@@ -1296,10 +1413,6 @@ class WishitemController extends Controller
         $orderDetails->status = 'succeeded';
         $orderDetails->save();
 
-        // Update gift item payment status
-        RyeCart::where('uuid', $orderUuid)->delete();
-
-
         return Inertia::render('rye/ThankYouRye', [
             'status' => true,
         ]);
@@ -1342,6 +1455,11 @@ class WishitemController extends Controller
         // Get webhook event type
         $eventType = $request->input('type');
         $payload = $request->all();
+
+        // **Step 1: Handle Challenge Verification**
+        if ($request->has('data.challenge')) {
+            return response()->json(['challenge' => $request->input('data.challenge')]);
+        }
 
         // Log webhook for debugging
         Log::info("Received Rye Webhook: " . $eventType, $payload);
@@ -1412,18 +1530,60 @@ class WishitemController extends Controller
     {
         // Example: Mark order as paid
         Log::info("Handling PaymentSucceeded", $payload);
+
+        ProductOrderDetail::updateOrCreate(
+            ['order_id' => $payload['requestId']], // Search condition
+            [
+                // 'user_id' => Auth::id() ?? null,
+                // 'creater_id' => $payload['order']['creater_id'] ?? null,
+                // 'cart_id' => $payload['order']['cart_id'] ?? null,
+                'order_id' => $payload['requestId'],
+                'details' => $payload ? json_encode($payload, true) : null,
+                'payment_status' => 'COMPLETED', // Update payment status
+                'session_id' => $payload['order']['session_id'] ?? null,
+            ]
+        );
+
         return response()->json(['message' => 'Payment succeeded processed']);
     }
 
     protected function handlePaymentFailed($payload)
     {
         Log::info("Handling PaymentFailed", $payload);
+
+        ProductOrderDetail::updateOrCreate(
+            ['order_id' => $payload['requestId']], // Search condition
+            [
+                // 'user_id' => Auth::id() ?? null,
+                // 'creater_id' => $payload['order']['creater_id'] ?? null,
+                // 'cart_id' => $payload['order']['cart_id'] ?? null,
+                'order_id' => $payload['requestId'],
+                'details' => $payload ? json_encode($payload, true) : null,
+                'payment_status' => 'FAILED', // Update payment status
+                'session_id' => $payload['order']['session_id'] ?? null,
+            ]
+        );
+
         return response()->json(['message' => 'Payment failed processed']);
     }
 
     protected function handlePaymentRefunded($payload)
     {
         Log::info("Handling PaymentRefunded", $payload);
+
+        ProductOrderDetail::updateOrCreate(
+            ['order_id' => $payload['requestId']], // Search condition
+            [
+                // 'user_id' => Auth::id() ?? null,
+                // 'creater_id' => $payload['order']['creater_id'] ?? null,
+                // 'cart_id' => $payload['order']['cart_id'] ?? null,
+                'order_id' => $payload['requestId'],
+                'details' => $payload ? json_encode($payload, true) : null,
+                'payment_status' => 'REFUNDED', // Update payment status
+                'session_id' => $payload['order']['session_id'] ?? null,
+            ]
+        );
+
         return response()->json(['message' => 'Payment refunded processed']);
     }
 
@@ -1442,6 +1602,20 @@ class WishitemController extends Controller
     protected function handleOrderPlaced($payload)
     {
         Log::info("Handling OrderPlaced", $payload);
+
+        ProductOrderDetail::updateOrCreate(
+            ['order_id' => $payload['requestId']], // Search condition
+            [
+                'user_id' => Auth::id() ?? null,
+                'creater_id' => $payload['order']['creater_id'] ?? null,
+                'cart_id' => $payload['order']['cart_id'] ?? null,
+                'order_id' => $payload['requestId'],
+                'details' => $payload ? json_encode($payload, true) : null,
+                'payment_status' => 'ORDER PLACED', // Update payment status
+                'session_id' => $payload['order']['session_id'] ?? null,
+            ]
+        );
+
         return response()->json(['message' => 'Order placed processed']);
     }
 
@@ -1465,8 +1639,25 @@ class WishitemController extends Controller
 
     protected function handleTrackingObtained($payload)
     {
-        Log::info("Handling TrackingObtained", $payload);
-        return response()->json(['message' => 'Tracking obtained processed']);
+        Log::info("TrackingObtained Webhook:", $payload);
+
+        ProductOrderDetail::updateOrCreate(
+            ['order_id' => $payload['requestId']], // Search condition
+            [
+                // 'user_id' => Auth::id() ?? null,
+                // 'creater_id' => $payload['order']['creater_id'] ?? null,
+                // 'cart_id' => $payload['order']['cart_id'] ?? null,
+                'order_id' => $payload['requestId'],
+                'details' => $payload ? json_encode($payload, true) : null,
+                'payment_status' => 'ORDER TRACKED', // Update payment status
+                'session_id' => $payload['order']['session_id'] ?? null,
+            ]
+        );
+
+        return response()->json([
+            'message' => 'Tracking obtained processed',
+            'tracking_number' => $payload['tracking_number'] ?? 'Not Available'
+        ]);
     }
 
     protected function handleReturnRequested($payload)
@@ -1508,43 +1699,43 @@ class WishitemController extends Controller
     /**
      * Rye Update order status in the database based on payment success
      */
-    private function updateOrderStatus(array $data, string $status): void
-    {
-        if (isset($data['order']['id'])) {
-            $orderId = $data['order']['id'];
+    // private function updateOrderStatus(array $data, string $status): void
+    // {
+    //     if (isset($data['order']['id'])) {
+    //         $orderId = $data['order']['id'];
 
-            ProductOrderDetail::where('order_id', $orderId)
-                ->update(['payment_status' => $status]);
+    //         ProductOrderDetail::where('order_id', $orderId)
+    //             ->update(['payment_status' => $status]);
 
-            Log::info("Order ID {$orderId} updated to status: {$status}");
-        } else {
-            Log::warning('Payment success event received but missing order ID', $data);
-        }
-    }
+    //         Log::info("Order ID {$orderId} updated to status: {$status}");
+    //     } else {
+    //         Log::warning('Payment success event received but missing order ID', $data);
+    //     }
+    // }
 
     /**
      * Rye Store new order details in the database
      */
-    private function createNewOrder(array $data): void
-    {
-        if (!isset($data['order'])) {
-            Log::warning('Order created event missing order details', $data);
-            return;
-        }
+    // private function createNewOrder(array $data): void
+    // {
+    //     if (!isset($data['order'])) {
+    //         Log::warning('Order created event missing order details', $data);
+    //         return;
+    //     }
 
-        $order = $data['order'];
+    //     $order = $data['order'];
 
-        ProductOrderDetail::create([
-            'user_id' => $order['user_id'] ?? null,
-            'creater_id' => $order['creator_id'] ?? null,
-            'cart_id' => $order['cart_id'] ?? null,
-            'order_id' => $order['id'],
-            'details' => json_encode($order),
-            'payment_status' => 'pending', // Default status until payment is confirmed
-        ]);
+    //     ProductOrderDetail::create([
+    //         'user_id' => $order['user_id'] ?? null,
+    //         'creater_id' => $order['creator_id'] ?? null,
+    //         'cart_id' => $order['cart_id'] ?? null,
+    //         'order_id' => $order['id'],
+    //         'details' => json_encode($order),
+    //         'payment_status' => 'pending', // Default status until payment is confirmed
+    //     ]);
 
-        Log::info("New order stored with ID: {$order['id']}");
-    }
+    //     Log::info("New order stored with ID: {$order['id']}");
+    // }
 
     /**
      *
@@ -1637,85 +1828,21 @@ class WishitemController extends Controller
                     'creater_id' => $request->creator_id,
                     'cart_id' => $cart_id,
                     'order_id' => $storeData['orderId'] ?? null,
-                    'details' => json_encode($data),
-                    'payment_status' => $storeData['status'] ?? 'pending',
+                    // 'details' => json_encode($data),
+                    // 'payment_status' => $storeData['status'] ?? 'pending',
                 ]);
+
+                RyeCart::where('cart_id', $cart_id)->delete();
 
                 return response()->json(['status' => true, 'message' => 'Order details stored', 'data' => $data]);
             }
 
-            return response()->json(['status' => false, 'message' => 'Order details not stored']);
+            // return response()->json(['status' => false, 'message' => 'Order details not stored']);
         } catch (Exception $e) {
             Log::error('Error in storeProductOrderDetails: ' . $e->getMessage());
             return response()->json(['status' => false, 'message' => $e->getMessage()]);
         }
     }
-
-    /**
-     *
-     * Rye create rye product and store in the database
-     *
-     * @return Response
-     */
-    public function createRyeProduct(Request $request)
-    {
-        $request->validate([
-            'url' => 'required',
-        ]);
-        // Extract the URL from the request (assuming it's passed as a query parameter)
-        $url = $request->input('url');  // You can change this as per your need
-        $checkProductId = RyeProduct::where('creator_id', Auth::id())->where('product_id', $url['id'])->exists();
-        // dd($url);
-        if ($checkProductId) {
-            return response()->json(['status' => false, 'message' => 'Product Already Added.']);
-        }
-
-        // Create a new product on Stripe
-        $productPayload = [
-            "name"  =>  $url['title'],
-            "images" => [$url['images'][0]['url']],
-            "default_price_data"    =>  [
-                "currency"  =>  $url['price']['currency'],
-                "unit_amount_decimal"   => $url['price']['value'],
-            ],
-            "url"   => env('APP_URL') . "/gift-item/$url[id]",
-        ];
-
-        $product = StripeControl::createProduct($productPayload);
-        $ryeProducts = new RyeProduct();
-        $ryeProducts->creator_id = Auth::id();
-        $ryeProducts->product_id = $url['id'];
-        $ryeProducts->stripe_product_id = $product->id;
-        $ryeProducts->details = json_encode($url, true);
-        if ($ryeProducts->save()) {
-            return response()->json(['status' => true, 'message' => 'Product Added Successfully.']);
-        }
-    }
-
-    /**
-     * rye delete and restore product from database
-     *
-     */
-    public function deleteAndRestoredRyeProduct($uuid)
-    {
-        // Find the product, including soft-deleted ones
-        $ryeProduct = RyeProduct::withTrashed()->where('uuid', $uuid)->where('creator_id', Auth::id())->first();
-
-        if (!$ryeProduct) {
-            return response()->json(['status' => false, 'message' => 'Product not found']);
-        }
-
-        if ($ryeProduct->trashed()) {
-            // If the product is deleted, restore it
-            $ryeProduct->restore();
-            return response()->json(['status' => true, 'message' => 'Product Enabled successfully']);
-        } else {
-            // Otherwise, soft delete it
-            $ryeProduct->delete();
-            return response()->json(['status' => true, 'message' => 'Product Disabled successfully']);
-        }
-    }
-
 
     /**
      * rye update buyer identity functionality
@@ -1785,18 +1912,6 @@ class WishitemController extends Controller
                         'countryCode' => $creatorShipping->country_code ?? 'US',
                         'postalCode' => $creatorShipping->postal_code ?? '10001', // Set a default postal code
                     ],
-                    // 'buyerIdentity' => [
-                    //     'firstName' => 'John',
-                    //     'lastName' => 'Doe',
-                    //     'email' => 'john.doe@example.com',
-                    //     'phone' => '+12125550101',
-                    //     'countryCode' => 'US',
-                    //     'address1' => '20 W 34th St',
-                    //     'address2' => 'Floor 102',
-                    //     'city' => 'New York',
-                    //     'provinceCode' => 'NY',
-                    //     'postalCode' => '10001',
-                    // ]
                 ]
             ]
         ]);
@@ -2084,6 +2199,8 @@ class WishitemController extends Controller
             'name' => 'Surprise Gift',
             'images' => ['https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/'],
             "default_price_data" => ["currency" => $owner->default_currency, "unit_amount_decimal" => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100],
+        ], [
+            'stripe_account' => $owner->account_id,
         ]);
 
         if (!Auth::check()) {
@@ -2423,27 +2540,24 @@ class WishitemController extends Controller
         $user = User::where('uuid', $uuid)->first();
         // TipGoal::where('status', 1)->where('completed', 0)->where('completed_at', '<', Carbon::now())->update(['completed' => 1]);
 
-        // $goal = TipGoal::whereHas('user', function ($q) use ($uuid) {
-        //     $q->where('uuid', $uuid);
-        // })->where('completed', 0)->first();
+        $goalPayment = TipGoalsPayment::where('creator_id', $user->id)->where('status', 'paid')->sum('amount');
+
         $arr = [];
         $bill_payment = BillPayment::whereHas('bill', function ($q) use ($user) {
             $q->where('user_id', $user->id);
-        })->sum('amount');
+        })->where('status', 'paid')->sum('amount');
 
         $mem_payment = MembershipPayment::whereHas('membership', function ($q) use ($user) {
             $q->where('user_id', $user->id);
-        })->sum('amount');
+        })->where('status', 'paid')->sum('amount');
 
-        $wish_payment = StripePaymentItems::whereHas('wish', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->sum('amount');
+        $wish_payment = StripePaymentDetail::where('owner_id', $user->id)->where('payment_status', 'paid')->sum('amount_subtotal');
 
         $sub_payment = WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
             $q->where('user_id', $user->id);
-        })->sum('amount');
+        })->where('status', 'paid')->sum('amount');
 
-        $total_earnings = $bill_payment + $mem_payment + $wish_payment + $sub_payment;
+        $total_earnings = $goalPayment + $bill_payment + $mem_payment + $wish_payment + $sub_payment;
 
         if ($total_earnings < 100) {
             $target = 100;
@@ -2509,28 +2623,28 @@ class WishitemController extends Controller
      */
     public function userTips()
     {
-        $userId = Auth::id(); // Use the user ID directly
+        $userId = Auth::id();
 
-        // Retrieve TipGoalsPayment records where either the payment's user_id matches or related tipGoal's user_id matches
-        $userTips = TipGoalsPayment::with('tipGoal.user') // Eager load the user relationship in tipGoal
-            ->where('user_id', $userId)
+        $userTips = TipGoalsPayment::with(['user', 'creator'])
+            ->where(function ($query) use ($userId) {
+                $query->where('creator_id', $userId)
+                    ->orWhere('user_id', $userId);
+            })
             ->whereIn('status', ['paid', 'cancelled'])
-            ->orWhereHas('tipGoal', function ($q) use ($userId) {
-                $q->where('user_id', $userId);
-            })->latest()
+            ->latest()
             ->get();
 
-        // Map each tip and add owner property dynamically
-        $tips = $userTips->map(function ($tip) {
-            $tip->setAttribute('owner', $tip->creator ?? null); // Dynamically set the 'owner' attribute
-            return $tip;
+        // Optionally add 'owner' property
+        $userTips->each(function ($tip) {
+            $tip->owner = $tip->creator;
         });
 
         return response()->json([
             'status' => true,
-            'tips' => $tips,
+            'tips' => $userTips,
         ]);
     }
+
 
     /**
      * Enable disable the auto tweet
@@ -2590,7 +2704,7 @@ class WishitemController extends Controller
         }
         return response()->json([
             'status' => true,
-            'msg' => "Wish payment shared on twitter."
+            'msg' => "Gift items has been shared on twitter."
         ]);
     }
 
@@ -2681,11 +2795,13 @@ class WishitemController extends Controller
             ->get();
 
         $membership_payments->map(function ($q) {
-            $q->user_data = [
-                'name' => $q->user->name,
-                'avatar' => $q->user->avatar_url,
-                'uuid' => $q->user->uuid
-            ];
+            if ($q->user) {
+                $q->user_data = [
+                    'name' => $q->user->name,
+                    'avatar' => $q->user->avatar_url,
+                    'uuid' => $q->user->uuid
+                ];
+            }
             return $q;
         });
 

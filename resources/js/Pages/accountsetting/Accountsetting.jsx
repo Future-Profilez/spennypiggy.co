@@ -71,8 +71,6 @@ export default function Accountsetting(props) {
                     </div>
                     <div className='accsettingList p-4'>
                         <ul>
-
-
                             {auth && auth?.user?.role == 1 ?
                                 <>
                                 {auth.user && auth.user.monthly_charge_enabled ?
@@ -107,37 +105,49 @@ export default function Accountsetting(props) {
                                     <ChangeCurrency defaultvalue={global_currency} />
                                 </Popup>
                             </li>
-                            <li>
-                                <Popup size={"lg"} action={passClose} space='4' modalclassName="pinkmodal" text={"Edit Address"} >
-                                    <AddressForm isEditPopup={true}/>
-                                </Popup>
-                            </li>
 
-                            {/* <li>
-                                <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>VAT <span className='text-gray'>{vatpercent || "0"}%</span></>} >
-                                    <ChangeVat defaultvalue={vatpercent} updatevat={updatevat} />
-                                </Popup>
-                            </li> */}
-
-                            {/* <li>
-                                <Popup action={passClose} space='4' modalclassName="pinkmodal"
-                                text={
+                            {auth && auth?.user?.role == 1 ?
                                 <>
-                                    { auth && auth.user && auth.user.twitter_username ? `AUTO TWEET` : 'SET UP AUTO TWEET'}
-                                    <div className='d-flex items-center' >
-                                        <img src={closeblacksm} alt="img" className='me-2 w-5 h-5' />
-                                        { auth && auth.user && auth.user.twitter_username ? `@${auth.user.twitter_username}` : ''}
-                                    </div>
-                                </> } >
-                                    <LinkTwitter auto_tweet={auto_tweet}
-                                    auth={auth}
-                                    username={auth && auth.user && auth.user.twitter_username || false}  />
-                                </Popup>
-                            </li> */}
+                                    <li>
+                                        <Popup size={"lg"} action={passClose} space='4' modalclassName="pinkmodal" text={"ADDRESS"} >
+                                            <AddressForm isEditPopup={true} setSassClose={setSassClose}/>
+                                        </Popup>
+                                    </li>
+                                </>
+                            : ''}
+
+                            {auth && auth?.user?.role == 1 ?
+                                <>
+                                <li>
+                                    <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>VAT <span className='text-gray'>{vatpercent || "0"}%</span></>} >
+                                        <ChangeVat defaultvalue={vatpercent} updatevat={updatevat} />
+                                    </Popup>
+                                </li>
+                                </>
+                            : ''}
+
+                            {auth && auth?.user?.role == 1 ?
+                                <>
+                                    <li>
+                                        <Popup action={passClose} space='4' modalclassName="pinkmodal"
+                                        text={
+                                        <>
+                                            { auth && auth.user && auth.user.twitter_username ? `AUTO TWEET` : 'SET UP AUTO TWEET'}
+                                            <div className='d-flex items-center' >
+                                                <img src={closeblacksm} alt="img" className='me-2 w-5 h-5' />
+                                                { auth && auth.user && auth.user.twitter_username ? `@${auth.user.twitter_username}` : ''}
+                                            </div>
+                                        </> } >
+                                            <LinkTwitter auto_tweet={auto_tweet}
+                                            auth={auth}
+                                            username={auth && auth.user && auth.user.twitter_username || false}  />
+                                        </Popup>
+                                    </li>
+                                </>
+                            : ''}
 
                             <li>
-                                <div className='notification uppercase'>
-                                Receive e-mail notifications
+                                <div className='notification uppercase'> Receive e-mail notifications
                                     <label className="toggle-switch">
                                         <input id='notification_handle' checked={emailEnabled}
                                          type="checkbox" onChange={switchNotification}  />
@@ -146,7 +156,9 @@ export default function Accountsetting(props) {
                                 </div>
                             </li>
 
-                            {/* <li>
+                            {auth && auth?.user?.role == 1 ?
+                                <>
+                            <li>
                                 <div className='notification uppercase'>
                                 Show Piggy Bank Earnings
                                     <label className="toggle-switch">
@@ -155,7 +167,9 @@ export default function Accountsetting(props) {
                                         <span for='showbankearning' className="slider"></span>
                                     </label>
                                 </div>
-                            </li> */}
+                            </li>
+                            </>
+                            : ''}
 
                             {/* <li>
                                 <TFA text={<>

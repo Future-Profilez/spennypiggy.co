@@ -14,5 +14,6 @@ class VerifyCsrfToken extends Middleware
     protected $except = [
         '/stripe/webhook',
         '/rye-webhook',
+        '/mandatory-status',
     ];
 }

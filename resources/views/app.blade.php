@@ -9,7 +9,7 @@
     {!! \App\SeoMeta::render() !!}
 
     {{-- <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:title" content="Exclusive Content, Memberships & More!" />
+    <meta property="twitter:title" content="Spenny Piggy - The Everything Wishlist - Gifts, Memberships, Exclusive Content & More." />
     <meta property="twitter:description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
     <meta property="twitter:image" content="{{ URL::asset('/siteicon.png') }}" />
     <meta property="twitter:site" content="@spennypiggy" />
@@ -29,7 +29,9 @@
     <meta name="description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
     <meta name="keywords"
         content="Exclusive Content, Memberships & More!, Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!, Create Wishlist, Share Wishlist, Add Wishlist, Recieve Gifts, Send Gifts, Fans Funding. The Best Alternative to Amazon Wishlist" />
-
+        <!-- Google Fonts -->
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
     <meta property="og:title" content="Exclusive Content, Memberships & More!" />
     <meta property="og:type" content="video.movie" />
     <meta property="og:url" content="spennypiggy.co" />

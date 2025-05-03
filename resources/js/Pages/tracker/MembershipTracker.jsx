@@ -8,7 +8,7 @@ import Avatar from '@/includes/Avatar';
 import userphoto from "../../../assets/img/userphoto.png";
 import TweetNow from './TweetNow';
 import { TimeFormat } from '@/includes/TimeFormat';
-const defaultsec = "https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/";
+const defaultsec = "https://ucarecdn.com/55965522-e075-4ef3-8afc-195dacbf267b/";
 
 export default function MembershipTracker({auth}) {
 
@@ -51,7 +51,7 @@ export default function MembershipTracker({auth}) {
                                     <Avatar name={`From : Anonymous`} subhead={(n.membership && n.membership.level) || "Membership Payment"} src={userphoto || ""}/>
                                 ) : (
                                     <>
-                                    <Avatar name={`From : ${ (n && n.user && n.user.name) || "Anonymous" }`} link={ (n.user && n.user.username) || null } subhead={(n.membership && n.membership.level) ||"Membership Payment"} username={(n.user && n.user.username) || ""} src={(n && n.user && n.user.avatar_url) ||userphoto} />
+                                    <Avatar name={`From : ${ (n && n.user && n.user.name) || "Anonymous" }`} link={ (n.user && n.user.username) || null } subhead={(n.membership && n.membership.level) ||"Membership Payment"} username={(n.user && n.user.username) || ""} src={(n && n.user && n.user.avatar_url) || userphoto} />
                                     </>
                                 )}
                             </div>
@@ -68,7 +68,7 @@ export default function MembershipTracker({auth}) {
                                         <div className="identity text-success text-nowrap">
                                             +
                                             {formatMultiPrice(
-                                                n.final_amount,
+                                                n.amount,
                                                 n.currency
                                             )}
                                         </div>
