@@ -320,21 +320,31 @@ class MembershipController extends Controller
         }
 
         $vat_percentage_amount = 0;
+        $vat_percentage_amounts = 0;
         $currency   =   strtolower($request->cookie("currency", "GBP"));
         $tax = round($membership->tax_amount, 2, PHP_ROUND_HALF_UP);
         $price = round($membership->price, 2, PHP_ROUND_HALF_UP);
-
+        $adminFeeAmount = config('app.administration_fee'); // Admin fee as a percentage
         // $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
 
+        // below are the values which user see can the price according to their selected currency
+        $DatabaseAdminFee = Helpers::priceFormat('GBP', $adminFeeAmount, $membership->currency);
+        $DatabaseTax = Helpers::priceFormat($currency, $tax, $membership->currency);
+        $DatabasePrice = Helpers::priceFormat($currency, $price, $membership->currency);
+        $DatabaseTotalTaxAmount = $DatabaseAdminFee + $DatabaseTax;
         if (!empty($membership->user->vat_amount_percentage)) {
-            $vat_percentage_amount = ($price + $tax) * $membership->user->vat_amount_percentage / 100;
+            $vat_percentage_amount = ($DatabasePrice + $DatabaseTax) * $membership->user->vat_amount_percentage / 100;
         }
 
-        $adminFeeAmount = config('app.administration_fee'); // Admin fee as a percentage
-        $adminFeeForStoreDB = Helpers::priceFormat('GBP', $adminFeeAmount, $membership->currency);
+        // below are the value which user can see the price according to their selected currency
+        $paymentAdminFee = Helpers::priceFormat($membership->currency, $adminFeeAmount, $currency);
+        $paymentTax = Helpers::priceFormat($membership->currency, $tax, $currency);
+        $paymentPrice = Helpers::priceFormat($membership->currency, $price, $currency);
+        $totalPaymentTaxAmount = $paymentTax + $paymentAdminFee;
 
-        // Combine tax percentage and admin fee percentage
-        $totalTaxAmount = $tax + $adminFeeForStoreDB;
+        if (!empty($membership->user->vat_amount_percentage)) {
+            $vat_percentage_amounts = ($paymentPrice + $paymentTax) * $membership->user->vat_amount_percentage / 100;
+        }
 
         if ($request->isMethod("POST")) {
             $request->validate([
@@ -363,7 +373,7 @@ class MembershipController extends Controller
                 'guest_email'    =>  $request->email,
                 'currency'       =>  $membership->currency,
                 'amount'         =>  $membership->price,
-                'tax'            =>  $totalTaxAmount,
+                'tax'            =>  $DatabaseTotalTaxAmount,
                 'vat_tax_amount' =>  $vat_percentage_amount,
                 'recurring_for'  =>  $reccure,
                 'recurring_type' =>  in_array($membership->level, ['bronze', 'silver', 'gold', 'platinum']) ? 'monthly' : 'lifetime',
@@ -375,8 +385,13 @@ class MembershipController extends Controller
             $price += $vat_percentage_amount;
             $amount_per = round(($price / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
 
-            $amount = $price + $totalTaxAmount;
-            $unit_amount = Helpers::priceFormat($membership->currency, $amount, $currency) * 100;
+            $amount = $paymentPrice + $totalPaymentTaxAmount + $vat_percentage_amounts;
+            $unit_amount = $amount * 100;
+            // Log::info("Unit Amount: $unit_amount");
+            Log::info("Membership Price: $price");
+            Log::info("Membership Tax: $tax");
+            Log::info("Membership Amount: $amount");
+            Log::info("Membership Amount Per: $amount_per");
             // $tax =   Helpers::priceFormat($membership->currency, $tax, $currency);
 
             $items  =   [
@@ -411,7 +426,7 @@ class MembershipController extends Controller
                 $payload['payment_intent_data']     =   [
                     'transfer_data' => [
                         'destination' => $membership->user->account_id, // Creator's connected account ID
-                        'amount' => Helpers::priceFormat($membership->currency, $price, $currency) * 100,
+                        'amount' => $paymentPrice * 100,
                     ],
                     // 'application_fee_amount' => $tax * 100,
                     // 'on_behalf_of'  => $membership->user->account_id,
@@ -442,7 +457,6 @@ class MembershipController extends Controller
                 $sub->delete();
                 return back()->with('error', $e->getMessage());
             }
-
         }
 
         return Inertia::render('membership/MemberCheckout', [
