@@ -7,7 +7,7 @@ import Nocontent from '@/includes/Nocontent';
 import TweetNow from './TweetNow';
 import { TimeFormat } from '@/includes/TimeFormat';
 import Avatar from '@/includes/Avatar';
-const defaultsec = 'https://ucarecdn.com/be9060ab-1a76-452f-b805-1c71d9af4fb7/';
+const defaultsec = 'https://ucarecdn.com/55965522-e075-4ef3-8afc-195dacbf267b/';
 
 export default function Tiplisting({ auth }) {
   const { formatMultiPrice } = PriceFormat();

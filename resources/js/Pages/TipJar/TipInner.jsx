@@ -7,7 +7,7 @@ import axios from 'axios';
 import { useAlerts } from '@/Components/Alerts';
 import toast from 'react-hot-toast';
 
-export default function TipInner({classes}) {
+export default function TipInner({classes, idd}) {
 
   const { global_currency, auth, user } = usePage().props;
   const checkRef = useRef();
@@ -163,11 +163,11 @@ export default function TipInner({classes}) {
             }
 
             <div className='termselect mt-3 mb-3'>
-                <label htmlFor="termaccept">
+                <label htmlFor={`termaccept${idd || 1}`}>
                   <p className='text-small text-dark font-normal' >
                     <input className='cursor-pointer'
                     type="checkbox" ref={checkRef}
-                    id="termaccept"  name="termaccept"
+                    id={`termaccept${idd || 1}`}  name="termaccept"
                     value="termaccept" required
                     onChange={(e) => setData("termaccept", e.target.value)}></input>
                       By supporting me, you agree that this support is a gift and as a thank you, you get access to my profile feed and supporter only posts. To view these, you will need to create an account with the e-mail you used to send the support, as effectively you are purchasing a supporter Membership attached to your e-mail for 30 days.
