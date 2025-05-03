@@ -279,9 +279,12 @@ class BillsController extends Controller
             }
 
             $vat_percentage_amount = 0;
+            $vat_percentage_amounts = 0;
             $currency   =   strtolower($request->cookie("currency", "GBP"));
             $price = round($bill->price, 2, PHP_ROUND_HALF_UP);
             $tax = round($bill->tax_amount, 2, PHP_ROUND_HALF_UP);
+
+
 
             // $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
             if (!empty($bill->user->vat_amount_percentage)) {
@@ -326,6 +329,13 @@ class BillsController extends Controller
                     'message'        =>  $request->message ?? NULL,
                     'anonymous'      => $request->anonymous ?? 0
                 ]);
+
+                // payment currency conversion
+                $paymentUnitAmount = Helpers::priceFormat($bill->currency, $price, $currency) * 100;
+                $paymentTax = Helpers::priceFormat($bill->currency, $tax, $currency) * 100;
+                if (!empty($bill->user->vat_amount_percentage)) {
+                    $vat_percentage_amounts = ($paymentUnitAmount + $paymentTax) * $bill->user->vat_amount_percentage / 100;
+                }
 
                 // $transfering_amount = Helpers::priceFormat($bill->currency, $price, $currency) * 100;
                 $price += $vat_percentage_amount;
