@@ -1837,7 +1837,7 @@ class WishitemController extends Controller
                 return response()->json(['status' => true, 'message' => 'Order details stored', 'data' => $data]);
             }
 
-            return response()->json(['status' => false, 'message' => 'Order details not stored']);
+            // return response()->json(['status' => false, 'message' => 'Order details not stored']);
         } catch (Exception $e) {
             Log::error('Error in storeProductOrderDetails: ' . $e->getMessage());
             return response()->json(['status' => false, 'message' => $e->getMessage()]);
