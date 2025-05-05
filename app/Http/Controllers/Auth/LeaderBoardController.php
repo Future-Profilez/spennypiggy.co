@@ -175,12 +175,12 @@ class LeaderBoardController extends Controller
             ->get();
 
         $users->map(function ($user) {
-            $user->total_payments = Helpers::priceFormat($user->default_currency, $user->total_payments, 'GBP');
-            $user->total_subscriptions = Helpers::priceFormat($user->default_currency, $user->total_subscriptions, 'GBP');
-            $user->total_tips = Helpers::priceFormat($user->default_currency, $user->total_tips, 'GBP');
-            $user->total_member = Helpers::priceFormat($user->default_currency, $user->total_member, 'GBP');
-            $user->total_bill = Helpers::priceFormat($user->default_currency, $user->total_bill, 'GBP');
-            $user->total_shop = Helpers::priceFormat($user->default_currency, $user->total_shop, 'GBP');
+            $user->total_payments = Helpers::priceFormat($user->default_currency, $user->total_payments, 'USD');
+            $user->total_subscriptions = Helpers::priceFormat($user->default_currency, $user->total_subscriptions, 'USD');
+            $user->total_tips = Helpers::priceFormat($user->default_currency, $user->total_tips, 'USD');
+            $user->total_member = Helpers::priceFormat($user->default_currency, $user->total_member, 'USD');
+            $user->total_bill = Helpers::priceFormat($user->default_currency, $user->total_bill, 'USD');
+            $user->total_shop = Helpers::priceFormat($user->default_currency, $user->total_shop, 'USD');
 
             $user->total_amount = $user->total_payments + $user->total_subscriptions + $user->total_tips + $user->total_member + $user->total_bill + $user->total_shop;
         });
