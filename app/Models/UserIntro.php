@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 
 class UserIntro extends Model
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'uuid',
@@ -28,11 +28,13 @@ class UserIntro extends Model
     ];
 
 
-    public function user(){
+    public function user()
+    {
         return $this->belongsTo(User::class, 'user_id')->where('suspended_account', 0);
     }
 
-    public function getPermaLinkAttribute(){
+    public function getPermaLinkAttribute()
+    {
         $url = false;
         if (!empty($this->uuid)) {
             $url = env("UPLOADCARE_CDN") . $this->uuid . '/';
@@ -43,6 +45,7 @@ class UserIntro extends Model
 
     public function getPosterUrlAttribute()
     {
+        $url = null;
         if (!empty($this->poster) && !empty($this->poster_token)) {
             $req = Http::accept('application/vnd.uploadcare-v0.7+json')
                 ->contentType('application/json')
@@ -88,5 +91,4 @@ class UserIntro extends Model
         }
         return $url;
     }
-
 }
