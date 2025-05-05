@@ -1073,8 +1073,6 @@ class WishitemController extends Controller
      */
     public function handleRyeProductPayment(Request $request)
     {
-        Log::info('Rye Product Payment Request', ['request' => $request->all()]);
-
         $user = Auth::user(); // or $requestingUser if handling guests
 
         if (empty($user->stripe_id)) {
@@ -1217,8 +1215,6 @@ class WishitemController extends Controller
             ]);
 
             RyeProductPayment::whereUuid($ryeProductPayment->uuid)->update(['payment_metadata' => json_encode($sessionCreate)]);
-
-            Log::info('Stripe session created', ['session' => $sessionCreate]);
 
             return response()->json([
                 'status' => true,
@@ -1462,7 +1458,7 @@ class WishitemController extends Controller
         }
 
         // Log webhook for debugging
-        Log::info("Received Rye Webhook: " . $eventType, $payload);
+        // Log::info("Received Rye Webhook: " . $eventType, $payload);
 
         // Store webhook in database
         // $webhook = RyeWebhook::create([
@@ -1529,7 +1525,7 @@ class WishitemController extends Controller
     protected function handlePaymentSucceeded($payload)
     {
         // Example: Mark order as paid
-        Log::info("Handling PaymentSucceeded", $payload);
+        // Log::info("Handling PaymentSucceeded", $payload);
 
         ProductOrderDetail::updateOrCreate(
             ['order_id' => $payload['requestId']], // Search condition
@@ -1549,7 +1545,7 @@ class WishitemController extends Controller
 
     protected function handlePaymentFailed($payload)
     {
-        Log::info("Handling PaymentFailed", $payload);
+        // Log::info("Handling PaymentFailed", $payload);
 
         ProductOrderDetail::updateOrCreate(
             ['order_id' => $payload['requestId']], // Search condition
@@ -1569,7 +1565,7 @@ class WishitemController extends Controller
 
     protected function handlePaymentRefunded($payload)
     {
-        Log::info("Handling PaymentRefunded", $payload);
+        // Log::info("Handling PaymentRefunded", $payload);
 
         ProductOrderDetail::updateOrCreate(
             ['order_id' => $payload['requestId']], // Search condition
@@ -1589,19 +1585,19 @@ class WishitemController extends Controller
 
     protected function handleOrderSubmissionStarted($payload)
     {
-        Log::info("Handling OrderSubmissionStarted", $payload);
+        // Log::info("Handling OrderSubmissionStarted", $payload);
         return response()->json(['message' => 'Order submission started processed']);
     }
 
     protected function handleOrderSubmissionSucceeded($payload)
     {
-        Log::info("Handling OrderSubmissionSucceeded", $payload);
+        // Log::info("Handling OrderSubmissionSucceeded", $payload);
         return response()->json(['message' => 'Order submission succeeded processed']);
     }
 
     protected function handleOrderPlaced($payload)
     {
-        Log::info("Handling OrderPlaced", $payload);
+        // Log::info("Handling OrderPlaced", $payload);
 
         ProductOrderDetail::updateOrCreate(
             ['order_id' => $payload['requestId']], // Search condition
@@ -1621,7 +1617,7 @@ class WishitemController extends Controller
 
     protected function handleOrderFailed($payload)
     {
-        Log::info("Handling OrderFailed", $payload);
+        // Log::info("Handling OrderFailed", $payload);
         return response()->json(['message' => 'Order failed processed']);
     }
 

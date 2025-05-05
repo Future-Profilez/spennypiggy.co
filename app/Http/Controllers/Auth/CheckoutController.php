@@ -117,11 +117,6 @@ class CheckoutController extends Controller
 
             $transfering_amount = $transfer_amount;
 
-            Log::info("Transfer Amount: $transfering_amount");
-            Log::info("Subtotal: $subtotal");
-            Log::info("Tax: $taxNew");
-            Log::info("Total Amount: $new_total_amount");
-
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
 

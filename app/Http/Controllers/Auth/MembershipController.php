@@ -388,10 +388,6 @@ class MembershipController extends Controller
             $amount = $paymentPrice + $totalPaymentTaxAmount + $vat_percentage_amounts;
             $unit_amount = $amount * 100;
             // Log::info("Unit Amount: $unit_amount");
-            Log::info("Membership Price: $price");
-            Log::info("Membership Tax: $tax");
-            Log::info("Membership Amount: $amount");
-            Log::info("Membership Amount Per: $amount_per");
             // $tax =   Helpers::priceFormat($membership->currency, $tax, $currency);
 
             $items  =   [

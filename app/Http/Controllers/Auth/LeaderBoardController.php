@@ -96,7 +96,13 @@ class LeaderBoardController extends Controller
         $currentWeekEndDate = Carbon::now()->endOfWeek();
         $currentDate = Carbon::today()->format('Y-m-d');
 
-        $users = User::where('stripe_details_submitted', 1)->where('suspended_account', 0)->where('country', '!=', 'GB')->with(['paymentitems', 'subscriptions', 'tip_goal_payment', 'membership_payments', 'bill_payments', 'shop_payments'])
+        $users = User::where('stripe_details_submitted', 1)->where('suspended_account', 0)->where(function ($query) {
+            $query->where(function ($q) {
+                $q->where('country', '!=', 'GB')
+                    ->orWhere('country', '')
+                    ->orWhereNull('country');
+            });
+        })->with(['paymentitems', 'subscriptions', 'tip_goal_payment', 'membership_payments', 'bill_payments', 'shop_payments'])
             ->withCount([
                 'paymentitems as total_payments' => function ($query) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
                     $query->select(DB::raw("COALESCE(SUM(amount), 0)"))->where('stripe_payment_details.payment_status', 'paid');
@@ -462,8 +468,6 @@ class LeaderBoardController extends Controller
         })->whereHas('wish', function ($q) use ($user) {
             $q->whereNotNull('stripe_product_id')->where('user_id', $user->id);
         })->groupBy('wish_item_id');
-        Log::info('single_wish start');
-        Log::info($single_wish->sum('amount'));
 
         // $crowd_wish = StripePaymentItems::whereHas('wish',function($q){
         //     $q->whereNull('stripe_product_id');
@@ -545,8 +549,6 @@ class LeaderBoardController extends Controller
 
             $single_wish->whereYear('created_at', '=', $currentYear)
                 ->whereMonth('created_at', $currentMonth);
-            Log::info('single_wish end');
-            Log::info($single_wish->sum('amount'));
 
             // $crowd_wish->whereYear('created_at', '=', $currentYear)
             // ->whereMonth('created_at',$currentMonth);

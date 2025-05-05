@@ -137,7 +137,7 @@ class ProfileController extends Controller
 
             $user->name = $request->name;
             $user->username = $request->username;
-            if ($request->bio) {
+            if ($request->bio !== $user->bio || $request->social_handle !== $user->social_handle) {
 
                 UserVerificationStatus::UpdateOrCreate([
                     'user_id' => $user->id,
@@ -151,10 +151,10 @@ class ProfileController extends Controller
                     'bio' => $request->bio !== $user->bio,
                     'social' => $request->social_handle !== $user->social_handle,
                 ];
-                Log::info($request->bio);
-                Log::info($user->bio);
+                // Log::info($request->bio);
+                // Log::info($user->bio);
 
-                Log::info('Updated fields:', $updatedFields);
+                // Log::info('Updated fields:', $updatedFields);
 
                 if ($updatedFields['bio'] || $updatedFields['social']) {
                     dispatch(new SendBioSocialUpdateEmail($user, $updatedFields));

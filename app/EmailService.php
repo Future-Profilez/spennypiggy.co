@@ -270,10 +270,8 @@ class EmailService
     public static function sendBillMail($bill_pay, $amountWithVat)
     {
         try {
-            Log::info("come in EmailService try ");
             Mail::to($bill_pay->bill->user->email)->send(new BillMail($bill_pay, $amountWithVat));
         } catch (TransportException $e) {
-            Log::info("come in EmailService catch");
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }

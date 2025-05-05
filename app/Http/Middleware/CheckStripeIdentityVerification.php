@@ -44,6 +44,7 @@ class CheckStripeIdentityVerification
             && $isBioSocialVerified
             && $hasPaidSubscription;
 
+
         if ($needsIdentityVerification) {
             return Inertia::render('Auth/StripeIdentity', [
                 'status' => false,
