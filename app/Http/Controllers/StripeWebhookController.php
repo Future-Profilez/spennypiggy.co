@@ -71,12 +71,6 @@ class StripeWebhookController extends Controller
                 'identity_verified_at' => null,
             ]);
 
-            Log::info('Verification session requires input', [
-                'user_id' => $user->id,
-                'session_id' => $session->id,
-                'is_fraudulent' => $isFraudulent,
-            ]);
-
             $emailType = $isFraudulent ? 'fraud' : 'failed';
             SendIdentityVerificationEmail::dispatch($user, $emailType);
         } else {
@@ -96,12 +90,6 @@ class StripeWebhookController extends Controller
                 'identity_status' => $isFraudulent ? 3 : 1, // 3 = Fraud, 1 = Verified
                 'identity_verified_at' => $isFraudulent ? null : now(),
                 'identity_verification_details' => json_encode($session),
-            ]);
-
-            Log::info('Verification session verified', [
-                'user_id' => $user->id,
-                'session_id' => $session->id,
-                'is_fraudulent' => $isFraudulent,
             ]);
 
             $emailType = $isFraudulent ? 'fraud' : 'success';

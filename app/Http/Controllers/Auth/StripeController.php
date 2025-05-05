@@ -210,7 +210,6 @@ class StripeController extends Controller
     /* create checkout */
     public function createCheckout($owner_id)
     {
-        Log::info('Query Parameters:', request()->query());
         try {
             if (!empty(request()->query('message'))) {
                 $wordLimit = 100;
@@ -354,7 +353,6 @@ class StripeController extends Controller
                 $payment_data->refresh();
                 $message = $stripeid->message;
 
-                Log::info("come at stripeController 349 line");
 
                 // if ($dd->wish_item_id == NULL) {
                 //     CheckoutUser::dispatch($payment_data, false, $dd, $message, false);
@@ -552,8 +550,6 @@ class StripeController extends Controller
                 $value->status = 0;
                 $value->save();
 
-                Log::info("come at stripeController 547 line");
-
                 // $dd->wish_id == NULL
                 // CheckoutUser::dispatch($data, true, false, false, $stripeid->name);
             }
@@ -678,16 +674,6 @@ class StripeController extends Controller
             $adminFee = config('app.administration_fee');
             $adminFee =   Helpers::priceFormat('GBP', $adminFee, $currency);
             $total_unit_amount = $unit_amount + $adminFee;
-
-            Log::info("unit_amount: " . $unit_amount);
-            Log::info("total_unit_amount: " . $total_unit_amount);
-            Log::info("currency: " . $currency);
-            Log::info("wish->stripe_product_id: " . $wish->stripe_product_id);
-            Log::info("wish->currency: " . $wish->currency);
-            Log::info("wish->price_id: " . $wish->price_id);
-            Log::info("wish->price: " . $wish->price);
-            Log::info("wish->tax_amount: " . $wish->tax_amount);
-            Log::info("amount_per: " . $amount_per);
 
             $items  =   [
                 'quantity'      =>  1,
@@ -1412,7 +1398,6 @@ class StripeController extends Controller
      */
     public function mandatorySubscriptionStatus(Request $request)
     {
-        Log::info('Webhook received: ' . json_encode($request->all()));
 
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
         $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
@@ -1428,8 +1413,6 @@ class StripeController extends Controller
             return response()->json(['error' => 'Invalid signature'], 400);
         }
 
-        Log::info(json_encode($event, true));
-
         if (!empty($event)) {
             $subscriptionId = data_get($event, 'data.object.subscription');
             $customerEmail = data_get($event, 'data.object.customer_email');
@@ -1438,7 +1421,6 @@ class StripeController extends Controller
 
             // $subs = MonthlyCharge::where('stripe_id', $event['data']['object']['id'])->first();
             $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->first();
-            Log::info($event['data']['object']['id']);
 
             try {
                 // $ret = StripeControl::getSubscription($subscriptionId);

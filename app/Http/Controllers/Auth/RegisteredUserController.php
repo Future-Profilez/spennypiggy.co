@@ -423,7 +423,6 @@ class RegisteredUserController extends Controller
             'customer' => $user->stripe_id,
             'limit' => 1,
         ]);
-        Log::info(json_encode($sessions, true));
 
         $session = $sessions->data[0] ?? null;
 

@@ -225,11 +225,9 @@ class TestController extends Controller
             if ($users->isEmpty()) {
                 return response()->json(['status' => 'error', 'message' => 'No users found with identity verification errors.']);
             }
-            Log::info('come after if');
 
             // Dispatch email jobs for each user
             foreach ($users as $user) {
-                Log::info("come after if " . $user->id);
                 dispatch(new SendIdentityVerificationEmail($user, 'failed'));
             }
 

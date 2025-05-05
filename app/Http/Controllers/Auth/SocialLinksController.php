@@ -87,8 +87,6 @@ class SocialLinksController extends Controller
                     'social' => true,
                 ];
 
-                Log::info('Updated fields:', $updatedFields);
-
                 if ($updatedFields['bio'] || $updatedFields['social']) {
                     dispatch(new SendBioSocialUpdateEmail(Auth::user(), $updatedFields));
                 }

@@ -332,7 +332,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/clear-cart/{device_id}/{ownerid}', [WishitemController::class, 'clearCart'])->name('clear-cart');
 
-        Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart')->middleware(['mustCompletedCardVerification','mustCompletedCardVerification']);
+        Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart')->middleware('mustCompletedCardVerification');
 
         Route::get('anonymous-cart/{deviceId}', [WishitemController::class, 'anonymousCartItems'])->name('anonymous-cart');
 
