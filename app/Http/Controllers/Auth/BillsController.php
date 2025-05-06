@@ -563,10 +563,14 @@ class BillsController extends Controller
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
         // This is your Stripe CLI webhook secret for testing your endpoint locally.
-        $endpoint_secret = 'whsec_tuck6Z96sSloUF7kuABTtbhvRiVaF8N8';
+        // $endpoint_secret = 'whsec_tuck6Z96sSloUF7kuABTtbhvRiVaF8N8';
+        $endpoint_secret = env('BILL_SUB_WEBHOOK_SECRET');
 
         $payload = @file_get_contents('php://input');
-        $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
+        $sig_header = $request->server('HTTP_STRIPE_SIGNATURE');
+
+        // $payload = @file_get_contents('php://input');
+        // $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
         $event = null;
 
         try {
@@ -576,10 +580,18 @@ class BillsController extends Controller
                 $endpoint_secret
             );
         } catch (\UnexpectedValueException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
             // Invalid payload
             http_response_code(400);
             exit();
         } catch (\Stripe\Exception\SignatureVerificationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
             // Invalid signature
             http_response_code(400);
             exit();
@@ -638,6 +650,10 @@ class BillsController extends Controller
             }
         }
 
-        return true;
+        return response()->json([
+            'status' => true,
+            'message' => 'success',
+        ]);
+        // return true;
     }
 }

@@ -16,5 +16,7 @@ class VerifyCsrfToken extends Middleware
         '/rye-webhook',
         '/mandatory-status',
         '/subs-status',
+        '/bill-status',
+        '/membership-status',
     ];
 }

@@ -349,13 +349,6 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/send-surprize', [WishitemController::class, 'sendSurprise'])->name('send-surprize');
 
-
-        Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status')->withoutMiddleware(VerifyCsrfToken::class);
-
-        Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-status')->withoutMiddleware(VerifyCsrfToken::class);
-
-        Route::post('mandatory-status', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status');
-
         Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
             Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay")->middleware('mustCompletedCardVerification');
             Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
@@ -363,8 +356,11 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-// wish subscription webhook
+// subscription webhook
 Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status');
+Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-status');
+Route::post('mandatory-status', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status');
+Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status');
 
 
 Route::get('tip-jar/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');
