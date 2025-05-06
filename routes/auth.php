@@ -349,7 +349,6 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/send-surprize', [WishitemController::class, 'sendSurprise'])->name('send-surprize');
 
-        Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status');
 
         Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status')->withoutMiddleware(VerifyCsrfToken::class);
 
@@ -363,6 +362,10 @@ Route::middleware('auth')->group(function () {
         });
     });
 });
+
+// wish subscription webhook
+Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status');
+
 
 Route::get('tip-jar/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');
 Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
