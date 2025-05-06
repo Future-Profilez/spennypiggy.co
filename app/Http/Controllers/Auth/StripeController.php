@@ -823,7 +823,7 @@ class StripeController extends Controller
         $endpoint_secret = 'whsec_o1Y8bPrcVLiQInKYsJ8LrbxUpQslQYvl';
 
         $payload = @file_get_contents('php://input');
-        $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
+        $sig_header = $request->header('Stripe-Signature');
         $event = null;
 
         try {
@@ -833,10 +833,18 @@ class StripeController extends Controller
                 $endpoint_secret
             );
         } catch (\UnexpectedValueException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
             // Invalid payload
             http_response_code(400);
             exit();
         } catch (\Stripe\Exception\SignatureVerificationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ]);
             // Invalid signature
             http_response_code(400);
             exit();
@@ -904,7 +912,11 @@ class StripeController extends Controller
             }
         }
 
-        return true;
+        return response()->json([
+            'status' => true,
+            'message' => 'success'
+        ]);
+        // return true;
     }
 
     public function cancelSubs($uuid)
