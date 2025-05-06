@@ -822,7 +822,8 @@ class StripeController extends Controller
         // This is your Stripe CLI webhook secret for testing your endpoint locally.
         $endpoint_secret = 'whsec_o1Y8bPrcVLiQInKYsJ8LrbxUpQslQYvl';
 
-        $payload = @file_get_contents('php://input');
+        // $payload = @file_get_contents('php://input');
+        $payload = $request->getContent();
         $sig_header = $request->header('Stripe-Signature');
         $event = null;
 
