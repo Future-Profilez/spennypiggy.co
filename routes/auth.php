@@ -349,7 +349,7 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/send-surprize', [WishitemController::class, 'sendSurprise'])->name('send-surprize');
 
-        Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status')->withoutMiddleware(VerifyCsrfToken::class);
+        Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status');
 
         Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status')->withoutMiddleware(VerifyCsrfToken::class);
 
