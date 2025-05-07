@@ -12,12 +12,14 @@ class PaymentSuccessMail extends Mailable
 
     public $user;
     public $amount;
+    public $planCurrency;
     public $nextPaymentDate;
 
-    public function __construct($user, $amount, $nextPaymentDate)
+    public function __construct($user, $amount, $planCurrency, $nextPaymentDate)
     {
         $this->user = $user;
         $this->amount = $amount;
+        $this->planCurrency = $planCurrency;
         $this->nextPaymentDate = $nextPaymentDate;
     }
 
