@@ -149,33 +149,37 @@ class StripeWebhookController extends Controller
             $invoice = $event->data->object;
             Log::info("Invoice: ");
             Log::info(json_encode($invoice, true));
-            // Get customer id from invoice
-            $stripeEmailId = $invoice->customer_details->email;
 
-            // Find MonthlyCharge by stripe customer ID (you may need to adjust this)
-            $monthlyCharge = MonthlyCharge::where('email', $stripeEmailId)->where('id', 'desc')->first();
+            // Get email from invoice
+            $stripeEmailId = $invoice->customer_email ?? null;
+
+            // Find MonthlyCharge by stripe customer email
+            $monthlyCharge = MonthlyCharge::where('email', $stripeEmailId)->latest()->first();
 
             Log::info("data: $monthlyCharge");
 
             if ($monthlyCharge) {
                 $monthlyCharge->updated_at = now();
                 $monthlyCharge->upcoming_payment = date('Y-m-d H:i:s', $invoice->next_payment_attempt);
+                $monthlyCharge->status = 'paid';
                 $monthlyCharge->save();
 
                 $email = $monthlyCharge->user->email ?? $monthlyCharge->email;
 
                 Log::info("Email: $email");
-                Log::info("Invoice Amount: " . ($invoice['amount_paid'] / 100));
+                Log::info("Invoice Amount: " . ($invoice->amount_paid / 100));
                 Log::info("Next Payment Date: " . date('Y-m-d H:i:s', $invoice->next_payment_attempt));
                 Log::info("Monthly Charge: " . $monthlyCharge);
+
                 // Dispatch mail job
                 dispatch(new SendPaymentSuccessEmail(
-                    $email,
-                    $invoice['amount_paid'] / 100,
+                    $monthlyCharge->user,
+                    $invoice->amount_paid / 100,
                     $monthlyCharge->upcoming_payment
                 ));
             }
         }
+
 
         return response()->json(['status' => 'success', 'message' => 'Webhook received']);
         // return response('Webhook received', 200);
