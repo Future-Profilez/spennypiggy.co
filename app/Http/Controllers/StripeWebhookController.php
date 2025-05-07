@@ -160,6 +160,7 @@ class StripeWebhookController extends Controller
             if ($monthlyCharge) {
                 $monthlyCharge->updated_at = now();
                 $monthlyCharge->upcoming_payment = date('Y-m-d H:i:s', $invoice->next_payment_attempt);
+                $monthlyCharge->status = 'paid';
                 $monthlyCharge->save();
 
                 $email = $monthlyCharge->user->email ?? $monthlyCharge->email;
