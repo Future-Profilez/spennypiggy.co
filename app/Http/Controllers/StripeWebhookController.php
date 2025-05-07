@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\SendIdentityVerificationEmail;
+use App\Jobs\SendPaymentSuccessEmail;
 use App\Mail\PaymentSuccessMail;
 use App\Models\MonthlyCharge;
 use App\Models\User;
@@ -158,8 +159,12 @@ class StripeWebhookController extends Controller
                 $monthlyCharge->upcoming_payment = date('Y-m-d H:i:s', $invoice->next_payment_attempt);
                 $monthlyCharge->save();
 
-                // Dispatch the job
-                dispatch(new PaymentSuccessMail($monthlyCharge->user, $invoice->amount_paid / 100, $monthlyCharge->upcoming_payment));
+                // Dispatch mail job
+                dispatch(new SendPaymentSuccessEmail(
+                    $monthlyCharge->user,
+                    $invoice['amount_paid'] / 100,
+                    $monthlyCharge->upcoming_payment
+                ));
             }
         }
 
