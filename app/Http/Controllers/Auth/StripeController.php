@@ -162,7 +162,6 @@ class StripeController extends Controller
         }
     }
 
-
     /**
      * Return URL After Success
      *
@@ -1526,6 +1525,7 @@ class StripeController extends Controller
 
         return response()->json(['status' => 'success']);
     }
+
     // public function mandatorySubscriptionStatus(Request $request)
     // {
     //     Log::info('Webhook received: ' . json_encode($request->all()));

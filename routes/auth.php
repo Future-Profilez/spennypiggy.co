@@ -23,6 +23,7 @@ use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\WishtenderController;
 use App\Http\Middleware\CheckGifterCardVerification;
 use App\Http\Middleware\VerifyCsrfToken;
@@ -357,6 +358,8 @@ Route::middleware('auth')->group(function () {
 });
 
 // subscription webhook
+Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
+Route::post('creator-monthly-verification-webhook', [StripeWebhookController::class, 'creatorMonthlyVerificationWebhook'])->name('creator.monthly.verification.webhook');
 Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status');
 Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-status');
 Route::post('mandatory-status', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status');
