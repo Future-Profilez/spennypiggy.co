@@ -79,7 +79,6 @@ Route::get('/giftstore', function () {
 //     return response()->json(['status' => 'done', 'message' => $a], 200);
 // })->name('test.stripe');
 
-Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
 
 Route::get('send-identity-verification-failed-emails', [TestController::class, 'sendFailedVerificationEmails']);
 

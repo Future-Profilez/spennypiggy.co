@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\SendIdentityVerificationEmail;
+use App\Mail\PaymentSuccessMail;
+use App\Models\MonthlyCharge;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -125,6 +127,45 @@ class StripeWebhookController extends Controller
         return false; // No fraud detected
     }
 
+    public function creatorMonthlyVerificationWebhook(Request $request)
+    {
+        $payload = $request->getContent();
+        $sigHeader = $request->header('Stripe-Signature');
+
+        try {
+            $event = \Stripe\Webhook::constructEvent(
+                $payload,
+                $sigHeader,
+                env('CREATOR_MONTHLY_SUBSCRIPTION_SECRET')
+            );
+        } catch (\UnexpectedValueException $e) {
+            return response('Invalid payload', 400);
+        } catch (\Stripe\Exception\SignatureVerificationException $e) {
+            return response('Invalid signature', 400);
+        }
+
+        if ($event->type === 'invoice.payment_succeeded') {
+            $invoice = $event->data->object;
+
+            // Get customer id from invoice
+            $stripeEmailId = $invoice->customer_details->email;
+
+            // Find MonthlyCharge by stripe customer ID (you may need to adjust this)
+            $monthlyCharge = MonthlyCharge::where('email', $stripeEmailId)->where('id', 'desc')->first();
+
+            if ($monthlyCharge) {
+                $monthlyCharge->updated_at = now();
+                $monthlyCharge->upcoming_payment = date('Y-m-d H:i:s', $invoice->next_payment_attempt);
+                $monthlyCharge->save();
+
+                // Dispatch the job
+                dispatch(new PaymentSuccessMail($monthlyCharge->user, $invoice->amount_paid / 100, $monthlyCharge->upcoming_payment));
+            }
+        }
+
+        return response()->json(['status' => 'success', 'message' => 'Webhook received']);
+        // return response('Webhook received', 200);
+    }
 
     // public function handleWebhook(Request $request)
     // {
