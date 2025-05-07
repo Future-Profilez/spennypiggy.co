@@ -154,12 +154,19 @@ class StripeWebhookController extends Controller
             // Find MonthlyCharge by stripe customer ID (you may need to adjust this)
             $monthlyCharge = MonthlyCharge::where('email', $stripeEmailId)->where('id', 'desc')->first();
 
+            Log::info("data: $monthlyCharge");
+
             if ($monthlyCharge) {
                 $monthlyCharge->updated_at = now();
                 $monthlyCharge->upcoming_payment = date('Y-m-d H:i:s', $invoice->next_payment_attempt);
                 $monthlyCharge->save();
 
                 $email = $monthlyCharge->user->email ?? $monthlyCharge->email;
+
+                Log::info("Email: $email");
+                Log::info("Invoice Amount: " . ($invoice['amount_paid'] / 100));
+                Log::info("Next Payment Date: " . date('Y-m-d H:i:s', $invoice->next_payment_attempt));
+                Log::info("Monthly Charge: " . $monthlyCharge);
                 // Dispatch mail job
                 dispatch(new SendPaymentSuccessEmail(
                     $email,
