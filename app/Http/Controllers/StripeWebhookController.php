@@ -159,9 +159,10 @@ class StripeWebhookController extends Controller
                 $monthlyCharge->upcoming_payment = date('Y-m-d H:i:s', $invoice->next_payment_attempt);
                 $monthlyCharge->save();
 
+                $email = $monthlyCharge->user->email ?? $monthlyCharge->email;
                 // Dispatch mail job
                 dispatch(new SendPaymentSuccessEmail(
-                    $monthlyCharge->user,
+                    $email,
                     $invoice['amount_paid'] / 100,
                     $monthlyCharge->upcoming_payment
                 ));
