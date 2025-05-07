@@ -164,17 +164,17 @@ class StripeWebhookController extends Controller
                 $monthlyCharge->status = 'paid';
                 $monthlyCharge->save();
 
-                $email = $monthlyCharge->user->email ?? $monthlyCharge->email;
+                $planAmount = $invoice->lines->data[0]->plan->amount ?? 0;
+                $planCurrency = strtoupper($invoice->lines->data[0]->plan->currency ?? 'usd');
+                $amount = $planAmount / 100;
 
-                Log::info("Email: $email");
-                Log::info("Invoice Amount: " . ($invoice->amount_paid / 100));
-                Log::info("Next Payment Date: " . date('Y-m-d H:i:s', $invoice->next_payment_attempt));
-                Log::info("Monthly Charge: " . $monthlyCharge);
+                Log::info("Plan Amount: {$amount} {$planCurrency}");
 
                 // Dispatch mail job
                 dispatch(new SendPaymentSuccessEmail(
                     $monthlyCharge->user,
-                    $invoice->amount_paid / 100,
+                    $amount,
+                    $planCurrency,
                     $monthlyCharge->upcoming_payment
                 ));
             }
