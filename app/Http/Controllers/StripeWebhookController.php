@@ -159,8 +159,12 @@ class StripeWebhookController extends Controller
             Log::info("data: $monthlyCharge");
 
             if ($monthlyCharge) {
+                // Get trial end date from invoice line item
+                $periodEndTimestamp = $invoice->lines->data[0]->period->end ?? null;
+                $trialEndDate = $periodEndTimestamp ? date('Y-m-d H:i:s', $periodEndTimestamp) : null;
+
                 $monthlyCharge->updated_at = now();
-                $monthlyCharge->upcoming_payment = date('Y-m-d H:i:s', $invoice->next_payment_attempt);
+                $monthlyCharge->upcoming_payment = $trialEndDate;
                 $monthlyCharge->status = 'paid';
                 $monthlyCharge->save();
 
@@ -179,6 +183,7 @@ class StripeWebhookController extends Controller
                 ));
             }
         }
+
 
 
         return response()->json(['status' => 'success', 'message' => 'Webhook received']);
