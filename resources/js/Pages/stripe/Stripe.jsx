@@ -122,10 +122,6 @@ export default function Stripe(props) {
                             </div>
                          }
 
-                        {/* {auth?.user?.profile_status_lock !== 2 ?
-                            <p className="text-red-500 text-lg">Your profile will go under verification. Please complete above steps to get verified and check back within 1-2 hours.</p> 
-                        : ''} */}
-
                         {auth?.user?.profile_status_lock == 0 && auth?.user?.profile_reject_reason ?
                             <div className="mt-4 alert alert-danger">
                              <h2 className="text-red-600 text-xl">Application Rejected</h2>
