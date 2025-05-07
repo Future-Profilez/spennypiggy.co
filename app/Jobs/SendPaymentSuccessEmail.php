@@ -15,18 +15,19 @@ class SendPaymentSuccessEmail implements ShouldQueue
 {
     use InteractsWithQueue, Queueable, SerializesModels;
 
-    public $user, $amount, $nextPaymentDate;
+    public $user, $amount, $nextPaymentDate, $email = null;
 
     public function __construct($user, $amount, $nextPaymentDate)
     {
         $this->user = $user;
         $this->amount = $amount;
         $this->nextPaymentDate = $nextPaymentDate;
+        $this->email = $this->user->email ?? $this->user->email;
     }
 
     public function handle()
     {
-        Mail::to($this->user->email)->send(
+        Mail::to($this->email)->send(
             new PaymentSuccessMail($this->user, $this->amount, $this->nextPaymentDate)
         );
     }
