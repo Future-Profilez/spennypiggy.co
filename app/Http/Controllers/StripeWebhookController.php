@@ -147,7 +147,8 @@ class StripeWebhookController extends Controller
 
         if ($event->type === 'invoice.payment_succeeded') {
             $invoice = $event->data->object;
-
+            Log::info("Invoice: ");
+            Log::info(json_encode($invoice, true));
             // Get customer id from invoice
             $stripeEmailId = $invoice->customer_details->email;
 
