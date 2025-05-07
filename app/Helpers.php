@@ -12,7 +12,7 @@ class Helpers
 {
     public static function checkBlockData($request)
     {
-        $blockedWords = ['paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive','tax','fee','session','deposit','tribute','dick','goddess','master','mistress'];
+        $blockedWords = ['paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive', 'tax', 'fee', 'session', 'deposit', 'tribute', 'dick', 'goddess', 'master', 'mistress'];
         $blockedEmojis = ['😈', '💩', '💬', '👅', '🍆', '🍌', '🌽', '🌶️', '🍑', '💎', '💦'];
         foreach ($blockedWords as $key => $word) {
             if (stripos($request->getContent(), $word) !== false) {
@@ -41,7 +41,6 @@ class Helpers
         return false;
     }
 
-
     public static function priceFormat($currency1, $amount, $currency2)
     {
         $def = Currency::where('ISO', strtoupper($currency1))->first();
@@ -54,7 +53,6 @@ class Helpers
 
         return round($prof_cur_price, 2, PHP_ROUND_HALF_UP);
     }
-
 
     public static function checkUnsafeContent($uuid)
     {
@@ -92,8 +90,8 @@ class Helpers
         return $rest;
     }
 
-
-    public static function getCurrency($currency){
+    public static function getCurrency($currency)
+    {
 
         $curr = strtolower($currency);
 
@@ -111,6 +109,42 @@ class Helpers
         ];
 
         return $arr[$curr];
+    }
 
+    public static function sendNotification($title, $content, $email)
+    {
+        $payload = [
+            'notification' => [
+                'title' => $title,
+                'content' => $content,
+                'recipients' => [
+                    ['email' => $email]
+                ]
+            ]
+        ];
+        try {
+            $response = Http::withHeaders([
+                'X-MAGICBELL-API-KEY' => env('MAGICBELL_API_KEY'),
+                'X-MAGICBELL-API-SECRET' => env("MAGICBELL_API_SECRET"),
+                'Accept' => 'application/json',
+            ])->post('https://api.magicbell.com/notifications', $payload);
+
+            Log::info('MagicBell API response status: ' . $response->status());
+            Log::info('MagicBell API response body: ' . $response->body());
+
+            if ($response->successful()) {
+                return response()->json(['message' => 'Push notification sent successfully!']);
+            }
+            Log::error('Failed to send push notification: ' . $response->reason());
+            return response()->json([
+                'error' => 'Failed to send push notification !!',
+                'reason' => $response->reason(),
+                'status_code' => $response->status(),
+                'response_body' => $response->body(),
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('Error sending push notification: ' . $e->getMessage());
+            return response()->json(['error' => 'Error sending push notification: ' . $e->getMessage()], 500);
+        }
     }
 }
