@@ -41,7 +41,7 @@ environments:
       - "php artisan route:cache"
       - "npm ci"
       - "npm run build"
-      - "rm -rf node_modules"   # Linux/mac/OS
+      - "rm -rf node_modules" # Linux/mac/OS
       # - "rd /s /q node_modules"  # Windows
     deploy:
       - "php artisan migrate --force"

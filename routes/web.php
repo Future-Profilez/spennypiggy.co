@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Illuminate\Support\Str;
 
 
 /*
@@ -124,6 +125,79 @@ Route::prefix("test")->name("test.")->group(function () {
     Route::get("items/{c?}", [TestController::class, 'testItems']);
     Route::get('/ip', [TestController::class, 'testIp']);
 });
+
+
+
+
+Route::get('/service-worker.js', function () {
+    $assetRoot = rtrim(asset("/"), "/");
+    $content = file_get_contents(resource_path("proxy/service-worker.js"));
+    $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
+    return response($content, 200, [
+        "Content-Type" => "text/javascript",
+    ]);
+})->name('service.worker');
+
+Route::get('/new-service-worker.js', function () {
+    $assetRoot = rtrim(asset("/"), "/");
+    $content = file_get_contents(resource_path("proxy/service-worker.js"));
+    $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
+    return response($content, 200, [
+        "Content-Type" => "text/javascript",
+    ]);
+})->name('service.worker');
+
+
+Route::get('/manifest.json', function () {
+    $assetRoot = rtrim(asset("/"), "/");
+    $content = file_get_contents(resource_path("proxy/manifest.json"));
+    $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
+    return response($content, 200, [
+        "Content-Type" => "text/json",
+    ]);
+})->name('manifest.file');
+
+
+Route::get('/android-chrome-192x192.png', function () {
+    $assetRoot = rtrim(asset("/"), "/");
+    $content = file_get_contents(filename: resource_path("proxy/android-chrome-192x192.png"));
+    $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
+    return response($content, 200, [
+        "Content-Type" => "image/png",
+    ]);
+})->name('192.image.file');
+
+
+
+Route::get('/android-chrome-512x512.png', function () {
+    $assetRoot = rtrim(asset("/"), "/");
+    $content = file_get_contents(filename: resource_path("proxy/android-chrome-512x512.png"));
+    $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
+    return response($content, 200, [
+        "Content-Type" => "image/png",
+    ]);
+})->name('512.image.file');
+
+
+Route::get('/favicon-16x16.png', function () {
+    $assetRoot = rtrim(asset("/"), "/");
+    $content = file_get_contents(filename: resource_path("proxy/favicon-16x16.png"));
+    $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
+    return response($content, 200, [
+        "Content-Type" => "image/png",
+    ]);
+})->name('16.image.file');
+
+
+Route::get('/favicon-32x32.png', function () {
+    $assetRoot = rtrim(asset("/"), "/");
+    $content = file_get_contents(filename: resource_path("proxy/favicon-32x32.png"));
+    $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
+    return response($content, 200, [
+        "Content-Type" => "image/png",
+    ]);
+})->name('32.image.file');
+
 
 
 require __DIR__ . '/auth.php';
