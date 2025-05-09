@@ -88,7 +88,6 @@ class NotificationController extends Controller
         return $response;
     }
 
-
     // public function sendNotification(Request $request)
     // {
     //     $request->validate([
@@ -96,17 +95,13 @@ class NotificationController extends Controller
     //         'title' => 'required|string',
     //         'content' => 'required|string',
     //     ]);
-
     //     $title = $request->input('title');
     //     $content = $request->input('content');
     //     $email = $request->input('email');
-
     //     $notification = $this->magicBellService->sendNotification($title, $content, $email);
-
     //     if ($notification) {
     //         return response()->json(['status' => 'success', 'message' => 'Notification sent successfully.']);
     //     }
-
     //     return response()->json(['status' => 'error', 'message' => 'Failed to send notification.'], 500);
     // }
 }
