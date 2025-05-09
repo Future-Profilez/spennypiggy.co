@@ -43,6 +43,20 @@
     <script type="text/javascript" src="//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js"></script>
 
     <script src="https://sdk.canva.com/v1/button.js"></script>
+    <link rel="manifest" href="{{ url('/manifest.json')}}" />
+    <script type="text/javascript" src="{{ url('/service-worker.js') }}"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/new-service-worker.js')
+                .then(registration => {
+                    console.log('Service Worker registered with scope:', registration.scope);
+                })
+                .catch(error => {
+                    console.error('Service Worker registration failed:', error);
+                });
+        }
+    </script>
+
     <script>
         const css1 = [
             "font-size: 15px",
@@ -65,7 +79,7 @@
         }
     </script>
 
-  <script async type="application/ld+json">
+    <script async type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "Organization",
@@ -81,19 +95,19 @@
       ]
     }
     </script>
-  <script async type="application/ld+json">
-          {
-          "@context":"http://schema.org",
-          "@type":"SiteNavigationElement",
-          "name":["Exclusive Content, Memberships & More!"],
-          "url":["https://spennypiggy.co/",
-          "https://intercom.help/spenny-piggy/en/",
-          "https://spennypiggy.co/login",
-          "https://spennypiggy.co/leaderboard",
-          "https://spennypiggy.co/discover",
-          "https://uk.spennypiggy.co/register"]
-          }
-        </script>
+    <script async type="application/ld+json">
+        {
+        "@context":"http://schema.org",
+        "@type":"SiteNavigationElement",
+        "name":["Exclusive Content, Memberships & More!"],
+        "url":["https://spennypiggy.co/",
+        "https://intercom.help/spenny-piggy/en/",
+        "https://spennypiggy.co/login",
+        "https://spennypiggy.co/leaderboard",
+        "https://spennypiggy.co/discover",
+        "https://uk.spennypiggy.co/register"]
+        }
+    </script>
         <script async type="application/ld+json">
             {
             "@context": "https://schema.org",
