@@ -22,6 +22,7 @@ use App\Http\Controllers\Auth\TestController;
 use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\WishtenderController;
@@ -354,8 +355,10 @@ Route::middleware('auth')->group(function () {
             Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay")->middleware('mustCompletedCardVerification');
             Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
         });
+        
     });
 });
+
 
 // subscription webhook
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);

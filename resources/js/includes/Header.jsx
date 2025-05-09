@@ -28,6 +28,7 @@ import { AiOutlineLogout } from "react-icons/ai";
 import { RiPagesLine } from "react-icons/ri";
 import { FiGift } from "react-icons/fi";
 import { LiaShoppingCartSolid } from "react-icons/lia";
+import MagicBellNotification from "@/Pages/webpush/MagicBellNotification";
 
 export default function Header() {
     const { global_currency, auth } = usePage().props;
@@ -138,7 +139,12 @@ export default function Header() {
                                 changer={true}
                             />
 
-                            {auth && auth.user ? <Notifications /> : ""}
+                            {/* {auth && auth.user ? <Notifications /> : ""} */}
+                            {auth && auth.user ? 
+                                <div className="mr-2">
+                                    <MagicBellNotification />
+                                </div>
+                            : ""}
 
                             <Link
                                 href={route("discover")}
