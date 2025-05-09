@@ -54,7 +54,6 @@ use Stripe\Exception\SignatureVerificationException;
 
 class StripeController extends Controller
 {
-
     public function __construct()
     {
         Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
@@ -84,8 +83,6 @@ class StripeController extends Controller
 
         return Inertia::render("stripe/Stripe");
     }
-
-
 
     /**
      * Init Connect Account Start
@@ -1412,7 +1409,7 @@ class StripeController extends Controller
     {
 
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-        $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
+        $endpoint_secret = env('CREATOR_TRIAL_END_MONTHLY_SUBSCRIPTION_SECRET');
 
         $payload = @file_get_contents('php://input');
         $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
@@ -1530,7 +1527,7 @@ class StripeController extends Controller
     // {
     //     Log::info('Webhook received: ' . json_encode($request->all()));
     //     $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-    //     $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
+    //     $endpoint_secret = env('CREATOR_TRIAL_END_MONTHLY_SUBSCRIPTION_SECRET');
 
     //     $payload = @file_get_contents('php://input');
     //     $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];

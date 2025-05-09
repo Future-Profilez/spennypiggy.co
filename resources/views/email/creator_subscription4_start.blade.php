@@ -12,16 +12,17 @@
                 <tr>
                     <td style="padding: 0 0 25px 0; text-align: center;">
                         <img style="max-width: 200px;"
-                            src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" alt="Trial Icon">
+                            src="https://ucarecdn.com/2f36094e-028f-48d2-9681-ef5f1226c355/subscriptionicon.png"
+                            alt="Subscription Started">
                     </td>
                 </tr>
 
                 <tr>
                     <td
                         style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
-                        <b>Welcome {{ $user->name ?? 'User' }} 🎉</b><br><br>
+                        <b>Hi {{ $user->name ?? 'User' }} 👋</b><br><br>
                         <span style="color:#F94F97;">
-                            <b>Your 3-day free trial has started!</b>
+                            <b>Your subscription has started!</b>
                         </span>
                     </td>
                 </tr>
@@ -33,10 +34,9 @@
                 <tr>
                     <td
                         style="padding: 0 0 15px 0; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                        Enjoy full access to all premium features during your trial period. Your subscription will
-                        automatically start on
-                        <b>{{ \Carbon\Carbon::parse($nextPaymentDate)->format('F j, Y') }}</b> and you'll be charged
-                        <b>{{ $planCurrency }}{{ $amount }}</b>.
+                        Your free trial has ended, and your subscription is now active. <br>
+                        We've successfully charged <b>{{ $amount }} {{ $currency }}</b> to your account on
+                        <b>{{ \Carbon\Carbon::parse($paymentDate)->format('F j, Y') }}</b>.
                     </td>
                 </tr>
 

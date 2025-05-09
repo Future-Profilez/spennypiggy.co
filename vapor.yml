@@ -16,8 +16,8 @@ environments:
       - "php artisan config:cache"
       - "npm ci"
       - "npm run build"
-      - "rm -rf node_modules"   # Linux/macOS
-      # - "rd /s /q node_modules"  # Windows/
+      # - "rm -rf node_modules"   # Linux/macOS
+      - "rd /s /q node_modules"  # Windows/
     deploy:
       - "php artisan migrate --force"
 
@@ -41,8 +41,13 @@ environments:
       - "php artisan route:cache"
       - "npm ci"
       - "npm run build"
+<<<<<<< HEAD
+      # - "rm -rf node_modules"   # Linux/mac/OS
+      - "rd /s /q node_modules"  # Windows
+=======
       - "rm -rf node_modules" # Linux/mac/OS
       # - "rd /s /q node_modules"  # Windows
+>>>>>>> be49536c78fb0820695c629233c21e792d27b888
     deploy:
       - "php artisan migrate --force"
 
