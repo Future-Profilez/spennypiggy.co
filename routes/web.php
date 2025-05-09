@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\Auth\WishitemController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TestController;
@@ -127,6 +128,10 @@ Route::prefix("test")->name("test.")->group(function () {
 });
 
 
+
+Route::get('/magicbell/user-key', [NotificationController::class, 'getUserKey']);
+Route::post('/magicbell/send-notification', [NotificationController::class, 'sendNotification']);
+Route::get('/test-push', [NotificationController::class, 'testSendNotification']);
 
 
 Route::get('/service-worker.js', function () {
