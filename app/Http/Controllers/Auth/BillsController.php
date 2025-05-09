@@ -456,6 +456,24 @@ class BillsController extends Controller
                 $amountWithVat = $symbol->symbol . ($bill_pay->amount + $vatAmountPercentage);
                 $amountWithCurr = $symbol->symbol . $bill_pay->amount;
 
+                /****************************PWA****START****************************************************/
+                // below is pwa for fans
+                $CreatorName = $bill_pay->bill->user->email ?? 'A Creator';
+                $title = "🧾 Bill Paid!";
+                $content = "You’ve successfully paid your bill to {{ $CreatorName }}.";
+                $email = $bill_pay->guest_email;
+
+                Helpers::sendNotification($title, $content, $email);
+
+                // below is pwa for creator
+                $FanName = $bill_pay->user->name ?? 'A Fan';
+                $title = "💰 Bill Payment Received!";
+                $content = "{{ $FanName }} has paid their bill. Check your earnings!";
+                $email = $bill_pay->bill->user->email;
+
+                Helpers::sendNotification($title, $content, $email);
+                /****************************PWA****ENDS****************************************************/
+
                 // Dispatch mail jobs
                 BillPayMail::dispatch($bill_pay, $amountWithVat);
                 BillPayToUser::dispatch($bill_pay, $amountWithCurr, $bill_pay->bill->user->name);

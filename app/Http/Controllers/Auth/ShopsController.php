@@ -232,7 +232,6 @@ class ShopsController extends Controller
         }
     }
 
-
     public function updateShopItems(Request $request, $uuid)
     {
         $user = User::find(Auth::id());
@@ -359,7 +358,7 @@ class ShopsController extends Controller
                             'images' => [$shop->perma_link],
                             "default_price" => $shop->price_id,
                             // "url" => $request->item_url ?? null
-                        ],[
+                        ], [
                             'stripe_account' => $user->account_id,
                         ]);
                     } else {
@@ -422,7 +421,6 @@ class ShopsController extends Controller
         ]);
     }
 
-
     public function shopList($username)
     {
         $user = User::where('username', $username)->first();
@@ -449,7 +447,6 @@ class ShopsController extends Controller
             'shops' => $shops
         ]);
     }
-
 
     public function singleShopList($slug, $uuid, $session_id = null)
     {
@@ -781,6 +778,26 @@ class ShopsController extends Controller
             }
 
             ShopBuyedUser::dispatch($stripeid, $stripeid->shop->reward_file_url, $symbol->symbol);
+
+            /**************************SHOP**PWA**START****************************************************/
+            // below is SHOP pwa for fans
+
+            $CreatorName = $stripeid->shop->user->name ?? 'A Creator';
+            $title = "🛍️ Purchase Confirmed!";
+            $content = "You bought something from {{ $CreatorName }}’s shop. They’ll process it soon.";
+            $email = $stripeid->email ?? $stripeid->user->email;
+
+            Helpers::sendNotification($title, $content, $email);
+
+            // below is wish pwa for creator
+            $FanName = $stripeid->user->name ?? 'A Fan';
+            $title = "📦 New Shop Order!";
+            $content = "{{ $FanName }} placed an order in your shop. Time to fulfill it!";
+            $email = $stripeid->shop->user->email;
+
+            Helpers::sendNotification($title, $content, $email);
+
+            /****************************MEMBERSHIP**PWA**ENDS****************************************************/
 
             $slug = strtolower(str_replace(" ", "-", $stripeid->shop->name));
 
