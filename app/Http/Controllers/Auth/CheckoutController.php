@@ -280,7 +280,7 @@ class CheckoutController extends Controller
                     }
                 }
 
-                /**************************MEMBERSHIP**PWA**START****************************************************/
+                /**************************WISH**PWA**START****************************************************/
                 // below is wish pwa for fans
 
                 $CreatorName = $dd->owner->name ?? 'A Creator';
@@ -298,7 +298,7 @@ class CheckoutController extends Controller
 
                 Helpers::sendNotification($title, $content, $email);
 
-                /****************************MEMBERSHIP**PWA**ENDS****************************************************/
+                /****************************WISH**PWA**ENDS****************************************************/
             }
 
 

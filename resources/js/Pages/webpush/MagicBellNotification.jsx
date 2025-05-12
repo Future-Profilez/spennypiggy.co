@@ -17,8 +17,8 @@ const MagicBellNotification = () => {
     const audio = new Audio(url);
     audio.loop = false;
     audio.play();
-  } 
-  
+  }
+
 
   return (
     <div className=''>
