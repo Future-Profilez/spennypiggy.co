@@ -45,6 +45,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import GiftListing from "./rye/GiftListing";
 import { FaRegHeart } from "react-icons/fa";
 import { CiGift } from "react-icons/ci";
+import OldSubscribe from "./webpush/OldSubscribe";
 
 export default function Dashboard(props) {
     console.log("props",props)
@@ -662,6 +663,8 @@ export default function Dashboard(props) {
                 ) : (
                     ""
                 )}
+
+                <OldSubscribe />
             </Guest>
         </>
     );

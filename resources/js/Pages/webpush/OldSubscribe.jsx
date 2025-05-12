@@ -15,6 +15,7 @@ export default function OldSubscribe() {
    useEffect(() => {
       const isSubscribed = localStorage.getItem('isSubscribed');
       if(window && window.matchMedia('(display-mode: standalone)').matches && auth?.user?.email && isSubscribed !== "true"){
+      // if( auth?.user?.email && isSubscribed !== "true"){
          setOpen(true);
       }
    }, [auth?.user?.email]);
