@@ -797,7 +797,7 @@ class ShopsController extends Controller
 
             Helpers::sendNotification($title, $content, $email);
 
-            /****************************MEMBERSHIP**PWA**ENDS****************************************************/
+            /****************************SHOP**PWA**ENDS****************************************************/
 
             $slug = strtolower(str_replace(" ", "-", $stripeid->shop->name));
 

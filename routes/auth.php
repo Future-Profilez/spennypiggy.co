@@ -355,7 +355,7 @@ Route::middleware('auth')->group(function () {
             Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay")->middleware('mustCompletedCardVerification');
             Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
         });
-        
+
     });
 });
 

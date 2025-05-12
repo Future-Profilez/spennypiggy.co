@@ -137,7 +137,7 @@ class StripeWebhookController extends Controller
             $event = \Stripe\Webhook::constructEvent(
                 $payload,
                 $sigHeader,
-                env('CREATOR_MONTHLY_SUBSCRIPTION_SECRET')
+                'whsec_Kg8JCp247IijHEPE81kW0vHMhVKkGuQM'
             );
         } catch (\UnexpectedValueException $e) {
             return response('Invalid payload', 400);
@@ -158,7 +158,7 @@ class StripeWebhookController extends Controller
 
             Log::info("data: $monthlyCharge");
 
-            if ($monthlyCharge) {
+            if ($monthlyCharge->status != 'paid') {
                 // Get trial end date from invoice line item
                 $periodEndTimestamp = $invoice->lines->data[0]->period->end ?? null;
                 $trialEndDate = $periodEndTimestamp ? date('Y-m-d H:i:s', $periodEndTimestamp) : null;

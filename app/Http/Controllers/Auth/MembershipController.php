@@ -674,19 +674,22 @@ class MembershipController extends Controller
 
         $array = [];
         if (!empty($event)) {
-            $subs = MembershipPayment::where('stripe_id', $event->data->object->subscription)->latest()->first();
+            $subs = MembershipPayment::where('stripe_id', $event->data->object->id)->latest()->first();
 
-            $ret = StripeControl::getSubscription($event->data->object->subscription);
+            // $ret = StripeControl::getSubscription($event->data->object->id);
+            $ret = $event->data->object;
+
 
             if ($event->type == "invoice.updated" && !empty($subs)) {
 
                 $array = [
-                    'email' => $event->data->object->customer_email,
-                    'name' => $event->data->object->customer_name,
-                    'invoice_pdf' => $event->data->object->invoice_pdf,
+                    'email' => $event->data->object->customer_email ?? $subs->guest_email,
+                    'name' => $event->data->object->customer_name ?? $subs->guest_name,
+                    'invoice_pdf' => $event->data->object->invoice_pdf ?? null,
                     'uuid' => $subs->uuid,
                     'notification' => $subs->user->notification_send ?? 0
                 ];
+
 
                 $subs->status = "ended";
                 $subs->save();
