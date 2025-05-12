@@ -279,7 +279,29 @@ class CheckoutController extends Controller
                         CheckoutTweet::dispatch($payment_data);
                     }
                 }
+
+                /**************************MEMBERSHIP**PWA**START****************************************************/
+                // below is wish pwa for fans
+
+                $CreatorName = $dd->owner->name ?? 'A Creator';
+                $title = "✨ Wish Sent Successfully!";
+                $content = "You've sent a wish to {{ $CreatorName }}. They'll be notified right away!";
+                $email = $dd->guest_email ?? $dd->user->email;
+
+                Helpers::sendNotification($title, $content, $email);
+
+                // below is wish pwa for creator
+                $FanName = $dd->user->name ?? 'A Fan';
+                $title = "🎁 New Wish Received!";
+                $content = "{{ $FanName }} has sent you a paid wish. Go check it out!";
+                $email = $dd->owner->email;
+
+                Helpers::sendNotification($title, $content, $email);
+
+                /****************************MEMBERSHIP**PWA**ENDS****************************************************/
             }
+
+
             if (Auth::check()) {
                 $curr = Currency::where('iso', strtoupper($currency))->first();
                 CheckoutMailToUser::dispatch($stripeid, $curr->symbol);

@@ -511,6 +511,24 @@ class MembershipController extends Controller
                 // this job is for fan
                 MembershipMailToUser::dispatch($mem, $amountWithcurrency);
 
+                /**************************MEMBERSHIP**PWA**START****************************************************/
+                // below is membership pwa for fans
+                $CreatorName = $mem->membership->user->email ?? 'A Creator';
+                $title = "🏆 Membership Activated!";
+                $content = "You've subscribed to {{ $CreatorName }}’s membership. Enjoy the perks!.";
+                $email = $mem->guest_email ?? $mem->user->email;
+
+                Helpers::sendNotification($title, $content, $email);
+
+                // below is membership pwa for creator
+                $FanName = $mem->user->name ?? 'A Fan';
+                $title = "💎 New Member Joined!";
+                $content = "{{ $FanName }} just subscribed to your membership!";
+                $email = $mem->membership->user->email;
+
+                Helpers::sendNotification($title, $content, $email);
+                /****************************MEMBERSHIP**PWA**ENDS****************************************************/
+
                 if ($mem->anonymous == 1) {
                     $username = "Anonymous user";
                 } else {

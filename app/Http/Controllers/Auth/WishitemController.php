@@ -1566,7 +1566,6 @@ class WishitemController extends Controller
     protected function handlePaymentRefunded($payload)
     {
         // Log::info("Handling PaymentRefunded", $payload);
-
         ProductOrderDetail::updateOrCreate(
             ['order_id' => $payload['requestId']], // Search condition
             [
