@@ -674,7 +674,7 @@ class MembershipController extends Controller
 
         $array = [];
         if (!empty($event)) {
-            $subs = MembershipPayment::where('stripe_id', $event->data->object->subscription)->latest()->first();
+            $subs = MembershipPayment::where('stripe_id', $event->data->object->id)->latest()->first();
 
             $ret = StripeControl::getSubscription($event->data->object->subscription);
 
