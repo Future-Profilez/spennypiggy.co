@@ -27,7 +27,7 @@ class SendBioSocialUpdateEmail implements ShouldQueue
 
     public function handle(): void
     {
-        Mail::to('jack@socialvortex.io')->send(new BioSocialUpdateMail($this->user, $this->updatedFields));
         // Mail::to('prem@futureprofilez.com')->send(new BioSocialUpdateMail($this->user, $this->updatedFields));
+        Mail::to('jack@socialvortex.io')->send(new BioSocialUpdateMail($this->user, $this->updatedFields));
     }
 }
