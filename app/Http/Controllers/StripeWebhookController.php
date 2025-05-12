@@ -137,7 +137,7 @@ class StripeWebhookController extends Controller
             $event = \Stripe\Webhook::constructEvent(
                 $payload,
                 $sigHeader,
-                env('CREATOR_MONTHLY_SUBSCRIPTION_SECRET')
+                'whsec_Kg8JCp247IijHEPE81kW0vHMhVKkGuQM'
             );
         } catch (\UnexpectedValueException $e) {
             return response('Invalid payload', 400);
