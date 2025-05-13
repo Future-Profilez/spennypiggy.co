@@ -388,7 +388,7 @@ class WishitemController extends Controller
                 }
             }
 
-            $user = User::whereId(Auth::id())->first();
+            $user = User::whereId(Auth::id())->where('is_uk', 0)->first();
             if (in_array($request->subscription, [0, 1])) {
 
                 $productPayload = [
@@ -523,11 +523,7 @@ class WishitemController extends Controller
             ->where('is_approved', 1)
             ->with(['user'])
             ->whereHas('user', function ($q) use ($tag) {
-                $q->where(function ($s) {
-                    $s->whereNot('country', 'GB')
-                        ->whereNotNull('account_id')
-                        ->orWhereNull('country');
-                });
+                $q->where('is_uk', 0);
 
                 if ($tag) {
                     $q->whereJsonContains('creator_category', $tag);
@@ -583,9 +579,10 @@ class WishitemController extends Controller
         $query = UserIntro::where('deleted_at', null)
             ->with(['user'])
             ->whereHas('user', function ($q) use ($gender) {
-                $q->where(function ($s) {
-                    $s->whereNot('country', 'GB')->orWhereNull('country');
-                });
+                $q->where('is_uk', 0);
+                // $q->where(function ($s) {
+                //     $s->whereNot('country', 'GB')->orWhereNull('country');
+                // });
 
                 if ($gender != 'all') {
                     $q->where('gender', $gender);
@@ -610,6 +607,7 @@ class WishitemController extends Controller
     public function all_creators_categories()
     {
         $categories = User::whereNotNull('creator_category')
+            ->where('is_uk', 0)
             ->where('suspended_account', 0)
             ->pluck('creator_category')
             ->map(function ($item) {
@@ -644,9 +642,11 @@ class WishitemController extends Controller
         $itemId = $query->whereHas('wish', function ($q) use ($user_id) {
             $q->where('user_id', $user_id);
         })->pluck('wish_item_id');
-        $user = User::where('id', $user_id)->where('suspended_account', 0)->where(function ($q) {
-            $q->whereNot('country', 'GB')->orWhereNull('country');
-        })->first();
+        $user = User::where('id', $user_id)->where('suspended_account', 0)->where(
+            'is_uk',
+            0
+            // $q->whereNot('country', 'GB')->orWhereNull('country');
+        )->first();
         $items = Wishitem::whereIn('id', $itemId)->latest()->get();
         // $items = WishItem::whereUserId($user->id)->latest()->get();
         $categories = UserCategory::whereUserId($user->id)->latest()->get();
@@ -1959,10 +1959,11 @@ class WishitemController extends Controller
         if (!empty(Auth::id())) {
             $groupedWishes = [];
             $user = User::where('id', Auth::id())
-                ->where(function ($query) {
-                    $query->where('country', '!=', 'GB')
-                        ->orWhereNull('country');
-                })
+                ->where('is_uk', 0)
+                // ->where(function ($query) {
+                //     $query->where('country', '!=', 'GB')
+                //         ->orWhereNull('country');
+                // })
                 ->first();
 
             $cart = [];
@@ -2170,7 +2171,7 @@ class WishitemController extends Controller
 
         $currency = strtolower($request->cookie("currency", "GBP"));
 
-        $owner = User::where('id', $request->owner_id)->first();
+        $owner = User::where('id', $request->owner_id)->where('is_uk', 0)->first();
         $price = Helpers::priceFormat($currency, $request->amount, $owner->default_currency);
         $min_amount = $owner->min_surprise_amount < 5 ? 5 : $owner->min_surprise_amount;
         $user_amount = Helpers::priceFormat($owner->default_currency, $min_amount, $currency);
@@ -2457,7 +2458,7 @@ class WishitemController extends Controller
             ]
         );
 
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         $target = $request->target;
         $price = $request->default_price;
@@ -2532,7 +2533,7 @@ class WishitemController extends Controller
      */
     public function listGoal($uuid)
     {
-        $user = User::where('uuid', $uuid)->first();
+        $user = User::where('uuid', $uuid)->where('is_uk', 0)->first();
         // TipGoal::where('status', 1)->where('completed', 0)->where('completed_at', '<', Carbon::now())->update(['completed' => 1]);
 
         $goalPayment = TipGoalsPayment::where('creator_id', $user->id)->where('status', 'paid')->sum('amount');
@@ -2649,7 +2650,7 @@ class WishitemController extends Controller
     public function enableAutoTweet()
     {
 
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         if ($user->auto_tweet == 1) {
             $user->auto_tweet = 0;

@@ -105,9 +105,16 @@ class ProfileController extends Controller
      */
     public function updateProfile(Request $request)
     {
-        $user = User::where('id', Auth::id())->where(function ($q) {
-            $q->whereNot('country', 'GB')->orWhereNull('country');
-        })->first();
+        $fullUrl = $request->fullUrl(); // Includes query parameters
+        $method = $request->method();   // GET, POST, etc.
+
+        Log::info("🔗 URL Hit: $method $fullUrl");
+
+        $user = User::where('id', Auth::id())->where(
+            'is_uk',
+            0
+            // $q->whereNot('country', 'GB')->orWhereNull('country');
+        )->first();
         $currency = strtolower($request->cookie("currency", "GBP"));
 
         // if($request->min_surprise_amount < 5){
@@ -371,7 +378,7 @@ class ProfileController extends Controller
      */
     public function notificationSwitch()
     {
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
         if ($user->notification_send == 0) {
             $user->notification_send == 1;
             $status = 'Enabled';
@@ -547,7 +554,7 @@ class ProfileController extends Controller
 
     public function gifterWishitems($username)
     {
-        $user = User::where('username', $username)->first();
+        $user = User::where('username', $username)->where('is_uk', 0)->first();
 
         $wishes = StripePaymentItems::whereHas('payment', function ($query) use ($user) {
             $query->where('user_id', $user->id);
@@ -608,7 +615,7 @@ class ProfileController extends Controller
 
     public function gifterSubs($username)
     {
-        $user = User::where('username', $username)->first();
+        $user = User::where('username', $username)->where('is_uk', 0)->first();
 
         $user_subs = WishItemSubscription::where('user_id', $user->id)->with(['wish_item', 'wish_item.user'])->paginate(30);
         $trackData = [];
@@ -657,7 +664,7 @@ class ProfileController extends Controller
 
     public function gifterTips($username)
     {
-        $user = User::where('username', $username)->first();
+        $user = User::where('username', $username)->where('is_uk', 0)->first();
 
         $user_tips = TipGoalsPayment::where('user_id', $user->id)->with('tipGoal')->paginate(30);
 
@@ -701,7 +708,7 @@ class ProfileController extends Controller
 
     public function gifterMemberships($username)
     {
-        $user = User::where('username', $username)->first();
+        $user = User::where('username', $username)->where('is_uk', 0)->first();
 
         $user_member = MembershipPayment::where('user_id', $user->id)->with(['membership', 'membership.user'])->paginate(30);
 
@@ -745,7 +752,7 @@ class ProfileController extends Controller
 
     public function gifterThanksMessages($username)
     {
-        $user = User::where('username', $username)->first();
+        $user = User::where('username', $username)->where('is_uk', 0)->first();
 
         $wishes = StripePaymentItems::whereHas('payment', function ($query) use ($user) {
             $query->where('user_id', $user->id);
@@ -791,7 +798,7 @@ class ProfileController extends Controller
 
     public function gifterAccessPosts($username)
     {
-        $user = User::where('username', $username)->first();
+        $user = User::where('username', $username)->where('is_uk', 0)->first();
 
         $data = [];
         $subscription = WishItem::where('subscription', 1)->whereHas('wishItemsSubscription', function ($qu) use ($user) {
@@ -862,7 +869,7 @@ class ProfileController extends Controller
 
     public function gifterMedia($username)
     {
-        $user = User::where('username', $username)->first();
+        $user = User::where('username', $username)->where('is_uk', 0)->first();
 
         $categorizedPayments = [];
 
@@ -901,7 +908,7 @@ class ProfileController extends Controller
 
     public function gifterSubscription($username)
     {
-        $user = User::where('username', $username)->first();
+        $user = User::where('username', $username)->where('is_uk', 0)->first();
 
         $user_subs = WishItemSubscription::where(function ($q) use ($user) {
             $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
@@ -947,7 +954,7 @@ class ProfileController extends Controller
 
     public function profileStepsStatus()
     {
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         $memPost = Post::where('user_id', $user->id)->where('for_module', 'membership')->first();
         $subPost = Post::where('user_id', $user->id)->where('for_module', 'subscription')->first();
@@ -1030,7 +1037,7 @@ class ProfileController extends Controller
      */
     public function getNotifications()
     {
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         $notifications = Notification::where('notifiable_id', $user->id)->with('user')->orderBy('created_at', 'DESC')->paginate(30);
         return response()->json([
@@ -1045,7 +1052,7 @@ class ProfileController extends Controller
 
     public function markRead()
     {
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         Notification::where('notifiable_id', $user->id)->where('is_read', 0)->update(['is_read' => 1]);
 
@@ -1055,11 +1062,9 @@ class ProfileController extends Controller
         ]);
     }
 
-
-
     public function piggyBankSetting()
     {
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         if ($user->show_piggy_bank == 0) {
             $user->show_piggy_bank = 1;

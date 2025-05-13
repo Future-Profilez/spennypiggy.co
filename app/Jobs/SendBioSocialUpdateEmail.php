@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Mail\BioSocialUpdateMail;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Bus\Queueable;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Queue\SerializesModels;
@@ -25,9 +26,24 @@ class SendBioSocialUpdateEmail implements ShouldQueue
         $this->updatedFields = $updatedFields;
     }
 
-    public function handle(): void
+    public function handle(Request $request): void
     {
-        // Mail::to('prem@futureprofilez.com')->send(new BioSocialUpdateMail($this->user, $this->updatedFields));
-        Mail::to('jack@socialvortex.io')->send(new BioSocialUpdateMail($this->user, $this->updatedFields));
+        $method = $request->method(); // GET, POST, etc.
+        $host = $request->getHost(); // e.g. "example.com"
+        $scheme = $request->getScheme(); // http or https
+        // $path = $request->getPathInfo(); // e.g. "/api/update-bio"
+        // $query = $request->getQueryString(); // e.g. "id=1"
+
+        $fullUrl = $scheme . '://' . $host;
+
+        Log::info("Request Method: $method");
+        Log::info("Request URL: $fullUrl");
+        if ($fullUrl == 'https://dev.spennypiggy.co/' || 'http://127.0.0.1:8000/') {
+            Mail::to('prem@futureprofilez.com')->send(new BioSocialUpdateMail($this->user, $this->updatedFields));
+        }
+
+        if ($fullUrl == 'https://spennypiggy.co/') {
+            Mail::to('jack@socialvortex.io')->send(new BioSocialUpdateMail($this->user, $this->updatedFields));
+        }
     }
 }

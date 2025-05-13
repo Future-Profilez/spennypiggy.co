@@ -32,18 +32,18 @@ class VerifyEmailController extends Controller
     public function emailVerify($uuid)
     {
         try {
-            $user = User::where(function ($q) {
-                $q->whereNot('country', 'GB')->orWhereNull('country');
-            })->where('uuid', $uuid)->first();
+            $user = User::where('uuid', $uuid)
+                ->where('is_uk', 0)
+                ->firstOrFail(); // Use firstOrFail to catch non-existing user
 
-            User::where('uuid', $uuid)->where(function ($q) {
-                $q->whereNot('country', 'GB')->orWhereNull('country');
-            })->update([
-                'email_verified_at' => Carbon::now(),
-            ]);
-            return redirect(route("user.show", [$user->username]))->with("success", "Email verified successfully");
+            $user->email_verified_at = Carbon::now();
+            $user->save();
+
+            return redirect()->route('user.show', [$user->username])
+                ->with("success", "Email verified successfully");
         } catch (\Throwable $th) {
-            //throw $th;
+            Log::error('Email verification failed: ' . $th->getMessage());
+            return redirect()->route('login')->with("error", "Invalid verification link or user.");
         }
     }
 }

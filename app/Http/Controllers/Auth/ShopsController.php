@@ -423,7 +423,7 @@ class ShopsController extends Controller
 
     public function shopList($username)
     {
-        $user = User::where('username', $username)->first();
+        $user = User::where('username', $username)->where('is_uk', 0)->first();
 
         $shops = [];
         if (!empty($user)) {
@@ -626,7 +626,7 @@ class ShopsController extends Controller
             $totalTaxAmount = $tax + $adminFee;
 
             if (!Auth::check()) {
-                $logged_out_user = User::where('email', request()->query('email'))->first();
+                $logged_out_user = User::where('email', request()->query('email'))->where('is_uk', 0)->first();
             }
 
             $shopPaymentDetail = ShopPayment::create([

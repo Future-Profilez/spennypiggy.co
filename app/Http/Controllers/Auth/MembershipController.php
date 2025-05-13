@@ -70,7 +70,7 @@ class MembershipController extends Controller
             ]);
         }
 
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
         $exist = Membership::where('user_id', $user->id)->pluck('level')->toArray();
 
 
@@ -165,7 +165,7 @@ class MembershipController extends Controller
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         } else {
 
-            $user = User::where('id', Auth::id())->first();
+            $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
             $mem = Membership::where('uuid', $uuid)->first();
             $old_price = $mem->price;
@@ -563,7 +563,7 @@ class MembershipController extends Controller
 
     public function membershipDashboard()
     {
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
 
         $count = MembershipPayment::whereHas('membership', function ($q) use ($user) {
@@ -594,7 +594,7 @@ class MembershipController extends Controller
 
     public function membershipGraph()
     {
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
 
         $currentDate = Carbon::now();

@@ -216,9 +216,10 @@ class StripeController extends Controller
                 }
             }
 
-            $user = User::where(function ($q) {
-                $q->whereNot('country', 'GB')->orWhereNull('country');
-            })->findOrFail(Auth::id());
+            $user = User::where('id', Auth::id())
+                ->where('is_uk', 0)
+                ->firstOrFail();
+
             $getdata = UserCart::where('user_id', Auth::id())
                 ->where('owner_id', $owner_id)
                 ->where('status', 1)
@@ -940,7 +941,7 @@ class StripeController extends Controller
             ]);
         }
 
-        $creator = User::where('uuid', $creator_uid)->first();
+        $creator = User::where('uuid', $creator_uid)->where('is_uk', 0)->first();
 
         if (Auth::check()) {
             if ($creator->id == Auth::id()) {
@@ -1203,7 +1204,7 @@ class StripeController extends Controller
      */
     public function deleteStripeAccount()
     {
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         if ($user->account_id) {
             StripeControl::deleteAccount($user->account_id);
@@ -1228,7 +1229,7 @@ class StripeController extends Controller
         $tax = round(($price * 20 / 100), 2, PHP_ROUND_HALF_UP);
         $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
 
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
         $sub = MonthlyCharge::create([
             'user_id'   =>  $user->id,
             'name'      =>  $user->name ?? NULL,
