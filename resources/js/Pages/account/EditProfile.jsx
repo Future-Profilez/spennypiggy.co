@@ -77,9 +77,9 @@ export default function EditProfile({ user, global_currency, classes, updateProf
             text={<> Update Profile </>}
             classes={`${classes ? classes : "button bg-pink d-table d-sm-flex m-auto m-sm-0"}`} >
             <div className='editprofileHead'>
-                <h2>Edit your Profile</h2>
+                <h2>Edit Profile</h2>
             </div>
-            <div className='editForm'>
+            <div className='editForm max-h-[70vh] overflow-y-auto'>
                 <div className='mainprofile mb-5 position-relative w-100 '>
                     <div className='profilePhotoImg cover'>
                         <img src={coverImage ? coverImage : (user?.cover_url || coverimage)} alt='img' />

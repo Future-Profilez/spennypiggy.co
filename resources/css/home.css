@@ -448,6 +448,7 @@ button.editpop{display:none !important;}
 .wishbanner span{width:100% !important;display:block !important;height:100% !important;}
 .movesvg{cursor:grab;border-radius:7px;width:30px;height:30px;padding:6px;background:#ffffffbd;position:absolute;top:10px;left:10px;z-index:1;}
 .currency-wrapper input{padding-left:50px !important;}
+.currency-wrapper.dollar input{padding-left:25px !important;}
 span.currency-tag{position:absolute;top:50%;left:10px;transform:translateY(-50%);}
 .introbox img,.introbox span{width:100% !important;display:block !important;height:100% !important;object-fit:cover;}
 .introbox{height:350px;border:1px solid var(--voilet);border-radius:30px;overflow:hidden;}

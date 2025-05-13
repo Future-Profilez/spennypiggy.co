@@ -130,8 +130,7 @@ export default function AddBills(props) {
         );
     };
 
-    const defaultCurrency =
-        (auth && auth.user && auth.user.default_currency) || "GBP";
+    const defaultCurrency = (auth && auth.user && auth.user.default_currency) || "USD";
     return (
         <Popup
             modalclass="pinkmodal full"
@@ -175,9 +174,9 @@ export default function AddBills(props) {
                                     <label className="mb-2 text-start d-block">
                                         Price{" "}
                                     </label>
-                                    <div className="currency-wrapper position-relative">
-                                        <span className="currency-tag">
-                                            {defaultCurrency}
+                                    <div className="currency-wrapper dollar position-relative">
+                                        <span className="currency-tag ">$
+                                            {/* {defaultCurrency} */}
                                         </span>
                                         <input
                                             id="price"
@@ -195,15 +194,14 @@ export default function AddBills(props) {
                                             }
                                         />
                                     </div>
+                                    {defaultCurrency !== 'USD' && 
                                     <p className="mt-1">
-                                        {" "}
                                         The Bill amount is set to{" "}
                                         {formatMultiPrice(
                                             data.price,
                                             defaultCurrency
-                                        )}
-                                        .{" "}
-                                    </p>
+                                        )}.
+                                    </p> }
                                 </li>
 
                                 <li className="mb-4">

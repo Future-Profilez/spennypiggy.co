@@ -6,37 +6,12 @@ import { usePage } from "@inertiajs/react";
 import LoadingScreen from "@/includes/LoadingScreen";
 import Nocontent from "@/includes/Nocontent";
 import CartItems from "./CartItems";
+import { use } from "react";
 
-export default function CartListing() {
-    const { auth, user } = usePage().props;
-    const [cartsItems, setCartItems] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const fetchCartItem = (e) => {
-        setLoading(true);
-        Axios.get(`get-cart-details`)
-            .then((resp) => {
-                if(resp?.data?.status){
-                    // console.log(JSON.parse(resp?.data?.data[0]?.cart_details));
-                    setCartItems(resp.data.data);
-                }
-                else{
-                    setCartItems([]);
-                }
-                setLoading(false);
-            })
-            .catch((_err) => {
-                console.error("error", _err);
-                setLoading(false);
-            });
-    };
+export default function CartListing({ryeItems, fetchRyeItems, loading}) {
+    
+    const {auth} = usePage().props;
 
-    useEffect(() => {
-        if (auth) {
-        fetchCartItem();
-        }
-    }, []);
-    // console.log("user",user);
-    // console.log("cartsItems", cartsItems);
     return (
         <div className="blackbg">
             <div className="container pb-5 ">
@@ -46,15 +21,15 @@ export default function CartListing() {
                 {loading ? <LoadingScreen /> : ""}
                 {!loading && (
                     <>
-                        {cartsItems && cartsItems.length>0 ? (
+                        {ryeItems && ryeItems.length>0 ? (
                             <>
-                                {cartsItems?.map((c, i) => {
+                                {ryeItems?.map((c, i) => {
                                     let data=JSON.parse(c.cart_details);
                                     return (
                                         <CartItems
                                             // auth={auth && auth.user}
                                             // key={`user-cart-${i}`}
-                                            fetchCartItem={fetchCartItem}
+                                            fetchCartItem={fetchRyeItems}
                                             cartsItems={c}
                                             data={data}
                                             auth={auth}
@@ -63,16 +38,7 @@ export default function CartListing() {
                                 })}
                             </>
                         ) : (
-                            <>
-                                <div className="py-5 text-center">
-                                    <div className="containerbox">
-                                        <Nocontent
-                                            classes={`py-5`}
-                                            text={"Cart is empty."}
-                                        />
-                                    </div>
-                                </div>
-                            </>
+                            ''
                         )}
                     </>
                 )}

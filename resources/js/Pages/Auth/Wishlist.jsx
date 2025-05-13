@@ -365,14 +365,14 @@ export default function Wishlist(props) {
                                             }
                                         />
                                     </div>
-                                    <p className="mt-1">
+                                    {defaultCurrency !== "USD" && <p className="mt-1">
                                         The wish item amount is set to{" "}
                                         {formatMultiPrice(
                                             data.price,
                                             defaultCurrency
                                         )}
                                         .
-                                    </p>
+                                    </p>}
                                 </li>
                                 <li className="mb-4">
                                     <label className="mb-2 text-start d-block">
