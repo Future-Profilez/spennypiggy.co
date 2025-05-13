@@ -220,7 +220,7 @@ class TestController extends Controller
     {
         try {
             // Fetch users with non-null identity_verification_error
-            $users = User::whereNotNull('identity_verification_error')->get();
+            $users = User::whereNotNull('identity_verification_error')->where('is_uk', 0)->get();
 
             if ($users->isEmpty()) {
                 return response()->json(['status' => 'error', 'message' => 'No users found with identity verification errors.']);

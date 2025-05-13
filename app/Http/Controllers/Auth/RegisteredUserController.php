@@ -80,12 +80,12 @@ class RegisteredUserController extends Controller
         }
 
         $ip_address = $request->ip();
-        $checkIpExist = User::where('ip_address', $ip_address)->exists();
+        $checkIpExist = User::where('ip_address', $ip_address)->where('is_uk', 0)->exists();
         if ($checkIpExist) {
             return redirect()->back()->with('error', "You can not create multiple account with same IP address. You have already registered with this IP address.");
         }
 
-        $exist = User::where('email', $request->email)->whereNull('deleted_at')->first();
+        $exist = User::where('email', $request->email)->where('is_uk', 0)->whereNull('deleted_at')->first();
         if (!empty($exist)) {
             return redirect()->back()->with('error', "This email already has been taken.");
         }
@@ -180,7 +180,7 @@ class RegisteredUserController extends Controller
             //send email
             WelcomeUser::dispatch($user);
 
-            $checkemailverify = User::whereId(Auth::id())->first();
+            $checkemailverify = User::whereId(Auth::id())->where('is_uk', 0)->first();
 
             if ($checkemailverify->email_verified_at != NUll) {
                 return redirect(route("user.show", [$user->username]))->with("success", "Registration successful.");
@@ -214,7 +214,7 @@ class RegisteredUserController extends Controller
                 "max:20"
             ]
         ]);
-        $exist = User::whereUsername($request->username)->first();
+        $exist = User::whereUsername($request->username)->where('is_uk', 0)->first();
         return response()->json([
             "available" => empty($exist)
         ]);
@@ -414,7 +414,7 @@ class RegisteredUserController extends Controller
     // This method is called when the payment is successful
     public function cardVerificationSuccess($uuid)
     {
-        $user = User::where('uuid', $uuid)->first();
+        $user = User::where('uuid', $uuid)->where('is_uk', 0)->first();
 
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
@@ -481,7 +481,7 @@ class RegisteredUserController extends Controller
      */
     public function cardVerificationFailed($uuid)
     {
-        $user = User::where('uuid', $uuid)->first();
+        $user = User::where('uuid', $uuid)->where('is_uk', 0)->first();
 
         if (!$user) {
             return response()->json([

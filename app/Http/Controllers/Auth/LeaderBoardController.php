@@ -96,13 +96,12 @@ class LeaderBoardController extends Controller
         $currentWeekEndDate = Carbon::now()->endOfWeek();
         $currentDate = Carbon::today()->format('Y-m-d');
 
-        $users = User::where('stripe_details_submitted', 1)->where('suspended_account', 0)->where(function ($query) {
-            $query->where(function ($q) {
-                $q->where('country', '!=', 'GB')
-                    ->orWhere('country', '')
-                    ->orWhereNull('country');
-            });
-        })->with(['paymentitems', 'subscriptions', 'tip_goal_payment', 'membership_payments', 'bill_payments', 'shop_payments'])
+        // $query->where(function ($q) {
+        //     $q->where('country', '!=', 'GB')
+        //         ->orWhere('country', '')
+        //         ->orWhereNull('country');
+        // });
+        $users = User::where('stripe_details_submitted', 1)->where('suspended_account', 0)->where('is_uk', 0)->with(['paymentitems', 'subscriptions', 'tip_goal_payment', 'membership_payments', 'bill_payments', 'shop_payments'])
             ->withCount([
                 'paymentitems as total_payments' => function ($query) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
                     $query->select(DB::raw("COALESCE(SUM(amount), 0)"))->where('stripe_payment_details.payment_status', 'paid');
@@ -206,9 +205,11 @@ class LeaderBoardController extends Controller
             $currentWeekEndDate = Carbon::now()->endOfWeek();
             $currentDate = Carbon::today();
 
-            $users = User::where(function ($q) {
-                $q->whereNot('country', 'GB')->orWhereNull('country');
-            })->with(['paymentitems', 'subscriptions', 'tip_goal_payment'])
+            $users = User::where('is_uk', 0)
+                // where(function ($q) {
+                //     $q->whereNot('country', 'GB')->orWhereNull('country');
+                // })
+                ->with(['paymentitems', 'subscriptions', 'tip_goal_payment'])
                 ->withCount([
                     'paymentitems as total_payments' => function ($query) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
                         $query->select(DB::raw("COALESCE(SUM(amount), 0)"));
@@ -455,7 +456,7 @@ class LeaderBoardController extends Controller
      */
     public function earnings($type = 'today')
     {
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         $currentMonth = Carbon::now()->month;
         $currentYear = Carbon::now()->year;
@@ -669,7 +670,7 @@ class LeaderBoardController extends Controller
 
     public function graphData()
     {
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
         $currentYear = Carbon::now()->year;
 
         $data = [];
@@ -762,7 +763,7 @@ class LeaderBoardController extends Controller
 
     public function topWishes()
     {
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         $pay = StripePaymentItems::whereHas('payment', function ($q) use ($user) {
             $q->where('owner_id', $user->id);
@@ -790,10 +791,9 @@ class LeaderBoardController extends Controller
         ]);
     }
 
-
     public function topSubscription()
     {
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         $pay = WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
             $q->whereNotNull('stripe_product_id')->where('user_id', $user->id);
@@ -818,10 +818,9 @@ class LeaderBoardController extends Controller
         ]);
     }
 
-
     public function topBill()
     {
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         $pay = BillPayment::whereHas('bill', function ($q) use ($user) {
             $q->where('user_id', $user->id);
@@ -846,10 +845,9 @@ class LeaderBoardController extends Controller
         ]);
     }
 
-
     public function topShop()
     {
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         $pay = ShopPayment::whereHas('shop', function ($q) use ($user) {
             $q->where('user_id', $user->id);
@@ -877,7 +875,7 @@ class LeaderBoardController extends Controller
 
     public function topPiggyBank()
     {
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         $pay = TipGoalsPayment::where('creator_id', $user->id)->whereNotNull('user_id')->with('user')->groupBy('user_id')
             ->selectRaw('user_id,sum(amount) as total_amount')

@@ -57,7 +57,7 @@ class BillsController extends Controller
             ]);
         }
 
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         $media = $request->thumbnail;
 
@@ -145,7 +145,7 @@ class BillsController extends Controller
             ]);
         }
 
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         $bill = Bills::where('uuid', $id)->first();
         $old_price = $bill->price;

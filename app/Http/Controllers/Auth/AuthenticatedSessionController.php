@@ -121,7 +121,8 @@ class AuthenticatedSessionController extends Controller
 
     public function verifyUser(Request $request)
     {
-        $user = User::where('email', $request->email)->first();
+
+        $user = User::where('email', $request->email)->where('is_uk', 0)->first();
 
         if (empty($user)) {
             return response()->json([
@@ -166,9 +167,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function getUserProfile($username)
     {
-        $user = User::where('username', $username)->where(function ($q) {
-            $q->whereNot('country', 'GB')->orWhereNull('country');
-        })->first();
+        $user = User::where('username', $username)->where('is_uk', 0)->first();
 
         if (!$user) {
             return Inertia::render('NotFound');
@@ -186,7 +185,7 @@ class AuthenticatedSessionController extends Controller
             if (!empty($value->user_id)) {
                 $arr[$key] = $value->user_id;
             } else {
-                $u = User::where('email', $value->guest_email)->first();
+                $u = User::where('email', $value->guest_email)->where('is_uk', 0)->first();
                 if (!empty($u)) {
                     $arr[$key] = $u->id;
                 } else {
@@ -241,9 +240,11 @@ class AuthenticatedSessionController extends Controller
 
     public function user_info($username, $category = false)
     {
-        $user = User::where('username', $username)->where(function ($q) {
-            $q->whereNot('country', 'GB')->orWhereNull('country');
-        })->first();
+        $user = User::where('username', $username)->where(
+            'is_uk',
+            0
+            // $q->whereNot('country', 'GB')->orWhereNull('country');
+        )->first();
         $items = [];
         if ($category && $user) {
             $query = WishCategory::orderBy('created_at', 'DESC');
@@ -295,9 +296,11 @@ class AuthenticatedSessionController extends Controller
      */
     public function userItems($username, $category_id = null)
     {
-        $user = User::where(function ($q) {
-            $q->whereNot('country', 'GB')->orWhereNull('country');
-        })->firstWhere('username', $username);
+        $user = User::where(
+            'is_uk',
+            0
+            // $q->whereNot('country', 'GB')->orWhereNull('country');
+        )->firstWhere('username', $username);
 
         if ($user) {
             $query = $user->wishItems()
@@ -339,9 +342,11 @@ class AuthenticatedSessionController extends Controller
     public function user_category($username)
     {
         try {
-            $user = User::where('username', $username)->where(function ($q) {
-                $q->whereNot('country', 'GB')->orWhereNull('country');
-            })->first();
+            $user = User::where('username', $username)->where(
+                'is_uk',
+                0
+                // $q->whereNot('country', 'GB')->orWhereNull('country');
+            )->first();
             $categories = [];
             if (!empty($user)) {
                 $categories = $user->user_categories()->get();
@@ -359,7 +364,8 @@ class AuthenticatedSessionController extends Controller
     public function user_shop_category($username)
     {
         try {
-            $user = User::where('username', $username)->where('country', 'GB')->first();
+            // $user = User::where('username', $username)->where('country', 'GB')->first();
+            $user = User::where('username', $username)->where('is_uk', 0)->first();
             $categories = [];
             if (!empty($user)) {
                 $categories = $user->user_shop_categories()->get();
@@ -376,9 +382,11 @@ class AuthenticatedSessionController extends Controller
 
     public function user_memberships($username)
     {
-        $user = User::where(function ($q) {
-            $q->whereNot('country', 'GB')->orWhereNull('country');
-        })->firstWhere('username', $username);
+        $user = User::where(
+            'is_uk',
+            0
+            // $q->whereNot('country', 'GB')->orWhereNull('country');
+        )->firstWhere('username', $username);
 
         if ($user) {
             $query = $user->memberships();
@@ -405,9 +413,11 @@ class AuthenticatedSessionController extends Controller
 
     public function user_posts($username)
     {
-        $user = User::where(function ($q) {
-            $q->whereNot('country', 'GB')->orWhereNull('country');
-        })->firstWhere('username', $username);
+        $user = User::where(
+            'is_uk',
+            0
+            // $q->whereNot('country', 'GB')->orWhereNull('country');
+        )->firstWhere('username', $username);
 
         if ($user) {
             $query = $user->posts();
@@ -426,7 +436,7 @@ class AuthenticatedSessionController extends Controller
                     $p->is_lock = 0;
                 } elseif ($p->type == 'image') {
                     if (Auth::check()) {
-                        $u = User::where('id', Auth::id())->first();
+                        $u = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
                         $tip = [];
                         if ($p->for_module == 'support') {
@@ -504,9 +514,11 @@ class AuthenticatedSessionController extends Controller
 
     public function user_bills($username)
     {
-        $user = User::where(function ($q) {
-            $q->whereNot('country', 'GB')->orWhereNull('country');
-        })->firstWhere('username', $username);
+        $user = User::where(
+            'is_uk',
+            0
+            // $q->whereNot('country', 'GB')->orWhereNull('country');
+        )->firstWhere('username', $username);
 
         if ($user) {
             $query = $user->bills();
@@ -535,9 +547,11 @@ class AuthenticatedSessionController extends Controller
     {
         $authUser = Auth::user(); // Get the logged-in user
 
-        $user = User::where(function ($q) {
-            $q->whereNot('country', 'GB')->orWhereNull('country');
-        })->firstWhere('username', $username);
+        $user = User::where(
+            'is_uk',
+            0
+            // $q->whereNot('country', 'GB')->orWhereNull('country');
+        )->firstWhere('username', $username);
 
         if (!$user) {
             return response()->json([
@@ -569,9 +583,11 @@ class AuthenticatedSessionController extends Controller
     public function sociallinks($username)
     {
         try {
-            $user = User::where('username', $username)->where(function ($q) {
-                $q->whereNot('country', 'GB')->orWhereNull('country');
-            })->first();
+            $user = User::where('username', $username)->where(
+                'is_uk',
+                0
+                // $q->whereNot('country', 'GB')->orWhereNull('country');
+            )->first();
             $slinks = [];
             $sociallinks = [];
             if (!empty($user)) {
@@ -633,9 +649,11 @@ class AuthenticatedSessionController extends Controller
         try {
             if (preg_match("/^[a-z0-9_]+$/", $username)) {
                 // Username contains only lowercase letters, numbers, and underscores
-                $user = User::where('username', $username)->where(function ($q) {
-                    $q->whereNot('country', 'GB')->orWhereNull('country');
-                })->first();
+                $user = User::where('username', $username)->where(
+                    'is_uk',
+                    0
+                    // $q->whereNot('country', 'GB')->orWhereNull('country');
+                )->first();
                 if (!empty($user)) {
                     return response()->json(['status' => false, 'msg' => 'Username is not available']);
                 } else {
@@ -652,7 +670,7 @@ class AuthenticatedSessionController extends Controller
 
     public function unlinkTwitter()
     {
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         if (!empty($user->twitter_token)) {
             //     $req = TwitterAuthService::revokeToken($user->twitter_token);
@@ -718,7 +736,7 @@ class AuthenticatedSessionController extends Controller
 
     public function updateVat($percent)
     {
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         $user->vat_amount_percentage = $percent;
         $user->save();
@@ -740,7 +758,7 @@ class AuthenticatedSessionController extends Controller
         $email = $request->query('email');
         $password = $request->query('password');
 
-        $user = User::where('email', $email)->first();
+        $user = User::where('email', $email)->where('is_uk', 0)->first();
 
         $otp = $request->query('otp');
         $backup_code = $request->query('backup_code');
@@ -867,7 +885,7 @@ class AuthenticatedSessionController extends Controller
 
         $sign = $request->query('sign');
 
-        $user = User::where('id', Auth::guard('sanctum')->id())->first();
+        $user = User::where('id', Auth::guard('sanctum')->id())->where('is_uk', 0)->first();
 
         $contract = new FanContract();
         $contract->user_id = $user->id;
