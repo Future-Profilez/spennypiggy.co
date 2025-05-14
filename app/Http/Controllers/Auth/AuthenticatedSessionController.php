@@ -99,7 +99,6 @@ class AuthenticatedSessionController extends Controller
         //         'origin'    =>  $request->getHttpHost(),
         //         'target'    =>  'spennypiggy.co',
         //     ]);
-
         //     Auth::logout();
         //     return Inertia::location("https://spennypiggy.co/verify-token/{$auth->uuid}");
         // } else 
@@ -111,7 +110,6 @@ class AuthenticatedSessionController extends Controller
         //         'origin'    =>  $request->getHttpHost(),
         //         'target'    =>  'uk.spennypiggy.co',
         //     ]);
-
         //     Auth::logout();
         //     return Inertia::location("https://uk.spennypiggy.co/verify-token/{$auth->uuid}");
         // }
