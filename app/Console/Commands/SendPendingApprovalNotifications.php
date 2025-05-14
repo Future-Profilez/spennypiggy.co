@@ -8,13 +8,14 @@ use Illuminate\Support\Facades\Notification;
 use App\Models\Admin;
 use App\Notifications\PendingApprovalNotification;
 use App\Notifications\PendingApprovalSummaryNotification;
+use Illuminate\Http\Request;
 
 class SendPendingApprovalNotifications extends Command
 {
     protected $signature = 'notifications:pending-approval';
     protected $description = 'Send summary notification for unapproved pending items every 30 minutes';
 
-    public function handle()
+    public function handle(Request $request)
     {
         Log::info('Running pending approval notifications summary command');
 
@@ -114,7 +115,16 @@ class SendPendingApprovalNotifications extends Command
         }
 
         if (!empty($pendingSummary)) {
-            $toEmail = env('PENDING_APPROVAL_EMAIL');
+            $host = $request->getHost(); // e.g. "example.com"
+            $scheme = $request->getScheme(); // http or https
+            $fullUrl = $scheme . '://' . $host;
+
+            $toEmail = null;
+            if ($fullUrl == 'https://dev.spennypiggy.co/' || 'http://127.0.0.1:8000/') {
+                $toEmail = 'prem@futureprofilez.com';
+            } else if ($fullUrl == 'https://spennypiggy.co/') {
+                $toEmail = 'jack@socialvortex.io';
+            }
 
             Notification::route('mail', $toEmail)
                 ->notify(new PendingApprovalNotification($pendingSummary));

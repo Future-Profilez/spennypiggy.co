@@ -36,13 +36,9 @@ class SendBioSocialUpdateEmail implements ShouldQueue
 
         $fullUrl = $scheme . '://' . $host;
 
-        Log::info("Request Method: $method");
-        Log::info("Request URL: $fullUrl");
         if ($fullUrl == 'https://dev.spennypiggy.co/' || 'http://127.0.0.1:8000/') {
             Mail::to('prem@futureprofilez.com')->send(new BioSocialUpdateMail($this->user, $this->updatedFields));
-        }
-
-        if ($fullUrl == 'https://spennypiggy.co/') {
+        } else if ($fullUrl == 'https://spennypiggy.co/') {
             Mail::to('jack@socialvortex.io')->send(new BioSocialUpdateMail($this->user, $this->updatedFields));
         }
     }
