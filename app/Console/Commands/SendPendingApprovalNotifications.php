@@ -124,7 +124,6 @@ class SendPendingApprovalNotifications extends Command
                 $toEmail = 'jack@socialvortex.io';
             }
 
-
             if ($toEmail != null) {
                 Notification::route('mail', $toEmail)
                     ->notify(new PendingApprovalNotification($pendingSummary));
