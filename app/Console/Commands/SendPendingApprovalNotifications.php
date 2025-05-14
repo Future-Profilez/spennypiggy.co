@@ -15,7 +15,7 @@ class SendPendingApprovalNotifications extends Command
     protected $signature = 'notifications:pending-approval';
     protected $description = 'Send summary notification for unapproved pending items every 30 minutes';
 
-    public function handle(Request $request)
+    public function handle()
     {
         Log::info('Running pending approval notifications summary command');
 
@@ -115,20 +115,20 @@ class SendPendingApprovalNotifications extends Command
         }
 
         if (!empty($pendingSummary)) {
-            $host = $request->getHost(); // e.g. "example.com"
-            $scheme = $request->getScheme(); // http or https
-            $fullUrl = $scheme . '://' . $host;
+            $appUrl = config('app.url'); // e.g. https://dev.spennypiggy.co
 
             $toEmail = null;
-            if ($fullUrl == 'https://dev.spennypiggy.co/' || 'http://127.0.0.1:8000/') {
+            if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
                 $toEmail = 'prem@futureprofilez.com';
-            } else if ($fullUrl == 'https://spennypiggy.co/') {
+            } elseif ($appUrl == 'https://spennypiggy.co') {
                 $toEmail = 'jack@socialvortex.io';
             }
 
-            Notification::route('mail', $toEmail)
-                ->notify(new PendingApprovalNotification($pendingSummary));
 
+            if ($toEmail != null) {
+                Notification::route('mail', $toEmail)
+                    ->notify(new PendingApprovalNotification($pendingSummary));
+            }
             Log::info('Sent summary notification with ' . count($pendingSummary) . ' categories');
         } else {
             Log::info('No pending items found.');

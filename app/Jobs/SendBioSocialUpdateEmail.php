@@ -26,19 +26,13 @@ class SendBioSocialUpdateEmail implements ShouldQueue
         $this->updatedFields = $updatedFields;
     }
 
-    public function handle(Request $request): void
+    public function handle(): void
     {
-        $method = $request->method(); // GET, POST, etc.
-        $host = $request->getHost(); // e.g. "example.com"
-        $scheme = $request->getScheme(); // http or https
-        // $path = $request->getPathInfo(); // e.g. "/api/update-bio"
-        // $query = $request->getQueryString(); // e.g. "id=1"
+        $appUrl = config('app.url'); // e.g. https://dev.spennypiggy.co
 
-        $fullUrl = $scheme . '://' . $host;
-
-        if ($fullUrl == 'https://dev.spennypiggy.co/' || 'http://127.0.0.1:8000/') {
+        if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
             Mail::to('prem@futureprofilez.com')->send(new BioSocialUpdateMail($this->user, $this->updatedFields));
-        } else if ($fullUrl == 'https://spennypiggy.co/') {
+        } elseif ($appUrl == 'https://spennypiggy.co') {
             Mail::to('jack@socialvortex.io')->send(new BioSocialUpdateMail($this->user, $this->updatedFields));
         }
     }
