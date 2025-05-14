@@ -130,7 +130,6 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                                 <Link href="/account?page=autotweet whitespace-nowrap">Enable </Link>
                             </div>
                         </div> : ''}
-
                         {/* basic_profile */}
                         {status && status.basic_profile !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
                             <div className="step-title d-flex max-w-[390px] pe-3">

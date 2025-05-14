@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 class SendPendingApprovalNotifications extends Command
 {
     protected $signature = 'notifications:pending-approval';
+
     protected $description = 'Send summary notification for unapproved pending items every 30 minutes';
 
     public function handle()
