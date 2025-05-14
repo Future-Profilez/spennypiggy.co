@@ -8,6 +8,8 @@ import axios from "axios";
 import { useRef } from "react";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 import { FaHouseChimneyUser } from "react-icons/fa6";
+import PriceFormat from "@/includes/PriceFormat";
+import { usePage } from "@inertiajs/react";
 
 const memberships = [
   {
@@ -76,9 +78,10 @@ const membershipBenifits = [
 ];
 
 export default function AddMembership({updateState, item, text, classes}) {
-
+  const { auth } = usePage().props;
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
-
+  const { formatMultiPrice } = PriceFormat();
+  const defaultCurrency = (auth && auth.user && auth.user.default_currency) || "USD";
   const uploaderRef = useRef();
   const resetUploader = () => {
       if (uploaderRef.current) {
@@ -210,13 +213,20 @@ export default function AddMembership({updateState, item, text, classes}) {
 
                       <div className="col-md-12 form-field mb-4">
                           <label className="d-block text-start mb-2">{data && data.level =='lifetime' ? "Lifetime membership price" : 'Monthly Price'}</label>
-                          <div className="position-relative  currency-wrapper" >
-                            <span className="currency-tag">{'GBP'}</span>
+                          <div className="position-relative  currency-wrapper dollar" >
+                            <span className="currency-tag">{'$'}</span>
                             <input className="form-input w-100 rounded"
                                 onChange={handleInput} defaultValue={item && item.price || ''}
                                 type="number" name="month_price"
                                 placeholder={data && data.level =='lifetime' ? "Enter Lifetime membership price" : 'Enter monthly price.. '}  />
                           </div>
+                          {defaultCurrency !== 'USD' && <p className="mt-1">
+                              The Bill amount is set to{" "}
+                              {formatMultiPrice(
+                                  data.month_price,
+                                  defaultCurrency
+                              )}.
+                          </p>}
                       </div>
 
                       <div className="col-md-12 form-field mb-4">

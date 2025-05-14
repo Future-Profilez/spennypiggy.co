@@ -19,6 +19,7 @@ export default function Register(props) {
     const captchaRef = useRef(null);
     const checkRef = useRef();
     const gifterref = useRef();
+    const addressCheck = useRef();
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const lowerLetter = /[a-z]/g;
     const capitalLetter = /[A-Z]/g;
@@ -77,7 +78,7 @@ export default function Register(props) {
         setData("role", e);
         setRole(e);
         if(e == 1){
-            await handleIpRedirection(ziggy);
+            // await handleIpRedirection(ziggy);
             setStep(1);
         }else {
             setStep(2);
@@ -199,6 +200,11 @@ export default function Register(props) {
         if (role == 0 && !gifterref.current.checked) {
             errorAlert("Please accept all terms and conditions.");
             gifterref.current.focus();
+            return false;
+        }
+        if (role == 0 && !addressCheck.current.checked) {
+            errorAlert("Please accept all terms and conditions.");
+            addressCheck.current.focus();
             return false;
         }
 
@@ -548,6 +554,13 @@ export default function Register(props) {
                                                         <input type="checkbox" ref={gifterref} id="gifterCheck" name="gifterCheck" value="gifterCheck"
                                                         required ></input>
                                                         The above matches the details on the bank card they will use. If it doesn’t their account will be suspended.
+                                                    </p>
+                                                </label>
+                                                <label htmlFor="addressCheck">
+                                                    <p className='tersms-accept mt-3' >
+                                                        <input type="checkbox" ref={addressCheck} id="addressCheck" name="addressCheck" value="addressCheck"
+                                                        required ></input>
+                                                        I confirm the address supplied is my billing address associated with the bank card I will use for purchases..
                                                     </p>
                                                 </label>
                                             </>

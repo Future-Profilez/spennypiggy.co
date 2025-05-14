@@ -91,29 +91,28 @@ class AuthenticatedSessionController extends Controller
         // Auth::logout();
         // return Inertia::location("http://localhost:8000/verify-token/{$auth->uuid}");
         // if()
-        if ($request->getHttpHost() == "uk.spennypiggy.co" and $user->country != "GB") {
-            // return Inertia::location("https://spennypiggy.com/{$user->username}");
-            $auth = AuthRedirect::create([
-                "user_id"   =>  $user->id,
-                'country'   =>  $user->country,
-                'origin'    =>  $request->getHttpHost(),
-                'target'    =>  'spennypiggy.co',
-            ]);
-
-            Auth::logout();
-            return Inertia::location("https://spennypiggy.co/verify-token/{$auth->uuid}");
-        } else if (!in_array($request->getHttpHost(), ['::1', 'localhost:8000', '127.0.0.1:8000']) and $request->getHttpHost() == 'spennypiggy.co' and $user->country == 'GB') {
-            // return Inertia::location("https://uk.spennypiggy.com/{$user->username}");
-            $auth = AuthRedirect::create([
-                "user_id"   =>  $user->id,
-                'country'   =>  $user->country,
-                'origin'    =>  $request->getHttpHost(),
-                'target'    =>  'uk.spennypiggy.co',
-            ]);
-
-            Auth::logout();
-            return Inertia::location("https://uk.spennypiggy.co/verify-token/{$auth->uuid}");
-        }
+        // if ($request->getHttpHost() == "uk.spennypiggy.co" and $user->country != "GB") {
+        //     // return Inertia::location("https://spennypiggy.com/{$user->username}");
+        //     $auth = AuthRedirect::create([
+        //         "user_id"   =>  $user->id,
+        //         'country'   =>  $user->country,
+        //         'origin'    =>  $request->getHttpHost(),
+        //         'target'    =>  'spennypiggy.co',
+        //     ]);
+        //     Auth::logout();
+        //     return Inertia::location("https://spennypiggy.co/verify-token/{$auth->uuid}");
+        // } else 
+        // if (!in_array($request->getHttpHost(), ['::1', 'localhost:8000', '127.0.0.1:8000']) and $request->getHttpHost() == 'spennypiggy.co' and $user->country == 'GB') {
+        //     // return Inertia::location("https://uk.spennypiggy.com/{$user->username}");
+        //     $auth = AuthRedirect::create([
+        //         "user_id"   =>  $user->id,
+        //         'country'   =>  $user->country,
+        //         'origin'    =>  $request->getHttpHost(),
+        //         'target'    =>  'uk.spennypiggy.co',
+        //     ]);
+        //     Auth::logout();
+        //     return Inertia::location("https://uk.spennypiggy.co/verify-token/{$auth->uuid}");
+        // }
         return redirect(route("user.show", ['username' => $user->username]))->with("success", "Logged in successfully.");
     }
 

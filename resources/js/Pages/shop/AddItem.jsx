@@ -495,14 +495,17 @@ export default function AddItem(props) {
 
                         <div className="shop-forms-field mb-4">
                             <label className="w-full mb-2">Price*</label>
-                            <input
-                                name="price"
-                                defaultValue={pre_price}
-                                onChange={handelInputs}
-                                className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5"
-                                type="number"
-                                placeholder="Enter the price of your item"
-                            />
+                            <div className="position-relative  currency-wrapper dollar" >
+                                <span className="currency-tag">$</span>
+                                <input
+                                    name="price"
+                                    defaultValue={pre_price}
+                                    onChange={handelInputs}
+                                    className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5"
+                                    type="number"
+                                    placeholder="Enter the price of your item"
+                                />
+                            </div>
                         </div>
 
                         <h2 className="text-md font-normal mb-3 mt-3">Item image</h2>

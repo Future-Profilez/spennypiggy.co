@@ -2,11 +2,9 @@ import axios from 'axios';
 
 export async function handleIpRedirection(ziggy) {
   try {
-    // console.log("ziggy",ziggy);
     const response = await axios.get(`https://ipapi.co/json/`);
     const countryCode = response?.data?.country_code;
     // console.log("countryCode",countryCode);
-
     if (ziggy && ziggy?.url === 'https://spennypiggy.co' && countryCode === 'GB') {
       window.location = 'https://uk.spennypiggy.co/register?type=creator';
     }
