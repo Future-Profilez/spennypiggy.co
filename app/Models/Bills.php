@@ -9,7 +9,7 @@ use Ramsey\Uuid\Uuid;
 
 class Bills extends Model
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'bills';
 
@@ -33,11 +33,12 @@ class Bills extends Model
     public static function boot()
     {
         parent::boot();
-        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
+        static::creating(fn($w) => $w->uuid = Uuid::uuid4());
     }
 
-    public function user(){
-        return $this->belongsTo(User::class,'user_id');
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id')->where('is_uk', 0);
     }
 
     public function getPermaLinkAttribute()
@@ -52,7 +53,8 @@ class Bills extends Model
         return $url;
     }
 
-    public function payments(){
+    public function payments()
+    {
         return $this->hasMany(BillPayment::class);
     }
 }

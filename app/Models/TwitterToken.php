@@ -11,7 +11,7 @@ class TwitterToken extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable=    [
+    protected $fillable =    [
         'uuid',
         'user_id',
         'twitter_id',
@@ -33,7 +33,7 @@ class TwitterToken extends Model
         'updated_at'
     ];
 
-    protected $casts    =   [
+    protected $casts = [
         'expires_at'    =>  'datetime'
     ];
 

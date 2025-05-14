@@ -10,7 +10,7 @@ use Ramsey\Uuid\Uuid;
 
 class TipGoal extends Model
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory, SoftDeletes;
 
 
     protected $fillable = [
@@ -49,16 +49,17 @@ class TipGoal extends Model
     public static function boot()
     {
         parent::boot();
-        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
+        static::creating(fn($w) => $w->uuid = Uuid::uuid4());
     }
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id')->where('is_uk', 0);
     }
 
-    public function getCompleteAtAttribute(){
-        if(!empty($this->completed_at)){
+    public function getCompleteAtAttribute()
+    {
+        if (!empty($this->completed_at)) {
             return Carbon::createFromFormat('Y-m-d H:i:s', $this->completed_at)->isoFormat('DD MMM YYYY');
         }
 

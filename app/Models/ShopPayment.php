@@ -48,7 +48,7 @@ class ShopPayment extends Model
     public static function boot()
     {
         parent::boot();
-        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
+        static::creating(fn($w) => $w->uuid = Uuid::uuid4());
     }
 
     public function getSenderAttribute()
@@ -62,11 +62,13 @@ class ShopPayment extends Model
         return $sender;
     }
 
-    public function user(){
-        return $this->belongsTo(User::class, 'user_id');
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id')->where('is_uk', 0);
     }
 
-    public function shop(){
-        return $this->belongsTo(Shop::class,'shop_id');
+    public function shop()
+    {
+        return $this->belongsTo(Shop::class, 'shop_id');
     }
 }
