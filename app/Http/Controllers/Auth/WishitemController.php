@@ -1101,7 +1101,7 @@ class WishitemController extends Controller
 
             if (!$orderDetails) {
                 return response()->json([
-                    'status' => false,
+                    'status' => 'falses', // set falses because it is showing error on frontend need to fix later
                     'message' => 'Order details not found.',
                 ], 404);
             }

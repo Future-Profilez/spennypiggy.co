@@ -55,6 +55,8 @@ class CheckoutController extends Controller
         //     ->send(new CommandFailed($emailSubject, $message));
 
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+        $getdata = collect(); // Or $getdata = []; if you're using plain arrays
+
         try {
             if (!empty(request()->query('message'))) {
                 $wordLimit = 100;
@@ -71,12 +73,14 @@ class CheckoutController extends Controller
                     ->where('country', 'global')
                     ->where('status', 1)
                     ->with(['wish'])
+                    ->orderBy('id', 'desc')
                     ->get();
             } else {
                 $getdata = UserCart::where('device_id', $id)
                     ->where('country', 'global')
                     ->where('status', 1)
                     ->with(['wish'])
+                    ->orderBy('id', 'desc')
                     ->get();
             }
 
@@ -96,7 +100,10 @@ class CheckoutController extends Controller
                 $ConvertedTax = Helpers::priceFormat($dd->owner->default_currency, $totalTax, $currency);
                 $TotalConvertedFinalAmount = $ConvertedTax + $ConvertedAmount + $showAdminsFees;
                 $new_total_amount = round($TotalConvertedFinalAmount, 2, PHP_ROUND_HALF_UP);
-
+                Log::info('priceid: and stripeProductId: ');
+                Log::info($dd);
+                Log::info($dd->priceid);
+                Log::info($dd->wish->stripe_product_id);
                 $lineItems[] = [
                     // 'price' => $dd->stripe_product_id ?? '',
                     'quantity' => $dd->quantity,
@@ -164,7 +171,14 @@ class CheckoutController extends Controller
 
             return Inertia::location($sessionCreate->url);
         } catch (\Throwable $th) {
-            return redirect(route('user.show', [$getdata[0]->owner->username]))->with('error', $th->getMessage());
+            if (!empty($getdata) && isset($getdata[0]->owner->username)) {
+                return redirect(route('user.show', [$getdata[0]->owner->username]))
+                    ->with('error', $th->getMessage());
+            } else {
+                return redirect()->back()->with('error', $th->getMessage());
+            }
+
+            // return redirect(route('user.show', [$getdata[0]->owner->username]))->with('error', $th->getMessage());
             // $now = Carbon::now()->format('h:i A d-m-Y');
             // $emailSubject = "Payment Process Failed - $now";
             // $message = "An error occurred while processing the payment: " . $th->getMessage();
@@ -189,6 +203,27 @@ class CheckoutController extends Controller
             }
 
             foreach ($getdata as $dd) {
+
+                /**************************WISH**PWA**START****************************************************/
+                // below is wish pwa for fans
+
+                $CreatorName = !empty($dd->owner->name) ? $dd->owner->name : 'A Creator';
+                $titles = "✨ Wish Sent Successfully!";
+                $contents = "You've sent a wish to {{ $CreatorName }}. They'll be notified right away!";
+                $emails = $dd->user->email ?? null;
+                Log::info("emails: $emails");
+                Helpers::sendNotification($titles, $contents, $emails);
+                
+                // below is wish pwa for creator
+                $FanName = $dd->user->name ?? 'A Fan';
+                $title = "🎁 New Wish Received!";
+                $content = "{{ $FanName }} has sent you a paid wish. Go check it out!";
+                $email = $dd->owner->email;
+                Log::info("email: $email");
+
+                Helpers::sendNotification($title, $content, $email);
+
+                /****************************WISH**PWA**ENDS****************************************************/
 
                 if (!empty($dd->wish->subscription)) {
 
@@ -279,26 +314,6 @@ class CheckoutController extends Controller
                         CheckoutTweet::dispatch($payment_data);
                     }
                 }
-
-                /**************************WISH**PWA**START****************************************************/
-                // below is wish pwa for fans
-
-                $CreatorName = !empty($dd->owner->name) ? $dd->owner->name : 'A Creator';
-                $title = "✨ Wish Sent Successfully!";
-                $content = "You've sent a wish to {{ $CreatorName }}. They'll be notified right away!";
-                $email = $dd->guest_email ?? $dd->user->email;
-
-                Helpers::sendNotification($title, $content, $email);
-
-                // below is wish pwa for creator
-                $FanName = $dd->user->name ?? 'A Fan';
-                $title = "🎁 New Wish Received!";
-                $content = "{{ $FanName }} has sent you a paid wish. Go check it out!";
-                $email = $dd->owner->email;
-
-                Helpers::sendNotification($title, $content, $email);
-
-                /****************************WISH**PWA**ENDS****************************************************/
             }
 
 
