@@ -70,11 +70,17 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request)
     {
-        // Log::info($request->ip());
+        //saving the google secret of an particular user
+
         $request->authenticate();
         $request->session()->regenerate();
         $user = Auth::user();
 
+        $secret = $this->google2FA->generateSecretKey();
+        if (empty($user->tfa_key) && $user->role == 1) {
+            $user->tfa_key = $secret;
+            $user->save();
+        }
         $ipAddress = $request->ip();
         $checkIpExist = $user->ip_address;
         if (empty($checkIpExist)) {
@@ -101,7 +107,7 @@ class AuthenticatedSessionController extends Controller
         //     ]);
         //     Auth::logout();
         //     return Inertia::location("https://spennypiggy.co/verify-token/{$auth->uuid}");
-        // } else 
+        // } else
         // if (!in_array($request->getHttpHost(), ['::1', 'localhost:8000', '127.0.0.1:8000']) and $request->getHttpHost() == 'spennypiggy.co' and $user->country == 'GB') {
         //     // return Inertia::location("https://uk.spennypiggy.com/{$user->username}");
         //     $auth = AuthRedirect::create([

@@ -28,9 +28,16 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Stripe\StripeClient;
+use PragmaRX\Google2FALaravel\Google2FA;
 
 class RegisteredUserController extends Controller
 {
+    protected $google2FA;
+
+    public function __construct(Google2FA $google2FA)
+    {
+        $this->google2FA = $google2FA;
+    }
     /**
      * Display the registration view.
      */
@@ -116,8 +123,11 @@ class RegisteredUserController extends Controller
 
                 $randomBio = $defaultBios[array_rand($defaultBios)];
             }
+            //saving the google secret of an particular user
+            $secret = $this->google2FA->generateSecretKey();
 
             $user = User::create([
+                'tfa_key' => $secret,
                 'name' => $request->name,
                 'email' => strtolower($request->email),
                 'username' => $request->username,

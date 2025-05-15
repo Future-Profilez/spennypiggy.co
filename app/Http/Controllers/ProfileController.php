@@ -31,6 +31,7 @@ use App\Models\StripePaymentItems;
 use App\Models\TipGoal;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
+use App\Models\UserBackupCode;
 use App\Models\UserCart;
 use App\Models\UserCategory;
 use App\Models\UserDocuments;
@@ -56,19 +57,24 @@ use PhpParser\Node\Expr\Print_;
 use Uploadcare\Api;
 use Uploadcare\AuthUrl\AuthUrlConfig;
 use Uploadcare\AuthUrl\Token\AkamaiToken;
+use PragmaRX\Google2FALaravel\Google2FA;
 use Uploadcare\Configuration;
 use Image;
+use PragmaRX\Recovery\Recovery;
 
 class ProfileController extends Controller
 {
 
     protected $uploadcareApi;
 
-    public function __construct()
+    protected $google2FA;
+
+    public function __construct(Google2FA $google2FA)
     {
         $authUrlConfig = new AuthUrlConfig('ucarecdn.com', new AkamaiToken(env('UPLOADCARE_SECRET_KEY'), 300));
         $config = Configuration::create(env('UPLOADCARE_PUBLIC_KEY'), env('UPLOADCARE_SECRET_KEY'))->setAuthUrlConfig($authUrlConfig);
         $this->uploadcareApi = new Api($config);
+        $this->google2FA = $google2FA;
     }
 
     /**
@@ -1143,5 +1149,109 @@ class ProfileController extends Controller
             'status' => true,
             'uuid' => $response->getUuid()
         ]);
+    }
+
+    public function show2faQR()
+    {
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $qrCode = null;
+
+        if (!empty($user->tfa_key)) {
+            $qrCode = $this->google2FA->getQRCodeInline("SpennyPiggy", $user->email, $user->tfa_key);
+        }
+
+        return response()->json([
+            'status' => true,
+            'qr_code' => $qrCode,
+        ]);
+    }
+
+    public function verification2FA(Request $request)
+    {
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+
+        $valid = false;
+        if (!empty($request->otp)) {
+            $valid = $this->google2FA->verifyKey($user->tfa_key, $request->otp);
+        }
+
+        $codes = [];
+        if ($valid) {
+            $recovery = new Recovery();
+            $codes = $recovery->setCount(5)->toCollection();
+            UserBackupCode::where('user_id', $user->id)->delete();
+            foreach ($codes as $key => $value) {
+                $backup = new UserBackupCode();
+                $backup->user_id = $user->id;
+                $backup->code = encrypt($value);
+                $backup->save();
+            }
+
+            $user->is_2fa = 1;
+            $user->save();
+        }
+
+        $message = $valid ? "Two factor authentication verification success." : "Two factor authentication verification failed.";
+        return response()->json([
+            'status' => $valid,
+            'msg' => $message,
+            'codes' => $codes,
+        ]);
+    }
+
+    /**
+     * Enable disable 2FA
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response json
+     */
+    public function update2faStatus(Request $request)
+    {
+        $request->validate([
+            'status' => 'required|boolean'
+        ]);
+        $user = User::find(Auth::id());
+        $status = $request->status ?? 0;
+
+        $user->is_2fa = $status;
+        $user->save();
+        if ($status == 0) {
+            UserBackupCode::where('user_id', $user->id)->delete();
+        }
+
+        $msg = 'Two factor authentication has been ' . ($status ? 'enabled.' : 'disabled.');
+
+        return response()->json([
+            'status' => true,
+            'tfa_status' => $user->is_2fa,
+            'msg'  => $msg,
+        ]);
+    }
+
+    /**
+     * Generating the backup codes for 2fa
+     *
+     * @return \Illuminate\Http\Response json
+     */
+    public function generateBackupCode()
+    {
+        $user = User::findOrFail(Auth::id());
+
+        $recovery = new Recovery();
+        $codes = $recovery->setCount(5)->toCollection();
+        UserBackupCode::where('user_id', $user->id)->delete();
+        foreach ($codes as $key => $value) {
+            $backup = new UserBackupCode();
+            $backup->user_id = $user->id;
+            $backup->code = encrypt($value);
+            $backup->save();
+        }
+        return response()->json([
+            'status' => true,
+            'tfa'  => true,
+            'msg' => 'Open your authenticator app to get security code.',
+            'qr' => request()->query('type') == 1 ? $this->twofQR($user->id) : null,
+            'backup_codes' => $codes ?? null
+        ], 200);
     }
 }

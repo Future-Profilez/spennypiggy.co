@@ -55,7 +55,7 @@ export default function TFA() {
     const verify = async () => {
         setVerifying(true);
         const resp = axios.post(`verification-2fa`, { otp: otp.join("") })
-        resp.then((resp) => { 
+        resp.then((resp) => {
          if (resp.data.status) {
             successAlert(resp.data.msg);
             setBackupCodes(resp.data.codes);
