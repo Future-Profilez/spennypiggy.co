@@ -152,7 +152,7 @@ export default function Login({ status, canResetPassword }) {
                     </form>
                 </div>
             </div>
-            <EnterOTP action={open} user={data} />
+            <A action={open} user={data} />
         </GuestLayout>
     );
 }

@@ -171,13 +171,13 @@ export default function Accountsetting(props) {
                             </>
                             : ''}
 
-                            {/* <li>
+                            <li>
                                 <TFA text={<>
                                     <div className='notification uppercase'>
                                         TWO FACTOR AUTHENTICATION
                                     </div>
                                 </>} />
-                            </li> */}
+                            </li>
 
                             <li>
                                 <Popup space='4' modalclassName="pinkmodal"
