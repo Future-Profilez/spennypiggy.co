@@ -1968,7 +1968,7 @@ class WishitemController extends Controller
 
             $cart = [];
             if ($user) {
-                $carts = UserCart::where('user_id', $user->id)->where('country', 'global')->where('status', 1)->get();
+                $carts = UserCart::whereHas('wish')->where('user_id', $user->id)->where('country', 'global')->where('status', 1)->get();
 
                 $groupedWishes = [];
                 foreach ($carts as $wish) {
@@ -2262,14 +2262,14 @@ class WishitemController extends Controller
     public function wish_counter($deviceid)
     {
         if (!Auth::check()) {
-            $items = UserCart::where('device_id', $deviceid ?? null)->where('country', 'global')->where('status', 1)->count();
+            $items = UserCart::where('wish')->where('device_id', $deviceid ?? null)->where('country', 'global')->where('status', 1)->count();
             return response()->json([
                 "success" => true,
                 "counter" => $items,
             ]);
         } else {
             $user = Auth::user();
-            $items = UserCart::where('user_id', $user->id ?? null)->where('country', 'global')->where('status', 1)->count();
+            $items = UserCart::where('wish')->where('user_id', $user->id ?? null)->where('country', 'global')->where('status', 1)->count();
             return response()->json([
                 "success" => true,
                 "counter" => $items,
