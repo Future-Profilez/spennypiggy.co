@@ -137,7 +137,7 @@ class StripeWebhookController extends Controller
             $event = \Stripe\Webhook::constructEvent(
                 $payload,
                 $sigHeader,
-                'whsec_Kg8JCp247IijHEPE81kW0vHMhVKkGuQM'
+                env('CREATOR_MONTHLY_SUBSCRIPTION_SECRET'),
             );
         } catch (\UnexpectedValueException $e) {
             return response('Invalid payload', 400);
@@ -183,8 +183,6 @@ class StripeWebhookController extends Controller
                 ));
             }
         }
-
-
 
         return response()->json(['status' => 'success', 'message' => 'Webhook received']);
         // return response('Webhook received', 200);

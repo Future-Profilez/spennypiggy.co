@@ -617,9 +617,9 @@ class BillsController extends Controller
 
         $array = [];
         if (!empty($event)) {
-            $subs = BillPayment::where('stripe_id', $event->data->object->subscription)->latest()->first();
+            $subs = BillPayment::where('stripe_id', $event->data->object->id)->latest()->first();
 
-            $ret = StripeControl::getSubscription($event->data->object->subscription);
+            $ret = StripeControl::getSubscription($event->data->object->id);
 
             if ($event->type == "invoice.updated" && !empty($subs)) {
 
