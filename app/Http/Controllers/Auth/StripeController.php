@@ -850,6 +850,8 @@ class StripeController extends Controller
         $array = [];
         if (!empty($event)) {
             $charge = $event->data->object;
+
+            // Get email from billing_details
             $email = $charge->billing_details->email ?? null;
 
             $subs = StripePaymentDetail::where('guest_email', $email)->where('payment_status', '!=', 'paid')->latest()->first();
@@ -866,38 +868,19 @@ class StripeController extends Controller
 
                     SendRenewMail::dispatch($array, 'failed', 'main');
                 } elseif ($event->type == "charge.updated" && !empty($subs)) {
-                    // Extract charge details
-                    $charge = $event->data->object;
 
-                    // Optionally, update subscription with new status if needed
-                    // You can inspect charge.status, charge.paid, etc.
-                    if (isset($charge->status)) {
-                        // For example, handle if the charge is marked as refunded or failed
-                        if ($charge->status === 'succeeded') {
-                            $subs->status = 'paid';
-                        } elseif ($charge->status === 'failed') {
-                            $subs->status = 'failed';
-                        } elseif ($charge->status === 'pending') {
-                            $subs->status = 'pending';
-                        } elseif ($charge->refunded) {
-                            $subs->status = 'refunded';
-                        }
+                    $subs->status = $charge->status ?? 'unknown';
+                    $subs->save();
 
-                        $subs->save();
+                    $array = [
+                        'email' => $email,
+                        'name' => $charge->billing_details->name ?? null,
+                        'uuid' => $subs->uuid,
+                        'notification' => $subs->user->notification_send ?? 0,
+                    ];
 
-                        // Populate email data if needed
-                        $array = [
-                            'email' => $charge->billing_details->email ?? null,
-                            'name' => $charge->billing_details->name ?? null,
-                            'uuid' => $subs->uuid,
-                            'notification' => $subs->user->notification_send ?? 0,
-                        ];
-
-                        // Send email based on charge status
-                        SendRenewMail::dispatch($array, $subs->status, 'main');
-                    }
+                    SendRenewMail::dispatch($array, $subs->status, 'main');
                 }
-
 
                 if (!empty($subs)) {
                     $stripe = new StripeWebhookStatus;

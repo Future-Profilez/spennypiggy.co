@@ -237,7 +237,6 @@ class CheckoutController extends Controller
                                 $end = Carbon::now()->addMonth(1);
                             }
 
-
                             $subscription = new Subscription();
                             $subscription->user_id = $dd->user_id;
                             $subscription->owner_id = $dd->owner_id;
