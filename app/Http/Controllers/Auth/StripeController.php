@@ -849,64 +849,104 @@ class StripeController extends Controller
 
         $array = [];
         if (!empty($event)) {
-            $subs = WishItemSubscription::where('stripe_id', $event->data->object->subscription)->latest()->first();
+            $charge = $event->data->object;
+            $email = $charge->billing_details->email ?? null;
 
+            $subs = StripePaymentDetail::where('guest_email', $email)->where('payment_status', '!=', 'paid')->latest()->first();
             $ret = StripeControl::getSubscription($event->data->object->subscription);
+            if ($charge->object == 'charge') {
+                if ($event->type == "customer.subscription.deleted" && !empty($subs)) {
+                    $subs->status = 'cancelled';
+                    $subs->save();
 
-            if ($event->type == "invoice.updated" && !empty($subs)) {
+                    SendRenewMail::dispatch($array, 'cancelled', 'main');
+                } elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
+                    $subs->status = 'failed';
+                    $subs->save();
 
-                $array = [
-                    'email' => $event->data->object->customer_email,
-                    'name' => $event->data->object->customer_name,
-                    'invoice_pdf' => $event->data->object->invoice_pdf,
-                    'uuid' => $subs->uuid,
-                    'notification' => $subs->user->notification_send ?? 0
-                ];
+                    SendRenewMail::dispatch($array, 'failed', 'main');
+                } elseif ($event->type == "charge.updated" && !empty($subs)) {
+                    // Extract charge details
+                    $charge = $event->data->object;
 
-                $subs->status = "ended";
-                $subs->save();
+                    // Optionally, update subscription with new status if needed
+                    // You can inspect charge.status, charge.paid, etc.
+                    if (isset($charge->status)) {
+                        // For example, handle if the charge is marked as refunded or failed
+                        if ($charge->status === 'succeeded') {
+                            $subs->status = 'paid';
+                        } elseif ($charge->status === 'failed') {
+                            $subs->status = 'failed';
+                        } elseif ($charge->status === 'pending') {
+                            $subs->status = 'pending';
+                        } elseif ($charge->refunded) {
+                            $subs->status = 'refunded';
+                        }
 
-                $newSubs = new WishItemSubscription();
-                $newSubs->stripe_id = $subs->stripe_id;
-                $newSubs->session_id = $subs->session_id;
-                $newSubs->wish_item_id = $subs->wish_item_id;
-                $newSubs->user_id = $subs->user_id;
-                $newSubs->guest_name = $subs->guest_name;
-                $newSubs->guest_email = $subs->guest_email;
-                $newSubs->currency = $subs->currency;
-                $newSubs->amount = $subs->amount;
-                $newSubs->tax = $subs->tax;
-                $newSubs->recurring_for = $subs->recurring_for;
-                $newSubs->recurring_type = $subs->recurring_type;
-                $newSubs->payment_method = 'stripe';
-                $newSubs->surprise_message = $subs->surprise_message;
-                $newSubs->anonymous = $subs->anonymous;
-                $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
-                $newSubs->status = "paid";
-                $newSubs->created_at = $subs->created_at;
-                $newSubs->updated_at = Carbon::now();
-                $newSubs->save();
+                        $subs->save();
 
-                SendRenewMail::dispatch($array, 'renew', 'main');
-            } elseif ($event->type == "customer.subscription.deleted" && !empty($subs)) {
-                $subs->status = 'cancelled';
-                $subs->save();
+                        // Populate email data if needed
+                        $array = [
+                            'email' => $charge->billing_details->email ?? null,
+                            'name' => $charge->billing_details->name ?? null,
+                            'uuid' => $subs->uuid,
+                            'notification' => $subs->user->notification_send ?? 0,
+                        ];
 
-                SendRenewMail::dispatch($array, 'cancelled', 'main');
-            } elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
-                $subs->status = 'failed';
-                $subs->save();
+                        // Send email based on charge status
+                        SendRenewMail::dispatch($array, $subs->status, 'main');
+                    }
+                }
 
-                SendRenewMail::dispatch($array, 'failed', 'main');
+
+                if (!empty($subs)) {
+                    $stripe = new StripeWebhookStatus;
+                    $stripe->subscription_id = $subs->id;
+                    $stripe->invoice_type = $event->type;
+                    $stripe->data = $event;
+                    $stripe->save();
+                }
             }
 
-            if (!empty($subs)) {
-                $stripe = new StripeWebhookStatus;
-                $stripe->subscription_id = $subs->id;
-                $stripe->invoice_type = $event->type;
-                $stripe->data = $event;
-                $stripe->save();
-            }
+            // if ($event->type == "invoice.updated" && !empty($subs)) {
+
+            //     $array = [
+            //         'email' => $event->data->object->customer_email,
+            //         'name' => $event->data->object->customer_name,
+            //         'invoice_pdf' => $event->data->object->invoice_pdf,
+            //         'uuid' => $subs->uuid,
+            //         'notification' => $subs->user->notification_send ?? 0
+            //     ];
+
+            //     $subs->status = "ended";
+            //     $subs->save();
+
+            //     $newSubs = new WishItemSubscription();
+            //     $newSubs->stripe_id = $subs->stripe_id;
+            //     $newSubs->session_id = $subs->session_id;
+            //     $newSubs->wish_item_id = $subs->wish_item_id;
+            //     $newSubs->user_id = $subs->user_id;
+            //     $newSubs->guest_name = $subs->guest_name;
+            //     $newSubs->guest_email = $subs->guest_email;
+            //     $newSubs->currency = $subs->currency;
+            //     $newSubs->amount = $subs->amount;
+            //     $newSubs->tax = $subs->tax;
+            //     $newSubs->recurring_for = $subs->recurring_for;
+            //     $newSubs->recurring_type = $subs->recurring_type;
+            //     $newSubs->payment_method = 'stripe';
+            //     $newSubs->surprise_message = $subs->surprise_message;
+            //     $newSubs->anonymous = $subs->anonymous;
+            //     $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+            //     $newSubs->status = "paid";
+            //     $newSubs->created_at = $subs->created_at;
+            //     $newSubs->updated_at = Carbon::now();
+            //     $newSubs->save();
+
+            //     SendRenewMail::dispatch($array, 'renew', 'main');
+            // }
+            // else
+
+
         }
 
         return response()->json([
