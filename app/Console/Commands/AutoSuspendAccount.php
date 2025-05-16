@@ -17,7 +17,7 @@ class AutoSuspendAccount extends Command
      * @var string
      */
     // protected $signature = 'app:auto-suspend-account';
-    protected $signature = 'app:notifications-pending-approval';
+    protected $signature = 'app:auto-suspend-account';
 
     /**
      * The console command description.

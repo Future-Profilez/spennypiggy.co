@@ -213,7 +213,7 @@ class CheckoutController extends Controller
                 $emails = $dd->user->email ?? null;
                 Log::info("emails: $emails");
                 Helpers::sendNotification($titles, $contents, $emails);
-                
+
                 // below is wish pwa for creator
                 $FanName = $dd->user->name ?? 'A Fan';
                 $title = "🎁 New Wish Received!";

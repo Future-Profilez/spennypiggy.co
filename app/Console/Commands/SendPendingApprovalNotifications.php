@@ -18,7 +18,7 @@ class SendPendingApprovalNotifications extends Command
      *
      * @var string
      */
-    protected $signature = 'notifications:pending-approval';
+    protected $signature = 'app:notifications-pending-approval';
 
     /**
      * The console command description.
