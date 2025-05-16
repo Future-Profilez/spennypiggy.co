@@ -1441,7 +1441,7 @@ class StripeController extends Controller
         }
 
         if (!empty($event)) {
-            $subscriptionId = data_get($event, 'data.object.subscription');
+            $subscriptionId = data_get($event, 'data.object.id');
             $customerEmail = data_get($event, 'data.object.customer_email');
             $customerName = data_get($event, 'data.object.customer_name');
             $invoicePdf = data_get($event, 'data.object.invoice_pdf');
