@@ -90,10 +90,11 @@ class SocialLinksController extends Controller
                 if ($updatedFields['bio'] || $updatedFields['social']) {
                     dispatch(new SendBioSocialUpdateEmail(Auth::user(), $updatedFields));
                 }
-
-
             }
 
+            $user = Auth::user();
+            // $user->profile_status_lock = 1;
+            $user->save();
 
             return response([
                 'status'  => 200,

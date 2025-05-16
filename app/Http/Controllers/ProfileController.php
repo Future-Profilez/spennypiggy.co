@@ -104,17 +104,15 @@ class ProfileController extends Controller
     }
 
 
-
-
     /**
      * Update the user's profile information.
      */
     public function updateProfile(Request $request)
     {
-        $fullUrl = $request->fullUrl(); // Includes query parameters
-        $method = $request->method();   // GET, POST, etc.
+        // $fullUrl = $request->fullUrl(); // Includes query parameters
+        // $method = $request->method();   // GET, POST, etc.
 
-        Log::info("🔗 URL Hit: $method $fullUrl");
+        // Log::info("🔗 URL Hit: $method $fullUrl");
 
         $user = User::where('id', Auth::id())->where(
             'is_uk',
@@ -139,17 +137,12 @@ class ProfileController extends Controller
                 'tags' => ['nullable', 'string', 'max:255'], // same fix
             ]);
 
-            // $request->validate([
-            //     'name' => ['string', 'max:255'],
-            //     'username' => ['string', 'lowercase', 'max:20', Rule::unique('users')->ignore($user->id)],
-            //     'bio' => ['sometimes', 'max:255'],
-            //     'tags' => ['sometimes', 'max:255'],
-            // ]);
             $avatar = $request->avatar;
             $cover = $request->cover;
 
             $user->name = $request->name;
             $user->username = $request->username;
+            $user_profile_status = UserVerificationStatus::where('user_id', $user->id)->where('role', $user->role)->first();
             if ($request->bio !== $user->bio || $request->social_handle !== $user->social_handle) {
 
                 UserVerificationStatus::UpdateOrCreate([
@@ -164,15 +157,13 @@ class ProfileController extends Controller
                     'bio' => $request->bio !== $user->bio,
                     'social' => $request->social_handle !== $user->social_handle,
                 ];
-                // Log::info($request->bio);
-                // Log::info($user->bio);
-
-                // Log::info('Updated fields:', $updatedFields);
 
                 if ($updatedFields['bio'] || $updatedFields['social']) {
                     dispatch(new SendBioSocialUpdateEmail($user, $updatedFields));
                 }
                 $user->bio = $request->bio;
+                $user_profile_status->user_profile_status = 0;
+                $user_profile_status->save();
             }
             $user->min_surprise_amount = $request->min_surprise_amount ?? 0;
 
@@ -180,6 +171,10 @@ class ProfileController extends Controller
                 $user->avatar = $avatar['uuid'] ?? null;
                 $user->avatar_approved = 0;
                 $user->avatar_cdn_modifier = $avatar['cdnUrlModifiers'] ?? null;
+
+                // user profile status column update when avatar update
+                $user_profile_status->user_profile_status = 0;
+                $user_profile_status->save();
             }
             if (!empty($cover)) {
                 $user->cover = $cover['uuid'] ?? null;
@@ -193,9 +188,11 @@ class ProfileController extends Controller
             if (!empty($request->bio)) {
                 $logs = Logs::where('edited_about_me_id', $user->id)->where('status', 'pending')->first();
                 if (!empty($logs)) {
+                    // logs data save
                     $logs->status = 'updated';
                     $logs->save();
 
+                    // user data save
                     $user->edit_bio_reason = '';
                     $user->save();
                     $user->refresh();
@@ -498,8 +495,6 @@ class ProfileController extends Controller
         ]);
     }
 
-
-
     /**
      * List the intro video
      *
@@ -540,7 +535,6 @@ class ProfileController extends Controller
         }
     }
 
-
     /**
      * Delete the intro video
      *
@@ -556,7 +550,6 @@ class ProfileController extends Controller
             'msg' => 'The intro video has been removed.'
         ]);
     }
-
 
     public function gifterWishitems($username)
     {
@@ -618,7 +611,6 @@ class ProfileController extends Controller
         ]);
     }
 
-
     public function gifterSubs($username)
     {
         $user = User::where('username', $username)->where('is_uk', 0)->first();
@@ -666,8 +658,6 @@ class ProfileController extends Controller
         ]);
     }
 
-
-
     public function gifterTips($username)
     {
         $user = User::where('username', $username)->where('is_uk', 0)->first();
@@ -711,7 +701,6 @@ class ProfileController extends Controller
         ]);
     }
 
-
     public function gifterMemberships($username)
     {
         $user = User::where('username', $username)->where('is_uk', 0)->first();
@@ -754,7 +743,6 @@ class ProfileController extends Controller
             "per_page" => $user_member->perPage() ?? null,
         ]);
     }
-
 
     public function gifterThanksMessages($username)
     {
@@ -956,7 +944,6 @@ class ProfileController extends Controller
             "per_page" => $user_subs->perPage() ?? null,
         ]);
     }
-
 
     public function profileStepsStatus()
     {
