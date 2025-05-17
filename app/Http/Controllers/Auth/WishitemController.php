@@ -2814,27 +2814,41 @@ class WishitemController extends Controller
      */
     public function shopTracker()
     {
-        $user = Auth::user();
-        $shopPayments = ShopPayment::whereHas('shop', function ($query) use ($user) {
-            $query->where('user_id', $user->id);
-        })->orWhere('user_id', $user->id)
-            ->with('shop')
-            ->whereIn('payment_status', ['paid', 'cancelled'])
-            ->orderBy('id', 'desc')
-            ->get();
+        $user = auth()->user();
 
-        $shopPayments->map(function ($q) {
-            $q->user_data = [
-                'name' => $q->user->name,
-                'avatar' => $q->user->avatar_url,
-                'uuid' => $q->user->uuid
+        // Build the base query
+        $paymentsQuery = ShopPayment::with(['shop', 'user'])
+            ->where(function ($query) use ($user) {
+                $query->whereHas('shop', function ($shopQuery) use ($user) {
+                    $shopQuery->where('user_id', $user->id);
+                })
+                    ->orWhere('user_id', $user->id);
+            })
+            ->whereIn('payment_status', ['paid', 'cancelled'])
+            ->orderByDesc('id');
+
+        // Execute
+        $shopPayments = $paymentsQuery->get();
+
+        // Log for debugging
+        Log::info('Fetched shop payments', [
+            'user_id'      => $user->id,
+            'payment_count' => $shopPayments->count(),
+        ]);
+
+        // Attach a simplified user_data payload to each payment
+        $shopPayments->transform(function ($payment) {
+            $payment->user_data = [
+                'name'   => $payment->user->name ?? 'A Creator',
+                'avatar' => $payment->user->avatar_url ?? null,
+                'uuid'   => $payment->user->uuid ?? null,
             ];
-            return $q;
+            return $payment;
         });
 
         return response()->json([
-            'status' => true,
-            'shop_payments' => $shopPayments
+            'status'        => true,
+            'shop_payments' => $shopPayments,
         ]);
     }
 }
