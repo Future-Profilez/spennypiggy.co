@@ -17,6 +17,7 @@ class UserVerificationStatus extends Model
         'bio_status',
         'social_status',
         'address_status',
+        'user_profile_status',
         'address_verification_error',
     ];
 

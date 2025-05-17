@@ -127,7 +127,7 @@ Route::prefix("test")->name("test.")->group(function () {
     Route::get('/ip', [TestController::class, 'testIp']);
 });
 
-
+Route::get("user-verification-bypass-entry", [TestController::class, "userVerificationBypassEntry"]);
 
 Route::get('/magicbell/user-key', [NotificationController::class, 'getUserKey']);
 Route::post('/magicbell/send-notification', [NotificationController::class, 'sendNotification']);
