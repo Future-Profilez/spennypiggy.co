@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use App\Jobs\SendIdentityVerificationEmail;
+use App\Models\UserVerificationStatus;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
@@ -244,13 +246,61 @@ class TestController extends Controller
         }
     }
 
-
-    public function  userVerificationBypassEntry()
+    public function seedUserVerificationStatus()
     {
-        $query = User::latest();
+        $now = Carbon::now();
 
-        $creatorEntry = $query->whereNotNull('bio')->where('role', 1)->whereNotNull('avatar')->where('avatar_approved',1)->where('');
+        // Process CREATORS
+        $creators = User::where('role', 1)->get();
+
+        foreach ($creators as $user) {
+            $hasAvatar = !empty($user->avatar) && $user->avatar_approved == 1;
+            $hasBio = !empty($user->bio);
+
+            $bioStatus = ($hasAvatar && $hasBio) ? 1 : 0; // Approved only if all conditions are met
+
+            UserVerificationStatus::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'role' => 1,
+                    'bio_status' => $bioStatus,
+                    'social_status' => 0,
+                    'address_status' => 0,
+                    'user_profile_status' => 0,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]
+            );
+        }
+
+        // Process GIFTERS
+        $gifters = User::where('role', 0)
+            ->whereHas('gifterCardVerification', function ($q) {
+                $q->where('status', 'success');
+            })
+            ->get();
+
+        foreach ($gifters as $user) {
+            UserVerificationStatus::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'role' => 0,
+                    'bio_status' => !empty($user->bio) ? 1 : 0,
+                    'social_status' => 0,
+                    'address_status' => 0,
+                    'user_profile_status' => 0,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]
+            );
+        }
+
+        return "User verification entries seeded successfully.";
     }
+
+
+
+
 
 
     // public function handleRyeProductPayment(Request $request)
