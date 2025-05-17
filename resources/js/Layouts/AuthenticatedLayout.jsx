@@ -3,11 +3,11 @@ import { usePage } from '@inertiajs/react';
 import { Toaster } from 'react-hot-toast';
 import { useAlerts } from '@/Components/Alerts';
 import React from 'react';
+import BottomBar from './BottomBar';
 const Footer = React.lazy(() => import('@/includes/Footer'));
 const Header = React.lazy(() => import('@/includes/Header'));
 
-export default function Authenticated(props) {
-
+export default function Authenticated(props) { 
     const { auth, user, children, cart_count } = props;
     const { successAlert, errorAlert } = useAlerts();
     const { flash, errors } = usePage().props;
@@ -33,7 +33,7 @@ export default function Authenticated(props) {
     },[]);
 
     return <>
-    <Header auth={auth} user={user}  />
+        <Header   auth={auth} user={user}  />
         <main>
             {children}
             <Toaster
@@ -57,6 +57,8 @@ export default function Authenticated(props) {
             />
         </main>
     <Footer auth={auth} />
+    <BottomBar />
+    
     </>
 }
 

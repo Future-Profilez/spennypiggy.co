@@ -50,7 +50,10 @@ export default function Board(props) {
                         <p>#{r && r.rank}</p>
                     </div>
                     <div className="wisher">
+                        
                         <Avatar
+                            role={r && r.role}
+                            profile_status_lock={r && r.profile_status_lock == 2 ? true : false}
                             name={(r && r.name) || "Anonymous"}
                             link={(r && r.username) || ""}
                             subhead={(r && r.username) || null}
@@ -161,6 +164,8 @@ export default function Board(props) {
                                     <h1 className="text-bl font-GillSans text-start text-2xl uppercase text-white ">
                                         Leaderboard
                                     </h1>
+
+                                     
                                     <div className="changePeriod">
                                         <button
                                             className={

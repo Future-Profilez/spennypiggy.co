@@ -30,8 +30,9 @@ import { FiGift } from "react-icons/fi";
 import { LiaShoppingCartSolid } from "react-icons/lia";
 import MagicBellNotification from "@/Pages/webpush/MagicBellNotification";
 
-export default function Header() {
+export default function Header({classMagicword}) {
     const { global_currency, auth } = usePage().props;
+    
     const deviceid = DeviceID();
     const [isActive, setActive] = useState(false);
     const [shows, setShows] = useState(false);
@@ -65,19 +66,7 @@ export default function Header() {
             <div className="blackbg headermain py-6 ">
                 <div className="containerbox">
                     <div className="header flex w-full items-center  justify-between ">
-                        {/* {auth?.user?.username ? (
-                            <Link
-                                href={`/${auth?.user?.username || ""}`}
-                                className="headtitle text-wh font-GillSans d-none d-lg-flex" >
-                                My Wishlist
-                            </Link>
-                        ) : (
-                            <Link
-                                href="/register"
-                                className="headtitle text-wh font-GillSans d-none d-lg-flex" >
-                                Sign Up
-                            </Link>
-                        )} */}
+                        
                         <div className="d-none d-md-flex  leftspaces items-center justify-content-start">
                             <div
                                 className="  menu-toggle cursor-pointer cartLink position-relative"
@@ -110,9 +99,6 @@ export default function Header() {
                                 href={"/giftstore"}
                             >
                                 <span className="flex items-center text-xl uppercase text-white font-gulfs">
-                                    {/* <span className="!text-[21px]">
-                                    🐷
-                                        </span> */}
                                     Gift Store
                                 </span>
                             </Link>
@@ -142,7 +128,7 @@ export default function Header() {
                             {/* {auth && auth.user ? <Notifications /> : ""} */}
                             {auth && auth.user ? 
                                 <div className="mr-2">
-                                    <MagicBellNotification />
+                                    <MagicBellNotification word={classMagicword} />
                                 </div>
                             : ""}
 
@@ -258,7 +244,7 @@ export default function Header() {
                         } blur bg-[#0005] min-h-screen w-full min-w-screen fixed top-0 left-0`}
                         onClick={toggleClass}
                     ></div>
-                    <div class="fixed menu p-2 z-10 top-0 left-0 pinkbg max-h-screen overflow-auto w-full max-w-[320px] h-full border-r">
+                    <div class="fixed menu p-2 z-10 top-0 left-0 pinkbg max-h-screen overflow-auto w-full sm:max-w-[320px] h-full border-r">
                         <button
                             onClick={toggleClass}
                             className="absolute top-3 right-4"
@@ -448,7 +434,8 @@ export default function Header() {
                                     </a>
                                 </li>
 
-                                {auth?.user?.username == !null ? (
+                                {auth?.user?.username ? 
+                                '' : (
                                     <>
                                         <li>
                                             <Link
@@ -486,8 +473,6 @@ export default function Header() {
                                             </Link>
                                         </li>
                                     </>
-                                ) : (
-                                    ""
                                 )}
 
                                 <li>
@@ -502,10 +487,7 @@ export default function Header() {
                                                 size={"1.2rem"}
                                             />
                                         </span>
-                                        <span
-                                            class="ml-2 text-[17px]
-                    tracking-wide truncate text-white"
-                                        >
+                                        <span class="ml-2 text-[17px] tracking-wide truncate text-white" >
                                             Leaderboard
                                         </span>
                                     </Link>
@@ -578,9 +560,7 @@ export default function Header() {
                                                 />
                                             </span>
                                             <span
-                                                class="ml-2 text-[17px]
-                                    tracking-wide truncate text-white"
-                                            >
+                                                class="ml-2 text-[17px] tracking-wide truncate text-white" >
                                                 Blog
                                             </span>
                                         </Link>

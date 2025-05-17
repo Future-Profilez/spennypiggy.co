@@ -104,7 +104,9 @@ export default function Wishtracker(props) {
                     src={userphoto}
                   />
                 ) : (
-                  <Avatar
+                  <Avatar 
+                    role={n && n.user && n.user.role}
+                    profile_status_lock={n && n.user && n.user.profile_status_lock == 2 ? true : false}
                     name={`From:${
                       (n && n.user && n.user.name) || 'Anonymous 222'
                     }`}

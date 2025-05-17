@@ -3,17 +3,13 @@ import { usePage } from '@inertiajs/react';
 import GifterItems from './GifterItems';
 import GifterTips from './GifterTips';
 import GifterSubscriptions from './GifterSubscriptions';
-import GifterMembership from './GifterMembership';
-import { Link } from "@inertiajs/react";
 import Social from '../Auth/Social';
 import ShareProfile from '@/wishlist/ShareProfile';
 import SocialLinks from '@/includes/SocialLinks';
-import Dropdown from "react-bootstrap/Dropdown";
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
 import { useState } from 'react';
 import GifterFeed from './GifterFeed';
-// import GifterMedia from './GifterMedia';
 import MembershipLists from './MembershipLists';
 import ActivateCard from './ActivateCard';
 
