@@ -131,7 +131,7 @@ class SendPendingApprovalNotifications extends Command
             }
 
             if (!empty($pendingSummary)) {
-                $appUrl = config('app.url'); // e.g. https://dev.spennypiggy.co
+                $appUrl = env('APP_URL'); // e.g. https://dev.spennypiggy.co
 
                 $toEmail = null;
                 if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
