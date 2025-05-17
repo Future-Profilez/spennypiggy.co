@@ -76,8 +76,8 @@ class NotificationController extends Controller
             ],
             'json' => [
                 'notification' => [
-                    'title' => 'Welcome to MagicBell',
-                    'content' => "This is a test push notification",
+                    'title' => $request->query('title')  ?? '🎉 You\'re in! Let\'s get started.',
+                    'content' => $request->query('content') ?? 'Want gifts without TMI? Build your privacy-first Wishlist and let your fans spoil you!',
                     'category' => 'general',
                     'recipients' => [
                         ['email' => $request->query('email')],

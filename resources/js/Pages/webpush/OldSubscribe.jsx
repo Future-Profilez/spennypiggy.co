@@ -47,7 +47,7 @@ export default function OldSubscribe() {
             ReceivePushNotification();
             if(subscribed){
                setTimeout(() => {
-                  axios.get(`/test-push?email=${auth && auth.user && auth.user.email}&title=Welcome%20to%20SpennyPiggy&content=You%20have%20been%20subscribed%20for%20push%20notifications.`).then((resp) => {
+                  axios.get(`/test-push?email=${auth && auth.user && auth.user.email}&title=🎉 You're in! Let's get started.&content=Want gifts without TMI? Build your privacy-first Wishlist and let your fans spoil you!`).then((resp) => {
                   }).catch((error) => {
                     console.error("error", error);
                   });
