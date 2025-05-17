@@ -254,44 +254,48 @@ export default function Header({classMagicword}) {
                         <div class="overflow-y-auto overflow-x-hidden flex-grow">
                             <ul class=" flex flex-col pt-8 space-y-1">
                                 <>
-                                    <li>
-                                        <Link
-                                            onClick={toggleClass}
-                                            href={"/account"}
-                                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                        >
-                                            <span class="inline-flex justify-center items-center ml-4">
-                                                <IoSettingsOutline
-                                                    color="#fff"
-                                                    size={"1.2rem"}
-                                                />
-                                            </span>
-                                            <span class="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                My Account
-                                            </span>
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link
-                                            onClick={toggleClass}
-                                            href={`/${
-                                                (auth &&
-                                                    auth?.user?.username) ||
-                                                ""
-                                            }`}
-                                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                        >
-                                            <span class="inline-flex justify-center items-center ml-4">
-                                                <FaHeart
-                                                    color="#fff"
-                                                    size={"1.2rem"}
-                                                />
-                                            </span>
-                                            <span class="ml-2 text-[17px] tracking-wide truncate text-white">
-                                            {auth?.user?.role == 1 ? "My Wishlist" : "My Profile" } 
-                                            </span>
-                                        </Link>
-                                    </li>
+                                    {auth?.user?.username ? 
+                                        <>
+                                            <li>
+                                                <Link
+                                                    onClick={toggleClass}
+                                                    href={"/account"}
+                                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                >
+                                                    <span class="inline-flex justify-center items-center ml-4">
+                                                        <IoSettingsOutline
+                                                            color="#fff"
+                                                            size={"1.2rem"}
+                                                        />
+                                                    </span>
+                                                    <span class="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                        My Account
+                                                    </span>
+                                                </Link>
+                                            </li>
+                                            <li>
+                                                <Link
+                                                    onClick={toggleClass}
+                                                    href={`/${
+                                                        (auth &&
+                                                            auth?.user?.username) ||
+                                                        ""
+                                                    }`}
+                                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                >
+                                                    <span class="inline-flex justify-center items-center ml-4">
+                                                        <FaHeart
+                                                            color="#fff"
+                                                            size={"1.2rem"}
+                                                        />
+                                                    </span>
+                                                    <span class="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                    {auth?.user?.role == 1 ? "My Wishlist" : "My Profile" } 
+                                                    </span>
+                                                </Link>
+                                            </li>
+                                        </> 
+                                    : ''}
                                     <li>
                                         <a
                                             href="https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk"
