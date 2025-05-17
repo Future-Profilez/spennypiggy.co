@@ -82,9 +82,7 @@ class SendPendingApprovalNotifications extends Command
                     'model' => \App\Models\UserVerificationStatus::class,
                     'relation' => 'user',
                     'conditions_callback' => function ($query) {
-                        $query->where('bio_status', 0)
-                            ->orWhere('social_status', 0)
-                            ->orWhere('address_status', 0);
+                        $query->where('user_profile_status', 0);
                     },
                     'label' => 'User Profiles',
                 ],

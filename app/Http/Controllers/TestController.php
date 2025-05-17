@@ -244,6 +244,14 @@ class TestController extends Controller
         }
     }
 
+
+    // public function  userVerificationBypassEntry()
+    // {
+    //     $query = User::latest();
+
+    //     $creatorEntry = $query->whereNotNull('bio')->where('role', 1)->whereNotNull('avatar')->where('avatar_approved',1)->where('');
+    // }
+
     // public function handleRyeProductPayment(Request $request)
     // {
     //     $orderDetails = RyeCart::with('creator')->where(['cart_id' => $request->cart_id, 'creator_id' => $request->creator_id])->first();
