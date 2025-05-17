@@ -271,4 +271,10 @@ class User extends Authenticatable
     {
         return $this->hasOne(GifterCardVerification::class, 'user_id');
     }
+
+
+    public function creatorMonthlySubscription()
+    {
+        return $this->hasOne(MonthlyCharge::class, 'user_id', 'id');
+    }
 }

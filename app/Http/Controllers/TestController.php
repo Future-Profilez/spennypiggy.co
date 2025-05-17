@@ -251,7 +251,9 @@ class TestController extends Controller
         $now = Carbon::now();
 
         // Process CREATORS
-        $creators = User::where('role', 1)->get();
+        $creators = User::whereHas('creatorMonthlySubscription', function ($q) {
+                $q->where('status', 'paid');
+            })->where('role', 1)->where('is_uk', 0)->get();
 
         foreach ($creators as $user) {
             $hasAvatar = !empty($user->avatar) && $user->avatar_approved == 1;
@@ -274,7 +276,7 @@ class TestController extends Controller
         }
 
         // Process GIFTERS
-        $gifters = User::where('role', 0)
+        $gifters = User::where('role', 0)->where('is_uk', 0)
             ->whereHas('gifterCardVerification', function ($q) {
                 $q->where('status', 'success');
             })
