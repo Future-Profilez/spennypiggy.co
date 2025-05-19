@@ -194,10 +194,18 @@ Route::get('/favicon-16x16.png', function () {
     ]);
 })->name('16.image.file');
 
-
 Route::get('/favicon-32x32.png', function () {
     $assetRoot = rtrim(asset("/"), "/");
     $content = file_get_contents(filename: resource_path("proxy/favicon-32x32.png"));
+    $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
+    return response($content, 200, [
+        "Content-Type" => "image/png",
+    ]);
+})->name('32.image.file');
+
+Route::get('/splashscreen.png', function () {
+    $assetRoot = rtrim(asset("/"), "/");
+    $content = file_get_contents(filename: resource_path("proxy/splash.png"));
     $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
     return response($content, 200, [
         "Content-Type" => "image/png",

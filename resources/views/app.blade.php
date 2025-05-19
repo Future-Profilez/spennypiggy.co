@@ -56,6 +56,11 @@
                 });
         }
     </script>
+    <link rel="apple-touch-startup-image"
+      href="/splash-640x1136.png"
+      media="(device-width: 320px) and (device-height: 568px)
+             and (-webkit-device-pixel-ratio: 2)
+             and (orientation: portrait)">
 
     <script>
         const css1 = [
