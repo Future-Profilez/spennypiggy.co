@@ -52,7 +52,7 @@ export default function AddComment({post_uuid, update, is_reply, comment_uuid, u
     };
 
     return <>
-      <div className="headerpost mt-3 d-flex align-items-center">
+      <div className="headerpost mt-3 flex items-center">
         <input id="user-comment" onChange={(e)=>setReply(e.target.value)} value={reply} className='border text-dark rounded-3 me-3 ' type="text" placeholder="Add comment..." />
         <div disabled={reply == ''} className='' onClick={addCommmnt}>
           

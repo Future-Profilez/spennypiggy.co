@@ -54,7 +54,7 @@ export default function Allwishes(props) {
 
     const Switch = () => {
         return (
-            <div className="d-flex align-items-center toggleswitch mb-3 mb-sm-0">
+            <div className="flex items-center toggleswitch mb-3 mb-sm-0">
                 <button
                     onClick={() => setOrder("new")}
                     className={`${order == "new" ? "active" : ""}`}
@@ -87,7 +87,7 @@ export default function Allwishes(props) {
         return (
             <>
                 {pageArray && pageArray.length > 1 ? (
-                    <ul className="mt-4 pagination d-flex flex-wrap justify-content-center">
+                    <ul className="mt-4 pagination flex flex-wrap justify-content-center">
                         {pageArray &&
                             pageArray.map((p, i) => {
                                 return (
@@ -110,9 +110,9 @@ export default function Allwishes(props) {
 
         return (
             <>
-                <div className="filters d-block d-sm-flex align-items-center justify-content-between w-100 mb-4">
+                <div className="filters d-block d-sm-flex items-center justify-between w-100 mb-4">
                     <Switch />
-                    <div className="d-flex align-items-center">
+                    <div className="flex items-center">
                         <div className="filter-select-wrap">
                             <select
                                 onChange={(e) => setType(e.target.value)}
@@ -152,7 +152,7 @@ export default function Allwishes(props) {
                     </div>
                 </div>
 
-                <div className="mt-3 mb-2 tagsfilterbar d-flex flex-wrap">
+                <div className="mt-3 mb-2 tagsfilterbar flex flex-wrap">
                     <button onClick={() => fetch_wishes(page, "")}
                         className={` me-2 mb-2  rounded-[12px] text-[14px] p-2 px-3 ${ tag == "" ? "bluebg text-white" : "bg-gray-300"}`}>All</button>
                     {lists &&
@@ -170,7 +170,7 @@ export default function Allwishes(props) {
 
                 <div className="row">
                     {loading ? (
-                        <div className="w-100 d-flex justify-content-center">
+                        <div className="w-100 flex justify-content-center">
                             <LoadingScreen />
                         </div>
                     ) : (

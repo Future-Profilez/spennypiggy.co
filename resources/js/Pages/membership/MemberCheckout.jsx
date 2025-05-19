@@ -424,7 +424,7 @@ export default function SubCheckout(props) {
                                             </div>
                                         </li>
                                     </ul>
-                                    <div className="mt-4 d-flex align-items-center justify-content-center">
+                                    <div className="mt-4 flex items-center justify-content-center">
                                         <button
                                             type="submit"
                                             className={`${

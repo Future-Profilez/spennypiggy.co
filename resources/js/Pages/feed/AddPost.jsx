@@ -109,7 +109,7 @@ export default function AddPost({item, text, classes, isEdit, updateState, title
     classes={` w-full addop bg-white rounded-xl py-2 px-3 ${classes}`} 
     text={text ? text : <AddItem />} >
         {/* <form onSubmit={submitPost} > */}
-            <div className="flex align-items-center" >
+            <div className="flex items-center" >
                 <div className={`gift-icon me-2 voilet`} dangerouslySetInnerHTML={{ __html: piggy }} />  
                 <h2 className="text-xl font-bold text-dark-500" >{title ? title: "Add Post"}</h2>
             </div>

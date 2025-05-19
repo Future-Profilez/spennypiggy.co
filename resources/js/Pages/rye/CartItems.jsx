@@ -668,7 +668,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                     </div>
                                 </li>
                             </ul>
-                            <div className="mt-4 d-flex align-items-center justify-content-between">
+                            <div className="mt-4 flex items-center justify-between">
                                 <button
                                     type="button"
                                     onClick={() => clearcart()}

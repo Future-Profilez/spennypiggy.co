@@ -46,7 +46,7 @@ export default function Membership_dashboard(props) {
                                     <div className="text-large font-bold color-dark tw-font-cr-medium text-fs-30 ln-h-40 membership-animate-number xs-flex xs-flex-both-center">
                                         {data.members}
                                     </div>
-                                    <div className="justify-center text-center color-grey tw-font-cr-regular text-fs-16 ln-h-25 mg-t-4 d-flex align-items-center gap-2 m-2">
+                                    <div className="justify-center text-center color-grey tw-font-cr-regular text-fs-16 ln-h-25 mg-t-4 flex items-center gap-2 m-2">
                                         <svg
                                             className="mg-r-4 vert-align-sub"
                                             width="18"
@@ -91,7 +91,7 @@ export default function Membership_dashboard(props) {
                                             {data.per_month}
                                         </span>
                                     </div>
-                                    <div className="justify-center text-center color-grey tw-font-cr-regular text-fs-16 ln-h-25 mg-t-4 d-flex align-items-center gap-2 m-2">
+                                    <div className="justify-center text-center color-grey tw-font-cr-regular text-fs-16 ln-h-25 mg-t-4 flex items-center gap-2 m-2">
                                         <svg
                                             className="mg-r-4 vert-align-sub"
                                             width="14"
@@ -146,7 +146,7 @@ export default function Membership_dashboard(props) {
                                             {data.all_time}
                                         </span>
                                     </div>
-                                    <div className="justify-center text-center color-grey tw-font-cr-regular text-fs-16 ln-h-25 mg-t-4 d-flex align-items-center gap-2 m-2">
+                                    <div className="justify-center text-center color-grey tw-font-cr-regular text-fs-16 ln-h-25 mg-t-4 flex items-center gap-2 m-2">
                                         <svg
                                             className="mg-r-4 vert-align-sub"
                                             width="16"

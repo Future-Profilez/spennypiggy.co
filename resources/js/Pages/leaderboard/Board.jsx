@@ -44,8 +44,8 @@ export default function Board(props) {
 
     const Rank = ({ r }) => {
         return (
-            <div className="rank py-3 border-bottom d-flex align-items-center justify-content-between">
-                <div className="d-flex align-items-center justify-content-between">
+            <div className="rank py-3 border-bottom flex items-center justify-between">
+                <div className="flex items-center justify-between">
                     <div className="sno me-2 me-md-4 ps-2">
                         <p>#{r && r.rank}</p>
                     </div>
@@ -160,7 +160,7 @@ export default function Board(props) {
                     <div className="row">
                         <div className="col-lg-8 mb-4">
                             <div className="pe-md-4">
-                                <div className="pt-4 pt-md-0 d-block d-md-flex align-items-center justify-content-between mb-4 pb-4">
+                                <div className="pt-4 pt-md-0 d-block d-mflex items-center justify-between mb-4 pb-4">
                                     <h1 className="text-bl font-GillSans text-start text-2xl uppercase text-white ">
                                         Leaderboard
                                     </h1>

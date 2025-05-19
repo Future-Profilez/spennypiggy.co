@@ -108,7 +108,7 @@ export default function LinkTwitter(props) {
     {username ? 
     <div className='step2' >
       <p className='text-center' >Linked Account : @{username}</p>
-      <div className='d-flex justify-content-center  my-3' >
+      <div className='flex justify-content-center  my-3' >
         <Form>
           <Form.Check checked={is_linked}
             type="switch" onChange={enableTweet}

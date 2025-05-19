@@ -60,7 +60,7 @@ export default function Post({item, updateState}) {
     <>
       <div className="post-wrap bg-light rounded-4 p-[15px] xl:p-6 mb-3 mb-md-4">
         {IsloggedIn && item && item.approved == 0 ?  <div className='approvalmessge rounded-3 p-3 py-2 mb-2 ' >Post waiting for approval. Currently only you can see this post.</div> : ''}
-        <div className='d-flex align-items-center justify-content-between mb-3' >
+        <div className='flex items-center justify-between mb-3' >
             {item?.user ? <Link href={`${item?.user?.username}`} className="headerpost mb-0 head w-auto" >
                 <img className="author-img" src={item?.user?.avatar_url || userphoto} />
                 <div>
@@ -102,12 +102,12 @@ export default function Post({item, updateState}) {
           <p className="description text-muted">{item?.content || ''}</p>
         </div>
 
-        <div className="interactions d-flex align-items-center"  >
+        <div className="interactions flex items-center"  >
           <PostLike is_liked={item.liked} likes_count={item?.likes_count || 0} updatecount={updatecount} text={likes} post_uuid={item.uuid} />
           <div onClick={()=>setShowComments(!showComments)} dangerouslySetInnerHTML={{ __html: comment }} />
         </div>
         
-        <div className='d-flex' >
+        <div className='flex' >
           <p className="like-count text-dark me-3"><b><span id="like-number">{lcount || 0}</span> likes</b></p>
           <p className="like-count text-dark"><b><span id="like-number">{ccount || 0}</span> Comments</b></p>
         </div>

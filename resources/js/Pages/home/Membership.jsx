@@ -92,7 +92,7 @@ export default function Membership() {
         <div className='position-relative p-0 p-md-4' >
         <LiveBar reps={20} color={`yellowbg`} classes={'commingsooon'} text={"  Coming Soon      "} />
 
-              <div data-aos="zoom-in-up" className='membership-image py-2 m-auto d-table d-flex justify-content-center max-width-900 mt-3 ' >
+              <div data-aos="zoom-in-up" className='membership-image py-2 m-auto d-table flex justify-content-center max-width-900 mt-3 ' >
                 <LazyLoadImage
                   alt={"image"} 
                   useIntersectionObserver={true}

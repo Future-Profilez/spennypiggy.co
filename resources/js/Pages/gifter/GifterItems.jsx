@@ -67,7 +67,7 @@ export default function GifterItems(props) {
       const wishname  = w && w.wish && w.wish.wishname;
       const s = w && w.wish && w.wish.subscription;
       return <div className='box rounded-lg px-3 py-3  '>
-       <div className='d-flex align-items-start '>
+       <div className='flex align-items-start '>
 
         <div className={`gift-icon mt-2 me-2 ${s == '0' ? 'mint' : s == '1' ? 'pink' : s == '2' ? 'voilet' : 'grey' }`} 
         dangerouslySetInnerHTML={{ __html: piggy }} />

@@ -6,7 +6,7 @@ export default function ComingNext() {
   return (
    <div className="comming-next mintbg" >
       <div className="containerbox py-5" >
-         <div className="row align-items-center " >
+         <div className="row items-center " >
             <div className='col-lg-6 ' >
                <div className='nextimage-wrap mb-4 mb-lg-0' >
                   <LazyLoadImage

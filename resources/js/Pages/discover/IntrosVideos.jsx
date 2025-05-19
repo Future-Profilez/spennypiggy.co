@@ -30,7 +30,7 @@ export default function IntroVideos(props) {
     },[order, gender]);
 
     const Switch = () => { 
-        return <div className='d-flex mb-3 mb-sm-0 align-items-center toggleswitch' >
+        return <div className='flex mb-3 mb-sm-0 items-center toggleswitch' >
         <button onClick={()=>setorder('new')} className={`${order == 'new' ? 'active' : ''}`} >Newest</button>
         <button onClick={()=>setorder('old')} className={`${order == 'old' ? 'active' : ''}`} >Oldest</button>
     </div>
@@ -69,9 +69,9 @@ export default function IntroVideos(props) {
     }
 
     return <>
-     <div className='filters d-block d-sm-flex  align-items-center justify-content-between w-100 mb-4' >
+     <div className='filters d-block d-sm-flex  items-center justify-between w-100 mb-4' >
                 <Switch />
-            <div className='d-flex align-items-center' >
+            <div className='flex items-center' >
               <div className='filter-select-wrap' >
                   <select onChange={(e)=> setgender(e.target.value)} id="types" className="me-2 filter-select bg-gray-50 border border-gray-300 text-gray-900 
                   text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 
@@ -88,7 +88,7 @@ export default function IntroVideos(props) {
 
         <div className='row' >
           {loading ? 
-          <div className='w-100 d-flex justify-content-center' ><LoadingScreen /></div>  
+          <div className='w-100 flex justify-content-center' ><LoadingScreen /></div>  
           :
           <>
             {intros && intros.length ? intros.map((w, i)=> { 

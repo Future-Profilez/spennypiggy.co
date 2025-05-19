@@ -55,8 +55,8 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                         <p className="text-gray-500 mb-3">Successful creators complete these steps, although not all required.</p>
                         <ProgressBar now={status && status.total} max={9} />
 
-                        {/* {status && status.payment_connect !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
-                            <div className="step-title d-flex max-w-[390px] pe-3">
+                        {/* {status && status.payment_connect !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl flex  items-center p-3 mt-3 justify-between">
+                            <div className="step-title flex max-w-[390px] pe-3">
                                 <div className={`check-icon me-2 pt-1 ${
                                     status && status.payment_connect == 1? "checked": ""}`}>
                                     <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
@@ -76,8 +76,8 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                         </div> : ""} */}
 
                         {/* Intro Video */}
-                        {introStatus !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
-                            <div className="step-title d-flex max-w-[390px] pe-3">
+                        {introStatus !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl flex  items-center p-3 mt-3 justify-between">
+                            <div className="step-title flex max-w-[390px] pe-3">
                                 <div
                                     className={`check-icon me-2 pt-1 ${
                                         introStatus == 1
@@ -105,8 +105,8 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                         </div> : ''}
 
                         {/* auto_tweets */}
-                        {status && status.auto_tweets !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
-                            <div className="step-title  d-flex max-w-[390px] pe-3">
+                        {status && status.auto_tweets !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl flex  items-center p-3 mt-3 justify-between">
+                            <div className="step-title  flex max-w-[390px] pe-3">
                                 <div
                                     className={`check-icon me-2 pt-1 ${
                                         status && status.auto_tweets == 1
@@ -131,8 +131,8 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                             </div>
                         </div> : ''}
                         {/* basic_profile */}
-                        {status && status.basic_profile !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
-                            <div className="step-title d-flex max-w-[390px] pe-3">
+                        {status && status.basic_profile !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl flex  items-center p-3 mt-3 justify-between">
+                            <div className="step-title flex max-w-[390px] pe-3">
                                 <div
                                     className={`check-icon me-2 pt-1 ${
                                         status && status.basic_profile == 1
@@ -162,8 +162,8 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
 
 
                         {/* social_links */}
-                        {status && status.social_links !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
-                            <div className="step-title d-flex max-w-[390px] pe-3">
+                        {status && status.social_links !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl flex  items-center p-3 mt-3 justify-between">
+                            <div className="step-title flex max-w-[390px] pe-3">
                                 <div
                                     className={`check-icon me-2 pt-1 ${ status && status.social_links == 1 ? "checked": "" }`} >
                                     <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
@@ -181,8 +181,8 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                         </div> : ''}
 
                         {/* post_required */}
-                       {/* {status && status.post_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
-                            <div className="step-title d-flex max-w-[390px] pe-3">
+                       {/* {status && status.post_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl flex  items-center p-3 mt-3 justify-between">
+                            <div className="step-title flex max-w-[390px] pe-3">
                                 <div className={`check-icon me-2 pt-1 ${ status && status.post_required == 1 ? "checked" : "" }`} >
                                     <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
                                 </div>
@@ -202,8 +202,8 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                         </div> : ""} */}
 
                         {/* membership_required */}
-                       {status && status.membership_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
-                            <div className="step-title d-flex max-w-[390px] pe-3">
+                       {status && status.membership_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl flex  items-center p-3 mt-3 justify-between">
+                            <div className="step-title flex max-w-[390px] pe-3">
                                 <div className={`check-icon me-2 pt-1 ${ status && status.membership_required == 1 ? "checked" : "" }`} >
                                     <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
                                 </div>
@@ -222,8 +222,8 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                         </div> : ""}
 
                         {/* bill_required */}
-                       {status && status.bill_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
-                            <div className="step-title d-flex max-w-[390px] pe-3">
+                       {status && status.bill_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl flex  items-center p-3 mt-3 justify-between">
+                            <div className="step-title flex max-w-[390px] pe-3">
                                 <div className={`check-icon me-2 pt-1 ${ status && status.bill_required == 1 ? "checked" : "" }`} >
                                     <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
                                 </div>
@@ -242,8 +242,8 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                         </div> : ""}
 
                         {/* vat_setting */}
-                        {status && status.vat_setting !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
-                            <div className="step-title d-flex max-w-[390px] pe-3">
+                        {status && status.vat_setting !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl flex  items-center p-3 mt-3 justify-between">
+                            <div className="step-title flex max-w-[390px] pe-3">
                                 <div className={`check-icon me-2 pt-1 ${status && status.vat_setting == 1 ? "checked":""}`}
                                 >
                                     <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
@@ -262,8 +262,8 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                             </div>
                         </div> : ''}
 
-                        {status && status.shop !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
-                            <div className="step-title d-flex max-w-[390px] pe-3">
+                        {status && status.shop !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl flex  items-center p-3 mt-3 justify-between">
+                            <div className="step-title flex max-w-[390px] pe-3">
                                 <div className={`check-icon me-2 pt-1 ${status && status.shop == 1 ? "checked":""}`} >
                                     <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
                                 </div>
@@ -282,8 +282,8 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                         </div> : ''}
 
                         {/* content */}
-                        {status && status.contents !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl d-flex  items-center p-3 mt-3 justify-content-between">
-                            <div className="step-title d-flex max-w-[390px] pe-3">
+                        {status && status.contents !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl flex  items-center p-3 mt-3 justify-between">
+                            <div className="step-title flex max-w-[390px] pe-3">
                                 <div className={`check-icon me-2 pt-1 ${status && status.contents == 1 ? "checked": ""}`} >
                                    <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
                                 </div>

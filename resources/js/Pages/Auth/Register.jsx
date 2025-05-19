@@ -346,7 +346,7 @@ export default function Register(props) {
                             <div className='px-0 px-md-4 px-lg-5 pb-4'>
                                 <p className='text-center text-[17px] text-muted ' >Choose from the following categories. This helps people find your profile. You can change these at any time.</p>
 
-                                <div className='d-flex creator-tags justify-content-center flex-wrap mt-4' >
+                                <div className='flex creator-tags justify-content-center flex-wrap mt-4' >
                                     {creatortypes.map((s, index) => (
                                         <div key={index} className="flex items-center">
                                             <input
@@ -524,10 +524,10 @@ export default function Register(props) {
                                     }
                                     
                                     <div className='promocode mb-4' >
-                                        <div className='d-flex align-items-center justify-content-between' >
+                                        <div className='flex items-center justify-between' >
                                             <label className='mb-2'>Referral (optional) {codevalid ? <span className='text-success text-small' >Code Applied.</span> : ''}</label>
                                         </div>
-                                        <div className='d-flex align-items-center relative' >
+                                        <div className='flex items-center relative' >
                                             <input ref={promoinput}
                                             placeholder="Enter Referral Code..." className='form-control ' />
                                             {codevalid ? <div  onClick={removecode}
