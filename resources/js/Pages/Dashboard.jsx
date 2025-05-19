@@ -428,12 +428,12 @@ export default function Dashboard(props) {
 
 
                         {user && user.role == 1 ? (
-                            <div className="wishManage sticky top-8">
-                                <div className="userManageRt mt-4">
-                                    <div className={`tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`} >
+                            <div className="wishManage sticky top-8 ">
+                                <div className="userManageRt mt-4 ">
+                                    <div className={`  tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`} >
 
-                                        <div className="inlinetab">
-                                                <div className="newnav-tabs flex items-center justify-between mb-4 ">
+                                        <div className="inlinetab ">
+                                                <div className="newnav-tabs flex items-center justify-between mb-4  ">
                                                     <Tabs activeTab={tab} onTabClick={onTabClick} hideNavBtnsOnMobile={false} >
                                                         <Tab key="0">About</Tab>
                                                         <Tab key="1" >Wishes</Tab>
