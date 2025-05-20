@@ -223,12 +223,20 @@ class EmailService
     public static function sendRenewMail($data, $type, $module)
     {
         try {
+            if (!isset($data['email']) || empty($data['email'])) {
+                throw new \InvalidArgumentException("Email address is missing in sendRenewMail.");
+            }
 
             Mail::to($data['email'])->send(new RenewMail($data, $type, $module));
+        } catch (\InvalidArgumentException $e) {
+            Log::error('Email not sent: ' . $e->getMessage(), ['data' => $data]);
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Unexpected error in sendRenewMail: ' . $e->getMessage());
         }
     }
+
 
     public static function sendSubscribedMail($sub, $creatorFinalAmount)
     {

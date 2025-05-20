@@ -52,6 +52,7 @@ use Stripe\Webhook;
 use Stripe\Identity;
 use Stripe\Identity\VerificationSession;
 use Stripe\Exception\SignatureVerificationException;
+use Stripe\Customer;
 
 class StripeController extends Controller
 {
@@ -1449,8 +1450,9 @@ class StripeController extends Controller
      */
     public function mandatorySubscriptionStatus(Request $request)
     {
+        // Log::info('Webhook received: mandatorySubscriptionStatus');
         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-        $endpoint_secret = env('CREATOR_TRIAL_END_MONTHLY_SUBSCRIPTION_SECRET');
+        $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
 
         $payload = $request->getContent();
         $sigHeader = $request->header('Stripe-Signature');
@@ -1463,26 +1465,36 @@ class StripeController extends Controller
             return response()->json(['error' => 'Invalid signature'], 400);
         }
 
+        Log::info('Webhook received: mandatorySubscriptionStatus');
+        Log::info(json_encode($event));
+
         if (!empty($event)) {
             $eventType = $event->type;
             $object = $event->data->object;
 
+            $customer_id = $object->customer ?? null;
+            $customer = Customer::retrieve($customer_id);
+
             $subscriptionId = data_get($object, 'id');
-            $customerEmail = data_get($object, 'customer_email');
+            $customerEmail = $customer->email ?? null;
             $customerName = data_get($object, 'customer_name');
             $invoicePdf = data_get($object, 'invoice_pdf');
+
+            Log::info('customerEmail: ');
+            Log::info($customerEmail);
 
             Log::info('Webhook received: ' . $eventType);
             Log::info(json_encode($event));
 
             $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->latest()->first();
 
-            try {
-                $ret = StripeControl::getSubscription($subscriptionId);
-            } catch (\Exception $e) {
-                Log::error("Failed to retrieve subscription: " . $e->getMessage());
-                return response()->json(['error' => 'Failed to retrieve subscription'], 500);
-            }
+            // try {
+            //     $ret = StripeControl::getSubscription($subscriptionId);
+
+            // } catch (\Exception $e) {
+            //     Log::error("Failed to retrieve subscription: " . $e->getMessage());
+            //     return response()->json(['error' => 'Failed to retrieve subscription'], 500);
+            // }
 
             if ($subs) {
                 $array = [
@@ -1499,8 +1511,6 @@ class StripeController extends Controller
                         $subs->save();
                         SendRenewMail::dispatch($array, 'trial_ending', 'site');
                         break;
-
-                    case "invoice.paid":
                     case "invoice.payment_succeeded":
                         if ($subs->status != 'paid') {
                             $periodEnd = data_get($object, 'lines.data.0.period.end');
@@ -1521,12 +1531,6 @@ class StripeController extends Controller
                         }
                         break;
 
-                    case "customer.subscription.deleted":
-                        $subs->status = "cancelled";
-                        $subs->save();
-                        SendRenewMail::dispatch($array, 'cancelled', 'site');
-                        break;
-
                     case "invoice.payment_failed":
                         $subs->status = "failed";
                         $subs->save();
@@ -1536,6 +1540,7 @@ class StripeController extends Controller
                     case "invoice.updated":
                         $subs->status = "ended";
                         $subs->save();
+                        $periodEnd = data_get($object, 'lines.data.0.period.end');
 
                         $newSubs = new MonthlyCharge();
                         $newSubs->stripe_id = $subs->stripe_id;
@@ -1546,7 +1551,7 @@ class StripeController extends Controller
                         $newSubs->currency = $subs->currency;
                         $newSubs->amount = $subs->amount;
                         $newSubs->tax = $subs->tax;
-                        $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+                        $newSubs->upcoming_payment = Carbon::createFromTimestamp($periodEnd)->format('Y-m-d H:i:s');
                         $newSubs->status = "paid";
                         $newSubs->created_at = $subs->created_at;
                         $newSubs->updated_at = $subs->updated_at;
