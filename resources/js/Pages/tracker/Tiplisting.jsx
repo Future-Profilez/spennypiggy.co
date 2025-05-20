@@ -60,6 +60,8 @@ export default function Tiplisting({ auth }) {
                   />
                 ) : (
                   <Avatar
+                    role={g && g.user && g.user.role}
+                    profile_status_lock={g && g.user && g.user.profile_status_lock == 2 ? true : false}
                     name={`To : ${
                       (g && g.owner && g.owner.name) || g.guest_name
                     }`}

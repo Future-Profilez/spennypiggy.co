@@ -50,7 +50,7 @@ export default function ShopTracker() {
                         <div className="d-flex align-items-center justify-content-between">
                             <div className="text-dark">
                                 {g.anonymous == 1 && g && g.sender == false ? (
-                                    <Avatar
+                                    <Avatar 
                                         name={`From : Anonymous`}
                                         subhead={
                                             (g.shop &&
@@ -62,6 +62,10 @@ export default function ShopTracker() {
                                 ) : (
                                     <>
                                         <Avatar
+                                        role={g && g.user && g.user.role}
+                                        profile_status_lock={
+                                            g && g.user && g.user.profile_status_lock == 2 ? true : false
+                                        }
                                             name={`From : ${
                                                 (g && g.user && g.user.name) ||
                                                 "Anonymous"

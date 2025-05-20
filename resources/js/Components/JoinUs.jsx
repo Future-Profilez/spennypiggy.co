@@ -11,7 +11,7 @@ import { LazyLoadImage } from "react-lazy-load-image-component";
 export default function JoinUs() {
     return (
         <>
-            <section className="w-full px-4 pb-16 bg-black flex flex-col items-center">
+            <section className="w-full px-4 pb-16 pt-6 bg-black flex flex-col items-center">
                 <p className="uppercase pt-3 md:pt-5 text-center text-white text-CeraGR">
                     Built for creators of all platforms{" "}
                 </p>
@@ -60,10 +60,10 @@ export default function JoinUs() {
                     </div>
                 </div>
             </section>
-            <div className="flex justify-end relative bottom-[-10px] z-50 sm:mr-16">
+            <div className="bg-black w-full flex justify-end  sm:mr-16">
                 <img
                     src={bottomImg}
-                    className=""
+                    className="relative bottom-[-10px] z-50 max-w-[200px]"
                     alt="Decorative"
                 />
             </div>

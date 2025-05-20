@@ -35,7 +35,7 @@ export default function Userprofile({ IsloggedIn }) {
                     </div>
                     <div className="ps-0 ps-md-3">
                         <h2 className="font-GillSans text-start flex items-center">{user && user.name}
-                            {/* {user && user.profile_status_lock == 2 ? <RiVerifiedBadgeFill  size={'1.7rem'} className="ms-2 text-mint" /> : ''} */}
+                            {user && user.role == 1 && user.profile_status_lock == 2 ? <RiVerifiedBadgeFill  size={'1.7rem'} className="ms-2 text-mint" /> : ''}
                         </h2>
                         <div className="userId flex items-center justify-start mb-0">
                             <ShareProfile

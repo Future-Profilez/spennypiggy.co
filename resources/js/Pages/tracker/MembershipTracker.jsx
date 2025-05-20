@@ -51,7 +51,9 @@ export default function MembershipTracker({auth}) {
                                     <Avatar name={`From : Anonymous`} subhead={(n.membership && n.membership.level) || "Membership Payment"} src={userphoto || ""}/>
                                 ) : (
                                     <>
-                                    <Avatar name={`From : ${ (n && n.user && n.user.name) || "Anonymous" }`} link={ (n.user && n.user.username) || null } subhead={(n.membership && n.membership.level) ||"Membership Payment"} username={(n.user && n.user.username) || ""} src={(n && n.user && n.user.avatar_url) || userphoto} />
+                                    <Avatar role={n && n.user && n.user.role} profile_status_lock={n && n.user && n.user.profile_status_lock == 2 ? true : false}
+
+                                     name={`From : ${ (n && n.user && n.user.name) || "Anonymous" }`} link={ (n.user && n.user.username) || null } subhead={(n.membership && n.membership.level) ||"Membership Payment"} username={(n.user && n.user.username) || ""} src={(n && n.user && n.user.avatar_url) || userphoto} />
                                     </>
                                 )}
                             </div>

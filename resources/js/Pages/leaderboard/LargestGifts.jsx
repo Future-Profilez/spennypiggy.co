@@ -38,6 +38,8 @@ export default function LargestGifts() {
       <div className="d-flex align-items-center justify-content-between">
         <div className="wisher wisher-rank">
           <Avatar
+            role={gift.role}
+            profile_status_lock={gift.profile_status_lock == 2 ? true : false}
             name={gift.name}
             link={gift.username || null}
             subhead={`@${gift.username || "anonymous"}`}
