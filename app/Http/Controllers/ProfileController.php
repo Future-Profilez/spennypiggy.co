@@ -912,7 +912,7 @@ class ProfileController extends Controller
         foreach ($user_subs as $key => $value) {
             $trackData[$key] = [
                 'owner' => [
-                    'name' => $value->wish_item->user->name,
+                    'name' => $value->wish_item->user->name ?? '',
                     'avatar' => $value->wish_item->user->avatar_url,
                     'cover' => $value->wish_item->user->cover_url,
                     'username' => $value->wish_item->user->username,
