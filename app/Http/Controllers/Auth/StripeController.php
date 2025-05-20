@@ -143,6 +143,8 @@ class StripeController extends Controller
         try {
             $account = StripeControl::getAccount($user->account_id);
             if ($account->charges_enabled) {
+                $user->stripe_details_submitted = 1;
+                $user->save();
                 return redirect(route("user.show", ["username" => $user->username]))->with("success", "Stripe already connected.");
             }
 
