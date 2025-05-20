@@ -67,9 +67,9 @@ export default function Header({classMagicword}) {
                 <div className="containerbox">
                     <div className="header flex w-full items-center  justify-between ">
                         
-                        <div className="d-none d-mflex  leftspaces items-center justify-content-start">
+                        <div className="md:flex hidden leftspaces items-center justify-content-start">
                             <div
-                                className="  menu-toggle cursor-pointer cartLink position-relative"
+                                className=" menu-toggle cursor-pointer cartLink position-relative"
                                 onClick={toggleClass}
                             >
                                 <svg
@@ -131,8 +131,6 @@ export default function Header({classMagicword}) {
                                     <MagicBellNotification word={classMagicword} />
                                 </div>
                             : ""}
-
-
 
                             <Link
                                 href={route("discover")}
@@ -209,7 +207,7 @@ export default function Header({classMagicword}) {
                                 </div>
                             )}
                             <div
-                                className= " menu-toggle cursor-pointer cartLink position-relative"
+                                className= "block md:hidden menu-toggle cursor-pointer cartLink position-relative"
                                 onClick={toggleClass}
                             >
                                 <svg

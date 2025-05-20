@@ -130,50 +130,13 @@ export default function Footer(props) {
                 <div className="max-w-5xl mx-auto">
                     <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
                         <div>
-                            <h3 className="font-gulfs text-light text-3xl mb-4">
-                                LEGAL
-                            </h3>
+                            <h3 className="font-gulfs text-light text-3xl mb-4"> LEGAL </h3>
                             <ul className="space-y-2 font-poppins cursor-pointer">
-                                <li>
-                                    <a
-                                        href="https://app.termly.io/policy-viewer/policy.html?policyUUID=88583b44-9385-430c-aa79-3c41dc8a167e"
-                                        target="blank"
-                                    >
-                                        Privacy policy
-                                    </a>
-                                </li>
-                                <li>
-                                    <a
-                                        href="https://app.termly.io/policy-viewer/policy.html?policyUUID=f11eb44f-4ddd-4d59-86d1-34c11e3fa80e"
-                                        target="blank"
-                                    >
-                                        Cookies Policy
-                                    </a>
-                                </li>
-                                <li>
-                                    <a
-                                        href="https://app.termly.io/policy-viewer/policy.html?policyUUID=a1f91da2-10e4-49e8-88b6-fc716b2645ba"
-                                        target="blank"
-                                    >
-                                        Return Policy
-                                    </a>
-                                </li>
-                                <li>
-                                    <a
-                                        href="https://ucarecdn.com/6b25399f-e259-4c19-bbdf-70308c5814ef/SPTERMSFINALVMAY2025.pdf"
-                                        target="blank"
-                                    >
-                                        Terms & Conditions
-                                    </a>
-                                </li>
-                                <li>
-                                    <a
-                                        href="https://app.termly.io/policy-viewer/policy.html?policyUUID=9a437e57-fcc7-439f-a7e7-96b493a8c50f"
-                                        target="blank"
-                                    >
-                                        Acceptable Use Policy
-                                    </a>
-                                </li>
+                                <li> <a href="https://app.termly.io/policy-viewer/policy.html?policyUUID=88583b44-9385-430c-aa79-3c41dc8a167e" target="blank" > Privacy policy </a> </li>
+                                <li> <a href="https://app.termly.io/policy-viewer/policy.html?policyUUID=f11eb44f-4ddd-4d59-86d1-34c11e3fa80e" target="blank" > Cookies Policy </a> </li>
+                                <li> <a href="https://app.termly.io/policy-viewer/policy.html?policyUUID=a1f91da2-10e4-49e8-88b6-fc716b2645ba" target="blank" > Return Policy </a> </li>
+                                <li> <a href="https://ucarecdn.com/6b25399f-e259-4c19-bbdf-70308c5814ef/SPTERMSFINALVMAY2025.pdf" target="blank" > Terms & Conditions </a> </li>
+                                <li> <a href="https://app.termly.io/policy-viewer/policy.html?policyUUID=9a437e57-fcc7-439f-a7e7-96b493a8c50f" target="blank" > Acceptable Use Policy </a> </li>
                             </ul>
                         </div>
 
@@ -182,29 +145,10 @@ export default function Footer(props) {
                                 GENERAL
                             </h3>
                             <ul className="space-y-2 font-poppins cursor-pointer">
-                                <li>
-                                    <a target="_blank" href="https://blog.spennypiggy.co">
-                                        Blog
-                                    </a>
-                                </li>
-                                <li>
-                                    <a target="_blank" href="https://app.termly.io/notify/88583b44-9385-430c-aa79-3c41dc8a167e">
-                                        DSAR Form
-                                    </a>
-                                </li>
-                                <li>
-                                    <a target="_blank" href="https://app.termly.io/policy-viewer/policy.html?policyUUID=364c168c-44ab-467e-a98a-a22629fc31f8">
-                                        Disclaimer
-                                    </a>
-                                </li>
-                                <li>
-                                    <a
-                                        href="#"
-                                        className="termly-display-preferences"
-                                    >
-                                        Consent Preferences
-                                    </a>
-                                </li>
+                                <li> <a target="_blank" href="https://blog.spennypiggy.co"> Blog </a> </li>
+                                <li> <a target="_blank" href="https://app.termly.io/notify/88583b44-9385-430c-aa79-3c41dc8a167e"> DSAR Form </a> </li>
+                                <li> <a target="_blank" href="https://app.termly.io/policy-viewer/policy.html?policyUUID=364c168c-44ab-467e-a98a-a22629fc31f8"> Disclaimer </a> </li>
+                                <li> <a href="#" className="termly-display-preferences" > Consent Preferences </a> </li>
                             </ul>
                         </div>
 
@@ -213,19 +157,9 @@ export default function Footer(props) {
                                 HELP
                             </h3>
                             <ul className="space-y-2 font-poppins cursor-pointer">
-                                <li>
-                                    <a className="livechat intercom-dud02y e11rlguj1" > Live Chat</a>
-                                </li>
-                                <li>
-                                    <a target="_blank" href="https://intercom.help/spenny-piggy" >
-                                            FAQ's
-                                    </a>
-                                </li>
-                                <li>
-                                    <Link href={route("promotion-terms")}>
-                                        Promotion Terms
-                                    </Link>
-                                </li>
+                                <li> <a className="livechat intercom-dud02y e11rlguj1" > Live Chat</a> </li>
+                                <li> <a target="_blank" href="https://intercom.help/spenny-piggy" > FAQ's </a> </li>
+                                <li> <Link href={route("promotion-terms")}> Promotion Terms </Link> </li>
                             </ul>
                         </div>
 
@@ -234,9 +168,7 @@ export default function Footer(props) {
                                 CONTACT
                             </h3>
                             <ul className="space-y-2 font-poppins cursor-pointer">
-                                <li>
-                                <a href="tel:02033552057"> 020 3355 2057</a>
-                                   </li>
+                                <li> <a href="tel:02033552057"> 020 3355 2057</a> </li>
                                 <li>
                                 <a href="mailto:support@spennypiggy.co">
                                 support@spennypiggy.co
