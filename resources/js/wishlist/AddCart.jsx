@@ -84,7 +84,7 @@ export default function AddCart(props) {
                                 now={formatMultiPrice(item.fullfill_amount, item?.currency || 'GBP')}
                                 max={formatMultiPrice(item.price, item?.currency || 'GBP')}
                             />
-                            <div className="d-flex align-items-center justify-content-between">
+                            <div className="flex items-center justify-between">
                                 <p className="mt-1 mb-0 text-small">
                                     {getPercentage(
                                         item.price,

@@ -720,7 +720,7 @@ export default function Wishlist(props) {
                                             : ""}
                                     </div>
 
-                                    <div className="cate-items mb-3 mt-4 d-flex ">
+                                    <div className="cate-items mb-3 mt-4 flex ">
                                         <input
                                             id="cats"
                                             type="text"

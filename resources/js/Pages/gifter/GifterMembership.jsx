@@ -46,7 +46,7 @@ export default function GifterMembership(props) {
 
     const amount =(w && +w.amount) + ( w && +w.tax)
     return <div className='wish-grant my-3 pb-3 box rounded-lg p-3' key={key} >
-        <div className='d-flex justify-content-between align-items-center' >
+        <div className='flex justify-between items-center' >
           <Avatar 
           role={w && w.owner && w.owner.role}
           profile_status_lock={w && w.owner && w.owner.profile_status_lock == 2 ? true : false}
@@ -62,7 +62,7 @@ export default function GifterMembership(props) {
             </div>
           </div>
         </div>
-          <div className="border-top pt-3 mt-3 d-flex justify-content-between align-items-center" >
+          <div className="border-top pt-3 mt-3 flex justify-between items-center" >
               <p className="mb-0 pe-2" >Price</p>
               <p className="text-muted text-small">{formatMultiPrice(amount, w && w.currency)}</p>
           </div> 

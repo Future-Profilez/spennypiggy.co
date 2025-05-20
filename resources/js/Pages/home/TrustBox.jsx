@@ -23,7 +23,7 @@ const TrustBox = () => {
             // data-allow-robots="true" data-stars="4,5"
             // data-style-alignment="left"
             >
-            <a href="https://uk.trustpilot.com/review/spennypiggy.co" className="d-inline-flex align-items-center text-white font-bold text-[20px]"
+            <a href="https://uk.trustpilot.com/review/spennypiggy.co" className="d-inline-flex items-center text-white font-bold text-[20px]"
             target="_blank" rel="noopener">Review us on&nbsp;<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M17.227 16.6699L19.417 23.4119L12.004 18.0239L17.227 16.6699ZM24 9.30987H14.835L12.005 0.588867L9.165 9.31187L0 9.29987L7.422 14.6969L4.582 23.4109L12.004 18.0239L16.587 14.6969L24 9.30987Z" fill="#00B67A"/>
             </svg>&nbsp;Trustpilot

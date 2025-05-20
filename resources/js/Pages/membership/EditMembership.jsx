@@ -172,7 +172,7 @@ export default function EditMembership({ fetch_membership, item }) {
         <div className="row">
           <div className="col-md-12 form-field mb-4">
             <label className="d-block text-start mb-2">Choose Membership Level</label>
-            <ul className="ps-0 d-flex flex-wrap tiers">
+            <ul className="ps-0 flex flex-wrap tiers">
               {memberships && memberships.map((m, i) => {
                 return (
                   <li key={`membership-${i}`} className="mb-2 me-2">
@@ -229,7 +229,7 @@ export default function EditMembership({ fetch_membership, item }) {
             </div>
 
           <p className="font-bold mb-3">Choose membership Rewards</p>
-          <div className="d-flex memberships-lists flex-wrap mb-4">
+          <div className="flex memberships-lists flex-wrap mb-4">
             {membershipBenifits && membershipBenifits.map((m, i) => {
               return (
                 <div className="member-reward me-2 mb-2 text-start" key={`reward-${i}`}>

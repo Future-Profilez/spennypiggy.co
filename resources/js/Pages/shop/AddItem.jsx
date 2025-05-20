@@ -728,7 +728,7 @@ export default function AddItem(props) {
                                     })}
                             </div>
 
-                            <div className="add-shop-cat-input relative d-flex items-center mt-3">
+                            <div className="add-shop-cat-input relative flex items-center mt-3">
                                 <input
                                     ref={inputRef}
                                     className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[13px] px-4"

@@ -102,14 +102,14 @@ export default function Membership({item, hidebtn, IsloggedIn, fetch_membership}
 
       <div className='p-2 pt-0' >
         <ul className='lists_rewards mt-3' >
-          <li  className='d-flex ' >
+          <li  className='flex ' >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M7.95801 14.9993L3.20801 10.2493L4.39551 9.06185L7.95801 12.6243L15.6038 4.97852L16.7913 6.16602L7.95801 14.9993Z" fill="#F94F97"/>
             </svg>
             <p className='ps-2'>Access to Member only posts</p>
           </li>
           {rewards && rewards.map((r, i)=>{
-            return <li key={`reward-${i}`} className='d-flex ' >
+            return <li key={`reward-${i}`} className='flex ' >
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M7.95801 14.9993L3.20801 10.2493L4.39551 9.06185L7.95801 12.6243L15.6038 4.97852L16.7913 6.16602L7.95801 14.9993Z" fill="#F94F97"/>
                 </svg>

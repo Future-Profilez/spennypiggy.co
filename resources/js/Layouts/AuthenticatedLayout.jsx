@@ -7,11 +7,11 @@ import BottomBar from './BottomBar';
 const Footer = React.lazy(() => import('@/includes/Footer'));
 const Header = React.lazy(() => import('@/includes/Header'));
 
-export default function Authenticated(props) { 
+export default function Authenticated(props){ 
+
     const { auth, user, children, cart_count } = props;
     const { successAlert, errorAlert } = useAlerts();
     const { flash, errors } = usePage().props;
-
     useEffect(() => {
         if(errors){
             Object.entries(errors).forEach(([key, value]) => {
@@ -33,13 +33,13 @@ export default function Authenticated(props) {
     },[]);
 
     return <>
-        <Header   auth={auth} user={user}  />
+        <Header auth={auth} user={user}  />
         <main>
             {children}
             <Toaster
-            reverseOrder={false}
-            gutter={8}
-            toastOptions={{
+                reverseOrder={false}
+                gutter={8}
+                toastOptions={{
                 className: '',
                 duration: 3000,
                 style: {
@@ -53,11 +53,11 @@ export default function Authenticated(props) {
                     secondary: 'black',
                 },
                 },
-            }}
+                }}
             />
         </main>
-    <Footer auth={auth} />
-    <BottomBar />
+        <Footer auth={auth} />
+        <BottomBar />
     
     </>
 }

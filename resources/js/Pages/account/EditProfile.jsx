@@ -10,8 +10,7 @@ import LoaderButton from '@/Components/LoaderButton';
 import PriceFormat from '@/includes/PriceFormat';
 
 export default function EditProfile({ user, global_currency, classes, updateProfileSteps }) {
-
-    const { formatMultiPrice } = PriceFormat();
+ 
     const [close, setClose] = useState()
     const { successAlert, errorAlert } = useAlerts();
     const [profileDP, setProfileDP] = useState();

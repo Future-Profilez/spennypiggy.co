@@ -86,7 +86,7 @@ export default function Wishtracker(props) {
             className=" cursor-pointer trackbar "
           >
             {n && !n.sender && isOwnerRead !== 1 ? (
-              <div className="newwish justify-content-between py-2 d-flex align-items-center">
+              <div className="newwish justify-between py-2 flex items-center">
                 <h2 className="granted-wish  font-GillSans ">
                   New Wish Granted. Tap to see
                 </h2>
@@ -95,7 +95,7 @@ export default function Wishtracker(props) {
               ''
             )}
 
-            <div className="d-flex align-items-center justify-content-between">
+            <div className="flex items-center justify-between">
               <div className="text-dark">
                 {n.payment.anonymous == 1 && n && n.sender === false ? (
                   <Avatar
@@ -117,7 +117,7 @@ export default function Wishtracker(props) {
                   />
                 )}
               </div>
-              <div className="text-muted rightbar d-flex align-items-center ">
+              <div className="text-muted rightbar flex items-center ">
                 <div>
                   {n && n.sender ? (
                     <div className="identity text-danger text-nowrap">
@@ -176,7 +176,7 @@ export default function Wishtracker(props) {
             <div id="example-collapse-text">
               <div className="track-summary mt-4">
                 <div className="wishitem-des box border rounded-lg">
-                  <div className="d-flex justify-content-between align-items-center">
+                  <div className="flex justify-between items-center">
                     <div className="wish-item">
                       <img
                         src={(n.wish && n.wish.perma_link) || defaultsec}
@@ -199,7 +199,7 @@ export default function Wishtracker(props) {
                     </div>
                   </div>
                   {n && n.cart_message ? (
-                    <div className="border-top pt-3 mt-3 d-flex justify-content-between align-items-center">
+                    <div className="border-top pt-3 mt-3 flex justify-between items-center">
                       <p className="mb-0 pe-2">Sender Note :</p>
                       <p className="text-muted text-small">
                         {n && n.cart_message}
@@ -209,7 +209,7 @@ export default function Wishtracker(props) {
                     ''
                   )}
                   {n && n.surprise_message ? (
-                    <div className="border-top pt-3 mt-3  d-flex justify-content-between align-items-center">
+                    <div className="border-top pt-3 mt-3  flex justify-between items-center">
                       <p className="mb-0 pe-2">Message</p>
                       <p className="text-muted text-small">
                         {n && n.surprise_message}
@@ -218,13 +218,13 @@ export default function Wishtracker(props) {
                   ) : (
                     ''
                   )}
-                  <div className="border-top pt-3 mt-3  d-flex justify-content-between align-items-center">
+                  <div className="border-top pt-3 mt-3  flex justify-between items-center">
                     <p className="mb-0 pe-2">Paid in </p>
                     <p className="text-muted text-small">
                       {n && n.payment && n.payment.currency}
                     </p>
                   </div>
-                  <div className="border-top pt-3 mt-3  d-flex justify-content-between align-items-center">
+                  <div className="border-top pt-3 mt-3  flex justify-between items-center">
                     <p className="mb-0 pe-2">Guest Email </p>
                     <p className="text-muted text-small">
                       {(n && n?.payment?.user?.email) ||
@@ -232,7 +232,7 @@ export default function Wishtracker(props) {
                         'N/A'}
                     </p>
                   </div>
-                  <div className="border-top pt-3 mt-3  d-flex justify-content-between align-items-center">
+                  <div className="border-top pt-3 mt-3  flex justify-between items-center">
                     <p className="mb-0 pe-2">Guest Name </p>
                     <p className="text-muted text-small capitalize">
                       {n && n.payment.name}
@@ -453,7 +453,7 @@ export default function Wishtracker(props) {
                                 {s && s.wish_item && s.wish_item.wishname}
                               </h2>
                               <ul className="ps-0 mt-3">
-                                <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                <li className="mt-2 flex justify-between border-top py-2">
                                   <p className="text-muted">Item Owner</p>
                                   <p className="text-dark text-capitalize">
                                     <Link
@@ -472,7 +472,7 @@ export default function Wishtracker(props) {
                                     </Link>
                                   </p>
                                 </li>
-                                <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                <li className="mt-2 flex justify-between border-top py-2">
                                   <p className="text-muted">
                                     Subscription Period
                                   </p>
@@ -482,7 +482,7 @@ export default function Wishtracker(props) {
                                       : s?.recurring_type}
                                   </p>
                                 </li>
-                                <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                <li className="mt-2 flex justify-between border-top py-2">
                                   <p className="text-muted">Price</p>
                                   <p className="text-dark text-capitalize">
                                     {formatMultiPrice(
@@ -491,19 +491,19 @@ export default function Wishtracker(props) {
                                     )}
                                   </p>
                                 </li>
-                                <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                <li className="mt-2 flex justify-between border-top py-2">
                                   <p className="text-muted">Start Date</p>
                                   <p className="text-dark text-capitalize">
                                     {s && s.start_date}
                                   </p>
                                 </li>
-                                <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                <li className="mt-2 flex justify-between border-top py-2">
                                   <p className="text-muted">Upcoming Payment</p>
                                   <p className="text-dark text-capitalize">
                                     {s && s.payment_upcoming}
                                   </p>
                                 </li>
-                                <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                <li className="mt-2 flex justify-between border-top py-2">
                                   <p className="text-muted">Status</p>
                                   <p className="text-dark text-capitalize">
                                     {s && s.status == 'paid' ? (
@@ -601,7 +601,7 @@ export default function Wishtracker(props) {
                               )}
 
                               <ul className="ps-0 mt-3">
-                                <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                <li className="mt-2 flex justify-between border-top py-2">
                                   <p className="text-muted">
                                     Subscription Item
                                   </p>
@@ -609,7 +609,7 @@ export default function Wishtracker(props) {
                                     {s && s.wish_item && s.wish_item.wishname}
                                   </p>
                                 </li>
-                                <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                <li className="mt-2 flex justify-between border-top py-2">
                                   <p className="text-muted">
                                     Subscription Period
                                   </p>
@@ -619,7 +619,7 @@ export default function Wishtracker(props) {
                                       s.wish_item.subscription_period}
                                   </p>
                                 </li>
-                                <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                <li className="mt-2 flex justify-between border-top py-2">
                                   <p className="text-muted">Price</p>
                                   <p className="text-dark text-capitalize">
                                     {formatMultiPrice(
@@ -628,19 +628,19 @@ export default function Wishtracker(props) {
                                     )}
                                   </p>
                                 </li>
-                                <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                <li className="mt-2 flex justify-between border-top py-2">
                                   <p className="text-muted">Upcoming Payment</p>
                                   <p className="text-dark text-capitalize">
                                     {s && s.payment_upcoming}
                                   </p>
                                 </li>
-                                <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                <li className="mt-2 flex justify-between border-top py-2">
                                   <p className="text-muted">Start Date</p>
                                   <p className="text-dark text-capitalize">
                                     {s && s.start_date}
                                   </p>
                                 </li>
-                                <li className="mt-2 d-flex justify-content-between border-top py-2">
+                                <li className="mt-2 flex justify-between border-top py-2">
                                   <p className="text-muted">Status</p>
                                   <p className="text-dark text-capitalize">
                                     {s && s.status == 'paid' ? (

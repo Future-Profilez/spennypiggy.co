@@ -106,10 +106,10 @@ export default function NotForBusiness() {
                     </div>
                 </div>
 
-                <div className="e8_tag d-flex mt-0 mt-md-5">
+                <div className="e8_tag flex mt-0 mt-md-5">
                     <div
                         data-aos="fade-left"
-                        className="8tag w-50 position-relative border-black border-start-0 p-5 text-center d-flex justify-content-center"
+                        className="8tag w-50 position-relative border-black border-start-0 p-5 text-center flex justify-content-center"
                     >
                         <div className="percent-eight">
                             <svg
@@ -139,7 +139,7 @@ export default function NotForBusiness() {
                     </div>
                     <div
                         data-aos="fade-right"
-                        className="conversion w-50 border-black border-end-0 border-start-0 px-4 px-md-5 py-5 text-center d-flex justify-content-center align-items-center"
+                        className="conversion w-50 border-black border-end-0 border-start-0 px-4 px-md-5 py-5 text-center flex justify-content-center items-center"
                     >
                         <div>
                             <h2 className="headingSm shadow-none text-dark stroke-none mb-3 text-center mb-6 max-width-1000 m-auto d-table">

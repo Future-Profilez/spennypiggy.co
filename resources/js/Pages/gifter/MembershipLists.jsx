@@ -31,22 +31,22 @@ import Membership from './../membership/Membership';
 
             </div>
             <div className='p-4' >
-              <Link href={`${itm?.owner?.username || ''}`} className="d-flex items-center w-auto" >
+              <Link href={`${itm?.owner?.username || ''}`} className="flex items-center w-auto" >
                   <img className="author-img h-[50px] w-[50px] rounded-lg me-2 border border-grey" src={`${itm?.owner?.avatar || ''}`} />
                 <div>
                   <p className="authors text-dark mb-0"> <b> {itm?.owner?.name || ''} </b> </p>
                   <p className="authors text-muted text-small">@{itm?.owner?.username || ''}</p>
                 </div>
               </Link>
-                <p className='pb-1 pt-3 d-flex justify-content-between' >
+                <p className='pb-1 pt-3 flex justify-between' >
                 { handleTab == 'memberships' ? <strong className='text-capitalize' >{itm.membership?.level || ''} Membership</strong> 
                   : 
                   <strong className='text-capitalize'  >{itm.wish_item?.name || ''}</strong>
                 }
                </p>
               <ul className='mt-3' >
-                <li className='border-top pt-2 pb-2 d-flex justify-content-between' ><span>Price</span> <strong>{formatMultiPrice(parseInt((itm && itm.amount)+(itm && itm.tax)), itm && itm.currency)}</strong> </li>
-                <li className='border-top pt-2 pb-2 d-flex justify-content-between' ><span>Duration</span> <strong>Monthly</strong> </li>
+                <li className='border-top pt-2 pb-2 flex justify-between' ><span>Price</span> <strong>{formatMultiPrice(parseInt((itm && itm.amount)+(itm && itm.tax)), itm && itm.currency)}</strong> </li>
+                <li className='border-top pt-2 pb-2 flex justify-between' ><span>Duration</span> <strong>Monthly</strong> </li>
               </ul>
             </div>
           </div>
@@ -95,7 +95,7 @@ import Membership from './../membership/Membership';
     return (
       <>
           <div className='m-auto'>
-          <div className='d-flex justify-content-start align-items-center' >
+          <div className='flex justify-content-start items-center' >
             <button onClick={()=>setHandleTab(`memberships`)} className={`${handleTab !== 'memberships' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[20px] mx-1 px-3 text-[11px] text-uppercase `} >Memberships</button>
             <button onClick={()=>setHandleTab('subscriptions')} className={`${handleTab !== 'subscriptions' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[20px] mx-1 px-3 text-[11px] text-uppercase `} >Subscriptions</button>
           </div>
