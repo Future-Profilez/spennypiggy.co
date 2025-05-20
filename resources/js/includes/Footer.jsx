@@ -160,7 +160,7 @@ export default function Footer(props) {
                                 </li>
                                 <li>
                                     <a
-                                        href="https://ucarecdn.com/90485216-9757-4fb8-8002-d45c7ced6c46/"
+                                        href="https://ucarecdn.com/6b25399f-e259-4c19-bbdf-70308c5814ef/SPTERMSFINALVMAY2025.pdf"
                                         target="blank"
                                     >
                                         Terms & Conditions
