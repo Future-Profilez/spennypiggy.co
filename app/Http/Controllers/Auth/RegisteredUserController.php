@@ -456,6 +456,7 @@ class RegisteredUserController extends Controller
                 'state' => $address->state ?? null,
                 'postal_code' => $address->postal_code ?? null,
                 'country' => $address->country ?? null,
+                'name' => $session->customer_details->name ?? null,
             ];
 
             $encryptedJson = json_encode($encryptedAddress);
@@ -483,7 +484,7 @@ class RegisteredUserController extends Controller
         // pending profile
         $user->update(['profile_status_lock' => 1]);
 
-        return redirect()->route('user.show', ['username' => $user->username])->with('success', "Payment Card verification successfully.");
+        return redirect()->route('user.show', ['username' => $user->username])->with('success', "Payment Card Verification Successfully Completed.");
     }
 
     /**

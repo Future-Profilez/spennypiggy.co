@@ -161,7 +161,6 @@ Route::middleware('auth')->group(function () {
             Route::get('cancel-subscription/{subscription_id}', [WishitemController::class, 'cancelSubscription'])->name('cancel-subscription');
             Route::get('/read-status/{payment_id}/{type}', [WishitemController::class, 'readStatus'])->name('read-status');
 
-
             Route::get('/stripe', function (Request $request) {
                 $auth = Auth::user();
                 $bills = Bills::where('user_id', $auth->id)->where('approved', 1)->count();
@@ -171,9 +170,6 @@ Route::middleware('auth')->group(function () {
                     'membership_count' => $membership
                 ]);
             })->middleware(['auth', 'verified'])->name('stripe');
-
-
-
 
             Route::get('/pin-item/{wish_id}/', [WishitemController::class, 'pinItem'])->name('pin-item');
 
