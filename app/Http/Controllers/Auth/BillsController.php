@@ -375,7 +375,7 @@ class BillsController extends Controller
                         'destination' => $bill->user->account_id, // Creator's connected account ID
                         'amount_percent' => $amount_per,
                     ],
-                    // 'on_behalf_of'  => $bill->user->account_id,
+                    'on_behalf_of'  => $bill->user->account_id,
                     // 'cancel_at_period_end'  =>  $reccure == 'onetime',
                     // 'description'   => "{$bill->name} of {$bill->user->username}."
                     'description'   => "Membership Content Purchase."

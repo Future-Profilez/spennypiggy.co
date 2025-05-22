@@ -82,7 +82,13 @@ class SendPendingApprovalNotifications extends Command
                     'model' => \App\Models\UserVerificationStatus::class,
                     'relation' => 'user',
                     'conditions_callback' => function ($query) {
-                        $query->where('user_profile_status', 0);
+                        $query->where('user_profile_status', 0)
+                            ->whereHas('user', function ($q) {
+                                $q->whereHas('gifterCardVerification', function ($subQ) {
+                                    // Add conditions to this relationship if needed
+                                    $subQ->where('status', 'success'); // Example
+                                });
+                            });
                     },
                     'label' => 'User Profiles',
                 ],
