@@ -190,11 +190,14 @@ class StripeControl
      * @param array $payload Payment Payload
      * @return Throwable|\Stripe\Checkout\Session
      */
-    public static function createCheckoutSession($payload)
+    public static function createCheckoutSession(array $payload, string $connectedAccountId)
     {
         self::setClient();
         try {
-            return self::$client->checkout->sessions->create($payload);
+            return self::$client->checkout->sessions->create(
+                $payload,
+                ['stripe_account' => $connectedAccountId]
+            );
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());
         } catch (InvalidRequestException $e) {
@@ -234,11 +237,14 @@ class StripeControl
      * @param array $payload Product Payload
      * @return Throwable|\Stripe\Product
      */
-    public static function createProduct($payload)
+    public static function createProduct(array $payload, string $connectedAccountId)
     {
         self::setClient();
         try {
-            return self::$client->products->create($payload);
+            return self::$client->products->create(
+                $payload,
+                ['stripe_account' => $connectedAccountId]
+            );
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());
         } catch (InvalidRequestException $e) {
@@ -323,7 +329,7 @@ class StripeControl
     }
 
 
-     /**
+    /**
      * Deleting and account
      *
      * @param string $account_id account Id

@@ -120,7 +120,8 @@ class MembershipController extends Controller
         }
 
         try {
-            $product = StripeControl::createProduct($productPayload);
+            $connectedAccountId = $user->account_id;
+            $product = StripeControl::createProduct($productPayload, $connectedAccountId);
             $mem->product_id = $product->id;
             $mem->price_id = $product->default_price;
             $mem->save();
@@ -223,7 +224,8 @@ class MembershipController extends Controller
                             'interval_count'    =>  1
                         ];
                     }
-                    $product = StripeControl::createProduct($productPayload);
+                    $connectedAccountId = $user->account_id;
+                    $product = StripeControl::createProduct($productPayload, $connectedAccountId);
                     $mem->price_id = $product->default_price;
                 }
                 $mem->product_id = $product->id;
@@ -425,7 +427,7 @@ class MembershipController extends Controller
                         'amount' => $paymentPrice * 100,
                     ],
                     // 'application_fee_amount' => $tax * 100,
-                    // 'on_behalf_of'  => $membership->user->account_id,
+                    'on_behalf_of'  => $membership->user->account_id,
                     'description'   => "Membership for {$membership->level} of {$membership->user->username}."
                 ];
             } else {
@@ -436,14 +438,15 @@ class MembershipController extends Controller
                         'destination' => $membership->user->account_id, // Creator's connected account ID
                         'amount_percent' => $amount_per,
                     ],
-                    'on_behalf_of'  => $membership->user->account_id,
+                    // 'on_behalf_of'  => $membership->user->account_id,
                     // 'cancel_at_period_end'  =>  $reccure == 'onetime',
                     'description'   => "Membership for {$membership->level} of {$membership->user->username}."
                 ];
             }
 
             try {
-                $session = StripeControl::createCheckoutSession($payload);
+                $connectedAccountId = $user->account_id;
+                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
                 $sub->update([
                     'session_id' =>  $session->id
                 ]);
