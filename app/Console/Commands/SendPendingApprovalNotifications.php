@@ -83,10 +83,14 @@ class SendPendingApprovalNotifications extends Command
                     'relation' => 'user',
                     'conditions_callback' => function ($query) {
                         $query->where('user_profile_status', 0)
-                            ->whereHas('user', function ($q) {
-                                $q->whereHas('gifterCardVerification', function ($subQ) {
-                                    // Add conditions to this relationship if needed
-                                    $subQ->where('status', 'success'); // Example
+                            ->where(function ($subQuery) {
+                                $subQuery->whereHas('user', function ($q) {
+                                    $q->where('role', 1);
+                                })->orWhereHas('user', function ($q) {
+                                    $q->where('role', 0)
+                                        ->whereHas('gifterCardVerification', function ($giftQ) {
+                                            $giftQ->where('status', 'success');
+                                        });
                                 });
                             });
                     },
