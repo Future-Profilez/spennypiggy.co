@@ -3,26 +3,16 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Helpers;
-use App\Helpers\JwtHelper;
 use App\Http\Controllers\Controller;
-use App\Jobs\CheckAdultContent;
 use App\Jobs\AutoTweetWishAdd;
 use App\Jobs\CheckoutTweet;
 use App\Jobs\CrowdfundTweet;
-use App\Jobs\MakeAutoTweets;
-use App\Jobs\SaveWishlist;
 use App\Jobs\SendThankYouMailAdmin;
-use App\Jobs\SendUserGiftMail;
 use App\Jobs\SubscribeAutoTweet;
 use App\Jobs\SurpriseTweet;
-use App\Jobs\ThankyouMailToUser;
 use App\Jobs\TipJarTweet;
-use App\Jobs\WelcomeUser;
-use App\Mail\CheckError;
-use App\Mail\CommandFailed;
 use App\Models\BillPayment;
 use App\Models\CreatorShippingAddress;
-use App\Models\GifterCardVerification;
 use App\Models\Logs;
 use App\Models\MembershipPayment;
 use App\Models\ProductOrderDetail;
@@ -35,7 +25,6 @@ use App\Models\StripePaymentItems;
 use App\Models\Subscription;
 use App\Models\TipGoal;
 use App\Models\TipGoalsPayment;
-use App\Models\TwitterToken;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserCategory;
@@ -44,10 +33,6 @@ use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
 use App\Rules\ValidSubscriptionPeriod;
-use App\StripeControl;
-use App\TwitterAuthService;
-use Carbon\Carbon;
-use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,13 +40,28 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
+use Stripe\StripeClient;
+use App\StripeControl;
+use Ramsey\Uuid\Uuid;
+use Inertia\Inertia;
+use Carbon\Carbon;
+use Exception;
+use App\Helpers\JwtHelper;
+use App\Jobs\CheckAdultContent;
+use App\Jobs\MakeAutoTweets;
+use App\Jobs\SaveWishlist;
+use App\Jobs\SendUserGiftMail;
+use App\Jobs\ThankyouMailToUser;
+use App\Jobs\WelcomeUser;
+use App\Mail\CheckError;
+use App\Mail\CommandFailed;
+use App\Models\GifterCardVerification;
+use App\Models\TwitterToken;
+use App\TwitterAuthService;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Validation\Rule;
-use Inertia\Inertia;
 use Ramsey\Uuid\Nonstandard\Uuid as NonstandardUuid;
-use Ramsey\Uuid\Uuid;
-use Stripe\StripeClient;
 
 class WishitemController extends Controller
 {
@@ -155,22 +155,35 @@ class WishitemController extends Controller
 
             if ($request->subscription != 2) {
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-                $stripe_client = $stripe->products->create([
-                    'name' => $request->wishname ?? null,
+
+                $productPayload = [
+                    'name' => $request->wishname ?? 'Untitled Wish',
                     'images' => [$wish->perma_link],
-                    "default_price_data" => [
-                        "currency" => "gbp",
-                        "unit_amount_decimal" => $createpriceid * 100
+                    'default_price_data' => [
+                        'currency' => 'gbp',
+                        'unit_amount_decimal' => number_format($createpriceid * 100, 0, '.', ''), // Stripe expects string or int
                     ],
-                    "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
-                ], [
-                    'stripe_account' => $user->account_id
-                ]);
-                $wish->stripe_product_id = $stripe_client->id;
-                $wish->price_id = $stripe_client->default_price;
+                    'metadata' => [
+                        'wish_id' => $wish->id,
+                        'user_id' => $user->id,
+                    ],
+                ];
+
+                // Add a URL if available
+                if (!empty($request->item_url)) {
+                    $productPayload['url'] = $request->item_url;
+                } else {
+                    $productPayload['url'] = env('APP_URL') . '/' . Auth::user()->username . '?item=' . $wish->uuid;
+                }
+
+                // Create the product under the connected account
+                $stripeProduct = StripeControl::createProduct($productPayload, $user->account_id);
+
+                // Save product and price IDs to the wish
+                $wish->stripe_product_id = $stripeProduct->id;
+                $wish->price_id = $stripeProduct->default_price;
                 $wish->save();
             }
-
 
             return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
         }
@@ -310,7 +323,31 @@ class WishitemController extends Controller
             }
 
             try {
-                $product = StripeControl::createProduct($productPayload);
+                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+
+                $productPayload = [
+                    'name' => $request->wishname ?? 'Untitled Wish',
+                    'images' => [$wish->perma_link],
+                    'default_price_data' => [
+                        'currency' => 'gbp',
+                        'unit_amount_decimal' => number_format($createpriceid * 100, 0, '.', ''), // Stripe expects string or int
+                    ],
+                    'metadata' => [
+                        'wish_id' => $wish->id,
+                        'user_id' => $user->id,
+                    ],
+                ];
+
+                // Add a URL if available
+                if (!empty($request->item_url)) {
+                    $productPayload['url'] = $request->item_url;
+                } else {
+                    $productPayload['url'] = env('APP_URL') . '/' . Auth::user()->username . '?item=' . $wish->uuid;
+                }
+
+                // Create the product under the connected account
+                $product = StripeControl::createProduct($productPayload, $user->account_id);
+
                 $wish->stripe_product_id = $product->id;
                 $wish->price_id = $product->default_price;
                 $wish->save();
@@ -419,7 +456,7 @@ class WishitemController extends Controller
                             // "url" => $request->item_url ?? null
                         ]);
                     } else {
-                        $stripe_client = StripeControl::createProduct($productPayload);
+                        $stripe_client = StripeControl::createProduct($productPayload, $user->account_id);
                         $wish->price_id = $stripe_client->default_price;
                     }
 

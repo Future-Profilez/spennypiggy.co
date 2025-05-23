@@ -22,6 +22,7 @@ use App\Jobs\TipJarPurchased;
 use App\Jobs\TipJarTweet;
 use App\Jobs\WishSubscriptionMailToUser;
 use App\Models\Bills;
+use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
 use App\Models\Membership;
 use App\Models\MonthlyCharge;
@@ -667,58 +668,114 @@ class StripeController extends Controller
             //     ];
             // } else {
 
+
             $amount = $price + $tax;
             $unit_amount = Helpers::priceFormat($wish->currency, $amount, $currency);
-            $tax =   Helpers::priceFormat($wish->currency, $tax, $currency);
+            $tax = Helpers::priceFormat($wish->currency, $tax, $currency);
 
             $adminFee = config('app.administration_fee');
-            $adminFee =   Helpers::priceFormat('GBP', $adminFee, $currency);
-            $total_unit_amount = $unit_amount + $adminFee;
+            $adminFee = Helpers::priceFormat('GBP', $adminFee, $currency);
 
-            $items  =   [
-                'quantity'      =>  1,
-                'price_data'    =>   [
-                    'currency'  =>  $currency,
-                    'product'   =>  $wish->stripe_product_id,
-                    'unit_amount_decimal'   =>  $total_unit_amount * 100,
-                    'recurring' =>  [
-                        'interval'  =>  StripeControl::$periods[$wish->subscription_period],
-                        'interval_count'    =>  1
-                    ]
-                ]
-            ];
-            // }
-            $payload = [
-                "mode"  =>  'subscription',
-                "currency"  =>  strtolower($request->cookie("currency", "GBP")),
-                'line_items' =>  [$items],
-                'subscription_data' =>  [
-                    // 'application_fee_percent'   =>  $fee_per,
-                    'transfer_data' => [
-                        'destination' => $wish->user->account_id, // Creator's connected account ID
-                        'amount_percent' => $amount_per,
+            $total_unit_amount = $unit_amount + $adminFee;
+            $connectedAccountId = $wish->user->account_id;
+
+            // Step 1: Check if customer already exists in connected account
+            $storeCustomer = ConnectedAccountCustomer::where('user_id', Auth::id())
+                ->where('creator_id', $wish->user->id)
+                ->where('connected_account_id', $connectedAccountId)
+                ->where('product_type', 'bill')
+                ->first();
+
+            // Step 2: Check if price already exists
+            $existingPriceEntry = ConnectedAccountCustomer::where('user_id', Auth::id())
+                ->where('creator_id', $wish->user->id)
+                ->where('connected_account_id', $connectedAccountId)
+                ->where('product_id', $wish->stripe_product_id)
+                ->where('product_type', 'bill')
+                ->whereNotNull('price_id')
+                ->first();
+
+            // Step 3: Create customer in connected account if not exists
+            $customer = null;
+            if (!$storeCustomer) {
+                $customer = StripeControl::createCustomer([
+                    'email' => $user->email,
+                    'name' => $user->name,
+                ], $connectedAccountId);
+            }
+
+            $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
+
+            // Step 4: Create price if not exists
+            if ($existingPriceEntry) {
+                $priceId = $existingPriceEntry->price_id;
+            } else {
+                $price = StripeControl::createPrice([
+                    'unit_amount' => round($amount * 100),
+                    'currency' => $currency,
+                    'recurring' => [
+                        'interval' => StripeControl::$periods[$wish->subscription_period],
+                        'interval_count' => 1,
                     ],
-                    // 'on_behalf_of'  => $wish->user->account_id,
-                    // 'cancel_at_period_end'  =>  $reccure == 'onetime',
-                    // 'description'   => "Subscription for {$wish->wishname} of {$wish->user->username}."
-                    'description'   => "Membership Content Purchase."
+                    'product' => $wish->stripe_product_id,
+                ], $connectedAccountId);
+
+                if (empty($price->id)) {
+                    throw new Exception("Failed to create Stripe price.");
+                }
+
+                $priceId = $price->id;
+            }
+
+            // Step 5: Store customer & price if not already stored
+            if (!$storeCustomer) {
+                ConnectedAccountCustomer::create([
+                    'user_id' => Auth::id(),
+                    'creator_id' => $wish->user->id,
+                    'connected_account_id' => $connectedAccountId,
+                    'stripe_customer_id' => $customer_id,
+                    'product_type' => 'wish item subscription',
+                    'product_id' => $wish->stripe_product_id,
+                    'price_id' => $priceId,
+                ]);
+            }
+
+            // Step 6: Build line item
+            $items = [
+                'price' => $priceId,  // Use the existing price ID
+                'quantity' => 1,
+            ];
+
+
+            // Step 7: Build session payload
+            $payload = [
+                "mode" => "subscription",
+                "currency" => strtolower($request->cookie("currency", "GBP")),
+                "line_items" => [$items],
+                "subscription_data" => [
+                    'description' => "Wish Item Subscription Content Purchase."
                 ],
-                'customer' => $user->stripe_id,
-                'success_url'       =>  route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
-                'cancel_url'       =>  route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
+                "customer" => $customer_id, // Connected account customer ID
+                "success_url" => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
+                "cancel_url" => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
             ];
 
             try {
-                $session = StripeControl::createCheckoutSession($payload);
+                // Step 8: Create session in connected account
+                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
+
+                // Step 9: Update subscription
                 $sub->update([
-                    'session_id' =>  $session->id
+                    'session_id' => $session->id,
                 ]);
 
                 return Inertia::location($session->url);
             } catch (Exception $e) {
                 $sub->delete();
+                Log::error("Stripe Checkout Error: " . $e->getMessage());
                 return back()->with('error', $e->getMessage());
             }
+
             // return response()->json([
             //     'success'   => true,
             //     'session'   => $session
@@ -749,7 +806,7 @@ class StripeController extends Controller
             return to_route('home')->with("error", 'Subscription already processed!');
         }
         try {
-            $session = StripeControl::getCheckoutSession($sub->session_id);
+            $session = StripeControl::getCheckoutSession($sub->session_id, $sub->wish_item->user->account_id);
 
             $sub->status = $session->payment_status;
             if ($session->payment_status == 'paid') {
