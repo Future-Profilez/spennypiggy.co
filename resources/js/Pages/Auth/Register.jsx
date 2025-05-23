@@ -197,11 +197,11 @@ export default function Register(props) {
         }
 
         
-        if (role == 0 && !gifterref.current.checked) {
-            errorAlert("Please accept all terms and conditions.");
-            gifterref.current.focus();
-            return false;
-        }
+        // if (role == 0 && !gifterref.current.checked) {
+        //     errorAlert("Please accept all terms and conditions.");
+        //     gifterref.current.focus();
+        //     return false;
+        // }
         if (role == 0 && !addressCheck.current.checked) {
             errorAlert("Please accept all terms and conditions.");
             addressCheck.current.focus();
@@ -469,7 +469,7 @@ export default function Register(props) {
 
                                     {role == 0 && role !== 1 ? 
                                         <>  
-                                        <p className='border-t mt-3 pt-4 text-grey uppercase text-normal mb-2'>Address Information</p>
+                                        <p className='border-t mt-3 pt-4 text-grey uppercase text-normal mb-2'>Billing address information</p>
                                             <div className='row'>
                                                 <div className='col-md-12 mb-4 formfield'>
                                                     <label>street_address</label>
@@ -549,18 +549,18 @@ export default function Register(props) {
                                         </label>
                                         {role == 0 ?
                                             <>
-                                                <label htmlFor="gifterCheck">
+                                                {/* <label htmlFor="gifterCheck">
                                                     <p className='tersms-accept mt-3' >
                                                         <input type="checkbox" ref={gifterref} id="gifterCheck" name="gifterCheck" value="gifterCheck"
                                                         required ></input>
                                                         The above matches the details on the bank card they will use. If it doesn’t their account will be suspended.
                                                     </p>
-                                                </label>
+                                                </label> */}
                                                 <label htmlFor="addressCheck">
                                                     <p className='tersms-accept mt-3' >
                                                         <input type="checkbox" ref={addressCheck} id="addressCheck" name="addressCheck" value="addressCheck"
                                                         required ></input>
-                                                        I confirm the address supplied is my billing address associated with the bank card I will use for purchases..
+                                                        The above address and name matches on the bank card I will later use for purchases. My account will be suspended if I use any other details.
                                                     </p>
                                                 </label>
                                             </>
