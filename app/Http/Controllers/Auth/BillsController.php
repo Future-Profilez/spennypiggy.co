@@ -11,6 +11,7 @@ use App\Jobs\NotificationSave;
 use App\Jobs\SendRenewMail;
 use App\Models\BillPayment;
 use App\Models\Bills;
+use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
 use App\Models\Logs;
 use App\Models\User;
@@ -103,7 +104,7 @@ class BillsController extends Controller
         ];
 
         try {
-            $product = StripeControl::createProduct($productPayload);
+            $product = StripeControl::createProduct($productPayload, $user->account_id);
             $bill->product_id = $product->id;
             $bill->price_id = $product->default_price;
             $bill->save();
@@ -267,7 +268,6 @@ class BillsController extends Controller
                 $user->save();
             }
 
-
             $bill = Bills::whereUuid($uuid)->with('user')->first();
 
             if (Auth::check() && ($bill->user_id == Auth::id())) {
@@ -283,8 +283,6 @@ class BillsController extends Controller
             $currency   =   strtolower($request->cookie("currency", "GBP"));
             $price = round($bill->price, 2, PHP_ROUND_HALF_UP);
             $tax = round($bill->tax_amount, 2, PHP_ROUND_HALF_UP);
-
-
 
             // $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
             if (!empty($bill->user->vat_amount_percentage)) {
@@ -343,6 +341,76 @@ class BillsController extends Controller
                 $amount = $price + $totalTax;
                 $unit_amount = Helpers::priceFormat($bill->currency, $amount, $currency) * 100;
 
+                $connectedAccountId = $bill->user->account_id;
+
+                // Step 1: Check if customer already exists in the connected account table
+                $storeCustomer = ConnectedAccountCustomer::where('user_id', Auth::id())
+                    ->where('creator_id', $bill->user->id)
+                    ->where('connected_account_id', $connectedAccountId)
+                    ->where('product_type', 'bill')
+                    ->first();
+
+                // Step 2: Check if price already exists for this product & user in the connected account
+                $existingPriceEntry = ConnectedAccountCustomer::where('user_id', Auth::id())
+                    ->where('creator_id', $bill->user->id)
+                    ->where('connected_account_id', $connectedAccountId)
+                    ->where('product_id', $bill->product_id)
+                    ->where('product_type', 'bill')
+                    ->whereNotNull('price_id')
+                    ->first();
+
+                // Step 3: Create customer in the connected account if not exists
+                $customer = null;
+                if (empty($storeCustomer)) {
+                    $customer = StripeControl::createCustomer([
+                        'email' => $user->email,
+                        'name' => $user->name,
+                    ], $connectedAccountId);
+                }
+
+                $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
+
+                // Step 4: Use existing price or create new one
+                if ($existingPriceEntry) {
+                    $priceId = $existingPriceEntry->price_id;
+                } else {
+                    //     $price = StripeControl::createPrice([
+                    //         'unit_amount' => round($amount * 100),
+                    //         'currency' => $currency,
+                    //         'product' => $membership->product_id,
+                    //     ], $connectedAccountId);
+                    // } else {
+                    $price = StripeControl::createPrice([
+                        'unit_amount' => round($amount * 100),
+                        'currency' => $currency,
+                        'recurring' => [
+                            'interval' => StripeControl::$periods[$bill->period],
+                            'interval_count' => 1,
+                        ],
+                        'product' => $bill->product_id,
+                    ], $connectedAccountId);
+                    // }
+
+                    if (empty($price->id)) {
+                        throw new Exception("Failed to create Stripe price.");
+                    }
+
+                    $priceId = $price->id;
+                }
+
+                // Step 5: Store customer and price if not already stored
+                if (empty($storeCustomer)) {
+                    ConnectedAccountCustomer::create([
+                        'user_id' => Auth::id(),
+                        'creator_id' => $bill->user->id,
+                        'connected_account_id' => $connectedAccountId,
+                        'stripe_customer_id' => $customer_id,
+                        'product_type' => 'bill',
+                        'product_id' => $bill->product_id,
+                        'price_id' => $priceId,
+                    ]);
+                }
+
                 $items  =   [
                     'quantity' =>   1
                 ];
@@ -363,7 +431,7 @@ class BillsController extends Controller
                 $payload    =   [
                     "currency"  =>  $currency,
                     'line_items' =>  [$items],
-                    'customer' => $user->stripe_id,
+                    'customer' => $customer_id,
                     'success_url'       =>  route('bill.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
                     'cancel_url'       =>  route('bill.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
                 ];
@@ -371,18 +439,18 @@ class BillsController extends Controller
                 $payload['mode']    =   'subscription';
                 $payload['subscription_data']     =   [
                     // 'application_fee_percent'   =>  $fee_per,
-                    'transfer_data' => [
-                        'destination' => $bill->user->account_id, // Creator's connected account ID
-                        'amount_percent' => $amount_per,
-                    ],
-                    'on_behalf_of'  => $bill->user->account_id,
+                    // 'transfer_data' => [
+                    //     'destination' => $bill->user->account_id, // Creator's connected account ID
+                    //     'amount_percent' => $amount_per,
+                    // ],
+                    // 'on_behalf_of'  => $bill->user->account_id,
                     // 'cancel_at_period_end'  =>  $reccure == 'onetime',
                     // 'description'   => "{$bill->name} of {$bill->user->username}."
-                    'description'   => "Membership Content Purchase."
+                    'description'   => "Bill Content Purchase."
                 ];
 
                 // try {
-                $session = StripeControl::createCheckoutSession($payload);
+                $session = StripeControl::createCheckoutSession($payload, $bill->user->account_id);
                 $sub->update([
                     'session_id' =>  $session->id
                 ]);
@@ -430,7 +498,7 @@ class BillsController extends Controller
         }
 
         try {
-            $session = StripeControl::getCheckoutSession($bill_pay->session_id);
+            $session = StripeControl::getCheckoutSession($bill_pay->session_id, $bill_pay->bill->user->account_id);
             $bill_pay->status = $session->payment_status;
 
             if ($session->payment_status === 'paid') {

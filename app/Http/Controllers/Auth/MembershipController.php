@@ -13,6 +13,7 @@ use App\Jobs\SubscribeAutoTweet;
 use App\Jobs\SubscribedMail;
 use App\Jobs\SubscriptionCancelAtEnd;
 use App\Jobs\SubscriptionFailed;
+use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
 use App\Models\Logs;
 use App\Models\Membership;
@@ -40,12 +41,13 @@ use Stripe\Webhook;
 
 class MembershipController extends Controller
 {
-
+    public function __construct()
+    {
+        $stripe = Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+    }
 
     public function membershipLevelSave(Request $request)
     {
-
-
         $validator = Validator::make($request->all(), [
             "level" => [
                 "required",
@@ -103,7 +105,7 @@ class MembershipController extends Controller
         $mem->save();
 
         $productPayload = [
-            "name"  => $user->username . '_' . $mem->level,
+            "name"  =>  'Membership_' . $mem->level . '_' . $user->username,
             "images" => [$mem->perma_link],
             "default_price_data"    =>  [
                 "currency"  =>  $user->default_currency,
@@ -122,6 +124,7 @@ class MembershipController extends Controller
         try {
             $connectedAccountId = $user->account_id;
             $product = StripeControl::createProduct($productPayload, $connectedAccountId);
+
             $mem->product_id = $product->id;
             $mem->price_id = $product->default_price;
             $mem->save();
@@ -279,9 +282,6 @@ class MembershipController extends Controller
      */
     public function buyLevel(Request $request, $uuid, $reccure = 'continue')
     {
-
-
-        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
         $user = Auth::user(); // or $requestingUser if handling guests
 
         // $user socila membershipDashboard
@@ -300,16 +300,15 @@ class MembershipController extends Controller
         if (!$socialData) {
             $isSocilAdded = false;
         }
+        // if (empty($user->stripe_id)) {
+        //     $stripeCustomer = \Stripe\Customer::create([
+        //         'email' => $user->email,
+        //         'name' => $user->name ?? null,
+        //     ]);
 
-        if (empty($user->stripe_id)) {
-            $stripeCustomer = \Stripe\Customer::create([
-                'email' => $user->email,
-                'name' => $user->name ?? null,
-            ]);
-
-            $user->stripe_id = $stripeCustomer->id;
-            $user->save();
-        }
+        //     $user->stripe_id = $stripeCustomer->id;
+        //     $user->save();
+        // }
 
         $membership = Membership::whereUuid($uuid)->with('user')->first();
 
@@ -403,57 +402,132 @@ class MembershipController extends Controller
                 'product'   =>  $membership->product_id,
                 'unit_amount_decimal'   =>  $unit_amount,
             ];
+
             if ($membership->level != 'lifetime') {
                 $items['price_data']['recurring']   =   [
                     'interval'  =>  StripeControl::$periods['monthly'],
                     'interval_count'    =>  1
                 ];
             }
-            // }
-
-            $payload    =   [
-                "currency"  =>  $currency,
-                'line_items' =>  [$items],
-                'customer' => $user->stripe_id,
-                'success_url'       =>  route('membership.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
-                'cancel_url'       =>  route('membership.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
-            ];
-
-            if ($membership->level == 'lifetime') {
-                $payload['mode']    =   'payment';
-                $payload['payment_intent_data']     =   [
-                    'transfer_data' => [
-                        'destination' => $membership->user->account_id, // Creator's connected account ID
-                        'amount' => $paymentPrice * 100,
-                    ],
-                    // 'application_fee_amount' => $tax * 100,
-                    'on_behalf_of'  => $membership->user->account_id,
-                    'description'   => "Membership for {$membership->level} of {$membership->user->username}."
-                ];
-            } else {
-                $payload['mode']    =   'subscription';
-                $payload['subscription_data']     =   [
-                    // 'application_fee_percent'   =>  $fee_per,
-                    'transfer_data' => [
-                        'destination' => $membership->user->account_id, // Creator's connected account ID
-                        'amount_percent' => $amount_per,
-                    ],
-                    // 'on_behalf_of'  => $membership->user->account_id,
-                    // 'cancel_at_period_end'  =>  $reccure == 'onetime',
-                    'description'   => "Membership for {$membership->level} of {$membership->user->username}."
-                ];
-            }
 
             try {
-                $connectedAccountId = $user->account_id;
+                $connectedAccountId = $membership->user->account_id;
+
+                // Step 1: Check if customer already exists in the connected account table
+                $storeCustomer = ConnectedAccountCustomer::where('user_id', Auth::id())
+                    ->where('creator_id', $membership->user->id)
+                    ->where('connected_account_id', $connectedAccountId)
+                    ->first();
+
+                // Step 2: Check if price already exists for this product & user in the connected account
+                $existingPriceEntry = ConnectedAccountCustomer::where('user_id', Auth::id())
+                    ->where('creator_id', $membership->user->id)
+                    ->where('connected_account_id', $connectedAccountId)
+                    ->where('product_id', $membership->product_id)
+                    ->whereNotNull('price_id')
+                    ->first();
+
+                // Step 3: Create customer in the connected account if not exists
+                $customer = null;
+                if (empty($storeCustomer)) {
+                    $customer = StripeControl::createCustomer([
+                        'email' => $user->email,
+                        'name' => $user->name,
+                    ], $connectedAccountId);
+                }
+
+                $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
+
+                // Step 4: Use existing price or create new one
+                if ($existingPriceEntry) {
+                    $priceId = $existingPriceEntry->price_id;
+                } else {
+                    if ($membership->level === 'lifetime') {
+                        $price = StripeControl::createPrice([
+                            'unit_amount' => round($amount * 100),
+                            'currency' => $currency,
+                            'product' => $membership->product_id,
+                        ], $connectedAccountId);
+                    } else {
+                        $price = StripeControl::createPrice([
+                            'unit_amount' => round($amount * 100),
+                            'currency' => $currency,
+                            'recurring' => [
+                                'interval' => 'month',
+                                'interval_count' => 1,
+                            ],
+                            'product' => $membership->product_id,
+                        ], $connectedAccountId);
+                    }
+
+                    if (empty($price->id)) {
+                        throw new Exception("Failed to create Stripe price.");
+                    }
+
+                    $priceId = $price->id;
+                }
+
+                // Step 5: Store customer and price if not already stored
+                if (empty($storeCustomer)) {
+                    ConnectedAccountCustomer::create([
+                        'user_id' => Auth::id(),
+                        'creator_id' => $membership->user->id,
+                        'connected_account_id' => $connectedAccountId,
+                        'stripe_customer_id' => $customer_id,
+                        'product_type' => 'membership',
+                        'product_id' => $membership->product_id,
+                        'price_id' => $priceId,
+                    ]);
+                }
+
+                // Step 6: Build line item
+                $items = [
+                    'price' => $priceId,
+                    'quantity' => 1
+                ];
+
+                // Step 7: Setup Checkout Session payload
+                $payload = [
+                    'currency' => $currency,
+                    'line_items' => [$items],
+                    'customer' => $customer_id,
+                    'success_url' => route('membership.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
+                    'cancel_url' => route('membership.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
+                    'metadata' => [
+                        'user_id' => Auth::id(),
+                        'creator_id' => $membership->user->id,
+                        'membership_id' => $membership->id,
+                    ],
+                ];
+
+                if ($membership->level === 'lifetime') {
+                    $payload['mode'] = 'payment';
+                    $payload['payment_intent_data'] = [
+                        'on_behalf_of' => $membership->user->account_id,
+                        'description' => "Membership [{$membership->level}] for {$membership->user->username}",
+                    ];
+                } else {
+                    $payload['mode'] = 'subscription';
+                    $payload['subscription_data'] = [
+                        'description' => "Membership [{$membership->level}] for {$membership->user->username}",
+                    ];
+                }
+
+                // Step 8: Create Checkout Session in the connected account
                 $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
+
+                // Step 9: Save subscription session ID, product & price
                 $sub->update([
-                    'session_id' =>  $session->id
+                    'session_id' => $session->id,
+                    'product_id' => $membership->product_id,
+                    'price_id' => $priceId,
+                    'customer_id' => $customer_id,
                 ]);
 
                 return Inertia::location($session->url);
             } catch (Exception $e) {
                 $sub->delete();
+                Log::error("Stripe Error: " . $e->getMessage());
                 return back()->with('error', $e->getMessage());
             }
         }
@@ -477,7 +551,7 @@ class MembershipController extends Controller
      */
     public function handlePayment($uuid, $status)
     {
-        $mem = MembershipPayment::whereUuid($uuid)->first();
+        $mem = MembershipPayment::with('membership')->whereUuid($uuid)->first();
         if (!$mem) {
             return to_route('home')->with("error", 'Insufficient data!');
         }
@@ -485,7 +559,7 @@ class MembershipController extends Controller
             return to_route('home')->with("error", 'Subscription already processed!');
         }
         try {
-            $session = StripeControl::getCheckoutSession($mem->session_id);
+            $session = StripeControl::getCheckoutSession($mem->session_id, $mem->membership->user->account_id);
             $mem->status = $session->payment_status;
             if ($session->payment_status == 'paid') {
                 $mem->stripe_id = $session->subscription;
@@ -554,6 +628,7 @@ class MembershipController extends Controller
             $mem->save();
             return to_route('user.show', ['username' => $mem->membership->user->username])->with('warning', "Membership is in {$session->payment_status} status.");
         } catch (Exception $e) {
+            Log::error("Stripe Error: " . $e->getMessage());
             return to_route('user.show', ['username' => $mem->membership->user->username])->with('error', $e->getMessage());
         }
         // return response()->json([
