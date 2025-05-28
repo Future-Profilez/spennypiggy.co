@@ -28,15 +28,7 @@ export default function VerifyEmail({auth}) {
         return () => clearInterval(timer);
     }, []);
 
-      
-    useEffect(() => {
-        if (auth?.user?.email && twq) {
-            twq('event', 'tw-ozu4h-pt5uc', {
-                conversion_id: auth?.user?.uuid, 
-                email_address: auth?.user?.email 
-            });
-        }
-    },[]);
+  
 
 
     return <div className="blackbg pageheight p-4">
