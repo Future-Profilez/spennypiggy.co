@@ -100,7 +100,7 @@ Route::middleware('auth')->group(function () {
     Route::get('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
         ->name('verification.email');
 
-    Route::middleware(['mustCompletedStripeIdentity'])->group(function () {
+    Route::middleware(['mustCompletedStripeIdentity', 'ProfileStatusLock'])->group(function () {
         Route::middleware('mustHaveToVerify')->group(function () {
 
             // gifter card verification routes
@@ -320,7 +320,7 @@ Route::middleware('auth')->group(function () {
         Route::get('delete-creator-products/{uuid}', [WishitemController::class, 'deleteAndRestoredRyeProduct'])->name('delete.creator.products');
         Route::post('create-cart', [WishitemController::class, 'createCart'])->name('create.cart');
         Route::get('check-cart-exist/{creator_id}', [WishitemController::class, 'checkCartExist'])->name('check.cart.exist');
-        Route::post('handle-rye-product-payment', [WishitemController::class, 'handleRyeProductPayment'])->name('handle.rye.product.payment')->middleware('mustCompletedCardVerification');
+        Route::post('handle-rye-product-payment', [WishitemController::class, 'handleRyeProductPayment'])->name('handle.rye.product.payment')->middleware(['mustCompletedCardVerification', 'ProfileStatusLock']);
         Route::get('remove-cart/{cart_id}', [WishitemController::class, 'removeCart'])->name('remove.cart');
         Route::get('get-cart-details', [WishitemController::class, 'getCartDetails'])->name('get.cart.details');
         Route::get('rye-success-payment/{uuid}/{orderUuid}', [WishitemController::class, 'ryeSuccessPayment'])->name('rye.success.payment');
@@ -330,7 +330,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/clear-cart/{device_id}/{ownerid}', [WishitemController::class, 'clearCart'])->name('clear-cart');
 
-        Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart')->middleware('mustCompletedCardVerification');
+        Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart')->middleware('mustCompletedCardVerification', 'ProfileStatusLock');
 
         Route::get('anonymous-cart/{deviceId}', [WishitemController::class, 'anonymousCartItems'])->name('anonymous-cart');
 
@@ -348,10 +348,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/send-surprize', [WishitemController::class, 'sendSurprise'])->name('send-surprize');
 
         Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
-            Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay")->middleware('mustCompletedCardVerification');
+            Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay")->middleware(['mustCompletedCardVerification', 'ProfileStatusLock']);
             Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
         });
-
     });
 });
 
