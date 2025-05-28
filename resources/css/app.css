@@ -274,34 +274,20 @@ body{position:relative;font-family:var(--para-font);}
 .likebtn{transition:all 0.5s;}
 .likebtn.liked{animation:like 0.5s 1;}
 
-.customScrollbar::-webkit-scrollbar {
-width: 5px; border-radius: 10px;
-}
-
-.customScrollbar::-webkit-scrollbar-track {
-  border-radius: 10px; background: transparent;
-}
-
-.customScrollbar::-webkit-scrollbar-thumb {
-  background: var(--pink); border-radius: 10px;
-}
-.overflow-y-auto::-webkit-scrollbar {
-  width: 5px; border-radius: 10px;
-}
-.overflow-y-auto::-webkit-scrollbar-track {
-  border-radius: 10px;background: #d7d7d7;
-}
-.overflow-y-auto::-webkit-scrollbar-thumb {
-  background: #5f5f5f; border-radius: 10px;
-}
-
+.customScrollbar::-webkit-scrollbar{width:5px;border-radius:10px;}
+.customScrollbar::-webkit-scrollbar-track{border-radius:10px;background:transparent;}
+.customScrollbar::-webkit-scrollbar-thumb{background:var(--pink);border-radius:10px;}
+.overflow-y-auto::-webkit-scrollbar{width:5px;border-radius:10px;}
+.overflow-y-auto::-webkit-scrollbar-track{border-radius:10px;background:#d7d7d7;}
+.overflow-y-auto::-webkit-scrollbar-thumb{background:#5f5f5f;border-radius:10px;}
 
 /* Magic bell css */
-a.css-1j56y57{background:#f94f96;width:40px !important;height:40px !important;padding:4px;display:flex;align-items:center !important;justify-content:center;border-radius:50%;}
+a.css-1j56y57{background:#f94f96;width:40px !important;height:40px !important;padding:4px;
+  display:flex;align-items:center !important;justify-content:center;border-radius:50%;}
 a.css-1j56y57 svg{width:24px !important;height:29px !important;}
 a.css-1j56y57 svg stroke{font-size:#fff !important;}
 a.css-1j56y57 svg path{fill:#fff !important;}
-.css-1uazkid{position:absolute !important;top:70px !important;max-width:500px !important;left:auto !important;right:0 !important;min-width:350px !important;}
+.css-1uazkid{position:absolute !important;top:50px !important;max-width:500px !important;left:auto !important;right:0 !important;min-width:350px !important;}
 @media(max-width:767px){
   a.css-1j56y57{width:30px !important;height:30px !important;}
   .css-1uazkid{top:50px !important;left:auto !important;right:-160px !important;}

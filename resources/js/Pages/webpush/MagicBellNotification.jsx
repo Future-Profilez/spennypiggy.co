@@ -71,11 +71,6 @@ const MagicBellNotification = () => {
   return (
     <div className='sm:relative'>
        <MagicBell 
-       classNames={{
-  bellButton: 'bg-pink-500 hover:bg-pink-400 rounded-full shadow-lg',
-  container: 'rounded-xl bg-pink-100 border border-pink-300',
-  notification: 'hover:bg-pink-200 text-purple-900 font-bold',
-}}
         theme={customTheme} className='magicbell' onNewNotification={notificationRecieve} closeOnClickOutside={true}
         apiKey={'515ceed31a4ba4c745b165a12e3a523dc9e93db4'}
         userEmail={auth?.user?.email} >
