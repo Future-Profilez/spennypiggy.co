@@ -118,7 +118,7 @@ class WishitemController extends Controller
             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         } else {
-
+            dd('come');
             $user = User::find(Auth::id());
             $taxamount = $request->price * config('app.single_tax') / 100;
             $adminFee = config('app.administration_fee');
@@ -725,6 +725,13 @@ class WishitemController extends Controller
             }
         })->first();
         if ($cart) {
+            Log::info("Cart Item Found", [
+                'cart_id' => $cart->id,
+                'wish_item_id' => $wishitem->id,
+                'user_id' => Auth::id(),
+                'device_id' => $device_id,
+                'subscription' => $wishitem->subscription,
+            ]);
 
             if ($cart->status == 1) {
                 $cart->quantity = $cart->quantity + 1;
@@ -748,6 +755,10 @@ class WishitemController extends Controller
                     'stripe_account' => $cart->owner->account_id
                 ]);
                 $priceid = $stripe_client->id;
+            } elseif ($wishitem->subscription == 0) {
+                $priceid = $wishitem->stripe_product_id;
+                $fullfillamount = $wishitem->price;
+                $tax = $wishitem->tax_amount;
             } else {
                 $fullfillamount = $wishitem->price;
                 $tax = $wishitem->tax_amount;
@@ -779,6 +790,10 @@ class WishitemController extends Controller
                     'stripe_account' => $wishitem->user->account_id
                 ]);
                 $priceid = $stripe_client->id;
+            } elseif ($wishitem->subscription == 0) {
+                $priceid = $wishitem->stripe_product_id;
+                $fullfillamount = $wishitem->price;
+                $tax = $wishitem->tax_amount;
             } else {
                 $fullfillamount = $wishitem->price;
                 $tax = $wishitem->tax_amount;

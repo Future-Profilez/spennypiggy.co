@@ -10,6 +10,7 @@ use App\Jobs\CheckoutUser;
 use App\Jobs\CrowdfundTweet;
 use App\Jobs\SurpriseTweet;
 use App\Mail\CommandFailed;
+use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
@@ -28,35 +29,11 @@ use Stripe\Stripe;
 
 class CheckoutController extends Controller
 {
-
     /* create checkout */
     public function createCheckout($id)
     {
-        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
         $user = Auth::user(); // or $requestingUser if handling guests
-
-        if (empty($user->stripe_id)) {
-            $stripeCustomer = \Stripe\Customer::create([
-                'email' => $user->email,
-                'name' => $user->name ?? null,
-            ]);
-
-            $user->stripe_id = $stripeCustomer->id;
-            $user->save();
-        }
-
-        // Email notification on success
-        // $now = Carbon::now()->format('h:i A d-m-Y');
-        // $emailSubject = "Wish Payment Initiation Start - $now";
-        // $message = "Wish Payment Process Initiation Start. $id";
-        // Mail::to('prem@futureprofilez.com', 'Prem Prakash')
-        //     // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
-        //     //     ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
-        //     ->send(new CommandFailed($emailSubject, $message));
-
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
-        $getdata = collect(); // Or $getdata = []; if you're using plain arrays
-
         try {
             if (!empty(request()->query('message'))) {
                 $wordLimit = 100;
@@ -70,26 +47,22 @@ class CheckoutController extends Controller
             if (Auth::check()) {
                 $getdata = UserCart::where('user_id', Auth::id())
                     ->where('owner_id', $id)
-                    ->where('country', 'global')
                     ->where('status', 1)
                     ->with(['wish'])
-                    ->orderBy('id', 'desc')
                     ->get();
             } else {
                 $getdata = UserCart::where('device_id', $id)
-                    ->where('country', 'global')
                     ->where('status', 1)
                     ->with(['wish'])
-                    ->orderBy('id', 'desc')
                     ->get();
             }
 
             $lineItems = [];
             $subtotal = 0;
             $taxNew = 0;
-            $adminFee = 0;
             $transfer_amount = 0;
             foreach ($getdata as $dd) {
+
                 $adminFee = config('app.administration_fee');
                 $showAdminsFees = Helpers::priceFormat('GBP', $adminFee, $currency);
                 $StoreAdminsFees = Helpers::priceFormat('GBP', $adminFee, $dd->owner->default_currency);
@@ -100,19 +73,73 @@ class CheckoutController extends Controller
                 $ConvertedTax = Helpers::priceFormat($dd->owner->default_currency, $totalTax, $currency);
                 $TotalConvertedFinalAmount = $ConvertedTax + $ConvertedAmount + $showAdminsFees;
                 $new_total_amount = round($TotalConvertedFinalAmount, 2, PHP_ROUND_HALF_UP);
-                Log::info('priceid: and stripeProductId: ');
-                Log::info($dd);
-                Log::info($dd->priceid);
-                Log::info($dd->wish->stripe_product_id);
+
+                $connectedAccountId = $getdata[0]->owner->account_id;
+
+                // Step 1: Check if customer already exists in connected account
+                $storeCustomer = ConnectedAccountCustomer::where('user_id', Auth::id())
+                    ->where('creator_id', $dd->owner->id)
+                    ->where('connected_account_id', $connectedAccountId)
+                    ->where('product_type', 'wish item')
+                    ->first();
+
+                // Step 2: Check if price already exists
+                $existingPriceEntry = ConnectedAccountCustomer::where('user_id', Auth::id())
+                    ->where('creator_id', $dd->owner->id)
+                    ->where('connected_account_id', $connectedAccountId)
+                    ->where('product_id', $dd->wish->stripe_product_id)
+                    ->where('product_type', 'wish item')
+                    ->whereNotNull('price_id')
+                    ->first();
+
+                // Step 3: Create customer in connected account if not exists
+                $customer = null;
+                if (!$storeCustomer) {
+                    $customer = StripeControl::createCustomer([
+                        'email' => $user->email,
+                        'name' => $user->name,
+                    ], $connectedAccountId);
+                }
+                Log::info('customer: ' . json_encode($customer));
+
+                $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
+
+                if ($existingPriceEntry) {
+                    $priceId = $existingPriceEntry->price_id;
+                } else {
+                    $price = StripeControl::createPrice([
+                        'unit_amount' => round($new_total_amount * 100),
+                        'currency' => $currency,
+                        'product' => $dd->priceid,
+                    ], $connectedAccountId);
+
+                    $priceId = $price->id;
+                }
+
+                // Step 5: Store customer & price if not already stored
+                if (!$storeCustomer) {
+                    ConnectedAccountCustomer::create([
+                        'user_id' => Auth::id(),
+                        'creator_id' => $dd->owner->id,
+                        'connected_account_id' => $connectedAccountId,
+                        'stripe_customer_id' => $customer_id,
+                        'product_type' => 'wish item',
+                        'product_id' => $dd->wish->stripe_product_id,
+                        'price_id' => $priceId,
+                    ]);
+                }
+
                 $lineItems[] = [
                     // 'price' => $dd->stripe_product_id ?? '',
                     'quantity' => $dd->quantity,
                     'price_data' => [
                         'currency' => $currency,
                         'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
-                        'unit_amount_decimal' => $new_total_amount * 100,
+                        'unit_amount_decimal' => Helpers::priceFormat($dd->owner->default_currency, $new_total_amount, $currency) * 100
                     ]
                 ];
+                // $subtotal += $dd->amount * $dd->quantity;
+                // $taxNew += $dd->tax * $dd->quantity;
 
                 $subtotal += $dd->amount * $dd->quantity;
                 $taxNew += $dd->tax * $dd->quantity;
@@ -122,35 +149,36 @@ class CheckoutController extends Controller
                 $transfer_amount += $ConvertedAmount * $dd->quantity;
             }
 
-            $transfering_amount = $transfer_amount;
+            // $transfering_amount = $subtotal - $taxNew;
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
-
-            $sessionCreate = $stripe->checkout->sessions->create([
+            $payload = [
                 'success_url' => route('checkout.success', [$id]),
                 'cancel_url' => route('checkout.cancel', [$id]),
+                "mode"  =>  "payment",
                 'line_items' => $lineItems,
-                'mode' => 'payment',
                 'payment_intent_data' => [
-                    'transfer_data' => [
-                        'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
-                        'amount' => $transfering_amount * 100,
-                    ],
+                    // 'transfer_data' => [
+                    // 'destination' => $connectedAccountId, // Creator's connected account ID
+                    // 'amount' => Helpers::priceFormat($dd->owner->default_currency, $subtotal, $currency) * 100,
+                    // ],
                     // 'application_fee_amount' => $taxNew,
                     'description' => "Custom Content Purchase."
                 ],
                 'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
-                // 'currency' => 'usd',
-            ]);
+            ];
+
+            $connectedAccount = $connectedAccountId;
+
+            $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccount);
 
             session()->forget('session_id');
             session(['session_id' => $sessionCreate->id]);
-            $amountSubtotal = $subtotal + $taxNew;
             $stripePaymentDetail = StripePaymentDetail::create([
                 'session_id' => $sessionCreate->id,
                 'amount_subtotal' => $subtotal,
-                'amount_total' => $amountSubtotal,
+                'amount_total' => $sessionCreate->amount_total / 100,
                 'tax' => $taxNew,
                 'currency' => $getdata[0]->owner->default_currency,
                 'payment_method_config_detail_id' => optional($sessionCreate->payment_method_configuration_details)->id,
@@ -158,7 +186,6 @@ class CheckoutController extends Controller
                 'user_id' => Auth::id() ?? null,
                 'owner_id' => $getdata[0]->owner->id,
                 'name' => request()->query('from') ?? '',
-                'guest_email' => request()->query('email') ?? '',
                 'message' => $message ?? '',
                 'anonymous' => request()->query('anonymous') ?? 0,
                 'session_created' => $sessionCreate->created,
@@ -171,26 +198,301 @@ class CheckoutController extends Controller
 
             return Inertia::location($sessionCreate->url);
         } catch (\Throwable $th) {
-            if (!empty($getdata) && isset($getdata[0]->owner->username)) {
-                return redirect(route('user.show', [$getdata[0]->owner->username]))
-                    ->with('error', $th->getMessage());
-            } else {
-                return redirect()->back()->with('error', $th->getMessage());
-            }
-
-            // return redirect(route('user.show', [$getdata[0]->owner->username]))->with('error', $th->getMessage());
-            // $now = Carbon::now()->format('h:i A d-m-Y');
-            // $emailSubject = "Payment Process Failed - $now";
-            // $message = "An error occurred while processing the payment: " . $th->getMessage();
-            // Mail::to('prem@futureprofilez.com', 'Prem Prakash')
-            //     // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
-            //     ->cc('naveen@internetbusinesssolutionsindia.com')
-            //     // ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
-            //     ->send(new CommandFailed($emailSubject, $message));
             // Log::error("Error in createCheckout: " . $th->getMessage());
-            // throw $th;
+            throw $th;
         }
     }
+
+    //   public function createCheckout($id)
+    // {
+    //     Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+    //     $user = Auth::user(); // or $requestingUser if handling guests
+
+    //     if (empty($user->stripe_id)) {
+    //         $stripeCustomer = \Stripe\Customer::create([
+    //             'email' => $user->email,
+    //             'name' => $user->name ?? null,
+    //         ]);
+
+    //         $user->stripe_id = $stripeCustomer->id;
+    //         $user->save();
+    //     }
+
+    //     // Email notification on success
+    //     // $now = Carbon::now()->format('h:i A d-m-Y');
+    //     // $emailSubject = "Wish Payment Initiation Start - $now";
+    //     // $message = "Wish Payment Process Initiation Start. $id";
+    //     // Mail::to('prem@futureprofilez.com', 'Prem Prakash')
+    //     //     // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
+    //     //     //     ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
+    //     //     ->send(new CommandFailed($emailSubject, $message));
+
+    //     $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+    //     $getdata = collect(); // Or $getdata = []; if you're using plain arrays
+
+    //     try {
+    //         if (!empty(request()->query('message'))) {
+    //             $wordLimit = 100;
+    //             $message = request()->query('message');
+
+    //             if (str_word_count($message) > $wordLimit) {
+    //                 return redirect()->back()->with("error", "Max limit for message is 100 words");
+    //             }
+    //         }
+
+    //         if (Auth::check()) {
+    //             $getdata = UserCart::where('user_id', Auth::id())
+    //                 ->where('owner_id', $id)
+    //                 ->where('country', 'global')
+    //                 ->where('status', 1)
+    //                 ->with(['wish'])
+    //                 ->orderBy('id', 'desc')
+    //                 ->get();
+    //         } else {
+    //             $getdata = UserCart::where('device_id', $id)
+    //                 ->where('country', 'global')
+    //                 ->where('status', 1)
+    //                 ->with(['wish'])
+    //                 ->orderBy('id', 'desc')
+    //                 ->get();
+    //         }
+
+    //         $lineItems = [];
+    //         $subtotal = 0;
+    //         $taxNew = 0;
+    //         $adminFee = 0;
+    //         $transfer_amount = 0;
+    //         foreach ($getdata as $dd) {
+    //             $adminFee = config('app.administration_fee');
+    //             $showAdminsFees = Helpers::priceFormat('GBP', $adminFee, $currency);
+    //             $StoreAdminsFees = Helpers::priceFormat('GBP', $adminFee, $dd->owner->default_currency);
+    //             $totalAmount = $dd->amount;
+    //             $totalTax =  $dd->tax;
+
+    //             $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, $currency);
+    //             $ConvertedTax = Helpers::priceFormat($dd->owner->default_currency, $totalTax, $currency);
+    //             $TotalConvertedFinalAmount = $ConvertedTax + $ConvertedAmount + $showAdminsFees;
+    //             $new_total_amount = round($TotalConvertedFinalAmount, 2, PHP_ROUND_HALF_UP);
+
+    //             $connectedAccountId = $dd->owner->account_id;
+
+    //             // Step 1: Check if customer already exists in connected account
+    //             $storeCustomer = ConnectedAccountCustomer::where('user_id', Auth::id())
+    //                 ->where('creator_id', $dd->owner->id)
+    //                 ->where('connected_account_id', $connectedAccountId)
+    //                 ->where('product_type', 'wish item')
+    //                 ->first();
+
+    //             // Step 2: Check if price already exists
+    //             $existingPriceEntry = ConnectedAccountCustomer::where('user_id', Auth::id())
+    //                 ->where('creator_id', $dd->owner->id)
+    //                 ->where('connected_account_id', $connectedAccountId)
+    //                 ->where('product_id', $dd->wish->stripe_product_id)
+    //                 ->where('product_type', 'wish item')
+    //                 ->whereNotNull('price_id')
+    //                 ->first();
+
+    //             // Step 3: Create customer in connected account if not exists
+    //             $customer = null;
+    //             if (!$storeCustomer) {
+    //                 $customer = StripeControl::createCustomer([
+    //                     'email' => $user->email,
+    //                     'name' => $user->name,
+    //                 ], $connectedAccountId);
+    //             }
+    //             Log::info('customer: ' . json_encode($customer));
+
+    //             $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
+
+    //             // $subscriptionPeriod = $dd->priceid ?? $dd->wish->subscription_period;
+    //             // Log::info('subscriptionPeriod: ' . $dd->wish->subscription_period);
+    //             // Log::info('dd->priceid: ' . $dd->priceid);
+    //             // if (empty($subscriptionPeriod) || !isset(StripeControl::$periods[$subscriptionPeriod])) {
+    //             //     throw new Exception("Invalid or missing subscription period for wish item.");
+    //             // }
+
+    //             $subscriptionPeriod = $dd->wish->subscription_period ?? 0;
+
+    //             Log::info('subscriptionPeriod: ' . $subscriptionPeriod);
+
+    //             if ((int)$subscriptionPeriod === 1) {
+    //                 // It's a subscription
+    //                 if (!isset(StripeControl::$periods[$subscriptionPeriod])) {
+    //                     throw new Exception("Invalid subscription period for wish item.");
+    //                 }
+
+    //                 if ($existingPriceEntry) {
+    //                     $priceId = $existingPriceEntry->price_id;
+    //                 } else {
+    //                     $price = StripeControl::createPrice([
+    //                         'unit_amount' => round($new_total_amount * 100),
+    //                         'currency' => $currency,
+    //                         'recurring' => [
+    //                             'interval' => StripeControl::$periods[$subscriptionPeriod],
+    //                             'interval_count' => 1,
+    //                         ],
+    //                         'product' => $dd->priceid,
+    //                     ], $connectedAccountId);
+
+    //                     if (empty($price->id)) {
+    //                         throw new Exception("Failed to create Stripe subscription price.");
+    //                     }
+
+    //                     $priceId = $price->id;
+    //                 }
+    //             } else {
+    //                 // It's a one-time payment
+    //                 if ($existingPriceEntry) {
+    //                     $priceId = $existingPriceEntry->price_id;
+    //                 } else {
+    //                     $price = StripeControl::createPrice([
+    //                         'unit_amount' => round($new_total_amount * 100),
+    //                         'currency' => $currency,
+    //                         'product' => $dd->priceid,
+    //                     ], $connectedAccountId);
+
+    //                     if (empty($price->id)) {
+    //                         throw new Exception("Failed to create Stripe one-time price.");
+    //                     }
+
+    //                     $priceId = $price->id;
+    //                 }
+    //             }
+
+
+    //             // Step 4: Create price if not exists
+    //             // if ($existingPriceEntry) {
+    //             //     $priceId = $existingPriceEntry->price_id;
+    //             // } else {
+    //             //     $price = StripeControl::createPrice([
+    //             //         'unit_amount' => round($new_total_amount * 100),
+    //             //         'currency' => $currency,
+    //             //         'recurring' => [
+    //             //             'interval' => StripeControl::$periods[$dd->wish->subscription_period],
+    //             //             'interval_count' => 1,
+    //             //         ],
+    //             //         'product' => $dd->wish->stripe_product_id,
+    //             //     ], $connectedAccountId);
+
+    //             //     if (empty($price->id)) {
+    //             //         throw new Exception("Failed to create Stripe price.");
+    //             //     }
+
+    //             //     $priceId = $price->id;
+    //             // }
+
+    //             Log::info('storeCustomer: ' . json_encode($storeCustomer));
+    //             // Step 5: Store customer & price if not already stored
+    //             if (!$storeCustomer) {
+    //                 ConnectedAccountCustomer::create([
+    //                     'user_id' => Auth::id(),
+    //                     'creator_id' => $dd->owner->id,
+    //                     'connected_account_id' => $connectedAccountId,
+    //                     'stripe_customer_id' => $customer_id,
+    //                     'product_type' => 'wish item',
+    //                     'product_id' => $dd->wish->stripe_product_id,
+    //                     'price_id' => $priceId,
+    //                 ]);
+    //             }
+
+    //             $lineItems[] = [
+    //                 'price' => $priceId,
+    //                 'quantity' => $dd->quantity,
+    //             ];
+
+    //             // $lineItems[] = [
+    //             //     // 'price' => $dd->stripe_product_id ?? '',
+    //             //     'quantity' => $dd->quantity,
+    //             //     'price_data' => [
+    //             //         'currency' => $currency,
+    //             //         'product' => $dd->wish->stripe_product_id ?? $dd->priceid,
+    //             //         // 'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
+    //             //         'unit_amount_decimal' => $new_total_amount * 100,
+    //             //     ]
+    //             // ];
+
+    //             Log::info('priceid: and stripeProductId: ');
+    //             // Log::info($dd);
+    //             // Log::info($dd->priceid);
+    //             Log::info($dd->wish->stripe_product_id);
+
+    //             $subtotal += $dd->amount * $dd->quantity;
+    //             $taxNew += $dd->tax * $dd->quantity;
+    //             $taxNew += $StoreAdminsFees;
+
+    //             // this amount will be transfer to the creators account
+    //             $transfer_amount += $ConvertedAmount * $dd->quantity;
+    //         }
+
+    //         $transfering_amount = $transfer_amount;
+
+    //         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+
+
+    //         $sessionCreate = $stripe->checkout->sessions->create([
+    //             'success_url' => route('checkout.success', [$id]),
+    //             'cancel_url' => route('checkout.cancel', [$id]),
+    //             'line_items' => $lineItems,
+    //             'mode' => 'payment',
+    //             'payment_intent_data' => [
+    //                 // 'transfer_data' => [
+    //                 //     'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
+    //                 //     'amount' => $transfering_amount * 100,
+    //                 // ],
+    //                 // 'application_fee_amount' => $taxNew,
+    //                 'description' => "Custom Content Purchase."
+    //             ],
+    //             'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
+    //             // 'currency' => 'usd',
+    //         ]);
+
+    //         session()->forget('session_id');
+    //         session(['session_id' => $sessionCreate->id]);
+    //         $amountSubtotal = $subtotal + $taxNew;
+    //         $stripePaymentDetail = StripePaymentDetail::create([
+    //             'session_id' => $sessionCreate->id,
+    //             'amount_subtotal' => $subtotal,
+    //             'amount_total' => $amountSubtotal,
+    //             'tax' => $taxNew,
+    //             'currency' => $getdata[0]->owner->default_currency,
+    //             'payment_method_config_detail_id' => optional($sessionCreate->payment_method_configuration_details)->id,
+    //             'payment_method_type' => optional($sessionCreate->payment_method_types)[0],
+    //             'user_id' => Auth::id() ?? null,
+    //             'owner_id' => $getdata[0]->owner->id,
+    //             'name' => request()->query('from') ?? '',
+    //             'guest_email' => request()->query('email') ?? '',
+    //             'message' => $message ?? '',
+    //             'anonymous' => request()->query('anonymous') ?? 0,
+    //             'session_created' => $sessionCreate->created,
+    //             'session_expires_at' => $sessionCreate->expires_at,
+    //             'created_at' => now(),
+    //             'updated_at' => now(),
+    //         ]);
+
+    //         $stripePaymentDetail->refresh();
+
+    //         return Inertia::location($sessionCreate->url);
+    //     } catch (\Throwable $th) {
+    //         if (!empty($getdata) && isset($getdata[0]->owner->username)) {
+    //             return redirect(route('user.show', [$getdata[0]->owner->username]))
+    //                 ->with('error', $th->getMessage());
+    //         } else {
+    //             return redirect()->back()->with('error', $th->getMessage());
+    //         }
+
+    //         // return redirect(route('user.show', [$getdata[0]->owner->username]))->with('error', $th->getMessage());
+    //         // $now = Carbon::now()->format('h:i A d-m-Y');
+    //         // $emailSubject = "Payment Process Failed - $now";
+    //         // $message = "An error occurred while processing the payment: " . $th->getMessage();
+    //         // Mail::to('prem@futureprofilez.com', 'Prem Prakash')
+    //         //     // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
+    //         //     ->cc('naveen@internetbusinesssolutionsindia.com')
+    //         //     // ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
+    //         //     ->send(new CommandFailed($emailSubject, $message));
+    //         // Log::error("Error in createCheckout: " . $th->getMessage());
+    //         // throw $th;
+    //     }
+    // }
 
     public function successCheckout($id)
     {

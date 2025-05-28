@@ -8,6 +8,7 @@ use App\Jobs\CheckoutUser;
 use App\Jobs\NotificationSave;
 use App\Jobs\ShopBuyed;
 use App\Jobs\ShopBuyedUser;
+use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
 use App\Models\Logs;
 use App\Models\MembershipPayment;
@@ -213,7 +214,7 @@ class ShopsController extends Controller
         ];
 
         try {
-            $product = StripeControl::createProduct($productPayload);
+            $product = StripeControl::createProduct($productPayload, $user->account_id);
             $shop->stripe_product_id = $product->id;
             $shop->price_id = $product->default_price;
             $shop->save();
@@ -650,51 +651,88 @@ class ShopsController extends Controller
             $total += $vat_percentage_amount;
             $total += $adminFee;
             $total += $shipping_price;
+            $sessionCreate = null;
             if ($shop->price > 0) {
 
-                $lineItems[] = [
-                    // 'price' => $dd->stripe_product_id ?? '',
-                    'quantity' => $shopPaymentDetail->quantity,
-                    'price_data' => [
+                $connectedAccountId = $shop->user->account_id;
+
+                // Step 1: Check if customer already exists in connected account
+                $storeCustomer = ConnectedAccountCustomer::where('user_id', Auth::id())
+                    ->where('creator_id', $shop->user->id)
+                    ->where('connected_account_id', $connectedAccountId)
+                    ->where('product_type', 'shop item')
+                    ->first();
+
+                // Step 2: Check if price already exists
+                $existingPriceEntry = ConnectedAccountCustomer::where('user_id', Auth::id())
+                    ->where('creator_id', $shop->user->id)
+                    ->where('connected_account_id', $connectedAccountId)
+                    ->where('product_id', $shop->stripe_product_id)
+                    ->where('product_type', 'shop item')
+                    ->whereNotNull('price_id')
+                    ->first();
+
+                // Step 3: Create customer in connected account if not exists
+                $customer = null;
+                if (!$storeCustomer) {
+                    $customer = StripeControl::createCustomer([
+                        'email' => $shop->user->email,
+                        'name' => $shop->user->name,
+                    ], $connectedAccountId);
+                }
+
+                $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
+
+                // Step 4: Create price if not exists
+                if ($existingPriceEntry) {
+                    $priceId = $existingPriceEntry->price_id;
+                } else {
+                    $pricePayload = [
+                        'unit_amount' => round($total * 100),
                         'currency' => $currency,
                         'product' => $shop->stripe_product_id,
-                        'unit_amount_decimal' => Helpers::priceFormat($shop->user->default_currency, $total, $currency) * 100
-                    ]
+                    ];
+
+                    // Create the price in the connected account
+                    $price = StripeControl::createPrice($pricePayload, $connectedAccountId);
+
+                    if (empty($price->id)) {
+                        throw new Exception("Failed to create Stripe price.");
+                    }
+
+                    $priceId = $price->id;
+                }
+
+                // Step 5: Store customer & price if not already stored
+                if (!$storeCustomer) {
+                    ConnectedAccountCustomer::create([
+                        'user_id' => Auth::id(),
+                        'creator_id' => $shop->user->id,
+                        'connected_account_id' => $connectedAccountId,
+                        'stripe_customer_id' => $customer_id,
+                        'product_type' => 'shop item',
+                        'product_id' => $shop->stripe_product_id,
+                        'price_id' => $priceId,
+                    ]);
+                }
+
+                // Step 6: Build line item
+                $items = [
+                    'price' => $priceId,  // Use the existing price ID
+                    'quantity' => 1,
                 ];
 
-                $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-                $sessionCreate = $stripe->checkout->sessions->create([
+                // Step 7: Build session payload
+                $payload = [
                     'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
                     'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
-                    'line_items' => $lineItems,
+                    'line_items' => [$items],
                     'mode' => 'payment',
                     'payment_method_types' => ['card'], // Add this line
-                    'payment_intent_data' => [
-                        'transfer_data' => [
-                            'destination' => $shop->user->account_id,
-                            'amount' => Helpers::priceFormat($shop->user->default_currency, $amount, $currency) * 100,
-                        ],
-                        'on_behalf_of'  => $shop->user->account_id,
-                    ],
-                    'customer_email' => request()->query('email'),
-                ]);
+                    "customer" => $customer_id,
+                ];
 
-                // $sessionCreate = $stripe->checkout->sessions->create([
-                //     'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
-                //     'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
-                //     'line_items' => $lineItems,
-                //     'mode' => 'payment',
-                //     'payment_intent_data' => [
-                //         'transfer_data' => [
-                //             'destination' => $shop->user->account_id, // Creator's connected account ID
-                //             'amount' => Helpers::priceFormat($shop->user->default_currency, $amount, $currency) * 100,
-                //         ],
-                //         // 'application_fee_amount' => $taxNew * 100,
-                //         'on_behalf_of'  => $shop->user->account_id,
-                //     ],
-                //     'customer_email' =>  request()->query('email'),
-                //     // 'currency' => 'usd',
-                // ]);
+                $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccountId);
 
                 $shopPaymentDetail->session_id =  $sessionCreate->id;
                 $shopPaymentDetail->save();

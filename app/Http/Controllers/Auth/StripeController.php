@@ -683,7 +683,7 @@ class StripeController extends Controller
             $storeCustomer = ConnectedAccountCustomer::where('user_id', Auth::id())
                 ->where('creator_id', $wish->user->id)
                 ->where('connected_account_id', $connectedAccountId)
-                ->where('product_type', 'bill')
+                ->where('product_type', 'wish item')
                 ->first();
 
             // Step 2: Check if price already exists
@@ -691,7 +691,7 @@ class StripeController extends Controller
                 ->where('creator_id', $wish->user->id)
                 ->where('connected_account_id', $connectedAccountId)
                 ->where('product_id', $wish->stripe_product_id)
-                ->where('product_type', 'bill')
+                ->where('product_type', 'wish item')
                 ->whereNotNull('price_id')
                 ->first();
 
@@ -734,7 +734,7 @@ class StripeController extends Controller
                     'creator_id' => $wish->user->id,
                     'connected_account_id' => $connectedAccountId,
                     'stripe_customer_id' => $customer_id,
-                    'product_type' => 'wish item subscription',
+                    'product_type' => 'wish item',
                     'product_id' => $wish->stripe_product_id,
                     'price_id' => $priceId,
                 ]);
@@ -745,7 +745,6 @@ class StripeController extends Controller
                 'price' => $priceId,  // Use the existing price ID
                 'quantity' => 1,
             ];
-
 
             // Step 7: Build session payload
             $payload = [
