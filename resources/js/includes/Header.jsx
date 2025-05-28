@@ -132,10 +132,10 @@ export default function Header({classMagicword}) {
                                 </div>
                             : ""}
 
+{/* hidden md:block */}
                             <Link
                                 href={route("discover")}
-                                className="me-2 md:me-3 discover-icon  hidden md:block"
-                            >
+                                className="me-2 md:me-3 discover-icon  " >
                                 <div className="bg-[#F94F96] rounded-full p-2 md:p-1 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
                                     <svg
                                         width="24"
@@ -336,7 +336,7 @@ export default function Header({classMagicword}) {
                                                     </span>
                                                 </Link>
                                             </li>
-                                            <li>
+                                            {/* <li>
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={"giftstore"}
@@ -352,7 +352,7 @@ export default function Header({classMagicword}) {
                                                         Gift Store
                                                     </span>
                                                 </Link>
-                                            </li>
+                                            </li> */}
                                             <li>
                                                 <Link
                                                     onClick={toggleClass}
@@ -365,10 +365,7 @@ export default function Header({classMagicword}) {
                                                             size={"1.2rem"}
                                                         />
                                                     </span>
-                                                    <span
-                                                        class="ml-2 text-[17px]
-                            tracking-wide truncate text-white"
-                                                    >
+                                                    <span class="ml-2 text-[17px] tracking-wide truncate text-white" >
                                                         Earnings
                                                     </span>
                                                 </Link>
@@ -419,26 +416,7 @@ export default function Header({classMagicword}) {
                                         </Link>
                                     </li>
                                 </>
-                                <li>
-                                    <a
-                                        href="https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk"
-                                        class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                    >
-                                        <span class="inline-flex justify-center items-center ml-4">
-                                            <SlCalender
-                                                color="#fff"
-                                                size={"1.2rem"}
-                                            />
-                                        </span>
-                                        <span
-                                            class="ml-2 text-[17px]
-                    tracking-wide truncate text-white"
-                                        >
-                                            Subscription Billing
-                                        </span>
-                                    </a>
-                                </li>
-
+                                 
                                 {auth?.user?.username ? 
                                 '' : (
                                     <>

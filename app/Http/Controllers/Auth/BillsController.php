@@ -323,7 +323,7 @@ class BillsController extends Controller
                     'tax'            =>  $totalTax,
                     'vat_tax_amount' =>  $vat_percentage_amount,
                     'recurring_for'  =>  $reccure,
-                    'recurring_type' => 'monthly',
+                    'recurring_type' =>  $bill->period,
                     'message'        =>  $request->message ?? NULL,
                     'anonymous'      => $request->anonymous ?? 0
                 ]);
