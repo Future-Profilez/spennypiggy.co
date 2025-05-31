@@ -38,12 +38,26 @@ export default function ActivateCard() {
         <>
             <div className="blackbg">
                 <div className=" mb-md-4 mx-auto border-mints swhbg shadow-mints rounded-[30px]">
-                    {auth?.user?.profile_status_lock == 1 && auth?.user?.is_500_limit_exceeded == 1  ? (
+                    {(auth?.user?.profile_status_lock == 1 || auth?.user?.profile_status_lock == 0) && auth?.user?.is_500_limit_exceeded == 1 && auth?.user?.is_subscribed !== 1  ? (
                         <div className="dark2 rounded-[30px] p-3">
                             <div className="stripNote p-3 p-md-4">
+                               
                                 <h4 className="text-[30px] font-GillSans text-white text-center text-uppercase mb-3">
-                                    Activate Account
+                                   {auth?.user?.profile_reject_reason ? 'Re-Activate Account' : ' Activate Account' }
                                 </h4>
+                                {auth?.user?.profile_reject_reason ? (
+                                    <div className="mt-3 text-center mb-6">
+                                        <strong className="text-red-500 text-lg">
+                                            Previous Verification Rejected
+                                        </strong>
+                                        <p className="text-red-500">
+                                            {auth?.user?.profile_reject_reason}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    ""
+                                )}
+
                                 <p className="mb-1 text-[17px] text-center text-gray-400">
                                     To activate your card and unlock the ability
                                     to make payments on our platform, simply
@@ -57,18 +71,7 @@ export default function ActivateCard() {
                                     the website.
                                 </p>
 
-                                {auth?.user?.profile_reject_reason ? (
-                                    <div className="mt-3 text-center">
-                                        <strong className="text-red-700 text-lg">
-                                            Previous Verification Rejected
-                                        </strong>
-                                        <p className="text-red-400">
-                                            {auth?.user?.profile_reject_reason}
-                                        </p>
-                                    </div>
-                                ) : (
-                                    ""
-                                )}
+                                
                             </div>
 
                             <p className="p-2 text-center  text-pink mb-3">
@@ -95,12 +98,12 @@ export default function ActivateCard() {
                     )}
 
                     {auth?.user?.profile_status_lock == 1 && auth?.user?.is_subscribed == 1 ? (
-                        <div className="py-4">
+                        <div className="dark2 rounded-[30px] p-3">
                             <div className="stripNote p-3 p-md-4">
-                                <h4 className="text-[25px] font-GillSans text-yellow-600 text-center text-uppercase mb-3">
+                                <h4 className="text-[25px] font-GillSans text-yellow-400 text-center text-uppercase mb-3">
                                     Verification Pending
                                 </h4>
-                                <p className="mb-1 text-[18px] text-center max-w-[400px] m-auto">
+                                <p className="mb-1 text-[18px] text-center max-w-[400px] m-auto text-gray-400">
                                     Admin will now confirm that you are a
                                     Verified person. Please check back in 1-2
                                     hours.
@@ -125,6 +128,7 @@ export default function ActivateCard() {
                     ) : (
                         ""
                     )}
+                   
 
                 </div>
             </div>
