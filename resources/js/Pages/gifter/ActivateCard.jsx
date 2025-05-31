@@ -16,7 +16,7 @@ export default function ActivateCard() {
         if (loading) return;
         setLoading(true);
         axios
-            .get(`gifter-card-verification`)
+            .get(route('gifter.card.verification'))
             .then((resp) => {
                 if (resp?.data?.status == true) {
                     window.location.href = resp?.data?.checkout_url;
@@ -41,7 +41,7 @@ export default function ActivateCard() {
                     {(auth?.user?.profile_status_lock == 1 || auth?.user?.profile_status_lock == 0) && auth?.user?.is_500_limit_exceeded == 1 && auth?.user?.is_subscribed !== 1  ? (
                         <div className="dark2 rounded-[30px] p-3">
                             <div className="stripNote p-3 p-md-4">
-                               
+
                                 <h4 className="text-[30px] font-GillSans text-white text-center text-uppercase mb-3">
                                    {auth?.user?.profile_reject_reason ? 'Re-Activate Account' : ' Activate Account' }
                                 </h4>
@@ -71,7 +71,7 @@ export default function ActivateCard() {
                                     the website.
                                 </p>
 
-                                
+
                             </div>
 
                             <p className="p-2 text-center  text-pink mb-3">
@@ -91,7 +91,7 @@ export default function ActivateCard() {
                                         : "Activate Account"}
                                 </LoaderButton>
                             </div>
-                            
+
                         </div>
                     ) : (
                         ""
@@ -128,7 +128,7 @@ export default function ActivateCard() {
                     ) : (
                         ""
                     )}
-                   
+
 
                 </div>
             </div>

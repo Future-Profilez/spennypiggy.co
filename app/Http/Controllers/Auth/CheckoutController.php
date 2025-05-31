@@ -310,9 +310,7 @@ class CheckoutController extends Controller
                 } else {
                     CheckoutUser::dispatch($payment_data, true, false, false, $stripeid->name, $symbol->symbol, $vat_amount);
                 }
-                $dd->status = 0;
-                $dd->quantity = 0;
-                $dd->save();
+
 
                 if ($dd->owner->auto_tweet == 1) {
                     if (empty($dd->wish_item_id)) {
@@ -324,17 +322,22 @@ class CheckoutController extends Controller
                     }
                 }
 
+                $total_amount = $dd->amount * $dd->quantity;
                 $userPayment = new UserPayment();
                 $userPayment->from_user_id = $dd->user_id ?? null;
                 $userPayment->to_user_id = $dd->owner_id;
                 $userPayment->product_type = 'wish item';
-                $userPayment->amount = $dd->amount;
+                $userPayment->amount = $total_amount;
                 $userPayment->currency = $dd->wish->currency;
                 $userPayment->payment_method = 'stripe';
                 $userPayment->payment_details = json_encode($sessionId, true);
                 $userPayment->paid_at = Carbon::now();
                 $userPayment->status = $stripeid->payment_status;
                 $userPayment->save();
+
+                $dd->status = 0;
+                $dd->quantity = 0;
+                $dd->save();
             }
 
 

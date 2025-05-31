@@ -271,8 +271,8 @@ class RegisteredUserController extends Controller
         }
 
         // Step 1: Check existing verification
-        $existingSuccess = GifterCardVerification::where('user_id', $user->id)->where('status', 'success')->first();
-        GifterCardVerification::where('user_id', $user->id)->where('status', 'pending')->delete();
+        $existingSuccess = GifterCardVerification::where('user_id', $user->id)->where('status', 'success')->whereNull('deleted_at')->first();
+        GifterCardVerification::where('user_id', $user->id)->whereIn('status', ['pending', 'rejected by admin'])->delete();
 
         if ($existingSuccess) {
             // Already verified

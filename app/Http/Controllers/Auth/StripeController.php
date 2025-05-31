@@ -740,7 +740,7 @@ class StripeController extends Controller
                     'creator_id' => $wish->user->id,
                     'connected_account_id' => $connectedAccountId,
                     'stripe_customer_id' => $customer_id,
-                    'product_type' => 'wish item',
+                    'product_type' => 'wish item subscription',
                     'product_id' => $wish->stripe_product_id,
                     'price_id' => $priceId,
                 ]);
