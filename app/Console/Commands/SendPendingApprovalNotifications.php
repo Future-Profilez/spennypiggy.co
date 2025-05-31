@@ -82,17 +82,15 @@ class SendPendingApprovalNotifications extends Command
                     'model' => \App\Models\UserVerificationStatus::class,
                     'relation' => 'user',
                     'conditions_callback' => function ($query) {
-                        $query->where('user_profile_status', 0)
-                            ->where(function ($subQuery) {
-                                $subQuery->whereHas('user', function ($q) {
-                                    $q->where('role', 1);
-                                })->orWhereHas('user', function ($q) {
-                                    $q->where('role', 0)
-                                        ->whereHas('gifterCardVerification', function ($giftQ) {
-                                            $giftQ->where('status', 'success');
-                                        });
-                                });
-                            });
+                        $query->where(function ($subQuery) {
+                            $subQuery->whereHas('user', function ($q) {
+                                $q->where('role', 1);
+                            })->where('user_profile_status', 0);
+                        })->orWhereHas('user', function ($q) {
+                            $q->where('role', 0)
+                                ->where('profile_status_lock', 1)
+                                ->where('is_500_limit_exceeded', 1);
+                        });
                     },
                     'label' => 'User Profiles',
                 ],
