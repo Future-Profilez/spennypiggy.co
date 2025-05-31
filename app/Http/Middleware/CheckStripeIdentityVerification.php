@@ -24,7 +24,7 @@ class CheckStripeIdentityVerification
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (!$user || $user->role == 0) {
             return $next($request);
         }
 

@@ -165,17 +165,17 @@ export default function UserCarts(props) {
                                             Card Payments:
                                         </strong>{" "}
                                         <br />
-                                        Bills - 10%
+                                        Bills - 8%
                                         <br />
                                         Memberships - 10%
                                         <br />
-                                        Piggy Bank - 20%
+                                        Piggy Bank - 15%
                                         <br />
                                         Crowdfunding - 20%
                                         <br />
                                         Subscriptions - 10%
                                         <br />
-                                        Single Purchases - 20%
+                                        Single Purchases - 12.5%
                                         <br />
                                         Profile Shop - 20%
                                         <br />

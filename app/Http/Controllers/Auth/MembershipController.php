@@ -23,6 +23,7 @@ use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
+use App\Models\UserPayment;
 use App\Models\WishItemSubscription;
 use App\StripeControl;
 use Carbon\Carbon;
@@ -282,6 +283,12 @@ class MembershipController extends Controller
      */
     public function buyLevel(Request $request, $uuid, $reccure = 'continue')
     {
+        $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
+        if ($checkGifterStatus == true) {
+            $user = Auth::user();
+           return to_route('user.show', ['username' => $user->username])->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
+        }
+
         $user = Auth::user(); // or $requestingUser if handling guests
 
         // $user socila membershipDashboard
@@ -614,6 +621,18 @@ class MembershipController extends Controller
 
                 $message = $username . " just subscribed to your " . $mem->membership->name . " membership";
                 NotificationSave::dispatch($message, $mem->membership->user, $mem->user, 'Membership');
+
+                $userPayment = new UserPayment();
+                $userPayment->from_user_id = $mem->user_id ?? null;
+                $userPayment->to_user_id = $mem->membership->user_id;
+                $userPayment->product_type = 'membership';
+                $userPayment->amount = $mem->amount;
+                $userPayment->currency = $mem->currency;
+                $userPayment->payment_method = 'stripe';
+                $userPayment->payment_details = json_encode($session, true);
+                $userPayment->paid_at = Carbon::now();
+                $userPayment->status = $session->payment_status;
+                $userPayment->save();
                 // if ($mem->wish_item->user->auto_tweet == 1) {
                 //     // MakeAutoTweets::dispatch($user);
                 //     SubscribeAutoTweet::dispatch($mem);

@@ -83,6 +83,7 @@ export default function TipInner({classes, idd}) {
     setLoading(true);
     const resp = axios.post(`tip-jar/pay/${user.uuid}`, data);
     resp.then((res) => {
+        console.log("res", res);
       if(res.data.status){
         window.location.href = res.data.url
       } else {
@@ -188,7 +189,7 @@ export default function TipInner({classes, idd}) {
                 <p className="text-muted text-small mt-1 mb-3" >Your personal email and name will be private.</p>
             </div>
             <button disabled={loading} onClick={send} className={`items-center px-4  shadow-black
-               rounded-[30px] btn-pink md justify-content-center   
+               rounded-[30px] btn-pink md justify-content-center
               ease-in-out duration-150 flex button text-center w-100
               font-CeraGR mx-auto ${checkRef.current && checkRef.current.checked ? '' :'disabled'}`}
                > {loading ? "Processing" : 'Support Me'} </button>
