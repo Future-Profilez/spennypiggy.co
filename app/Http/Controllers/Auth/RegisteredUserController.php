@@ -413,7 +413,7 @@ class RegisteredUserController extends Controller
         }
 
         // pending profile
-        $user->update(['profile_status_lock' => 2]);
+        $user->update(['profile_status_lock' => 2, 'is_subscribed' => 1]);
 
         return redirect()->route('user.show', ['username' => $user->username])->with('success', "Payment Card Verification Successfully Completed.");
     }
