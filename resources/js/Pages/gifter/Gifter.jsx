@@ -23,9 +23,9 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
   const AboutScreen = () => {
     return <>
         <div className=" about-sec  m-auto " >
-              <div className={`${user && !user.bio ? "d-nones":""} box shadow-voilet rounded-lg mb-4`} >
-                  <p className="font-bold" >About me</p>
-                  <p className={`text-muted text-start mt-2 `}>{(user && user.bio) || ""}</p>
+              <div className={`${user && !user.bio ? "d-nones":""}  p-3 rounded-2xl dark2     mb-4`} >
+                  <p className=" text-white text-lg" >About me</p>
+                  <p className={`  text-start mt-2 font-light text-gray-200`}>{(user && user.bio) || "I believe in good vibes and great creators. Supporting one smile at a time 😊"}</p>
                   
                   {IsloggedIn && user?.edit_bio_reason  ?
                     <div className="mt-3">
@@ -34,7 +34,7 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
                     </div>
                     : ''}
 
-                  <SocialLinks links={sLinks} />
+                  <SocialLinks textcolor="text-gray-300 giftersocials" links={sLinks} />
                   {IsloggedIn ? <div className="addsocial flex">
                     <ul>
                         <li><Social updatedLinks={fetchingLinks} links={sLinks}/></li>
@@ -48,9 +48,9 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
                 </div> : ''}
               </div>
 
-              <GifterTips />
-              <GifterItems IsloggedIn={IsloggedIn} />
-              <GifterSubscriptions IsloggedIn={IsloggedIn} />
+              {/* <GifterTips /> */}
+              {/* <GifterItems IsloggedIn={IsloggedIn} /> */}
+              {/* <GifterSubscriptions IsloggedIn={IsloggedIn} /> */}
 
               {/* <GifterMembership /> */}
 
@@ -71,7 +71,14 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
         <div className={`tabs-container gifter ${IsloggedIn ? "IsloggedIn" : ""}`} >
           {IsloggedIn ? <>
             <div className="inlinetab">
-                <Tabs
+                <div className='max-w-3xl m-auto'>
+                    {auth?.user?.profile_status_lock == 1 ? <>
+                        <ActivateCard auth={auth}/>
+                    </> : '' }
+                    <AboutScreen />
+                </div>
+
+                {/* <Tabs
                     defaultActiveKey="home"
                     transition={true}
                     onSelect={(e) => setTab(e)}
@@ -79,24 +86,24 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
                     className="mb-3 justify-content-center" >
                     <Tab eventKey="home" title="About">
                         <div className='max-w-3xl m-auto'>
-                            {auth?.user?.profile_status_lock !== 2 ? <>
+                            {auth?.user?.profile_status_lock == 1 ? <>
                                 <ActivateCard auth={auth}/>
                             </> : '' }
                             <AboutScreen />
                         </div>
                     </Tab>
-
+                    
                     <Tab eventKey="feed" title="Feed">
                         <GifterFeed username={user && user.username || ''} />
                     </Tab>
                     <Tab eventKey="memberships" title="Memberships">
                         <MembershipLists username={user && user.username || ''}/>
                     </Tab>
-                    {/* <Tab eventKey="media" title="Media">
+                    <Tab eventKey="media" title="Media">
                             <GifterMedia username={user && user.username || ''} />
                         </Tab>
-                    */}
-                </Tabs>
+                   
+                </Tabs> */}
             </div>
             </>
           : <AboutScreen /> }

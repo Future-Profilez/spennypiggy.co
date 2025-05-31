@@ -1,5 +1,5 @@
 import React from 'react';
-export default function SocialLinks({ links }) {
+export default function SocialLinks({ links, textcolor }) {
 
     const twitter = `<svg width="19" height="18" viewBox="0 0 19 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M14.9201 0.875H17.6767L11.6542 7.75833L18.7392 17.125H13.1909L8.84589 11.4442L3.87422 17.125H1.11589L7.55755 9.7625L0.761719 0.875H6.44922L10.3767 6.0675L14.9184 0.875H14.9201ZM13.9526 15.475H15.4801L5.62005 2.43833H3.98089L13.9526 15.475Z" fill="#8C52FF"/>
@@ -57,7 +57,7 @@ export default function SocialLinks({ links }) {
 
                 {links && links.instagram ?
                     <li className={`px-2 mt-2 mb-2`} >
-                        <a target="_blank" title={"instagram"} href={`${gefullurl("instagram")}${links && links.instagram}`}  >
+                        <a target="_blank" className={textcolor} title={"instagram"} href={`${gefullurl("instagram")}${links && links.instagram}`}  >
                             <div dangerouslySetInnerHTML={{ __html: instagram }}></div> Instagram
                         </a>
                     </li>
@@ -65,7 +65,7 @@ export default function SocialLinks({ links }) {
 
                 {links && links.youtube ?
                     <li className={`px-2 mt-2 mb-2`} >
-                        <a target="_blank" title={"youtube"} href={`${gefullurl("youtube")}${links && links.youtube}`}  >
+                        <a target="_blank" className={textcolor} title={"youtube"} href={`${gefullurl("youtube")}${links && links.youtube}`}  >
                             <div dangerouslySetInnerHTML={{ __html: youtube }}></div> Youtube
                         </a>
                     </li>
@@ -73,7 +73,7 @@ export default function SocialLinks({ links }) {
 
                 {links && links.facebook ?
                     <li className={`px-2 mt-2 mb-2`} >
-                        <a target="_blank" title={"facebook"} href={`${gefullurl("facebook")}${links && links.facebook}`}  >
+                        <a target="_blank" className={textcolor} title={"facebook"} href={`${gefullurl("facebook")}${links && links.facebook}`}  >
                             <div dangerouslySetInnerHTML={{ __html: facebook }}></div> Facebook
                         </a>
                     </li>
@@ -81,7 +81,7 @@ export default function SocialLinks({ links }) {
 
                {links && links.twitter ?
                     <li className={`px-2 mt-2 mb-2`} >
-                        <a target="_blank" title={"twitter"} href={`${gefullurl("twitter")}${links && links.twitter}`}  >
+                        <a target="_blank" className={textcolor} title={"twitter"} href={`${gefullurl("twitter")}${links && links.twitter}`}  >
                             <div dangerouslySetInnerHTML={{ __html: twitter }}></div>  Twitter
                         </a>
                     </li>
@@ -89,7 +89,7 @@ export default function SocialLinks({ links }) {
 
                 {/*  {links && links.reddit ?
                     <li className={`px-2 mt-2 mb-2`} >
-                        <a target="_blank" title={"reddit"} href={`${gefullurl("reddit")}${links && links.reddit}`}  >
+                        <a target="_blank" className={textcolor} title={"reddit"} href={`${gefullurl("reddit")}${links && links.reddit}`}  >
                             <div dangerouslySetInnerHTML={{ __html: reddit }}></div> Reddit
                         </a>
                     </li>
@@ -97,7 +97,7 @@ export default function SocialLinks({ links }) {
 
                 {links && links.tumblr ?
                     <li className={`px-2 mt-2 mb-2`} >
-                        <a target="_blank" title={"tumblr"} href={`${gefullurl("tumblr")}${links && links.tumblr}`}  >
+                        <a target="_blank" className={textcolor} title={"tumblr"} href={`${gefullurl("tumblr")}${links && links.tumblr}`}  >
                             <div dangerouslySetInnerHTML={{ __html: tumblr }}></div> Tumblr
                         </a>
                     </li>
@@ -106,7 +106,7 @@ export default function SocialLinks({ links }) {
 
                 {links && links.twitch ?
                     <li className={`px-2 mt-2 mb-2`} >
-                        <a target="_blank" title={"twitch"} href={`${gefullurl("twitch")}${links && links.twitch}`}  >
+                        <a target="_blank" className={textcolor} title={"twitch"} href={`${gefullurl("twitch")}${links && links.twitch}`}  >
                             <div dangerouslySetInnerHTML={{ __html: twitch }}></div> Twitch
                         </a>
                     </li>
@@ -114,7 +114,7 @@ export default function SocialLinks({ links }) {
 
                 {/* {links && links.other ?
                     <li className={`px-2 mt-2 mb-2`} >
-                        <a target="_blank" title={"other"} href={`${gefullurl("other")}${links && links.other}`}  >
+                        <a target="_blank" className={textcolor} title={"other"} href={`${gefullurl("other")}${links && links.other}`}  >
                             <div dangerouslySetInnerHTML={{ __html: other }}></div>  Other
                         </a>
                     </li>
