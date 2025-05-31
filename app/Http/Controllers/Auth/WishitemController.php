@@ -733,13 +733,6 @@ class WishitemController extends Controller
             }
         })->first();
         if ($cart) {
-            Log::info("Cart Item Found", [
-                'cart_id' => $cart->id,
-                'wish_item_id' => $wishitem->id,
-                'user_id' => Auth::id(),
-                'device_id' => $device_id,
-                'subscription' => $wishitem->subscription,
-            ]);
 
             if ($cart->status == 1) {
                 $cart->quantity = $cart->quantity + 1;
@@ -1822,8 +1815,6 @@ class WishitemController extends Controller
                 $store = $storeData['store'] ?? $store;
             }
 
-            Log::info("Shipping ID: $shippingId, Store: $store");
-
             $response = Http::withHeaders([
                 'Authorization' => env('RYE_API_KEY'),
                 'Rye-Shopper-IP' => '122.180.247.198',
@@ -1873,7 +1864,6 @@ class WishitemController extends Controller
             ]);
 
             $data = $response->json();
-            Log::info('SubmitCart API Response:', $data);
 
             $storeData = $data['data']['submitCart']['cart']['stores'][0] ?? null;
 
@@ -2889,12 +2879,6 @@ class WishitemController extends Controller
 
         // Execute
         $shopPayments = $paymentsQuery->get();
-
-        // Log for debugging
-        Log::info('Fetched shop payments', [
-            'user_id'      => $user->id,
-            'payment_count' => $shopPayments->count(),
-        ]);
 
         // Attach a simplified user_data payload to each payment
         $shopPayments->transform(function ($payment) {

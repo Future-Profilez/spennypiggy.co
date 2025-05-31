@@ -182,7 +182,6 @@ class Helpers
             $totalPaid = array_sum($convertedAmount);
 
             if ($user->is_500_limit_exceeded == 0 && $totalPaid && $totalPaid > 500) {
-                Log::info('User ' . $user->id . ' has exceeded the 500 GBP limit for Gifter Card Verification.');
                 $user->update(['profile_status_lock' => 1, 'is_500_limit_exceeded' => 1]);
                 return true;
             }
