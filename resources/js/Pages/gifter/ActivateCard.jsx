@@ -37,20 +37,14 @@ export default function ActivateCard() {
     return (
         <>
             <div className="blackbg">
-                <div className=" mb-md-4 mx-auto border-mint whbg shadow-mint rounded-[30px]">
-                    <div className="loginheadbox pinkbg">
-                        <span className="mintbg"></span>
-                        <span className="bluebg"></span>
-                    </div>
-
-                    {auth?.user?.profile_status_lock == 0 ? (
-                        <div className="py-4">
+                <div className=" mb-md-4 mx-auto border-mints swhbg shadow-mints rounded-[30px]">
+                    {auth?.user?.profile_status_lock == 1 && auth?.user?.is_500_limit_exceeded == 1  ? (
+                        <div className="dark2 rounded-[30px] p-3">
                             <div className="stripNote p-3 p-md-4">
-                                <h4 className="text-[30px] font-GillSans text-center text-uppercase mb-3">
+                                <h4 className="text-[30px] font-GillSans text-white text-center text-uppercase mb-3">
                                     Activate Account
                                 </h4>
-                                <p className="mb-1 text-[18px] text-center">
-                                    {" "}
+                                <p className="mb-1 text-[17px] text-center text-gray-400">
                                     To activate your card and unlock the ability
                                     to make payments on our platform, simply
                                     click the button below and complete a
@@ -64,7 +58,7 @@ export default function ActivateCard() {
                                 </p>
 
                                 {auth?.user?.profile_reject_reason ? (
-                                    <div className="mt-4 text-center">
+                                    <div className="mt-3 text-center">
                                         <strong className="text-red-700 text-lg">
                                             Previous Verification Rejected
                                         </strong>
@@ -76,6 +70,11 @@ export default function ActivateCard() {
                                     ""
                                 )}
                             </div>
+
+                            <p className="p-2 text-center  text-pink mb-3">
+                                Please use the card with same address as you
+                                have used for your account.{" "}
+                            </p>
 
                             <div className="text-center flex justify-center mb-2">
                                 <LoaderButton
@@ -89,16 +88,13 @@ export default function ActivateCard() {
                                         : "Activate Account"}
                                 </LoaderButton>
                             </div>
-                            <p className="p-2 text-center text-red-600">
-                                Please use the card with same address as you
-                                have used for your account.{" "}
-                            </p>
+                            
                         </div>
                     ) : (
                         ""
                     )}
 
-                    {auth?.user?.profile_status_lock == 1 ? (
+                    {auth?.user?.profile_status_lock == 1 && auth?.user?.is_subscribed == 1 ? (
                         <div className="py-4">
                             <div className="stripNote p-3 p-md-4">
                                 <h4 className="text-[25px] font-GillSans text-yellow-600 text-center text-uppercase mb-3">

@@ -10,7 +10,7 @@ import { RiVerifiedBadgeFill } from "react-icons/ri";
 export default function Userprofile({ IsloggedIn }) {
     const { auth, user, global_currency, supporters }  = usePage().props;
     return (
-        <div className="userprofilesec mb-4 ">
+        <div className="userprofilesec mb-2 ">
             <div className="userPr px-4 py-0 py-md-4 md:flex items-center justify-center md:justify-between mt-[-80px] md:mt-[-50px]" >
                 <div className="update-profile text-center md:flex items-center justify-center md:justify-start" >
                     <div className="userphoto relative !flex md:!block items-center justify-center w-full md:w-auto ">

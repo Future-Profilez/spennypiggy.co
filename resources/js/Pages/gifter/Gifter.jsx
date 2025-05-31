@@ -72,12 +72,9 @@ export default function Gifter({ IsloggedIn, fetchingLinks, sLinks }){
           {IsloggedIn ? <>
             <div className="inlinetab">
                 <div className='max-w-3xl m-auto'>
-                    {auth?.user?.profile_status_lock == 1 ? <>
-                        <ActivateCard auth={auth}/>
-                    </> : '' }
+                    <ActivateCard auth={auth}/>
                     <AboutScreen />
                 </div>
-
                 {/* <Tabs
                     defaultActiveKey="home"
                     transition={true}
