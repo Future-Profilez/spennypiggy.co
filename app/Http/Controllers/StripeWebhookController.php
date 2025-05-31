@@ -156,9 +156,6 @@ class StripeWebhookController extends Controller
             $customerName = data_get($event, 'data.object.customer_name');
             $invoicePdf = data_get($event, 'data.object.invoice_pdf');
 
-            Log::info('Webhook received: ');
-            Log::info(json_encode($event));
-
             $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->first();
 
             try {

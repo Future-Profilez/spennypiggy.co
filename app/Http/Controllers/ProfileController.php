@@ -103,7 +103,6 @@ class ProfileController extends Controller
         return back()->with('success', 'Profile information updated.');
     }
 
-
     /**
      * Update the user's profile information.
      */
@@ -112,13 +111,7 @@ class ProfileController extends Controller
         // $fullUrl = $request->fullUrl(); // Includes query parameters
         // $method = $request->method();   // GET, POST, etc.
 
-        // Log::info("🔗 URL Hit: $method $fullUrl");
-
-        $user = User::where('id', Auth::id())->where(
-            'is_uk',
-            0
-            // $q->whereNot('country', 'GB')->orWhereNull('country');
-        )->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
         $currency = strtolower($request->cookie("currency", "GBP"));
 
         // if($request->min_surprise_amount < 5){
@@ -142,7 +135,7 @@ class ProfileController extends Controller
 
             $user->name = $request->name;
             $user->username = $request->username;
-            $user_profile_status = UserVerificationStatus::where('user_id', $user->id)->where('role', $user->role)->first();
+            $userProfileStatus = UserVerificationStatus::where('user_id', $user->id)->where('role', $user->role)->first();
             if ($request->bio !== $user->bio || $request->social_handle !== $user->social_handle) {
 
                 UserVerificationStatus::UpdateOrCreate([
@@ -162,8 +155,8 @@ class ProfileController extends Controller
                     dispatch(new SendBioSocialUpdateEmail($user, $updatedFields));
                 }
                 $user->bio = $request->bio;
-                $user_profile_status->user_profile_status = 0;
-                $user_profile_status->save();
+                $userProfileStatus->user_profile_status = $userProfileStatus->role == 0 ? 4 : 0;
+                $userProfileStatus->save();
             }
             $user->min_surprise_amount = $request->min_surprise_amount ?? 0;
 
@@ -173,8 +166,8 @@ class ProfileController extends Controller
                 $user->avatar_cdn_modifier = $avatar['cdnUrlModifiers'] ?? null;
 
                 // user profile status column update when avatar update
-                $user_profile_status->user_profile_status = 0;
-                $user_profile_status->save();
+                $userProfileStatus->user_profile_status = $userProfileStatus->role == 0 ? 4 : 0;
+                $userProfileStatus->save();
             }
             if (!empty($cover)) {
                 $user->cover = $cover['uuid'] ?? null;

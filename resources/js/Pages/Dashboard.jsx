@@ -50,7 +50,7 @@ import OldSubscribe from "./webpush/OldSubscribe";
 export default function Dashboard(props) {
     // alert("props")
     const w = useWidthCount();
-    const{auth,user,username,global_currency,itemid}= props;
+    const{auth,user,username,global_currency,itemid,verification_status}= props;
     const [tab, setTab] = useState(0);
     const onTabClick = (e, d) => {
         setTab(d);
@@ -474,7 +474,12 @@ export default function Dashboard(props) {
                                                                             <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
                                                                                 {(user &&user.bio) ||""}
                                                                             </p>
-
+                                                                            {IsloggedIn && auth?.verification_status?.user_profile_status == 2 && user?.profile_status_lock == 0 && user?.profile_reject_reason != null  ?
+                                                                                <div className="mt-3">
+                                                                                    <p className="text-red-700">Profile Rejected Reason</p>
+                                                                                    <p className="text-red-500 text-sm">Reason : {user?.profile_reject_reason }.</p>
+                                                                                </div>
+                                                                              : ''}
                                                                             {IsloggedIn && user?.edit_bio_reason  ?
                                                                                 <div className="mt-3">
                                                                                     <p className="text-red-700">Bio Edit Request</p>

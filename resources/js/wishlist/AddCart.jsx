@@ -1,6 +1,6 @@
 import React from "react";
 import giftimg from "../../assets/img/giftimg.jpg";
-const Popup = React.lazy(() => import('@/Components/Popup'));
+const Popup = React.lazy(() => import("@/Components/Popup"));
 import ToCart from "./ToCart";
 import uploadedimg from "../../assets/img/uploadedimg.png";
 import ProgressBar from "react-bootstrap/ProgressBar";
@@ -10,68 +10,77 @@ import PriceFormat from "@/includes/PriceFormat";
 import { Link, router } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
 export default function AddCart(props) {
-
     const { auth, action, uuid, item, currency, showall } = props;
-    const [sub, setSub] = useState('daily');
+    const [sub, setSub] = useState("daily");
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
-    const { format , formatMultiPrice} = PriceFormat();
+    const { format, formatMultiPrice } = PriceFormat();
     const [cartamount, setcartamount] = useState(null);
     const [close, setClose] = useState(action);
     const [is_cart, setIs_cart] = useState(item && item?.is_cart);
 
     const ItemAdded = (e) => {
-        if(e == 'added'){
+        if (e == "added") {
             setIs_cart(true);
         }
-        if(e == 'removed'){
+        if (e == "removed") {
             setIs_cart(false);
         }
         setClose(false);
-    }
+    };
 
-    useEffect(()=>{
+    useEffect(() => {
         setClose(action);
-        return  () => {
-            setSub('onetime');
-        }
-    },[action]);
+        return () => {
+            setSub("onetime");
+        };
+    }, [action]);
 
     const getPercentage = (actual, paid) => {
-        const r = (paid/actual)*100;
+        const r = (paid / actual) * 100;
         return r.toFixed(1);
-    }
+    };
 
-    const gotologin = (recure) => { 
+    const gotologin = (recure) => {
         successAlert("You must login first.");
-        const url = `/wish/checkout/${item.uuid}/${recure ? recure : ''}`
+        const url = `/wish/checkout/${item.uuid}/${recure ? recure : ""}`;
         router.visit(`/login?redirect=${url}`);
-    }
+    };
 
     return (
-        <Popup size="md"
+        <Popup
+            size="md"
             action={close}
             modalclassName="pinkmodal"
-            classes="d-none" >
+            classes="d-none"
+        >
             <div className="addCartModalHead rounded-3xl relative ">
-                <h2 className="font-GillSans text-bl uppercase pt-8 text-lg relative z-1 px-3 text-center"> Add to Cart </h2>
+                <h2 className="font-GillSans text-bl uppercase pt-8 text-lg relative z-1 px-3 text-center">
+                    {" "}
+                    Add to Cart{" "}
+                </h2>
             </div>
             <div className="cartModimg absolute left-0 top-0">
                 <img src={giftimg} alt="img" />
             </div>
             <div className="bannerrr p-4">
                 <div className="cartbanner">
-                    <img src={item.perma_link ? item.perma_link : uploadedimg} alt="img" />
+                    <img
+                        src={item.perma_link ? item.perma_link : uploadedimg}
+                        alt="img"
+                    />
                 </div>
                 <div className="cartTitle text-center">{item.wishname}</div>
                 <div className="cartPrice font-CeraGRBold text-voilet mt-1 mb-3 text-center">
-                    {formatMultiPrice(item.price, item?.currency || 'GBP')}
+                    {formatMultiPrice(item.price, item?.currency || "GBP")}
                 </div>
                 {item.subscription == "2" ? (
                     <>
                         <p className="mb-0">Amount </p>
                         <div className="croud-add  global-currency-wrap ">
-                            <div className="global-currency" >{currency || "GBP"}</div>
+                            <div className="global-currency">
+                                {currency || "GBP"}
+                            </div>
                             <input
                                 onChange={(e) => setcartamount(e.target.value)}
                                 placeholder={`Eg. 50`}
@@ -81,18 +90,29 @@ export default function AddCart(props) {
                         </div>
                         <div className="crowd pt-2 mb-4">
                             <ProgressBar
-                                now={formatMultiPrice(item.fullfill_amount, item?.currency || 'GBP')}
-                                max={formatMultiPrice(item.price, item?.currency || 'GBP')}
+                                now={formatMultiPrice(
+                                    item.fullfill_amount,
+                                    item?.currency || "GBP"
+                                )}
+                                max={formatMultiPrice(
+                                    item.price,
+                                    item?.currency || "GBP"
+                                )}
                             />
                             <div className="flex items-center justify-between">
                                 <p className="mt-1 mb-0 text-small">
                                     {getPercentage(
                                         item.price,
                                         item.fullfill_amount
-                                    )}% granted
+                                    )}
+                                    % granted
                                 </p>
                                 <p className="mt-1 mb-0 text-small">
-                                    Remaining  {formatMultiPrice(item.price - item.fullfill_amount, item?.currency || 'GBP')}
+                                    Remaining{" "}
+                                    {formatMultiPrice(
+                                        item.price - item.fullfill_amount,
+                                        item?.currency || "GBP"
+                                    )}
                                 </p>
                             </div>
                         </div>
@@ -100,88 +120,144 @@ export default function AddCart(props) {
                 ) : (
                     ""
                 )}
-            {item.subscription == 1 ?
-            <>
-            {auth && auth.user !== null ?
-            <>
-                <div className=" pb-2">
-                    <Link className="inline-flex items-center px-4 border 
+                {item.subscription == 1 ? (
+                    <>
+                        {auth && auth.user !== null ? (
+                            <>
+                                <div className=" pb-2">
+                                    <Link
+                                        className="inline-flex items-center px-4 border
                     border-transparentfont-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 false flex btn-pink lg w-100 mb-2 font-CeraGR  mx-auto"
-                     href={route('wish.subscribe.checkout',{uuid: item.uuid, reccure: 'onetime'})}>
-                        OneTime Purchase
-                    </Link>
-                    <Link className="inline-flex items-center px-4 border 
-                    border-transparent text-xs text-white 
+                                        href={route("wish.subscribe.checkout", {
+                                            uuid: item.uuid,
+                                            reccure: "onetime",
+                                        })}
+                                    >
+                                        OneTime Purchase
+                                    </Link>
+                                    <Link
+                                        className="inline-flex items-center px-4 border
+                    border-transparent text-xs text-white
                     uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 `
-                    active:bg-gray-900 focus:outline-none focus:ring-2 
-                    focus:ring-indigo-500 focus:ring-offset-2 transition 
-                    ease-in-out duration-150 false flex btn-pink lg w-100 
-                    mb-3 font-CeraGR  mx-auto" 
-                    href={route('wish.subscribe.checkout',{uuid: item.uuid, })}>
-                        Pay Every {item.subscription_period == 'daily' ? " Day" : ''}
-                        {item.subscription_period == 'weekly' ? " Week" : ''}
-                        {item.subscription_period == 'monthly' ? " Month" : ''}
-                    </Link>
-                    <p className="text-center" >Gain access to my exclusive subscriber only posts</p>
-
-                    
-                </div>
-            </>
-            :
-            <>
-                <div className=" pb-2">
-                    <button className="inline-flex items-center px-4 border 
+                    active:bg-gray-900 focus:outline-none focus:ring-2
+                    focus:ring-indigo-500 focus:ring-offset-2 transition
+                    ease-in-out duration-150 false flex btn-pink lg w-100
+                    mb-3 font-CeraGR  mx-auto"
+                                        href={route("wish.subscribe.checkout", {
+                                            uuid: item.uuid,
+                                        })}
+                                    >
+                                        Pay Every{" "}
+                                        {item.subscription_period == "daily"
+                                            ? " Day"
+                                            : ""}
+                                        {item.subscription_period == "weekly"
+                                            ? " Week"
+                                            : ""}
+                                        {item.subscription_period == "monthly"
+                                            ? " Month"
+                                            : ""}
+                                    </Link>
+                                    <p className="text-center">
+                                        Gain access to my exclusive subscriber
+                                        only posts
+                                    </p>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className=" pb-2">
+                                    <button
+                                        className="inline-flex items-center px-4 border
                     border-transparentfont-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 false flex btn-pink lg w-100 mb-2 font-CeraGR  mx-auto"
-                     onClick={()=>gotologin('onetime')}>
-                        OneTime Purchase
-                    </button>
-                    <button className="inline-flex items-center px-4 border 
-                    border-transparent text-xs text-white 
+                                        onClick={() => gotologin("onetime")}
+                                    >
+                                        OneTime Purchase
+                                    </button>
+                                    <button
+                                        className="inline-flex items-center px-4 border
+                    border-transparent text-xs text-white
                     uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 `
-                    active:bg-gray-900 focus:outline-none focus:ring-2 
-                    focus:ring-indigo-500 focus:ring-offset-2 transition 
-                    ease-in-out duration-150 false flex btn-pink lg w-100 
-                    mb-3 font-CeraGR  mx-auto" 
-                    onClick={()=>gotologin()}>
-                        Pay Every {item.subscription_period == 'daily' ? " Day" : ''}
-                        {item.subscription_period == 'weekly' ? " Week" : ''}
-                        {item.subscription_period == 'monthly' ? " Month" : ''}
-                    </button>
-                    <p className="text-center" >Gain access to my exclusive subscriber only posts</p>
-                </div>
-                </>
-            }
-            </>
-                
-                : 
-                <div className=" pb-2">
-                    <ToCart currency={currency} sub={sub} ItemAdded={ItemAdded}  auth={auth}
-                        pending={item.price - item.fullfill_amount}
-                        crowd={item.subscription == 2}
-                        amount={cartamount}
-                        item={item}
-                        isEqual={item.price <= item.fullfill_amount}
-                        is_cart={is_cart}
-                        text={`Add To Cart And Keep Shopping`}
-                        classes={`btn-pink lg w-100 mb-3 font-CeraGR ${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
-                        uuid={uuid}
-                    />
-                    <ToCart currency={currency} sub={sub} auth={auth}
-                        ItemAdded={ItemAdded}
-                        pending={item.price - item.fullfill_amount}
-                        crowd={item.subscription == 2}
-                        amount={cartamount}
-                        item={item}
-                        isEqual={item.price <= item.fullfill_amount}
-                        is_cart={is_cart}
-                        text={`Add To Cart And Checkout`}
-                        checkoutbtn={true}
-                        classes={`btn-pink lg w-100 mb-3 font-CeraGR ${item.subscription == "2" && item.price <= item.fullfill_amount ? 'd-none' : '' }`}
-                        uuid={uuid}
-                    />
-                </div>
-            }
-            {showall ? <Link  href={`/${item.user && item.user.username}`} className="m-auto d-table text-primary" >See All {item.user && item.user.name}'s Wishes</Link> : ''}
+                    active:bg-gray-900 focus:outline-none focus:ring-2
+                    focus:ring-indigo-500 focus:ring-offset-2 transition
+                    ease-in-out duration-150 false flex btn-pink lg w-100
+                    mb-3 font-CeraGR  mx-auto"
+                                        onClick={() => gotologin()}
+                                    >
+                                        Pay Every{" "}
+                                        {item.subscription_period == "daily"
+                                            ? " Day"
+                                            : ""}
+                                        {item.subscription_period == "weekly"
+                                            ? " Week"
+                                            : ""}
+                                        {item.subscription_period == "monthly"
+                                            ? " Month"
+                                            : ""}
+                                    </button>
+                                    <p className="text-center">
+                                        Gain access to my exclusive subscriber
+                                        only posts
+                                    </p>
+                                </div>
+                            </>
+                        )}
+                    </>
+                ) : (
+                    <div className=" pb-2">
+                        <ToCart
+                            currency={currency}
+                            sub={sub}
+                            ItemAdded={ItemAdded}
+                            auth={auth}
+                            pending={item.price - item.fullfill_amount}
+                            crowd={item.subscription == 2}
+                            amount={cartamount}
+                            item={item}
+                            isEqual={item.price <= item.fullfill_amount}
+                            is_cart={is_cart}
+                            text={`Add To Cart And Keep Shopping`}
+                            classes={`btn-pink lg w-100 mb-3 font-CeraGR ${
+                                item.subscription == "2" &&
+                                item.price <= item.fullfill_amount
+                                    ? "d-none"
+                                    : ""
+                            }`}
+                            uuid={uuid}
+                        />
+                        <ToCart
+                            currency={currency}
+                            sub={sub}
+                            auth={auth}
+                            ItemAdded={ItemAdded}
+                            pending={item.price - item.fullfill_amount}
+                            crowd={item.subscription == 2}
+                            amount={cartamount}
+                            item={item}
+                            isEqual={item.price <= item.fullfill_amount}
+                            is_cart={is_cart}
+                            text={`Add To Cart And Checkout`}
+                            checkoutbtn={true}
+                            classes={`btn-pink lg w-100 mb-3 font-CeraGR ${
+                                item.subscription == "2" &&
+                                item.price <= item.fullfill_amount
+                                    ? "d-none"
+                                    : ""
+                            }`}
+                            uuid={uuid}
+                        />
+                    </div>
+                )}
+                {showall ? (
+                    <Link
+                        href={`/${item.user && item.user.username}`}
+                        className="m-auto d-table text-primary"
+                    >
+                        See All {item.user && item.user.name}'s Wishes
+                    </Link>
+                ) : (
+                    ""
+                )}
             </div>
         </Popup>
     );

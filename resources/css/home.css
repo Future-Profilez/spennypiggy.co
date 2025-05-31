@@ -114,7 +114,7 @@ select#country{text-transform:capitalize;border-radius:10px;border:1px solid var
 .sharelinks{text-align:center;border-top:1px solid var(--voilet);padding:8px;}
 .sharelinks a,.userprofilesec h2{font-style:normal;text-transform:uppercase;text-align:center;}
 .sharelinks a{color:var(--pink);text-shadow:1px 1px 0 var(--black);line-height:19px;}
-.userphoto img{ border:4px solid var(--mint);}
+.userphoto img{ border:4px solid #000;}
 .accountphotosm,.wishlistModal .accordion-button::after{display:none;}
 .userprofilesec h2{color:var(--white);font-size:24px;font-weight:400;line-height:normal;}
 .userphotobox{height:180px;margin-bottom:110px;border:2px solid var(--voilet);border-top:none;border-radius:22px 22px 30px 30px;}
@@ -546,8 +546,16 @@ ul.socialmedia li svg{width:25px !important;height:24px !important;}
 .wishManage .rts___nav___btn___container{position:absolute;right:0;background:linear-gradient(90deg,rgb(0 0 0 / 0%) -84%,rgb(0 0 0) 100%) !important;top:5px;width:60px !important;}
 .wishManage .rts___btn.rts___nav___btn{width:41px;height:40px !important;margin-left:auto !important;margin-right:5px !important;background:transparent;}
 .wishManage .rts___tabs{padding:0 !important;}
-.wishManage .rts___btn{ font-size:18px; border-radius:0 !important;border:0;color:#fff !important;border-bottom:2px solid transparent !important;padding-left:2px !important;padding-right:5px !important;margin-right:23px !important;}
-.wishManage .rts___tab___selected{color:var(--pink) !important;background:transparent !important;border-color:var(--pink) !important;}
+.wishManage .rts___btn {
+    font-size: 18px;
+    border-radius: 0 !important;
+    border: 0;
+    color: #b5b5b5 !important;
+    border-bottom: 2px solid transparent !important;
+    padding-left: 2px !important;
+    padding-right: 5px !important;
+    margin-right: 23px !important;
+}.wishManage .rts___tab___selected{color:var(--pink) !important;background:transparent !important;border-color:var(--pink) !important;}
 .wishManage button.rts___nav___btn{margin:0 !important;}
 .wishManage .rts___btn.rts___nav___btn svg{stroke:#fff !important;width:30px;height:30px;}
 .wishManage .rts___tabs___container{position:relative;padding-right:44px !important;}
@@ -896,3 +904,32 @@ select#country{width:100%;}
 .menutoggle .menu{left:-100%;transition:0.4s;}
 .menutoggle.shows .menu{transition:0.4s;left:0%;}
 .otp-input{line-height:32px;font-family:sans-serif;}
+
+
+.dark1 {
+  background: #1a1a1a !important; /* Very dark gray, almost black */
+}
+
+.dark2 {
+  background: #262626 !important; /* Dark charcoal */
+}
+
+.dark3 {
+  background: #333333 !important; /* Charcoal gray */
+}
+
+.dark4 {
+  background: #404040 !important; /* Medium-dark gray */
+}
+
+.dark5 {
+  background: #4d4d4d !important; /* Slate gray */
+}
+
+.dark6 {
+  background: #595959 !important; /* Soft dark gray */
+}
+
+.dark7 {
+  background: #666666 !important; 
+}

@@ -3,6 +3,11 @@
 namespace App;
 
 use App\Models\Currency;
+use App\Models\GifterCardVerification;
+use App\Models\User;
+use App\Models\UserPayment;
+use App\Models\UserVerificationStatus;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -145,6 +150,46 @@ class Helpers
         } catch (\Exception $e) {
             Log::error('Error sending push notification: ' . $e->getMessage());
             return response()->json(['error' => 'Error sending push notification: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public static function checkGifterCardVerificationStatus(): bool
+    {
+        $user = Auth::user();
+        try {
+
+            if ($user->role != 0) {
+                return false;
+            }
+
+            $totalPaid = UserPayment::whereHas('fromUser')->where('from_user_id', $user->id)
+                ->where('status', 'paid')
+                ->get();
+
+            if ($totalPaid->isEmpty()) {
+                return false;
+            }
+
+            $convertedAmount = [];
+            foreach ($totalPaid as $payment) {
+                if ($payment->currency != 'GBP') {
+                    $convertedAmount[] = Helpers::priceFormat($payment->currency, $payment->amount, 'GBP');
+                } else {
+                    $convertedAmount[] = $payment->amount;
+                }
+            }
+
+            $totalPaid = array_sum($convertedAmount);
+
+            if ($user->is_500_limit_exceeded == 0 && $totalPaid && $totalPaid > 500) {
+                $user->update(['profile_status_lock' => 1, 'is_500_limit_exceeded' => 1]);
+                return true;
+            }
+
+            return false;
+        } catch (\Exception $e) {
+            Log::error('Error retrieving authenticated user: ' . $e->getMessage());
+            return false;
         }
     }
 }
