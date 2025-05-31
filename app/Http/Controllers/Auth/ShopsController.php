@@ -18,6 +18,7 @@ use App\Models\ShopPayment;
 use App\Models\ShopShippingInfo;
 use App\Models\ShopVarients;
 use App\Models\User;
+use App\Models\UserPayment;
 use App\Models\UserShopCategories;
 use App\StripeControl;
 use Carbon\Carbon;
@@ -451,7 +452,6 @@ class ShopsController extends Controller
 
     public function singleShopList($slug, $uuid, $session_id = null)
     {
-
         $shop = Shop::where('uuid', $uuid)->with(['user', 'shop_varients'])->first();
 
         $opened = null;
@@ -564,6 +564,14 @@ class ShopsController extends Controller
 
     public function buyShopItem(Request $request, $shop_id, $varient_id)
     {
+        $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
+        if ($checkGifterStatus == true) {
+            return response()->json([
+                'status' => false,
+                'message' => "⚠️ Please complete your card verification payment and wait for admin approval before making further payments."
+            ]);
+        }
+
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         try {
             if (!empty(request()->query('message'))) {
@@ -789,7 +797,11 @@ class ShopsController extends Controller
     {
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         try {
-            $stripeid = ShopPayment::where('uuid', $id)->first();
+            $stripeid = ShopPayment::with('shop', 'user')->where('uuid', $id)->first();
+            if (!$stripeid) {
+                Log::error("No ShopPayment found for UUID: $id");
+                return redirect()->back()->with('error', 'Invalid payment ID.');
+            }
 
             if ($stripeid->anonymous == 1) {
                 $username = "Anonymous user";
@@ -837,10 +849,23 @@ class ShopsController extends Controller
 
             /****************************SHOP**PWA**ENDS****************************************************/
 
+            $userPayment = new UserPayment();
+            $userPayment->from_user_id = $stripeid->user_id ?? null;
+            $userPayment->to_user_id = $stripeid->shop->user_id;
+            $userPayment->product_type = 'shop';
+            $userPayment->amount = $stripeid->amount;
+            $userPayment->currency = $stripeid->currency;
+            $userPayment->payment_method = 'stripe';
+            $userPayment->payment_details = json_encode($stripeid->session_id, true);
+            $userPayment->paid_at = Carbon::now();
+            $userPayment->status = $stripeid->payment_status ?? 'paid';
+            $userPayment->save();
+
             $slug = strtolower(str_replace(" ", "-", $stripeid->shop->name));
 
             return redirect(route('single-shop-list', [$slug, $stripeid->shop->uuid, $stripeid->session_id]))->with('success', 'Payment Successful.');
         } catch (Exception $e) {
+            Log::error("Error in successPayment: " . $e->getMessage());
             return redirect(route('user.show', [$stripeid->shop->user->username]))->with('error', $e->getMessage());
         }
     }

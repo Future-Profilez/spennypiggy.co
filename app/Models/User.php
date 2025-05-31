@@ -34,6 +34,7 @@ class User extends Authenticatable
         'username',
         'country',
         'bio',
+        'bio_approved',
         'gender',
         'password',
         'uuid',
@@ -45,6 +46,9 @@ class User extends Authenticatable
         'identity_verification_details',
         'ip_address',
         'profile_status_lock',
+        'profile_reject_reason',
+        'is_500_limit_exceeded',
+        'is_subscribed',
     ];
 
     public static function boot()

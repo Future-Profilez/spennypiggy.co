@@ -24,7 +24,7 @@ class CheckStripeIdentityVerification
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (!$user || $user->role == 0) {
             return $next($request);
         }
 
@@ -55,44 +55,4 @@ class CheckStripeIdentityVerification
 
         return $next($request);
     }
-
-    // public function handle(Request $request, Closure $next)
-    // {
-    //     $user = Auth::user();
-
-    //     if (!$user) {
-    //         return $next($request);
-    //     }
-
-    //     // $socialLink = SocialLinks::where('user_id', $user->id)->where(function ($q) {
-    //     //     $q->where('twitter', '!=', null)
-    //     //         ->orWhere('instagram', '!=', '')
-    //     //         ->orWhere('tumblr', '!=', '')
-    //     //         ->orWhere('twitch', '!=', '')
-    //     //         ->orWhere('facebook', '!=', '');
-    //     // })->exists();
-
-    //     $bioSocialStatus = UserVerificationStatus::where('user_id', $user->id)->where('bio_status', 1)->where('social_status', 1)->where('address_status', 1)->exists();
-
-    //     if ($user && $user->role == 1 && $user->identity_status == 0 && $user->avatar_approved == 1 && $bioSocialStatus) {
-
-    //         $subscriptionCheck = MonthlyCharge::where('user_id', $user->id)
-    //             ->where('status', 'paid')
-    //             ->exists();
-
-    //         // Check if the user's identity_status is not verified (0)
-    //         if ($subscriptionCheck) {
-    //             // dd($user);
-    //             // Redirect to the Stripe identity verification page
-    //             return Inertia::render('Auth/StripeIdentity', [
-    //                 'status' => false,
-    //                 'data' => $user,
-    //                 'message' => 'Please complete your Stripe identity verification.',
-    //             ]);
-    //         }
-    //     }
-
-    //     // If verified, allow the request to proceed
-    //     return $next($request);
-    // }
 }

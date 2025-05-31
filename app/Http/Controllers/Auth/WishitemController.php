@@ -118,7 +118,6 @@ class WishitemController extends Controller
             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         } else {
-            dd('come');
             $user = User::find(Auth::id());
             $taxamount = $request->price * config('app.single_tax') / 100;
             $adminFee = config('app.administration_fee');
@@ -693,6 +692,15 @@ class WishitemController extends Controller
 
     public function addToCart($uuid, $device_id, $sub, $amount = null)
     {
+        $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
+        if ($checkGifterStatus == true) {
+            return response()->json([
+                'status' => false,
+                'msg' => "⚠️ Please complete your card verification payment and wait for admin approval before making further payments."
+            ]);
+            //    return to_route('user.show', ['username' => $user->username])->with("error", "⚠️ Your card verification is pending admin approval. Please wait before making any payments.");
+        }
+
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
 
         $amount = round($amount, 2, PHP_ROUND_HALF_UP);

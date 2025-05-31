@@ -138,6 +138,7 @@ class RegisteredUserController extends Controller
                 'ip_address' => $ip_address,
                 'country' => $request->country_code ?? null,
                 'bio' => $randomBio, // Here goes the random bio
+                'profile_status_lock' => $request->role ? 1 : 0,
             ]);
             $user->refresh();
 
@@ -149,15 +150,15 @@ class RegisteredUserController extends Controller
 
 
             if ($request->role == 0) {
-                UserVerificationStatus::create(
-                    [
-                        'user_id' => $user->id,
-                        'role' => $request->role,
-                        'bio_status' => 1,
-                        'social_status' => 1,
-                        'address_status' => 0
-                    ]
-                );
+                // UserVerificationStatus::create(
+                //     [
+                //         'user_id' => $user->id,
+                //         'role' => $request->role,
+                //         'bio_status' => 1,
+                //         'social_status' => 1,
+                //         'address_status' => 0
+                //     ]
+                // );
 
                 GifterAddress::create([
                     'user_id' => $user->id,
@@ -331,93 +332,6 @@ class RegisteredUserController extends Controller
         ]);
     }
 
-    // public function gifterCardVerification(Request $request)
-    // {
-    //     $currency = strtolower($request->cookie("currency", "GBP"));
-    //     $user = Auth::user();
-    //     $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-
-    //     // Step 1: Ensure Stripe customer
-    //     if (empty($user->stripe_id)) {
-    //         $stripeCustomer = $stripe->customers->create([
-    //             'email' => $user->email,
-    //             'name' => $user->name,
-    //         ]);
-    //         $user->stripe_id = $stripeCustomer->id;
-    //         $user->save();
-    //     }
-
-    //     // Step 2: Get base price (from fixed product in Stripe)
-    //     $productId = env('GIFTER_VERIFY_PRODUCT_ID');
-
-    //     $priceList = $stripe->prices->all([
-    //         'product' => $productId,
-    //         'active' => true,
-    //         'limit' => 10,
-    //     ]);
-
-    //     Log::info("Price List: ");
-    //     Log::info(json_encode($priceList, true));
-
-    //     $basePrice = collect($priceList->data)->firstWhere('currency', 'gbp');
-
-    //     if (!$basePrice) {
-    //         return response()->json(['status' => false, 'message' => 'Base GBP price not found.'], 404);
-    //     }
-
-    //     $baseAmount = $basePrice->unit_amount / 100; // Convert to major unit (e.g. 1 GBP)
-
-    //     // Step 3: Add tax (20%) and VAT (20% on subtotal)
-    //     $tax = $baseAmount * 0.20;
-    //     $subtotal = $baseAmount + $tax;
-    //     $vat = $subtotal * 0.20;
-    //     $finalAmount = $subtotal + $vat;
-
-    //     Log::info("Base Amount: $baseAmount, Tax: $tax, Subtotal: $subtotal, VAT: $vat, Final Amount: $finalAmount");
-
-    //     // Step 4: Convert to selected currency
-    //     $convertedAmount = Helpers::priceFormat('gbp', $finalAmount, $currency);
-    //     $finalUnitAmount = intval(round($convertedAmount * 100)); // in smallest unit
-
-    //     // Step 5: Create Checkout Session with inline amount (not linked to Stripe price object)
-    //     $session = $stripe->checkout->sessions->create([
-    //         'success_url' => route('card.verification.success', [$user->uuid]),
-    //         'cancel_url' => route('card.verification.failed', [$user->uuid]),
-    //         'mode' => 'payment',
-    //         'customer' => $user->stripe_id,
-    //         'line_items' => [[
-    //             'price_data' => [
-    //                 'currency' => $currency,
-    //                 'product' => $productId,
-    //                 'unit_amount' => $finalUnitAmount,
-    //             ],
-    //             'quantity' => 1,
-    //         ]],
-    //         'payment_method_types' => ['card'],
-    //     ]);
-
-    //     // Step 6: Update or create verification record
-    //     $verification = GifterCardVerification::updateOrCreate(
-    //         ['user_id' => $user->id],
-    //         [
-    //             'amount' => $baseAmount,
-    //             'currency' => $currency,
-    //             'status' => 'pending',
-    //             'payment_details' => null,
-    //             'payment_method' => 'Card',
-    //         ]
-    //     );
-
-    //     // Step 7: Lock profile
-    //     $user->update(['profile_status_lock' => 1]);
-
-    //     return response()->json([
-    //         'status' => true,
-    //         'checkout_url' => $session->url,
-    //         'verification' => $verification,
-    //     ]);
-    // }
-
     /**
      * Handle successful card verification.
      */
@@ -468,21 +382,38 @@ class RegisteredUserController extends Controller
             );
         }
 
-        // Find the latest verification record
-        $verification = GifterCardVerification::where('user_id', $user->id)
-            ->latest()
-            ->first();
+        if ($user->role == 0) {
+            // Find the latest verification record
+            $verification = GifterCardVerification::where('user_id', $user->id)
+                ->latest()
+                ->first();
 
-        if ($verification) {
-            $verification->status = 'success';
-            $verification->payment_details = json_encode([
-                'payment_intent' => $session,
-            ]);
-            $verification->save();
+            if ($verification) {
+                $verification->status = 'success';
+                $verification->payment_details = json_encode([
+                    'payment_intent' => $session,
+                ]);
+                $verification->save();
+            }
+
+            $userVerificationStatus = UserVerificationStatus::where('user_id', $user->id)
+                ->where('role', 0)
+                ->first();
+            if (!$userVerificationStatus) {
+                $userVerificationStatus = new UserVerificationStatus();
+                $userVerificationStatus->user_id = $user->id;
+                $userVerificationStatus->role = 0; // Assuming role 0 is for regular users
+            }
+
+            $userVerificationStatus->bio_status = 1; // Set gifter card status to verified
+            $userVerificationStatus->social_status = 1; // Set gifter card status to verified
+            $userVerificationStatus->address_status = 1; // Set gifter card status to verified
+            $userVerificationStatus->user_profile_status = 1; // Set gifter card status to verified
+            $userVerificationStatus->save();
         }
 
         // pending profile
-        $user->update(['profile_status_lock' => 1]);
+        $user->update(['profile_status_lock' => 2]);
 
         return redirect()->route('user.show', ['username' => $user->username])->with('success', "Payment Card Verification Successfully Completed.");
     }

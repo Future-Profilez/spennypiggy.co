@@ -301,9 +301,7 @@ Route::middleware('auth')->group(function () {
         })->name("redirecting");
 
 
-        Route::get('my-intro/{id}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
 
-        Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
         Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity');
         Route::get('cancel-subs/{uuid}', [StripeController::class, 'cancelSubs'])->name('cancel-subs');
         Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
@@ -351,7 +349,6 @@ Route::middleware('auth')->group(function () {
             Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay")->middleware('mustCompletedCardVerification');
             Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
         });
-
     });
 });
 
@@ -364,7 +361,8 @@ Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-
 Route::post('mandatory-status', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status');
 Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status');
 
-
+Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
+Route::get('my-intro/{id}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
 Route::get('tip-jar/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');
 Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
 

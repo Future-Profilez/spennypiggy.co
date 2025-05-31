@@ -48,9 +48,9 @@ import { CiGift } from "react-icons/ci";
 import OldSubscribe from "./webpush/OldSubscribe";
 
 export default function Dashboard(props) {
-    console.log("props",props)
+    // alert("props")
     const w = useWidthCount();
-    const{auth,user,username,global_currency,itemid}= props;
+    const{auth,user,username,global_currency,itemid,verification_status}= props;
     const [tab, setTab] = useState(0);
     const onTabClick = (e, d) => {
         setTab(d);
@@ -387,7 +387,7 @@ export default function Dashboard(props) {
         </>
     }
 
-    
+
 
     return (
         <>
@@ -422,7 +422,7 @@ export default function Dashboard(props) {
                             <Userprofile IsloggedIn={IsloggedIn} />
                         </div>
 
-                        {user && user?.role == 1 && IsloggedIn && showAlert ? 
+                        {user && user?.role == 1 && IsloggedIn && showAlert ?
                             <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-lg">
                                 <div>
                                     <span className="font-medium">Stripe Policy Notice:</span> To comply with Stripe's requirements, you must regularly post content related to memberships, billing, and subscriptions. Accounts that do not may be suspended.
@@ -474,6 +474,12 @@ export default function Dashboard(props) {
                                                                             <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
                                                                                 {(user &&user.bio) ||""}
                                                                             </p>
+                                                                            {IsloggedIn && auth?.verification_status?.user_profile_status == 2 && user?.profile_status_lock == 0 && user?.profile_reject_reason != null  ?
+                                                                                <div className="mt-3">
+                                                                                    <p className="text-red-700">Profile Rejected Reason</p>
+                                                                                    <p className="text-red-500 text-sm">Reason : {user?.profile_reject_reason }.</p>
+                                                                                </div>
+                                                                              : ''}
                                                                             {IsloggedIn && user?.edit_bio_reason  ?
                                                                                 <div className="mt-3">
                                                                                     <p className="text-red-700">Bio Edit Request</p>

@@ -15,6 +15,7 @@ use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
 use App\Models\Logs;
 use App\Models\User;
+use App\Models\UserPayment;
 use App\StripeControl;
 use Carbon\Carbon;
 use Exception;
@@ -254,6 +255,12 @@ class BillsController extends Controller
      */
     public function buyBill(Request $request, $uuid, $reccure = 'continue')
     {
+        $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
+        if ($checkGifterStatus == true) {
+            $user = Auth::user();
+            return to_route('user.show', ['username' => $user->username])->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
+        }
+
         try {
 
             $user = Auth::user(); // or $requestingUser if handling guests
@@ -552,6 +559,18 @@ class BillsController extends Controller
                 NotificationSave::dispatch($message, $bill_pay->bill->user, $bill_pay->user, 'Bill');
 
                 $bill_pay->save();
+
+                $userPayment = new UserPayment();
+                $userPayment->from_user_id = $bill_pay->user_id;
+                $userPayment->to_user_id = $bill_pay->bill->user_id;
+                $userPayment->product_type = 'bill';
+                $userPayment->amount = $bill_pay->amount;
+                $userPayment->currency = $bill_pay->currency;
+                $userPayment->payment_method = 'stripe';
+                $userPayment->payment_details = json_encode($session, true);
+                $userPayment->paid_at = Carbon::now();
+                $userPayment->status = $session->payment_status;
+                $userPayment->save();
 
                 return to_route('thank-you', ['username' => $bill_pay->bill->user->username])->with('success', "Payment for subscription of bill is successful.");
             }
