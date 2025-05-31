@@ -109,7 +109,6 @@ class CheckoutController extends Controller
                 }
 
                 $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
-                Log::info('customer: ' . json_encode($customer_id));
 
                 if ($existingPriceEntry) {
                     $priceId = $existingPriceEntry->price_id;
@@ -237,7 +236,6 @@ class CheckoutController extends Controller
                 $title = "🎁 New Wish Received!";
                 $content = "{{ $FanName }} has sent you a paid wish. Go check it out!";
                 $email = $dd->owner->email;
-                Log::info("email: $email");
 
                 Helpers::sendNotification($title, $content, $email);
 

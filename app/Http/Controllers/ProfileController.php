@@ -111,13 +111,7 @@ class ProfileController extends Controller
         // $fullUrl = $request->fullUrl(); // Includes query parameters
         // $method = $request->method();   // GET, POST, etc.
 
-        // Log::info("🔗 URL Hit: $method $fullUrl");
-
-        $user = User::where('id', Auth::id())->where(
-            'is_uk',
-            0
-            // $q->whereNot('country', 'GB')->orWhereNull('country');
-        )->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
         $currency = strtolower($request->cookie("currency", "GBP"));
 
         // if($request->min_surprise_amount < 5){

@@ -33,7 +33,6 @@ class SendPendingApprovalNotifications extends Command
     public function handle()
     {
         try {
-            Log::info('Running pending approval notifications summary command');
 
             $pendingSummary = [];
 
@@ -150,7 +149,6 @@ class SendPendingApprovalNotifications extends Command
                     Notification::route('mail', $toEmail)
                         ->notify(new PendingApprovalNotification($pendingSummary));
                 }
-                Log::info('Sent summary notification with ' . count($pendingSummary) . ' categories');
             } else {
                 Log::info('No pending items found.');
             }

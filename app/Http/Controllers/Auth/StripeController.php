@@ -1628,9 +1628,6 @@ class StripeController extends Controller
             return response()->json(['error' => 'Invalid signature'], 400);
         }
 
-        Log::info('Webhook received: mandatorySubscriptionStatus');
-        Log::info(json_encode($event));
-
         if (!empty($event)) {
             $eventType = $event->type;
             $object = $event->data->object;
@@ -1642,12 +1639,6 @@ class StripeController extends Controller
             $customerEmail = $customer->email ?? null;
             $customerName = data_get($object, 'customer_name');
             $invoicePdf = data_get($object, 'invoice_pdf');
-
-            Log::info('customerEmail: ');
-            Log::info($customerEmail);
-
-            Log::info('Webhook received: ' . $eventType);
-            Log::info(json_encode($event));
 
             $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->latest()->first();
 
