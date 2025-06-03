@@ -162,21 +162,14 @@ class CheckoutController extends Controller
             $payload = [
                 'success_url' => route('checkout.success', [$id]),
                 'cancel_url' => route('checkout.cancel', [$id]),
-                "mode"  =>  "payment",
+                'mode' => 'payment',
                 'line_items' => $lineItems,
-                'payment_intent_data' => [
-                    // 'transfer_data' => [
-                    // 'destination' => $connectedAccountId, // Creator's connected account ID
-                    // 'amount' => Helpers::priceFormat($dd->owner->default_currency, $subtotal, $currency) * 100,
-                    // ],
-                    // 'application_fee_amount' => $taxNew,
-                    'description' => "Custom Content Purchase."
-                ],
-                'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
+                'customer_email' => 'user@example.com',
                 'automatic_tax' => [
                     'enabled' => true,
                 ],
             ];
+
 
             $connectedAccount = $connectedAccountId;
 

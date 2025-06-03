@@ -445,18 +445,30 @@ export default function Dashboard(props) {
                                     <div className={`  tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`} >
 
                                         <div className="inlinetab ">
-                                                <div className="newnav-tabs flex items-center justify-between mb-4  ">
-                                                    <Tabs activeTab={tab} onTabClick={onTabClick} hideNavBtnsOnMobile={false} >
+                                            <div className="newnav-tabs flex flex-col gap-2 mb-4">
+
+                                                {/* Show rejection message if profile is rejected */}
+                                                {!IsloggedIn && user?.profile_status_lock != 2 && user?.profile_reject_reason != null && (
+                                                    <div className="text-red-600 text-xl">
+                                                        This creator's profile has been rejected by the admin. Payments to this creator are currently disabled.
+                                                    </div>
+                                                )}
+
+                                                {/* Show tabs only if profile is not rejected */}
+                                                {!IsloggedIn && user?.profile_status_lock == 2 && user?.profile_reject_reason == null && (
+                                                    <Tabs activeTab={tab} onTabClick={onTabClick} hideNavBtnsOnMobile={false}>
                                                         <Tab key="0">About</Tab>
-                                                        <Tab key="1" >Wishes</Tab>
-                                                        <Tab key="2" >Feed</Tab>
-                                                        <Tab key="3" >Membership</Tab>
-                                                        <Tab key="4" >Bills</Tab>
-                                                        <Tab key="5" >Shop</Tab>
-                                                        <Tab key="6" >Gift Item</Tab>
+                                                        <Tab key="1">Wishes</Tab>
+                                                        <Tab key="2">Feed</Tab>
+                                                        <Tab key="3">Membership</Tab>
+                                                        <Tab key="4">Bills</Tab>
+                                                        <Tab key="5">Shop</Tab>
+                                                        <Tab key="6">Gift Item</Tab>
                                                     </Tabs>
-                                                    {IsloggedIn ? <Toggle /> : ''}
-                                                </div>
+                                                )}
+
+                                                {IsloggedIn && <Toggle />}
+                                            </div>
 
                                                 <div className="tabs-containers min-height" >
                                                     {tab == '0' ?
