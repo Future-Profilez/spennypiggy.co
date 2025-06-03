@@ -28,11 +28,11 @@ class CheckStripeIdentityVerification
             return $next($request);
         }
 
-        $isBioSocialVerified = UserVerificationStatus::where('user_id', $user->id)
-            ->where('bio_status', 1)
-            ->where('social_status', 1)
-            ->where('address_status', 1)
-            ->exists();
+        // $isBioSocialVerified = UserVerificationStatus::where('user_id', $user->id)
+        //     ->where('bio_status', 1)
+        //     ->where('social_status', 1)
+        //     ->where('address_status', 1)
+        //     ->exists();
 
         $hasPaidSubscription = MonthlyCharge::where('user_id', $user->id)
             ->where('status', 'paid')
@@ -41,7 +41,7 @@ class CheckStripeIdentityVerification
         $needsIdentityVerification = $user->role == 1
             && $user->identity_status == 0
             && $user->avatar_approved == 1
-            && $isBioSocialVerified
+            // && $isBioSocialVerified
             && $hasPaidSubscription;
 
 

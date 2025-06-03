@@ -282,12 +282,12 @@ export default function Dashboard(props) {
         setShowAlert(false);
     };
 
-        
+
     useEffect(() => {
         if (auth?.user?.email && twq) {
             twq('event', 'tw-ozu4h-pt5uc', {
-                conversion_id: auth?.user?.uuid, 
-                email_address: auth?.user?.email 
+                conversion_id: auth?.user?.uuid,
+                email_address: auth?.user?.email
             });
         }
     },[]);

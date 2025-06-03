@@ -103,12 +103,12 @@ class StripeController extends Controller
         // $mem_post = Post::where('user_id', $user->id)->where('for_module', 'membership')->first();
         // $support_post = Post::where('user_id', $user->id)->where('for_module', 'support')->first();
 
-        $membership = Membership::where('user_id', $user->id)->where('deleted_at', null)->whereIn('status', [0, 1])->whereIn('approved', [0, 1])->first();
-        $bill = Bills::where('user_id', $user->id)->where('deleted_at', null)->whereIn('status', [0, 1])->whereIn('approved', [0, 1])->first();
+        // $membership = Membership::where('user_id', $user->id)->where('deleted_at', null)->whereIn('status', [0, 1])->whereIn('approved', [0, 1])->first();
+        // $bill = Bills::where('user_id', $user->id)->where('deleted_at', null)->whereIn('status', [0, 1])->whereIn('approved', [0, 1])->first();
 
-        if (empty($membership) || empty($bill)) {
-            return redirect(route("user.show", ["username" => $user->username]))->with("error", "Before connecting your Stripe account, you need to add at least one Membership and one Bill for your fans total of at least two items.");
-        }
+        // if (empty($membership) || empty($bill)) {
+        //     return redirect(route("user.show", ["username" => $user->username]))->with("error", "Before connecting your Stripe account, you need to add at least one Membership and one Bill for your fans total of at least two items.");
+        // }
 
         if (empty($user->account_id)) {
             // if (!$request->isMethod("POST")) {
@@ -763,6 +763,9 @@ class StripeController extends Controller
                 "customer" => $customer_id, // Connected account customer ID
                 "success_url" => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
                 "cancel_url" => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
+                'automatic_tax' => [
+                    'enabled' => true,
+                ],
             ];
 
             try {

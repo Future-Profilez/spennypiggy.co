@@ -169,7 +169,7 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         Intervention\Image\ImageServiceProvider::class,
-        ])->toArray(),
+    ])->toArray(),
 
     /*
     |--------------------------------------------------------------------------
@@ -187,14 +187,23 @@ return [
         'Image' => Intervention\Image\Facades\Image::class,
     ])->toArray(),
 
-    'surprise_tax' => 10,
-    'single_tax' => 20,
-    'subs_tax' => 10,
-    'crowd_tax' => 20,
-    'member_tax' => 10,
-    'jar_tax' => 20,
-    'bill_tax' => 10,
-    'shop_tax' => 20,
+    'surprise_tax' => 15,
+    'single_tax' => 15,
+    'subs_tax' => 15,
+    'crowd_tax' => 15,
+    'member_tax' => 15,
+    'jar_tax' => 15,
+    'bill_tax' => 15,
+    'shop_tax' => 15,
+
+    // 'surprise_tax' => 10,
+    // 'single_tax' => 20,
+    // 'subs_tax' => 10,
+    // 'crowd_tax' => 20,
+    // 'member_tax' => 10,
+    // 'jar_tax' => 20,
+    // 'bill_tax' => 10,
+    // 'shop_tax' => 20,
 
 
     'administration_fee' => 1,
