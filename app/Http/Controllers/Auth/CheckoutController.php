@@ -141,7 +141,7 @@ class CheckoutController extends Controller
                     'price_data' => [
                         'currency' => $currency,
                         'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
-                        'unit_amount_decimal' => Helpers::priceFormat($dd->owner->default_currency, $new_total_amount, $currency) * 100
+                        'unit_amount_decimal' => Helpers::priceFormat($dd->owner->default_currency, $ConvertedAmount, $currency) * 100
                     ]
                 ];
                 // $subtotal += $dd->amount * $dd->quantity;
@@ -230,7 +230,6 @@ class CheckoutController extends Controller
                 // below is wish pwa for fans
 
                 $CreatorName = !empty($dd->owner->name) ? $dd->owner->name : 'A Creator';
-                Log::info($CreatorName . " has received a wish from " . $dd->user->name);
                 $titles = "✨ Wish Sent Successfully!";
                 $contents = "You've sent a wish to $CreatorName. They'll be notified right away!";
                 $emails = $dd->user->email ?? null;
