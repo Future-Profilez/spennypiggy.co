@@ -173,9 +173,6 @@ class CheckoutController extends Controller
                     'description' => "Custom Content Purchase."
                 ],
                 'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
-                'automatic_tax' => [
-                    'enabled' => true,
-                ],
             ];
 
             $connectedAccount = $connectedAccountId;
