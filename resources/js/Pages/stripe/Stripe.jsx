@@ -8,7 +8,7 @@ import { useRef } from "react";
 import Popup from '@/Components/Popup';
 
 export default function Stripe(props) {
-    const { auth, user, 
+    const { auth, user,
         bills_count, membership_count
      } = props;
      const verification_status = auth && auth.verification_status;
@@ -117,15 +117,15 @@ export default function Stripe(props) {
                                 {verification_status?.social_status == 0 ? <p className="text-yellow-600 mt-2 "> ⚠️ Your social media handles are not approved yet.</p> : ''}
                                 {auth?.user?.avatar == null ? <p className="text-yellow-600 mt-2 "> ⚠️ Please update your profile picture before activating your account.</p> : ''}
                                 {auth?.user?.avatar && auth?.user?.avatar_approved == 0 ? <p className="text-yellow-600 mt-2 "> ⚠️ Your profile image hasn't been approved yet.</p> : ''}
-                                {bills_count < 1 ? <p className="text-yellow-600 mt-2 "> ⚠️ Please add at least one bill before activating your account.</p> : ''}
-                                {membership_count < 1 ? <p className="text-yellow-600 mt-2 "> ⚠️ Please add at least one membership before activating your account.</p> : ''}
+                                {/* {bills_count < 1 ? <p className="text-yellow-600 mt-2 "> ⚠️ Please add at least one bill before activating your account.</p> : ''} */}
+                                {/* {membership_count < 1 ? <p className="text-yellow-600 mt-2 "> ⚠️ Please add at least one membership before activating your account.</p> : ''} */}
                             </div>
                          }
 
                         {auth?.user?.profile_status_lock == 0 && auth?.user?.profile_reject_reason ?
                             <div className="mt-4 alert alert-danger">
                              <h2 className="text-red-600 text-xl">Application Rejected</h2>
-                             <p className="text-red-500 text-lg">{auth?.user?.profile_reject_reason}</p> 
+                             <p className="text-red-500 text-lg">{auth?.user?.profile_reject_reason}</p>
                             </div>
                         :'' }
 

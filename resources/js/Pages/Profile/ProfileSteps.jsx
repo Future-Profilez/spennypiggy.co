@@ -202,7 +202,7 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                         </div> : ""} */}
 
                         {/* membership_required */}
-                       {status && status.membership_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl flex  items-center p-3 mt-3 justify-between">
+                       {/* {status && status.membership_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl flex  items-center p-3 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pe-3">
                                 <div className={`check-icon me-2 pt-1 ${ status && status.membership_required == 1 ? "checked" : "" }`} >
                                     <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
@@ -219,10 +219,10 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                             <div>
                                 <AddMembership text="Add Membership" classes="edit_membership_step" />
                             </div>
-                        </div> : ""}
+                        </div> : ""} */}
 
                         {/* bill_required */}
-                       {status && status.bill_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl flex  items-center p-3 mt-3 justify-between">
+                       {/* {status && status.bill_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl flex  items-center p-3 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pe-3">
                                 <div className={`check-icon me-2 pt-1 ${ status && status.bill_required == 1 ? "checked" : "" }`} >
                                     <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
@@ -239,7 +239,7 @@ export default function ProfileSteps({ IsloggedIn, fetchingLinks, sLinks }) {
                             <div>
                                 <AddBills text="Add Bill" classes="edit_bill_step" />
                             </div>
-                        </div> : ""}
+                        </div> : ""} */}
 
                         {/* vat_setting */}
                         {status && status.vat_setting !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl flex  items-center p-3 mt-3 justify-between">

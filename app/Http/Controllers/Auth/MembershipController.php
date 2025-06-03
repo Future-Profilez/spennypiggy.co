@@ -124,6 +124,12 @@ class MembershipController extends Controller
 
         try {
             $connectedAccountId = $user->account_id;
+            if (empty($connectedAccountId)) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => "You need to connect your Stripe account first."
+                ]);
+            }
             $product = StripeControl::createProduct($productPayload, $connectedAccountId);
 
             $mem->product_id = $product->id;
@@ -286,7 +292,7 @@ class MembershipController extends Controller
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus == true) {
             $user = Auth::user();
-           return to_route('user.show', ['username' => $user->username])->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
+            return to_route('user.show', ['username' => $user->username])->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
         }
 
         $user = Auth::user(); // or $requestingUser if handling guests
