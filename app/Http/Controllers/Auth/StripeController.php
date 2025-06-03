@@ -1621,11 +1621,16 @@ class StripeController extends Controller
         $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
 
         $payload = $request->getContent();
-        $sigHeader = $request->header('Stripe-Signature');
+        // $sigHeader = $request->header('Stripe-Signature');
+        $sig_header = $request->header('Stripe-Signature');
         $event = null;
 
         try {
-            $event = \Stripe\Webhook::constructEvent($payload, $sigHeader, $endpoint_secret);
+            $event = Webhook::constructEvent(
+                $payload,
+                $sig_header,
+                $endpoint_secret
+            );
         } catch (\UnexpectedValueException | \Stripe\Exception\SignatureVerificationException $e) {
             Log::error("Webhook signature verification failed: " . $e->getMessage());
             return response()->json(['error' => 'Invalid signature'], 400);
@@ -2069,7 +2074,7 @@ class StripeController extends Controller
             'name' => 'Gifter Card Verification',
             'images' => ["https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/"],
             "default_price_data" => ["currency" => 'gbp', "unit_amount_decimal" => $price * 100],
-        ]);
+        ], true);
 
         return response()->json([
             'product_id' => $product->id,
