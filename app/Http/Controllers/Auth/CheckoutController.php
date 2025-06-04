@@ -135,27 +135,64 @@ class CheckoutController extends Controller
                     ]);
                 }
 
-                $lineItems[] = [
-                    // 'price' => $dd->stripe_product_id ?? '',
-                    'quantity' => $dd->quantity,
-                    'price_data' => [
-                        'currency' => $currency,
-                        'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
-                        'unit_amount_decimal' => Helpers::priceFormat($dd->owner->default_currency, $ConvertedAmount, $currency) * 100
-                    ]
+                $subtotal += $totalAmount * $dd->quantity;
+                $taxNew += $dd->tax * $dd->quantity;
+                $storeTax = $taxNew + $StoreAdminsFees;
+                $taxNew += $showAdminsFees;
+                // $taxNew += 50;
+
+                $lineItems = [
+                    // Your main product
+                    [
+                        'quantity' => $dd->quantity,
+                        'price_data' => [
+                            'currency' => $currency,
+                            'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
+                            'unit_amount_decimal' => Helpers::priceFormat($dd->owner->default_currency, $ConvertedAmount, $currency) * 100,
+                        ]
+                    ],
+                    // Platform fee + Vat as a separate item
+                    [
+                        'quantity' => 1,
+                        'price_data' => [
+                            'currency' => $currency,
+                            'product_data' => [
+                                'name' => 'Platform Fee + Vat',
+                            ],
+                            'unit_amount' => $taxNew * 100,
+                            'tax_behavior' => 'exclusive',
+                        ],
+                    ],
                 ];
+
                 // $subtotal += $dd->amount * $dd->quantity;
                 // $taxNew += $dd->tax * $dd->quantity;
 
-                $subtotal += $dd->amount * $dd->quantity;
-                $taxNew += $dd->tax * $dd->quantity;
-                $taxNew += $StoreAdminsFees;
 
                 // this amount will be transfer to the creators account
                 $transfer_amount += $ConvertedAmount * $dd->quantity;
             }
 
             // $transfering_amount = $subtotal - $taxNew;
+
+            // $payload = [
+            //     'success_url' => route('checkout.success', [$id]),
+            //     'cancel_url' => route('checkout.cancel', [$id]),
+            //     'mode' => 'payment',
+            //     'line_items' => $lineItems,
+            //     'customer_email' => 'user@example.com',
+            //     'automatic_tax' => [
+            //         'enabled' => true,
+            //     ],
+            //     'payment_intent_data' => [
+            //         'application_fee_amount' => round($taxNew * 100), // Admin fee
+            //         // 'transfer_data' => [
+            //         //     'destination' => $connectedAccountId, // Creator's connected account ID
+            //         //     'amount' => round($transfer_amount * 100), // Amount to transfer to creator
+            //         // ],
+            //         // 'on_behalf_of' => $connectedAccountId, // On behalf of the creator
+            //     ],
+            // ];
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
@@ -164,12 +201,12 @@ class CheckoutController extends Controller
                 'cancel_url' => route('checkout.cancel', [$id]),
                 'mode' => 'payment',
                 'line_items' => $lineItems,
-                'customer_email' => 'user@example.com',
-                'automatic_tax' => [
-                    'enabled' => true,
-                ],
+                'customer_email' => 'prem@futureprofilez.com',
+                // 'automatic_tax' => [
+                //     'enabled' => true,
+                // ],
                 'payment_intent_data' => [
-                    'application_fee_amount' => round($taxNew * 100), // Admin fee
+                    'application_fee_amount' => round($taxNew * 100), // Admin fee + tax
                     // 'transfer_data' => [
                     //     'destination' => $connectedAccountId, // Creator's connected account ID
                     //     'amount' => round($transfer_amount * 100), // Amount to transfer to creator
@@ -177,6 +214,7 @@ class CheckoutController extends Controller
                     // 'on_behalf_of' => $connectedAccountId, // On behalf of the creator
                 ],
             ];
+
 
 
             $connectedAccount = $connectedAccountId;
@@ -189,7 +227,7 @@ class CheckoutController extends Controller
                 'session_id' => $sessionCreate->id,
                 'amount_subtotal' => $subtotal,
                 'amount_total' => $sessionCreate->amount_total / 100,
-                'tax' => $taxNew,
+                'tax' => $storeTax,
                 'currency' => $getdata[0]->owner->default_currency,
                 'payment_method_config_detail_id' => optional($sessionCreate->payment_method_configuration_details)->id,
                 'payment_method_type' => optional($sessionCreate->payment_method_types)[0],

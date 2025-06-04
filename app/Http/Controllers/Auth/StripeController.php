@@ -682,7 +682,8 @@ class StripeController extends Controller
             $adminFee = config('app.administration_fee');
             $adminFee = Helpers::priceFormat('GBP', $adminFee, $currency);
 
-            $total_unit_amount = $unit_amount + $adminFee;
+            // $total_unit_amount = $unit_amount + $adminFee;
+            $total_tax_amount = $tax + $adminFee;
             $connectedAccountId = $wish->user->account_id;
 
             // Step 1: Check if customer already exists in connected account
@@ -747,9 +748,35 @@ class StripeController extends Controller
             }
 
             // Step 6: Build line item
+            // $items = [
+            //     'price' => $priceId,  // Use the existing price ID
+            //     'quantity' => 1,
+            // ];
+
             $items = [
-                'price' => $priceId,  // Use the existing price ID
-                'quantity' => 1,
+                // Your main product
+                [
+                    'quantity' => 1,
+                    'price' => $priceId,
+                    // 'price_data' => [
+                    //     'currency' => $currency,
+                    //     'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
+                    //     'unit_amount_decimal' => Helpers::priceFormat($dd->owner->default_currency, $ConvertedAmount, $currency) * 100,
+                    // ]
+                ],
+                // Platform fee + Vat as a separate item
+                [
+                    'quantity' => 1,
+                    'price_data' => [
+                        'currency' => $currency,
+                        'product_data' => [
+                            'name' => 'Platform Fee',
+                            // 'name' => 'Platform Fee + Vat',
+                        ],
+                        'unit_amount' => $total_tax_amount * 100,
+                        'tax_behavior' => 'exclusive',
+                    ],
+                ],
             ];
 
             // Step 7: Build session payload
@@ -763,8 +790,16 @@ class StripeController extends Controller
                 "customer" => $customer_id, // Connected account customer ID
                 "success_url" => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
                 "cancel_url" => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
-                'automatic_tax' => [
-                    'enabled' => true,
+                // 'automatic_tax' => [
+                //     'enabled' => true,
+                // ],
+                'payment_intent_data' => [
+                    'application_fee_amount' => round($total_tax_amount * 100), // Admin fee + tax
+                    // 'transfer_data' => [
+                    //     'destination' => $connectedAccountId, // Creator's connected account ID
+                    //     'amount' => round($transfer_amount * 100), // Amount to transfer to creator
+                    // ],
+                    // 'on_behalf_of' => $connectedAccountId, // On behalf of the creator
                 ],
             ];
 
