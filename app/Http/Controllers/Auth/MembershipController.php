@@ -392,9 +392,11 @@ class MembershipController extends Controller
             // $unit_amount = $amount * 100;
 
             $memberTax = config('app.member_tax'); // Membership tax percentage
-
+            Log::info("Membership Tax Percentage: " . $memberTax);
             $taxAmount = round(($paymentPrice * $memberTax / 100), 2, PHP_ROUND_HALF_UP); // Tax based on combined percentage
+            Log::info("Membership Tax Amount: " . $taxAmount);
             $totalPrice = $paymentPrice + $taxAmount + $paymentAdminFee; // Total price including tax
+            Log::info("Membership Total Price: " . $totalPrice);
             try {
                 $connectedAccountId = $membership->user->account_id;
 
@@ -485,7 +487,6 @@ class MembershipController extends Controller
                 $applicationFeeAmount = round($totalPaymentTaxAmount * 100);
                 if ($membership->level === 'lifetime') {
                     $payload['mode'] = 'payment';
-
 
                     $payload['payment_intent_data'] = [
                         'application_fee_amount' => $applicationFeeAmount,
