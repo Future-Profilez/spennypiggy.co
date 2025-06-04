@@ -41,7 +41,6 @@ export default function ActivateCard() {
                     {(auth?.user?.profile_status_lock == 1 || auth?.user?.profile_status_lock == 0) && auth?.user?.is_500_limit_exceeded == 1 && auth?.user?.is_subscribed !== 1  ? (
                         <div className="dark2 rounded-[30px] p-3">
                             <div className="stripNote p-3 p-md-4">
-
                                 <h4 className="text-[30px] font-GillSans text-white text-center text-uppercase mb-3">
                                    {auth?.user?.profile_reject_reason ? 'Re-Activate Account' : ' Activate Account' }
                                 </h4>
@@ -57,7 +56,6 @@ export default function ActivateCard() {
                                 ) : (
                                     ""
                                 )}
-
                                 <p className="mb-1 text-[17px] text-center text-gray-400">
                                     To activate your card and unlock the ability
                                     to make payments on our platform, simply
