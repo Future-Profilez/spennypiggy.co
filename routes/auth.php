@@ -46,6 +46,7 @@ use Illuminate\Support\Facades\Http;
 use App\SeoMeta;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Request;
+use PHPUnit\Event\Code\Test;
 
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
@@ -461,8 +462,9 @@ Route::prefix("bill")->name("bill.")->group(function () {
     Route::get('/handle/{uuid}/{status}', [BillsController::class, 'handlePayment'])->name('handle');
 });
 
-Route::get('image/dalle', [TestController::class, 'testAiImage'])->name("image-dalle");
+Route::get('delete-all-products', [TestController::class, 'deleteAllProducts'])->name('delete-all-products');
 
+Route::get('image/dalle', [TestController::class, 'testAiImage'])->name("image-dalle");
 
 Route::match(["get", "post"], '/test-kyc-webhook', [TestController::class, 'reviewWebhook'])->name("test-kyc")->withoutMiddleware(VerifyCsrfToken::class);
 

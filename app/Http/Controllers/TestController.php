@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\CurrencyExchange;
 use App\Helpers;
 use App\IpTracker;
+use App\Jobs\DeleteStripeProductJob;
 use App\Jobs\FetchSelfTwitterData;
 use App\Mail\Welcome;
 use App\Models\Currency;
@@ -20,7 +21,11 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use App\Jobs\SendIdentityVerificationEmail;
+use App\Models\Bills;
+use App\Models\Membership;
+use App\Models\Shop;
 use App\Models\UserVerificationStatus;
+use App\Models\WishItem;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Client\ConnectionException;
@@ -252,8 +257,8 @@ class TestController extends Controller
 
         // Process CREATORS
         $creators = User::whereHas('creatorMonthlySubscription', function ($q) {
-                $q->where('status', 'paid');
-            })->where('role', 1)->where('is_uk', 0)->get();
+            $q->where('status', 'paid');
+        })->where('role', 1)->where('is_uk', 0)->get();
 
         foreach ($creators as $user) {
             $hasAvatar = !empty($user->avatar) && $user->avatar_approved == 1;
@@ -300,6 +305,45 @@ class TestController extends Controller
         return "User verification entries seeded successfully.";
     }
 
+    public function deleteAllProducts()
+    {
+        $productsGroupedByUser = [];
+
+        foreach (Bills::whereNull('deleted_at')->get() as $bill) {
+            if ($bill->product_id && $bill->user) {
+                $productsGroupedByUser[$bill->user_id][] = $bill->product_id;
+            }
+        }
+
+        foreach (WishItem::whereNull('deleted_at')->get() as $item) {
+            if ($item->stripe_product_id && $item->user) {
+                $productsGroupedByUser[$item->user_id][] = $item->stripe_product_id;
+            }
+        }
+
+        foreach (Membership::whereNull('deleted_at')->get() as $membership) {
+            if ($membership->product_id && $membership->user) {
+                $productsGroupedByUser[$membership->user_id][] = $membership->product_id;
+            }
+        }
+
+        foreach (Shop::whereNull('deleted_at')->get() as $shop) {
+            if ($shop->stripe_product_id && $shop->user) {
+                $productsGroupedByUser[$shop->user_id][] = $shop->stripe_product_id;
+            }
+        }
+
+        foreach ($productsGroupedByUser as $userId => $productIds) {
+            $user = \App\Models\User::find($userId);
+            if (!$user) continue;
+
+            foreach (array_unique($productIds) as $productId) {
+                DeleteStripeProductJob::dispatch($productId, $user);
+            }
+        }
+
+        Log::info("Dispatched deletion jobs for users: " . implode(', ', array_keys($productsGroupedByUser)));
+    }
 
 
 

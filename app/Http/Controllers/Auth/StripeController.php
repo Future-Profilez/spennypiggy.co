@@ -675,7 +675,7 @@ class StripeController extends Controller
             // } else {
 
 
-            $amount = $price + $tax;
+            $amount = $price + $totalTax;
             $unit_amount = Helpers::priceFormat($wish->currency, $amount, $currency);
             $tax = Helpers::priceFormat($wish->currency, $tax, $currency);
 
