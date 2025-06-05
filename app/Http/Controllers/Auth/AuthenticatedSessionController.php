@@ -85,7 +85,7 @@ class AuthenticatedSessionController extends Controller
         }
         $ipAddress = $request->ip();
         $checkIpExist = $user->ip_address;
-        if (empty($checkIpExist)) {
+        if (empty($checkIpExist) && $user instanceof \App\Models\User) {
             $user->ip_address = $ipAddress;
             $user->save();
         }

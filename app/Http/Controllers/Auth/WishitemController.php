@@ -1135,8 +1135,10 @@ class WishitemController extends Controller
                 'name' => $user->name ?? null,
             ]);
 
-            $user->stripe_id = $stripeCustomer->id;
-            $user->save();
+                $user->stripe_id = $stripeCustomer->id;
+                if ($user instanceof \App\Models\User) {
+                    $user->save();
+                }
         }
 
         // $request->validate([
@@ -2658,12 +2660,16 @@ class WishitemController extends Controller
             $user->auto_tweet = 1;
         }
 
-        $user->save();
+        if ($user) {
+            $user->save();
 
-        if ($user->auto_tweet == 1) {
-            return back()->with('success', "Auto tweet for gift is Enabled.");
+            if ($user->auto_tweet == 1) {
+                return back()->with('success', "Auto tweet for gift is Enabled.");
+            } else {
+                return back()->with('success', "Auto tweet for gift is Disabled.");
+            }
         } else {
-            return back()->with('success', "Auto tweet for gift is Disabled.");
+            return back()->with('error', "User not found.");
         }
     }
 
