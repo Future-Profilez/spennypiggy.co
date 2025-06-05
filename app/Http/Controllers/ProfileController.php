@@ -503,30 +503,7 @@ class ProfileController extends Controller
         ]);
     }
 
-
-    /**
-     * List the intro video by uuid
-     *
-     * @param $uuid uuid of the intro video
-     * @return JsonResponse
-     */
-    public function getIntroById($id)
-    {
-        if (Auth::id() == $id) {
-            $intro = UserIntro::where('user_id', $id)->first();
-            return response()->json([
-                'status' => true,
-                'intro' => $intro,
-                'login' => true,
-            ]);
-        } else {
-            $intro = UserIntro::where('user_id', $id)->whereApproved(1)->first();
-            return response()->json([
-                'status' => true,
-                'intro' => $intro
-            ]);
-        }
-    }
+    
 
     /**
      * Delete the intro video
@@ -941,21 +918,16 @@ class ProfileController extends Controller
     public function profileStepsStatus()
     {
         $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
-
         $memPost = Post::where('user_id', $user->id)->where('for_module', 'membership')->first();
         $subPost = Post::where('user_id', $user->id)->where('for_module', 'subscription')->first();
         $supPost = Post::where('user_id', $user->id)->where('for_module', 'support')->first();
-
         $membership = Membership::where('user_id', $user->id)->where('deleted_at', null)->where('status', 1)->whereIn('approved', [0, 1])->first();
         $bill = Bills::where('user_id', $user->id)->where('deleted_at', null)->where('status', 1)->whereIn('approved', [0, 1])->first();
-
         $total = 0;
-
         $basic_profile = empty($user->avatar) || empty($user->bio) || empty($user->cover) ? 0 : 1;
         if ($basic_profile) {
             $total += 1;
         }
-
         $social_links = empty($user->social_links) ? 0 : 1;
         if ($social_links) {
             $total += 1;

@@ -9,7 +9,7 @@ import { useRef } from "react";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 import { FaHouseChimneyUser } from "react-icons/fa6";
 import PriceFormat from "@/includes/PriceFormat";
-import { usePage } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 
 const memberships = [
   {
@@ -145,14 +145,16 @@ export default function AddMembership({updateState, item, text, classes}) {
         setLoading(true);
         axios.post(`/membership/save`, {...data, thumbnail: thumb}).then((resp)=>{
           if(resp.data.status) {
-            successAlert(resp.data.msg)
-            updateState && updateState(new Date());
+            successAlert(resp.data.msg) 
             setClose(false);
             setTimeout(() => {
               setClose();
             }, 100);
-            reset();
             resetUploader();
+            router.visit(route('user.show', { username: auth?.user?.username, page: 'memberships' }), {
+              preserveState: true,
+              preserveScroll: true,
+            });
           } else {
             if(resp.data.errors){
               Object.entries(resp.data.errors).forEach(([key, value]) => {

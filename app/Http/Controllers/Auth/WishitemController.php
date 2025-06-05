@@ -303,7 +303,6 @@ class WishitemController extends Controller
         }
 
         if (in_array($request->subscription, [0, 1])) {
-
             $productPayload = [
                 "name"  =>  $wish->wishname . "(Custom Content Purchase)",
                 "images" => [$wish->perma_link],
@@ -323,7 +322,6 @@ class WishitemController extends Controller
 
             try {
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-
                 $productPayload = [
                     'name' => $request->wishname ?? 'Untitled Wish',
                     'images' => [$wish->perma_link],
@@ -357,11 +355,11 @@ class WishitemController extends Controller
                 }
             } catch (Exception $e) {
                 $wish->delete();
-                return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
+                return redirect(route("user.show", ["username" => Auth::user()->username, "page" => "wishes"]))->with('error', "Stripe Error: " . $e->getMessage());
             }
         }
 
-        return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added, your upload will be approved shortly.");
+        return redirect(route("user.show", ["username" => Auth::user()->username, "page" => "wishes"]))->with('success', "Wish Item has been added, your upload will be approved shortly.");
     }
 
     public function updateWishItem(Request $request, $uuid = null)
@@ -470,12 +468,12 @@ class WishitemController extends Controller
                     }
                 } catch (Exception $e) {
                     $wish->delete();
-                    return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
+                    return redirect(route("user.show", ["username" => Auth::user()->username, 'page'=>'wishes']))->with('error', "Stripe Error: " . $e->getMessage());
                 }
             }
             //send email
             // SaveWishlist::dispatch($user);
-            return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been updated.");
+            return redirect(route("user.show", ["username" => Auth::user()->username, 'page'=>'wishes']))->with('success', "Wish Item has been updated.");
         }
     }
 
@@ -2578,58 +2576,7 @@ class WishitemController extends Controller
         ]);
     }
 
-    /**
-     * List a tip jar goal
-     *
-     * @param $uuid uuid of user
-     * @return mixed
-     */
-    public function listGoal($uuid)
-    {
-        $user = User::where('uuid', $uuid)->where('is_uk', 0)->first();
-        // TipGoal::where('status', 1)->where('completed', 0)->where('completed_at', '<', Carbon::now())->update(['completed' => 1]);
-
-        $goalPayment = TipGoalsPayment::where('creator_id', $user->id)->where('status', 'paid')->sum('amount');
-
-        $arr = [];
-        $bill_payment = BillPayment::whereHas('bill', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->where('status', 'paid')->sum('amount');
-
-        $mem_payment = MembershipPayment::whereHas('membership', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->where('status', 'paid')->sum('amount');
-
-        $wish_payment = StripePaymentDetail::where('owner_id', $user->id)->where('payment_status', 'paid')->sum('amount_subtotal');
-
-        $sub_payment = WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->where('status', 'paid')->sum('amount');
-
-        $total_earnings = $goalPayment + $bill_payment + $mem_payment + $wish_payment + $sub_payment;
-
-        if ($total_earnings < 100) {
-            $target = 100;
-        } elseif ($total_earnings < 1000) {
-            $target = 1000;
-        } elseif ($total_earnings < 10000) {
-            $target = 10000;
-        } elseif ($total_earnings < 100000) {
-            $target = 100000;
-        } elseif ($total_earnings < 1000000) {
-            $target = 1000000;
-        } else {
-            $target = 10000000;
-        }
-
-        $arr['fullfilled'] = $total_earnings;
-        $arr['target'] = $target;
-        $arr['currency'] = $user->default_currency;
-        return response()->json([
-            'status' => true,
-            'goal' => $arr,
-        ]);
-    }
+    
 
     /**
      * Mark as completed the tip jar goal

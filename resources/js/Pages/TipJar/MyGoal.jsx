@@ -4,9 +4,9 @@ import PriceFormat from '@/includes/PriceFormat';
 import mouse from '../../../assets/img/mouse.png';
 import { usePage } from '@inertiajs/react';
 
-export default function MyGoal({goal, IsloggedIn}) {
+export default function MyGoal({  IsloggedIn}) {
 
-  const { user } = usePage().props;
+  const { user, goal } = usePage().props;
   const [showEarning, setShowEarning] = useState(user && user.show_piggy_bank == 1 ? true : false );
   const { formatMultiPrice } = PriceFormat();
   const getPercentage = (actual, paid) => {

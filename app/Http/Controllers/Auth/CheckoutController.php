@@ -162,22 +162,18 @@ class CheckoutController extends Controller
             $payload = [
                 'success_url' => route('checkout.success', [$id]),
                 'cancel_url' => route('checkout.cancel', [$id]),
-                'mode' => 'payment',
+                "mode"  =>  "payment",
                 'line_items' => $lineItems,
-                'customer_email' => 'user@example.com',
-                'automatic_tax' => [
-                    'enabled' => true,
-                ],
                 'payment_intent_data' => [
-                    'application_fee_amount' => round($taxNew * 100), // Admin fee
                     // 'transfer_data' => [
-                    //     'destination' => $connectedAccountId, // Creator's connected account ID
-                    //     'amount' => round($transfer_amount * 100), // Amount to transfer to creator
+                    // 'destination' => $connectedAccountId, // Creator's connected account ID
+                    // 'amount' => Helpers::priceFormat($dd->owner->default_currency, $subtotal, $currency) * 100,
                     // ],
-                    // 'on_behalf_of' => $connectedAccountId, // On behalf of the creator
+                    // 'application_fee_amount' => $taxNew,
+                    'description' => "Custom Content Purchase."
                 ],
+                'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
             ];
-
 
             $connectedAccount = $connectedAccountId;
 
@@ -230,16 +226,15 @@ class CheckoutController extends Controller
                 // below is wish pwa for fans
 
                 $CreatorName = !empty($dd->owner->name) ? $dd->owner->name : 'A Creator';
-                Log::info($CreatorName . " has received a wish from " . $dd->user->name);
                 $titles = "✨ Wish Sent Successfully!";
-                $contents = "You've sent a wish to $CreatorName. They'll be notified right away!";
+                $contents = "You've sent a wish to {{ $CreatorName }}. They'll be notified right away!";
                 $emails = $dd->user->email ?? null;
                 Helpers::sendNotification($titles, $contents, $emails);
 
                 // below is wish pwa for creator
                 $FanName = $dd->user->name ?? 'A Fan';
                 $title = "🎁 New Wish Received!";
-                $content = "$FanName has sent you a paid wish. Go check it out!";
+                $content = "{{ $FanName }} has sent you a paid wish. Go check it out!";
                 $email = $dd->owner->email;
 
                 Helpers::sendNotification($title, $content, $email);

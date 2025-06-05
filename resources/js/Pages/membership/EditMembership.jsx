@@ -1,7 +1,7 @@
 import { useAlerts } from "@/Components/Alerts";
 import React, { useEffect } from "react";
 import  LoaderButton from "@/Components/LoaderButton";
-import { useForm, usePage } from "@inertiajs/react";
+import { router, useForm, usePage } from "@inertiajs/react";
 const Popup = React.lazy(() => import('@/Components/Popup'));
 import { useState } from "react";
 import GlobalUploader from "@/uploadcare/Uploader";
@@ -74,8 +74,9 @@ const membershipBenifits = [
     'value':'weekly_video_call'
   },
 ];
-export default function EditMembership({ fetch_membership, item }) {
+export default function EditMembership({   item }) {
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
+  const { auth } = usePage().props;
   const uploaderRef = useRef();
   const resetUploader = () => {
       if (uploaderRef.current) {
@@ -137,7 +138,7 @@ export default function EditMembership({ fetch_membership, item }) {
     setLoading(true);
     axios.post(`/membership/edit/${item.uuid}`, {...data, thumbnail: thumb, rewards :rewardItems}).then((resp) => {
       if (resp.data.status) {
-        fetch_membership && fetch_membership();
+        
         successAlert(resp.data.msg);
         setClose(false);
         setTimeout(() => {
@@ -145,6 +146,10 @@ export default function EditMembership({ fetch_membership, item }) {
         }, 100);
         reset();
         resetUploader();
+        router.visit(route('user.show', { username: auth.user.username, page: 'membership' }), {
+          preserveState: true,
+          preserveScroll: true,
+        });
       } else {
         if (resp.data.errors) {
           Object.entries(resp.data.errors).forEach(([key, value]) => {
