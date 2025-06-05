@@ -362,7 +362,7 @@ Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-
 Route::post('mandatory-status', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status');
 Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status');
 
-Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter'); 
+Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
 // Route::get('user/tip-jar/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');
 Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
 
@@ -424,7 +424,7 @@ Route::get('sociallinks/{username}', [AuthenticatedSessionController::class, 'so
 // Route::get('bills/{username}', [AuthenticatedSessionController::class, 'user_bills'])->name('user.bills');
 
 Route::get('gift-items/{username}', [AuthenticatedSessionController::class, 'userGiftItems'])->name('gift.items');
- 
+
 
 Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('user.posts.comments');
 

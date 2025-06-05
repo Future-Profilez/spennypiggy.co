@@ -307,27 +307,28 @@ class TestController extends Controller
 
     public function deleteAllProducts()
     {
+        $userIdToTest = 45;
         $productsGroupedByUser = [];
 
-        foreach (Bills::whereNull('deleted_at')->get() as $bill) {
+        foreach (Bills::whereNull('deleted_at')->where('user_id', $userIdToTest)->get() as $bill) {
             if ($bill->product_id && $bill->user) {
                 $productsGroupedByUser[$bill->user_id][] = $bill->product_id;
             }
         }
 
-        foreach (WishItem::whereNull('deleted_at')->get() as $item) {
+        foreach (WishItem::whereNull('deleted_at')->where('user_id', $userIdToTest)->get() as $item) {
             if ($item->stripe_product_id && $item->user) {
                 $productsGroupedByUser[$item->user_id][] = $item->stripe_product_id;
             }
         }
 
-        foreach (Membership::whereNull('deleted_at')->get() as $membership) {
+        foreach (Membership::whereNull('deleted_at')->where('user_id', $userIdToTest)->get() as $membership) {
             if ($membership->product_id && $membership->user) {
                 $productsGroupedByUser[$membership->user_id][] = $membership->product_id;
             }
         }
 
-        foreach (Shop::whereNull('deleted_at')->get() as $shop) {
+        foreach (Shop::whereNull('deleted_at')->where('user_id', $userIdToTest)->get() as $shop) {
             if ($shop->stripe_product_id && $shop->user) {
                 $productsGroupedByUser[$shop->user_id][] = $shop->stripe_product_id;
             }
@@ -342,8 +343,51 @@ class TestController extends Controller
             }
         }
 
-        Log::info("Dispatched deletion jobs for users: " . implode(', ', array_keys($productsGroupedByUser)));
+        Log::info("Tested deletion job dispatch for user ID: $userIdToTest");
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Deletion jobs dispatched for user ID: ' . $userIdToTest,
+            'products_grouped_by_user' => $productsGroupedByUser
+        ]);
     }
+    // $productsGroupedByUser = [];
+
+    // foreach (Bills::whereNull('deleted_at')->get() as $bill) {
+    //     if ($bill->product_id && $bill->user) {
+    //         $productsGroupedByUser[$bill->user_id][] = $bill->product_id;
+    //     }
+    // }
+
+    // foreach (WishItem::whereNull('deleted_at')->get() as $item) {
+    //     if ($item->stripe_product_id && $item->user) {
+    //         $productsGroupedByUser[$item->user_id][] = $item->stripe_product_id;
+    //     }
+    // }
+
+    // foreach (Membership::whereNull('deleted_at')->get() as $membership) {
+    //     if ($membership->product_id && $membership->user) {
+    //         $productsGroupedByUser[$membership->user_id][] = $membership->product_id;
+    //     }
+    // }
+
+    // foreach (Shop::whereNull('deleted_at')->get() as $shop) {
+    //     if ($shop->stripe_product_id && $shop->user) {
+    //         $productsGroupedByUser[$shop->user_id][] = $shop->stripe_product_id;
+    //     }
+    // }
+
+    // foreach ($productsGroupedByUser as $userId => $productIds) {
+    //     $user = \App\Models\User::find($userId);
+    //     if (!$user) continue;
+
+    //     foreach (array_unique($productIds) as $productId) {
+    //         DeleteStripeProductJob::dispatch($productId, $user);
+    //     }
+    // }
+
+    // Log::info("Dispatched deletion jobs for users: " . implode(', ', array_keys($productsGroupedByUser)));
+    // }
 
 
 
