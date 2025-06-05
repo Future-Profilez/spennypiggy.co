@@ -13,7 +13,7 @@ import {  Link, usePage } from "@inertiajs/react";
 import userphoto from "../../../assets/img/userphoto.png";
 import RemovePost from './RemovePost'
 
-export default function Post({item, updateState}) {
+export default function Post({item}) {
 
   const { auth, user } = usePage().props;
   const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
@@ -64,7 +64,7 @@ export default function Post({item, updateState}) {
             {item?.user ? <Link href={`${item?.user?.username}`} className="headerpost mb-0 head w-auto" >
                 <img className="author-img" src={item?.user?.avatar_url || userphoto} />
                 <div>
-                  <p className="authors text-dark"> <b> {item?.user?.name || "SPENNY PIGGY"} </b> </p>
+                  <p className="authors text-dark !capitalize"> <b> {item?.user?.name || "SPENNY PIGGY"} </b> </p>
                   <p className="authors text-muted text-small"> <TimeFormat dateString={item?.updated_at || ''} />   </p>
                 </div>
             </Link>
@@ -72,7 +72,7 @@ export default function Post({item, updateState}) {
             <Link href={`${user && user.username}`} className="headerpost mb-0 head w-auto" >
                 <img className="author-img" src={user && user.avatar_url || userphoto} />
               <div>
-                <p className="authors text-dark"> <b> {user && user.name || "SPENNY PIGGY"} </b> </p>
+                <p className="authors text-dark !capitalize"> <b> {user && user.name || "SPENNY PIGGY"} </b> </p>
                 <p className="authors text-muted text-small"> <TimeFormat dateString={item?.updated_at || ''} />   </p>
               </div>
             </Link> }
@@ -84,8 +84,8 @@ export default function Post({item, updateState}) {
               <span className='bg-dark' ></span>
               <span className='bg-dark' ></span>
             </div>}>
-                <AddPost title="Edit Post"  updateState={updateState} text={"Edit Post"} classes={`text-start`} item={item} isEdit={true} />
-                <RemovePost classes={`px-[18px] py-2 text-start w-full`} updateItems={updateState} uuid={item.uuid} text="Remove Post" />
+                <AddPost title="Edit Post"   text={"Edit Post"} classes={`text-start`} item={item} isEdit={true} />
+                <RemovePost classes={`px-[18px] py-2 text-start w-full`} uuid={item.uuid} text="Remove Post" />
             </DropdownButton> : ''} 
         </div>
         

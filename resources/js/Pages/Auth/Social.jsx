@@ -1,17 +1,14 @@
 import { useAlerts } from "@/Components/Alerts";
 import LoaderButton from "@/Components/LoaderButton";
 import Popup from "@/Components/Popup";
-import { useForm } from "@inertiajs/react";
+import { router, useForm, usePage } from "@inertiajs/react";
 import axios from "axios";
 import { useEffect } from "react";
 import { useState } from "react";
 
-export default function Social({
-    links,removetext, openSocial,
-    updatedLinks, type,
-    redirect_url
-}) {
-    const { successAlert, errorAlert, errorsHandling } = useAlerts();
+export default function AddSocial({ removetext, openSocial, sLinks, type, redirect_url }) {
+    const { auth  } = usePage().props;
+    const { successAlert, errorAlert, errorsHandling  } = useAlerts();
     const [close, setClose] = useState();
     const [loading, setloading] = useState(false);
 
@@ -22,13 +19,13 @@ export default function Social({
     },[openSocial])
 
     const [data, setData] = useState({
-        instagram: links?.instagram ? links.instagram : "",
-        discord: links?.discord ? links.discord : "",
-        facebook: links?.facebook ? links.facebook : "",
-        youtube: links?.youtube ? links.youtube : "",
-        twitch: links?.twitch ? links.twitch : "",
-        tumblr: links?.tumblr ? links.tumblr : "",
-        twitter: links?.twitter ? links.twitter : "",
+        instagram: sLinks?.instagram ? sLinks.instagram : "",
+        discord: sLinks?.discord ? sLinks.discord : "",
+        facebook: sLinks?.facebook ? sLinks.facebook : "",
+        youtube: sLinks?.youtube ? sLinks.youtube : "",
+        twitch: sLinks?.twitch ? sLinks.twitch : "",
+        tumblr: sLinks?.tumblr ? sLinks.tumblr : "",
+        twitter: sLinks?.twitter ? sLinks.twitter : "",
     });
 
     let nameattr, valueattr;
@@ -39,16 +36,18 @@ export default function Social({
     };
 
     useEffect(() => {
-        setData({
-            instagram: links?.instagram ? links.instagram : "",
-            discord: links?.discord ? links.discord : "",
-            facebook: links?.facebook ? links.facebook : "",
-            youtube: links?.youtube ? links.youtube : "",
-            twitch: links?.twitch ? links.twitch : "",
-            tumblr: links?.tumblr ? links.tumblr : "",
-            twitter: links?.twitter ? links.twitter : "",
-        });
-    }, [links]);
+        if(sLinks == undefined || sLinks == null){
+            setData({
+                instagram: sLinks?.instagram ? sLinks.instagram : "",
+                discord: sLinks?.discord ? sLinks.discord : "",
+                facebook: sLinks?.facebook ? sLinks.facebook : "",
+                youtube: sLinks?.youtube ? sLinks.youtube : "",
+                twitch: sLinks?.twitch ? sLinks.twitch : "",
+                tumblr: sLinks?.tumblr ? sLinks.tumblr : "",
+                twitter: sLinks?.twitter ? sLinks.twitter : "",
+            });
+        }
+    }, [sLinks]);
 
     const createSocial = (e) => {
         e.preventDefault();
@@ -60,11 +59,14 @@ export default function Social({
             .then((res) => {
                 if (res.data.status) {
                     successAlert(res.data.message || "Updated successfully.");
-                    updatedLinks && updatedLinks();
                     setClose(false);
-                    if(res.data?.url){
-                        window.location.href = res.data?.url;
-                    }
+                    // if(res.data?.url){
+                    //     window.location.href = res.data?.url;
+                    // }
+                    router.visit(route("user.show", auth?.user?.username), {
+                        // preserveState: true, 
+                        preserveScroll: true,
+                    });
                     setTimeout(() => {
                         setClose();
                     }, 1000);
@@ -108,7 +110,7 @@ export default function Social({
                                         name="twitter"
                                         type="text"
                                         placeholder="Enter username"
-                                        defaultValue={links?.twitter || ""}
+                                        defaultValue={sLinks?.twitter || ""}
                                         className="form-input px-2 py-2 border w-full rounded-md"
                                         onChange={handleInput}
                                     />
@@ -122,7 +124,7 @@ export default function Social({
                                         type="text"
                                         placeholder="Enter username"
                                         name="instagram"
-                                        defaultValue={links?.instagram || ""}
+                                        defaultValue={sLinks?.instagram || ""}
                                         className="form-input px-2 py-2 border w-full rounded-md"
                                         onChange={handleInput}
                                     />
@@ -132,7 +134,7 @@ export default function Social({
                                 <input id="reddit"
                                     name="reddit"
                                     type="text" placeholder="Enter reddit profile url"
-                                    defaultValue={links?.reddit||''}
+                                    defaultValue={sLinks?.reddit||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('reddit', e.target.value)}
                                 />
@@ -145,7 +147,7 @@ export default function Social({
                                     <input
                                         id="facebook"
                                         name="facebook"
-                                        defaultValue={links?.facebook || ""}
+                                        defaultValue={sLinks?.facebook || ""}
                                         type="text"
                                         placeholder={
                                             "Enter facebook profile or page url"
@@ -162,7 +164,7 @@ export default function Social({
                                     <input
                                         id="youtube"
                                         name="youtube"
-                                        defaultValue={links?.youtube || ""}
+                                        defaultValue={sLinks?.youtube || ""}
                                         type="text"
                                         placeholder={
                                             "Enter channel or video url"
@@ -179,7 +181,7 @@ export default function Social({
                                     <input
                                         id="twitch"
                                         name="twitch"
-                                        defaultValue={links?.twitch || ""}
+                                        defaultValue={sLinks?.twitch || ""}
                                         type="text"
                                         placeholder={"Enter url"}
                                         className="form-input px-2 py-2 border w-full rounded-md"
@@ -194,7 +196,7 @@ export default function Social({
                                     <input
                                         id="tumblr"
                                         name="tumblr"
-                                        defaultValue={links?.tumblr || ""}
+                                        defaultValue={sLinks?.tumblr || ""}
                                         type="text"
                                         placeholder={"Enter username"}
                                         className="form-input px-2 py-2 border w-full rounded-md"
@@ -207,7 +209,7 @@ export default function Social({
                                 <input id="other"
                                     name="other"
                                     type="text" placeholder="Enter URL"
-                                    defaultValue={links?.other||''}
+                                    defaultValue={sLinks?.other||''}
                                     className="form-input px-2 py-2 border w-full rounded-md"
                                     onChange={(e) => setData('other', e.target.value)}
                                 />

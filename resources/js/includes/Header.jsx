@@ -514,7 +514,7 @@ export default function Header({classMagicword}) {
                                 <li>
                                     <Link
                                         onClick={toggleClass}
-                                        href="https://blog.spennypiggy.co"
+                                        
                                         class="livechat relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                     >
                                         <span class="inline-flex justify-center items-center ml-4">
@@ -531,7 +531,7 @@ export default function Header({classMagicword}) {
                                 <div className="bg-[#ff87b8] h-[1px] w-full max-w-[85%] m-auto mt-3"></div>
                                 <ul className="pt-3 text-white ">
                                     <li>
-                                        <Link
+                                        <a target="_blank"
                                             onClick={toggleClass}
                                             href="https://blog.spennypiggy.co"
                                             class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
@@ -546,7 +546,7 @@ export default function Header({classMagicword}) {
                                                 class="ml-2 text-[17px] tracking-wide truncate text-white" >
                                                 Blog
                                             </span>
-                                        </Link>
+                                        </a>
                                     </li>
                                     <li>
                                         <a

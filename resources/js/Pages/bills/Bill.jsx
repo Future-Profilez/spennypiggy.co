@@ -18,7 +18,7 @@ export default function Bill(props) {
   
   const {auth} = usePage().props;
   const { format, formatMultiPrice } = PriceFormat();
-  const { itm, itemid, IsloggedIn, classes, key, fetchBills  } = props;
+  const { itm, itemid, IsloggedIn, classes, key   } = props;
   const { attributes, listeners, isDragging, index, over, setNodeRef, transform, transition } = useSortable({ id: itm && itm.id });
   const style = { 
     transform: CSS.Translate.toString(transform)
@@ -72,7 +72,7 @@ export default function Bill(props) {
                 <span className='bg-dark' ></span>
                 <span className='bg-dark' ></span>
                 </div>}>
-                        <RemoveBill classes={`px-[18px] py-2 text-start w-full`} updateItems={fetchBills} uuid={itm.uuid} text="Remove Bill" />
+                   <RemoveBill classes={`px-[18px] py-2 text-start w-full`}   uuid={itm.uuid} text="Remove Bill" />
                 </DropdownButton> 
               : ''} 
 
@@ -91,7 +91,7 @@ export default function Bill(props) {
 
             <div className='p-sm-3 p-3 pt-0 pt-sm-0' >
               {IsloggedIn ?
-                  <AddBills fetchBills={props.fetchBills} classes="btn-pink px-2 sm text-center w-100" text="Update Bill"
+                  <AddBills   classes="btn-pink px-2 sm text-center w-100" text="Update Bill"
                   item={itm} isEdit={true} />
                 :
                 <>

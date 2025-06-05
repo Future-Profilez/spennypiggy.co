@@ -11,9 +11,11 @@ import { useAlerts } from "@/Components/Alerts";
 import { useRef } from "react";
 import { FaPenNib } from "react-icons/fa6";
 import ImageGenerationWithAI from "@/Components/ImageGenerationWithAI";
+import { router, usePage } from "@inertiajs/react";
 
-export default function AddPost({item, text, classes, isEdit, updateState, title}) {
+export default function AddPost({item, text, classes, isEdit, title}) {
 
+    const {auth} = usePage().props;
     const [ close, setClose ] = useState();
     const { errorsHandling } = useAlerts();
     const [filetype, setfiletype] =  useState('image');
@@ -77,12 +79,16 @@ export default function AddPost({item, text, classes, isEdit, updateState, title
                     title: "",
                     content:""
                 });
-                updateState && updateState(new Date());
+                 
                 toast.success(resp.data.msg);
                 setClose(false);
                 setTimeout(()=>{
                     setClose();
                 },100);
+                router.visit(route('user.show', { username: auth.user.username, page: 'feed' }), {
+                    preserveState: true,
+                    preserveScroll: true,
+                });
                 resetUploader();
             } else {
                 toast.error(resp.data.msg);
@@ -138,7 +144,7 @@ export default function AddPost({item, text, classes, isEdit, updateState, title
 
                     <div className="relative">
                         <GlobalUploader ref={uploaderRef} view={false} type="minimal" sendFile={getfile} options={st.post} />
-                        <div className="absolute top-[14px] right-3">
+                        <div className="absolute top-[14px] right-12">
                             <ImageGenerationWithAI classes={`button bg-pink d-table text-[10px] d-sm-flex m-auto m-sm-0 hover:opacity-80`} update={getAIImage} />
                         </div> 
                     </div>
@@ -158,7 +164,7 @@ export default function AddPost({item, text, classes, isEdit, updateState, title
 
             <LoaderButton onClick={submitPost}
                 disabled={loading}
-                className="flex btn-pink lg mt-4 w-full "
+                className={`${rewardImage == '' || rewardImage == null ? 'opacity-50 cursor-not-allowed' : ''} flex btn-pink lg mt-4 w-full `}
                 spinnerClassName="fill-red-600">
                 {isEdit ? 
                     loading ? "Updating.." :"Update Post" 

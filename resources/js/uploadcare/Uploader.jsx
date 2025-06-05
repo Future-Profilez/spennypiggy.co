@@ -68,7 +68,7 @@ const GlobalUploader = forwardRef(({ options, sendFile, clear, view, isUploading
       const fileuid= f && f.uuid;
       if(fileuid && type !== 'video'){
           setScanning(true);
-          axios.get(`check-adult-content/${fileuid}`, {signal}).then(resp => {
+          axios.get(`/scanning/check-adult-content/${fileuid}`,).then(resp => {
             setTimeout(()=>{
                 setScanning(false);
             },100);

@@ -205,12 +205,9 @@ class MembershipController extends Controller
                 $mem->thumbnail = $request->thumbnail;
             }
             $mem->rewards = $rewards;
-
             $mem->save();
-
             try {
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-
                 if ($old_price == $mem->price) {
                     $product = $stripe->products->update($mem->product_id, [
                         "name"  => $user->username . '_' . $mem->level,
@@ -241,7 +238,6 @@ class MembershipController extends Controller
                 $mem->product_id = $product->id;
                 $mem->approved = 0;
                 $mem->save();
-
                 $logs = Logs::where('edited_membership_id', $mem->id)->where('status', 'pending')->first();
                 if (!empty($logs)) {
                     $logs->status = 'updated';
@@ -249,10 +245,9 @@ class MembershipController extends Controller
                 }
             } catch (Exception $e) {
                 $mem->delete();
-                return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
+                return redirect(route("user.show", ["username" => Auth::user()->username, "page" => "memberships"]))->with('error', "Stripe Error: " . $e->getMessage());
             }
-
-            return redirect()->back()->with('success', 'Membership level is added in your profile.');
+            return redirect(route("user.show", ["username" => Auth::user()->username, "page" => "memberships"]))->with('success', 'Membership level is added in your profile.');
         }
     }
 

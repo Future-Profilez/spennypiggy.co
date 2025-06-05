@@ -134,7 +134,7 @@ Route::middleware('auth')->group(function () {
 
             Route::get('notification-switch', [ProfileController::class, 'notificationSwitch'])->name('switch-notification');
 
-            Route::post('save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
+            Route::post('user/save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
 
             Route::post('edit-category/{id}', [WishitemController::class, 'editWishCategory'])->name('edit-category');
 
@@ -147,7 +147,7 @@ Route::middleware('auth')->group(function () {
                 ]);
             })->name("account");
 
-            Route::get('check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content');
+            Route::get('/scanning/check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content');
 
             Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
 
@@ -232,7 +232,7 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/say-thankyou/{payment_id}', [WishitemController::class, 'sayThanks'])->name('say-thankyou');
 
-        Route::post('move-wish', [WishitemController::class, 'moveWishes'])->name('move-wish');
+        Route::post('/update/move-wish', [WishitemController::class, 'moveWishes'])->name('move-wish');
 
         Route::get('/earnings', function () {
             return Inertia::render('earnings/Earnings');
@@ -278,7 +278,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/report-content/', [ProfileController::class, 'reportContent'])->name('report-content');
 
         Route::prefix('shop')->group(function () {
-            Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
+            // Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
             Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class, 'singleShopList'])->name('single-shop-list')->middleware('mustCompletedCardVerification');
             Route::match(['get', 'post'], '/buy/{uuid}/{varient_id}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item');
             Route::post('/answer-to-payment/{payment_id}', [ShopsController::class, 'answerPayment'])->name('answerPayment');
@@ -362,20 +362,17 @@ Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-
 Route::post('mandatory-status', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status');
 Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status');
 
-Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
-Route::get('my-intro/{id}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
-Route::get('tip-jar/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');
+Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter'); 
+// Route::get('user/tip-jar/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');
 Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
 
 Route::get('/how-it-works', function () {
     return Inertia::render('howitworks/Works');
 })->name("how-it-works");
 
-
 Route::get('/terms-and-conditions', function () {
     return Inertia::render('Terms');
 })->name("terms-and-conditions");
-
 
 Route::get('/promotion-terms', function () {
     return Inertia::render('Promotions');
@@ -388,16 +385,15 @@ Route::get('/files/{filename}', function (string $filename) {
 
 Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
 
-
 /* wishtender */
 Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('leaderboard');
 Route::get('first-three-leaderboard/{type?}', [LeaderBoardController::class, 'firstThreeWisher'])->name('first-three-wishes');
 /*check username exist*/
 // Route::get('/data-check', function () {
 //     $ret = StripeControl::getSubscription("sub_1OND8tG7xsNScLmXLFzAhobA");
-
 //     return $ret;
 // });
+
 Route::get('/test/test', function () {
     return Inertia::render('Test');
 })->name("test");
@@ -423,20 +419,19 @@ Route::get('check-username/{username}', [AuthenticatedSessionController::class, 
 
 Route::get('sociallinks/{username}', [AuthenticatedSessionController::class, 'sociallinks'])->name('user.sociallinks');
 
-Route::get('memberships/{username}', [AuthenticatedSessionController::class, 'user_memberships'])->name('user.memberships');
+// Route::get('memberships/{username}', [AuthenticatedSessionController::class, 'user_memberships'])->name('user.memberships');
 
-Route::get('bills/{username}', [AuthenticatedSessionController::class, 'user_bills'])->name('user.bills');
+// Route::get('bills/{username}', [AuthenticatedSessionController::class, 'user_bills'])->name('user.bills');
 
 Route::get('gift-items/{username}', [AuthenticatedSessionController::class, 'userGiftItems'])->name('gift.items');
-
-Route::get('posts/{username}', [AuthenticatedSessionController::class, 'user_posts'])->name('user.posts');
+ 
 
 Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('user.posts.comments');
 
-Route::get('/{username}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
-Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');
+Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
+// Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');
 Route::get('/items/{username}/{category_id?}', [AuthenticatedSessionController::class, 'userItems'])->name('user.items');
-Route::get('/user_category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.category');
+Route::get('/user/category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.category');
 Route::get('/user_shop_category/{username}', [AuthenticatedSessionController::class, 'user_shop_category'])->name('user.shop.category');
 
 

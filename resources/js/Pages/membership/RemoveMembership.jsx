@@ -1,7 +1,8 @@
 import { useAlerts } from '@/Components/Alerts';
+import { router, usePage } from '@inertiajs/react';
 import axios from 'axios';
-export default function RemoveMembership({text, uuid, updateItems, classes}){
-   
+export default function RemoveMembership({text, uuid, classes}){
+   const { auth } = usePage().props;
    const { successAlert, errorAlert } = useAlerts();
    const remove = (e) => {
       if(!uuid){ 
@@ -10,7 +11,10 @@ export default function RemoveMembership({text, uuid, updateItems, classes}){
       axios.get(`/membership/remove/${uuid}`).then((resp) => {
          if(resp.data.status){
             successAlert(resp.data.msg);
-            updateItems && updateItems()
+            router.visit(route('user.show', { username:auth?.user?.username, page: 'memberships' }), {
+               preserveState: true,
+               preserveScroll: true,
+            });
          }else{
             errorAlert(resp.data.msg)
          }
