@@ -155,18 +155,21 @@ class ProfileController extends Controller
                     dispatch(new SendBioSocialUpdateEmail($user, $updatedFields));
                 }
                 $user->bio = $request->bio;
-                $userProfileStatus->user_profile_status = $userProfileStatus->role == 0 ? 4 : 0;
+                $user->profile_status_lock = 1;
+                $userProfileStatus->user_profile_status = 0;
                 $userProfileStatus->save();
             }
+
             $user->min_surprise_amount = $request->min_surprise_amount ?? 0;
 
             if (!empty($avatar)) {
                 $user->avatar = $avatar['uuid'] ?? null;
                 $user->avatar_approved = 0;
+                $user->profile_status_lock = 1;
                 $user->avatar_cdn_modifier = $avatar['cdnUrlModifiers'] ?? null;
 
                 // user profile status column update when avatar update
-                $userProfileStatus->user_profile_status = $userProfileStatus->role == 0 ? 4 : 0;
+                $userProfileStatus->user_profile_status = 0;
                 $userProfileStatus->save();
             }
             if (!empty($cover)) {
