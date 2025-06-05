@@ -793,8 +793,8 @@ class StripeController extends Controller
                 // 'automatic_tax' => [
                 //     'enabled' => true,
                 // ],
-                'payment_intent_data' => [
-                    'application_fee_amount' => round($total_tax_amount * 100), // Admin fee + tax
+                'subscription_data' => [
+                    'application_fee_percent' => config('app.subs_tax'), // Admin fee + tax
                     // 'transfer_data' => [
                     //     'destination' => $connectedAccountId, // Creator's connected account ID
                     //     'amount' => round($transfer_amount * 100), // Amount to transfer to creator
