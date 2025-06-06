@@ -25,6 +25,7 @@ use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\TestController as ControllersTestController;
 use App\Http\Controllers\WishtenderController;
 use App\Http\Middleware\CheckGifterCardVerification;
 use App\Http\Middleware\VerifyCsrfToken;
@@ -457,7 +458,6 @@ Route::prefix("bill")->name("bill.")->group(function () {
     Route::get('/handle/{uuid}/{status}', [BillsController::class, 'handlePayment'])->name('handle');
 });
 
-Route::get('delete-all-products', [TestController::class, 'deleteAllProducts'])->name('delete.all.products');
 
 Route::get('image/dalle', [TestController::class, 'testAiImage'])->name("image-dalle");
 
