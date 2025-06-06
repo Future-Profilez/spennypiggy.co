@@ -10,7 +10,7 @@ export default function SiteSubscription() {
          No charges until the trial period ends.
         </p>
         <Link
-          href={"/stripe-subscription"}
+          href={"/activate-subscription"}
           className="btn-pink border-black shadow-black text-xs lg" >
           Start 3-Days Free Trial
         </Link>

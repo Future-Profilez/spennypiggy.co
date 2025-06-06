@@ -222,9 +222,9 @@ Route::middleware('auth')->group(function () {
             Route::get('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->name("mandatory.checkout");
             Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleMandatorySubscription'])->name('mandatory.handle');
 
-            Route::get('/stripe-subscription', function () {
+            Route::get('/activate-subscription', function () {
                 return Inertia::render('Profile/ActivateSubscription');
-            })->name('stripe-subscription');
+            })->name('activate-subscription');
 
             Route::post('/dalle-image', [ProfileController::class, 'getImageGenerateAI'])->name('dalle.image');
             Route::post('/upload-dalle-image', [ProfileController::class, 'uploadDalleImage'])->name('upload.dalle.image');
