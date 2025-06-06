@@ -695,14 +695,14 @@ class StripeController extends Controller
             $adminFeeGBP = config('app.administration_fee'); // fixed
             $gbpToUsdRate = Helpers::priceFormat('GBP', $adminFeeGBP, $wish->currency);
 
-            $platformFeeAmount = $basePrice * $platformFeePercentage / 100; // 37.50
-            $vatAmount = ($basePrice + $platformFeeAmount) * $vatPercentage / 100; // 50.00
-            $adminFeeUSD = $adminFeeGBP * $gbpToUsdRate; // 1.33
+            $platformFeeAmount = $basePrice * $platformFeePercentage / 100;
+            $vatAmount = ($basePrice + $platformFeeAmount) * $vatPercentage / 100;
+            $adminFeeUSD = $adminFeeGBP * $gbpToUsdRate;
 
-            $creatorTotal = $basePrice + $vatAmount; // 300.00
-            $platformTotal = $platformFeeAmount + $adminFeeUSD; // 37.50 + 1.33 = 38.83
+            $creatorTotal = $basePrice + $vatAmount;
+            $platformTotal = $platformFeeAmount + $adminFeeUSD; // example 37.50 + 1.33 = 38.83
 
-            $finalTotalAmount = $creatorTotal + $platformTotal; // 338.83
+            $finalTotalAmount = $creatorTotal + $platformTotal; // example 338.83
 
             // Application fee percent (for Checkout session)
             $applicationFeePercent = ($platformTotal / $finalTotalAmount) * 100;
