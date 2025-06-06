@@ -157,7 +157,7 @@ class CheckoutController extends Controller
                         'price_data' => [
                             'currency' => $currency,
                             'product_data' => [
-                                'name' => 'Platform Fee + Vat',
+                                'name' => 'Platform Fee',
                             ],
                             'unit_amount' => $taxNew * 100,
                             'tax_behavior' => 'exclusive',
