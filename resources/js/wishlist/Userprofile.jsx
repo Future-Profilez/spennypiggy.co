@@ -1,5 +1,6 @@
 import React from "react";
-import userphoto from "../../assets/img/userphoto.png";
+// import userphoto from "../../assets/img/userphoto.png";
+import userphoto from "../../assets/siteicon.png";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import { usePage } from '@inertiajs/react';
 const EditProfile = React.lazy(() => import('@/Pages/account/EditProfile'));
@@ -17,7 +18,7 @@ export default function Userprofile({ IsloggedIn }) {
                         <LazyLoadImage
                         alt={"image"} useIntersectionObserver={true} effect="blur"
                         src={user && user.avatar_url ? user.avatar_url : userphoto}
-                        height={150} width={150} className="rounded-full 
+                        height={150} width={150} className="rounded-full !border-3 !border-[var(--mint)]
                         !h-[130px] !w-[130px] min-w-[130px] !min-h-[130px] !max-w-[130px] !max-h-[130px]
                         md:!h-[150px] md:!w-[150px] md:min-w-[150px] md:!min-h-[150px] md:!max-w-[150px] md:!max-h-[150px]
                         " />
@@ -35,7 +36,7 @@ export default function Userprofile({ IsloggedIn }) {
                     </div>
                     <div className="ps-3">
                         <h2 className="font-GillSans  flex items-center text-start  justify-center md:justify-start">{user && user.name}
-                            {user && user.role == 1 && user.profile_status_lock == 2 ? <RiVerifiedBadgeFill  size={'1.7rem'} className="ms-2 text-mint" /> : ''}
+                            {user && user.role == 1 && user.profile_status_lock === 2 ? <RiVerifiedBadgeFill  size={'1.7rem'} className="ms-2 text-pink" /> : ''}
                         </h2>
                         <div className="userId  mb-0 flex items-center text-start  justify-center md:justify-start">
                             <ShareProfile

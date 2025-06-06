@@ -3,14 +3,12 @@ import { useAlerts } from "@/Components/Alerts";
 import { Head, Link, usePage } from "@inertiajs/react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
 import { addicon } from "@/includes/Icons";
-const AddGoal = React.lazy(() => import("./TipJar/AddGoal"));
 const Wishlist = React.lazy(() => import("./Auth/Wishlist"));
 const Wishlistbox = React.lazy(() => import("@/wishlist/Wishlistbox"));
 const Userprofile = React.lazy(() => import("@/wishlist/Userprofile"));
 const ShareProfile = React.lazy(() => import("@/wishlist/ShareProfile"));
 const Nocontent = React.lazy(() => import("@/includes/Nocontent"));
 const LoadingScreen = React.lazy(() => import("@/includes/LoadingScreen"));
-const Social = React.lazy(() => import("./Auth/Social"));
 const VersionUpdate = React.lazy(() => import("@/Components/VersionUpdate"));
 const PaymentDashboard = React.lazy(() => import("./stripe/PaymentDashboard"));
 const ChangeCurrency = React.lazy(() => import("@/Components/ChangeCurrency"));
@@ -46,33 +44,23 @@ import GiftListing from "./rye/GiftListing";
 import { FaRegHeart } from "react-icons/fa";
 import { CiGift } from "react-icons/ci";
 import OldSubscribe from "./webpush/OldSubscribe";
+import AddSocial from "./Auth/Social";
+import CreatorVerification from "./Profile/CreatorVerification";
 
 export default function Dashboard(props) {
-    // alert("props")
     const w = useWidthCount();
-    const{auth,user,username,global_currency,itemid,verification_status}= props;
+    const{auth,user,username,global_currency,itemid, slinks,wish_categories, items, page, selectedCategory}= props;
+    const [wishitems, setWishitems] = useState(useMemo(() => items || [], [items]));
+    console.log("props", props);
     const [tab, setTab] = useState(0);
-    const onTabClick = (e, d) => {
-        setTab(d);
-    };
+ 
     const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
     const [loading, setLoading] = useState(false);
     const [giftsloading, setGiftsLoading] = useState(false);
-    const [socialLinks, setSocialLinks] = useState([]);
-    const [sLinks, setLinks] = useState([]);
-    const [categories, setcategories] = useState([]);
+    const [sLinks, setLinks] = useState(slinks || []); 
     const [gifts, setGifts] = useState([]);
-
-    const fetch_categories = async (signal) => {
-        axios.get(`/user_category/${username}`, { signal })
-        .then((resp) => {
-            setcategories(resp.data.categories);
-        }).catch((_err) => {
-            console.error("error", _err);
-        });
-    };
-
+   
     const fetch_gifts = async (signal) => {
         setGiftsLoading(true);
         axios.get(`/gift-items/${username}`, { signal })
@@ -85,88 +73,16 @@ export default function Dashboard(props) {
         });
     };
 
-
-    const [its, setIts] = useState();
-    const fetchingcats = (cat, signal) => {
-        setLoading(true);
-        if(!cat){
-            setSelectedCat('');
-        }
-        fetch(`/items/${username}${cat ? `/${cat}` : ""}`)
-        .then((response) => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then((data) => {
-            setLoading(false);
-            const result = data && data.items;
-            setIts(result);
-        }).catch((error) => {
-            console.error("error", error);
-            setLoading(false);
-        });
-    };
-
     useEffect(() => {
         const controller = new AbortController();
         const { signal } = controller;
-        if(tab == '1'){
-            fetch_categories(signal);
-            fetchingcats(false, signal);
-        }
-        if(tab == '6'){
-            fetch_gifts(signal);
-            fetchingcats(false, signal);
-        }
+        fetch_gifts(signal); 
         return () => controller.abort();
     }, [tab]);
 
+ 
+ 
 
-    const [selectedCat, setSelectedCat] = useState('')
-    const showCategory = (e) => {
-        fetchingcats(e);
-        setSelectedCat(e);
-    };
-
-    const fetchingLinks = () => {
-        axios.get(`sociallinks/${username}`)
-        .then((resp) => {
-            setSocialLinks(resp.data.sociallinks);
-            setLinks(resp.data.slinks);
-        })
-        .catch((_err) => {
-            console.error("error", _err);
-        });
-    };
-    const [fetchingGoal, setfetchingGoal] = useState(false);
-    const [goal, setGoal] = useState();
-    const fetch_goal = async (signal) => {
-        if (fetchingGoal) {
-            return true;
-        }
-        setfetchingGoal(true);
-        axios.get(`tip-jar/list/${user && user.uuid}`, { signal })
-            .then((resp) => {
-                setGoal(resp.data.goal);
-                setfetchingGoal(false);
-            })
-            .catch((_err) => {
-                console.error("error", _err);
-                setfetchingGoal(false);
-            });
-    };
-
-    useEffect(() => {
-        const controller = new AbortController();
-        const { signal } = controller;
-        fetchingLinks(signal);
-        fetch_goal(signal);
-        return () => controller.abort();
-    }, []);
-
-    // Currency update
     const currencyaction = (e) => {
         if (e == "open") {
             setOpenCurrency(true);
@@ -187,7 +103,7 @@ export default function Dashboard(props) {
             array.push(name.id);
         });
         axios
-            .post(`move-wish`, {
+            .post(`/update/move-wish`, {
                 shuffled_items: array,
             })
             .then((resp) => {})
@@ -204,20 +120,21 @@ export default function Dashboard(props) {
             coordinateGetter: sortableKeyboardCoordinates,
         })
     );
+    
     const handleDragEnd = (event) => {
         if (!IsloggedIn) {
             return false;
         }
         const { active, over } = event;
-        const activeIndex = its.findIndex((item) => item.id === active.id);
+        const activeIndex = wishitems.findIndex((item) => item.id === active.id);
         const newOverIndex = over
-            ? its.findIndex((item) => item.id === over.id)
+            ? wishitems.findIndex((item) => item.id === over.id)
             : null;
         if (activeIndex !== newOverIndex) {
-            const updated = arrayMove(its, activeIndex, newOverIndex, {
+            const updated = arrayMove(wishitems, activeIndex, newOverIndex, {
                 key: "id",
             });
-            setIts(updated);
+            setWishitems(updated);
             updateMovement(updated);
         }
     };
@@ -249,22 +166,9 @@ export default function Dashboard(props) {
                 infoAlert(flash.info);
             }, 500);
         }
-    }, []);
+    }, [errors, flash]);
 
-    const [billupdated, setbillupdated] = useState("");
-    function updatebill(e) {
-        if (e == "updated") {
-            setTimeout(() => {
-                setbillupdated(new Date());
-            }, 100);
-        }
-    }
-
-    const [isUpdated, setIsUpdated] = useState();
-    const updateState = (e) => {
-        setIsUpdated(e);
-    }
-
+ 
 
     const [showAlert, setShowAlert] = useState(true);
     useEffect(() => {
@@ -281,7 +185,6 @@ export default function Dashboard(props) {
         localStorage.setItem('stripeAlertDismissedAt', Date.now().toString());
         setShowAlert(false);
     };
-
 
     useEffect(() => {
         if (auth?.user?.email && twq) {
@@ -307,7 +210,7 @@ export default function Dashboard(props) {
 
         return  <>
             {IsloggedIn ? <>
-                <div onClick={()=>setShowAdd(true)} className="addoption-action cursor-pointer px-3" dangerouslySetInnerHTML={{__html:addicon}} ></div>
+                <div onClick={()=>setShowAdd(true)} className="addoption-action cursor-pointer px-3 " dangerouslySetInnerHTML={{__html:addicon}} ></div>
                 {showAdd ?
                     <div className="bg-[#0001] rounded-xl position-fixed shadow-lg z-[99999999999999999999] flex justify-center items-center
                      top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full">
@@ -319,12 +222,9 @@ export default function Dashboard(props) {
 
                                             { wishOptions ?
                                                 <div>
-                                                    <Wishlist text="Cash Gift"
-                                                    fetchcategories={fetch_categories}
+                                                    <Wishlist text="Cash Gift" 
                                                     currency={global_currency}
-                                                    setuped={auth.user &&auth.user.stripe_details_submitted == 1 ? true : false}
-                                                    fetchingcats={fetchingcats}
-                                                    categories={categories} />
+                                                    setuped={auth.user &&auth.user.stripe_details_submitted == 1 ? true : false} />
                                                     <div  className="w-full font-bold disabled addop bg-white rounded-xl p-3 mb-2 text-center">
                                                         <div className=" flex items-center">
                                                             <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
@@ -340,11 +240,10 @@ export default function Dashboard(props) {
                                                     </div>
 
                                                 </div>
-
                                             : <div>
 
-                                            {auth.user && auth.user.stripe_details_submitted == 1 ?
-                                                    <>
+                                        
+                                                    <div className={`${auth.user && auth.user.stripe_details_submitted == 1 ? "block" : "disabled"}`}>
                                                     <div onClick={()=> setWishOptions(true)} className="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center cursor-pointer">
                                                         <div className=" flex items-center">
                                                             <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
@@ -361,15 +260,13 @@ export default function Dashboard(props) {
 
                                                     <AddItem  classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
                                                     product_type="digital_products"  />
-                                                    <AddPost classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} />
-
-                                                    {/* {ziggy && ziggy.url !== 'https://spennypiggy.co' && */}
-                                                        <AddGift text="Add Gift " classes="font-bold py-3 px-3 mb-2 text-center" updateState={updateState} fetch_gifts={fetch_gifts} addressAdded={auth?.user?.is_creator_address_found} />
-                                                    {/* // } */}
-                                                    </>
-                                            : '' }
-                                            <AddMembership updateState= {updateState} />
-                                            <AddBills updatebill={updatebill}/>
+                                                    <AddPost classes="font-bold py-3 px-3 mb-2 text-center"   />
+                                                    <AddGift text="Add Gift " classes="font-bold py-3 px-3 mb-2 text-center"
+                                                    fetch_gifts={fetch_gifts} addressAdded={auth?.user?.is_creator_address_found} />
+                                                    <AddMembership  />
+                                                    <AddBills  />
+                                                    </div>
+                                            
                                             </div>}
 
                                     </div>
@@ -396,31 +293,33 @@ export default function Dashboard(props) {
                 <div className="wishlistPage blackbg pt-6 pb-0 pb-sm-5 ">
                     <div className="containerbox">
                         <VersionUpdate />
-                        <div className="wishbanner relative ">
-                        <LazyLoadImage
-                            alt={"image"}
-                            useIntersectionObserver={true}
-                            effect="blur"
-                            height={400}
-                            className="w-full border-black border-2 shadow-mint rounded-2xl"
-                            src={user?.cover_url || wishlistbannerimg}
-                            width={1200}
-                        />
 
-                        <div className="relative">
-                            {IsloggedIn && auth && auth?.user.cover_url && auth?.user?.cover_approved == 0 ?
-                                <div className="absolute right-5 top-3 mx-auto">
-                                    <button className='tooltipbtn' >
-                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M9 15H11V9H9V15ZM10 7C10.2833 7 10.521 6.904 10.713 6.712C10.905 6.52 11.0007 6.28267 11 6C11 5.71667 10.904 5.47933 10.712 5.288C10.52 5.09667 10.2827 5.00067 10 5C9.71667 5 9.47933 5.096 9.288 5.288C9.09667 5.48 9.00067 5.71733 9 6C9 6.28333 9.096 6.521 9.288 6.713C9.48 6.905 9.71733 7.00067 10 7ZM10 20C8.61667 20 7.31667 19.7373 6.1 19.212C4.88333 18.6867 3.825 17.9743 2.925 17.075C2.025 16.175 1.31267 15.1167 0.788 13.9C0.263333 12.6833 0.000666667 11.3833 0 10C0 8.61667 0.262667 7.31667 0.788 6.1C1.31333 4.88333 2.02567 3.825 2.925 2.925C3.825 2.025 4.88333 1.31267 6.1 0.788C7.31667 0.263333 8.61667 0.000666667 10 0C11.3833 0 12.6833 0.262667 13.9 0.788C15.1167 1.31333 16.175 2.02567 17.075 2.925C17.975 3.825 18.6877 4.88333 19.213 6.1C19.7383 7.31667 20.0007 8.61667 20 10C20 11.3833 19.7373 12.6833 19.212 13.9C18.6867 15.1167 17.9743 16.175 17.075 17.075C16.175 17.975 15.1167 18.6877 13.9 19.213C12.6833 19.7383 11.3833 20.0007 10 20Z" fill="#FF8E25"/>
-                                        </svg>
-                                        <p>Cover image is waiting for approval. Currently only you can see this.</p>
-                                    </button>
-                                </div>
-                            : ""}
+
+                        <div className="wishbanner relative ">
+                            <LazyLoadImage
+                                alt={"image"}
+                                useIntersectionObserver={true}
+                                effect="blur"
+                                height={400}
+                                className="w-full border-black border-2 shadow-mint rounded-[30px]"
+                                src={user?.cover_url || wishlistbannerimg}
+                                width={1200}
+                            />
+                            <div className="relative">
+                                {IsloggedIn && auth && auth?.user.cover_url && auth?.user?.cover_approved == 0 ?
+                                    <div className="absolute right-5 top-3 mx-auto">
+                                        <button className='tooltipbtn' >
+                                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M9 15H11V9H9V15ZM10 7C10.2833 7 10.521 6.904 10.713 6.712C10.905 6.52 11.0007 6.28267 11 6C11 5.71667 10.904 5.47933 10.712 5.288C10.52 5.09667 10.2827 5.00067 10 5C9.71667 5 9.47933 5.096 9.288 5.288C9.09667 5.48 9.00067 5.71733 9 6C9 6.28333 9.096 6.521 9.288 6.713C9.48 6.905 9.71733 7.00067 10 7ZM10 20C8.61667 20 7.31667 19.7373 6.1 19.212C4.88333 18.6867 3.825 17.9743 2.925 17.075C2.025 16.175 1.31267 15.1167 0.788 13.9C0.263333 12.6833 0.000666667 11.3833 0 10C0 8.61667 0.262667 7.31667 0.788 6.1C1.31333 4.88333 2.02567 3.825 2.925 2.925C3.825 2.025 4.88333 1.31267 6.1 0.788C7.31667 0.263333 8.61667 0.000666667 10 0C11.3833 0 12.6833 0.262667 13.9 0.788C15.1167 1.31333 16.175 2.02567 17.075 2.925C17.975 3.825 18.6877 4.88333 19.213 6.1C19.7383 7.31667 20.0007 8.61667 20 10C20 11.3833 19.7373 12.6833 19.212 13.9C18.6867 15.1167 17.9743 16.175 17.075 17.075C16.175 17.975 15.1167 18.6877 13.9 19.213C12.6833 19.7383 11.3833 20.0007 10 20Z" fill="#FF8E25"/>
+                                            </svg>
+                                            <p>Cover image is waiting for approval. Currently only you can see this.</p>
+                                        </button>
+                                    </div>
+                                : ""}
                             </div>
                             <Userprofile IsloggedIn={IsloggedIn} />
                         </div>
+                        
 
                         {user && user?.role == 1 && IsloggedIn && showAlert ?
                             <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-lg">
@@ -445,28 +344,48 @@ export default function Dashboard(props) {
                                     <div className={`  tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`} >
 
                                         <div className="inlinetab ">
-                                                <div className="newnav-tabs flex items-center justify-between mb-4  ">
-                                                    <Tabs activeTab={tab} onTabClick={onTabClick} hideNavBtnsOnMobile={false} >
-                                                        <Tab key="0">About</Tab>
-                                                        <Tab key="1" >Wishes</Tab>
-                                                        <Tab key="2" >Feed</Tab>
-                                                        <Tab key="3" >Membership</Tab>
-                                                        <Tab key="4" >Bills</Tab>
-                                                        <Tab key="5" >Shop</Tab>
-                                                        <Tab key="6" >Gift Item</Tab>
-                                                    </Tabs>
-                                                    {IsloggedIn ? <Toggle /> : ''}
+                                            {/* Show rejection message if profile is rejected */}
+                                            {/* {!IsloggedIn && user?.profile_status_lock != 2 && user?.profile_reject_reason != null && (
+                                                <div className="text-red-600 text-xl">
+                                                    This creator's profile has been rejected by the admin. Payments to this creator are currently disabled.
                                                 </div>
+                                            )} */}
+                                            <div className="newnav-tabs flex  justify-between gap-2 mb-4">
+                                                <Tabs activeTab={1}  hideNavBtnsOnMobile={false}>
+                                                    <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'about' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "about" || page === false ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >About</Link>
+
+                                                    <Link preserveScroll href={route('user.show', { username: user.username, page: 'wishes' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "wishes" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >Wishes</Link>
+                                                    
+                                                    <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'feed' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "feed" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >feed</Link>
+                                                    
+                                                    <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'memberships' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "memberships" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >memberships</Link>
+
+                                                    <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'bills' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "bills" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >bills</Link>
+                                                    
+                                                    <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'shop' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "shop" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >shop</Link>
+                                                    
+                                                    <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'gifts' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "gifts" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >gifts</Link>
+                                                    
+                                                </Tabs>
+
+                                                {IsloggedIn && <Toggle />}
+                                            </div>
+
+
+                                           
+
+
+
 
                                                 <div className="tabs-containers min-height" >
-                                                    {tab == '0' ?
+                                                    {page === "about" || page === false ?
                                                         <Suspense fallback={<LoadingScreen />} >
                                                             <div className="row about-sec align-self-start">
                                                                 <div className="col-md-6  h-auto">
                                                                     <div className="about-sticky" >
 
-                                                                        {user && goal && user?.stripe_details_submitted == '1' ?
-                                                                            <MyGoal IsloggedIn={IsloggedIn} goal={goal} />
+                                                                        {user && user?.stripe_details_submitted == '1' ?
+                                                                            <MyGoal IsloggedIn={IsloggedIn}  />
                                                                         : ""}
 
                                                                         <div className="box p-3 p-md-4 shadow-voilet rounded-lg mb-4">
@@ -474,12 +393,9 @@ export default function Dashboard(props) {
                                                                             <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
                                                                                 {(user &&user.bio) ||""}
                                                                             </p>
-                                                                            {IsloggedIn && auth?.verification_status?.user_profile_status == 2 && user?.profile_status_lock == 0 && user?.profile_reject_reason != null  ?
-                                                                                <div className="mt-3">
-                                                                                    <p className="text-red-700">Profile Rejected Reason</p>
-                                                                                    <p className="text-red-500 text-sm">Reason : {user?.profile_reject_reason }.</p>
-                                                                                </div>
-                                                                              : ''}
+
+                                                                            
+
                                                                             {IsloggedIn && user?.edit_bio_reason  ?
                                                                                 <div className="mt-3">
                                                                                     <p className="text-red-700">Bio Edit Request</p>
@@ -491,10 +407,11 @@ export default function Dashboard(props) {
 
                                                                             {IsloggedIn ? (
                                                                                 <div className="userProfileDate pt-0 pt-md-3">
-                                                                                    {auth.user && auth.user.role == 1 && <>
-                                                                                        {auth.user && auth.user.monthly_charge_enabled ? '' : <SiteSubscription user={auth.user} /> }
-                                                                                    </>
-                                                                                    || ''}
+                                                                                    
+                                                                                    {auth?.user && auth?.user?.role == 1  
+                                                                                    && !auth?.user?.monthly_charge_enabled ? 
+                                                                                        <SiteSubscription user={auth?.user} />
+                                                                                    : ''}
 
                                                                                     {auth.user && auth.user.role == 1 && auth.user.monthly_charge_enabled &&
                                                                                     <>
@@ -520,7 +437,7 @@ export default function Dashboard(props) {
                                                                                     <div className="addsocial flex">
                                                                                         <ul>
                                                                                             <li>
-                                                                                                <Social updatedLinks={fetchingLinks}links={sLinks}/>
+                                                                                                <AddSocial sLinks={sLinks} />
                                                                                             </li>
                                                                                             <li>
                                                                                                 <ShareProfile username={user && user.name} classes={"flex ms-auto"}>
@@ -540,52 +457,48 @@ export default function Dashboard(props) {
                                                                 </div>
 
                                                                 <div className="ps-md-4 col-md-6">
-                                                                    {IsloggedIn ? <ProfileSteps fetchingLinks={fetchingLinks} sLinks={sLinks} user={user} IsloggedIn={IsloggedIn} /> : ''}
-                                                                    {tab == "0" ? <>
-                                                                        {user && user.stripe_details_submitted == 1 && w > 767 ? <TipInner classes={`mb-4`} /> : ''}
-                                                                        <FeedList isUpdated={isUpdated}
-                                                                            user={user}
-                                                                            IsloggedIn={IsloggedIn}
-                                                                        />
-                                                                    </> : ''}
+                                                                    {IsloggedIn && user && user.stripe_details_submitted == 0 ? <CreatorVerification  IsloggedIn={IsloggedIn} /> : ''}
+                                                                    {IsloggedIn && user && user.stripe_details_submitted == 1 ? <ProfileSteps sLinks={sLinks} user={user} IsloggedIn={IsloggedIn} /> : ''}
+                                                                    {!IsloggedIn && user && user.stripe_details_submitted == 1 && w > 767 ? 
+                                                                        <TipInner classes={`mb-4`} /> 
+                                                                    : ''}
+                                                                    <FeedList IsloggedIn={IsloggedIn} />
                                                                 </div>
                                                             </div>
                                                         </Suspense>
                                                     : ''}
 
-                                                    {tab == '1' ?
-                                                     <Suspense fallback={<LoadingScreen />} >
-                                                        <div className="wishes-items ">
-                                                            {categories && categories.length ?
-                                                            <>
-                                                            <div className="new-wish-cats flex mb-2" >
-                                                                <div onClick={()=>showCategory('')} className={`${selectedCat == '' ? 'active' : ''} me-2  mb-2  wish-tags cursor-pointer`} >All</div>
-                                                                {categories.map((c,i) => {
-                                                                    return <>
-                                                                    <div onClick={()=>showCategory(c.id)} className={`${selectedCat == c.id ? 'active' : ''} me-2  mb-2  wish-tags cursor-pointer`} key={`cats-${i}`} >{c.category}</div>
-                                                                    </>;
-                                                                })}
-                                                                {IsloggedIn ? <EditCategories fetch_categories={fetch_categories} username={auth && auth?.user?.username || null} /> : ''}
-                                                            </div>
-                                                            </>
-                                                            : ''}
-
-                                                            {loading ? (
-                                                                <LoadingScreen />
-                                                            ) : (
-                                                                ""
-                                                            )}
-                                                            <div className="row  items-lists">
-                                                                {IsloggedIn || user?.stripe_details_submitted == 1 ? (
+                                                    {IsloggedIn || user?.stripe_details_submitted == 1 ? 
+                                                        <>
+                                                            {page === "wishes" ?
+                                                            <Suspense fallback={<LoadingScreen />} >
+                                                                <div className="wishes-items ">
+                                                                    {wish_categories && wish_categories.length ?
                                                                     <>
-                                                                        {its &&
-                                                                        its.length ? (
+                                                                    <div className="new-wish-cats flex mb-2" >
+                                                                        <Link preserveScroll  href={route('user.show', { username: user.username, page: 'wishes' })} className={`${selectedCategory == '' ? 'active' : ''} me-2  mb-2  wish-tags cursor-pointer focus:bg-pink`} >All</Link>
+                                                                        {wish_categories.map((c,i) => {
+                                                                            return <>
+                                                                            <Link preserveScroll  href={route('user.show', { username: user.username, page: 'wishes', category: c.id })}
+                                                                            className={`${selectedCategory == c.id ? 'active' : ''} me-2  mb-2  wish-tags cursor-pointer focus:bg-pink`} 
+                                                                            key={`cats-${i}`} >{c.category}</Link>
+                                                                            </>;
+                                                                        })}
+                                                                        {IsloggedIn ? <EditCategories  username={auth && auth?.user?.username || null} /> : ''}
+                                                                    </div>
+                                                                    </>
+                                                                    : ''}
+
+
+                                                                    {wishitems && wishitems.length ? (
+                                                                    <>
+                                                                        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                                                             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                                                                                <SortableContext strategy={rectSortingStrategy} items={its}>
-                                                                                    {!loading && its.map((c, i) => {
+                                                                                <SortableContext strategy={rectSortingStrategy} items={wishitems}>
+                                                                                    {!loading && wishitems.map((c, i) => {
                                                                                                 return (
-                                                                                                    <Wishlistbox key={`wish-item-${i}`} classes="col-xl-3 col-lg-3 col-md-4 col-6"
-                                                                                                        currency={global_currency} fetchingcats={fetchingcats} categories={categories} IsloggedIn={IsloggedIn}
+                                                                                                    <Wishlistbox key={`wish-item-${i}`} classes=" "
+                                                                                                        currency={global_currency}  IsloggedIn={IsloggedIn}
                                                                                                         auth={auth.user} itemid={itemid} setuped={auth && auth.user && auth.user.stripe_details_submitted == 1
                                                                                                                 ? true : false} itm={c}
                                                                                                     />
@@ -594,94 +507,84 @@ export default function Dashboard(props) {
                                                                                         )}
                                                                                 </SortableContext>
                                                                             </DndContext>
-                                                                        ) : (
-                                                                            <>
-                                                                                {(!loading && (
-                                                                                    <div className="col-md-12">
-                                                                                        <Nocontent text="Nothing to see." />
-                                                                                    </div>
-                                                                                )) ||
-                                                                                    ""}
-                                                                            </>
-                                                                        )}
+                                                                        </div>
                                                                     </>
-                                                                ) : (
-                                                                    <PaymentUnActivated
-                                                                    heading={`WishList not activated yet. `}
-                                                                    subheading={`Until they activate their wishlist, this user won't be able to receive gifts.`} />
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                     </Suspense>
-                                                    : ''}
+                                                                    ) : (
+                                                                        <>
+                                                                            {loading ? (
+                                                                                <LoadingScreen />
+                                                                            ) : (
+                                                                                ""
+                                                                            )}
+                                                                            {(!loading && (
+                                                                                <div className="col-md-12">
+                                                                                    <Nocontent text="Nothing to see." />
+                                                                                </div>
+                                                                            )) || ""}
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                            </Suspense>
+                                                            : ''}
 
-                                                    {tab == '2' ?
-                                                        <Suspense fallback={<LoadingScreen />}>
-                                                            <FeedList isUpdated={isUpdated} user={user}  IsloggedIn={IsloggedIn} />
-                                                        </Suspense>
-                                                    : ''}
+                                                            {page === "feed" ?
+                                                                <Suspense fallback={<LoadingScreen />}>
+                                                                    <FeedList  user={user} IsloggedIn={IsloggedIn} />
+                                                                </Suspense>
+                                                            : ''}
 
-                                                    {tab == '3' ?
-                                                        <Suspense
-                                                            fallback={<LoadingScreen />} >
-                                                                {IsloggedIn || user?.stripe_details_submitted == 1 ? (
-                                                                    <MembershipsLists  isUpdated={isUpdated}
-                                                                    IsloggedIn={IsloggedIn}
-                                                                    username={user?.username || auth?.user ?.username}
-                                                                    />
-                                                                ) : (
-                                                                    <PaymentUnActivated
-                                                                    heading={`Memberships not activated yet. `}
-                                                                    subheading={`Until they activate their Memberships, this user won't be able to receive gifts.`} />
-                                                                )}
-                                                        </Suspense>
-                                                    : ''}
+                                                            {page === "memberships" ?
+                                                                <Suspense
+                                                                    fallback={<LoadingScreen />} >
+                                                                        <MembershipsLists   
+                                                                        IsloggedIn={IsloggedIn}
+                                                                        username={user?.username || auth?.user ?.username}
+                                                                        />
+                                                                </Suspense>
+                                                            : ''}
 
-                                                    {tab == '4' ?
-                                                        <Suspense fallback={<LoadingScreen />} >
-                                                            {IsloggedIn || user?.stripe_details_submitted == 1 ? (
-                                                                <Billslist billupdate={billupdated} IsloggedIn={IsloggedIn} />
-                                                            ) : (
-                                                                <PaymentUnActivated  heading={`Bills not activated yet. `}
-                                                                subheading={`Until they activate their bills, this user won't be able to receive gifts.`} />
-                                                            )}
-                                                        </Suspense>
-                                                    : "" }
+                                                            {page === "bills" ?
+                                                                <Suspense fallback={<LoadingScreen />} >
+                                                                    <Billslist  IsloggedIn={IsloggedIn} />
+                                                                </Suspense>
+                                                            : "" }
 
-                                                    {tab == '5' ?
-                                                        <Suspense fallback={<LoadingScreen />} >
-                                                            {IsloggedIn || user?.stripe_details_submitted == 1 ? (
-                                                                 <ProfileProductLists profileuser={user} IsloggedIn={IsloggedIn} />
-                                                            ) :
-                                                                <PaymentUnActivated  heading={`Bills not activated yet. `}
-                                                                subheading={`Until they activate their bills, this user won't be able to receive gifts.`} />
-                                                            }
-                                                        </Suspense>
-                                                    : "" }
+                                                            {page === "shop" ?
+                                                                <Suspense fallback={<LoadingScreen />} >
+                                                                    <ProfileProductLists profileuser={user} IsloggedIn={IsloggedIn} />
+                                                                </Suspense>
+                                                            : "" }
 
-                                                    {tab == '6' ?
-                                                        <Suspense fallback={<LoadingScreen />}>
-                                                     {giftsloading ? (
-                                                       <LoadingScreen />
-                                                     ) : gifts && gifts.length > 0 ? (
-                                                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-                                                         {gifts.map((gift) => {
-                                                           const details = JSON.parse(gift.details); // Parse the details JSON
-                                                           return(
-                                                            <>
-                                                            {(IsloggedIn || gift?.deleted_at === null) &&
-                                                           <GiftListing key={gift.id} gift={gift} details={details} user={user} IsloggedIn={IsloggedIn} fetch_gifts={fetch_gifts} auth={auth} />}
-                                                           </>
-                                                        );
-                                                         })}
-                                                       </div>
-                                                     ) : (
-                                                       <div className="col-md-12">
-                                                         <Nocontent text="Nothing to see." />
-                                                       </div>
-                                                     )}
-                                                        </Suspense>
-                                                    : ''}
+                                                            {page === "gifts" ?
+                                                                <Suspense fallback={<LoadingScreen />}>
+                                                                    {giftsloading ? (
+                                                                    <LoadingScreen />
+                                                                    ) : gifts && gifts.length > 0 ? (
+                                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+                                                                        {gifts.map((gift) => {
+                                                                        const details = JSON.parse(gift.details); // Parse the details JSON
+                                                                        return(
+                                                                            <>
+                                                                            {(IsloggedIn || gift?.deleted_at === null) &&
+                                                                            <GiftListing key={gift.id} gift={gift} details={details} user={user} IsloggedIn={IsloggedIn} fetch_gifts={fetch_gifts} auth={auth} />
+                                                                            }
+                                                                        </>
+                                                                        );
+                                                                        })}
+                                                                    </div>
+                                                                    ) : (
+                                                                    <div className="col-md-12">
+                                                                        <Nocontent text="Nothing to see." />
+                                                                    </div>
+                                                                    )}
+                                                                </Suspense>
+                                                            : ''}
+                                                        </>  
+                                                        : 
+                                                        <PaymentUnActivated
+                                                        heading={`WishList not activated yet. `}
+                                                        subheading={`Until they activate their wishlist, this user won't be able to receive gifts.`} />
+                                                    }
                                                 </div>
                                         </div>
                                     </div>
@@ -689,7 +592,6 @@ export default function Dashboard(props) {
                             </div>
                         ) : <>
                             <Gifter
-                            fetchingLinks={fetchingLinks}
                             auth={auth}
                             sLinks={sLinks}
                             IsloggedIn={IsloggedIn} />

@@ -423,32 +423,7 @@ class ShopsController extends Controller
         ]);
     }
 
-    public function shopList($username)
-    {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
-
-        $shops = [];
-        if (!empty($user)) {
-            $query = Shop::where('user_id', $user->id)->with(['user', 'shop_varients'])->orderBy('created_at', 'desc');
-
-            if (Auth::check()) {
-                if (Auth::id() != $user->id) {
-                    $query->where('approved', 1);
-                }
-            } else {
-                $query->where('approved', 1);
-            }
-
-            $shops = $query->get();
-            // $shops = Shop::where('user_id',$user->id)->orderBy('created_at','desc')->get();
-
-        }
-
-        return response()->json([
-            'status' => true,
-            'shops' => $shops
-        ]);
-    }
+     
 
     public function singleShopList($slug, $uuid, $session_id = null)
     {

@@ -9,11 +9,13 @@ import LoaderButton from '@/Components/LoaderButton';
 import { useEffect } from 'react';
 import wishlistbannerimg from "../../../assets/img/wishlistbannerimg.jpg";
 import { useRef } from 'react';
+import { router, usePage } from '@inertiajs/react';
 
-export default function AddIntro({IsloggedIn, uuid, text, classes, setIntroStatus}){
+export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
 
   const [open, setOpen] = useState(false);
   const [loading,setloading] = useState(false);
+  const { intro, auth } = usePage().props;
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
   const [close, setClose] = useState();
   const [clear, setClear] = useState();
@@ -29,28 +31,7 @@ export default function AddIntro({IsloggedIn, uuid, text, classes, setIntroStatu
       }
   };
 
-  const [introVideo, setIntroVideo] = useState(null);
   const [videoLoading, setVideoLoading] = useState(false);
-
-  async function getVideo (signal) { 
-    setVideoLoading(true);
-    axios.get(`my-intro/${uuid}`, {signal}).then(resp => {
-      if(resp.data.status) { 
-        setIntroVideo(resp.data.intro);
-      }
-      setVideoLoading(false);
-    }).catch(_err => {
-        console.error("error", _err);
-        setVideoLoading(false);
-    });
-  }
-
-  useEffect(()=>{
-    const controller = new AbortController();
-    const {signal} = controller;
-    getVideo(signal)
-    return () => controller.abort();
-  },[]); 
 
   const addVideo = () => { 
     if(msgMedia == null || undefined){
@@ -59,15 +40,19 @@ export default function AddIntro({IsloggedIn, uuid, text, classes, setIntroStatu
     setloading(true);
     axios.post(`intro/save`, { "media":msgMedia }).then(resp => {
       if(resp.data.status){
-          getVideo();
           successAlert(resp.data.msg);
           setClose(false);
+          resetUploader();
+          setOpen(false);
+          router.visit(route('user.show', auth?.user?.username), {
+            method: 'get',
+            preserveState: true,
+            preserveScroll: true,
+          });
+          setIntroStatus && setIntroStatus(1)
           setTimeout(()=>{
             setClose();
           },1000);
-          resetUploader();
-          setOpen(false);
-          setIntroStatus && setIntroStatus(1)
       } else {
           errorAlert(resp.data.msg);
       }
@@ -81,7 +66,11 @@ export default function AddIntro({IsloggedIn, uuid, text, classes, setIntroStatu
   const removeVideo = () => { 
     axios.get(`intro/remove`).then(resp => {
       if(resp.data.status){
-          getVideo();
+          router.visit(route('user.show', auth?.user?.username), {
+            method: 'get',
+            preserveState: true,
+            preserveScroll: true,
+          });
           successAlert(resp.data.msg);
           setClose(false);
           setTimeout(()=>{
@@ -103,18 +92,18 @@ export default function AddIntro({IsloggedIn, uuid, text, classes, setIntroStatu
         <div className='isintro relative cursor-pointer shadow-voilet'>
           <img
           alt={"image"} useIntersectionObserver={true} effect="blur"
-          height={350} src={ introVideo && introVideo.poster_url || wishlistbannerimg} className='' width={400} />
+          height={350} src={ intro && intro.poster_url || wishlistbannerimg} className='' width={400} />
           <div className='cursor-pointer playicon' >
             <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="32" cy="32" r="32" fill="#F94F97"/>
             <path d="M40 32.0234L22.72 22.0468V42L40 32.0234Z" fill="black"/>
             </svg>
           </div>
-          {IsloggedIn && introVideo && introVideo.approved !== 1 ? <div className='text-sm mb-0 alert alert-warning text-yellow-900 w-full  absolute z-1 bottom-0 left-0 rounded p-2' >Profile intro video is waiting for approval. Currently only you can see this intro.</div> : ''}
+          {IsloggedIn && intro && intro.approved !== 1 ? <div className='text-sm mb-0 alert alert-warning text-yellow-900 w-full  absolute z-1 bottom-0 left-0 rounded p-2' >Profile intro video is waiting for approval. Currently only you can see this intro.</div> : ''}
         </div>
         </>} > 
           <div className='video-payer-pop' >
-            <video playsInline='false' autoPlay src={introVideo && introVideo?.perma_link || ''} controls controlsList='nodownload' />
+            <video playsInline='false' autoPlay src={intro && intro?.perma_link || ''} controls controlsList='nodownload' />
           </div>
       </Popup>
     </>
@@ -122,7 +111,7 @@ export default function AddIntro({IsloggedIn, uuid, text, classes, setIntroStatu
 
   return (
     <div className={`pb-4 ${videoLoading ? 'd-none' : '' } `}>
-      {introVideo ? 
+      {intro ? 
         <div className='position-relative'>
           <ProfileIntro /> 
           {IsloggedIn ? <button onClick={removeVideo} className='badge bg-danger remove-story' >Remove</button> : ''}

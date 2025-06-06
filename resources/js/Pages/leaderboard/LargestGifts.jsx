@@ -58,7 +58,7 @@ export default function LargestGifts() {
   );
 
   return (
-    <div className="rank_lists largest bg-white p-4 rounded-lg mt-4">
+    <div className="rank_lists largest bg-white p-4 rounded-[25px] mt-4">
       <h2 className="text-bl font-GillSans text-start text-2xl uppercase text-dark mb-4">Largest Gifts</h2>
       
       <div className="time-hrs">

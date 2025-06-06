@@ -7,7 +7,6 @@ import { Toaster } from "react-hot-toast";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 
 export default function SubCheckout(props) {
-
     const {auth, user, wish, reccure, vat_amount  } = props;
     const { formatMultiPrice } = PriceFormat();
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');

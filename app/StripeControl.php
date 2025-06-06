@@ -298,9 +298,13 @@ class StripeControl
      * @param array $payload Price Payload
      * @return Throwable|\Stripe\Price
      */
-    public static function createPrice(array $priceData, string $connectedAccountId)
+    public static function createPrice(array $priceData, mixed $connectedAccountId = null)
     {
         self::setClient();
+
+        if(!$connectedAccountId) {
+            return self::$client->prices->create($priceData);
+        }
 
         return self::$client->prices->create(
             $priceData,

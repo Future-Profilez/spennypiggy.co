@@ -13,6 +13,7 @@ use App\Models\GifterCardVerification;
 use App\Models\MembershipPayment;
 use App\Models\Notification;
 use App\Models\RyeProduct;
+use App\Models\Shop;
 use App\Models\SocialLinks;
 use App\Models\StripePaymentDetail;
 use App\Models\TipGoalsPayment;
@@ -20,6 +21,7 @@ use App\Models\TwitterToken;
 use App\Models\User;
 use App\Models\UserBackupCode;
 use App\Models\UserCategory;
+use App\Models\UserIntro;
 use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
@@ -83,7 +85,7 @@ class AuthenticatedSessionController extends Controller
         }
         $ipAddress = $request->ip();
         $checkIpExist = $user->ip_address;
-        if (empty($checkIpExist)) {
+        if (empty($checkIpExist) && $user instanceof \App\Models\User) {
             $user->ip_address = $ipAddress;
             $user->save();
         }
@@ -169,10 +171,9 @@ class AuthenticatedSessionController extends Controller
     /**
      * Private user profile info
      */
-    public function getUserProfile($username)
+    public function getUserProfile($username, $page = 'about')
     {
         $user = User::where('username', $username)->where('is_uk', 0)->first();
-
         if (!$user) {
             return Inertia::render('NotFound');
         }
@@ -222,6 +223,242 @@ class AuthenticatedSessionController extends Controller
         $userName = str_replace(' ', '%20', $userfield);
         $image = "https://ucarecdn.com/8dfae4ba-cd77-406f-8b70-7cf360b4c18c/-/preview/900x900/-/text_align/center/center/-/font/14/000000/-/text/100px30p/100p,100p/spennypiggy.co~s" . $user->username . "/-/text_align/center/center/-/font/19/e6ea82/-/text/100px78p/100p,100p/" . $userName . "/";
 
+
+        $slinks = [];
+        $sociallinks = [];
+        $intro = null;
+        $goal = null;
+        if($page == 'about'){
+            // Social links
+            $slinks = $user->social_links()->first();
+            if (!empty($slinks)) {
+                $sociallinks = [
+                    [
+                        'social' => 'facebook',
+                        'url'    => $slinks->facebook ?? null,
+                    ],
+                    [
+                        'social' => 'twitter',
+                        'url'    => $slinks->twitter ?? null,
+                    ],
+                    [
+                        'social' => 'instagram',
+                        'url'    => $slinks->instagram ?? null,
+                    ],
+                    [
+                        'social' => 'reddit',
+                        'url'    => $slinks->reddit ?? null,
+                    ],
+                    [
+                        'social' => 'youtube',
+                        'url'    => $slinks->youtube ?? null,
+                    ],
+                    [
+                        'social' => 'tumblr',
+                        'url'    => $slinks->tumblr ?? null,
+                    ],
+                    [
+                        'social' => 'twitch',
+                        'url'    => $slinks->twitch ?? null,
+                    ],
+                    [
+                        'social' => 'other',
+                        'url'    => $slinks->other ?? null,
+                    ]
+                ];
+            }
+            // Intro Video
+            if ($user->id) {
+                $intro = UserIntro::where('user_id', $user->id)->first();
+            }
+
+
+            // GOAL
+            $goalPayment = TipGoalsPayment::where('creator_id', $user->id)->where('status', 'paid')->sum('amount');
+            $arr = [];
+            $bill_payment = BillPayment::whereHas('bill', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->where('status', 'paid')->sum('amount');
+            $mem_payment = MembershipPayment::whereHas('membership', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->where('status', 'paid')->sum('amount');
+            $wish_payment = StripePaymentDetail::where('owner_id', $user->id)->where('payment_status', 'paid')->sum('amount_subtotal');
+            $sub_payment = WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->where('status', 'paid')->sum('amount');
+            $total_earnings = $goalPayment + $bill_payment + $mem_payment + $wish_payment + $sub_payment;
+            if ($total_earnings < 100) {
+                $target = 100;
+            } elseif ($total_earnings < 1000) {
+                $target = 1000;
+            } elseif ($total_earnings < 10000) {
+                $target = 10000;
+            } elseif ($total_earnings < 100000) {
+                $target = 100000;
+            } elseif ($total_earnings < 1000000) {
+                $target = 1000000;
+            } else {
+                $target = 10000000;
+            }
+            $arr['fullfilled'] = $total_earnings;
+            $arr['target'] = $target;
+            $arr['currency'] = $user->default_currency;
+            $goal = $arr;
+        }
+
+
+        $wishitems = [];
+        $pinned = [];
+        $categories = $user->user_categories()->get();
+        $category = request()->query('category') ?? false;
+        if($page == 'wishes'){
+            
+            if ($category) {
+                $query = WishCategory::orderBy('created_at', 'DESC');
+                if ($category != 'all' && $category != false) {
+                    $query->where('user_category_id', $category);
+                }
+
+                $itemId = $query->whereHas('wish', function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                })->pluck('wish_item_id');
+
+                $q = WishItem::where('is_pin', 0)->with(['user']);
+                if ($category != 'all') {
+                    $q->whereIn('id', $itemId);
+                } else {
+                    $q->where('user_id', $user->id);
+                }
+                $wishitems = $q->latest()->get();
+
+                $pin = WishItem::where('is_pin', 1)->with(['user']);
+                if ($category != 'all') {
+                    $pin->whereIn('id', $itemId);
+                } else {
+                    $pin->where('user_id', $user->id);
+                }
+                $pinned = $pin->get();
+            } else {
+                $wishitems = WishItem::where('is_pin', 0)->whereUserId($user->id)->with(['user'])->latest()->get();
+                $pinned = WishItem::where('is_pin', 1)->whereUserId($user->id)->with(['user'])->get();
+            } 
+           $wishitems = $wishitems->merge($pinned)->sortBy('sort')->values()->toArray();
+
+        }
+
+        $posts = [];
+        if($page == 'feed' || $page == 'about'){
+            $query = $user->posts();
+            if ((Auth::check() && $user->id != Auth::id()) || !(Auth::check())) {
+                $query->where('approved', 1);
+            }
+            $post = $query->latest()
+                ->get();
+            $posts= $post->map(function ($p) use ($user) {
+
+                if ($user->id == Auth::id()) {
+                    $p->is_lock = 0;
+                } elseif ($p->type == 'image') {
+                    if (Auth::check()) {
+                        $u = User::where('id', Auth::id())->where('is_uk', 0)->first();
+
+                        $tip = [];
+                        if ($p->for_module == 'support') {
+                            $tip = TipGoalsPayment::where('creator_id', $user->id)
+                                ->where(function ($q) use ($u) {
+                                    $q->where('user_id', $u->id)->orWhere('guest_email', $u->email);
+                                })->first();
+                        }
+
+                        $mem = [];
+                        $lifetime = [];
+                        if ($p->for_module == 'membership') {
+                            $mem = MembershipPayment::where('recurring_type', '!=', 'lifetime')->where(function ($que) {
+                                $que->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now());
+                            })->whereHas('membership', function ($q) use ($user) {
+                                $q->where('user_id', $user->id);
+                            })->where(function ($q) use ($u) {
+                                $q->where('user_id', $u->id)->orWhere('guest_email', $u->email);
+                            })->first();
+
+                            $lifetime = MembershipPayment::where('recurring_type', 'lifetime')->whereHas('membership', function ($q) use ($user) {
+                                $q->where('user_id', $user->id);
+                            })->where(function ($q) use ($u) {
+                                $q->where('user_id', $u->id)->orWhere('guest_email', $u->email);
+                            })->first();
+                        }
+
+                        $subs = [];
+                        $bills = [];
+                        if ($p->for_module == 'subscription') {
+                            $subs = WishItemSubscription::where('recurring_for', 'continue')->where(function ($que) {
+                                $que->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now());
+                            })->whereHas('wish_item', function ($q) use ($user) {
+                                $q->where('user_id', $user->id);
+                            })->where(function ($q) use ($u) {
+                                $q->where('user_id', $u->id)->orWhere('guest_email', $u->email);
+                            })->first();
+
+                            $bills = BillPayment::where(function ($que) {
+                                $que->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now());
+                            })->whereHas('bill', function ($q) use ($user) {
+                                $q->where('user_id', $user->id);
+                            })->where(function ($q) use ($u) {
+                                $q->where('user_id', $u->id)->orWhere('guest_email', $u->email);
+                            })->first();
+                        }
+
+                        if ((!empty($tip) && $p->for_module == 'support') || ((!empty($mem) || !empty($lifetime)) && $p->for_module == 'membership') || ((!empty($subs) || !empty($bills)) && $p->for_module == 'subscription')) {
+                            $p->is_lock = 0;
+                        } else {
+                            $p->is_lock = 1;
+                        }
+                    } else {
+                        $p->is_lock = 1;
+                    }
+                } else {
+                    $p->is_lock = 0;
+                }
+
+                return $p;
+            });
+        }
+
+
+        $memberships = [];
+        if($page == 'memberships'){
+            $query = $user->memberships();
+            if ((Auth::check() && $user->id != Auth::id()) || !(Auth::check())) {
+                $query->where('approved', 1);
+            }
+            $membership = $query->latest()->get();
+            $memberships =   $membership; 
+        }
+        $bills = [];
+        if($page == 'bills'){
+            $query = $user->bills();
+            if ((Auth::check() && $user->id != Auth::id()) || !(Auth::check())) {
+                $query->where('approved', 1);
+            }
+            $bills = $query->latest()->get();
+        }
+
+        $shops = [];
+        if($page == 'shop'){
+                $query = Shop::where('user_id', $user->id)->with(['user', 'shop_varients'])->orderBy('created_at', 'desc');
+                if (Auth::check()) {
+                    if (Auth::id() != $user->id) {
+                        $query->where('approved', 1);
+                    }
+                } else {
+                    $query->where('approved', 1);
+                }
+                $shops = $query->get();
+
+        }
+
+
+        // SEO Meta Tags
         SeoMeta::addTag('title', "{$user->name} - Spenny Piggy - Financial Gifts, Exclusive Content & Memberships");
         SeoMeta::addTag('meta', ['property' => 'twitter:title', 'content' => 'Financial Gifts,Donations & Memberships']);
         SeoMeta::addTag('meta', ['property' => 'twitter:card', 'content' => 'summary_large_image']);
@@ -237,59 +474,71 @@ class AuthenticatedSessionController extends Controller
             "username" => $username,
             "user" => $user,
             "itemid" => $itemdid,
+            "sociallinks" => $sociallinks,
+            "slinks" => $slinks,
+            'page' => $page,
+            'intro' => $intro ?? null,
             'supporters' => $supporters,
+            'wish_categories' => $categories,
+            'items' => $wishitems,
+            'selectedCategory' => $category,
+            'posts' => $posts,
+            'memberships' => $memberships,
+            'bills' => $bills,
+            'shops' => $shops,
+            'goal' => $goal,
             'notification_count' => $notification_count
         ]);
     }
 
-    public function user_info($username, $category = false)
-    {
-        $user = User::where('username', $username)->where(
-            'is_uk',
-            0
-            // $q->whereNot('country', 'GB')->orWhereNull('country');
-        )->first();
-        $items = [];
-        if ($category && $user) {
-            $query = WishCategory::orderBy('created_at', 'DESC');
-            if ($category != 'all') {
-                $query->where('user_category_id', $category);
-            }
+    // public function user_info($username, $category = false)
+    // {
+    //     $user = User::where('username', $username)->where(
+    //         'is_uk',
+    //         0
+    //         // $q->whereNot('country', 'GB')->orWhereNull('country');
+    //     )->first();
+    //     $items = [];
+    //     if ($category && $user) {
+    //         $query = WishCategory::orderBy('created_at', 'DESC');
+    //         if ($category != 'all') {
+    //             $query->where('user_category_id', $category);
+    //         }
 
-            $itemId = $query->whereHas('wish', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            })->pluck('wish_item_id');
+    //         $itemId = $query->whereHas('wish', function ($q) use ($user) {
+    //             $q->where('user_id', $user->id);
+    //         })->pluck('wish_item_id');
 
-            $q = WishItem::where('is_pin', 0)->with(['user']);
-            if ($category != 'all') {
-                $q->whereIn('id', $itemId);
-            } else {
-                $q->where('user_id', $user->id);
-            }
-            $items = $q->latest()->get();
+    //         $q = WishItem::where('is_pin', 0)->with(['user']);
+    //         if ($category != 'all') {
+    //             $q->whereIn('id', $itemId);
+    //         } else {
+    //             $q->where('user_id', $user->id);
+    //         }
+    //         $items = $q->latest()->get();
 
-            $pin = WishItem::where('is_pin', 1)->with(['user']);
-            if ($category != 'all') {
-                $pin->whereIn('id', $itemId);
-            } else {
-                $pin->where('user_id', $user->id);
-            }
-            $pinned = $pin->get();
-            return response()->json([
-                "success" => true,
-                "items" => ['list' => $items, "pinned" => $pinned],
-            ]);
-        } else {
-            if ($user) {
-                $items = WishItem::where('is_pin', 0)->whereUserId($user->id)->with(['user'])->latest()->get();
-                $pinned = WishItem::where('is_pin', 1)->whereUserId($user->id)->with(['user'])->get();
-            }
-        }
-        return response()->json([
-            "success" => true,
-            "items" => ['list' => $items, "pinned" => $pinned],
-        ]);
-    }
+    //         $pin = WishItem::where('is_pin', 1)->with(['user']);
+    //         if ($category != 'all') {
+    //             $pin->whereIn('id', $itemId);
+    //         } else {
+    //             $pin->where('user_id', $user->id);
+    //         }
+    //         $pinned = $pin->get();
+    //         return response()->json([
+    //             "success" => true,
+    //             "items" => ['list' => $items, "pinned" => $pinned],
+    //         ]);
+    //     } else {
+    //         if ($user) {
+    //             $items = WishItem::where('is_pin', 0)->whereUserId($user->id)->with(['user'])->latest()->get();
+    //             $pinned = WishItem::where('is_pin', 1)->whereUserId($user->id)->with(['user'])->get();
+    //         }
+    //     }
+    //     return response()->json([
+    //         "success" => true,
+    //         "items" => ['list' => $items, "pinned" => $pinned],
+    //     ]);
+    // }
 
     /**
      * Get User Wish Items
@@ -384,168 +633,10 @@ class AuthenticatedSessionController extends Controller
         }
     }
 
-    public function user_memberships($username)
-    {
-        $user = User::where(
-            'is_uk',
-            0
-            // $q->whereNot('country', 'GB')->orWhereNull('country');
-        )->firstWhere('username', $username);
+     
 
-        if ($user) {
-            $query = $user->memberships();
-
-            if ((Auth::check() && $user->id != Auth::id()) || !(Auth::check())) {
-                $query->where('approved', 1);
-            }
-
-            $membership = $query->latest()
-                ->get();
-
-
-            return response()->json([
-                'success'   => true,
-                'memberships' => $membership
-            ]);
-        }
-        return response()->json([
-            'success'   => false,
-            'items'     => [],
-            'message'   =>  'User not found'
-        ]);
-    }
-
-    public function user_posts($username)
-    {
-        $user = User::where(
-            'is_uk',
-            0
-            // $q->whereNot('country', 'GB')->orWhereNull('country');
-        )->firstWhere('username', $username);
-
-        if ($user) {
-            $query = $user->posts();
-
-            if ((Auth::check() && $user->id != Auth::id()) || !(Auth::check())) {
-                $query->where('approved', 1);
-            }
-
-            $post = $query->latest()
-                ->get();
-
-
-            $post->map(function ($p) use ($user) {
-
-                if ($user->id == Auth::id()) {
-                    $p->is_lock = 0;
-                } elseif ($p->type == 'image') {
-                    if (Auth::check()) {
-                        $u = User::where('id', Auth::id())->where('is_uk', 0)->first();
-
-                        $tip = [];
-                        if ($p->for_module == 'support') {
-                            $tip = TipGoalsPayment::where('creator_id', $user->id)
-                                ->where(function ($q) use ($u) {
-                                    $q->where('user_id', $u->id)->orWhere('guest_email', $u->email);
-                                })->first();
-                        }
-
-                        $mem = [];
-                        $lifetime = [];
-                        if ($p->for_module == 'membership') {
-                            $mem = MembershipPayment::where('recurring_type', '!=', 'lifetime')->where(function ($que) {
-                                $que->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now());
-                            })->whereHas('membership', function ($q) use ($user) {
-                                $q->where('user_id', $user->id);
-                            })->where(function ($q) use ($u) {
-                                $q->where('user_id', $u->id)->orWhere('guest_email', $u->email);
-                            })->first();
-
-                            $lifetime = MembershipPayment::where('recurring_type', 'lifetime')->whereHas('membership', function ($q) use ($user) {
-                                $q->where('user_id', $user->id);
-                            })->where(function ($q) use ($u) {
-                                $q->where('user_id', $u->id)->orWhere('guest_email', $u->email);
-                            })->first();
-                        }
-
-                        $subs = [];
-                        $bills = [];
-                        if ($p->for_module == 'subscription') {
-                            $subs = WishItemSubscription::where('recurring_for', 'continue')->where(function ($que) {
-                                $que->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now());
-                            })->whereHas('wish_item', function ($q) use ($user) {
-                                $q->where('user_id', $user->id);
-                            })->where(function ($q) use ($u) {
-                                $q->where('user_id', $u->id)->orWhere('guest_email', $u->email);
-                            })->first();
-
-                            $bills = BillPayment::where(function ($que) {
-                                $que->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now());
-                            })->whereHas('bill', function ($q) use ($user) {
-                                $q->where('user_id', $user->id);
-                            })->where(function ($q) use ($u) {
-                                $q->where('user_id', $u->id)->orWhere('guest_email', $u->email);
-                            })->first();
-                        }
-
-                        if ((!empty($tip) && $p->for_module == 'support') || ((!empty($mem) || !empty($lifetime)) && $p->for_module == 'membership') || ((!empty($subs) || !empty($bills)) && $p->for_module == 'subscription')) {
-                            $p->is_lock = 0;
-                        } else {
-                            $p->is_lock = 1;
-                        }
-                    } else {
-                        $p->is_lock = 1;
-                    }
-                } else {
-                    $p->is_lock = 0;
-                }
-
-                return $p;
-            });
-
-            return response()->json([
-                'success'   => true,
-                'posts' => $post
-            ]);
-        }
-
-        return response()->json([
-            'success'   => false,
-            'items'     => [],
-            'message'   =>  'User not found'
-        ]);
-    }
-
-    public function user_bills($username)
-    {
-        $user = User::where(
-            'is_uk',
-            0
-            // $q->whereNot('country', 'GB')->orWhereNull('country');
-        )->firstWhere('username', $username);
-
-        if ($user) {
-            $query = $user->bills();
-
-            if ((Auth::check() && $user->id != Auth::id()) || !(Auth::check())) {
-                $query->where('approved', 1);
-            }
-
-            $bills = $query->latest()
-                ->get();
-
-
-            return response()->json([
-                'success'   => true,
-                'bills' => $bills
-            ]);
-        }
-        return response()->json([
-            'success'   => false,
-            'items'     => [],
-            'message'   =>  'User not found'
-        ]);
-    }
+    
+    
 
     public function userGiftItems($username)
     {
@@ -638,10 +729,14 @@ class AuthenticatedSessionController extends Controller
                     "msg" => 'User not found !!'
                 ]);
             }
+
+
+            
+
             return response()->json([
                 "success" => true,
-                "sociallinks" => $sociallinks,
-                "slinks" => $slinks
+                // "sociallinks" => $sociallinks,
+                // "slinks" => $slinks
             ]);
         } catch (\Throwable $th) {
             //throw $th;

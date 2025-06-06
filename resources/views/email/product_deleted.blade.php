@@ -1,0 +1,43 @@
+@extends('email.default-2')
+
+@section('content')
+<tr>
+    <td align="center" style="padding:10px 10px 20px 10px;">
+        <a href="{{ env('APP_URL') }}">
+            <img alt="Logo" width="119" src="https://ucarecdn.com/2c2af8ee-fbdb-4d38-9ba4-3de474410a20/emaillogo.png" style="border:none">
+        </a>
+    </td>
+</tr>
+<tr>
+    <td align="center" style="padding:10px 10px 20px 10px;">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 296px; text-align: center;">
+            <tr>
+                <td style="font-family: Arial; font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
+                    <span style="color: #DC3545">Products Removed Due to Policy Update</span>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 0 0 25px 0; font-family: Arial; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
+                    Hello {{ ucfirst(strtolower($user->name)) }}, <br><br>
+                    Due to recent changes in our platform policy, your existing products linked with Stripe have been removed from Spenny Piggy and deactivated from Stripe.
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 0 0 25px 0; font-family: Arial; font-size: 16px; line-height: 24px; color: #4D4D4D; text-align: center;">
+                    Any active subscriptions connected to these products have also been scheduled for cancellation.
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 0 0 25px 0; font-family: Arial; font-size: 16px; line-height: 24px; color: #4D4D4D; text-align: center;">
+                    Moving forward, you will need to create new Spenny Piggy products directly within the platform to comply with our updated integration model.
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 0 0 25px 0; font-family: Arial; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
+                    We appreciate your understanding. If you have any questions or need help creating new products, please contact our support team.
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+@endsection

@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 const LoadingScreen = React.lazy(() => import('@/includes/LoadingScreen'));
 const Nocontent = React.lazy(() => import('@/includes/Nocontent'));
+import userphoto from "../../../assets/img/userphoto.png";
 
 export default function IntroVideos(props) {
 
@@ -40,10 +41,10 @@ export default function IntroVideos(props) {
       const [open, setOpen] = useState(false);
 
       return <div  className=' col-xl-3 col-lg-4 col-6 mb-4' >
-          <div className='introbox rounded-lg position-relative' >
+          <div className='introbox border-3 !border-[#F94F97] rounded-lg position-relative' >
             <LazyLoadImage  onClick={()=>setOpen(!open)} 
             alt={"image"} useIntersectionObserver={true} effect="blur"
-            height={360} src={w && w.poster_url} className='' width={260} />
+            height={360} src={ w && w?.poster_url || w?.user && w?.user?.avatar_url|| userphoto} className='' width={260} />
             <div onClick={()=>setOpen(!open)} className='cursor-pointer playicon' >
               <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="32" cy="32" r="32" fill="#F94F97"/>
@@ -53,7 +54,7 @@ export default function IntroVideos(props) {
             <div className='user-links w-100' >
               <Link href={`/${w && w.user && w.user.username}`}  >
                 <p className='text-white text-normal' >{w && w.user && w.user.name}</p>
-                <p className='text-mint text-normal' >@{w && w.user && w.user.username}</p>
+                <p className='text-white text-normal' >@{w && w.user && w.user.username}</p>
               </Link>
             </div>
 

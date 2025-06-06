@@ -51,7 +51,7 @@ const rewards_lists = [
   },
 ];
 
-export default function Membership({item, hidebtn, IsloggedIn, fetch_membership}) {
+export default function Membership({item, hidebtn, IsloggedIn }) {
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
   const gotologin = () => {
     errorAlert("You must login first.");
@@ -93,7 +93,7 @@ export default function Membership({item, hidebtn, IsloggedIn, fetch_membership}
               <span className='bg-dark' ></span>
               <span className='bg-dark' ></span>
             </div>}>
-                <RemoveMembership classes={`px-[18px] py-2 text-start w-full`} updateItems={fetch_membership} uuid={item?.uuid} text="Remove" />
+                <RemoveMembership classes={`px-[18px] py-2 text-start w-full`}   uuid={item?.uuid} text="Remove" />
             </DropdownButton> : ''}
         </div>
 
@@ -118,9 +118,7 @@ export default function Membership({item, hidebtn, IsloggedIn, fetch_membership}
           })}
         </ul>
 
-
-
-          {IsloggedIn ? <EditMembership fetch_membership={fetch_membership} item={item} /> :
+          {IsloggedIn ? <EditMembership   item={item} /> :
             <>
               {auth && auth.user !== null ?
                 <Link className='btn-pink sm mt-3 ' method='get'

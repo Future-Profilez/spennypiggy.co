@@ -1,0 +1,176 @@
+public function wishItemSubscribe(Request $request, $uuid, $reccure = 'continue') {
+        // 1. Gifter status and user validation
+        $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
+        if ($checkGifterStatus == true) {
+            $user = Auth::user();
+            return to_route('user.show', ['username' => $user->username])
+                ->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
+        }
+        $user = Auth::user();
+
+        // 2. Ensure Stripe customer exists for the user
+        if (empty($user->stripe_id)) {
+            $stripeCustomer = \Stripe\Customer::create([
+                'email' => $user->email,
+                'name' => $user->name ?? null,
+            ]);
+            $user->stripe_id = $stripeCustomer->id;
+            $user->save();
+        }
+
+        // 3. Fetch the wish item and creator
+        $wish = WishItem::whereUuid($uuid)->with('user')->first();
+        if (!$wish) {
+            return redirect()->back()->with('error', 'Wish item not found!');
+        }
+
+        // 4. Calculate amounts and fees
+        $currency = strtolower($request->cookie("currency", "GBP"));
+        $price = number_format($wish->price, 2);
+        $tax = number_format($wish->tax_amount, 2);
+
+        $vat_percentage_amount = 0;
+        if ($reccure == 'continue' && !empty($wish->user->vat_amount_percentage)) {
+            // $vat_percentage_amount = ($price) * $wish->user->vat_amount_percentage / 100;
+            // $vat_percentage_amount = $price;
+        }
+        
+        // Convert admin fee (£1) to buyer's currency
+        $adminFeeGBP = config('app.administration_fee', 1.00); // fallback to £1 if not set
+        $adminFee = Helpers::priceFormat('GBP', $adminFeeGBP, $currency);
+        
+        // Calculate total price for the main product (including VAT if applicable)
+        $mainProductAmount = $price + $vat_percentage_amount;
+        // 5. Ensure customer exists in connected account
+        $connectedAccountId = $wish->user->account_id;
+        $storeCustomer = ConnectedAccountCustomer::where('user_id', Auth::id())
+            ->where('creator_id', $wish->user->id)
+            ->where('connected_account_id', $connectedAccountId)
+            ->where('product_type', 'wish item')
+            ->first();
+
+        $customer = null;
+        if (!$storeCustomer) {
+            $customer = StripeControl::createCustomer([
+                'email' => $user->email,
+                'name' => $user->name,
+            ], $connectedAccountId);
+        }
+        $customer_id = $storeCustomer->stripe_customer_id ?? ($customer ? $customer->id : null);
+
+        // 6. Ensure price exists for main product in connected account
+        $existingPriceEntry = ConnectedAccountCustomer::where('user_id', Auth::id())
+            ->where('creator_id', $wish->user->id)
+            ->where('connected_account_id', $connectedAccountId)
+            ->where('product_id', $wish->stripe_product_id)
+            ->where('product_type', 'wish item')
+            ->whereNotNull('price_id')
+            ->first();
+
+        if ($existingPriceEntry) {
+            $mainProductPriceId = $existingPriceEntry->price_id;
+        } else {
+            $mainPrice = StripeControl::createPrice([
+                'unit_amount' => round($mainProductAmount * 100),
+                'currency' => $currency,
+                'recurring' => [
+                    'interval' => StripeControl::$periods[$wish->subscription_period],
+                    'interval_count' => 1,
+                ],
+                'product' => $wish->stripe_product_id,
+            ], $connectedAccountId);
+
+            if (empty($mainPrice->id)) {
+                throw new Exception("Failed to create Stripe price.");
+            }
+            $mainProductPriceId = $mainPrice->id;
+        }
+
+
+        // 7. Create admin fee price in PLATFORM account (not connected account)
+        $adminFeePrice = StripeControl::createPrice([
+            'unit_amount' => round($adminFee * 100),
+            'currency' => $currency,
+            'recurring' => [
+                'interval' => StripeControl::$periods[$wish->subscription_period],
+                'interval_count' => 1,
+            ],
+            'product_data' => [
+                'name' => 'Admin Fee',
+            ]
+        ],$connectedAccountId); // Pass null or omit the second argument for platform account
+
+        if (empty($adminFeePrice->id)) {
+            throw new Exception("Failed to create Stripe admin fee price.");
+        }
+        $adminFeePriceId = $adminFeePrice->id;
+
+        $processingFee = round($mainProductAmount * 0.15, 2);
+        $processingFeePrice = StripeControl::createPrice([
+            'unit_amount' => round($processingFee * 100),
+            'currency' => $currency,
+            'recurring' => [
+                'interval' => StripeControl::$periods[$wish->subscription_period],
+                'interval_count' => 1,
+            ],
+            'product_data' => [
+                'name' => 'Processing Fee (15%)',
+            ]
+        ],$connectedAccountId); // Pass null or omit the second argument for platform account
+
+        $processingFeePriceId = $processingFeePrice->id;
+
+
+        $items = [
+            [
+                'price' => $mainProductPriceId,
+                'quantity' => 1,
+            ],
+            [
+                'price' => $adminFeePriceId,
+                'quantity' => 1,
+            ],
+            [
+                'price' => $processingFeePriceId,
+                'quantity' => 1,
+            ]
+        ];
+
+        $payload = [
+            "mode" => "subscription",
+            "currency" => $currency,
+            "line_items" => $items,
+            "customer" => $customer_id,
+            "success_url" => route('wish.subscribe.handle', ['uuid' => $uuid, 'status' => "success"]),
+            "cancel_url" => route('wish.subscribe.handle', ['uuid' => $uuid, 'status' => "cancel"]),
+            "subscription_data" => [
+                'description' => "Wish Item Subscription Content Purchase.",
+                // 'application_fee_percent' => 15, // 15% platform fee
+            ],
+        ];
+        try {
+            $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
+            $sub = WishItemSubscription::create([
+                'wish_item_id'   =>  $wish->id,
+                'user_id'        =>  Auth::id(),
+                'guest_name'     =>  $request->name ?? NULL,
+                'guest_email'    =>  $request->email,
+                'currency'       =>  $wish->currency,
+                'amount'         =>  $wish->price,
+                'tax'            =>  $tax,
+                'vat_tax_amount' =>  ceil($vat_percentage_amount),
+                'recurring_for'  =>  $reccure,
+                'recurring_type' =>  $wish->subscription_period,
+                'payment_method' =>  'stripe',
+                'surprise_message'  =>  $request->message ?? NULL,
+                'anonymous' => $request->anonymous ?? 0,
+                'session_id' => $session->id,
+            ]);
+            return Inertia::location($session->url);
+        } catch (Exception $e) {
+            // Optionally delete subscription record if session creation fails
+            if (isset($sub)) $sub->delete();
+            Log::error("Stripe Checkout Error: " . $e->getMessage());
+            return back()->with('error', $e->getMessage());
+        }
+    }

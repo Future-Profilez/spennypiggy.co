@@ -409,9 +409,19 @@ div#msgText p.valid svg path{stroke:#27b227;}
 .swiper-button-prev:after{margin-left:0 !important;margin-right:3px !important;}
 .tooltipbtn{width:13px;height:14px;background:#505050;color:#fff;font-size:11px;border-radius:50%;margin-left:6px;display:inline-block;}
 .text-small,.tooltipbtn p{font-size:14px;}
-.tooltipbtn p{position:absolute;background:#505050;padding:10px;border-radius:11px;max-width:330px;left:-58px;z-index:2;top:20px;width:230px;display:none;}
-.tooltipbtn{position:relative;}
-.tooltipbtn p:after{content:"";width:10px;height:10px;background:#505050;position:absolute;left:40px;top:-3px;transform:rotate(45deg);}
+.tooltipbtn p {
+    position: absolute;
+    background: #505050;
+    padding: 10px;
+    border-radius: 11px;
+    max-width: 190px;
+    left: -118px;
+    z-index: 2;
+    top: 20px;
+    width: 230px;
+    display: none;
+}.tooltipbtn{position:relative;}
+.tooltipbtn p:after{content:"";width:10px;height:10px;background:#505050;position:absolute;right:60px;top:-3px;transform:rotate(45deg);}
 .titleprice:hover .tooltipbtn p{display:block !important;}
 .welcomeRt{animation:menu 0.5s linear;transition:0.6s;}
 .wishtracker .nav.nav-tabs li button{margin-right:15px;background:0 0;color:#fff;border:0 !important;padding:15px 10px !important;font-size:17px;border-bottom:2px solid transparent !important;}
@@ -544,14 +554,11 @@ ul.socialmedia li svg{width:25px !important;height:24px !important;}
 
 .wishManage .rts___tabs___container .rts___nav___btn___container:first-child{display:none !important;}
 .wishManage .rts___nav___btn___container{position:absolute;right:0;background:linear-gradient(90deg,rgb(0 0 0 / 0%) -84%,rgb(0 0 0) 100%) !important;top:5px;width:60px !important;}
-.wishManage .rts___btn.rts___nav___btn{width:41px;height:40px !important;margin-left:auto !important;margin-right:5px !important;background:transparent;}
+.wishManage .rts___btn.rts___nav___btn{ border: 0 !important; width:41px;height:40px !important;margin-left:auto !important;margin-right:5px !important;background:transparent;}
 .wishManage .rts___tabs{padding:0 !important;}
 .wishManage .rts___btn {
     font-size: 18px;
     border-radius: 0 !important;
-    border: 0;
-    color: #b5b5b5 !important;
-    border-bottom: 2px solid transparent !important;
     padding-left: 2px !important;
     padding-right: 5px !important;
     margin-right: 23px !important;
