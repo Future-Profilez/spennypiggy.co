@@ -58,8 +58,7 @@ export default function Post({item}) {
 
   return (
     <>
-      <div className="post-wrap bg-light rounded-4 p-[15px] xl:p-6 mb-3 mb-md-4">
-        {IsloggedIn && item && item.approved == 0 ?  <div className='approvalmessge rounded-3 p-3 py-2 mb-2 ' >Post waiting for approval. Currently only you can see this post.</div> : ''}
+      <div className="post-wrap bg-light rounded-[30px] p-[15px] xl:p-6 mb-3 mb-md-4 shadow-pink border-2 border-[#F94F97]">
         <div className='flex items-center justify-between mb-3' >
             {item?.user ? <Link href={`${item?.user?.username}`} className="headerpost mb-0 head w-auto" >
                 <img className="author-img" src={item?.user?.avatar_url || userphoto} />
@@ -76,10 +75,12 @@ export default function Post({item}) {
                 <p className="authors text-muted text-small"> <TimeFormat dateString={item?.updated_at || ''} />   </p>
               </div>
             </Link> }
+
+
             {IsloggedIn ? <DropdownButton
               className='edit-post pe-0 ' id="dropdown-basic-button"
               title={
-              <div className='dots' >
+                <div className='dots' >
               <span className='bg-dark' ></span>
               <span className='bg-dark' ></span>
               <span className='bg-dark' ></span>
@@ -88,6 +89,10 @@ export default function Post({item}) {
                 <RemovePost classes={`px-[18px] py-2 text-start w-full`} uuid={item.uuid} text="Remove Post" />
             </DropdownButton> : ''} 
         </div>
+
+        {IsloggedIn && item && item.approved == 0 ?  <div className='bg-yellow-50 text-yellow-500 p-2 text-sm rounded-3 mb-2 border !border-yellow-500' >
+          Post waiting for approval. Currently only you can see this post.
+        </div> : ''}
         
         {item && item.type =='image' ? 
           <div className='post-images position-relative' >

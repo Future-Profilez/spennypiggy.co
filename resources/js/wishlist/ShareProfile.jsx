@@ -1,6 +1,11 @@
 import toast from "react-hot-toast";
 export default function ShareProfile({ children, username, classes, custom }) {
-    function shareTo() {
+    /**
+     * 
+     * @param {Event} e 
+     */
+    function shareTo(e) {
+        e.stopPropagation();
         const width = window && window.innerWidth;
         const currentURL = custom ? custom : window.location.href;
 

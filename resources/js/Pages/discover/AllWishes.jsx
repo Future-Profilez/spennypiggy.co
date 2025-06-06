@@ -168,7 +168,7 @@ export default function Allwishes(props) {
                         })}
                 </div>
 
-                <div className="row">
+                <div className="d">
                     {loading ? (
                         <div className="w-100 flex justify-content-center">
                             <LoadingScreen />
@@ -176,29 +176,29 @@ export default function Allwishes(props) {
                     ) : (
                         <>
                             {wishes && wishes.length ? (
-                                wishes.map((w, i) => {
-                                    return (
-                                        <Wishlistbox
-                                            key={`wish-item-${i}`}
-                                            classes="col-xl-3 col-lg-4 col-6"
-                                            currency={global_currency}
-                                            // fetchingcats={fetchingcats}
-                                            // categories={categories}
-                                            IsloggedIn={false}
-                                            showall={true}
-                                            auth={auth.user}
-                                            setuped={
-                                                auth &&
-                                                auth.user &&
-                                                auth.user
-                                                    .stripe_details_submitted == 1
-                                                    ? true
-                                                    : false
-                                            }
-                                            itm={w}
-                                        />
-                                    );
-                                })
+                                <div className="grid  grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-3 sm:!gap-4 lg:!gap-6 xl:!gap-4 mt-4 ">  
+                                    {wishes.map((w, i) => {
+                                        return (
+                                            <Wishlistbox
+                                                key={`wish-item-${i}`}
+                                                classes=" "
+                                                currency={global_currency}
+                                                IsloggedIn={false}
+                                                showall={true}
+                                                auth={auth.user}
+                                                setuped={
+                                                    auth &&
+                                                    auth.user &&
+                                                    auth.user
+                                                        .stripe_details_submitted == 1
+                                                        ? true
+                                                        : false
+                                                }
+                                                itm={w}
+                                            />
+                                        );
+                                    })}
+                                </div>
                             ) : (
                                 <div className="my-5">
                                     <Nocontent text={"No Result Found"} />

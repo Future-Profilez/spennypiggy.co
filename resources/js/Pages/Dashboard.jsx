@@ -293,31 +293,33 @@ export default function Dashboard(props) {
                 <div className="wishlistPage blackbg pt-6 pb-0 pb-sm-5 ">
                     <div className="containerbox">
                         <VersionUpdate />
-                        <div className="wishbanner relative ">
-                        <LazyLoadImage
-                            alt={"image"}
-                            useIntersectionObserver={true}
-                            effect="blur"
-                            height={400}
-                            className="w-full border-black border-2 shadow-mint rounded-2xl"
-                            src={user?.cover_url || wishlistbannerimg}
-                            width={1200}
-                        />
 
-                        <div className="relative">
-                            {IsloggedIn && auth && auth?.user.cover_url && auth?.user?.cover_approved == 0 ?
-                                <div className="absolute right-5 top-3 mx-auto">
-                                    <button className='tooltipbtn' >
-                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M9 15H11V9H9V15ZM10 7C10.2833 7 10.521 6.904 10.713 6.712C10.905 6.52 11.0007 6.28267 11 6C11 5.71667 10.904 5.47933 10.712 5.288C10.52 5.09667 10.2827 5.00067 10 5C9.71667 5 9.47933 5.096 9.288 5.288C9.09667 5.48 9.00067 5.71733 9 6C9 6.28333 9.096 6.521 9.288 6.713C9.48 6.905 9.71733 7.00067 10 7ZM10 20C8.61667 20 7.31667 19.7373 6.1 19.212C4.88333 18.6867 3.825 17.9743 2.925 17.075C2.025 16.175 1.31267 15.1167 0.788 13.9C0.263333 12.6833 0.000666667 11.3833 0 10C0 8.61667 0.262667 7.31667 0.788 6.1C1.31333 4.88333 2.02567 3.825 2.925 2.925C3.825 2.025 4.88333 1.31267 6.1 0.788C7.31667 0.263333 8.61667 0.000666667 10 0C11.3833 0 12.6833 0.262667 13.9 0.788C15.1167 1.31333 16.175 2.02567 17.075 2.925C17.975 3.825 18.6877 4.88333 19.213 6.1C19.7383 7.31667 20.0007 8.61667 20 10C20 11.3833 19.7373 12.6833 19.212 13.9C18.6867 15.1167 17.9743 16.175 17.075 17.075C16.175 17.975 15.1167 18.6877 13.9 19.213C12.6833 19.7383 11.3833 20.0007 10 20Z" fill="#FF8E25"/>
-                                        </svg>
-                                        <p>Cover image is waiting for approval. Currently only you can see this.</p>
-                                    </button>
-                                </div>
-                            : ""}
+
+                        <div className="wishbanner relative ">
+                            <LazyLoadImage
+                                alt={"image"}
+                                useIntersectionObserver={true}
+                                effect="blur"
+                                height={400}
+                                className="w-full border-black border-2 shadow-mint rounded-[30px]"
+                                src={user?.cover_url || wishlistbannerimg}
+                                width={1200}
+                            />
+                            <div className="relative">
+                                {IsloggedIn && auth && auth?.user.cover_url && auth?.user?.cover_approved == 0 ?
+                                    <div className="absolute right-5 top-3 mx-auto">
+                                        <button className='tooltipbtn' >
+                                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M9 15H11V9H9V15ZM10 7C10.2833 7 10.521 6.904 10.713 6.712C10.905 6.52 11.0007 6.28267 11 6C11 5.71667 10.904 5.47933 10.712 5.288C10.52 5.09667 10.2827 5.00067 10 5C9.71667 5 9.47933 5.096 9.288 5.288C9.09667 5.48 9.00067 5.71733 9 6C9 6.28333 9.096 6.521 9.288 6.713C9.48 6.905 9.71733 7.00067 10 7ZM10 20C8.61667 20 7.31667 19.7373 6.1 19.212C4.88333 18.6867 3.825 17.9743 2.925 17.075C2.025 16.175 1.31267 15.1167 0.788 13.9C0.263333 12.6833 0.000666667 11.3833 0 10C0 8.61667 0.262667 7.31667 0.788 6.1C1.31333 4.88333 2.02567 3.825 2.925 2.925C3.825 2.025 4.88333 1.31267 6.1 0.788C7.31667 0.263333 8.61667 0.000666667 10 0C11.3833 0 12.6833 0.262667 13.9 0.788C15.1167 1.31333 16.175 2.02567 17.075 2.925C17.975 3.825 18.6877 4.88333 19.213 6.1C19.7383 7.31667 20.0007 8.61667 20 10C20 11.3833 19.7373 12.6833 19.212 13.9C18.6867 15.1167 17.9743 16.175 17.075 17.075C16.175 17.975 15.1167 18.6877 13.9 19.213C12.6833 19.7383 11.3833 20.0007 10 20Z" fill="#FF8E25"/>
+                                            </svg>
+                                            <p>Cover image is waiting for approval. Currently only you can see this.</p>
+                                        </button>
+                                    </div>
+                                : ""}
                             </div>
                             <Userprofile IsloggedIn={IsloggedIn} />
                         </div>
+                        
 
                         {user && user?.role == 1 && IsloggedIn && showAlert ?
                             <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-lg">
@@ -487,41 +489,40 @@ export default function Dashboard(props) {
                                                                     </>
                                                                     : ''}
 
-                                                                    {loading ? (
-                                                                        <LoadingScreen />
+
+                                                                    {wishitems && wishitems.length ? (
+                                                                    <>
+                                                                        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                                                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                                                                <SortableContext strategy={rectSortingStrategy} items={wishitems}>
+                                                                                    {!loading && wishitems.map((c, i) => {
+                                                                                                return (
+                                                                                                    <Wishlistbox key={`wish-item-${i}`} classes=" "
+                                                                                                        currency={global_currency}  IsloggedIn={IsloggedIn}
+                                                                                                        auth={auth.user} itemid={itemid} setuped={auth && auth.user && auth.user.stripe_details_submitted == 1
+                                                                                                                ? true : false} itm={c}
+                                                                                                    />
+                                                                                                );
+                                                                                            }
+                                                                                        )}
+                                                                                </SortableContext>
+                                                                            </DndContext>
+                                                                        </div>
+                                                                    </>
                                                                     ) : (
-                                                                        ""
+                                                                        <>
+                                                                            {loading ? (
+                                                                                <LoadingScreen />
+                                                                            ) : (
+                                                                                ""
+                                                                            )}
+                                                                            {(!loading && (
+                                                                                <div className="col-md-12">
+                                                                                    <Nocontent text="Nothing to see." />
+                                                                                </div>
+                                                                            )) || ""}
+                                                                        </>
                                                                     )}
-                                                                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                                                            <>
-                                                                                {wishitems && wishitems.length ? (
-                                                                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                                                                                        <SortableContext strategy={rectSortingStrategy} items={wishitems}>
-                                                                                            {!loading && wishitems.map((c, i) => {
-                                                                                                        return (
-                                                                                                            <Wishlistbox key={`wish-item-${i}`} classes=" "
-                                                                                                                currency={global_currency}  IsloggedIn={IsloggedIn}
-                                                                                                                auth={auth.user} itemid={itemid} setuped={auth && auth.user && auth.user.stripe_details_submitted == 1
-                                                                                                                        ? true : false} itm={c}
-                                                                                                            />
-                                                                                                        );
-                                                                                                    }
-                                                                                                )}
-                                                                                        </SortableContext>
-                                                                                    </DndContext>
-                                                                                ) : (
-                                                                                    <>
-                                                                                        {(!loading && (
-                                                                                            <div className="col-md-12">
-                                                                                                <Nocontent text="Nothing to see." />
-                                                                                            </div>
-                                                                                        )) ||
-                                                                                            ""}
-                                                                                    </>
-                                                                                )}
-                                                                            </>
-                                                                        
-                                                                    </div>
                                                                 </div>
                                                             </Suspense>
                                                             : ''}
