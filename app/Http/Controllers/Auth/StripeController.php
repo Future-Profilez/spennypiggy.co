@@ -678,13 +678,10 @@ class StripeController extends Controller
 
             $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
 
-            Log::info("Creating Stripe Checkout for Wish Item Subscription");
             $vat_percentage_amount = 0;
-            // dd($reccure);
             if ($reccure == 'continue') {
                 if (!empty($wish->user->vat_amount_percentage)) {
                     $vat_percentage_amount = $wish->user->vat_amount_percentage;
-                    // $vatPercentage = $wish->user->vat_amount_percentage; // 20%
                     // $vat_percentage_amount = ($price + $tax) * $wish->user->vat_amount_percentage / 100;
                 }
             }
