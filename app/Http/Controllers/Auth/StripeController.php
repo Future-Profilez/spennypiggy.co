@@ -624,6 +624,8 @@ class StripeController extends Controller
             }
         }
 
+        $vatAmount = $vat_percentage_amount; // 50.00
+
         if ($request->isMethod("POST")) {
             $request->validate([
                 'name' => [
@@ -693,8 +695,8 @@ class StripeController extends Controller
             $adminFeeGBP = config('app.administration_fee'); // fixed
             $gbpToUsdRate = Helpers::priceFormat('GBP', $adminFeeGBP, $wish->currency);
 
-            $vatAmount = $basePrice * $vatPercentage / 100; // 50.00
             $platformFeeAmount = $basePrice * $platformFeePercentage / 100; // 37.50
+            $vatAmount = ($basePrice + $platformFeeAmount) * $vatPercentage / 100; // 50.00
             $adminFeeUSD = $adminFeeGBP * $gbpToUsdRate; // 1.33
 
             $creatorTotal = $basePrice + $vatAmount; // 300.00
@@ -704,7 +706,6 @@ class StripeController extends Controller
 
             // Application fee percent (for Checkout session)
             $applicationFeePercent = ($platformTotal / $finalTotalAmount) * 100;
-
 
             // Price creation or reuse
             $priceId = $existingPriceEntry->price_id ?? null;
@@ -759,7 +760,6 @@ class StripeController extends Controller
                 // Create the session on connected account
                 $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
 
-
                 // Save session id
                 $sub->update(['session_id' => $session->id]);
 
@@ -773,7 +773,7 @@ class StripeController extends Controller
 
         return Inertia::render('cart/SubCheckout', [
             'wish'  => $wish,
-            'vat_amount' => $vat_percentage_amount,
+            'vat_amount' => $vatAmount,
             'reccure'   => $reccure
         ]);
     }
