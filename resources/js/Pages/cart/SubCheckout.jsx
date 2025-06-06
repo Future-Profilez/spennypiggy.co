@@ -100,28 +100,27 @@ export default function SubCheckout(props) {
                         </div>
 
                         <div className="cartTotal px-0 py-3">
-                            <div className="cartSubTotal text-right mt-1">
-                                <span>Platform Fee :</span>{" "}
+                            <div className="cartSubTotal text-right mt-1 !text-sm">
+                                <span> Amount :</span>
+                                <strong className="text-end">
+                                    {formatMultiPrice(wish.price || "", wish && wish.currency)}
+                                </strong>
+                            </div>
+                            <div className="cartSubTotal text-right mt-1 !text-sm">
+                                <span>VAT Applicable : </span>
+                                <strong className="text-end">
+                                    {formatMultiPrice(vat_amount || "", wish && wish.currency)}
+                                </strong>
+                            </div>
+                            <div className="cartSubTotal text-right mt-1 !text-sm">
+                                <span>Platform Fee :</span>
                                 <strong className="text-end">
                                     {formatMultiPrice(wish.tax_amount || "", wish && wish.currency)}
                                 </strong>
                             </div>
                             <div className="cartSubTotal text-right mt-1">
-                                <span>VAT : </span>{" "}
-                                <strong className="text-end">
-                                    {formatMultiPrice(vat_amount || "", wish && wish.currency)}
-                                </strong>
-                            </div>
-                            <div className="cartSubTotal text-right mt-1">
-                                <span>Subtotal :</span>{" "}
-                                <strong className="text-end">
-                                    {formatMultiPrice(wish.price || "", wish && wish.currency)}
-                                </strong>
-                            </div>
-                            <div className="cartSubTotal text-right mt-1">
-                                <strong className="text-dark">Total :</strong>{" "}
-                                <strong className="text-end">
-                                    {/* {formatMultiPrice(wish.tax_amount + wish.price || "", wish && wish.currency)} */}
+                                <strong className="text-dark">Total :</strong>
+                                <strong className="text-end text-black">
                                     {formatMultiPrice(wish.tax_amount + wish.price + vat_amount || "", wish && wish.currency)}
                                 </strong>
                             </div>
