@@ -48,8 +48,10 @@ export default function Wishlistbox(props) {
     return r.toFixed(1);
   }
 
-  return <div key={key} style={IsloggedIn ? style : stylenone}  className={`wish-item-box ${classes} ${isDragging ? 'dragging' : ''}`}> 
-      <div  className='wishlistcntbox mb-3 mb-sm-4 whbg relative  shadow-voilet '>
+  return <div key={key} 
+  style={IsloggedIn ? style : stylenone}  
+  className={`wish-item-box ${classes} ${isDragging ? 'dragging' : ''}`}> 
+      <div  className=' rounded-3xl shadow-pinks overflow-hidden   relative border-4 border-[#F94F97] w-full '>
 
       {IsloggedIn && itm && itm.is_approved === 0 ?  <div className='approvalmessge membership m-2 rounded-3 p-3 py-2 mb-2 ' >Wish item waiting for approval. Currently only you can see this wish.</div> : ''}
 
@@ -75,36 +77,62 @@ export default function Wishlistbox(props) {
           </Dropdown.Item>
         </DropdownButton> : ''}
 
-        {/* {itm?.is_pin == 1 ? <div className='badge bg-info text-dark font-light pinned-badge' ><svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="#000000"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="M4 2h7v.278c0 .406-.086.778-.258 1.117-.172.339-.42.63-.742.875v2.86c.307.145.583.328.828.546.245.219.456.464.633.735.177.27.31.565.398.882.089.318.136.646.141.985v.5H8V14l-.5 1-.5-1v-3.222H3v-.5c0-.339.047-.664.14-.977.094-.312.227-.607.4-.883A3.404 3.404 0 0 1 5 7.13V4.27a2.561 2.561 0 0 1-.734-.875A2.505 2.505 0 0 1 4 2.278V2zm1.086.778c.042.125.094.232.156.32a1.494 1.494 0 0 0 .461.43L6 3.715v4.102l-.336.117c-.411.146-.76.383-1.047.711C4.331 8.973 4.09 9.573 4 10h7c-.088-.427-.33-1.027-.617-1.355a2.456 2.456 0 0 0-1.047-.71L9 7.816V3.715l.297-.18c.094-.057.177-.122.25-.195a2.28 2.28 0 0 0 .21-.242.968.968 0 0 0 .157-.32H5.086z"></path></g></svg> Pinned</div> : ''} */}
 
-        <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
+        <div onClick={openAddtocart} className='rounded-[12px] h-[200px] wishbox overflow-hidden cursor-pointer'>
           <LazyLoadImage
           alt={"image"} useIntersectionObserver={true} effect="blur"
-          height={193}
-          src={itm?.perma_link ? itm?.perma_link : uploadedimg} className=''
+          height={193} className='rounded-t-3xl block w-full h-full object-cover'
+          src={itm?.perma_link ? itm?.perma_link : uploadedimg}  
           width={243} />
         </div>
 
-        <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
+        <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative bg-white'>
           <div>
-            <h4 className={`fon-bold text-dark ${itm.subscription !== '0' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>
-            <h5 className='font-CeraGRBold text-dark titleprice'>{formatMultiPrice(itm.price, itm?.currency || 'GBP')}
+            <h4 className={`text-lg  !text-gray-800 text-center ${itm.subscription !== '0' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>
+            <h5 className='text-center font-bold font-poppins  text-black my-2 titleprice'>{formatMultiPrice(itm.price, itm?.currency || 'GBP')}
                 <button className='tooltipbtn' >?<p>*just not including service fee.</p></button>
             </h5>
           </div>
           {itm.subscription == '2' ?
             <div className='crowd pt-2'>
             <ProgressBar now={itm.fullfill_amount} max={itm.price} />
-            <p className='mt-1 mb-0 text-small' >{getPercentage(itm.price, itm.fullfill_amount)}% granted</p>
+            <p className='mt-1 mb-0 text-small text-center' >{getPercentage(itm.price, itm.fullfill_amount)}% granted</p>
             </div>
           : '' }
-          {itm && itm.subscription == '1' ? <div className='subscribletag' > Subscribable </div> : ''}
-        </div>
-        <div className='sharelinks'>
-          <ShareProfile username={itm.wishname} custom={`${window.location.href}?item=${itm.uuid}`} >
-            <div className='text-pink font-GillSans'>Share Link</div>
-          </ShareProfile>
+          
+          {itm && itm.subscription == '1' ? <div class="bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full absolute top-[-35px] right-2">Subscribable</div> : ''}
+          <div className='flex justify-center items-center mt-3'>
+            <ShareProfile username={itm.wishname} custom={`${window.location.href}?item=${itm.uuid}`} >
+              <div className='bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-4 rounded-full shadow'>Share Link</div>
+            </ShareProfile>
+          </div>
+          <div class="absolute top-2 left-2 text-xl">👀</div>
+          <div class="absolute bottom-2 right-2 text-xl">⭐</div>
         </div>
       </div>
     </div>
 }
+
+
+
+// <div class="bg-white rounded-3xl shadow-pink  sshadow-lg relative border-2 border-[#F94F97] w-full max-w-[250px]">
+                                                 
+
+//                                                 <div class="flex justify-center ">
+//                                                     <img src="https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/" alt="Piggy Bank Illustration" class="w-full rounded-[20px]" />
+//                                                 </div>
+//                                                 <div className="p-4">
+//                                                     <div class="text-lg   text-gray-800 text-center">Naveen Tehrpariya</div>
+//                                                     <div class="text-center font-bold font-poppins  text-black my-2">US$45.00</div>
+//                                                     <div class="text-center mt-4">
+//                                                         <button class="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-4 rounded-full shadow">
+//                                                         Special Link
+//                                                         </button>
+//                                                     </div>
+//                                                 </div>
+
+
+
+//                                                 <div class="absolute top-2 left-2 text-xl">👀</div>
+//                                                 <div class="absolute bottom-2 right-2 text-xl">⭐</div>
+//                                                 </div>

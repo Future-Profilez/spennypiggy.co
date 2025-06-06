@@ -83,7 +83,7 @@ export default function Accountsetting(props) {
                                     </li>
                                  :
                                     <li>
-                                        <Link href={'/stripe-subscription'} >Activate Subscription  <span className='text-voilet'>Activate</span></Link>
+                                        <Link href={'/activate-subscription'} >Activate Subscription  <span className='text-voilet'>Activate</span></Link>
                                     </li>
                                   }
                                 </>

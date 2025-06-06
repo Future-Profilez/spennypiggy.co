@@ -9,7 +9,7 @@ import UpdateAvatar from './UpdateAvatar';
 import LoaderButton from '@/Components/LoaderButton';
 import PriceFormat from '@/includes/PriceFormat';
 
-export default function EditProfile({ user, global_currency, classes, updateProfileSteps }) {
+export default function EditProfile({ user, text, classes, updateProfileSteps }) {
  
     const [close, setClose] = useState()
     const { successAlert, errorAlert } = useAlerts();
@@ -73,7 +73,7 @@ export default function EditProfile({ user, global_currency, classes, updateProf
 
     return (
         <Popup modalclass='pinkmodal editprofile full' size='md' action={close}
-            text={<> Update Profile </>}
+            text={text||<> Update Profile </>}
             classes={`${classes ? classes : "button bg-pink d-table d-sm-flex m-auto m-sm-0"}`} >
             <div className='editprofileHead'>
                 <h2>Edit Profile</h2>

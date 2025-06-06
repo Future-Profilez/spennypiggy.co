@@ -45,6 +45,7 @@ import { FaRegHeart } from "react-icons/fa";
 import { CiGift } from "react-icons/ci";
 import OldSubscribe from "./webpush/OldSubscribe";
 import AddSocial from "./Auth/Social";
+import CreatorVerification from "./Profile/CreatorVerification";
 
 export default function Dashboard(props) {
     const w = useWidthCount();
@@ -241,8 +242,8 @@ export default function Dashboard(props) {
                                                 </div>
                                             : <div>
 
-                                            {auth.user && auth.user.stripe_details_submitted == 1 ?
-                                                    <>
+                                        
+                                                    <div className={`${auth.user && auth.user.stripe_details_submitted == 1 ? "block" : "disabled"}`}>
                                                     <div onClick={()=> setWishOptions(true)} className="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center cursor-pointer">
                                                         <div className=" flex items-center">
                                                             <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
@@ -260,15 +261,12 @@ export default function Dashboard(props) {
                                                     <AddItem  classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
                                                     product_type="digital_products"  />
                                                     <AddPost classes="font-bold py-3 px-3 mb-2 text-center"   />
-
-                                                    {/* {ziggy && ziggy.url !== 'https://spennypiggy.co' && */}
-                                                        <AddGift text="Add Gift " classes="font-bold py-3 px-3 mb-2 text-center"
-                                                        fetch_gifts={fetch_gifts} addressAdded={auth?.user?.is_creator_address_found} />
-                                                    {/* // } */}
-                                                    </>
-                                            : '' }
-                                            <AddMembership  />
-                                            <AddBills  />
+                                                    <AddGift text="Add Gift " classes="font-bold py-3 px-3 mb-2 text-center"
+                                                    fetch_gifts={fetch_gifts} addressAdded={auth?.user?.is_creator_address_found} />
+                                                    <AddMembership  />
+                                                    <AddBills  />
+                                                    </div>
+                                            
                                             </div>}
 
                                     </div>
@@ -371,6 +369,12 @@ export default function Dashboard(props) {
                                                 {IsloggedIn && <Toggle />}
                                             </div>
 
+
+                                           
+
+
+
+
                                                 <div className="tabs-containers min-height" >
                                                     {page === "about" || page === false ?
                                                         <Suspense fallback={<LoadingScreen />} >
@@ -387,12 +391,9 @@ export default function Dashboard(props) {
                                                                             <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
                                                                                 {(user &&user.bio) ||""}
                                                                             </p>
-                                                                            {IsloggedIn && auth?.verification_status?.user_profile_status == 2 && user?.profile_status_lock == 0 && user?.profile_reject_reason != null  ?
-                                                                                <div className="mt-3">
-                                                                                    <p className="text-red-700">Profile Rejected Reason</p>
-                                                                                    <p className="text-red-500 text-sm">Reason : {user?.profile_reject_reason }.</p>
-                                                                                </div>
-                                                                              : ''}
+
+                                                                            
+
                                                                             {IsloggedIn && user?.edit_bio_reason  ?
                                                                                 <div className="mt-3">
                                                                                     <p className="text-red-700">Bio Edit Request</p>
@@ -404,10 +405,11 @@ export default function Dashboard(props) {
 
                                                                             {IsloggedIn ? (
                                                                                 <div className="userProfileDate pt-0 pt-md-3">
-                                                                                    {auth.user && auth.user.role == 1 && <>
-                                                                                        {auth.user && auth.user.monthly_charge_enabled ? '' : <SiteSubscription user={auth.user} /> }
-                                                                                    </>
-                                                                                    || ''}
+                                                                                    
+                                                                                    {auth?.user && auth?.user?.role == 1  
+                                                                                    && !auth?.user?.monthly_charge_enabled ? 
+                                                                                        <SiteSubscription user={auth?.user} />
+                                                                                    : ''}
 
                                                                                     {auth.user && auth.user.role == 1 && auth.user.monthly_charge_enabled &&
                                                                                     <>
@@ -453,11 +455,12 @@ export default function Dashboard(props) {
                                                                 </div>
 
                                                                 <div className="ps-md-4 col-md-6">
-                                                                    {IsloggedIn ? <ProfileSteps sLinks={sLinks} user={user} IsloggedIn={IsloggedIn} /> : ''}
-                                                                    {tab == "0" ? <>
-                                                                        {user && user.stripe_details_submitted == 1 && w > 767 ? <TipInner classes={`mb-4`} /> : ''}
-                                                                        <FeedList IsloggedIn={IsloggedIn} />
-                                                                    </> : ''}
+                                                                    {IsloggedIn && user && user.stripe_details_submitted == 0 ? <CreatorVerification  IsloggedIn={IsloggedIn} /> : ''}
+                                                                    {IsloggedIn && user && user.stripe_details_submitted == 1 ? <ProfileSteps sLinks={sLinks} user={user} IsloggedIn={IsloggedIn} /> : ''}
+                                                                    {!IsloggedIn && user && user.stripe_details_submitted == 1 && w > 767 ? 
+                                                                        <TipInner classes={`mb-4`} /> 
+                                                                    : ''}
+                                                                    <FeedList IsloggedIn={IsloggedIn} />
                                                                 </div>
                                                             </div>
                                                         </Suspense>
@@ -489,14 +492,14 @@ export default function Dashboard(props) {
                                                                     ) : (
                                                                         ""
                                                                     )}
-                                                                    <div className="row  items-lists">
+                                                                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                                                             <>
                                                                                 {wishitems && wishitems.length ? (
                                                                                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                                                                                         <SortableContext strategy={rectSortingStrategy} items={wishitems}>
                                                                                             {!loading && wishitems.map((c, i) => {
                                                                                                         return (
-                                                                                                            <Wishlistbox key={`wish-item-${i}`} classes="col-xl-3 col-lg-3 col-md-4 col-6"
+                                                                                                            <Wishlistbox key={`wish-item-${i}`} classes=" "
                                                                                                                 currency={global_currency}  IsloggedIn={IsloggedIn}
                                                                                                                 auth={auth.user} itemid={itemid} setuped={auth && auth.user && auth.user.stripe_details_submitted == 1
                                                                                                                         ? true : false} itm={c}
