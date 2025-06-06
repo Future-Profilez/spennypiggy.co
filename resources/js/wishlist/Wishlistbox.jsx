@@ -19,8 +19,8 @@ export default function Wishlistbox(props) {
    
   const { format, formatMultiPrice } = PriceFormat();
   const { currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped, classes, showall, key } = props;
-
   const { attributes, listeners, isDragging, index, over, setNodeRef, transform, transition } = useSortable({ id: itm && itm.id });
+  
   const style = { 
     transform: CSS.Translate.toString(transform)
   };
@@ -50,8 +50,8 @@ export default function Wishlistbox(props) {
 
   return <div key={key} 
   style={IsloggedIn ? style : stylenone}  
-  className={`wish-item-box ${classes} ${isDragging ? 'dragging' : ''}`}> 
-      <div  className=' rounded-3xl shadow-pinks overflow-hidden   relative border-4 border-[#F94F97] w-full '>
+  className={`wish-item-box !p-0 ${classes} ${isDragging ? 'dragging' : ''}`}> 
+      <div  className=' rounded-3xl shadow-pinks overflow-hidden   relative border-3 md:border-4 border-[#F94F97] w-full '>
 
       {IsloggedIn && itm && itm.is_approved === 0 ?  <div className='approvalmessge membership m-2 rounded-3 p-3 py-2 mb-2 ' >Wish item waiting for approval. Currently only you can see this wish.</div> : ''}
 
@@ -77,8 +77,7 @@ export default function Wishlistbox(props) {
           </Dropdown.Item>
         </DropdownButton> : ''}
 
-
-        <div onClick={openAddtocart} className='rounded-[12px] h-[200px] wishbox overflow-hidden cursor-pointer'>
+        <div onClick={openAddtocart} className='rounded-[12px] h-[150px] md:h-[200px] wishbox overflow-hidden cursor-pointer'>
           <LazyLoadImage
           alt={"image"} useIntersectionObserver={true} effect="blur"
           height={193} className='rounded-t-3xl block w-full h-full object-cover'
@@ -101,13 +100,13 @@ export default function Wishlistbox(props) {
           : '' }
           
           {itm && itm.subscription == '1' ? <div class="bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full absolute top-[-35px] right-2">Subscribable</div> : ''}
-          <div className='flex justify-center items-center mt-3'>
+          <div class="absolute top-1 left-1 text-xl">👀</div>
+          <div class="absolute bottom-2 right-2 text-xl">⭐</div>
+          <div className='flex justify-center items-center mt-3'  >
             <ShareProfile username={itm.wishname} custom={`${window.location.href}?item=${itm.uuid}`} >
-              <div className='bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-4 rounded-full shadow'>Share Link</div>
+              <div className='bg-yellow-400 hover:bg-yellow-500 text-black font-bold text-[13px] md:text-normal py-2 px-4 rounded-full shadow'>Share Link</div>
             </ShareProfile>
           </div>
-          <div class="absolute top-2 left-2 text-xl">👀</div>
-          <div class="absolute bottom-2 right-2 text-xl">⭐</div>
         </div>
       </div>
     </div>

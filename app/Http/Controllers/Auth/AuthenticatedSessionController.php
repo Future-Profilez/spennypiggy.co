@@ -274,7 +274,6 @@ class AuthenticatedSessionController extends Controller
 
 
             // GOAL
-           
             $goalPayment = TipGoalsPayment::where('creator_id', $user->id)->where('status', 'paid')->sum('amount');
             $arr = [];
             $bill_payment = BillPayment::whereHas('bill', function ($q) use ($user) {
@@ -310,10 +309,9 @@ class AuthenticatedSessionController extends Controller
 
         $wishitems = [];
         $pinned = [];
-        $categories = [];
+        $categories = $user->user_categories()->get();
         $category = request()->query('category') ?? false;
         if($page == 'wishes'){
-            $categories = $user->user_categories()->get();
             
             if ($category) {
                 $query = WishCategory::orderBy('created_at', 'DESC');

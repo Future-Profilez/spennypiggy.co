@@ -1,0 +1,145 @@
+public function createCheckout($id)
+    {
+        $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
+        if ($checkGifterStatus == true) {
+            $user = Auth::user();
+            return to_route('user.show', ['username' => $user->username])
+                ->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
+        }
+
+        $user = Auth::user();
+        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+
+        try {
+            if (!empty(request()->query('message'))) {
+                $wordLimit = 100;
+                $message = request()->query('message');
+                if (str_word_count($message) > $wordLimit) {
+                    return redirect()->back()->with("error", "Max limit for message is 100 words");
+                }
+            }
+
+            if (Auth::check()) {
+                $getdata = UserCart::where('user_id', Auth::id())
+                    ->where('owner_id', $id)
+                    ->where('status', 1)
+                    ->with(['wish'])
+                    ->get();
+            } else {
+                $getdata = UserCart::where('device_id', $id)
+                    ->where('status', 1)
+                    ->with(['wish'])
+                    ->get();
+            }
+
+            $lineItems = [];
+            $subtotal = 0;
+            $totalPlatformFee = 0;
+            $totalAdminFee = 0;
+            $transfer_amount = 0;
+
+            foreach ($getdata as $dd) {
+                // Item price in buyer's currency
+                $itemPrice = Helpers::priceFormat($dd->owner->default_currency, $dd->amount, $currency);
+                $quantity = $dd->quantity;
+
+                // 15% platform fee (in buyer's currency)
+                $platformFee = round($itemPrice * 0.15, 2);
+
+                // £1 admin fee, converted to buyer's currency
+                $adminFeeGBP = 1.00;
+                $adminFee = Helpers::priceFormat('GBP', $adminFeeGBP, $currency);
+
+                // Add line item for the product
+                $lineItems[] = [
+                    'quantity' => $quantity,
+                    'price_data' => [
+                        'currency' => $currency,
+                        'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
+                        'unit_amount_decimal' => $itemPrice * 100,
+                    ]
+                ];
+
+                $subtotal += $itemPrice * $quantity;
+                $totalPlatformFee += $platformFee * $quantity;
+                $totalAdminFee += $adminFee * $quantity;
+                $transfer_amount += $itemPrice * $quantity;
+            }
+
+            // Add line item for admin fee (converted to buyer's currency)
+            $lineItems[] = [
+                'quantity' => 1,
+                'price_data' => [
+                    'currency' => $currency,
+                    'product_data' => [
+                        'name' => '£1 Admin Fee',
+                    ],
+                    'unit_amount' => $totalAdminFee * 100,
+                ],
+            ];
+
+            // Add line item for platform fee
+            $lineItems[] = [
+                'quantity' => 1,
+                'price_data' => [
+                    'currency' => $currency,
+                    'product_data' => [
+                        'name' => 'Platform Fee (15%)',
+                    ],
+                    'unit_amount' => $totalPlatformFee * 100,
+                ],
+            ];
+
+            $connectedAccountId = $getdata[0]->owner->account_id;
+
+            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+
+            $payload = [
+                'success_url' => route('checkout.success', [$id]),
+                'cancel_url' => route('checkout.cancel', [$id]),
+                "mode"  =>  "payment",
+                'line_items' => $lineItems,
+                'customer_email' => request()->query('email') ?? $getdata[0]->user->email,
+                'payment_intent_data' => [
+                    // Only the item price is transferred to the creator
+                    // 'transfer_data' => [
+                    //     'destination' => $connectedAccountId,
+                    //     'amount' => round($transfer_amount * 100),
+                    // ],
+                    // All fees (admin + platform) are kept by the platform
+                    'application_fee_amount' => round(($totalAdminFee + $totalPlatformFee) * 100),
+                    'description' => "Custom Content Purchase."
+                ],
+            ];
+
+            $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccountId);
+
+            session()->forget('session_id');
+            session(['session_id' => $sessionCreate->id]);
+            $stripePaymentDetail = StripePaymentDetail::create([
+                'session_id' => $sessionCreate->id,
+                'amount_subtotal' => $subtotal,
+                'amount_total' => $sessionCreate->amount_total / 100,
+                'tax' => 0, // Adjust if you have VAT logic
+                'currency' => $currency,
+                'payment_method_config_detail_id' => optional($sessionCreate->payment_method_configuration_details)->id,
+                'payment_method_type' => optional($sessionCreate->payment_method_types)[0],
+                'user_id' => Auth::id() ?? null,
+                'owner_id' => $getdata[0]->owner->id,
+                'name' => request()->query('from') ?? '',
+                'message' => $message ?? '',
+                'anonymous' => request()->query('anonymous') ?? 0,
+                'session_created' => $sessionCreate->created,
+                'session_expires_at' => $sessionCreate->expires_at,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $stripePaymentDetail->refresh();
+
+            return Inertia::location($sessionCreate->url);
+        } catch (\Throwable $th) {
+            Log::error("Error in createCheckout: " . $th->getMessage());
+            throw $th;
+        }
+    }

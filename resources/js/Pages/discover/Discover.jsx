@@ -8,6 +8,7 @@ const Allwishes = React.lazy(() => import('./AllWishes'));
 const IntroVideos = React.lazy(() => import('./IntrosVideos'));
 
 export default function Discover(props) {
+    console.log("props", props);
   const {auth} = props;
   return (
     <Authenticated auth={auth?.user || ''} >
