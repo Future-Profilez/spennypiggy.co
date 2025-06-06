@@ -457,7 +457,7 @@ Route::prefix("bill")->name("bill.")->group(function () {
     Route::get('/handle/{uuid}/{status}', [BillsController::class, 'handlePayment'])->name('handle');
 });
 
-Route::get('delete-all-products', [TestController::class, 'deleteAllProducts'])->name('delete-all-products');
+Route::get('delete-all-products', [TestController::class, 'deleteAllProducts'])->name('delete.all.products');
 
 Route::get('image/dalle', [TestController::class, 'testAiImage'])->name("image-dalle");
 

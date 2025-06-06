@@ -795,17 +795,17 @@ class StripeController extends Controller
                 // ],
                 'subscription_data' => [
                     'application_fee_percent' => config('app.subs_tax'), // Admin fee + tax
-                    // 'transfer_data' => [
-                    //     'destination' => $connectedAccountId, // Creator's connected account ID
-                    //     'amount' => round($transfer_amount * 100), // Amount to transfer to creator
-                    // ],
+                    'transfer_data' => [
+                        'destination' => $connectedAccountId, // Creator's connected account ID
+                        'amount' => round($total_tax_amount * 100), // Amount to transfer to creator
+                    ],
                     // 'on_behalf_of' => $connectedAccountId, // On behalf of the creator
                 ],
             ];
 
             try {
                 // Step 8: Create session in connected account
-                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
+                $session = StripeControl::createSubscription($payload, $connectedAccountId);
 
                 // Step 9: Update subscription
                 $sub->update([
