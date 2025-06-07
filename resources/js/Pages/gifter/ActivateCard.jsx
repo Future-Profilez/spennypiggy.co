@@ -126,8 +126,6 @@ export default function ActivateCard() {
                     ) : (
                         ""
                     )}
-
-
                 </div>
             </div>
         </>

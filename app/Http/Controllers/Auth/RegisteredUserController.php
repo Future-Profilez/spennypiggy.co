@@ -279,8 +279,7 @@ class RegisteredUserController extends Controller
         $existingSuccess = GifterCardVerification::where('user_id', $user->id)->where('status', 'success')->whereNull('deleted_at')->first();
         GifterCardVerification::where('user_id', $user->id)->whereIn('status', ['pending', 'rejected by admin'])->delete();
 
-        if ($existingSuccess) {
-            // Already verified
+        if ($existingSuccess){
             $user->update(['profile_status_lock' => 1]);
             return response()->json([
                 'status' => false,

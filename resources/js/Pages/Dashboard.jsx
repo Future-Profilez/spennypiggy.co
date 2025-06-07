@@ -412,19 +412,17 @@ export default function Dashboard(props) {
                                                                                     && !auth?.user?.monthly_charge_enabled ? 
                                                                                         <SiteSubscription user={auth?.user} />
                                                                                     : ''}
-
-                                                                                    {auth.user && auth.user.role == 1 && auth.user.monthly_charge_enabled &&
-                                                                                    <>
-                                                                                    {auth.user && auth.user.stripe_details_submitted == 1  ? (
-                                                                                            <PaymentDashboard classes="btn-pink lg w-100 mt-3" text="Payment Dashboard" />
-                                                                                        ) : (
-                                                                                            <div className="finish mt-4 d-block">
-                                                                                                <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                                                                <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-xs lg" > Finish Setup
-                                                                                                </Link>
-                                                                                            </div>
-                                                                                        )}
-                                                                                    </> || ''}
+                                                                                  
+                                                                                    {auth.user && auth.user.role == 1 && auth.user.stripe_details_submitted == 1  ? (
+                                                                                        <PaymentDashboard classes="btn-pink lg w-100 mt-3" text="Payment Dashboard" />
+                                                                                        ) : 
+                                                                                        // <div className="finish mt-4 d-block">
+                                                                                        //     <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                                                                        //     <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-xs lg" > Finish Setup
+                                                                                        //     </Link>
+                                                                                        // </div> 
+                                                                                        ''
+                                                                                    }
 
                                                                                     {/* {auth.user && auth.user.stripe_details_submitted == 1 ?
                                                                                         <AddGoal
@@ -457,7 +455,10 @@ export default function Dashboard(props) {
                                                                 </div>
 
                                                                 <div className="ps-md-4 col-md-6">
-                                                                    {IsloggedIn && user && user.stripe_details_submitted == 0 ? <CreatorVerification  IsloggedIn={IsloggedIn} /> : ''}
+                                                                    {IsloggedIn && user && user.stripe_details_submitted == 0 ? 
+                                                                        <CreatorVerification  IsloggedIn={IsloggedIn} />
+                                                                        : ''}
+                                                                        <CreatorVerification  IsloggedIn={IsloggedIn} />
                                                                     {IsloggedIn && user && user.stripe_details_submitted == 1 ? <ProfileSteps sLinks={sLinks} user={user} IsloggedIn={IsloggedIn} /> : ''}
                                                                     {!IsloggedIn && user && user.stripe_details_submitted == 1 && w > 767 ? 
                                                                         <TipInner classes={`mb-4`} /> 

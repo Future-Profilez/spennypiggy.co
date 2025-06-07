@@ -22,7 +22,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const [introStatus, setIntroStatus] = useState(status && status.intro);
     const [filledSteps, setFilledSteps] = useState(0);
 
-    const hasAnySocialMedia = Object.values(slinks).some(value => value !== null && value !== '');
+    const hasAnySocialMedia = slinks && Object.values(slinks).some(value => value !== null && value !== '') ;
 
     const updateProfileSteps = () => {
         window.location.reload(false);
@@ -219,7 +219,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                  <p className="text-gray-500 text-[14px]">Secure your account and meet compliance requirements.</p>
                            </div>
                         </div>
-                        <div>{auth?.user?.identity_status == 1 ? <span className="text-green-600">Verified</span> : <span className="text-yellow-600 font-bold">Pending</span>}</div>
+                        <div>{auth?.user?.identity_status == 1 ? <span className="text-green-600">Verified</span> : <Link className="text-pink" href="/stripe/identity-verification">Verify</Link>}</div>
                      </div>
 
 
@@ -230,15 +230,18 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                            </div>
                            <div>
                                  <h2 className="text-dark font-bold">Connect Stripe Account</h2>
-                                 <p className="text-gray-500 text-[14px]">Stripe powers payments on Spenny Piggy for adult creators.</p>
+                                 <p className="text-gray-500 text-[14px]">Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
                            </div>
                         </div>
                         {auth?.user?.stripe_details_submitted == 0 ?
                            <div>
                               <Link className="text-pink" href="/stripe">Connect</Link>
                            </div> : 
-                        <div> <span className="text-green-600">Connected</span> </div>
-
+                            ''
+                        }
+                        {auth?.user?.stripe_details_submitted == 1 ?
+                           <div> <span className="text-green-600">Connected</span> </div> : 
+                            ''
                         }
                      </div>
                   </div>
