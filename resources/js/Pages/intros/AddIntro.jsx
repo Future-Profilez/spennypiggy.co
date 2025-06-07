@@ -38,12 +38,13 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
       return false;
     }
     setloading(true);
-    axios.post(`intro/save`, { "media":msgMedia }).then(resp => {
+    axios.post(`/update/intro/video`, { "media":msgMedia }).then(resp => {
       if(resp.data.status){
           successAlert(resp.data.msg);
           setClose(false);
           resetUploader();
           setOpen(false);
+          setMsgMedia(null);
           router.visit(route('user.show', auth?.user?.username), {
             method: 'get',
             preserveState: true,
@@ -99,7 +100,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
             <path d="M40 32.0234L22.72 22.0468V42L40 32.0234Z" fill="black"/>
             </svg>
           </div>
-          {IsloggedIn && intro && intro.approved !== 1 ? <div className='text-sm mb-0 alert alert-warning text-yellow-900 w-full  absolute z-1 bottom-0 left-0 rounded p-2' >Profile intro video is waiting for approval. Currently only you can see this intro.</div> : ''}
+          {IsloggedIn && intro && intro.approved !== 1 ? <div className='text-sm mb-0   alert bg-black text-yellow-400 w-full  absolute z-1 bottom-0 left-0 rounded p-2 px-3' >Profile intro video is waiting for approval. Currently only you can see this intro.</div> : ''}
         </div>
         </>} > 
           <div className='video-payer-pop' >
@@ -144,7 +145,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
                 </div>  
                 <LoaderButton onClick={addVideo}
                     disabled={loading}
-                    className="flex px-4  mb-3 btn-pink sm mx-auto"
+                    className={`${!msgMedia ? 'disabled' : ''} flex px-4  mb-3 btn-pink sm mx-auto w-full`}
                     spinnerClassName="fill-red-600" >
                     {loading ? "Adding..." : " Add Video "}
                 </LoaderButton>

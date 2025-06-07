@@ -188,6 +188,7 @@ Route::middleware('auth')->group(function () {
             Route::get('all-goals', [WishitemController::class, 'allGoalsCreators'])->name('all-goals');
 
             // Intro video
+            Route::post('/update/intro/video', [ProfileController::class, 'saveIntroVideo'])->name('save');
             Route::prefix("intro")->name("intro.")->group(function () {
                 Route::post('save', [ProfileController::class, 'saveIntroVideo'])->name('save');
                 Route::get('list', [ProfileController::class, 'getIntroVideo'])->name('list');
@@ -247,8 +248,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/earnings', function () {
             return Inertia::render('earnings/Earnings');
         })->name('earnings-page');
-        Route::get('profile-steps-status/', [ProfileController::class, 'profileStepsStatus'])->name("profle-steps-status");
-
+        
         Route::get('piggy-bank-setting/', [ProfileController::class, 'piggyBankSetting'])->name("piggy-bank-setting");
 
         Route::get('get-notification/', [ProfileController::class, 'getNotifications'])->name("get-notification");

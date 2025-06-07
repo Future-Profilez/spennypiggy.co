@@ -172,11 +172,7 @@ export default function Accountsetting(props) {
                             : ''}
 
                             <li>
-                                <TFA text={<>
-                                    <div className='notification uppercase'>
-                                        TWO FACTOR AUTHENTICATION
-                                    </div>
-                                </>} />
+                                <TFA  />
                             </li>
 
                             <li>
