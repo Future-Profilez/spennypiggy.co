@@ -83,7 +83,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         </div>
                         <Link  className="bg-[#fce100] mt-3 mb-4 block rounded-xl px-3 py-2 text-sm text-center focus:opacity-[0.8]"
                         href="/update-profile-lock-status" >
-                            Submit Reverification Request
+                            Submit Re-verification Request
                         </Link>
                     </>
                  : (
@@ -385,18 +385,17 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             </div>
                         </div>
                         <div>
-                            {auth?.user?.identity_status == 1 ? (
+                            {auth?.user?.identity_status == 1 ?
                                 <span className="text-green-600">Verified</span>
-                            ) : (
-                                <Link
-                                    className="text-pink"
-                                    href="/stripe/identity-verification"
-                                >
-                                    Verify
-                                </Link>
-                            )}
+                            :
+                            <>
+                                {auth?.user?.profile_status_lock == 2 ?
+                                <Link className={"text-pink"} href="/stripe">Verify</Link>
+                                : <p className={"text-gray-400"}  >Verify</p> }
+                            </>
+                            }
                         </div>
-                    </div>
+                     </div>
 
                     <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
                         <div className="step-title flex max-w-[390px] pe-3">
@@ -424,28 +423,22 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 </p>
                             </div>
                         </div>
-                        {auth?.user?.stripe_details_submitted == 0 ||
-                        auth?.user?.stripe_details_submitted == null ? (
-                            <div>
-                                <Link className="text-pink" href="/stripe">
-                                    Connect
-                                </Link>
-                            </div>
-                        ) : (
-                            ""
-                        )}
-                        {auth?.user?.stripe_details_submitted == 1 ? (
-                            <div>
-                                {" "}
-                                <span className="text-green-600">
-                                    Connected
-                                </span>{" "}
-                            </div>
-                        ) : (
-                            ""
-                        )}
-                    </div>
-                </div>
+                        {auth?.user?.stripe_details_submitted == 0 || auth?.user?.stripe_details_submitted == null ?
+                           <div>
+                            { auth?.user?.profile_status_lock == 2 ?
+                            <Link className={"text-pink"} href="/stripe">Connect</Link>
+                             :
+                             <p className={"text-gray-400"}  >Connect</p>
+                            }
+                           </div> :
+                            ''
+                        }
+                        {auth?.user?.stripe_details_submitted == 1 ?
+                           <div> <span className="text-green-600">Connected</span> </div> :
+                            ''
+                        }
+                     </div>
+                  </div>
             </div>
         </>
     );
