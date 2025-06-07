@@ -87,7 +87,11 @@ class RegisteredUserController extends Controller
         }
 
         $ip_address = $request->ip();
-        $checkIpExist = User::where('ip_address', $ip_address)->where('is_uk', 0)->exists();
+        $appUrl = config('app.url');
+        $checkIpExist = false;
+        if (in_array($appUrl, ['https://spennypiggy.co'])) {
+            $checkIpExist = User::where('ip_address', $ip_address)->where('is_uk', 0)->exists();
+        }
         if ($checkIpExist) {
             return redirect()->back()->with('error', "You can not create multiple account with same IP address. You have already registered with this IP address.");
         }
@@ -138,8 +142,8 @@ class RegisteredUserController extends Controller
                 'ip_address' => $ip_address,
                 'country' => $request->country_code ?? null,
                 'bio' => $randomBio, // Here goes the random bio
-                'bio_approved' => 1,
-                'profile_status_lock' => $request->role ? 1 : 0,
+                'bio_approved' => $request->role == 1 ? 0 : 0,
+                'profile_status_lock' => 0,
             ]);
             $user->refresh();
 
@@ -275,8 +279,7 @@ class RegisteredUserController extends Controller
         $existingSuccess = GifterCardVerification::where('user_id', $user->id)->where('status', 'success')->whereNull('deleted_at')->first();
         GifterCardVerification::where('user_id', $user->id)->whereIn('status', ['pending', 'rejected by admin'])->delete();
 
-        if ($existingSuccess) {
-            // Already verified
+        if ($existingSuccess){
             $user->update(['profile_status_lock' => 1]);
             return response()->json([
                 'status' => false,

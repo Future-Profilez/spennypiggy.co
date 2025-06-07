@@ -39,8 +39,8 @@ class CheckStripeIdentityVerification
             ->exists();
 
         $needsIdentityVerification = $user->role == 1
-            && $user->identity_status == 0
-            && $user->avatar_approved == 1
+            && $user->profile_status_lock == 2
+            && $user->identity_status != 1
             // && $isBioSocialVerified
             && $hasPaidSubscription;
 

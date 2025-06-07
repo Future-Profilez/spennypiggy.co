@@ -1814,16 +1814,23 @@ class StripeController extends Controller
         }
 
         $email = isset($sub->user) ? $sub->user->email : $sub->email;
+        $user = User::where('id', $sub->user_id)->where('is_uk', 0)->first();
 
         try {
             $session = StripeControl::getCheckoutSession($sub->session_id);
             $sub->status = $session->payment_status;
             if ($session->payment_status == 'paid') {
+
                 $sub->stripe_id = $session->subscription;
 
                 // $sub->upcoming_payment = Carbon::now()->addMonth();
                 $sub->upcoming_payment = Carbon::now()->addDays(3);
-                $sub->save();
+                if ($sub->save()) {
+                    // update profile status lock 1
+                    $user->profile_status_lock = 1;
+                    $user->is_subscribed = 1;
+                    $user->save();
+                }
 
                 MonthlySubscribedJob::dispatch($sub->email, $sub, 'success');
 

@@ -25,6 +25,7 @@ use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\TestController as ControllersTestController;
 use App\Http\Controllers\WishtenderController;
 use App\Http\Middleware\CheckGifterCardVerification;
 use App\Http\Middleware\VerifyCsrfToken;
@@ -47,6 +48,7 @@ use App\SeoMeta;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Request;
 use PHPUnit\Event\Code\Test;
+use Symfony\Component\HttpKernel\Profiler\Profile;
 
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
@@ -187,6 +189,7 @@ Route::middleware('auth')->group(function () {
             Route::get('all-goals', [WishitemController::class, 'allGoalsCreators'])->name('all-goals');
 
             // Intro video
+            Route::post('/update/intro/video', [ProfileController::class, 'saveIntroVideo'])->name('save');
             Route::prefix("intro")->name("intro.")->group(function () {
                 Route::post('save', [ProfileController::class, 'saveIntroVideo'])->name('save');
                 Route::get('list', [ProfileController::class, 'getIntroVideo'])->name('list');
@@ -226,9 +229,18 @@ Route::middleware('auth')->group(function () {
                 return Inertia::render('Profile/ActivateSubscription');
             })->name('activate-subscription');
 
+
             Route::post('/dalle-image', [ProfileController::class, 'getImageGenerateAI'])->name('dalle.image');
             Route::post('/upload-dalle-image', [ProfileController::class, 'uploadDalleImage'])->name('upload.dalle.image');
         });
+
+        // stripe identity verification routes
+        Route::get('/stripe/identity-verification', function () {
+            return Inertia::render('Auth/StripeIdentity', [
+                'status' => false,
+                'message' => 'Please complete your Stripe identity verification.',
+            ]);
+        })->name('stripe.identity.verification');
 
         Route::post('/say-thankyou/{payment_id}', [WishitemController::class, 'sayThanks'])->name('say-thankyou');
 
@@ -237,7 +249,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/earnings', function () {
             return Inertia::render('earnings/Earnings');
         })->name('earnings-page');
-        Route::get('profile-steps-status/', [ProfileController::class, 'profileStepsStatus'])->name("profle-steps-status");
 
         Route::get('piggy-bank-setting/', [ProfileController::class, 'piggyBankSetting'])->name("piggy-bank-setting");
 
@@ -301,8 +312,6 @@ Route::middleware('auth')->group(function () {
             return Inertia::render('Redirecting');
         })->name("redirecting");
 
-
-
         Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity');
         Route::get('cancel-subs/{uuid}', [StripeController::class, 'cancelSubs'])->name('cancel-subs');
         Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
@@ -350,6 +359,8 @@ Route::middleware('auth')->group(function () {
             Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay")->middleware('mustCompletedCardVerification');
             Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
         });
+
+        Route::get('/update-profile-lock-status', [ProfileController::class, 'updateProfileLockStatus'])->name('update.profile.lock.status');
     });
 });
 
@@ -457,7 +468,6 @@ Route::prefix("bill")->name("bill.")->group(function () {
     Route::get('/handle/{uuid}/{status}', [BillsController::class, 'handlePayment'])->name('handle');
 });
 
-Route::get('delete-all-products', [TestController::class, 'deleteAllProducts'])->name('delete.all.products');
 
 Route::get('image/dalle', [TestController::class, 'testAiImage'])->name("image-dalle");
 

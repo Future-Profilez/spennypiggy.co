@@ -152,7 +152,7 @@ export default function AddBills(props) {
                     </h2>
 
                     <div className="wishinfo border-top p-4 max-h-[70vh] overflow-auto">
-                        
+
                         <form onSubmit={createBills}>
                             <ul className="ps-0">
                                 <li className="mb-4">
@@ -198,7 +198,7 @@ export default function AddBills(props) {
                                             }
                                         />
                                     </div>
-                                    {defaultCurrency !== 'USD' && 
+                                    {defaultCurrency !== 'USD' &&
                                     <p className="mt-1">
                                         The Bill amount is set to{" "}
                                         {formatMultiPrice(

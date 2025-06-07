@@ -8,10 +8,13 @@ use App\Http\Requests\Verify2FARequest;
 use App\Jobs\SendContractMail;
 use App\Models\AuthRedirect;
 use App\Models\BillPayment;
+use App\Models\Bills;
 use App\Models\FanContract;
 use App\Models\GifterCardVerification;
+use App\Models\Membership;
 use App\Models\MembershipPayment;
 use App\Models\Notification;
+use App\Models\Post;
 use App\Models\RyeProduct;
 use App\Models\Shop;
 use App\Models\SocialLinks;
@@ -228,7 +231,11 @@ class AuthenticatedSessionController extends Controller
         $sociallinks = [];
         $intro = null;
         $goal = null;
+        $profile_steps = null;
         if($page == 'about'){
+
+
+
             // Social links
             $slinks = $user->social_links()->first();
             if (!empty($slinks)) {
@@ -268,9 +275,7 @@ class AuthenticatedSessionController extends Controller
                 ];
             }
             // Intro Video
-            if ($user->id) {
-                $intro = UserIntro::where('user_id', $user->id)->first();
-            }
+            $intro = UserIntro::where('user_id', $user->id)->first();
 
 
             // GOAL
@@ -304,6 +309,98 @@ class AuthenticatedSessionController extends Controller
             $arr['target'] = $target;
             $arr['currency'] = $user->default_currency;
             $goal = $arr;
+
+
+            // Profile Steps
+            if($user->stripe_details_submitted == 1){
+                // $memPost = Post::where('user_id', $user->id)->where('for_module', 'membership')->first();
+                // $subPost = Post::where('user_id', $user->id)->where('for_module', 'subscription')->first();
+                // $supPost = Post::where('user_id', $user->id)->where('for_module', 'support')->first();
+                $membership = Membership::where('user_id', $user->id)->where('deleted_at', null)->where('status', 1)->whereIn('approved', [0, 1])->first();
+                $bill = Bills::where('user_id', $user->id)->where('deleted_at', null)->where('status', 1)->whereIn('approved', [0, 1])->first();
+
+                $total = 0;
+
+                // profile
+                $basic_profile = empty($user->avatar) || empty($user->bio) || empty($user->cover) ? 0 : 1;
+                if ($basic_profile) {
+                    $total += 1;
+                }
+
+                // socal links
+                // $social_links = empty($user->social_links) ? 0 : 1;
+                // if ($social_links) {
+                //     $total += 1;
+                // }
+                // user Intro
+                $userIntro = UserIntro::where('user_id', $user->id)->first();
+                $userIntro = !empty($userIntro) ? 1 : 0;
+                if ($userIntro) {
+                    $total += 1;
+                }
+
+                $post_required = !empty($memPost) && !empty($subPost) && !empty($supPost) ? 1 : 0;
+                if ($post_required) {
+                    $total += 1;
+                }
+
+                $member_required = !empty($membership) ? 1 : 0;
+                if ($member_required) {
+                    $total += 1;
+                }
+
+                $bill_required = !empty($bill) ? 1 : 0;
+                if ($bill_required) {
+                    $total += 1;
+                }
+
+                $vat_setting = !empty($user->vat_amount_percentage) ? 1 : 0;
+                if ($vat_setting) {
+                    $total += 1;
+                }
+
+                // $payment_connect = $user->stripe_details_submitted ? 1 : 0;
+                // if ($payment_connect) {
+                //     $total += 1;
+                // }
+
+                $shop = !empty($user->shop) ? 1 : 0;
+                if ($shop) {
+                    $total += 1;
+                }
+
+                // $contents = !empty($user->wishItems) && !empty($user->memberships) && !empty($user->bills) ? 1 : 0;
+                // if ($contents) {
+                //     $total += 1;
+                // }
+
+
+                $auto_tweets = $user->auto_tweet;
+                if ($auto_tweets) {
+                    $total += 1;
+                }
+
+                if ($user->is_2fa == 1) {
+                    $total += 1;
+                }
+
+                $profile_steps = [
+                    'status' => true,
+                    'basic_profile' => $basic_profile,
+                    'intro' => $userIntro,
+                    'post_required' => $post_required,
+                    'membership_required' => $member_required,
+                    'bill_required' => $bill_required,
+                    'vat_setting' => $vat_setting,
+                    // 'payment_connect' => $payment_connect,
+                    // 'contents' => $contents,
+                    'is_2fa' => $user->is_2fa,
+                    'auto_tweets' => $auto_tweets,
+                    'shop' => $shop,
+                    // 'social_links' => $social_links,
+                    'total' => $total,
+                ];
+            }
         }
 
 
@@ -312,7 +409,7 @@ class AuthenticatedSessionController extends Controller
         $categories = $user->user_categories()->get();
         $category = request()->query('category') ?? false;
         if($page == 'wishes'){
-            
+
             if ($category) {
                 $query = WishCategory::orderBy('created_at', 'DESC');
                 if ($category != 'all' && $category != false) {
@@ -341,7 +438,7 @@ class AuthenticatedSessionController extends Controller
             } else {
                 $wishitems = WishItem::where('is_pin', 0)->whereUserId($user->id)->with(['user'])->latest()->get();
                 $pinned = WishItem::where('is_pin', 1)->whereUserId($user->id)->with(['user'])->get();
-            } 
+            }
            $wishitems = $wishitems->merge($pinned)->sortBy('sort')->values()->toArray();
 
         }
@@ -432,7 +529,7 @@ class AuthenticatedSessionController extends Controller
                 $query->where('approved', 1);
             }
             $membership = $query->latest()->get();
-            $memberships =   $membership; 
+            $memberships =   $membership;
         }
         $bills = [];
         if($page == 'bills'){
@@ -487,7 +584,8 @@ class AuthenticatedSessionController extends Controller
             'bills' => $bills,
             'shops' => $shops,
             'goal' => $goal,
-            'notification_count' => $notification_count
+            'notification_count' => $notification_count,
+            'profile_steps' => $profile_steps
         ]);
     }
 
@@ -633,10 +731,10 @@ class AuthenticatedSessionController extends Controller
         }
     }
 
-     
 
-    
-    
+
+
+
 
     public function userGiftItems($username)
     {
@@ -731,7 +829,7 @@ class AuthenticatedSessionController extends Controller
             }
 
 
-            
+
 
             return response()->json([
                 "success" => true,
