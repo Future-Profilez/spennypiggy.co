@@ -614,7 +614,8 @@ class StripeController extends Controller
         $price = number_format($wish->price, 2);
 
         $adminFee = config('app.administration_fee');
-        $adminFee =   Helpers::priceFormat('GBP', $adminFee, $wish->currency);
+        $adminFees =   Helpers::priceFormat('GBP', $adminFee, $wish->currency);
+        $adminFee =   number_format($tax + $adminFees, 2);
         $totalTax = number_format($tax + $adminFee, 2);
 
         // dd($reccure);
