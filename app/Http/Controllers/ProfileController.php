@@ -203,17 +203,18 @@ class ProfileController extends Controller
      */
     public function updateProfileLockStatus()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
-        if ($user->role == 1) {
-            $user->profile_status_lock = 1;
-            $user->save();
-        }
+        try {
+            $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+            if ($user->role == 1) {
+                $user->profile_status_lock = 1;
+                $user->save();
+            }
 
-        return back()->with('success', 'Profile lock status updated successfully.');
-        // return response()->json([
-        //     'status' => true,
-        //     'msg' => 'Profile verification status updated successfully.',
-        // ]);
+            return back()->with('success', 'Profile lock status updated successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error updating profile lock status: ' . $e->getMessage());
+            return back()->with('error', 'Failed to update profile lock status. Please try again later.');
+        }
     }
 
     /**
