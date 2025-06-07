@@ -81,6 +81,8 @@ Route::get('/giftstore', function () {
 //     return response()->json(['status' => 'done', 'message' => $a], 200);
 // })->name('test.stripe');
 
+Route::get('delete-all-products', [TestController::class, 'deleteAllProducts'])->name('delete.all.products');
+
 
 Route::get('send-identity-verification-failed-emails', [TestController::class, 'sendFailedVerificationEmails']);
 

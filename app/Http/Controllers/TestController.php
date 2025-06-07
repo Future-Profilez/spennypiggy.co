@@ -30,12 +30,18 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
+use Stripe\Stripe;
 
 class TestController extends Controller
 {
-
+    public function __construct()
+    {
+        // dd('ok');
+        // Middleware can be applied here if needed
+    }
     /**
      * Search Stripe Customer
      *
@@ -307,6 +313,7 @@ class TestController extends Controller
 
     public function deleteAllProducts()
     {
+
         $userIdToTest = 45;
         $productsGroupedByUser = [];
 

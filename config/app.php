@@ -187,14 +187,14 @@ return [
         'Image' => Intervention\Image\Facades\Image::class,
     ])->toArray(),
 
-    'surprise_tax' => 15,
-    'single_tax' => 15,
-    'subs_tax' => 15,
-    'crowd_tax' => 15,
-    'member_tax' => 15,
-    'jar_tax' => 15,
-    'bill_tax' => 15,
-    'shop_tax' => 15,
+
+    'single_tax' => 15, // wish single payment fees
+    'subs_tax' => 15, // wish subscription payment fees
+    'crowd_tax' => 15, // wish crowed fund payment fees
+    'member_tax' => 15, // membership payment fees
+    'jar_tax' => 15, // tip jar payment fees
+    'bill_tax' => 15, // bill payment fees
+    'shop_tax' => 15, // Shop payment fees
 
     // 'surprise_tax' => 10,
     // 'single_tax' => 20,

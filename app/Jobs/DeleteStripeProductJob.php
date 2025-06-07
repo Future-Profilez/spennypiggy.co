@@ -25,33 +25,45 @@ class DeleteStripeProductJob implements ShouldQueue
 
     public function __construct($productId, User $user)
     {
+        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
         $this->productId = $productId;
         $this->user = $user;
     }
 
     public function handle()
     {
-        Stripe::setApiKey(config('services.stripe.secret'));
+        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+        if (empty($this->user->account_id)) {
+            Log::error("Stripe product cleanup failed: Connected account ID not found for user ID {$this->user->id}");
+            return;
+        }
 
         try {
-            $subscriptions = Subscription::all(['limit' => 100]);
+            $connectedAccountId = $this->user->account_id;
+            $account = ['stripe_account' => $connectedAccountId];
+
+            // Cancel all subscriptions using the product
+            $subscriptions = \Stripe\Subscription::all(['limit' => 100], $account);
             foreach ($subscriptions->data as $subscription) {
                 foreach ($subscription->items->data as $item) {
                     if ($item->price->product === $this->productId) {
-                        Subscription::update($subscription->id, ['cancel_at_period_end' => true]);
+                        \Stripe\Subscription::update($subscription->id, ['cancel_at_period_end' => true], $account);
                     }
                 }
             }
 
-            $prices = Price::all(['product' => $this->productId, 'limit' => 100]);
+            // Deactivate prices for the product
+            $prices = \Stripe\Price::all(['product' => $this->productId, 'limit' => 100], $account);
             foreach ($prices->data as $price) {
-                Price::update($price->id, ['active' => false]);
+                \Stripe\Price::update($price->id, ['active' => false], $account);
             }
 
-            Product::update($this->productId, ['active' => false]);
+            // Deactivate the product itself
+            \Stripe\Product::update($this->productId, ['active' => false], $account);
 
-            // ✅ Send email after deletion
-            Mail::to($this->user->email)->queue(new ProductDeletionMail($this->user));
+            // Send deletion email
+            Mail::to($this->user->email)->queue(new \App\Mail\ProductDeletionMail($this->user));
 
             Log::info("Deleted product {$this->productId} and emailed user {$this->user->id}");
         } catch (\Exception $e) {

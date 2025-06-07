@@ -624,6 +624,8 @@ class StripeController extends Controller
             }
         }
 
+        $vatAmount = $vat_percentage_amount; // 50.00
+
         if ($request->isMethod("POST")) {
             $request->validate([
                 'name' => [
@@ -678,13 +680,10 @@ class StripeController extends Controller
 
             $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
 
-            Log::info("Creating Stripe Checkout for Wish Item Subscription");
             $vat_percentage_amount = 0;
-            // dd($reccure);
             if ($reccure == 'continue') {
                 if (!empty($wish->user->vat_amount_percentage)) {
                     $vat_percentage_amount = $wish->user->vat_amount_percentage;
-                    // $vatPercentage = $wish->user->vat_amount_percentage; // 20%
                     // $vat_percentage_amount = ($price + $tax) * $wish->user->vat_amount_percentage / 100;
                 }
             }
@@ -696,18 +695,17 @@ class StripeController extends Controller
             $adminFeeGBP = config('app.administration_fee'); // fixed
             $gbpToUsdRate = Helpers::priceFormat('GBP', $adminFeeGBP, $wish->currency);
 
-            $vatAmount = $basePrice * $vatPercentage / 100; // 50.00
-            $platformFeeAmount = $basePrice * $platformFeePercentage / 100; // 37.50
-            $adminFeeUSD = $adminFeeGBP * $gbpToUsdRate; // 1.33
+            $platformFeeAmount = $basePrice * $platformFeePercentage / 100;
+            $vatAmount = ($basePrice + $platformFeeAmount) * $vatPercentage / 100;
+            $adminFeeUSD = $adminFeeGBP * $gbpToUsdRate;
 
-            $creatorTotal = $basePrice + $vatAmount; // 300.00
-            $platformTotal = $platformFeeAmount + $adminFeeUSD; // 37.50 + 1.33 = 38.83
+            $creatorTotal = $basePrice + $vatAmount;
+            $platformTotal = $platformFeeAmount + $adminFeeUSD; // example 37.50 + 1.33 = 38.83
 
-            $finalTotalAmount = $creatorTotal + $platformTotal; // 338.83
+            $finalTotalAmount = $creatorTotal + $platformTotal; // example 338.83
 
             // Application fee percent (for Checkout session)
             $applicationFeePercent = ($platformTotal / $finalTotalAmount) * 100;
-
 
             // Price creation or reuse
             $priceId = $existingPriceEntry->price_id ?? null;
@@ -762,7 +760,6 @@ class StripeController extends Controller
                 // Create the session on connected account
                 $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
 
-
                 // Save session id
                 $sub->update(['session_id' => $session->id]);
 
@@ -776,7 +773,7 @@ class StripeController extends Controller
 
         return Inertia::render('cart/SubCheckout', [
             'wish'  => $wish,
-            'vat_amount' => $vat_percentage_amount,
+            'vat_amount' => $vatAmount,
             'reccure'   => $reccure
         ]);
     }
@@ -1817,16 +1814,22 @@ class StripeController extends Controller
         }
 
         $email = isset($sub->user) ? $sub->user->email : $sub->email;
+        $user = User::where('id', $sub->user_id)->where('is_uk', 0)->first();
 
         try {
             $session = StripeControl::getCheckoutSession($sub->session_id);
             $sub->status = $session->payment_status;
             if ($session->payment_status == 'paid') {
+
                 $sub->stripe_id = $session->subscription;
 
                 // $sub->upcoming_payment = Carbon::now()->addMonth();
                 $sub->upcoming_payment = Carbon::now()->addDays(3);
-                $sub->save();
+                if ($sub->save()) {
+                    // update profile status lock 1
+                    $user->profile_status_lock = 1;
+                    $user->save();
+                }
 
                 MonthlySubscribedJob::dispatch($sub->email, $sub, 'success');
 

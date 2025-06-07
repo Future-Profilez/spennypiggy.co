@@ -136,6 +136,8 @@ class CheckoutController extends Controller
                 }
 
                 $subtotal += $totalAmount * $dd->quantity;
+                $platformFeePercentage = config('app.single_tax'); // 15%
+                $platformFeeAmount = $subtotal * $platformFeePercentage / 100;
                 $taxNew += $dd->tax * $dd->quantity;
                 $storeTax = $taxNew + $StoreAdminsFees;
                 $taxNew += $showAdminsFees;
@@ -202,22 +204,12 @@ class CheckoutController extends Controller
                 "mode"  =>  "payment",
                 'line_items' => $lineItems,
                 'customer_email' => 'prem@futureprofilez.com',
-                // 'automatic_tax' => [
-                //     'enabled' => true,
-                // ],
                 'payment_intent_data' => [
                     'application_fee_amount' => round($taxNew * 100), // Admin fee + tax
-                    // 'transfer_data' => [
-                    // 'destination' => $connectedAccountId, // Creator's connected account ID
-                    // 'amount' => Helpers::priceFormat($dd->owner->default_currency, $subtotal, $currency) * 100,
-                    // ],
-                    // 'application_fee_amount' => $taxNew,
                     'description' => "Custom Content Purchase."
                 ],
                 'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
             ];
-
-
 
             $connectedAccount = $connectedAccountId;
 
