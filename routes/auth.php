@@ -227,6 +227,13 @@ Route::middleware('auth')->group(function () {
                 return Inertia::render('Profile/ActivateSubscription');
             })->name('activate-subscription');
 
+            Route::get('/stripe/identity-verification', function () {
+                return Inertia::render('Auth/StripeIdentity', [
+                    'status' => false,
+                    'message' => 'Please complete your Stripe identity verification.',
+                ]);
+            })->name('stripe.identity.verification');
+
             Route::post('/dalle-image', [ProfileController::class, 'getImageGenerateAI'])->name('dalle.image');
             Route::post('/upload-dalle-image', [ProfileController::class, 'uploadDalleImage'])->name('upload.dalle.image');
         });
