@@ -22,7 +22,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const [introStatus, setIntroStatus] = useState(status && status.intro);
     const [filledSteps, setFilledSteps] = useState(0);
 
-    const hasAnySocialMedia = Object.values(slinks).some(value => value !== null && value !== '');
+    const hasAnySocialMedia = slinks && Object.values(slinks).some(value => value !== null && value !== '') ;
 
     const updateProfileSteps = () => {
         window.location.reload(false);
@@ -230,7 +230,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                            </div>
                            <div>
                                  <h2 className="text-dark font-bold">Connect Stripe Account</h2>
-                                 <p className="text-gray-500 text-[14px]">Stripe powers payments on Spenny Piggy for adult creators.</p>
+                                 <p className="text-gray-500 text-[14px]">Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
                            </div>
                         </div>
                         {auth?.user?.stripe_details_submitted == 0 ?
