@@ -88,6 +88,7 @@ class RegisteredUserController extends Controller
 
         $ip_address = $request->ip();
         $appUrl = config('app.url');
+        $checkIpExist = false;
         if (in_array($appUrl, ['https://spennypiggy.co'])) {
             $checkIpExist = User::where('ip_address', $ip_address)->where('is_uk', 0)->exists();
         }
