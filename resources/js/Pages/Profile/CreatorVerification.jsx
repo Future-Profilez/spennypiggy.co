@@ -233,7 +233,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                  <p className="text-gray-500 text-[14px]">Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
                            </div>
                         </div>
-                        {auth?.user?.stripe_details_submitted == 0 ?
+                        {auth?.user?.stripe_details_submitted == 0 || auth?.user?.stripe_details_submitted == null ?
                            <div>
                               <Link className="text-pink" href="/stripe">Connect</Link>
                            </div> : 
