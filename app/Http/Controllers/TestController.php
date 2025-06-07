@@ -346,6 +346,7 @@ class TestController extends Controller
             if (!$user) continue;
 
             foreach (array_unique($productIds) as $productId) {
+                // dd($productId);
                 DeleteStripeProductJob::dispatch($productId, $user);
             }
         }
