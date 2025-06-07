@@ -405,10 +405,10 @@ export default function Dashboard(props) {
                                                                                 {IsloggedIn ? (
                                                                                     <div className="userProfileDate pt-0 pt-md-3">
                                                                                         
-                                                                                        {auth?.user && auth?.user?.role == 1  
+                                                                                        {/* {auth?.user && auth?.user?.role == 1  
                                                                                         && !auth?.user?.monthly_charge_enabled ? 
                                                                                             <SiteSubscription user={auth?.user} />
-                                                                                        : ''}
+                                                                                        : ''} */}
                                                                                     
                                                                                         {auth.user && auth.user.role == 1 && auth.user.stripe_details_submitted == 1  ? (
                                                                                             <PaymentDashboard classes="btn-pink lg w-100 mt-3" text="Payment Dashboard" />

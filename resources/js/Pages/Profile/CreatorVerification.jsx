@@ -425,7 +425,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         </div>
                         {auth?.user?.stripe_details_submitted == 0 || auth?.user?.stripe_details_submitted == null ?
                            <div>
-                            { auth?.user?.profile_status_lock == 2 ?
+                            { auth?.user?.profile_status_lock == 2 && auth?.user?.identity_status == 1 ?
                             <Link className={"text-pink"} href="/stripe">Connect</Link>
                              :
                              <p className={"text-gray-400"}  >Connect</p>
