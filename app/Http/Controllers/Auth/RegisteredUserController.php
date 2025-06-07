@@ -139,7 +139,7 @@ class RegisteredUserController extends Controller
                 'country' => $request->country_code ?? null,
                 'bio' => $randomBio, // Here goes the random bio
                 'bio_approved' => 1,
-                'profile_status_lock' => $request->role ? 1 : 0,
+                'profile_status_lock' => 0,
             ]);
             $user->refresh();
 

@@ -25,6 +25,8 @@ class DeleteStripeProductJob implements ShouldQueue
 
     public function __construct($productId, User $user)
     {
+        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
         $this->productId = $productId;
         $this->user = $user;
     }
