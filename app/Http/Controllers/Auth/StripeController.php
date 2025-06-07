@@ -1828,6 +1828,7 @@ class StripeController extends Controller
                 if ($sub->save()) {
                     // update profile status lock 1
                     $user->profile_status_lock = 1;
+                    $user->is_subscribed = 1;
                     $user->save();
                 }
 
