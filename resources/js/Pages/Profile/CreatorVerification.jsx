@@ -390,7 +390,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             :
                             <>
                                 {auth?.user?.profile_status_lock == 2 ?
-                                <Link className={"text-pink"} href="/stripe">Verify</Link>
+                                <Link className={"text-pink"} href="/stripe/identity-verification">Verify</Link>
                                 : <p className={"text-gray-400"}  >Verify</p> }
                             </>
                             }
