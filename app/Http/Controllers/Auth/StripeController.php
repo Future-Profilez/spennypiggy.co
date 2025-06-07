@@ -610,13 +610,31 @@ class StripeController extends Controller
         $vat_percentage_amount = 0;
 
         $currency   =   strtolower($request->cookie("currency", "GBP"));
-        $tax = number_format($wish->tax_amount, 2);
-        $price = number_format($wish->price, 2);
+        // $tax = number_format($wish->tax_amount, 2);
+        // $price = number_format($wish->price, 2);
 
-        $adminFee = config('app.administration_fee');
-        $adminFees =   Helpers::priceFormat('GBP', $adminFee, $wish->currency);
-        $adminFee =   number_format($tax + $adminFees, 2);
-        $totalTax = number_format($tax + $adminFee, 2);
+        // $adminFee = config('app.administration_fee');
+        // $adminFee =   Helpers::priceFormat('GBP', $adminFee, $wish->currency);
+        // dd($adminFee, $tax);
+        // $totalTax = number_format($tax + $adminFee, 2);
+
+        // Clean tax and price values and convert to float
+        $tax = (float) str_replace(',', '', $wish->tax_amount);   // e.g., 4800.00
+        $price = (float) str_replace(',', '', $wish->price);      // if needed
+
+        // Get admin fee as numeric
+        $adminFee = (float) config('app.administration_fee');     // e.g., 1.33
+
+        // Correct math using numeric values
+        $totalTax = $tax + $adminFee;                             // 4801.33
+
+        // Format only for display
+        $formattedTotalTax = number_format($totalTax, 2);         // "4,801.33"
+
+        // Optional debug
+        // dd($adminFee, $tax, $formattedTotalTax);
+
+
 
         // dd($reccure);
         if ($reccure == 'continue') {
