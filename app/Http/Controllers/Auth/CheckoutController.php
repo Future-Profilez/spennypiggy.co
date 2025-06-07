@@ -138,9 +138,10 @@ class CheckoutController extends Controller
                 $subtotal += $totalAmount * $dd->quantity;
                 $platformFeePercentage = config('app.single_tax'); // 15%
                 $platformFeeAmount = $subtotal * $platformFeePercentage / 100;
-                $taxNew += $dd->tax * $dd->quantity;
-                $storeTax = $taxNew + $StoreAdminsFees;
-                $taxNew += $showAdminsFees;
+                // $taxNew += $dd->tax * $dd->quantity;
+                $showTax = $platformFeeAmount + $showAdminsFees;
+                $storeTax = $platformFeeAmount + $StoreAdminsFees;
+                // $taxNew += $showAdminsFees;
                 // $taxNew += 50;
 
                 $lineItems = [
@@ -161,7 +162,7 @@ class CheckoutController extends Controller
                             'product_data' => [
                                 'name' => 'Platform Fee',
                             ],
-                            'unit_amount' => $taxNew * 100,
+                            'unit_amount' => $showTax * 100,
                             'tax_behavior' => 'exclusive',
                         ],
                     ],
@@ -205,7 +206,7 @@ class CheckoutController extends Controller
                 'line_items' => $lineItems,
                 'customer_email' => 'prem@futureprofilez.com',
                 'payment_intent_data' => [
-                    'application_fee_amount' => round($taxNew * 100), // Admin fee + tax
+                    'application_fee_amount' => round($showTax * 100), // Admin fee + tax
                     'description' => "Custom Content Purchase."
                 ],
                 'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
