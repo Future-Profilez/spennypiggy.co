@@ -291,312 +291,308 @@ export default function Dashboard(props) {
             <Guest auth={auth.user} user={user}>
                 <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
                 <div className="wishlistPage blackbg pt-6 pb-0 pb-sm-5 ">
-                    <div className="containerbox">
-                        <VersionUpdate />
+                        <div className="containerbox">
+                            <VersionUpdate />
+                            <div className="wishbanner relative ">
+                                <div className="relative">
+                                    <LazyLoadImage
+                                        alt={"image"}
+                                        useIntersectionObserver={true}
+                                        effect="blur"
+                                        height={400}
+                                        className="w-full border-black border-2 shadow-mint rounded-[30px]"
+                                        src={user?.cover_url || wishlistbannerimg}
+                                        width={1200}
+                                    />
+                                    {IsloggedIn && auth && auth?.user.cover_url && auth?.user?.cover_approved == 0 ?
+                                        <div className="absolute right-8 bottom-4 mx-auto">
+                                            <button className='tooltipbtn' >
+                                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M9 15H11V9H9V15ZM10 7C10.2833 7 10.521 6.904 10.713 6.712C10.905 6.52 11.0007 6.28267 11 6C11 5.71667 10.904 5.47933 10.712 5.288C10.52 5.09667 10.2827 5.00067 10 5C9.71667 5 9.47933 5.096 9.288 5.288C9.09667 5.48 9.00067 5.71733 9 6C9 6.28333 9.096 6.521 9.288 6.713C9.48 6.905 9.71733 7.00067 10 7ZM10 20C8.61667 20 7.31667 19.7373 6.1 19.212C4.88333 18.6867 3.825 17.9743 2.925 17.075C2.025 16.175 1.31267 15.1167 0.788 13.9C0.263333 12.6833 0.000666667 11.3833 0 10C0 8.61667 0.262667 7.31667 0.788 6.1C1.31333 4.88333 2.02567 3.825 2.925 2.925C3.825 2.025 4.88333 1.31267 6.1 0.788C7.31667 0.263333 8.61667 0.000666667 10 0C11.3833 0 12.6833 0.262667 13.9 0.788C15.1167 1.31333 16.175 2.02567 17.075 2.925C17.975 3.825 18.6877 4.88333 19.213 6.1C19.7383 7.31667 20.0007 8.61667 20 10C20 11.3833 19.7373 12.6833 19.212 13.9C18.6867 15.1167 17.9743 16.175 17.075 17.075C16.175 17.975 15.1167 18.6877 13.9 19.213C12.6833 19.7383 11.3833 20.0007 10 20Z" fill="#FF8E25"/>
+                                                </svg>
+                                                <p>Cover image is waiting for approval. Currently only you can see this.</p>
+                                            </button>
+                                        </div>
+                                    : ""}
+                                </div>
+                                <Userprofile IsloggedIn={IsloggedIn} />
+                            </div>
 
-
-                        <div className="wishbanner relative ">
-                            <LazyLoadImage
-                                alt={"image"}
-                                useIntersectionObserver={true}
-                                effect="blur"
-                                height={400}
-                                className="w-full border-black border-2 shadow-mint rounded-[30px]"
-                                src={user?.cover_url || wishlistbannerimg}
-                                width={1200}
-                            />
-                            <div className="relative">
-                                {IsloggedIn && auth && auth?.user.cover_url && auth?.user?.cover_approved == 0 ?
-                                    <div className="absolute right-5 top-3 mx-auto">
-                                        <button className='tooltipbtn' >
-                                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M9 15H11V9H9V15ZM10 7C10.2833 7 10.521 6.904 10.713 6.712C10.905 6.52 11.0007 6.28267 11 6C11 5.71667 10.904 5.47933 10.712 5.288C10.52 5.09667 10.2827 5.00067 10 5C9.71667 5 9.47933 5.096 9.288 5.288C9.09667 5.48 9.00067 5.71733 9 6C9 6.28333 9.096 6.521 9.288 6.713C9.48 6.905 9.71733 7.00067 10 7ZM10 20C8.61667 20 7.31667 19.7373 6.1 19.212C4.88333 18.6867 3.825 17.9743 2.925 17.075C2.025 16.175 1.31267 15.1167 0.788 13.9C0.263333 12.6833 0.000666667 11.3833 0 10C0 8.61667 0.262667 7.31667 0.788 6.1C1.31333 4.88333 2.02567 3.825 2.925 2.925C3.825 2.025 4.88333 1.31267 6.1 0.788C7.31667 0.263333 8.61667 0.000666667 10 0C11.3833 0 12.6833 0.262667 13.9 0.788C15.1167 1.31333 16.175 2.02567 17.075 2.925C17.975 3.825 18.6877 4.88333 19.213 6.1C19.7383 7.31667 20.0007 8.61667 20 10C20 11.3833 19.7373 12.6833 19.212 13.9C18.6867 15.1167 17.9743 16.175 17.075 17.075C16.175 17.975 15.1167 18.6877 13.9 19.213C12.6833 19.7383 11.3833 20.0007 10 20Z" fill="#FF8E25"/>
-                                            </svg>
-                                            <p>Cover image is waiting for approval. Currently only you can see this.</p>
+                            {user && user?.role == 1 && IsloggedIn && showAlert ?
+                                <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-lg">
+                                    <div>
+                                        <span className="font-medium">Stripe Policy Notice:</span> To comply with Stripe's requirements, you must regularly post content related to memberships, billing, and subscriptions. Accounts that do not may be suspended.
+                                        Please contact <a   className="underline font-medium text-blue-800 hover:text-blue-900 livechat intercom-dud02y e11rlguj1 cursor-pointer">support</a> for more information.
+                                        <button
+                                            onClick={handleDismiss}
+                                            className="absolute top-2 right-2 text-blue-700 hover:text-blue-900"
+                                            aria-label="Dismiss alert"
+                                        >
+                                            ✕
                                         </button>
                                     </div>
-                                : ""}
-                            </div>
-                            <Userprofile IsloggedIn={IsloggedIn} />
-                        </div>
-                        
-
-                        {user && user?.role == 1 && IsloggedIn && showAlert ?
-                            <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-lg">
-                                <div>
-                                    <span className="font-medium">Stripe Policy Notice:</span> To comply with Stripe's requirements, you must regularly post content related to memberships, billing, and subscriptions. Accounts that do not may be suspended.
-                                    Please contact <a   className="underline font-medium text-blue-800 hover:text-blue-900 livechat intercom-dud02y e11rlguj1 cursor-pointer">support</a> for more information.
-                                    <button
-                                        onClick={handleDismiss}
-                                        className="absolute top-2 right-2 text-blue-700 hover:text-blue-900"
-                                        aria-label="Dismiss alert"
-                                    >
-                                        ✕
-                                    </button>
                                 </div>
-                            </div>
-                        : ''}
+                            : ''}
 
 
-                        {user && user.role == 1 ? (
-                            <div className="wishManage sticky top-8 ">
-                                <div className="userManageRt mt-4 ">
-                                    <div className={`  tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`} >
+                            {user && user.role == 1 ? (
+                                <div className="wishManage sticky top-8 ">
+                                    <div className="userManageRt mt-4 ">
+                                        <div className={`  tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`} >
 
-                                        <div className="inlinetab ">
-                                            {/* Show rejection message if profile is rejected */}
-                                            {/* {!IsloggedIn && user?.profile_status_lock != 2 && user?.profile_reject_reason != null && (
-                                                <div className="text-red-600 text-xl">
-                                                    This creator's profile has been rejected by the admin. Payments to this creator are currently disabled.
+                                            <div className="inlinetab ">
+                                                {/* Show rejection message if profile is rejected */}
+                                                {/* {!IsloggedIn && user?.profile_status_lock != 2 && user?.profile_reject_reason != null && (
+                                                    <div className="text-red-600 text-xl">
+                                                        This creator's profile has been rejected by the admin. Payments to this creator are currently disabled.
+                                                    </div>
+                                                )} */}
+                                                <div className="newnav-tabs flex  justify-between gap-2 mb-4">
+                                                    <Tabs activeTab={1}  hideNavBtnsOnMobile={false}>
+                                                        <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'about' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "about" || page === false ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >About</Link>
+
+                                                        <Link preserveScroll href={route('user.show', { username: user.username, page: 'wishes' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "wishes" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >Wishes</Link>
+                                                        
+                                                        <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'feed' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "feed" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >feed</Link>
+                                                        
+                                                        <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'memberships' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "memberships" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >memberships</Link>
+
+                                                        <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'bills' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "bills" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >bills</Link>
+                                                        
+                                                        <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'shop' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "shop" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >shop</Link>
+                                                        
+                                                        <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'gifts' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "gifts" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >gifts</Link>
+                                                        
+                                                    </Tabs>
+
+                                                    {IsloggedIn && <Toggle />}
                                                 </div>
-                                            )} */}
-                                            <div className="newnav-tabs flex  justify-between gap-2 mb-4">
-                                                <Tabs activeTab={1}  hideNavBtnsOnMobile={false}>
-                                                    <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'about' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "about" || page === false ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >About</Link>
-
-                                                    <Link preserveScroll href={route('user.show', { username: user.username, page: 'wishes' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "wishes" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >Wishes</Link>
-                                                    
-                                                    <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'feed' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "feed" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >feed</Link>
-                                                    
-                                                    <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'memberships' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "memberships" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >memberships</Link>
-
-                                                    <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'bills' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "bills" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >bills</Link>
-                                                    
-                                                    <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'shop' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "shop" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >shop</Link>
-                                                    
-                                                    <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'gifts' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "gifts" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >gifts</Link>
-                                                    
-                                                </Tabs>
-
-                                                {IsloggedIn && <Toggle />}
-                                            </div>
 
 
-                                           
+                                            
 
 
 
 
-                                                <div className="tabs-containers min-height" >
-                                                    {page === "about" || page === false ?
-                                                        <Suspense fallback={<LoadingScreen />} >
-                                                            <div className="row about-sec align-self-start">
-                                                                <div className="col-md-6  h-auto">
-                                                                    <div className="about-sticky" >
-
-                                                                        {user && user?.stripe_details_submitted == '1' ?
-                                                                            <MyGoal IsloggedIn={IsloggedIn}  />
-                                                                        : ""}
-
-                                                                        <div className="box p-3 p-md-4 shadow-voilet rounded-lg mb-4">
-                                                                            <p className="font-bold">About me</p>
-                                                                            <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
-                                                                                {(user &&user.bio) ||""}
-                                                                            </p>
-
-                                                                            
-
-                                                                            {IsloggedIn && user?.edit_bio_reason  ?
-                                                                                <div className="mt-3">
-                                                                                    <p className="text-red-700">Bio Edit Request</p>
-                                                                                    <p className="text-red-500 text-sm">Reason : {user?.edit_bio_reason } Please update your bio as per requested.</p>
-                                                                                </div>
-                                                                              : ''}
-
-                                                                            <SocialLinks links={sLinks} />
-
-                                                                            {IsloggedIn ? (
-                                                                                <div className="userProfileDate pt-0 pt-md-3">
-                                                                                    
-                                                                                    {auth?.user && auth?.user?.role == 1  
-                                                                                    && !auth?.user?.monthly_charge_enabled ? 
-                                                                                        <SiteSubscription user={auth?.user} />
-                                                                                    : ''}
-                                                                                  
-                                                                                    {auth.user && auth.user.role == 1 && auth.user.stripe_details_submitted == 1  ? (
-                                                                                        <PaymentDashboard classes="btn-pink lg w-100 mt-3" text="Payment Dashboard" />
-                                                                                        ) : 
-                                                                                        // <div className="finish mt-4 d-block">
-                                                                                        //     <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                                                        //     <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-xs lg" > Finish Setup
-                                                                                        //     </Link>
-                                                                                        // </div> 
-                                                                                        ''
-                                                                                    }
-
-                                                                                    {/* {auth.user && auth.user.stripe_details_submitted == 1 ?
-                                                                                        <AddGoal
-                                                                                        stripe_enabled={auth.user && auth.user.stripe_details_submitted}
-                                                                                        fetch_goal={fetch_goal}
-                                                                                        activegoal={goal}
-                                                                                        />
-                                                                                    : ''} */}
-
-                                                                                    <div className="addsocial flex">
-                                                                                        <ul>
-                                                                                            <li>
-                                                                                                <AddSocial sLinks={sLinks} />
-                                                                                            </li>
-                                                                                            <li>
-                                                                                                <ShareProfile username={user && user.name} classes={"flex ms-auto"}>
-                                                                                                    Share Profile
-                                                                                                </ShareProfile>
-                                                                                            </li>
-                                                                                        </ul>
-                                                                                    </div>
-                                                                                </div>
-                                                                            ) : (
-                                                                                ""
-                                                                            )}
-                                                                        </div>
-                                                                        <AddIntro uuid={user?.id || null} IsloggedIn={IsloggedIn}/>
-
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="ps-md-4 col-md-6">
-                                                                    {IsloggedIn && user && user.stripe_details_submitted == 0 ? 
-                                                                        <CreatorVerification  IsloggedIn={IsloggedIn} />
-                                                                        : ''}
-                                                                        <CreatorVerification  IsloggedIn={IsloggedIn} />
-                                                                    {IsloggedIn && user && user.stripe_details_submitted == 1 ? <ProfileSteps sLinks={sLinks} user={user} IsloggedIn={IsloggedIn} /> : ''}
-                                                                    {!IsloggedIn && user && user.stripe_details_submitted == 1 && w > 767 ? 
-                                                                        <TipInner classes={`mb-4`} /> 
-                                                                    : ''}
-                                                                    <FeedList IsloggedIn={IsloggedIn} />
-                                                                </div>
-                                                            </div>
-                                                        </Suspense>
-                                                    : ''}
-
-                                                    {IsloggedIn || user?.stripe_details_submitted == 1 ? 
-                                                        <>
-                                                            {page === "wishes" ?
+                                                    <div className="tabs-containers min-height" >
+                                                        {page === "about" || page === false ?
                                                             <Suspense fallback={<LoadingScreen />} >
-                                                                <div className="wishes-items ">
-                                                                    {wish_categories && wish_categories.length ?
-                                                                    <>
-                                                                    <div className="new-wish-cats flex mb-2" >
-                                                                        <Link preserveScroll  href={route('user.show', { username: user.username, page: 'wishes' })} className={`${selectedCategory == '' ? 'active' : ''} me-2  mb-2  wish-tags cursor-pointer focus:bg-pink`} >All</Link>
-                                                                        {wish_categories.map((c,i) => {
-                                                                            return <>
-                                                                            <Link preserveScroll  href={route('user.show', { username: user.username, page: 'wishes', category: c.id })}
-                                                                            className={`${selectedCategory == c.id ? 'active' : ''} me-2  mb-2  wish-tags cursor-pointer focus:bg-pink`} 
-                                                                            key={`cats-${i}`} >{c.category}</Link>
-                                                                            </>;
-                                                                        })}
-                                                                        {IsloggedIn ? <EditCategories  username={auth && auth?.user?.username || null} /> : ''}
-                                                                    </div>
-                                                                    </>
-                                                                    : ''}
+                                                                <div className="row about-sec align-self-start">
+                                                                    <div className="col-md-6  h-auto">
+                                                                        <div className="about-sticky" >
 
+                                                                            {user && user?.stripe_details_submitted == '1' ?
+                                                                                <MyGoal IsloggedIn={IsloggedIn}  />
+                                                                            : ""}
 
-                                                                    {wishitems && wishitems.length ? (
-                                                                    <>
-                                                                        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                                                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                                                                                <SortableContext strategy={rectSortingStrategy} items={wishitems}>
-                                                                                    {!loading && wishitems.map((c, i) => {
-                                                                                                return (
-                                                                                                    <Wishlistbox key={`wish-item-${i}`} classes=" "
-                                                                                                        currency={global_currency}  IsloggedIn={IsloggedIn}
-                                                                                                        auth={auth.user} itemid={itemid} setuped={auth && auth.user && auth.user.stripe_details_submitted == 1
-                                                                                                                ? true : false} itm={c}
-                                                                                                    />
-                                                                                                );
-                                                                                            }
-                                                                                        )}
-                                                                                </SortableContext>
-                                                                            </DndContext>
+                                                                            <div className="box p-3 p-md-4 shadow-voilet rounded-lg mb-4">
+                                                                                <p className="font-bold">About me</p>
+                                                                                <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
+                                                                                    {(user &&user.bio) ||""}
+                                                                                </p>
+
+                                                                                
+
+                                                                                {IsloggedIn && user?.edit_bio_reason  ?
+                                                                                    <div className="mt-3">
+                                                                                        <p className="text-red-700">Bio Edit Request</p>
+                                                                                        <p className="text-red-500 text-sm">Reason : {user?.edit_bio_reason } Please update your bio as per requested.</p>
+                                                                                    </div>
+                                                                                : ''}
+
+                                                                                <SocialLinks links={sLinks} />
+
+                                                                                {IsloggedIn ? (
+                                                                                    <div className="userProfileDate pt-0 pt-md-3">
+                                                                                        
+                                                                                        {auth?.user && auth?.user?.role == 1  
+                                                                                        && !auth?.user?.monthly_charge_enabled ? 
+                                                                                            <SiteSubscription user={auth?.user} />
+                                                                                        : ''}
+                                                                                    
+                                                                                        {auth.user && auth.user.role == 1 && auth.user.stripe_details_submitted == 1  ? (
+                                                                                            <PaymentDashboard classes="btn-pink lg w-100 mt-3" text="Payment Dashboard" />
+                                                                                            ) : 
+                                                                                            // <div className="finish mt-4 d-block">
+                                                                                            //     <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                                                                            //     <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-xs lg" > Finish Setup
+                                                                                            //     </Link>
+                                                                                            // </div> 
+                                                                                            ''
+                                                                                        }
+
+                                                                                        {/* {auth.user && auth.user.stripe_details_submitted == 1 ?
+                                                                                            <AddGoal
+                                                                                            stripe_enabled={auth.user && auth.user.stripe_details_submitted}
+                                                                                            fetch_goal={fetch_goal}
+                                                                                            activegoal={goal}
+                                                                                            />
+                                                                                        : ''} */}
+
+                                                                                        <div className="addsocial flex">
+                                                                                            <ul>
+                                                                                                <li>
+                                                                                                    <AddSocial sLinks={sLinks} />
+                                                                                                </li>
+                                                                                                <li>
+                                                                                                    <ShareProfile username={user && user.name} classes={"flex ms-auto"}>
+                                                                                                        Share Profile
+                                                                                                    </ShareProfile>
+                                                                                                </li>
+                                                                                            </ul>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    ""
+                                                                                )}
+                                                                            </div>
+                                                                            <AddIntro uuid={user?.id || null} IsloggedIn={IsloggedIn}/>
+
                                                                         </div>
-                                                                    </>
-                                                                    ) : (
-                                                                        <>
-                                                                            {loading ? (
-                                                                                <LoadingScreen />
-                                                                            ) : (
-                                                                                ""
-                                                                            )}
-                                                                            {(!loading && (
-                                                                                <div className="col-md-12">
-                                                                                    <Nocontent text="Nothing to see." />
-                                                                                </div>
-                                                                            )) || ""}
-                                                                        </>
-                                                                    )}
+                                                                    </div>
+
+                                                                    <div className="ps-md-4 col-md-6">
+                                                                        {IsloggedIn && user && user.stripe_details_submitted == 0 || user.stripe_details_submitted == null ? 
+                                                                            <CreatorVerification  IsloggedIn={IsloggedIn} />
+                                                                        : ''}
+                                                                        {IsloggedIn && user && user.stripe_details_submitted == 1 ? <ProfileSteps sLinks={sLinks} user={user} IsloggedIn={IsloggedIn} /> : ''}
+                                                                        {!IsloggedIn && user && user.stripe_details_submitted == 1 && w > 767 ? 
+                                                                            <TipInner classes={`mb-4`} /> 
+                                                                        : ''}
+                                                                        <FeedList IsloggedIn={IsloggedIn} />
+                                                                    </div>
                                                                 </div>
                                                             </Suspense>
-                                                            : ''}
+                                                        : ''}
 
-                                                            {page === "feed" ?
-                                                                <Suspense fallback={<LoadingScreen />}>
-                                                                    <FeedList  user={user} IsloggedIn={IsloggedIn} />
-                                                                </Suspense>
-                                                            : ''}
-
-                                                            {page === "memberships" ?
-                                                                <Suspense
-                                                                    fallback={<LoadingScreen />} >
-                                                                        <MembershipsLists   
-                                                                        IsloggedIn={IsloggedIn}
-                                                                        username={user?.username || auth?.user ?.username}
-                                                                        />
-                                                                </Suspense>
-                                                            : ''}
-
-                                                            {page === "bills" ?
+                                                        {IsloggedIn || user?.stripe_details_submitted == 1 ? 
+                                                            <>
+                                                                {page === "wishes" ?
                                                                 <Suspense fallback={<LoadingScreen />} >
-                                                                    <Billslist  IsloggedIn={IsloggedIn} />
-                                                                </Suspense>
-                                                            : "" }
-
-                                                            {page === "shop" ?
-                                                                <Suspense fallback={<LoadingScreen />} >
-                                                                    <ProfileProductLists profileuser={user} IsloggedIn={IsloggedIn} />
-                                                                </Suspense>
-                                                            : "" }
-
-                                                            {page === "gifts" ?
-                                                                <Suspense fallback={<LoadingScreen />}>
-                                                                    {giftsloading ? (
-                                                                    <LoadingScreen />
-                                                                    ) : gifts && gifts.length > 0 ? (
-                                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-                                                                        {gifts.map((gift) => {
-                                                                        const details = JSON.parse(gift.details); // Parse the details JSON
-                                                                        return(
-                                                                            <>
-                                                                            {(IsloggedIn || gift?.deleted_at === null) &&
-                                                                            <GiftListing key={gift.id} gift={gift} details={details} user={user} IsloggedIn={IsloggedIn} fetch_gifts={fetch_gifts} auth={auth} />
-                                                                            }
+                                                                    <div className="wishes-items ">
+                                                                        {wish_categories && wish_categories.length ?
+                                                                        <>
+                                                                        <div className="new-wish-cats flex mb-2" >
+                                                                            <Link preserveScroll  href={route('user.show', { username: user.username, page: 'wishes' })} className={`${selectedCategory == '' ? 'active' : ''} me-2  mb-2  wish-tags cursor-pointer focus:bg-pink`} >All</Link>
+                                                                            {wish_categories.map((c,i) => {
+                                                                                return <>
+                                                                                <Link preserveScroll  href={route('user.show', { username: user.username, page: 'wishes', category: c.id })}
+                                                                                className={`${selectedCategory == c.id ? 'active' : ''} me-2  mb-2  wish-tags cursor-pointer focus:bg-pink`} 
+                                                                                key={`cats-${i}`} >{c.category}</Link>
+                                                                                </>;
+                                                                            })}
+                                                                            {IsloggedIn ? <EditCategories  username={auth && auth?.user?.username || null} /> : ''}
+                                                                        </div>
                                                                         </>
-                                                                        );
-                                                                        })}
+                                                                        : ''}
+
+
+                                                                        {wishitems && wishitems.length ? (
+                                                                        <>
+                                                                            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                                                                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                                                                    <SortableContext strategy={rectSortingStrategy} items={wishitems}>
+                                                                                        {!loading && wishitems.map((c, i) => {
+                                                                                                    return (
+                                                                                                        <Wishlistbox key={`wish-item-${i}`} classes=" "
+                                                                                                            currency={global_currency}  IsloggedIn={IsloggedIn}
+                                                                                                            auth={auth.user} itemid={itemid} setuped={auth && auth.user && auth.user.stripe_details_submitted == 1
+                                                                                                                    ? true : false} itm={c}
+                                                                                                        />
+                                                                                                    );
+                                                                                                }
+                                                                                            )}
+                                                                                    </SortableContext>
+                                                                                </DndContext>
+                                                                            </div>
+                                                                        </>
+                                                                        ) : (
+                                                                            <>
+                                                                                {loading ? (
+                                                                                    <LoadingScreen />
+                                                                                ) : (
+                                                                                    ""
+                                                                                )}
+                                                                                {(!loading && (
+                                                                                    <div className="col-md-12">
+                                                                                        <Nocontent text="Nothing to see." />
+                                                                                    </div>
+                                                                                )) || ""}
+                                                                            </>
+                                                                        )}
                                                                     </div>
-                                                                    ) : (
-                                                                    <div className="col-md-12">
-                                                                        <Nocontent text="Nothing to see." />
-                                                                    </div>
-                                                                    )}
                                                                 </Suspense>
-                                                            : ''}
-                                                        </>  
-                                                        : 
-                                                        <PaymentUnActivated
-                                                        heading={`WishList not activated yet. `}
-                                                        subheading={`Until they activate their wishlist, this user won't be able to receive gifts.`} />
-                                                    }
-                                                </div>
+                                                                : ''}
+
+                                                                {page === "feed" ?
+                                                                    <Suspense fallback={<LoadingScreen />}>
+                                                                        <FeedList  user={user} IsloggedIn={IsloggedIn} />
+                                                                    </Suspense>
+                                                                : ''}
+
+                                                                {page === "memberships" ?
+                                                                    <Suspense
+                                                                        fallback={<LoadingScreen />} >
+                                                                            <MembershipsLists   
+                                                                            IsloggedIn={IsloggedIn}
+                                                                            username={user?.username || auth?.user ?.username}
+                                                                            />
+                                                                    </Suspense>
+                                                                : ''}
+
+                                                                {page === "bills" ?
+                                                                    <Suspense fallback={<LoadingScreen />} >
+                                                                        <Billslist  IsloggedIn={IsloggedIn} />
+                                                                    </Suspense>
+                                                                : "" }
+
+                                                                {page === "shop" ?
+                                                                    <Suspense fallback={<LoadingScreen />} >
+                                                                        <ProfileProductLists profileuser={user} IsloggedIn={IsloggedIn} />
+                                                                    </Suspense>
+                                                                : "" }
+
+                                                                {page === "gifts" ?
+                                                                    <Suspense fallback={<LoadingScreen />}>
+                                                                        {giftsloading ? (
+                                                                        <LoadingScreen />
+                                                                        ) : gifts && gifts.length > 0 ? (
+                                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+                                                                            {gifts.map((gift) => {
+                                                                            const details = JSON.parse(gift.details); // Parse the details JSON
+                                                                            return(
+                                                                                <>
+                                                                                {(IsloggedIn || gift?.deleted_at === null) &&
+                                                                                <GiftListing key={gift.id} gift={gift} details={details} user={user} IsloggedIn={IsloggedIn} fetch_gifts={fetch_gifts} auth={auth} />
+                                                                                }
+                                                                            </>
+                                                                            );
+                                                                            })}
+                                                                        </div>
+                                                                        ) : (
+                                                                        <div className="col-md-12">
+                                                                            <Nocontent text="Nothing to see." />
+                                                                        </div>
+                                                                        )}
+                                                                    </Suspense>
+                                                                : ''}
+                                                            </>  
+                                                            : 
+                                                            <PaymentUnActivated
+                                                            heading={`WishList not activated yet. `}
+                                                            subheading={`Until they activate their wishlist, this user won't be able to receive gifts.`} />
+                                                        }
+                                                    </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ) : <>
-                            <Gifter
-                            auth={auth}
-                            sLinks={sLinks}
-                            IsloggedIn={IsloggedIn} />
-                        </>
+                            ) : <>
+                                <Gifter
+                                auth={auth}
+                                sLinks={sLinks}
+                                IsloggedIn={IsloggedIn} />
+                            </>
                         }
                     </div>
                 </div>

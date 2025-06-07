@@ -9,7 +9,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { IoPhonePortrait } from "react-icons/io5";
 
-export default function TFA() {
+export default function TFA({text}) {
 
     const { auth } = usePage().props;
     const [open, setOpen] = useState(false);
@@ -100,7 +100,7 @@ export default function TFA() {
         <>
             <Popup space="4" action={open}
                 modalclass="full pinkmodal"
-                text={<>TWO FACTOR AUTHENTICATION</>} >
+                text={text ||<>TWO FACTOR AUTHENTICATION</>} >
                 {isTFA == 0 ?
                         <>
                             {backupCodes && backupCodes.length ? <>
