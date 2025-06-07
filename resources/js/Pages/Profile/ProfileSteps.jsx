@@ -94,8 +94,7 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
                                 <div>
                                     <h2 className="text-dark font-bold">Enable Auto Tweets</h2>
                                     <p className="text-gray-500 text-[14px]">
-                                        Enable auto tweets for your supporters when
-                                        you get any wish granted.
+                                        Automatically tweet to your supporters when a wish is granted.
                                     </p>
                                 </div>
                             </div>
@@ -164,7 +163,7 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
                                 </div>
                                 <div>
                                     <h2 className="text-dark font-bold">
-                                        Post Required
+                                        Write a Post
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
                                        Add something for your subscribers and supporters.
@@ -184,15 +183,15 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
                                 </div>
                                 <div>
                                     <h2 className="text-dark font-bold">
-                                        Membership Required
+                                        Add Memberships
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
-                                        You must add 1 membership for your fans.
+                                        Add at least one membership option for your fans.
                                     </p>
                                 </div>
                             </div>
                             <div>
-                                <AddMembership text="Add Membership" classes="edit_membership_step" />
+                                <AddMembership text="Add" classes="edit_membership_step" />
                             </div>
                         </div> : ""}
 
@@ -204,10 +203,10 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
                                 </div>
                                 <div>
                                     <h2 className="text-dark font-bold">
-                                        Bill Required
+                                        Add Your Bills
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
-                                        You must add 1 bill for your fan.
+                                       Add at least one billing option for your fans.
                                     </p>
                                 </div>
                             </div>
