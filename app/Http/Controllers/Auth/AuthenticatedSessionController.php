@@ -275,9 +275,7 @@ class AuthenticatedSessionController extends Controller
                 ];
             }
             // Intro Video
-            if ($user->id) {
-                $intro = UserIntro::where('user_id', $user->id)->first();
-            }
+            $intro = UserIntro::where('user_id', $user->id)->first();
 
 
             // GOAL
@@ -320,7 +318,7 @@ class AuthenticatedSessionController extends Controller
                 // $supPost = Post::where('user_id', $user->id)->where('for_module', 'support')->first();
                 $membership = Membership::where('user_id', $user->id)->where('deleted_at', null)->where('status', 1)->whereIn('approved', [0, 1])->first();
                 $bill = Bills::where('user_id', $user->id)->where('deleted_at', null)->where('status', 1)->whereIn('approved', [0, 1])->first();
-                
+
                 $total = 0;
 
                 // profile
@@ -336,8 +334,8 @@ class AuthenticatedSessionController extends Controller
                 // }
                 // user Intro
                 $userIntro = UserIntro::where('user_id', $user->id)->first();
-                $intro = !empty($userIntro) ? 1 : 0;
-                if ($intro) {
+                $userIntro = !empty($userIntro) ? 1 : 0;
+                if ($userIntro) {
                     $total += 1;
                 }
 
@@ -376,7 +374,7 @@ class AuthenticatedSessionController extends Controller
                 //     $total += 1;
                 // }
 
-            
+
                 $auto_tweets = $user->auto_tweet;
                 if ($auto_tweets) {
                     $total += 1;
@@ -385,11 +383,11 @@ class AuthenticatedSessionController extends Controller
                 if ($user->is_2fa == 1) {
                     $total += 1;
                 }
-    
+
                 $profile_steps = [
                     'status' => true,
                     'basic_profile' => $basic_profile,
-                    'intro' => $intro,
+                    'intro' => $userIntro,
                     'post_required' => $post_required,
                     'membership_required' => $member_required,
                     'bill_required' => $bill_required,
@@ -404,14 +402,14 @@ class AuthenticatedSessionController extends Controller
                 ];
             }
         }
-        
+
 
         $wishitems = [];
         $pinned = [];
         $categories = $user->user_categories()->get();
         $category = request()->query('category') ?? false;
         if($page == 'wishes'){
-            
+
             if ($category) {
                 $query = WishCategory::orderBy('created_at', 'DESC');
                 if ($category != 'all' && $category != false) {
@@ -440,7 +438,7 @@ class AuthenticatedSessionController extends Controller
             } else {
                 $wishitems = WishItem::where('is_pin', 0)->whereUserId($user->id)->with(['user'])->latest()->get();
                 $pinned = WishItem::where('is_pin', 1)->whereUserId($user->id)->with(['user'])->get();
-            } 
+            }
            $wishitems = $wishitems->merge($pinned)->sortBy('sort')->values()->toArray();
 
         }
@@ -531,7 +529,7 @@ class AuthenticatedSessionController extends Controller
                 $query->where('approved', 1);
             }
             $membership = $query->latest()->get();
-            $memberships =   $membership; 
+            $memberships =   $membership;
         }
         $bills = [];
         if($page == 'bills'){
@@ -733,10 +731,10 @@ class AuthenticatedSessionController extends Controller
         }
     }
 
-     
 
-    
-    
+
+
+
 
     public function userGiftItems($username)
     {
@@ -831,7 +829,7 @@ class AuthenticatedSessionController extends Controller
             }
 
 
-            
+
 
             return response()->json([
                 "success" => true,

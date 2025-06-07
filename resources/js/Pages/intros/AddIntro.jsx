@@ -22,7 +22,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
   const [msgMedia, setMsgMedia] = useState(null);
   const getFileUID = async (data) => {
     setMsgMedia(data);
-  }; 
+  };
 
   const uploaderRef = useRef();
   const resetUploader = () => {
@@ -33,7 +33,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
 
   const [videoLoading, setVideoLoading] = useState(false);
 
-  const addVideo = () => { 
+  const addVideo = () => {
     if(msgMedia == null || undefined){
       return false;
     }
@@ -47,7 +47,6 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
           setMsgMedia(null);
           router.visit(route('user.show', auth?.user?.username), {
             method: 'get',
-            preserveState: true,
             preserveScroll: true,
           });
           setIntroStatus && setIntroStatus(1)
@@ -64,12 +63,11 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
     });
   }
 
-  const removeVideo = () => { 
+  const removeVideo = () => {
     axios.get(`intro/remove`).then(resp => {
       if(resp.data.status){
           router.visit(route('user.show', auth?.user?.username), {
             method: 'get',
-            preserveState: true,
             preserveScroll: true,
           });
           successAlert(resp.data.msg);
@@ -84,7 +82,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
         console.error("error", _err);
     });
   }
-
+  console.log(IsloggedIn, "intro")
   const ProfileIntro = () => {
     return <>
       <Popup
@@ -102,7 +100,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
           </div>
           {IsloggedIn && intro && intro.approved !== 1 ? <div className='text-sm mb-0   alert bg-black text-yellow-400 w-full  absolute z-1 bottom-0 left-0 rounded p-2 px-3' >Profile intro video is waiting for approval. Currently only you can see this intro.</div> : ''}
         </div>
-        </>} > 
+        </>} >
           <div className='video-payer-pop' >
             <video playsInline='false' autoPlay src={intro && intro?.perma_link || ''} controls controlsList='nodownload' />
           </div>
@@ -112,16 +110,16 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
 
   return (
     <div className={`pb-4 ${videoLoading ? 'd-none' : '' } `}>
-      {intro ? 
+      {intro ?
         <div className='position-relative'>
-          <ProfileIntro /> 
+          <ProfileIntro />
           {IsloggedIn ? <button onClick={removeVideo} className='badge bg-danger remove-story' >Remove</button> : ''}
         </div>
-        : 
+        :
         <>
-        { IsloggedIn ? 
+        { IsloggedIn ?
               <Popup modalclassName="pinkmodal sendSurprize-modal shadow-pink" space="4" size="md" action={close} classes={`${classes} w-100`}
-                text={text ? text : 
+                text={text ? text :
                   <div className='cursor-pointer box shadow-voilet rounded-lg p-3 py-4 flex items-center justify-content-center' >
                     <div>
                         <div className='svg-icon m-auto d-table' >
@@ -129,9 +127,9 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
                         </div>
                         <p className='w-100 text-center mt-2' >Add Intro</p>
                     </div>
-                  </div> 
-                } 
-              >  
+                  </div>
+                }
+              >
               <div className='wrap' >
                 <h2 className="text-uppercase font-GillSans pb-1 font-large">Add Intro Video</h2>
                 <p className='text-muted mb-3' >Add a 15 to 30 sec video to introduce yourself.</p>
@@ -141,8 +139,8 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
                     ref={uploaderRef} type='minimal'
                     sendFile={getFileUID}
                     options={st.profileVideo}
-                  />  
-                </div>  
+                  />
+                </div>
                 <LoaderButton onClick={addVideo}
                     disabled={loading}
                     className={`${!msgMedia ? 'disabled' : ''} flex px-4  mb-3 btn-pink sm mx-auto w-full`}
@@ -157,4 +155,3 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
     </div>
   )
 }
- 

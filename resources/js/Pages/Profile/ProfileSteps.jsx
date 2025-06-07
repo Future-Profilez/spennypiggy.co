@@ -17,7 +17,7 @@ import TFA from "../Auth/TFA";
 
 export default function ProfileSteps({ IsloggedIn,  sLinks }) {
 
-    const { intro, user, global_currency, profile_steps } = usePage().props;
+    const {  user, global_currency, profile_steps } = usePage().props;
     const [profile, setProfile] = useState(profile_steps || null);
 
     const updateProfileSteps = ()=> {
@@ -57,11 +57,11 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
                         </div> : ""} */}
 
                         {/* Intro Video */}
-                        {intro !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl flex  items-center p-3 mt-3 justify-between">
+                        {profile?.intro !== 1 ? <div className="profile-steps border border-gray-200 rounded-xl flex  items-center p-3 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pe-3">
                                 <div
                                     className={`check-icon me-2 pt-1 ${
-                                        intro == 1
+                                        profile?.intro == 1
                                             ? "checked"
                                             : ""
                                     }`}
