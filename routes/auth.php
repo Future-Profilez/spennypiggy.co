@@ -227,7 +227,7 @@ Route::middleware('auth')->group(function () {
                 return Inertia::render('Profile/ActivateSubscription');
             })->name('activate-subscription');
 
-            Route::get('/stripe-identity-verification', function () {
+            Route::get('/stripe/identity-verification', function () {
                 return Inertia::render('Auth/StripeIdentity', [
                     'status' => false,
                     'message' => 'Please complete your Stripe identity verification.',
