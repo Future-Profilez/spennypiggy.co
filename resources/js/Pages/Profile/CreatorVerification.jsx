@@ -219,7 +219,17 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                  <p className="text-gray-500 text-[14px]">Secure your account and meet compliance requirements.</p>
                            </div>
                         </div>
-                        <div>{auth?.user?.identity_status == 1 ? <span className="text-green-600">Verified</span> : <Link className="text-pink" href="/stripe/identity-verification">Verify</Link>}</div>
+                        <div>
+                            {auth?.user?.identity_status == 1 ? 
+                                <span className="text-green-600">Verified</span> 
+                            : 
+                            <>
+                                {auth?.user?.profile_status_lock == 2 ? 
+                                <Link className={"text-pink"} href="/stripe">Verify</Link>
+                                : <p className={"text-gray-400"}  >Verify</p> }
+                            </>
+                            }
+                        </div>
                      </div>
 
 
@@ -235,7 +245,11 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         </div>
                         {auth?.user?.stripe_details_submitted == 0 || auth?.user?.stripe_details_submitted == null ?
                            <div>
-                              <Link className="text-pink" href="/stripe">Connect</Link>
+                            { auth?.user?.profile_status_lock == 2 ? 
+                            <Link className={"text-pink"} href="/stripe">Connect</Link>
+                             : 
+                             <p className={"text-gray-400"}  >Connect</p>
+                            }
                            </div> : 
                             ''
                         }
