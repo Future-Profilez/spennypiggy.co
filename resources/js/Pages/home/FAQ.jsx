@@ -22,34 +22,32 @@ export default function FAQ() {
       "description": "Pick your currency! Creators, you've got the choice between USD or GBP. If you're based in the UK, GBP; for the rest of the world, USD is the go-to. Customize your display currency, and supporters can do the same when making payments. Keeping it simple for everyone! 💲"
     }
   ];
-  
+
   return (
     <>
     <style>{`
-    .faq-section .accordion-button{font-family:var(--body-font);text-transform:uppercase;font-size:19px;}
-    .faq-section .accordion-header button{background:transparent !important;}
-    .faq-section .accordion-collapse{border-top:1px solid #000 !important;}
-    .faq-section .accordion-item{border:2px solid var(--black) !important;}
+    .faq-section .accordion-button{font-family:var(--body-font);text-transform:uppercase;font-size:20px;color:#ffff;}
+    .faq-section .accordion-header button{background:#000000 !important;}
+    .faq-section .accordion-collapse{background:#000000 !important;}
+    .faq-section .accordion-item{border: 2px solid #05EFB8 !important;}
     .faq-section .accordion-button:focus{box-shadow:none !important;}
-  
   `}</style>
-    <div id={`faq`} className='faq-section lightpink-50 pb-2 pb-md-5 pt-4 ' >
+    <div id={`faq`} className='faq-section pt-10 pb-5' >
       <div className='container' >
-          <h2 className='headingSm shadow-none text-dark stroke-none   text-center mb-4 pb-2' >Frequently Asked questions</h2>
+          <h2 className='headingSm shadow-none font-gulfs stroke-none text-center mb-4 lg:!mb-8 pb-2' >Frequently Asked questions</h2>
           <div className='max-width-1100 m-auto d-table' >
               <div className='faqaccordian' >
                   <Accordion defaultActiveKey={0}>
                     {faqs && faqs.map((f, i)=>{
-                      return <Accordion.Item eventKey={i} data-aos="zoom-in-up" className='border-black rounded-4 mb-4 shadow-black-sm' >
+                      return <Accordion.Item eventKey={i} data-aos="zoom-in-up" className='mb-4' >
                           <Accordion.Header onClick={(e) => setOpen(i)}>
                               {f.title}
                           </Accordion.Header>
-                          <Accordion.Body>
+                          <Accordion.Body className='text-white'>
                           {f.description}
                           </Accordion.Body>
                       </Accordion.Item>
                     })}
-                      
                   </Accordion>
               </div>
           </div>
@@ -58,4 +56,4 @@ export default function FAQ() {
     </>
   );
 };
- 
+

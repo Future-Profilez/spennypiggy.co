@@ -9,7 +9,7 @@ use Ramsey\Uuid\Uuid;
 
 class ShopShippingInfo extends Model
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'uuid',
@@ -21,11 +21,11 @@ class ShopShippingInfo extends Model
     public static function boot()
     {
         parent::boot();
-        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
+        static::creating(fn($w) => $w->uuid = Uuid::uuid4());
     }
 
-
-    public function shop(){
-        return $this->belongsTo(Shop::class,'shop_id');
+    public function shop()
+    {
+        return $this->belongsTo(Shop::class, 'shop_id');
     }
 }

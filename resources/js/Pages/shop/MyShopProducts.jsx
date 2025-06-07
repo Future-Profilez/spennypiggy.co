@@ -7,6 +7,7 @@ import AddItem from './AddItem';
 import LoadingScreen from '@/includes/LoadingScreen';
 import Dropdown from "react-bootstrap/Dropdown";
 import { Suspense } from 'react';
+import Nocontent from '@/includes/Nocontent';
 
 export default function MyShopProducts({lists, loading, update}) {
 
@@ -37,7 +38,8 @@ export default function MyShopProducts({lists, loading, update}) {
          <h2 className='font-GillSans text-uppercase text-xl mb-3' >My Products</h2>
          <div className='shop-items-lists' >
 
-         {loading ? <LoadingScreen /> : <>
+         {loading ? <LoadingScreen /> : 
+            <>
             {lists && lists.length ? lists.map((s, i)=>{
                return <div className='mt-2 bg-white p-3 rounded-xl' > 
                   <div className='shop-item flex justify-between w-full items-center ' >
@@ -75,8 +77,10 @@ export default function MyShopProducts({lists, loading, update}) {
                   </div>
                   {s.approved == 0 ?  <div className='approvalmessge static rounded-3 p-3 py-2 mt-3 ' >Shop item waiting for approval. Currently only you can see this wish.</div> : ''}
                </div>
-            }) : <p className='text-gray-400 p-4 text-center bg-white rounded-[20px] my-3 ' >Nothing to see</p>}
+            }) : <Nocontent/>
+             }
          </>}
+
             
          </div>
     </div>

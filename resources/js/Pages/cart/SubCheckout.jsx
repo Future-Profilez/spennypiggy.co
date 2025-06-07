@@ -7,7 +7,6 @@ import { Toaster } from "react-hot-toast";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 
 export default function SubCheckout(props) {
-
     const {auth, user, wish, reccure, vat_amount  } = props;
     const { formatMultiPrice } = PriceFormat();
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
@@ -19,10 +18,10 @@ export default function SubCheckout(props) {
         message: '',
         agree: false,
         anonymous: 0,
-    }); 
+    });
 
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
-    function checkanonymous(e){ 
+    function checkanonymous(e){
         setKeepAnonmyous(e.target.checked);
         if(e.target.checked){
             setData("anonymous", 1)
@@ -34,7 +33,7 @@ export default function SubCheckout(props) {
     const handleSubmit = (e) => {
         e.preventDefault();
         post(route(`wish.subscribe.checkout`,{
-            uuid:wish.uuid, 
+            uuid:wish.uuid,
             reccure:reccure
         }),
         {
@@ -66,7 +65,7 @@ export default function SubCheckout(props) {
                 <div className="my-4 cartsub cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
                     <div className="cartMain">
                         <h2 className="pb-1 wishtitle">
-                            Wish Basket for {wish?.user?.name || " "} 
+                            Wish Basket for {wish?.user?.name || " "}
                             <Link className="text-voilet" target="_blank"
                                 href={`/${wish?.user?.username || ""}`} >
                                 @{wish?.user?.username || ""}
@@ -101,27 +100,27 @@ export default function SubCheckout(props) {
                         </div>
 
                         <div className="cartTotal px-0 py-3">
-                            <div className="cartSubTotal text-right mt-1">
-                                <span>Platform Fee :</span>{" "}
+                            <div className="cartSubTotal text-right mt-1 !text-sm">
+                                <span> Amount :</span>
+                                <strong className="text-end">
+                                    {formatMultiPrice(wish.price || "", wish && wish.currency)}
+                                </strong>
+                            </div>
+                            <div className="cartSubTotal text-right mt-1 !text-sm">
+                                <span>VAT Applicable : </span>
+                                <strong className="text-end">
+                                    {formatMultiPrice(vat_amount || "", wish && wish.currency)}
+                                </strong>
+                            </div>
+                            <div className="cartSubTotal text-right mt-1 !text-sm">
+                                <span>Platform Fee :</span>
                                 <strong className="text-end">
                                     {formatMultiPrice(wish.tax_amount || "", wish && wish.currency)}
                                 </strong>
                             </div>
                             <div className="cartSubTotal text-right mt-1">
-                                <span>VAT : </span>{" "}
-                                <strong className="text-end">
-                                    {formatMultiPrice(vat_amount || "", wish && wish.currency)}
-                                </strong>
-                            </div>
-                            <div className="cartSubTotal text-right mt-1">
-                                <span>Subtotal :</span>{" "}
-                                <strong className="text-end">
-                                    {formatMultiPrice(wish.price || "", wish && wish.currency)}
-                                </strong>
-                            </div>
-                            <div className="cartSubTotal text-right mt-1">
-                                <strong className="text-dark">Total :</strong>{" "}
-                                <strong className="text-end">
+                                <strong className="text-dark">Total :</strong>
+                                <strong className="text-end text-black">
                                     {formatMultiPrice(wish.tax_amount + wish.price + vat_amount || "", wish && wish.currency)}
                                 </strong>
                             </div>
@@ -187,12 +186,12 @@ export default function SubCheckout(props) {
                                         <label
                                             htmlFor="agreeterm"
                                             className="text-start" >
-                                            <input 
-                                            onChange={(e) => setData('agree', e.target.checked)} 
-                                            type="checkbox" 
-                                            id="agreeterm" 
-                                            name="agreeterm" 
-                                            className="me-2" 
+                                            <input
+                                            onChange={(e) => setData('agree', e.target.checked)}
+                                            type="checkbox"
+                                            id="agreeterm"
+                                            name="agreeterm"
+                                            className="me-2"
                                             value="agreeterm" ></input>
                                            I understand I am paying the creator directly and I agree to the <Link target='_blank' className="text-voilet" href={route("terms-and-conditions")} >Terms of Service</Link> and <a className="text-voilet" target='_blank' href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>  and the following statements:
                                         </label>
@@ -210,12 +209,12 @@ export default function SubCheckout(props) {
                                         </div>
                                     </li>
                                 </ul>
-                                <div className="mt-4 d-flex align-items-center justify-content-center" >
+                                <div className="mt-4 flex items-center justify-content-center" >
                                     <button type="submit"
                                         className={`${!data.agree || processing ? "disabled" : ""} btn-pink md px-4 mt-3 text-center`}
                                         disabled={!data.agree || processing}>
                                         {processing ? 'Processing...' : `${reccure == 'onetime' ? `Subscribe Once ` : `Subscribe ${wish.subscription_period}`} `}
-                                    </button> 
+                                    </button>
                                 </div>
                             </form>
                         </div>

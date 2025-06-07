@@ -38,7 +38,7 @@ class ShopBuyedMailUser extends Mailable
     public function build()
     {
         try {
-            $subject = "Thank you for claiming " . $this->data->shop->name;
+            $subject = "Thank You For Claiming Shop Item  " . $this->data->shop->name;
             return $this->view('email.shop-buy-user')
                 ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
                 ->subject($subject);

@@ -28,31 +28,35 @@ export default function ActivateSubscription(props) {
     }
 
     return (
-        <Authenticated auth={auth.user} user={user} >
-            <Head title={""} />
-            <div className='blackbg py-4 py-md-5  '>
-                <div className='stripbox mb-md-4 mx-auto border-mint whbg shadow-mint rounded-3xl '>
+        <Authenticated auth={auth?.user} user={user}>
+            <Head title={"Set up Subscription"} />
+            <div className='blackbg py-4 py-md-5'>
+                <div className='stripbox mb-md-4 mx-auto border-mint whbg shadow-mint rounded-3xl'>
                     <div className='loginheadbox pinkbg'>
                         <span className='mintbg'></span>
                         <span className='bluebg'></span>
                     </div>
                     <div className='py-4'>
-                      <div className='stripNote p-3 p-md-4'>
-                          <h4 className='text-[30px] font-GillSans text-center text-uppercase mb-3'>Set up Subscription</h4>
-                          <p className='mb-4 text-[18px] text-center' >You are required to set up a monthly stripe subscription to cover the costs of Stripe connect, they charge £2 a month for this service. We are adding a £2 administrator charge due to the additional workload from are heightened compliance requirements.</p>
-                      </div>
-                      <div className="text-center flex justify-center mb-4 ">
-                        <LoaderButton onClick={checkTerms}
-                          disabled={loading}
-                          className={'p-3 lg'}
-                          spinnerClassName="fill-red-600" >
-                          {loading? "Activating..": 'Activate Subscription'}
-                        </LoaderButton>
-                      </div>
+                        <div className='stripNote p-3 p-md-4'>
+                            <h4 className='text-[30px] font-GillSans text-center text-uppercase mb-3'>Set up Subscription</h4>
+                            <p className='mb-4 text-[18px] text-center'>
+                                Enjoy a <span className='text-green-500 font-bold'>3-days free trial</span> before your monthly subscription begins! Stripe charges £2 a month for this service, and we add a £2 administrator charge due to heightened compliance requirements.
+                            </p>
+                                <p className='font-semibold text-center text-green-600 text-lg'>Start your subscription today and pay nothing for the first 3 days!</p>
+                        </div>
+                        <div className='text-center flex justify-center mb-4'>
+                            <LoaderButton onClick={checkTerms}
+                                disabled={loading}
+                                className={'p-3 lg'}
+                                spinnerClassName="fill-red-600">
+                                {loading ? "Activating.." : "Start Free Trial"}
+                            </LoaderButton>
+                        </div>
                     </div>
                 </div>
             </div>
         </Authenticated>
     )
+
 }
 

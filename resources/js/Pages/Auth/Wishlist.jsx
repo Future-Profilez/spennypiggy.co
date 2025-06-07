@@ -3,7 +3,7 @@ import "swiper/css/pagination";
 import "swiper/css/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import LoaderButton from "@/Components/LoaderButton";
-import { useForm, usePage } from "@inertiajs/react";
+import { router, useForm, usePage } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
 import GlobalUploader from "@/uploadcare/Uploader";
 import st from "../../../css/uploader.module.css";
@@ -16,26 +16,22 @@ import PriceFormat from "@/includes/PriceFormat";
 import axios from "axios";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 import { FaRegHeart } from "react-icons/fa";
-import ImageGenerationWithAI from "@/Components/ImageGenerationWithAI";
-
 const imageLinks = [
-    "901c0a0e-e5de-4d7a-8ac3-de11a4632542",
-    "ca1392cd-d81e-4e00-b106-55fcba62bc84",
+    "901c0a0e-e5de-4d7a-8ac3-de11a4632542", 
+    "6d5506b2-7361-4c58-8f1b-dfe1e196885a",
     "467f7ad0-e397-45fe-be22-a6e8e8afe9fa",
     "897b3ec3-63f8-42c0-83b3-a3a9a1b90b7c",
-    "be9060ab-1a76-452f-b805-1c71d9af4fb7", // first
-    "01bbc3bd-7e79-4dc0-817c-2c260da43c20",
-    "f0c45dc9-cc56-4955-a406-7527004a1373",
-    "4c42426a-1396-49e2-8b46-2381a2ae5d7b",
+    "55965522-e075-4ef3-8afc-195dacbf267b", // first
+    "bcd5dc1e-a97f-4f76-aa93-511c997ff2f0",
+    "7490cf45-09a0-427d-abb7-568d98edf344",
+    "59cf9a4a-6a4d-4297-915d-513847681f29",
 ];
 
 export default function Wishlist(props) {
-    const { global_currency, auth } = usePage().props;
-    const {
-        fetchingcats,
-        fetchcategories,
+    const { global_currency, auth, wish_categories } = usePage().props;
+    const { 
         currency,
-        item,
+        item, text,
         editpop,
         openPop,
         setuped,
@@ -72,12 +68,12 @@ export default function Wishlist(props) {
         }
     };
 
-    const [categories, setcategories] = useState([]);
+    const [categories, setcategories] = useState(wish_categories || []);
     const fetch_categories = async () => {
         const controller = new AbortController();
         const { signal } = controller;
         axios
-            .get(`/user_category/${auth && auth.user && auth.user.username}`, {
+            .get(`/user/category/${auth && auth.user && auth.user.username}`, {
                 signal,
             })
             .then((resp) => {
@@ -88,21 +84,17 @@ export default function Wishlist(props) {
             });
     };
 
-    useEffect(() => {
-        fetch_categories();
-    }, []);
-
     const AddCategory = async () => {
         const value = inputRef.current.value;
         setAdding(true);
         axios
-            .post("save-category", { category: value })
+            .post("/user/save-category", { category: value })
             .then((res) => {
                 setAdding(false);
                 if (res.data.status) {
-                    successAlert(res.data.msg || "Added");
-                    fetch_categories();
+                    successAlert(res.data.msg || "Added"); 
                     inputRef.current.value = "";
+                     fetch_categories();
                 } else {
                     errorAlert(res.data.msg || "Something went wrong.");
                 }
@@ -220,26 +212,26 @@ export default function Wishlist(props) {
             errorAlert("Please choose a category for this item.");
             return false;
         }
-        if ((!editpop && data && data.reward_file == "") || null || undefined) {
-            errorAlert("Please choose a exclusive reward for this wish item.");
-            return false;
-        }
+        // if ((!editpop && data && data.reward_file == "") || null || undefined) {
+        //     errorAlert("Please choose a exclusive reward for this wish item.");
+        //     return false;
+        // }
         if (editpop) {
             post(route(`update_wish_item`, [item && item.uuid]), {
                 preserveScroll: true,
                 onSuccess: (resp) => {
                     if (resp.props.flash?.success !== null) {
-                        successAlert(
-                            resp.props.flash?.success || "Updated successfully."
-                        );
+                        router.visit(
+                            route("user.show", {
+                            username: auth?.user?.username,
+                            page : 'wishes'
+                        })); 
                         reset();
                         setClose(false);
                         setTimeout(() => {
                             setClose();
                         }, 100);
-                        fetchingcats();
                         resetUploader();
-                        fetchcategories && fetchcategories();
                     }
                     if (resp.props.flash?.error) {
                         errorAlert(
@@ -258,17 +250,17 @@ export default function Wishlist(props) {
                 preserveScroll: true,
                 onSuccess: (resp) => {
                     if (resp.props.flash?.success !== null) {
-                        successAlert(
-                            resp.props.flash?.success ||
-                                "Wish added successfully."
-                        );
+                        router.visit(
+                            route("user.show", {
+                            username: auth?.user?.username,
+                            page : 'wishes'
+                        }));
                         reset();
                         setClose(false);
                         resetUploader();
                         setTimeout(() => {
                             setClose();
                         }, 100);
-                        fetchingcats();
                     }
                     if (resp.props.flash?.error) {
                         errorAlert(
@@ -292,9 +284,9 @@ export default function Wishlist(props) {
                     <FaRegHeart color="var(--pink)" size="1.5rem" />
                 </div>
                 <div className="ps-3 text-start">
-                    <h2 className="text-md">Add Wish Item</h2>
-                    <p className="text-sm font-normal">
-                        Let fans fund your lifestyle for a reward.
+                    <h2 className="text-md font-normal font-GillSans uppercase">{text ?text :"Add Wish Item"}</h2>
+                    <p className="text-sm font-poppins">
+                        For products you will buy directly
                     </p>
                 </div>
             </div>
@@ -304,22 +296,17 @@ export default function Wishlist(props) {
     return (
         <Popup
             modalclassName="pinkmodal full"
-            size="lg"
             action={close}
-            classes={`${
-                editpop
-                    ? "editpop"
-                    : "w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
-            }`}
+            classes={`${ editpop ? "editpop" : "w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center" }`}
             text={customtext || <AddItem />}
         >
-            <div className="editprofileModal  wishlistModal max-h-[90vh] overflow-auto customScrollbar ">
-                <div className="editprofileModalInner">
+            <div className="editprofileModal  wishlistModal  ">
+                <div className="editprofileModalInner ">
                     <h2 className="p-4 text-pink text-start font-GillSans uppercase text-large black-stroke font-semibold mb-1 pe-5">
                         {editpop ? " Edit Wish" : "Add A Wish"}
                     </h2>
-                    <div className="wishinfo border-top pt-0">
-                        <p className="text-danger mb-4 pt-3">
+                    <div className="wishinfo border-top p-4 max-h-[70vh] overflow-auto">
+                        <p className="p-3 mb-4 text-sm text-yellow-800 rounded-lg bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300">
                             When adding items please ensure they are specific
                             i.e Holiday Clothes or New Gym Equipment. Items that
                             are non specific will be rejected and removed. Our
@@ -372,14 +359,14 @@ export default function Wishlist(props) {
                                             }
                                         />
                                     </div>
-                                    <p className="mt-1">
+                                    {defaultCurrency !== "USD" && <p className="mt-1">
                                         The wish item amount is set to{" "}
                                         {formatMultiPrice(
                                             data.price,
                                             defaultCurrency
                                         )}
                                         .
-                                    </p>
+                                    </p>}
                                 </li>
                                 <li className="mb-4">
                                     <label className="mb-2 text-start d-block">
@@ -594,7 +581,7 @@ export default function Wishlist(props) {
                                 </Accordion>
                             </div>
 
-                            <div className="pt-4 pb-3">
+                            {/* <div className="pt-4 pb-3">
                                 <strong className="text-start d-block">
                                     Exclusive Reward or Art commission *
                                 </strong>
@@ -646,7 +633,7 @@ export default function Wishlist(props) {
                                         />
                                     </div>
                                 </div>
-                            </div>
+                            </div> */}
 
                             {/* <div className="twitter-an mt-3 pt-2">
                                             <div className="repeatpurchase mt-1 mb-2 text-start">
@@ -727,7 +714,7 @@ export default function Wishlist(props) {
                                             : ""}
                                     </div>
 
-                                    <div className="cate-items mb-3 mt-4 d-flex ">
+                                    <div className="cate-items mb-3 mt-4 flex ">
                                         <input
                                             id="cats"
                                             type="text"

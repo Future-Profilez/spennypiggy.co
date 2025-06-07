@@ -26,15 +26,15 @@ export default function TipTracker({auth}) {
       const r = (paid/actual)*100;
       return r.toFixed(2);
    }
-   
+
    const GoalItem = ({g}) => {
       const [open, setOpen] = useState(false);
       const openState = () => { setOpen(!open) }
       return <>
          <div onClick={openState} className='box shadow-pink rounded-lg mb-4 p-3' >
-            <div  aria-controls="example-collapse-text "  
+            <div  aria-controls="example-collapse-text "
             aria-expanded={open} className="cursor-pointer trackbar " >
-                  <div className='d-flex tip align-items-center justify-content-between' >
+                  <div className='flex tip items-center justify-between' >
                      <h2 className='text-large mb-2' >{g && g.name}</h2>
                      <div className="angle-icon w-auto">
                         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" > <g id="SVGRepo_bgCarrier" stroke-width="0"></g> <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round" ></g> <g id="SVGRepo_iconCarrier">{" "}
@@ -42,14 +42,14 @@ export default function TipTracker({auth}) {
                         </g></svg>
                      </div>
                   </div>
-               <div className='goal-stats  d-flex align-items-center justify-content-between' >
+               <div className='goal-stats  flex items-center justify-between' >
                      <h2 className='' >Goal Target : {formatMultiPrice(g && g.target, g.currency)}</h2>
-                     {g && g.completed == 1 ?  
-                        <span className='badge bg-success mt-2 ' >Completed</span> 
-                     : 
+                     {g && g.completed == 1 ?
+                        <span className='badge bg-success mt-2 ' >Completed</span>
+                     :
                         <p className='text-success mt-2 text-mint font-bold' >{ getPercentage(g.target, g.fullfilled)}% fullfilled</p>
                      }
-                  
+
                </div>
             </div>
             <Collapse in={open} >
@@ -57,32 +57,32 @@ export default function TipTracker({auth}) {
                      <div className='mt-3 pt-3 border-top'>
                      <ProgressBar now={g?.fullfilled} max={g?.target} />
                      <p className='text-muted text-small mt-1 mb-4' >{getPercentage(g?.target, g?.fullfilled)}% of {formatMultiPrice(g?.target, g?.currency)} goal.</p>
-                     
-                     <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
+
+                     <div  className='flex justify-between border-top pt-3 mt-3' >
                         <p className='text-muted  ' >Goal target amount</p>
-                        <p className='mb-0' >{formatMultiPrice(g && g.target, g.currency)}</p> 
+                        <p className='mb-0' >{formatMultiPrice(g && g.target, g.currency)}</p>
                      </div>
 
-                     <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
+                     <div  className='flex justify-between border-top pt-3 mt-3' >
                         <p className='text-muted  ' >Minimum price to pay</p>
-                        <p className='mb-0' >{formatMultiPrice(g && g.default_price, g.currency)}</p> 
+                        <p className='mb-0' >{formatMultiPrice(g && g.default_price, g.currency)}</p>
                      </div>
 
-                     <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
+                     <div  className='flex justify-between border-top pt-3 mt-3' >
                         <p className='text-muted ' >Total paid</p>
-                        <p className='mb-0' >{formatMultiPrice(g && g.fullfilled, g.currency)}</p> 
+                        <p className='mb-0' >{formatMultiPrice(g && g.fullfilled, g.currency)}</p>
                      </div>
 
-                     <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
+                     <div  className='flex justify-between border-top pt-3 mt-3' >
                         <p className='text-muted ' >Goal End</p>
-                        <p className='mb-0' >{g?.status == 0 ? "Open Until Acheived" : g?.status == 1 ? `30 Days Period` : "Until marked as completed" }</p> 
+                        <p className='mb-0' >{g?.status == 0 ? "Open Until Acheived" : g?.status == 1 ? `30 Days Period` : "Until marked as completed" }</p>
                      </div>
-                     {g && g.complete_at ? <div  className='d-flex justify-content-between border-top pt-3 mt-3' >
+                     {g && g.complete_at ? <div  className='flex justify-between border-top pt-3 mt-3' >
                         <p className='text-muted ' >Completed On</p>
-                        <p className='mb-0' >{g && g.complete_at}</p> 
+                        <p className='mb-0' >{g && g.complete_at}</p>
                      </div> : ''}
                      <p className='text-muted mb-1 mt-3 border-top pt-3 text-small' >Description</p>
-                     <p className='mb-2' >{g && g.description}</p> 
+                     <p className='mb-2' >{g && g.description}</p>
                      </div>
                   </div>
             </Collapse>

@@ -15,12 +15,12 @@ import ChangeVat from '../account/ChangeVat';
 import DeleteStripeAccount from '../Profile/DeleteStripeAccount';
 import SiteSubscription from '../Profile/SiteSubscription';
 import TFA from '../Auth/TFA';
+import AddressForm from '../rye/AddressForm';
 
 export default function Accountsetting(props) {
     const { successAlert, errorAlert } = useAlerts();
     const {auth, user, global_currency, auto_tweet} = props;
 
-    console.log("props", props)
     const [emailEnabled, setSetEnabled] = useState(auth && auth.user && auth.user.notification_send == 1 ? true : false )
     const [showEarning, setShowEarning] = useState(auth && auth.user && auth.user.show_piggy_bank == 1 ? true : false );
     const swicthEarning  = () =>{
@@ -71,21 +71,19 @@ export default function Accountsetting(props) {
                     </div>
                     <div className='accsettingList p-4'>
                         <ul>
-
-
                             {auth && auth?.user?.role == 1 ?
                                 <>
                                 {auth.user && auth.user.monthly_charge_enabled ?
                                     <li>
                                         {auth && auth.user && auth.user.stripe_details_submitted == 1 ?
-                                            <PaymentDashboard classes='w-100 text-black rounded-3  border-0 paymentbutton' text={<>PAYMENT DASHBOARD <span className='text-mint text-sm'>Linked</span></>} />
+                                            <PaymentDashboard classes='w-100 text-black rounded-3  border-0 !bg-white paymentbuttons' text={<>PAYMENT DASHBOARD <span className='text-mint text-sm'>Linked</span></>} />
                                             :
                                             <Link href={route("stripe")} >LINK STRIPE <span className='text-voilet'>Link</span></Link>
                                         }
                                     </li>
                                  :
                                     <li>
-                                        <Link href={'/stripe-subscription'} >Activate Subscription  <span className='text-voilet'>Activate</span></Link>
+                                        <Link href={'/activate-subscription'} >Activate Subscription  <span className='text-voilet'>Activate</span></Link>
                                     </li>
                                   }
                                 </>
@@ -108,31 +106,48 @@ export default function Accountsetting(props) {
                                 </Popup>
                             </li>
 
-                            <li>
-                                <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>VAT <span className='text-gray'>{vatpercent || "0"}%</span></>} >
-                                    <ChangeVat defaultvalue={vatpercent} updatevat={updatevat} />
-                                </Popup>
-                            </li>
-
-                            <li>
-                                <Popup action={passClose} space='4' modalclassName="pinkmodal"
-                                text={
+                            {auth && auth?.user?.role == 1 ?
                                 <>
-                                    { auth && auth.user && auth.user.twitter_username ? `AUTO TWEET` : 'SET UP AUTO TWEET'}
-                                    <div className='d-flex items-center' >
-                                        <img src={closeblacksm} alt="img" className='me-2 w-5 h-5' />
-                                        { auth && auth.user && auth.user.twitter_username ? `@${auth.user.twitter_username}` : ''}
-                                    </div>
-                                </> } >
-                                    <LinkTwitter auto_tweet={auto_tweet}
-                                    auth={auth}
-                                    username={auth && auth.user && auth.user.twitter_username || false}  />
-                                </Popup>
-                            </li>
+                                    <li>
+                                        <Popup size={"lg"} action={passClose} space='4' modalclassName="pinkmodal" text={"ADDRESS"} >
+                                            <AddressForm isEditPopup={true} setSassClose={setSassClose}/>
+                                        </Popup>
+                                    </li>
+                                </>
+                            : ''}
+
+                            {auth && auth?.user?.role == 1 ?
+                                <>
+                                <li>
+                                    <Popup action={passClose} space='4' modalclassName="pinkmodal" text={<>VAT <span className='text-gray'>{vatpercent || "0"}%</span></>} >
+                                        <ChangeVat defaultvalue={vatpercent} updatevat={updatevat} />
+                                    </Popup>
+                                </li>
+                                </>
+                            : ''}
+
+                            {auth && auth?.user?.role == 1 ?
+                                <>
+                                    <li>
+                                        <Popup action={passClose} space='4' modalclassName="pinkmodal"
+                                        text={
+                                        <>
+                                            { auth && auth.user && auth.user.twitter_username ? `AUTO TWEET` : 'SET UP AUTO TWEET'}
+                                            <div className='flex items-center' >
+                                                <img src={closeblacksm} alt="img" className='me-2 w-5 h-5' />
+                                                { auth && auth.user && auth.user.twitter_username ? `@${auth.user.twitter_username}` : ''}
+                                            </div>
+                                        </> } >
+                                            <LinkTwitter auto_tweet={auto_tweet}
+                                            auth={auth}
+                                            username={auth && auth.user && auth.user.twitter_username || false}  />
+                                        </Popup>
+                                    </li>
+                                </>
+                            : ''}
 
                             <li>
-                                <div className='notification uppercase'>
-                                Receive e-mail notifications
+                                <div className='notification uppercase'> Receive e-mail notifications
                                     <label className="toggle-switch">
                                         <input id='notification_handle' checked={emailEnabled}
                                          type="checkbox" onChange={switchNotification}  />
@@ -141,6 +156,8 @@ export default function Accountsetting(props) {
                                 </div>
                             </li>
 
+                            {auth && auth?.user?.role == 1 ?
+                                <>
                             <li>
                                 <div className='notification uppercase'>
                                 Show Piggy Bank Earnings
@@ -151,14 +168,12 @@ export default function Accountsetting(props) {
                                     </label>
                                 </div>
                             </li>
+                            </>
+                            : ''}
 
-                            {/* <li>
-                                <TFA text={<>
-                                    <div className='notification uppercase'>
-                                        TWO FACTOR AUTHENTICATION
-                                    </div>
-                                </>} />
-                            </li> */}
+                            <li>
+                                <TFA  />
+                            </li>
 
                             <li>
                                 <Popup space='4' modalclassName="pinkmodal"

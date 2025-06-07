@@ -16,6 +16,7 @@ class AutoSuspendAccount extends Command
      *
      * @var string
      */
+    // protected $signature = 'app:auto-suspend-account';
     protected $signature = 'app:auto-suspend-account';
 
     /**

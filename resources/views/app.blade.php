@@ -7,9 +7,9 @@
     <meta name="googlebot" content="index,follow" />
 
     {!! \App\SeoMeta::render() !!}
-    
+
     {{-- <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:title" content="Exclusive Content, Memberships & More!" />
+    <meta property="twitter:title" content="Spenny Piggy - The Everything Wishlist - Gifts, Memberships, Exclusive Content & More." />
     <meta property="twitter:description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
     <meta property="twitter:image" content="{{ URL::asset('/siteicon.png') }}" />
     <meta property="twitter:site" content="@spennypiggy" />
@@ -27,9 +27,10 @@
     <meta name="msapplication-TileImage" content="{{ URL::asset('/siteicon.png') }}">
     <meta name="theme-color" content="#05EFB8" />
     <meta name="description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
-    <meta name="keywords"
-        content="Exclusive Content, Memberships & More!, Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!, Create Wishlist, Share Wishlist, Add Wishlist, Recieve Gifts, Send Gifts, Fans Funding. The Best Alternative to Amazon Wishlist" />
-
+    <meta name="keywords" content="Exclusive Content, Memberships & More!, Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!, Create Wishlist, Share Wishlist, Add Wishlist, Recieve Gifts, Send Gifts, Fans Funding. The Best Alternative to Amazon Wishlist" />
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
     <meta property="og:title" content="Exclusive Content, Memberships & More!" />
     <meta property="og:type" content="video.movie" />
     <meta property="og:url" content="spennypiggy.co" />
@@ -37,9 +38,36 @@
     <meta property="og:site_name" content="spennypiggy.co" />
     <meta property="og:description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes"/>
     <script type="text/javascript" src="//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js"></script>
 
-    <script src="https://sdk.canva.com/v1/button.js"></script>
+    <link rel="manifest" href="{{ url('/manifest.json')}}" />
+    <script type="text/javascript" src="{{ url('/service-worker.js') }}"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/new-service-worker.js')
+            .then(registration => {
+                console.log('Service Worker registered with scope:', registration.scope);
+            })
+            .catch(error => {
+                console.error('Service Worker registration failed:', error);
+            });
+        }
+    </script>
+    <script>
+        !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);
+        },s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.src='https://static.ads-twitter.com/uwt.js',
+        a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
+        twq('config','ozu4h');
+    </script>
+
+
+    <link rel="apple-touch-startup-image"
+      href="/splash-640x1136.png"
+      media="(device-width: 320px) and (device-height: 568px)
+             and (-webkit-device-pixel-ratio: 2)
+             and (orientation: portrait)">
+
     <script>
         const css1 = [
             "font-size: 15px",
@@ -61,8 +89,8 @@
             }
         }
     </script>
-  
-  <script async type="application/ld+json">
+
+    <script async type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "Organization",
@@ -78,19 +106,19 @@
       ]
     }
     </script>
-  <script async type="application/ld+json">
-          {
-          "@context":"http://schema.org",
-          "@type":"SiteNavigationElement",
-          "name":["Exclusive Content, Memberships & More!"],
-          "url":["https://spennypiggy.co/",
-          "https://intercom.help/spenny-piggy/en/",
-          "https://spennypiggy.co/login",
-          "https://spennypiggy.co/leaderboard",
-          "https://spennypiggy.co/discover",
-          "https://uk.spennypiggy.co/register"]
-          }
-        </script>
+    <script async type="application/ld+json">
+        {
+        "@context":"http://schema.org",
+        "@type":"SiteNavigationElement",
+        "name":["Exclusive Content, Memberships & More!"],
+        "url":["https://spennypiggy.co/",
+        "https://intercom.help/spenny-piggy/en/",
+        "https://spennypiggy.co/login",
+        "https://spennypiggy.co/leaderboard",
+        "https://spennypiggy.co/discover",
+        "https://uk.spennypiggy.co/register"]
+        }
+    </script>
         <script async type="application/ld+json">
             {
             "@context": "https://schema.org",
@@ -117,7 +145,7 @@
                     "@type": "Answer",
                     "text": "Creators, listen up! The best part? It won't cost you a dime! You pocket the whole 100%. Sure, there might be some tiny conversion costs, but fear not—US, CAD, and UK creators, you're in the clear! Now, here's the scoop for Supporters: there's a service fee, starting at just 8%. But, for those creators craving extra perks, drop £29.99 per month for exclusive features and no service fees for supporters. They just handle the processing fees, making each transaction way cheaper. More money in your pocket, less in fees—win-win! 💸"
                     }
-                }, 
+                },
                 {
                 "@type": "Question",
                 "name": "What currencies do you offer?",
@@ -128,7 +156,7 @@
                 }
             ]
             }
-        </script> 
+        </script>
 
     {{-- @laravelPWA --}}
     @routes

@@ -1,5 +1,5 @@
 import React from 'react';
-export default function SocialLinks({ links }) {
+export default function SocialLinks({ links, textcolor }) {
 
     const twitter = `<svg width="19" height="18" viewBox="0 0 19 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M14.9201 0.875H17.6767L11.6542 7.75833L18.7392 17.125H13.1909L8.84589 11.4442L3.87422 17.125H1.11589L7.55755 9.7625L0.761719 0.875H6.44922L10.3767 6.0675L14.9184 0.875H14.9201ZM13.9526 15.475H15.4801L5.62005 2.43833H3.98089L13.9526 15.475Z" fill="#8C52FF"/>
@@ -55,69 +55,69 @@ export default function SocialLinks({ links }) {
         <div>
             <ul className='socialmedia flex-wrap flex justify-start mt-4'>
 
-                {links && links.instagram ? 
-                    <li className={`px-2 mt-2 mb-2`} >  
-                        <a target="_blank" title={"instagram"} href={`${gefullurl("instagram")}${links && links.instagram}`}  >
+                {links && links.instagram ?
+                    <li className={`px-2 mt-2 mb-2`} >
+                        <a target="_blank" className={textcolor} title={"instagram"} href={`${gefullurl("instagram")}${links && links.instagram}`}  >
                             <div dangerouslySetInnerHTML={{ __html: instagram }}></div> Instagram
                         </a>
-                    </li> 
+                    </li>
                 : ''}
 
-                {links && links.youtube ? 
-                    <li className={`px-2 mt-2 mb-2`} >  
-                        <a target="_blank" title={"youtube"} href={`${gefullurl("youtube")}${links && links.youtube}`}  >
+                {links && links.youtube ?
+                    <li className={`px-2 mt-2 mb-2`} >
+                        <a target="_blank" className={textcolor} title={"youtube"} href={`${gefullurl("youtube")}${links && links.youtube}`}  >
                             <div dangerouslySetInnerHTML={{ __html: youtube }}></div> Youtube
                         </a>
-                    </li> 
+                    </li>
                 : ''}
 
-                {links && links.facebook ? 
-                    <li className={`px-2 mt-2 mb-2`} >  
-                        <a target="_blank" title={"facebook"} href={`${gefullurl("facebook")}${links && links.facebook}`}  >
+                {links && links.facebook ?
+                    <li className={`px-2 mt-2 mb-2`} >
+                        <a target="_blank" className={textcolor} title={"facebook"} href={`${gefullurl("facebook")}${links && links.facebook}`}  >
                             <div dangerouslySetInnerHTML={{ __html: facebook }}></div> Facebook
                         </a>
-                    </li> 
+                    </li>
                 : ''}
 
-                {/* {links && links.twitter ? 
-                    <li className={`px-2 mt-2 mb-2`} >  
-                        <a target="_blank" title={"twitter"} href={`${gefullurl("twitter")}${links && links.twitter}`}  >
+               {links && links.twitter ?
+                    <li className={`px-2 mt-2 mb-2`} >
+                        <a target="_blank" className={textcolor} title={"twitter"} href={`${gefullurl("twitter")}${links && links.twitter}`}  >
                             <div dangerouslySetInnerHTML={{ __html: twitter }}></div>  Twitter
                         </a>
-                    </li> 
+                    </li>
                 : ''}
 
-                {links && links.reddit ? 
-                    <li className={`px-2 mt-2 mb-2`} >  
-                        <a target="_blank" title={"reddit"} href={`${gefullurl("reddit")}${links && links.reddit}`}  >
+                {/*  {links && links.reddit ?
+                    <li className={`px-2 mt-2 mb-2`} >
+                        <a target="_blank" className={textcolor} title={"reddit"} href={`${gefullurl("reddit")}${links && links.reddit}`}  >
                             <div dangerouslySetInnerHTML={{ __html: reddit }}></div> Reddit
                         </a>
-                    </li> 
+                    </li>
                 : ''} */}
 
-                {links && links.tumblr ? 
-                    <li className={`px-2 mt-2 mb-2`} >  
-                        <a target="_blank" title={"tumblr"} href={`${gefullurl("tumblr")}${links && links.tumblr}`}  >
+                {links && links.tumblr ?
+                    <li className={`px-2 mt-2 mb-2`} >
+                        <a target="_blank" className={textcolor} title={"tumblr"} href={`${gefullurl("tumblr")}${links && links.tumblr}`}  >
                             <div dangerouslySetInnerHTML={{ __html: tumblr }}></div> Tumblr
                         </a>
-                    </li> 
+                    </li>
                 : ''}
 
 
-                {links && links.twitch ? 
-                    <li className={`px-2 mt-2 mb-2`} >  
-                        <a target="_blank" title={"twitch"} href={`${gefullurl("twitch")}${links && links.twitch}`}  >
+                {links && links.twitch ?
+                    <li className={`px-2 mt-2 mb-2`} >
+                        <a target="_blank" className={textcolor} title={"twitch"} href={`${gefullurl("twitch")}${links && links.twitch}`}  >
                             <div dangerouslySetInnerHTML={{ __html: twitch }}></div> Twitch
                         </a>
-                    </li> 
+                    </li>
                 : ''}
 
-                {/* {links && links.other ? 
-                    <li className={`px-2 mt-2 mb-2`} >  
-                        <a target="_blank" title={"other"} href={`${gefullurl("other")}${links && links.other}`}  >
+                {/* {links && links.other ?
+                    <li className={`px-2 mt-2 mb-2`} >
+                        <a target="_blank" className={textcolor} title={"other"} href={`${gefullurl("other")}${links && links.other}`}  >
                             <div dangerouslySetInnerHTML={{ __html: other }}></div>  Other
                         </a>
-                    </li> 
+                    </li>
                 : ''} */}
             </ul>
         </div>

@@ -8,7 +8,7 @@ export default function CountriesShipping({handleShipping, handlewws}) {
    const { auth, user } = usePage().props;
    const defaultCurrency = user && user.default_currency || "GBP";
    const [shipping, setShippings] = useState([]);
-      
+
    const addShipping = () => {
          setShippings([...shipping, { country: '', price: '' }]);
          handleShipping([...shipping, { country: '', price: '' }]);
@@ -24,9 +24,8 @@ export default function CountriesShipping({handleShipping, handlewws}) {
          const newVariants = shipping.filter((_, i) => i !== index);
          setShippings(newVariants);
          handleShipping(newVariants);
-         console.log('Product shipping:', shipping);
    };
-       
+
    const [haveQty, setHaveQty] = useState(false);
    const handleQty = () => {
       if(haveQty){
@@ -80,7 +79,7 @@ export default function CountriesShipping({handleShipping, handlewws}) {
                      />
                   </div>
                   <button type="button" className="text-black shop-forms-input bg-gray-200 w-full bg-gray-300 text-[20px] border-0 rounded-xl p-[8px] px-[20px] max-w-[50px]" onClick={() => handleRemoveVariant(index)}>
-                     &times;   
+                     &times;
                   </button>
                </div>
             ))}

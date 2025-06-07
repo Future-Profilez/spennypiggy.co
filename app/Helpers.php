@@ -3,6 +3,11 @@
 namespace App;
 
 use App\Models\Currency;
+use App\Models\GifterCardVerification;
+use App\Models\User;
+use App\Models\UserPayment;
+use App\Models\UserVerificationStatus;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -12,13 +17,10 @@ class Helpers
 {
     public static function checkBlockData($request)
     {
-        $blockedWords = ['paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive','tax','fee','session','deposit','tribute','dick','goddess','master','mistress'];
-        Log::info("request -". json_encode($request->all(),true));
+        $blockedWords = ['paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive', 'tax', 'fee', 'session', 'deposit', 'tribute', 'dick', 'goddess', 'master', 'mistress'];
         $blockedEmojis = ['😈', '💩', '💬', '👅', '🍆', '🍌', '🌽', '🌶️', '🍑', '💎', '💦'];
         foreach ($blockedWords as $key => $word) {
             if (stripos($request->getContent(), $word) !== false) {
-                Log::info("word -$key ". $word);
-                Log::info("word -request->getContent() ". $request->getContent());
                 // return response()->json([
                 //     'status' => true,
                 //     'message' => 'Some restricted words are not allowed.',
@@ -44,7 +46,6 @@ class Helpers
         return false;
     }
 
-
     public static function priceFormat($currency1, $amount, $currency2)
     {
         $def = Currency::where('ISO', strtoupper($currency1))->first();
@@ -57,7 +58,6 @@ class Helpers
 
         return round($prof_cur_price, 2, PHP_ROUND_HALF_UP);
     }
-
 
     public static function checkUnsafeContent($uuid)
     {
@@ -95,8 +95,8 @@ class Helpers
         return $rest;
     }
 
-
-    public static function getCurrency($currency){
+    public static function getCurrency($currency)
+    {
 
         $curr = strtolower($currency);
 
@@ -114,6 +114,82 @@ class Helpers
         ];
 
         return $arr[$curr];
+    }
 
+    public static function sendNotification($title, $content, $email)
+    {
+        $payload = [
+            'notification' => [
+                'title' => $title,
+                'content' => $content,
+                'recipients' => [
+                    ['email' => $email]
+                ]
+            ]
+        ];
+        try {
+            $response = Http::withHeaders([
+                'X-MAGICBELL-API-KEY' => env('MAGICBELL_API_KEY'),
+                'X-MAGICBELL-API-SECRET' => env("MAGICBELL_API_SECRET"),
+                'Accept' => 'application/json',
+            ])->post('https://api.magicbell.com/notifications', $payload);
+
+            Log::info('MagicBell API response status: ' . $response->status());
+            Log::info('MagicBell API response body: ' . $response->body());
+
+            if ($response->successful()) {
+                return response()->json(['message' => 'Push notification sent successfully!']);
+            }
+            Log::error('Failed to send push notification: ' . $response->reason());
+            return response()->json([
+                'error' => 'Failed to send push notification !!',
+                'reason' => $response->reason(),
+                'status_code' => $response->status(),
+                'response_body' => $response->body(),
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('Error sending push notification: ' . $e->getMessage());
+            return response()->json(['error' => 'Error sending push notification: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public static function checkGifterCardVerificationStatus(): bool
+    {
+        $user = Auth::user();
+        try {
+
+            if ($user->role != 0) {
+                return false;
+            }
+
+            $totalPaid = UserPayment::whereHas('fromUser')->where('from_user_id', $user->id)
+                ->where('status', 'paid')
+                ->get();
+
+            if ($totalPaid->isEmpty()) {
+                return false;
+            }
+
+            $convertedAmount = [];
+            foreach ($totalPaid as $payment) {
+                if ($payment->currency != 'GBP') {
+                    $convertedAmount[] = Helpers::priceFormat($payment->currency, $payment->amount, 'GBP');
+                } else {
+                    $convertedAmount[] = $payment->amount;
+                }
+            }
+
+            $totalPaid = array_sum($convertedAmount);
+
+            if ($user->is_500_limit_exceeded == 0 && $totalPaid && $totalPaid > 500) {
+                $user->update(['profile_status_lock' => 1, 'is_500_limit_exceeded' => 1]);
+                return true;
+            }
+
+            return false;
+        } catch (\Exception $e) {
+            Log::error('Error retrieving authenticated user: ' . $e->getMessage());
+            return false;
+        }
     }
 }

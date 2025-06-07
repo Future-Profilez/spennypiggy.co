@@ -4,15 +4,20 @@ use App\Http\Controllers\Auth\CheckoutController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\TwitterController;
+use App\Http\Controllers\Auth\WishitemController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TestController;
+use App\StripeControl;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Illuminate\Support\Str;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -22,6 +27,14 @@ use Inertia\Inertia;
 | routes are loaded by the RouteServiceProvider within a group which
 | contains the "web" middleware group. Now create something great!
 */
+
+Route::get('/send-test-mail', function () {
+    Mail::raw('This is a test email. If you are seeing this, your mail configuration is working!', function ($message) {
+        $message->to('prem@futureprofilez.com')
+            ->subject('Test Email');
+    });
+    return 'Test email sent!';
+});
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -36,12 +49,44 @@ Route::get('/membership-dashboard', function () {
     return Inertia::render('membership/Membership_dashboard');
 })->name('membershipDashboard');
 
-Route::get('/stripe-identity', function () {
-    return Inertia::render('IdentityVerification');
-})->name('stripe.identity');
+// Route::get('/stripe-identity', function () {
+//     return Inertia::render('IdentityVerification');
+// })->name('stripe.identity');
 
-Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
+// Route::post('create-cart', [TestController::class, 'createCart'])->name('create.cart');
+// Route::get('get-all-products', [TestController::class, 'fetchRyeProducts'])->name('get.all.products');
 
+
+// Route::get('rey-test', function () {
+//     return Inertia::render('ReyTest');
+// })->name('rey.test');
+
+Route::get('get-cart', function () {
+    return Inertia::render('GetCart');
+})->name('get.cart');
+
+Route::post('rye-webhook', [WishitemController::class, 'handleWebhook'])->name('rye.webhook');
+
+
+// GiftStore Route
+Route::get('/giftstore', function () {
+    return Inertia::render('rye/GiftStore');
+})->name('giftStore');
+
+
+// Route::post('test-stripe', function (Request $request) {
+//     $request = json_encode($request->all());
+//     Log::info("webhook run: $request");
+//     $a = "come in this condition";
+//     return response()->json(['status' => 'done', 'message' => $a], 200);
+// })->name('test.stripe');
+
+Route::get('delete-all-products', [TestController::class, 'deleteAllProducts'])->name('delete.all.products');
+
+
+Route::get('send-identity-verification-failed-emails', [TestController::class, 'sendFailedVerificationEmails']);
+
+Route::get('create-product/{price}', [StripeController::class, 'makeProductId'])->name('create.product');
 
 //check referal code
 Route::get('check-coupon-code/{code}', [RegisteredUserController::class, 'checkCouponCode'])->name('checkCouponCode');
@@ -51,7 +96,6 @@ Route::post("/username-availablity", [RegisteredUserController::class, "checkUse
 // Route::get('/dashboard', function () {
 //     return Inertia::render('Dashboard');
 // })->middleware(['auth', 'verified'])->name('dashboard');
-
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -84,5 +128,92 @@ Route::prefix("test")->name("test.")->group(function () {
     Route::get("items/{c?}", [TestController::class, 'testItems']);
     Route::get('/ip', [TestController::class, 'testIp']);
 });
+
+// create bypass entry for all users in userVerificationEntry
+Route::get("seed-user-verification-status", [TestController::class, "seedUserVerificationStatus"]);
+
+Route::get('/magicbell/user-key', [NotificationController::class, 'getUserKey']);
+Route::post('/magicbell/send-notification', [NotificationController::class, 'sendNotification']);
+Route::get('/test-push', [NotificationController::class, 'testSendNotification']);
+
+
+Route::get('/service-worker.js', function () {
+    $assetRoot = rtrim(asset("/"), "/");
+    $content = file_get_contents(resource_path("proxy/service-worker.js"));
+    $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
+    return response($content, 200, [
+        "Content-Type" => "text/javascript",
+    ]);
+})->name('service.worker');
+
+Route::get('/new-service-worker.js', function () {
+    $assetRoot = rtrim(asset("/"), "/");
+    $content = file_get_contents(resource_path("proxy/service-worker.js"));
+    $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
+    return response($content, 200, [
+        "Content-Type" => "text/javascript",
+    ]);
+})->name('service.worker');
+
+
+Route::get('/manifest.json', function () {
+    $assetRoot = rtrim(asset("/"), "/");
+    $content = file_get_contents(resource_path("proxy/manifest.json"));
+    $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
+    return response($content, 200, [
+        "Content-Type" => "text/json",
+    ]);
+})->name('manifest.file');
+
+
+Route::get('/android-chrome-192x192.png', function () {
+    $assetRoot = rtrim(asset("/"), "/");
+    $content = file_get_contents(filename: resource_path("proxy/android-chrome-192x192.png"));
+    $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
+    return response($content, 200, [
+        "Content-Type" => "image/png",
+    ]);
+})->name('192.image.file');
+
+
+
+Route::get('/android-chrome-512x512.png', function () {
+    $assetRoot = rtrim(asset("/"), "/");
+    $content = file_get_contents(filename: resource_path("proxy/android-chrome-512x512.png"));
+    $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
+    return response($content, 200, [
+        "Content-Type" => "image/png",
+    ]);
+})->name('512.image.file');
+
+
+Route::get('/favicon-16x16.png', function () {
+    $assetRoot = rtrim(asset("/"), "/");
+    $content = file_get_contents(filename: resource_path("proxy/favicon-16x16.png"));
+    $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
+    return response($content, 200, [
+        "Content-Type" => "image/png",
+    ]);
+})->name('16.image.file');
+
+Route::get('/favicon-32x32.png', function () {
+    $assetRoot = rtrim(asset("/"), "/");
+    $content = file_get_contents(filename: resource_path("proxy/favicon-32x32.png"));
+    $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
+    return response($content, 200, [
+        "Content-Type" => "image/png",
+    ]);
+})->name('32.image.file');
+
+Route::get('/splashscreen.png', function () {
+    $assetRoot = rtrim(asset("/"), "/");
+    $content = file_get_contents(filename: resource_path("proxy/splash.png"));
+    $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
+    return response($content, 200, [
+        "Content-Type" => "image/png",
+    ]);
+})->name('32.image.file');
+
+
 
 require __DIR__ . '/auth.php';

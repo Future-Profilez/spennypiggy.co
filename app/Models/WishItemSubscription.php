@@ -23,8 +23,10 @@ class WishItemSubscription extends Model
         'currency',
         'amount',
         'tax',
+        'vat_tax_amount',
         'recurring_for',
         'recurring_type',
+        'payment_method',
         'surprise_message',
         'anonymous',
         'end',
@@ -55,7 +57,7 @@ class WishItemSubscription extends Model
     public static function boot()
     {
         parent::boot();
-        static::creating(fn ($s) =>  $s->uuid = Uuid::uuid4());
+        static::creating(fn($s) =>  $s->uuid = Uuid::uuid4());
     }
 
     // public function wish_item()
@@ -69,7 +71,7 @@ class WishItemSubscription extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id')->where('is_uk', 0);
     }
 
 

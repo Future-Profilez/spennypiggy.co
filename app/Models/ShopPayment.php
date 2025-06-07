@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
 use Ramsey\Uuid\Uuid;
 
 class ShopPayment extends Model
@@ -16,6 +17,7 @@ class ShopPayment extends Model
         'session_id',
         'amount',
         'tax_amount',
+        'vat_tax_amount',
         'currency',
         'shop_id',
         'user_id',
@@ -38,18 +40,35 @@ class ShopPayment extends Model
         'deleted_at',
     ];
 
+    protected $appends = [
+        'sender',
+    ];
+
+
     public static function boot()
     {
         parent::boot();
-        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
+        static::creating(fn($w) => $w->uuid = Uuid::uuid4());
     }
 
-
-    public function user(){
-        return $this->belongsTo(User::class, 'user_id');
+    public function getSenderAttribute()
+    {
+        $sender = false;
+        if (isset($this->user_id)) {
+            if (Auth::check() && $this->user_id == Auth::id()) {
+                $sender = true;
+            }
+        }
+        return $sender;
     }
 
-    public function shop(){
-        return $this->belongsTo(Shop::class,'shop_id');
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id')->where('is_uk', 0);
+    }
+
+    public function shop()
+    {
+        return $this->belongsTo(Shop::class, 'shop_id');
     }
 }

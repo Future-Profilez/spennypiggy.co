@@ -13,15 +13,17 @@ class MemberMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $data;
+    public $mem;
+    public $amountWithCurr;
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($data)
+    public function __construct($mem, $amountWithCurr)
     {
-        $this->data = $data;
+        $this->mem = $mem;
+        $this->amountWithCurr = $amountWithCurr;
     }
 
     /**

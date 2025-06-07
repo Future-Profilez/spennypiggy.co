@@ -4,29 +4,27 @@ namespace App\Http\Controllers\Auth;
 
 use App\Helpers;
 use App\Http\Controllers\Controller;
-use App\Jobs\CheckAdultContent;
 use App\Jobs\AutoTweetWishAdd;
 use App\Jobs\CheckoutTweet;
 use App\Jobs\CrowdfundTweet;
-use App\Jobs\MakeAutoTweets;
-use App\Jobs\SaveWishlist;
 use App\Jobs\SendThankYouMailAdmin;
-use App\Jobs\SendUserGiftMail;
 use App\Jobs\SubscribeAutoTweet;
 use App\Jobs\SurpriseTweet;
-use App\Jobs\ThankyouMailToUser;
 use App\Jobs\TipJarTweet;
-use App\Jobs\WelcomeUser;
-use App\Mail\CheckError;
 use App\Models\BillPayment;
+use App\Models\CreatorShippingAddress;
 use App\Models\Logs;
 use App\Models\MembershipPayment;
+use App\Models\ProductOrderDetail;
+use App\Models\RyeCart;
+use App\Models\RyeProduct;
+use App\Models\RyeProductPayment;
+use App\Models\ShopPayment;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\Subscription;
 use App\Models\TipGoal;
 use App\Models\TipGoalsPayment;
-use App\Models\TwitterToken;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserCategory;
@@ -35,22 +33,43 @@ use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
 use App\Rules\ValidSubscriptionPeriod;
-use App\StripeControl;
-use App\TwitterAuthService;
-use Carbon\Carbon;
-use Exception;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
-use Inertia\Inertia;
-use Ramsey\Uuid\Nonstandard\Uuid as NonstandardUuid;
-use Ramsey\Uuid\Uuid;
 use Stripe\StripeClient;
+use App\StripeControl;
+use Ramsey\Uuid\Uuid;
+use Inertia\Inertia;
+use Carbon\Carbon;
+use Exception;
+use App\Helpers\JwtHelper;
+use App\Jobs\CheckAdultContent;
+use App\Jobs\MakeAutoTweets;
+use App\Jobs\SaveWishlist;
+use App\Jobs\SendUserGiftMail;
+use App\Jobs\ThankyouMailToUser;
+use App\Jobs\WelcomeUser;
+use App\Mail\CheckError;
+use App\Mail\CommandFailed;
+use App\Models\GifterCardVerification;
+use App\Models\TwitterToken;
+use App\TwitterAuthService;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Session;
+use Ramsey\Uuid\Nonstandard\Uuid as NonstandardUuid;
 
 class WishitemController extends Controller
 {
+    // public function __construct()
+    // {
+    //     $this->middleware('auth');
+    // }
+
     public function saveWishItem(Request $request): RedirectResponse
     {
         $request->validate([
@@ -99,11 +118,13 @@ class WishitemController extends Controller
             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         } else {
-
-            $taxamount = $request->price * config('app.single_tax') / 100;
-            // $taxamount = $request->price * env('TAX_PERCENTAGE', 20) / 100; // commented old code which written by saurav sir
-            $createpriceid = ceil($request->price) + ceil($taxamount);
             $user = User::find(Auth::id());
+            $taxamount = $request->price * config('app.single_tax') / 100;
+            $adminFee = config('app.administration_fee');
+            $adminFees = Helpers::priceFormat('GBP', $adminFee, $user->default_currency);
+            // $taxamount = $request->price * env('TAX_PERCENTAGE', 20) / 100; // commented old code which written by saurav sir
+            $createpriceid = ceil($request->price) + ceil($taxamount) + ceil($adminFees);
+            $totalTax = ceil($taxamount) + ceil($adminFees);
             $wish = WishItem::create([
                 "user_id" => Auth::id(),
                 'wishname' => $request->wishname,
@@ -114,7 +135,7 @@ class WishitemController extends Controller
                 'subscription' => $request->subscription,
                 'subscription_period' => $request->subscription_period ?? null,
                 'repeat_purchase' => $request->repeat_purchase ?? 0,
-                'tax_amount' => ceil($taxamount),
+                'tax_amount' => $totalTax,
                 // 'category' => $request->category ?? null,
             ]);
 
@@ -133,20 +154,35 @@ class WishitemController extends Controller
 
             if ($request->subscription != 2) {
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-                $stripe_client = $stripe->products->create([
-                    'name' => $request->wishname ?? null,
+
+                $productPayload = [
+                    'name' => $request->wishname ?? 'Untitled Wish',
                     'images' => [$wish->perma_link],
-                    "default_price_data" => [
-                        "currency" => "gbp",
-                        "unit_amount_decimal" => $createpriceid * 100
+                    'default_price_data' => [
+                        'currency' => 'gbp',
+                        'unit_amount_decimal' => number_format($createpriceid * 100, 0, '.', ''), // Stripe expects string or int
                     ],
-                    "url" => !empty($request->item_url) ? $request->item_url : env('APP_URL') . '/' . Auth::user()->username . "?item=$wish->uuid/"
-                ]);
-                $wish->stripe_product_id = $stripe_client->id;
-                $wish->price_id = $stripe_client->default_price;
+                    'metadata' => [
+                        'wish_id' => $wish->id,
+                        'user_id' => $user->id,
+                    ],
+                ];
+
+                // Add a URL if available
+                if (!empty($request->item_url)) {
+                    $productPayload['url'] = $request->item_url;
+                } else {
+                    $productPayload['url'] = env('APP_URL') . '/' . Auth::user()->username . '?item=' . $wish->uuid;
+                }
+
+                // Create the product under the connected account
+                $stripeProduct = StripeControl::createProduct($productPayload, $user->account_id);
+
+                // Save product and price IDs to the wish
+                $wish->stripe_product_id = $stripeProduct->id;
+                $wish->price_id = $stripeProduct->default_price;
                 $wish->save();
             }
-
 
             return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
         }
@@ -183,9 +219,9 @@ class WishitemController extends Controller
                     "sometimes",
                     "nullable"
                 ],
-                'reward_file' => [
-                    'required'
-                ],
+                // 'reward_file' => [
+                //     'required'
+                // ],
                 "subscription" => [
                     "required",
                     "integer",
@@ -226,8 +262,7 @@ class WishitemController extends Controller
         $price = $request->price;
 
         // $price = round($request->price, 2, PHP_ROUND_HALF_UP);
-
-        if ($request->susbcription == 0) {
+        if ($request->subscription == 0) {
             $tax_percent = config('app.single_tax');
         } elseif ($request->subscription == 1) {
             $tax_percent = config('app.subs_tax');
@@ -245,7 +280,8 @@ class WishitemController extends Controller
             'currency' => $user->default_currency,
             'item_url' => $request->item_url != "" ? $request->item_url : null,
             'thumbnail' => $request->thumbnail ?? null,
-            'reward' => $request->reward_file ?? null,
+            'reward' => null,
+            // 'reward' => $request->reward_file ?? null,
             "ai_generated" => $request->ai_generated,
             'subscription' => $request->subscription,
             'subscription_period' => $request->subscription_period ?? null,
@@ -267,7 +303,6 @@ class WishitemController extends Controller
         }
 
         if (in_array($request->subscription, [0, 1])) {
-
             $productPayload = [
                 "name"  =>  $wish->wishname . "(Custom Content Purchase)",
                 "images" => [$wish->perma_link],
@@ -286,7 +321,30 @@ class WishitemController extends Controller
             }
 
             try {
-                $product = StripeControl::createProduct($productPayload);
+                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                $productPayload = [
+                    'name' => $request->wishname ?? 'Untitled Wish',
+                    'images' => [$wish->perma_link],
+                    'default_price_data' => [
+                        'currency' => 'gbp',
+                        'unit_amount_decimal' => number_format($createpriceid * 100, 0, '.', ''), // Stripe expects string or int
+                    ],
+                    'metadata' => [
+                        'wish_id' => $wish->id,
+                        'user_id' => $user->id,
+                    ],
+                ];
+
+                // Add a URL if available
+                if (!empty($request->item_url)) {
+                    $productPayload['url'] = $request->item_url;
+                } else {
+                    $productPayload['url'] = env('APP_URL') . '/' . Auth::user()->username . '?item=' . $wish->uuid;
+                }
+
+                // Create the product under the connected account
+                $product = StripeControl::createProduct($productPayload, $user->account_id);
+
                 $wish->stripe_product_id = $product->id;
                 $wish->price_id = $product->default_price;
                 $wish->save();
@@ -297,11 +355,11 @@ class WishitemController extends Controller
                 }
             } catch (Exception $e) {
                 $wish->delete();
-                return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
+                return redirect(route("user.show", ["username" => Auth::user()->username, "page" => "wishes"]))->with('error', "Stripe Error: " . $e->getMessage());
             }
         }
 
-        return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added, your upload will be approved shortly.");
+        return redirect(route("user.show", ["username" => Auth::user()->username, "page" => "wishes"]))->with('success', "Wish Item has been added, your upload will be approved shortly.");
     }
 
     public function updateWishItem(Request $request, $uuid = null)
@@ -315,7 +373,7 @@ class WishitemController extends Controller
 
         $old_price = $wish->price;
         if (!empty($request->price)) {
-            if ($request->susbcription == 0) {
+            if ($request->subscription == 0) {
                 $tax_percent = config('app.single_tax');
             } elseif ($request->subscription == 1) {
                 $tax_percent = config('app.subs_tax');
@@ -364,7 +422,7 @@ class WishitemController extends Controller
                 }
             }
 
-            $user = User::whereId(Auth::id())->first();
+            $user = User::whereId(Auth::id())->where('is_uk', 0)->first();
             if (in_array($request->subscription, [0, 1])) {
 
                 $productPayload = [
@@ -395,7 +453,7 @@ class WishitemController extends Controller
                             // "url" => $request->item_url ?? null
                         ]);
                     } else {
-                        $stripe_client = StripeControl::createProduct($productPayload);
+                        $stripe_client = StripeControl::createProduct($productPayload, $user->account_id);
                         $wish->price_id = $stripe_client->default_price;
                     }
 
@@ -410,12 +468,12 @@ class WishitemController extends Controller
                     }
                 } catch (Exception $e) {
                     $wish->delete();
-                    return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
+                    return redirect(route("user.show", ["username" => Auth::user()->username, 'page'=>'wishes']))->with('error', "Stripe Error: " . $e->getMessage());
                 }
             }
             //send email
             // SaveWishlist::dispatch($user);
-            return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been updated.");
+            return redirect(route("user.show", ["username" => Auth::user()->username, 'page'=>'wishes']))->with('success', "Wish Item has been updated.");
         }
     }
 
@@ -499,11 +557,10 @@ class WishitemController extends Controller
             ->where('is_approved', 1)
             ->with(['user'])
             ->whereHas('user', function ($q) use ($tag) {
-                $q->where(function ($s) {
-                    $s->whereNot('country', 'GB')
-                        ->whereNotNull('account_id')
-                        ->orWhereNull('country');
-                });
+                $q->where('is_uk', 0)->where('profile_status_lock', 2)->where('profile_reject_reason', null);
+                // $q->where(function ($s) {
+                //     $s->whereNot('country', 'GB')->orWhereNull('country');
+                // });
 
                 if ($tag) {
                     $q->whereJsonContains('creator_category', $tag);
@@ -559,9 +616,10 @@ class WishitemController extends Controller
         $query = UserIntro::where('deleted_at', null)
             ->with(['user'])
             ->whereHas('user', function ($q) use ($gender) {
-                $q->where(function ($s) {
-                    $s->whereNot('country', 'GB')->orWhereNull('country');
-                });
+                $q->where('is_uk', 0);
+                // $q->where(function ($s) {
+                //     $s->whereNot('country', 'GB')->orWhereNull('country');
+                // });
 
                 if ($gender != 'all') {
                     $q->where('gender', $gender);
@@ -586,6 +644,7 @@ class WishitemController extends Controller
     public function all_creators_categories()
     {
         $categories = User::whereNotNull('creator_category')
+            ->where('is_uk', 0)
             ->where('suspended_account', 0)
             ->pluck('creator_category')
             ->map(function ($item) {
@@ -620,9 +679,11 @@ class WishitemController extends Controller
         $itemId = $query->whereHas('wish', function ($q) use ($user_id) {
             $q->where('user_id', $user_id);
         })->pluck('wish_item_id');
-        $user = User::where('id', $user_id)->where('suspended_account', 0)->where(function ($q) {
-            $q->whereNot('country', 'GB')->orWhereNull('country');
-        })->first();
+        $user = User::where('id', $user_id)->where('suspended_account', 0)->where(
+            'is_uk',
+            0
+            // $q->whereNot('country', 'GB')->orWhereNull('country');
+        )->first();
         $items = Wishitem::whereIn('id', $itemId)->latest()->get();
         // $items = WishItem::whereUserId($user->id)->latest()->get();
         $categories = UserCategory::whereUserId($user->id)->latest()->get();
@@ -632,6 +693,15 @@ class WishitemController extends Controller
 
     public function addToCart($uuid, $device_id, $sub, $amount = null)
     {
+        $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
+        if ($checkGifterStatus == true) {
+            return response()->json([
+                'status' => false,
+                'msg' => "⚠️ Please complete your card verification payment and wait for admin approval before making further payments."
+            ]);
+            //    return to_route('user.show', ['username' => $user->username])->with("error", "⚠️ Your card verification is pending admin approval. Please wait before making any payments.");
+        }
+
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
 
         $amount = round($amount, 2, PHP_ROUND_HALF_UP);
@@ -683,8 +753,14 @@ class WishitemController extends Controller
                     'name' => $wishitem->wishname,
                     'images' => [$wishitem->perma_link],
                     "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100],
+                ], [
+                    'stripe_account' => $cart->owner->account_id
                 ]);
                 $priceid = $stripe_client->id;
+            } elseif ($wishitem->subscription == 0) {
+                $priceid = $wishitem->stripe_product_id;
+                $fullfillamount = $wishitem->price;
+                $tax = $wishitem->tax_amount;
             } else {
                 $fullfillamount = $wishitem->price;
                 $tax = $wishitem->tax_amount;
@@ -712,8 +788,14 @@ class WishitemController extends Controller
                     'name' => $wishitem->wishname,
                     'images' => [$wishitem->perma_link],
                     "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" =>  round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100],
+                ], [
+                    'stripe_account' => $wishitem->user->account_id
                 ]);
                 $priceid = $stripe_client->id;
+            } elseif ($wishitem->subscription == 0) {
+                $priceid = $wishitem->stripe_product_id;
+                $fullfillamount = $wishitem->price;
+                $tax = $wishitem->tax_amount;
             } else {
                 $fullfillamount = $wishitem->price;
                 $tax = $wishitem->tax_amount;
@@ -740,6 +822,1171 @@ class WishitemController extends Controller
         }
     }
 
+    /*x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x******x******x*****x******x*****x*****x******x******x******x******x******x*****x
+     *
+     * Rye create rye product and store in the database
+     *
+     * @return Response
+     */
+    public function createRyeProduct(Request $request)
+    {
+        $request->validate([
+            'url' => 'required',
+        ]);
+        // Extract the URL from the request (assuming it's passed as a query parameter)
+        $url = $request->input('url');  // You can change this as per your need
+        $checkProductId = RyeProduct::where('creator_id', Auth::id())->where('product_id', $url['id'])->exists();
+        // dd($url);
+        if ($checkProductId) {
+            return response()->json(['status' => false, 'message' => 'Product Already Added.']);
+        }
+
+        // Create a new product on Stripe
+        $productPayload = [
+            "name"  =>  $url['title'],
+            "images" => [$url['images'][0]['url']],
+            "default_price_data"    =>  [
+                "currency"  =>  $url['price']['currency'],
+                "unit_amount_decimal"   => $url['price']['value'],
+            ],
+            "url"   => env('APP_URL') . "/gift-item/$url[id]",
+        ];
+
+        $product = StripeControl::createProduct($productPayload);
+        $ryeProducts = new RyeProduct();
+        $ryeProducts->creator_id = Auth::id();
+        $ryeProducts->product_id = $url['id'];
+        $ryeProducts->stripe_product_id = $product->id;
+        $ryeProducts->details = json_encode($url, true);
+        if ($ryeProducts->save()) {
+            return response()->json(['status' => true, 'message' => 'Product Added Successfully.']);
+        }
+    }
+
+    /**
+     * rye delete and restore product from database
+     *
+     */
+    public function deleteAndRestoredRyeProduct($uuid)
+    {
+        // Find the product, including soft-deleted ones
+        $ryeProduct = RyeProduct::withTrashed()->where('uuid', $uuid)->where('creator_id', Auth::id())->first();
+
+        if (!$ryeProduct) {
+            return response()->json(['status' => false, 'message' => 'Product not found']);
+        }
+
+        if ($ryeProduct->trashed()) {
+            // If the product is deleted, restore it
+            $ryeProduct->restore();
+            return response()->json(['status' => true, 'message' => 'Product Enabled successfully']);
+        } else {
+            // Otherwise, soft delete it
+            $ryeProduct->delete();
+            return response()->json(['status' => true, 'message' => 'Product Disabled successfully']);
+        }
+    }
+
+    /**
+     *
+     * Rye product functionality starts
+     *
+     * Rye create cart product for rye into our site
+     *
+     * @return Response
+     */
+    public function createCart(Request $request)
+    {
+        try {
+            $userId = Auth::id();
+
+            // Prevent user from adding their own gift item
+            if ($userId === (int) $request->creator_id) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'User cannot add their own gift item'
+                ], 403);
+            }
+
+            // Prepare data
+            $cartData = [
+                'user_id' => $userId,
+                'creator_id' => $request->creator_id,
+                'cart_id' => $request->cart_id,
+            ];
+
+            // Use firstOrNew to find or create a new instance
+            $cart = RyeCart::firstOrNew($cartData);
+
+            // Update cart details only if it's different to avoid unnecessary writes
+            $newCartDetails = json_encode($request->data, true);
+            if ($cart->exists && $cart->cart_details === $newCartDetails) {
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Cart item is already added'
+                ]);
+            }
+
+            // Update or create the cart item
+            $cart->cart_details = $newCartDetails;
+            $cart->save();
+
+            return response()->json([
+                'status' => true,
+                'message' => $cart->wasRecentlyCreated ? 'Added to Cart' : 'Updated Cart Item'
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Rye check rye cart exist or not
+     *
+     * @return Response
+     */
+    public function checkCartExist($creator_id): JsonResponse
+    {
+        $userId = Auth::id();
+
+        // Fetch only necessary fields using `pluck()` (more efficient than `select()->first()`)
+        $cartId = RyeCart::where([
+            'user_id' => $userId,
+            'creator_id' => $creator_id
+        ])->value('cart_id');
+
+        return response()->json([
+            'status' => (bool) $cartId,
+            'message' => $cartId ? 'Cart data found' : 'Cart not found',
+            'cart_id' => $cartId,
+        ]);
+    }
+
+    /**
+     * Rye get all carts products details of rye
+     *
+     * @return Response
+     */
+    public function getCartDetails(): JsonResponse
+    {
+        if (!Auth::check()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not authenticated',
+                'data' => []
+            ], 401);
+        }
+
+        $cartDetails = RyeCart::with('creator')->where('user_id', Auth::id())
+            ->select(['cart_id', 'creator_id', 'cart_details'])
+
+
+
+            ->get()
+            ->map(function ($cart) {
+                // Decode the JSON data in cart_details
+                $cartData = json_decode($cart->cart_details, true);
+
+                // Check if cart_details is null or 'stores' is empty/missing
+                if (is_null($cart->cart_details) || empty($cartData['cart']['stores'])) {
+                    return null; // Skip this entry
+                }
+
+                return $cart;
+            })
+            ->filter() // Remove null entries from the collection
+            ->values() // Reset array keys
+            ->toArray(); // Convert to array for optimized response
+
+        return response()->json([
+            'status' => !empty($cartDetails), // Returns true if data exists, false otherwise
+            'message' => !empty($cartDetails) ? 'Cart data retrieved successfully' : 'No cart data found',
+            'data' => !empty($cartDetails) ? $cartDetails : null
+        ]);
+    }
+
+    /**
+     * Rye remove cart from rye cart
+     *
+     * @return Response
+     */
+    public function removeCart($cart_id)
+    {
+        $userId = Auth::id();
+        $deleted = RyeCart::where('user_id', $userId)
+            ->where('cart_id', $cart_id)
+            ->delete(); // Returns the number of deleted rows
+
+        // return Inertia::render('feed/AddGift');
+        return response()->json([
+            'status' => true,
+            'message' => $deleted ? 'Cart item deleted successfully' : 'Cart item not found'
+        ]);
+    }
+
+    /**
+     * Rye create store address for creator on rye
+     *
+     * @return Response
+     */
+    private function safeEncrypt(?string $value): ?string
+    {
+        return $value ? Crypt::encryptString($value) : null;
+    }
+
+    public function creatorStoreAddress(Request $request)
+    {
+        try {
+            $validatedData = $request->validate([
+                'first_name'     => 'nullable|string|max:255',
+                'last_name'      => 'nullable|string|max:255',
+                'phone'          => 'nullable|digits_between:8,15',
+                'address_1'      => 'nullable|string|max:255',
+                'address_2'      => 'nullable|string|max:255',
+                'city'           => 'nullable|string|max:255',
+                'province_code'  => 'nullable|size:2',
+                'country_code'   => 'nullable|size:2',
+                'postal_code'    => 'nullable|digits_between:4,10',
+            ]);
+
+            $creatorId = Auth::id();
+
+            CreatorShippingAddress::updateOrCreate(
+                ['creator_id' => $creatorId],
+                [
+                    'first_name'    => $this->safeEncrypt($validatedData['first_name'] ?? null),
+                    'last_name'     => $this->safeEncrypt($validatedData['last_name'] ?? null),
+                    'phone'         => $this->safeEncrypt($validatedData['phone'] ?? null),
+                    'address_1'     => $this->safeEncrypt($validatedData['address_1'] ?? null),
+                    'address_2'     => $this->safeEncrypt($validatedData['address_2'] ?? null),
+                    'city'          => $this->safeEncrypt($validatedData['city'] ?? null),
+                    'province_code' => $this->safeEncrypt($validatedData['province_code'] ?? null),
+                    'country_code'  => $this->safeEncrypt($validatedData['country_code'] ?? null),
+                    'postal_code'   => $this->safeEncrypt($validatedData['postal_code'] ?? null),
+                ]
+            );
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Address stored successfully',
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Validation failed',
+                'errors'  => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Something went wrong',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Rye get creator store address
+     *
+     * @return Response
+     */
+    public function getCreatorStoreAddress()
+    {
+        $creatorId = Auth::id();
+        $creatorAddress = CreatorShippingAddress::where('creator_id', $creatorId)->first();
+        if (!$creatorAddress) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Creator address not found',
+            ], 404);
+        }
+        $creatorAddress->first_name = Crypt::decryptString($creatorAddress->first_name);
+        $creatorAddress->last_name = Crypt::decryptString($creatorAddress->last_name);
+        $creatorAddress->address_1 = Crypt::decryptString($creatorAddress->address_1);
+        $creatorAddress->address_2 = Crypt::decryptString($creatorAddress->address_2);
+        $creatorAddress->city =      Crypt::decryptString($creatorAddress->city);
+        $creatorAddress->postal_code = Crypt::decryptString($creatorAddress->postal_code);
+        $creatorAddress->country_code = Crypt::decryptString($creatorAddress->country_code);
+        $creatorAddress->province_code = Crypt::decryptString($creatorAddress->province_code);
+        $creatorAddress->phone = Crypt::decryptString($creatorAddress->phone);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Creator address retrieved successfully',
+            'data' => $creatorAddress,
+        ]);
+    }
+
+    /**
+     * Rye handle rye product payment and return the payment url
+     *
+     * @return Response
+     */
+    public function handleRyeProductPayment(Request $request)
+    {
+        $user = Auth::user(); // or $requestingUser if handling guests
+
+        if (empty($user->stripe_id)) {
+            $stripeCustomer = \Stripe\Customer::create([
+                'email' => $user->email,
+                'name' => $user->name ?? null,
+            ]);
+
+                $user->stripe_id = $stripeCustomer->id;
+                if ($user instanceof \App\Models\User) {
+                    $user->save();
+                }
+        }
+
+        // $request->validate([
+        //     'country' => 'required|string',
+        //     'street_address' => 'required|string',
+        //     'city' => 'required|string',
+        //     'state' => 'required|string',
+        //     'postal_code' => 'required|integer|digits_between:4,8',
+        // ]);
+
+        try {
+            $orderDetails = RyeCart::with('creator', 'user')->where([
+                'cart_id' => $request->cart_id,
+                'creator_id' => $request->creator_id
+            ])->first();
+
+            if (!$orderDetails) {
+                return response()->json([
+                    'status' => 'falses', // set falses because it is showing error on frontend need to fix later
+                    'message' => 'Order details not found.',
+                ], 404);
+            }
+
+            $currency = 'usd';
+            $totalAmount = 0;
+            $lineItems = [];
+            $cartData = is_string($orderDetails->cart_details) ? json_decode($orderDetails->cart_details, true) : $orderDetails->cart_details;
+            $cartLines = data_get($cartData, 'cart.stores.0.cartLines', []);
+
+            if (empty($cartLines)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Cart is empty.',
+                ], 422);
+            }
+
+            foreach ($cartLines as $cartLine) {
+                $quantity = data_get($cartLine, 'quantity', 1);
+                $unitPrice = data_get($cartLine, 'product.price.value', 0); // Convert to cents
+                $productId = data_get($cartLine, 'product.id', '');
+
+                if (!$productId || $unitPrice <= 0) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Invalid product details in cart.',
+                    ], 422);
+                }
+
+                $totalAmount += ($unitPrice * $quantity);
+
+                $lineItems[] = [
+                    'quantity' => $quantity,
+                    'price_data' => [
+                        'currency' => $currency,
+                        'unit_amount' => $unitPrice,
+                        'product_data' => [
+                            'name' => data_get($cartLine, 'product.title', 'Product'),
+                        ],
+                    ],
+                ];
+            }
+
+            if ($totalAmount <= 0) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Total amount must be greater than zero.',
+                ], 422);
+            }
+
+            if (empty($orderDetails->creator->account_id)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Stripe account details are missing.',
+                ], 422);
+            }
+
+            // $addressData = [
+            //     'country' => $request->country,
+            //     'street_address' => $request->street_address,
+            //     'city' => $request->city,
+            //     'state' => $request->state,
+            //     'postal_code' => $request->postal_code,
+            // ];
+            // Convert to JSON format
+            $addressJson = null;
+            // $addressJson = json_encode($addressData, true);
+
+            $ryeProductPayment = new RyeProductPayment();
+            $ryeProductPayment->user_id = Auth::id();
+            $ryeProductPayment->currency = $currency;
+            $ryeProductPayment->amount = $totalAmount / 100;
+            $ryeProductPayment->payment_method = 'card';
+            $ryeProductPayment->shipping_address = $addressJson;
+            $ryeProductPayment->customer_email = $orderDetails->user->email;
+            $ryeProductPayment->save();
+
+            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+
+            // Create Stripe checkout session
+            $successUrl = route('rye.success.payment', [
+                'uuid' => $ryeProductPayment->uuid,
+                'orderUuid' => $orderDetails->uuid
+            ]);
+
+            $sessionCreate = $stripe->checkout->sessions->create([
+                'success_url' => $successUrl, // Include correct parameters
+                'cancel_url' => route('rye.cancel.payment', [$ryeProductPayment->uuid]),
+                'line_items' => $lineItems,
+                'mode' => 'payment',
+                'payment_method_types' => ['card'],
+                'payment_intent_data' => [
+                    'transfer_data' => [
+                        'destination' => $orderDetails->creator->account_id,
+                        'amount' => $totalAmount,
+                    ],
+                    'on_behalf_of' => $orderDetails->creator->account_id,
+                    'metadata' => [
+                        'order_id' => $orderDetails->id,
+                        'user_id' => $orderDetails->user->id,
+                        'creator_id' => $orderDetails->creator->id,
+                        'payment_type' => 'product_purchase'
+                    ],
+                ],
+                'customer_email' => $orderDetails->user->email,
+                'metadata' => [
+                    'order_id' => $orderDetails->id,
+                    'user_email' => $orderDetails->user->email,
+                    'payment_source' => 'website',
+                ],
+            ]);
+
+            RyeProductPayment::whereUuid($ryeProductPayment->uuid)->update(['payment_metadata' => json_encode($sessionCreate)]);
+
+            return response()->json([
+                'status' => true,
+                'url' => $sessionCreate->url,
+                'orderDetails' => $orderDetails, // Send data directly
+                'creator' => $orderDetails->creator,
+            ]);
+        } catch (\Stripe\Exception\ApiErrorException $e) {
+            Log::error('Stripe API Error', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Stripe API error: ' . $e->getMessage(),
+            ], 500);
+        } catch (Exception $e) {
+            Log::error('Payment Processing Error', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Something went wrong: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // public function handleRyeProductPayment(Request $request)
+    // {
+    //     Log::info('Rye Product Payment Request', ['request' => $request->all()]);
+    //     try {
+    //         // Fetch order details with creator relation
+    //         $orderDetails = RyeCart::with('creator', 'user')->where(['cart_id' => $request->cart_id, 'creator_id' => $request->creator_id])->first();
+
+    //         if (!$orderDetails) {
+    //             return response()->json([
+    //                 'status' => false,
+    //                 'message' => 'Order details not found.',
+    //             ], 404);
+    //         }
+
+    //         $currency = 'usd'; // Assuming USD as currency
+    //         $totalAmount = 0;
+    //         $lineItems = [];
+
+    //         // Decode cart data if stored as JSON
+    //         $cartData = is_string($orderDetails->cart_details) ? json_decode($orderDetails->cart_details, true) : $orderDetails->cart_details;
+    //         $cartLines = data_get($cartData, 'cart.stores.0.cartLines', []);
+    //         // dd($cartLines);
+    //         // Check if cartLines is not empty
+    //         if (empty($cartLines)) {
+    //             return response()->json([
+    //                 'status' => false,
+    //                 'message' => 'Cart is empty.',
+    //             ], 422);
+    //         }
+
+    //         // Loop through each cart line and build the Stripe line items
+    //         foreach ($cartLines as $cartLine) {
+    //             $quantity = data_get($cartLine, 'quantity', 1);
+    //             $unitPrice = data_get($cartLine, 'product.price.value', 0); // Convert to cents
+    //             $productId = data_get($cartLine, 'product.id', '');
+
+    //             if (!$productId || $unitPrice <= 0) {
+    //                 return response()->json([
+    //                     'status' => false,
+    //                     'message' => 'Invalid product details in cart.',
+    //                 ], 422);
+    //             }
+
+    //             // Add to total amount
+    //             $totalAmount += ($unitPrice * $quantity);
+
+    //             // Prepare Stripe line items
+    //             $lineItems[] = [
+    //                 'quantity' => $quantity,
+    //                 'price_data' => [
+    //                     'currency' => $currency,
+    //                     'unit_amount' => $unitPrice,
+    //                     'product_data' => [
+    //                         'name' => data_get($cartLine, 'product.title', 'Product'),
+    //                     ],
+    //                 ],
+    //             ];
+    //         }
+
+    //         // Ensure creator has a Stripe account
+    //         if (empty($orderDetails->creator->account_id)) {
+    //             return response()->json([
+    //                 'status' => false,
+    //                 'message' => 'Stripe account details are missing.',
+    //             ], 422);
+    //         }
+
+    //         // Initialize Stripe
+
+    //         $ryeProductPayment = new RyeProductPayment();
+    //         $ryeProductPayment->user_id = Auth::id();
+    //         $ryeProductPayment->currency = $currency;
+    //         $ryeProductPayment->amount = $totalAmount / 100;
+    //         $ryeProductPayment->payment_method = 'card';
+    //         $ryeProductPayment->customer_email = $orderDetails->user->email;
+    //         $ryeProductPayment->save();
+
+    //         Session::put('cartData', $orderDetails);
+
+    //         $now = Carbon::now()->format('h:i A d-m-Y');
+    //         $emailSubject = "Payment Process Failed - $now";
+    //         $message = "An error occurred while processing the payment: " . $ryeProductPayment;
+    //         Mail::to('prem@futureprofilez.com', 'Prem Prakash')
+    //             // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
+    //             ->cc('naveen@internetbusinesssolutionsindia.com')
+    //             // ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
+    //             ->send(new CommandFailed($emailSubject, $message));
+    //         // Log::error("Error in createCheckout: " . $th->getMessage());
+
+    //         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+    //         // Create Stripe checkout session
+    //         $sessionCreate = $stripe->checkout->sessions->create([
+    //             'success_url' => route('rye.success.payment', [$ryeProductPayment->uuid]),
+    //             'cancel_url' => route('rye.cancel.payment', [$ryeProductPayment->uuid]),
+    //             'line_items' => $lineItems,
+    //             'mode' => 'payment',
+    //             'payment_method_types' => ['card'],
+    //             'payment_intent_data' => [
+    //                 'transfer_data' => [
+    //                     'destination' => $orderDetails->creator->account_id,
+    //                     'amount' => $totalAmount,
+    //                 ],
+    //                 'on_behalf_of' => $orderDetails->creator->account_id,
+    //             ],
+    //             'customer_email' => $orderDetails->user->email,
+    //         ]);
+
+    //         $now = Carbon::now()->format('h:i A d-m-Y');
+    //         $emailSubject = "Payment Process Failed - $now";
+    //         $message = "An error occurred while processing the payment: " . json_encode($sessionCreate);
+    //         Mail::to('prem@futureprofilez.com', 'Prem Prakash')
+    //             // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
+    //             ->cc('naveen@internetbusinesssolutionsindia.com')
+    //             // ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
+    //             ->send(new CommandFailed($emailSubject, $message));
+    //         // Log::error("Error in createCheckout: " . $th->getMessage());
+    //         // Log::info('Stripe session create', ['session' => $sessionCreate]);
+
+    //         RyeProductPayment::whereUuid($ryeProductPayment->uuid)->update(['payment_metadata' => json_encode($sessionCreate)]);
+
+    //         Log::info('Stripe session create', ['session' => $sessionCreate]);
+
+    //         Log::info('Stripe session url', ['url' => $sessionCreate->url]);
+    //         return response()->json([
+    //             'status' => true,
+    //             'url' => $sessionCreate->url,
+    //         ]);
+    //     // } catch (\Stripe\Exception\ApiErrorException $e) {
+    //     //     Log::info('Stripe API Error', ['error' => $e->getMessage()]);
+    //     //     return response()->json([
+    //     //         'status' => false,
+    //     //         'message' => 'Stripe API error: ' . $e->getMessage(),
+    //     //     ], 500);
+    //     } catch (Exception $e) {
+    //         $now = Carbon::now()->format('h:i A d-m-Y');
+    //         $emailSubject = "Payment Process Failed - $now";
+    //         $message = "An error occurred while processing the payment: " . $e->getMessage();
+    //         Mail::to('prem@futureprofilez.com', 'Prem Prakash')
+    //             // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
+    //             ->cc('naveen@internetbusinesssolutionsindia.com')
+    //             // ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
+    //             ->send(new CommandFailed($emailSubject, $message));
+    //         Log::info('Stripe Payment Error', ['error' => $e->getMessage()]);
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Something went wrong: ' . $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
+
+    /**
+     * Rye handle rye product payment success
+     *
+     * @return Response
+     */
+    public function ryeSuccessPayment($uuid, $orderUuid)
+    {
+        $orderDetails = RyeProductPayment::with('user')->where('uuid', $uuid)->first();
+
+        if (!$orderDetails) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Payment details not found.',
+            ], 404);
+        }
+
+        // Update order status
+        $orderDetails->status = 'succeeded';
+        $orderDetails->save();
+
+        return Inertia::render('rye/ThankYouRye', [
+            'status' => true,
+        ]);
+    }
+
+    /**
+     * Rye handle rye product payment success
+     *
+     * @return Response
+     */
+    public function ryeCancelPayment($uuid)
+    {
+        $orderDetails = RyeProductPayment::with('user')->where('uuid', $uuid)->first();
+
+        if ($orderDetails) {
+            $orderDetails->status = "canceled";
+            $orderDetails->save();
+        }
+        // if (!$orderDetails) {
+        // return response()->json([
+        //     'status' => false,
+        //     'message' => 'Payment details not found.',
+        // ], 404);
+        // }
+
+        // $payment = ShopPayment::where('uuid', $uuid)->first();
+
+        return redirect(route('cart'))->with('error', 'Payment Cancelled.');
+    }
+
+    /**
+     * rye integrations and functionality ends here
+     *
+     * Rye handle rye webhook and store the response in the database
+     *
+     * @return Response
+     */
+    public function handleWebhook(Request $request)
+    {
+        // Get webhook event type
+        $eventType = $request->input('type');
+        $payload = $request->all();
+
+        // **Step 1: Handle Challenge Verification**
+        if ($request->has('data.challenge')) {
+            return response()->json(['challenge' => $request->input('data.challenge')]);
+        }
+
+        // Log webhook for debugging
+        // Log::info("Received Rye Webhook: " . $eventType, $payload);
+
+        // Store webhook in database
+        // $webhook = RyeWebhook::create([
+        //     'event_type' => $eventType,
+        //     'payload' => $payload
+        // ]);
+
+        // Handle specific event types
+        switch ($eventType) {
+            case 'PAYMENT_SUCCEEDED':
+                return $this->handlePaymentSucceeded($payload);
+
+            case 'PAYMENT_FAILED':
+                return $this->handlePaymentFailed($payload);
+
+            case 'PAYMENT_REFUNDED':
+                return $this->handlePaymentRefunded($payload);
+
+            case 'ORDER_SUBMISSION_STARTED':
+                return $this->handleOrderSubmissionStarted($payload);
+
+            case 'ORDER_SUBMISSION_SUCCEEDED':
+                return $this->handleOrderSubmissionSucceeded($payload);
+
+            case 'ORDER_PLACED':
+                return $this->handleOrderPlaced($payload);
+
+            case 'ORDER_FAILED':
+                return $this->handleOrderFailed($payload);
+
+            case 'ORDER_CANCEL_REQUESTED':
+                return $this->handleOrderCancelRequested($payload);
+
+            case 'ORDER_CANCEL_SUCCEEDED':
+                return $this->handleOrderCancelSucceeded($payload);
+
+            case 'TRACKING_OBTAINED':
+                return $this->handleTrackingObtained($payload);
+
+            case 'RETURN_REQUESTED':
+                return $this->handleReturnRequested($payload);
+
+            case 'RETURN_APPROVED':
+                return $this->handleReturnApproved($payload);
+
+            case 'RETURN_DECLINED':
+                return $this->handleReturnDeclined($payload);
+
+            case 'RETURN_CLOSED':
+                return $this->handleReturnClosed($payload);
+
+            case 'RETURN_CANCELLED':
+                return $this->handleReturnCancelled($payload);
+
+            case 'SHOPIFY_PRODUCT_UPDATED':
+                return $this->handleShopifyProductUpdated($payload);
+
+            default:
+                return response()->json(['message' => 'Event not handled'], 200);
+        }
+    }
+
+    // Handling each webhook event
+    protected function handlePaymentSucceeded($payload)
+    {
+        // Example: Mark order as paid
+        // Log::info("Handling PaymentSucceeded", $payload);
+
+        ProductOrderDetail::updateOrCreate(
+            ['order_id' => $payload['requestId']], // Search condition
+            [
+                // 'user_id' => Auth::id() ?? null,
+                // 'creater_id' => $payload['order']['creater_id'] ?? null,
+                // 'cart_id' => $payload['order']['cart_id'] ?? null,
+                'order_id' => $payload['requestId'],
+                'details' => $payload ? json_encode($payload, true) : null,
+                'payment_status' => 'COMPLETED', // Update payment status
+                'session_id' => $payload['order']['session_id'] ?? null,
+            ]
+        );
+
+        return response()->json(['message' => 'Payment succeeded processed']);
+    }
+
+    protected function handlePaymentFailed($payload)
+    {
+        // Log::info("Handling PaymentFailed", $payload);
+
+        ProductOrderDetail::updateOrCreate(
+            ['order_id' => $payload['requestId']], // Search condition
+            [
+                // 'user_id' => Auth::id() ?? null,
+                // 'creater_id' => $payload['order']['creater_id'] ?? null,
+                // 'cart_id' => $payload['order']['cart_id'] ?? null,
+                'order_id' => $payload['requestId'],
+                'details' => $payload ? json_encode($payload, true) : null,
+                'payment_status' => 'FAILED', // Update payment status
+                'session_id' => $payload['order']['session_id'] ?? null,
+            ]
+        );
+
+        return response()->json(['message' => 'Payment failed processed']);
+    }
+
+    protected function handlePaymentRefunded($payload)
+    {
+        // Log::info("Handling PaymentRefunded", $payload);
+        ProductOrderDetail::updateOrCreate(
+            ['order_id' => $payload['requestId']], // Search condition
+            [
+                // 'user_id' => Auth::id() ?? null,
+                // 'creater_id' => $payload['order']['creater_id'] ?? null,
+                // 'cart_id' => $payload['order']['cart_id'] ?? null,
+                'order_id' => $payload['requestId'],
+                'details' => $payload ? json_encode($payload, true) : null,
+                'payment_status' => 'REFUNDED', // Update payment status
+                'session_id' => $payload['order']['session_id'] ?? null,
+            ]
+        );
+
+        return response()->json(['message' => 'Payment refunded processed']);
+    }
+
+    protected function handleOrderSubmissionStarted($payload)
+    {
+        // Log::info("Handling OrderSubmissionStarted", $payload);
+        return response()->json(['message' => 'Order submission started processed']);
+    }
+
+    protected function handleOrderSubmissionSucceeded($payload)
+    {
+        // Log::info("Handling OrderSubmissionSucceeded", $payload);
+        return response()->json(['message' => 'Order submission succeeded processed']);
+    }
+
+    protected function handleOrderPlaced($payload)
+    {
+        // Log::info("Handling OrderPlaced", $payload);
+
+        ProductOrderDetail::updateOrCreate(
+            ['order_id' => $payload['requestId']], // Search condition
+            [
+                'user_id' => Auth::id() ?? null,
+                'creater_id' => $payload['order']['creater_id'] ?? null,
+                'cart_id' => $payload['order']['cart_id'] ?? null,
+                'order_id' => $payload['requestId'],
+                'details' => $payload ? json_encode($payload, true) : null,
+                'payment_status' => 'ORDER PLACED', // Update payment status
+                'session_id' => $payload['order']['session_id'] ?? null,
+            ]
+        );
+
+        return response()->json(['message' => 'Order placed processed']);
+    }
+
+    protected function handleOrderFailed($payload)
+    {
+        // Log::info("Handling OrderFailed", $payload);
+        return response()->json(['message' => 'Order failed processed']);
+    }
+
+    protected function handleOrderCancelRequested($payload)
+    {
+        Log::info("Handling OrderCancelRequested", $payload);
+        return response()->json(['message' => 'Order cancel requested processed']);
+    }
+
+    protected function handleOrderCancelSucceeded($payload)
+    {
+        Log::info("Handling OrderCancelSucceeded", $payload);
+        return response()->json(['message' => 'Order cancel succeeded processed']);
+    }
+
+    protected function handleTrackingObtained($payload)
+    {
+        Log::info("TrackingObtained Webhook:", $payload);
+
+        ProductOrderDetail::updateOrCreate(
+            ['order_id' => $payload['requestId']], // Search condition
+            [
+                // 'user_id' => Auth::id() ?? null,
+                // 'creater_id' => $payload['order']['creater_id'] ?? null,
+                // 'cart_id' => $payload['order']['cart_id'] ?? null,
+                'order_id' => $payload['requestId'],
+                'details' => $payload ? json_encode($payload, true) : null,
+                'payment_status' => 'ORDER TRACKED', // Update payment status
+                'session_id' => $payload['order']['session_id'] ?? null,
+            ]
+        );
+
+        return response()->json([
+            'message' => 'Tracking obtained processed',
+            'tracking_number' => $payload['tracking_number'] ?? 'Not Available'
+        ]);
+    }
+
+    protected function handleReturnRequested($payload)
+    {
+        Log::info("Handling ReturnRequested", $payload);
+        return response()->json(['message' => 'Return requested processed']);
+    }
+
+    protected function handleReturnApproved($payload)
+    {
+        Log::info("Handling ReturnApproved", $payload);
+        return response()->json(['message' => 'Return approved processed']);
+    }
+
+    protected function handleReturnDeclined($payload)
+    {
+        Log::info("Handling ReturnDeclined", $payload);
+        return response()->json(['message' => 'Return declined processed']);
+    }
+
+    protected function handleReturnClosed($payload)
+    {
+        Log::info("Handling ReturnClosed", $payload);
+        return response()->json(['message' => 'Return closed processed']);
+    }
+
+    protected function handleReturnCancelled($payload)
+    {
+        Log::info("Handling ReturnCancelled", $payload);
+        return response()->json(['message' => 'Return cancelled processed']);
+    }
+
+    protected function handleShopifyProductUpdated($payload)
+    {
+        Log::info("Handling ShopifyProductUpdated", $payload);
+        return response()->json(['message' => 'Shopify product updated processed']);
+    }
+
+    /**
+     * Rye Update order status in the database based on payment success
+     */
+    // private function updateOrderStatus(array $data, string $status): void
+    // {
+    //     if (isset($data['order']['id'])) {
+    //         $orderId = $data['order']['id'];
+
+    //         ProductOrderDetail::where('order_id', $orderId)
+    //             ->update(['payment_status' => $status]);
+
+    //         Log::info("Order ID {$orderId} updated to status: {$status}");
+    //     } else {
+    //         Log::warning('Payment success event received but missing order ID', $data);
+    //     }
+    // }
+
+    /**
+     * Rye Store new order details in the database
+     */
+    // private function createNewOrder(array $data): void
+    // {
+    //     if (!isset($data['order'])) {
+    //         Log::warning('Order created event missing order details', $data);
+    //         return;
+    //     }
+
+    //     $order = $data['order'];
+
+    //     ProductOrderDetail::create([
+    //         'user_id' => $order['user_id'] ?? null,
+    //         'creater_id' => $order['creator_id'] ?? null,
+    //         'cart_id' => $order['cart_id'] ?? null,
+    //         'order_id' => $order['id'],
+    //         'details' => json_encode($order),
+    //         'payment_status' => 'pending', // Default status until payment is confirmed
+    //     ]);
+
+    //     Log::info("New order stored with ID: {$order['id']}");
+    // }
+
+    /**
+     *
+     * Rye hit submitCart api and store the response in the database
+     *
+     * @return Response
+     */
+    public function storeProductOrderDetails(Request $request)
+    {
+        try {
+            $creatorShipping = CreatorShippingAddress::with('creator')
+                ->where('creator_id', $request->creator_id)
+                ->first();
+
+            if (!$creatorShipping) {
+                return response()->json(['status' => false, 'message' => 'Shipping address not found']);
+            }
+
+            $cart_id = $request->cart_id;
+            $buyerIdentity = $this->updateCartBuyerIdentity($cart_id, $creatorShipping);
+            $responseData = json_decode($buyerIdentity->getContent(), true);
+
+            $shippingId = '0-Default shipping method';
+            $store = 'amazon';
+
+            if (!empty($responseData['data']['data']['updateCartBuyerIdentity']['cart']['stores'][0])) {
+                $storeData = $responseData['data']['data']['updateCartBuyerIdentity']['cart']['stores'][0];
+                $shippingId = $storeData['offer']['shippingMethods'][0]['id'] ?? $shippingId;
+                $store = $storeData['store'] ?? $store;
+            }
+
+            $response = Http::withHeaders([
+                'Authorization' => env('RYE_API_KEY'),
+                'Rye-Shopper-IP' => '122.180.247.198',
+                'Content-Type' => 'application/json',
+            ])->post('https://staging.graphql.api.rye.com/v1/query', [
+                'query' => "mutation SubmitCart(\$input: CartSubmitInput!) {
+                submitCart(input: \$input) {
+                    cart {
+                        id
+                        stores {
+                            status
+                            orderId
+                            store {
+                                ... on ShopifyStore {
+                                    store
+                                    cartLines { quantity variant { id } }
+                                }
+                            }
+                            errors { code message }
+                        }
+                    }
+                    errors { code message }
+                }
+            }",
+                'variables' => [
+                    'input' => [
+                        'id' => $cart_id,
+                        'token' => env('PAYMENT_TOKEN'),
+                        'selectedShippingOptions' => [[
+                            'store' => $store,
+                            'shippingId' => $shippingId,
+                        ]],
+                        'billingAddress' => [
+                            'firstName' => $creatorShipping->first_name ?? 'John',
+                            'lastName' => $creatorShipping->last_name ?? 'Doe',
+                            'phone' => (string) ($creatorShipping->phone ?? '4155552671'),
+                            'address1' => $creatorShipping->address_1 ?? '123 Main Street',
+                            'address2' => $creatorShipping->address_2 ?? 'Apt 4B',
+                            'city' => $creatorShipping->city ?? 'New York',
+                            'provinceCode' => $creatorShipping->province_code ?? 'NY',
+                            'countryCode' => $creatorShipping->country_code ?? 'US',
+                            'postalCode' => (string) ($creatorShipping->postal_code ?? '10001'),
+                        ],
+                        'cartSettings' => ['amazonSettings' => ['hidePriceOnPackage' => true]]
+                    ]
+                ]
+            ]);
+
+            $data = $response->json();
+
+            $storeData = $data['data']['submitCart']['cart']['stores'][0] ?? null;
+
+            if ($storeData && $storeData['status'] === 'COMPLETED') {
+                ProductOrderDetail::create([
+                    'user_id' => Auth::id(),
+                    'creater_id' => $request->creator_id,
+                    'cart_id' => $cart_id,
+                    'order_id' => $storeData['orderId'] ?? null,
+                    // 'details' => json_encode($data),
+                    // 'payment_status' => $storeData['status'] ?? 'pending',
+                ]);
+
+                RyeCart::where('cart_id', $cart_id)->delete();
+
+                return response()->json(['status' => true, 'message' => 'Order details stored', 'data' => $data]);
+            }
+
+            // return response()->json(['status' => false, 'message' => 'Order details not stored']);
+        } catch (Exception $e) {
+            Log::error('Error in storeProductOrderDetails: ' . $e->getMessage());
+            return response()->json(['status' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * rye update buyer identity functionality
+     *
+     */
+    public function updateCartBuyerIdentity($cart_id, $address)
+    {
+        $url = 'https://staging.graphql.api.rye.com/v1/query';
+        $authToken = 'Basic UllFL3N0YWdpbmctYTlmYjk0YjhmYTM1NGE4MTg5NWI6'; // Replace with your actual token
+
+        $response = Http::withHeaders([
+            'Authorization' => $authToken,
+            'Rye-Shopper-IP' => '122.180.247.198',
+            'Content-Type' => 'application/json',
+        ])->post($url, [
+            'query' => 'mutation updateCartBuyerIdentity($input: CartBuyerIdentityUpdateInput!) {
+            updateCartBuyerIdentity(input: $input) {
+                cart {
+                    id
+                    stores {
+                        ... on AmazonStore {
+                            store
+                            offer {
+                                subtotal { value currency displayValue }
+                                margin { value currency displayValue }
+                                notAvailableIds
+                                shippingMethods { id label taxes { value currency displayValue } total { value currency displayValue } }
+                                selectedShippingMethod { id label }
+                                errors { code message details { productIds } }
+                            }
+                            errors { message code details { productIds } }
+                            requestId
+                            isSubmitted
+                        }
+                        ... on ShopifyStore {
+                            store
+                            offer {
+                                subtotal { value currency displayValue }
+                                margin { value currency displayValue }
+                                notAvailableIds
+                                shippingMethods { id label price { value currency displayValue } taxes { value currency displayValue } total { value currency displayValue } }
+                                selectedShippingMethod { id label }
+                                errors { code message details { variantIds } }
+                            }
+                            errors { message code details { variantIds } }
+                            requestId
+                            isSubmitted
+                            shipsToCountries
+                        }
+                    }
+                }
+                errors { message code }
+            }
+        }',
+            'variables' => [
+                'input' => [
+                    'id' => $cart_id,
+                    'buyerIdentity' => [
+                        'firstName' => $creatorShipping->first_name ?? 'John',
+                        'lastName' => $creatorShipping->last_name ?? 'Doe',
+                        'email' => $creatorShipping->creator->email ?? 'john-doe@gmail.com',
+                        'phone' => $creatorShipping->phone ?? '+1 234-567-8901',
+                        'address1' => $creatorShipping->address_1 ?? '123 Main Street',
+                        'address2' => $creatorShipping->address_2 ?? 'Apt 4B',
+                        'city' => $creatorShipping->city ?? 'New York',
+                        'provinceCode' => $creatorShipping->province_code ?? 'NY',
+                        'countryCode' => $creatorShipping->country_code ?? 'US',
+                        'postalCode' => $creatorShipping->postal_code ?? '10001', // Set a default postal code
+                    ],
+                ]
+            ]
+        ]);
+
+        // Check the response
+        if ($response->successful()) {
+            // return $response->json();
+            return response()->json([
+                'status' => true,
+                'message' => 'Cart buyer identity updated successfully',
+                'data' => $response->json()
+            ]);
+        } else {
+            // return $response->body();
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to update cart buyer identity',
+                'error' => $response->body()
+            ], $response->status());
+        }
+    }
+    /**
+     * rye product functionality ends
+     *
+     *x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x******x******x*****x******x*****x*****x******x******x******x******x******x*****/
+
+
     public function clearCart($deviceid, $ownerid)
     {
         $query = UserCart::where('country', 'global')->where('owner_id', $ownerid)->where('status', 1);
@@ -765,15 +2012,16 @@ class WishitemController extends Controller
         if (!empty(Auth::id())) {
             $groupedWishes = [];
             $user = User::where('id', Auth::id())
-                ->where(function ($query) {
-                    $query->where('country', '!=', 'GB')
-                        ->orWhereNull('country');
-                })
+                ->where('is_uk', 0)
+                // ->where(function ($query) {
+                //     $query->where('country', '!=', 'GB')
+                //         ->orWhereNull('country');
+                // })
                 ->first();
 
             $cart = [];
             if ($user) {
-                $carts = UserCart::where('user_id', $user->id)->where('country', 'global')->where('status', 1)->get();
+                $carts = UserCart::whereHas('wish')->where('user_id', $user->id)->where('country', 'global')->where('status', 1)->get();
 
                 $groupedWishes = [];
                 foreach ($carts as $wish) {
@@ -880,7 +2128,7 @@ class WishitemController extends Controller
 
     public function anonymousCartItems($deviceId)
     {
-        $carts = UserCart::where('device_id', $deviceId)->where('country', 'global')->where('status', 1)->get();
+        $carts = UserCart::whereHas('wish')->where('device_id', $deviceId)->where('country', 'global')->where('status', 1)->get();
         $groupedWishes = [];
         foreach ($carts as $wish) {
             $owner_id = $wish->owner_id;
@@ -976,7 +2224,7 @@ class WishitemController extends Controller
 
         $currency = strtolower($request->cookie("currency", "GBP"));
 
-        $owner = User::where('id', $request->owner_id)->first();
+        $owner = User::where('id', $request->owner_id)->where('is_uk', 0)->first();
         $price = Helpers::priceFormat($currency, $request->amount, $owner->default_currency);
         $min_amount = $owner->min_surprise_amount < 5 ? 5 : $owner->min_surprise_amount;
         $user_amount = Helpers::priceFormat($owner->default_currency, $min_amount, $currency);
@@ -1000,6 +2248,8 @@ class WishitemController extends Controller
             'name' => 'Surprise Gift',
             'images' => ['https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/'],
             "default_price_data" => ["currency" => $owner->default_currency, "unit_amount_decimal" => round(($price + $tax), 2, PHP_ROUND_HALF_UP) * 100],
+        ], [
+            'stripe_account' => $owner->account_id,
         ]);
 
         if (!Auth::check()) {
@@ -1031,7 +2281,7 @@ class WishitemController extends Controller
 
     public function noOfCartItems()
     {
-        $items = UserCart::where('user_id', Auth::id())->where('country', 'global')->where('status', 1)->count();
+        $items = UserCart::whereHas('wish')->where('user_id', Auth::id())->where('country', 'global')->where('status', 1)->count();
         return response()->json([
             "success" => true,
             "counts" => $items,
@@ -1065,14 +2315,14 @@ class WishitemController extends Controller
     public function wish_counter($deviceid)
     {
         if (!Auth::check()) {
-            $items = UserCart::where('device_id', $deviceid ?? null)->where('country', 'global')->where('status', 1)->count();
+            $items = UserCart::whereHas('wish')->where('device_id', $deviceid ?? null)->where('country', 'global')->where('status', 1)->count();
             return response()->json([
                 "success" => true,
                 "counter" => $items,
             ]);
         } else {
             $user = Auth::user();
-            $items = UserCart::where('user_id', $user->id ?? null)->where('country', 'global')->where('status', 1)->count();
+            $items = UserCart::whereHas('wish')->where('user_id', $user->id ?? null)->where('country', 'global')->where('status', 1)->count();
             return response()->json([
                 "success" => true,
                 "counter" => $items,
@@ -1261,7 +2511,7 @@ class WishitemController extends Controller
             ]
         );
 
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         $target = $request->target;
         $price = $request->default_price;
@@ -1328,61 +2578,7 @@ class WishitemController extends Controller
         ]);
     }
 
-    /**
-     * List a tip jar goal
-     *
-     * @param $uuid uuid of user
-     * @return mixed
-     */
-    public function listGoal($uuid)
-    {
-        $user = User::where('uuid', $uuid)->first();
-        // TipGoal::where('status', 1)->where('completed', 0)->where('completed_at', '<', Carbon::now())->update(['completed' => 1]);
-
-        // $goal = TipGoal::whereHas('user', function ($q) use ($uuid) {
-        //     $q->where('uuid', $uuid);
-        // })->where('completed', 0)->first();
-        $arr = [];
-        $bill_payment = BillPayment::whereHas('bill', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->sum('amount');
-
-        $mem_payment = MembershipPayment::whereHas('membership', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->sum('amount');
-
-        $wish_payment = StripePaymentItems::whereHas('wish', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->sum('amount');
-
-        $sub_payment = WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->sum('amount');
-
-        $total_earnings = $bill_payment + $mem_payment + $wish_payment + $sub_payment;
-
-        if ($total_earnings < 100) {
-            $target = 100;
-        } elseif ($total_earnings < 1000) {
-            $target = 1000;
-        } elseif ($total_earnings < 10000) {
-            $target = 10000;
-        } elseif ($total_earnings < 100000) {
-            $target = 100000;
-        } elseif ($total_earnings < 1000000) {
-            $target = 1000000;
-        } else {
-            $target = 10000000;
-        }
-
-        $arr['fullfilled'] = $total_earnings;
-        $arr['target'] = $target;
-        $arr['currency'] = $user->default_currency;
-        return response()->json([
-            'status' => true,
-            'goal' => $arr,
-        ]);
-    }
+    
 
     /**
      * Mark as completed the tip jar goal
@@ -1419,28 +2615,34 @@ class WishitemController extends Controller
     }
 
     /**
-     * User tips send or get
+     * User tips payment show data
      *
-     * @return mixed
+     * @return Response
      */
     public function userTips()
     {
-        $user = Auth::user();
+        $userId = Auth::id();
 
-        $user_tips = TipGoalsPayment::whereHas('tipGoal', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->with('tipGoal')->orWhere('user_id', $user->id)->get();
+        $userTips = TipGoalsPayment::with(['user', 'creator'])
+            ->where(function ($query) use ($userId) {
+                $query->where('creator_id', $userId)
+                    ->orWhere('user_id', $userId);
+            })
+            ->whereIn('status', ['paid', 'cancelled'])
+            ->latest()
+            ->get();
 
-        $tips = $user_tips->map(function ($q) {
-            $q->owner = $q->tipGoal->user;
-            return $q;
+        // Optionally add 'owner' property
+        $userTips->each(function ($tip) {
+            $tip->owner = $tip->creator;
         });
 
         return response()->json([
             'status' => true,
-            'tips' => $tips
+            'tips' => $userTips,
         ]);
     }
+
 
     /**
      * Enable disable the auto tweet
@@ -1450,7 +2652,7 @@ class WishitemController extends Controller
     public function enableAutoTweet()
     {
 
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         if ($user->auto_tweet == 1) {
             $user->auto_tweet = 0;
@@ -1458,12 +2660,16 @@ class WishitemController extends Controller
             $user->auto_tweet = 1;
         }
 
-        $user->save();
+        if ($user) {
+            $user->save();
 
-        if ($user->auto_tweet == 1) {
-            return back()->with('success', "Auto tweet for gift is Enabled.");
+            if ($user->auto_tweet == 1) {
+                return back()->with('success', "Auto tweet for gift is Enabled.");
+            } else {
+                return back()->with('success', "Auto tweet for gift is Disabled.");
+            }
         } else {
-            return back()->with('success', "Auto tweet for gift is Disabled.");
+            return back()->with('error', "User not found.");
         }
     }
 
@@ -1500,7 +2706,7 @@ class WishitemController extends Controller
         }
         return response()->json([
             'status' => true,
-            'msg' => "Wish payment shared on twitter."
+            'msg' => "Gift items has been shared on twitter."
         ]);
     }
 
@@ -1534,25 +2740,115 @@ class WishitemController extends Controller
         ]);
     }
 
+    /**
+     * Bill Payment Data Show
+     *
+     * @return Response
+     */
     public function billTracker()
     {
         $user = Auth::user();
+
+        // Fetch bill payments with conditional user data
         $bill_payments = BillPayment::whereHas('bill', function ($q) use ($user) {
             $q->where('user_id', $user->id);
-        })->with('bill')->latest()->get();
+        })->orWhere('user_id', $user->id)
+            ->whereIn('status', ['paid', 'cancelled'])
+            ->with('bill', 'user') // Load bill and user relationships
+            ->latest()
+            ->get();
 
-        $bill_payments->map(function ($q) {
-            $q->user_data = [
-                'name' => $q->user->name,
-                'avatar' => $q->user->avatar_url,
-                'uuid' => $q->user->uuid
-            ];
-            return $q;
+        // Map the results to include user data or fallback to guest email
+        $bill_payments->map(function ($payment) {
+            $payment->user_data = $payment->user
+                ? [
+                    'name' => $payment->user->name,
+                    'avatar' => $payment->user->avatar_url,
+                    'uuid' => $payment->user->uuid,
+                ]
+                : [
+                    'name' => $payment->guest_name ?? 'Anonymous',
+                    'avatar' => null, // Set default avatar or null for guests
+                    'email' => $payment->guest_email ?? 'N/A',
+                ];
+            return $payment;
         });
 
         return response()->json([
             'status' => true,
             'bill_payments' => $bill_payments
+        ]);
+    }
+
+    /**
+     * Membership Payment Data Show
+     *
+     * @return Response
+     */
+    public function membershipTracker()
+    {
+        $user = Auth::user();
+        $membership_payments = MembershipPayment::whereHas('membership', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->orWhere('user_id', $user->id)
+            ->whereIn('status', ['paid', 'cancelled'])
+            ->with('membership')
+            ->latest()
+            ->get();
+
+        $membership_payments->map(function ($q) {
+            if ($q->user) {
+                $q->user_data = [
+                    'name' => $q->user->name,
+                    'avatar' => $q->user->avatar_url,
+                    'uuid' => $q->user->uuid
+                ];
+            }
+            return $q;
+        });
+
+        return response()->json([
+            'status' => true,
+            'membership_payments' => $membership_payments
+        ]);
+    }
+
+    /**
+     * Shop Payment Data Show
+     *
+     * @return Response
+     */
+    public function shopTracker()
+    {
+        $user = auth()->user();
+
+        // Build the base query
+        $paymentsQuery = ShopPayment::with(['shop', 'user'])
+            ->where(function ($query) use ($user) {
+                $query->whereHas('shop', function ($shopQuery) use ($user) {
+                    $shopQuery->where('user_id', $user->id);
+                })
+                    ->orWhere('user_id', $user->id);
+            })
+            ->whereIn('payment_status', ['paid', 'cancelled'])
+            ->orderByDesc('id');
+
+        // Execute
+        $shopPayments = $paymentsQuery->get();
+
+        // Attach a simplified user_data payload to each payment
+        $shopPayments->transform(function ($payment) {
+            $payment->user_data = [
+                'name'   => $payment->user->name ?? 'A Creator',
+                'avatar' => $payment->user->avatar_url ?? null,
+                'uuid'   => $payment->user->uuid ?? null,
+            ];
+            return $payment;
+        });
+
+        return response()->json([
+            'status'        => true,
+            'shop_payments' => $shopPayments,
         ]);
     }
 }

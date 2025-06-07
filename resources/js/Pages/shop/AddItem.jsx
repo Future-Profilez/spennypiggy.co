@@ -42,7 +42,7 @@ const updatedVarients = (data) =>{
 export default function AddItem(props) {
     const { auth, user } = usePage().props;
     const defaultCurrency = user && user.default_currency || "GBP";
-    
+
     const {
         item,
         update,
@@ -112,21 +112,19 @@ export default function AddItem(props) {
             description: pre_description || "",
             price: pre_price || '',
         });
-        
+
         const [wwsShipping, setwwsShipping] = useState([]);
         const [shipping, setShipping] = useState([]);
         const [variants, setVariants] = useState([{ name: '', value: '' }]);
         const [shipping_info, setShipping_info] = useState('');
 
-        const handleShipping = (e) =>{ 
+        const handleShipping = (e) =>{
             setShipping(e);
-            console.log("setShipping", e)
         }
-        const handlewws = (e) => { 
+        const handlewws = (e) => {
             setwwsShipping(e)
-            console.log("wwsShipping", e)
         }
- 
+
 
         const [physical, setPhysical] = useState(shopItem && shopItem.type === "physical" ? true : false);
         const handleLists = (e) => {
@@ -168,7 +166,6 @@ export default function AddItem(props) {
                 setFetchingCats(false);
             })
             .catch((err) => {
-                console.log(err);
                 setFetchingCats(false);
             });
         };
@@ -197,7 +194,7 @@ export default function AddItem(props) {
         }
 
         const [IsAiImage, setIsAiImage] = useState(false);
-        const getAIImage = (e) =>{ 
+        const getAIImage = (e) =>{
             setrewardfile(e.uuid+'/-/text_align/left/center/-/font/10/fff/-/text/80px8p/8p,100p/Made%20with%20AI%20/-/format/jpeg/-/preview/');
             setIsAiImage(e.url);
         }
@@ -227,7 +224,6 @@ export default function AddItem(props) {
 
         const handleVat = () => {
             if (!isVat && haveVat == 0) {
-                console.log(isVat, haveVat);
                 setSassClose(false);
                 setTimeout(() => {
                     setSassClose(true);
@@ -246,7 +242,6 @@ export default function AddItem(props) {
             sethaveVat(1);
             setIsVat(true);
             setSassClose(false);
-            console.log("vat", e);
         };
 
         const handleSuccessPageType = (e) => {
@@ -306,7 +301,7 @@ export default function AddItem(props) {
                     errorAlert("Success page content can not be empty");
                     return false;
                 }
-            }  
+            }
 
             if (!isChecked) {
                 return false;
@@ -328,11 +323,11 @@ export default function AddItem(props) {
 
             const ships = updatedShipping()
             if ( physical && ships.length < 1) {
-                errorAlert("Please add atleast one shipping method");
+                errorAlert("Please add at least one shipping method");
                 return false;
             }
             if ( physical && vars.length < 1) {
-                errorAlert("Please add atleast one variant");
+                errorAlert("Please add at least one variant");
                 return false;
             }
 
@@ -429,15 +424,15 @@ export default function AddItem(props) {
                         <AiOutlineShop color="var(--pink)" size="1.5rem" />
                     </div>
                     <div className="ps-3 text-start">
-                        <h2 className="text-md">Sell Something</h2>
-                        <p className="text-sm font-normal">
+                        <h2 className="text-md font-normal font-GillSans uppercase ">Sell Something</h2>
+                        <p className="text-sm font-poppins">
                             Sell digital or physical items from your page
                         </p>
                     </div>
                 </div>
             );
         };
-         
+
         const addVariant = () => {
             setVariants([...variants, { name: '', value: '' }]);
         };
@@ -450,7 +445,6 @@ export default function AddItem(props) {
         const handleRemoveVariant = (index) => {
             const newVariants = variants.filter((_, i) => i !== index);
             setVariants(newVariants);
-            console.log('Product variants:', variants);
         };
         return (
             <Popup
@@ -466,7 +460,7 @@ export default function AddItem(props) {
                     <div className="shop-forms-field p-0 md:p-8 max-w-[800px] m-auto rounded-[20px]">
                         <div className="shop-forms-field mb-4">
                             <label className="w-full mb-1.5"> Select what you’re offering </label>
-                            <Select 
+                            <Select
                             defaultValue={product_type ? lists.filter((item) => item.value === product_type)  : { value: "Digital Products", label: "Digital Products" }}
                             classNamePrefix="react-select"
                             className="react-select-lists mb-4 mt-2 "
@@ -501,14 +495,17 @@ export default function AddItem(props) {
 
                         <div className="shop-forms-field mb-4">
                             <label className="w-full mb-2">Price*</label>
-                            <input
-                                name="price"
-                                defaultValue={pre_price}
-                                onChange={handelInputs}
-                                className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5"
-                                type="number"
-                                placeholder="Enter the price of your item"
-                            />
+                            <div className="position-relative  currency-wrapper dollar" >
+                                <span className="currency-tag">$</span>
+                                <input
+                                    name="price"
+                                    defaultValue={pre_price}
+                                    onChange={handelInputs}
+                                    className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5"
+                                    type="number"
+                                    placeholder="Enter the price of your item"
+                                />
+                            </div>
                         </div>
 
                         <h2 className="text-md font-normal mb-3 mt-3">Item image</h2>
@@ -555,9 +552,9 @@ export default function AddItem(props) {
                                 <button onClick={addVariant} className="button sm pinkbg px-3 py-2 mt-2 mb-3" >Add Variant</button>
                             </div>
                             <CountriesShipping handleShipping={handleShipping} handlewws={handlewws} />
-                            
+
                             <h2 className="font-bold pt-4 border-t border-gray-200 mb-2">Shipping Information</h2>
-                            <input type="text" className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 
+                            <input type="text" className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0
                             mb-6 rounded-xl p-[12px] px-[20px]"
                             name={`shipping-information`}
                             placeholder="Shipping information.."
@@ -638,7 +635,7 @@ export default function AddItem(props) {
                                             ) : '' }
 
                                             {/* video */}
-                                            {item && item.reward_file_type =="video" ? 
+                                            {item && item.reward_file_type =="video" ?
                                                 <video
                                                     controls
                                                     playsInline
@@ -651,7 +648,7 @@ export default function AddItem(props) {
                                             }
 
                                             {/* audio */}
-                                            {item && item.reward_file_type =="audio" ? 
+                                            {item && item.reward_file_type =="audio" ?
                                                     <audio
                                                         controls
                                                         playsInline
@@ -663,18 +660,18 @@ export default function AddItem(props) {
                                                     /> : ''
                                             }
                                             {/* video */}
-                                            {item && item.reward_file_type =="application" ? 
+                                            {item && item.reward_file_type =="application" ?
                                                 <iframe
                                                     className=" mb-4 w-full  max-h-[500px] object-cover h-full rounded-4"
                                                     src={item &&item.reward_file_url}
                                                 /> : ''
                                             }
-                                            
-                                            {IsAiImage ? 
+
+                                            {IsAiImage ?
                                                 <img
                                                 alt="image-profile"
                                                 className=" mb-2 mt-1 w-full max-h-[500px] object-cover h-auto rounded-4"
-                                                src={IsAiImage} /> 
+                                                src={IsAiImage} />
                                             : ""}
                                             <GlobalUploader
                                                 type="minimal"
@@ -690,7 +687,7 @@ export default function AddItem(props) {
                                             </div>
 
                                         </div>
-                                    </div> 
+                                    </div>
                                 ) : "" }
                                 {pagetype == "url" ? (
                                     <input
@@ -731,7 +728,7 @@ export default function AddItem(props) {
                                     })}
                             </div>
 
-                            <div className="add-shop-cat-input relative d-flex items-center mt-3">
+                            <div className="add-shop-cat-input relative flex items-center mt-3">
                                 <input
                                     ref={inputRef}
                                     className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[13px] px-4"
@@ -829,7 +826,7 @@ export default function AddItem(props) {
                                     ? "after:transition-all after:translate-x-full  bg-blue-600"
                                     : "bg-gray-200"}`} ></div>
                                     <span className="ms-3 text-md font-medium text-gray-900">
-                                    Limit slots (optional) 
+                                    Limit slots (optional)
                                     <button className="tooltipbtn"> ?
                                         <p>
                                             A limited number of slots creates a
@@ -974,8 +971,8 @@ export default function AddItem(props) {
         {/*
         <button onClick={(e)=>setOpen(true)} className={classes ? classes : 'w-full shop-start-box px-6 py-6 md:px-8 md:py-12 text-center bg-white rounded-[20px]'} >
             <h2 className='md:text-[19px]' >{title}</h2>
-        </button> 
-        */} 
+        </button>
+        */}
         <AddForm classes="w-full shop-start-box px-6 py-6 md:px-8 md:py-12 text-center bg-white rounded-[20px]" />
         </>
     );

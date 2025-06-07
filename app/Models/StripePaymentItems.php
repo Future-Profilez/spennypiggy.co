@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Helpers;
 use App\Uploadcare;
 use App\WatermarkHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -32,7 +33,7 @@ class StripePaymentItems extends Model
 
     protected $appends = [
         'sender',
-        'message_url'
+        'message_url',
     ];
 
     protected $hidden   =   [

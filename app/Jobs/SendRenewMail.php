@@ -20,7 +20,7 @@ class SendRenewMail implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct($array,$type,$module)
+    public function __construct($array, $type, $module)
     {
         $this->array = $array;
         $this->type = $type;
@@ -32,8 +32,8 @@ class SendRenewMail implements ShouldQueue
      */
     public function handle(): void
     {
-        if($this->array['notification'] == 1){
-            EmailService::sendRenewMail($this->array,$this->type,$this->module);
+        if ($this->array['notification'] == 1) {
+            EmailService::sendRenewMail($this->array, $this->type, $this->module);
         }
     }
 }

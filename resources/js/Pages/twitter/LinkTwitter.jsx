@@ -64,6 +64,8 @@ export default function LinkTwitter(props) {
   const TwitterCard = () => {
     return <div className='t-card bg-light box p-3 rounded-lg shadow-md'>
             <Avatar 
+            role={auth && auth.user && auth.user.role}
+              profile_status_lock={auth && auth.user && auth.user.profile_status_lock == 2 ? true : false}
               name={auth && auth.user && auth.user.name}
               subhead={`@${auth && auth.user && auth.user.username}`}
               username={auth && auth.user && auth.user.username}
@@ -106,7 +108,7 @@ export default function LinkTwitter(props) {
     {username ? 
     <div className='step2' >
       <p className='text-center' >Linked Account : @{username}</p>
-      <div className='d-flex justify-content-center  my-3' >
+      <div className='flex justify-content-center  my-3' >
         <Form>
           <Form.Check checked={is_linked}
             type="switch" onChange={enableTweet}

@@ -1,16 +1,16 @@
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
-import userphoto from "../../../assets/img/userphoto.png";
+// import userphoto from "../../../assets/img/userphoto.png";
+import userphoto from "../../../assets/siteicon.png";
 import Avatar from "@/includes/Avatar";
 import axios from "axios";
 import React, { useState, useMemo } from "react";
 import LargestGifts from "./LargestGifts";
 import { crown } from "@/includes/Icons";
+import { RiVerifiedBadgeFill } from "react-icons/ri";
 
 export default function Board(props) {
     const { auth, data, is_daily } = props;
-
-    console.log(props);
 
     const [positions, setPositions] = useState([]);
     const [ranks, setRanks] = useState([]);
@@ -46,16 +46,19 @@ export default function Board(props) {
 
     const Rank = ({ r }) => {
         return (
-            <div className="rank py-3 border-bottom d-flex align-items-center justify-content-between">
-                <div className="d-flex align-items-center justify-content-between">
+            <div className="rank py-3 border-bottom flex items-center justify-between">
+                <div className="flex items-center justify-between">
                     <div className="sno me-2 me-md-4 ps-2">
-                        <p>#{r && r.rank}</p>
+                        <p className="font-gulfs">#{r && r.rank}</p>
                     </div>
                     <div className="wisher">
+                        
                         <Avatar
+                            role={r && r.role}
+                            profile_status_lock={r && r.profile_status_lock === 2 ? true : false}
                             name={(r && r.name) || "Anonymous"}
                             link={(r && r.username) || ""}
-                            subhead={(r && r.username) || null}
+                            subhead={`@${(r && r.username) || null}`}
                             username={(r && r.username) || null}
                             src={(r && r.avatar) || userphoto}
                         />
@@ -74,7 +77,7 @@ export default function Board(props) {
                 {p && p.username ? (
                     <Link
                         href={p && p.username}
-                        className={`position-${position} position text-center rounded-lg shadow-pink bg-white`}
+                        className={`position-${position} position text-center rounded-[40px] border-4 border-[#F94F97] shadow-pinks bg-white`}
                     >
                         <div className="profile p-3 pb-0">
                             <div className="position-relative">
@@ -97,16 +100,34 @@ export default function Board(props) {
                                 </div>
                             </div>
                             <div className="profile-content">
-                                <h2 className="font-bold text-large pt-2">
-                                    {(p && p.name) || "Anonymous"}
+                                <h2 className=" text-large pt-2 capitalize flex justify-center">
+                                    {(p && p.name) || "Anonymous"} 
+                                    {p?.role == 1 && p?.profile_status_lock === 2 ? 
+                                        <RiVerifiedBadgeFill  size={'1.2rem'} className="ms-1 mt-1 text-pink" />
+                                    : ''}
                                 </h2>
-                                <p className="toppercentage text-center">
+                                <p className="toppercentage text-center font-gulfs">
                                     {p && p.top}%{" "}
                                 </p>
                             </div>
-                            <div className={`rank-position `}>
-                                <h2 className="font-GillSans">{position}</h2>
-                            </div>
+                            {position === 1 ? 
+                                <div className={`rank-position  `}>
+                                    <h2 className="font-gulfs !text-[130px]">{position}</h2>
+                                </div>
+                                : ''
+                            }
+                            {position === 2 ? 
+                                <div className={`rank-position  `}>
+                                    <h2 className="font-gulfs !text-[80px]">{position}</h2>
+                                </div>
+                                : ''
+                            }
+                            {position === 3 ? 
+                                <div className={`rank-position  `}>
+                                    <h2 className="font-gulfs !text-[50px]">{position}</h2>
+                                </div>
+                                : ''
+                            }
                         </div>
                     </Link>
                 ) : (
@@ -116,12 +137,7 @@ export default function Board(props) {
                         <div className="profile p-3 pb-0">
                             <div className=" position-relative">
                                 {position == 1 ? (
-                                    <div
-                                        className="crown-wings"
-                                        dangerouslySetInnerHTML={{
-                                            __html: crown,
-                                        }}
-                                    />
+                                    <div className="crown-wings" dangerouslySetInnerHTML={{__html: crown}} />
                                 ) : (
                                     ""
                                 )}
@@ -159,10 +175,12 @@ export default function Board(props) {
                     <div className="row">
                         <div className="col-lg-8 mb-4">
                             <div className="pe-md-4">
-                                <div className="pt-4 pt-md-0 d-block d-md-flex align-items-center justify-content-between mb-4 pb-4">
-                                    <h1 className="text-bl font-GillSans text-start text-2xl uppercase text-white ">
+                                <div className="pt-4 pt-md-0 d-block d-mflex items-center justify-between mb-4 pb-4">
+                                    <h1 className="text-bl font-GillSans text-start text-4xl mb-3 uppercase text-white ">
                                         Leaderboard
                                     </h1>
+
+                                     
                                     <div className="changePeriod">
                                         <button
                                             className={
@@ -246,7 +264,7 @@ export default function Board(props) {
                                     <div
                                         className={`${
                                             loading ? "loading-state" : ""
-                                        }  rank_lists bg-white py-3 px-3 rounded-lg`}
+                                        }  rank_lists bg-white py-3 px-3 rounded-[25px]`}
                                     >
                                         {ranks.map((r, i) => {
                                             return <Rank r={r} key={i} />;

@@ -8,6 +8,7 @@ use App\Jobs\CheckoutUser;
 use App\Jobs\NotificationSave;
 use App\Jobs\ShopBuyed;
 use App\Jobs\ShopBuyedUser;
+use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
 use App\Models\Logs;
 use App\Models\MembershipPayment;
@@ -17,12 +18,14 @@ use App\Models\ShopPayment;
 use App\Models\ShopShippingInfo;
 use App\Models\ShopVarients;
 use App\Models\User;
+use App\Models\UserPayment;
 use App\Models\UserShopCategories;
 use App\StripeControl;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
@@ -212,7 +215,7 @@ class ShopsController extends Controller
         ];
 
         try {
-            $product = StripeControl::createProduct($productPayload);
+            $product = StripeControl::createProduct($productPayload, $user->account_id);
             $shop->stripe_product_id = $product->id;
             $shop->price_id = $product->default_price;
             $shop->save();
@@ -230,7 +233,6 @@ class ShopsController extends Controller
             // return redirect(route("user.show", ["username" => Auth::user()->username]))->with('error', "Stripe Error: " . $e->getMessage());
         }
     }
-
 
     public function updateShopItems(Request $request, $uuid)
     {
@@ -358,6 +360,8 @@ class ShopsController extends Controller
                             'images' => [$shop->perma_link],
                             "default_price" => $shop->price_id,
                             // "url" => $request->item_url ?? null
+                        ], [
+                            'stripe_account' => $user->account_id,
                         ]);
                     } else {
                         $stripe_client = StripeControl::createProduct($productPayload);
@@ -419,38 +423,10 @@ class ShopsController extends Controller
         ]);
     }
 
-
-    public function shopList($username)
-    {
-        $user = User::where('username', $username)->first();
-
-        $shops = [];
-        if (!empty($user)) {
-            $query = Shop::where('user_id', $user->id)->with(['user', 'shop_varients'])->orderBy('created_at', 'desc');
-
-            if (Auth::check()) {
-                if (Auth::id() != $user->id) {
-                    $query->where('approved', 1);
-                }
-            } else {
-                $query->where('approved', 1);
-            }
-
-            $shops = $query->get();
-            // $shops = Shop::where('user_id',$user->id)->orderBy('created_at','desc')->get();
-
-        }
-
-        return response()->json([
-            'status' => true,
-            'shops' => $shops
-        ]);
-    }
-
+     
 
     public function singleShopList($slug, $uuid, $session_id = null)
     {
-
         $shop = Shop::where('uuid', $uuid)->with(['user', 'shop_varients'])->first();
 
         $opened = null;
@@ -561,9 +537,16 @@ class ShopsController extends Controller
         ]);
     }
 
-
     public function buyShopItem(Request $request, $shop_id, $varient_id)
     {
+        $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
+        if ($checkGifterStatus == true) {
+            return response()->json([
+                'status' => false,
+                'message' => "⚠️ Please complete your card verification payment and wait for admin approval before making further payments."
+            ]);
+        }
+
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         try {
             if (!empty(request()->query('message'))) {
@@ -627,12 +610,13 @@ class ShopsController extends Controller
             $totalTaxAmount = $tax + $adminFee;
 
             if (!Auth::check()) {
-                $logged_out_user = User::where('email', request()->query('email'))->first();
+                $logged_out_user = User::where('email', request()->query('email'))->where('is_uk', 0)->first();
             }
 
             $shopPaymentDetail = ShopPayment::create([
                 'amount' => $amount,
                 'tax_amount' => $totalTaxAmount,
+                'vat_tax_amount' => $vat_percentage_amount,
                 'currency' => $shop->user->default_currency,
                 'shop_id' => $shop->id,
                 'user_id' => (Auth::check()) ? Auth::id() : (!empty($logged_out_user) ? $logged_out_user->id : null),
@@ -650,36 +634,88 @@ class ShopsController extends Controller
             $total += $vat_percentage_amount;
             $total += $adminFee;
             $total += $shipping_price;
+            $sessionCreate = null;
             if ($shop->price > 0) {
 
-                $lineItems[] = [
-                    // 'price' => $dd->stripe_product_id ?? '',
-                    'quantity' => $shopPaymentDetail->quantity,
-                    'price_data' => [
+                $connectedAccountId = $shop->user->account_id;
+
+                // Step 1: Check if customer already exists in connected account
+                $storeCustomer = ConnectedAccountCustomer::where('user_id', Auth::id())
+                    ->where('creator_id', $shop->user->id)
+                    ->where('connected_account_id', $connectedAccountId)
+                    ->where('product_type', 'shop item')
+                    ->first();
+
+                // Step 2: Check if price already exists
+                $existingPriceEntry = ConnectedAccountCustomer::where('user_id', Auth::id())
+                    ->where('creator_id', $shop->user->id)
+                    ->where('connected_account_id', $connectedAccountId)
+                    ->where('product_id', $shop->stripe_product_id)
+                    ->where('product_type', 'shop item')
+                    ->whereNotNull('price_id')
+                    ->first();
+
+                // Step 3: Create customer in connected account if not exists
+                $customer = null;
+                if (!$storeCustomer) {
+                    $customer = StripeControl::createCustomer([
+                        'email' => $shop->user->email,
+                        'name' => $shop->user->name,
+                    ], $connectedAccountId);
+                }
+
+                $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
+
+                // Step 4: Create price if not exists
+                if ($existingPriceEntry) {
+                    $priceId = $existingPriceEntry->price_id;
+                } else {
+                    $pricePayload = [
+                        'unit_amount' => round($total * 100),
                         'currency' => $currency,
                         'product' => $shop->stripe_product_id,
-                        'unit_amount_decimal' => Helpers::priceFormat($shop->user->default_currency, $total, $currency) * 100
-                    ]
+                    ];
+
+                    // Create the price in the connected account
+                    $price = StripeControl::createPrice($pricePayload, $connectedAccountId);
+
+                    if (empty($price->id)) {
+                        throw new Exception("Failed to create Stripe price.");
+                    }
+
+                    $priceId = $price->id;
+                }
+
+                // Step 5: Store customer & price if not already stored
+                if (!$storeCustomer) {
+                    ConnectedAccountCustomer::create([
+                        'user_id' => Auth::id(),
+                        'creator_id' => $shop->user->id,
+                        'connected_account_id' => $connectedAccountId,
+                        'stripe_customer_id' => $customer_id,
+                        'product_type' => 'shop item',
+                        'product_id' => $shop->stripe_product_id,
+                        'price_id' => $priceId,
+                    ]);
+                }
+
+                // Step 6: Build line item
+                $items = [
+                    'price' => $priceId,  // Use the existing price ID
+                    'quantity' => 1,
                 ];
 
-                $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-
-                $sessionCreate = $stripe->checkout->sessions->create([
+                // Step 7: Build session payload
+                $payload = [
                     'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
                     'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
-                    'line_items' => $lineItems,
+                    'line_items' => [$items],
                     'mode' => 'payment',
-                    'payment_intent_data' => [
-                        'transfer_data' => [
-                            'destination' => $shop->user->account_id, // Creator's connected account ID
-                            'amount' => Helpers::priceFormat($shop->user->default_currency, $amount, $currency) * 100,
-                        ],
-                        // 'application_fee_amount' => $taxNew * 100,
-                        'on_behalf_of'  => $shop->user->account_id,
-                    ],
-                    'customer_email' =>  request()->query('email'),
-                    // 'currency' => 'usd',
-                ]);
+                    'payment_method_types' => ['card'], // Add this line
+                    "customer" => $customer_id,
+                ];
+
+                $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccountId);
 
                 $shopPaymentDetail->session_id =  $sessionCreate->id;
                 $shopPaymentDetail->save();
@@ -722,9 +758,13 @@ class ShopsController extends Controller
                 'msg' => "Payment Successfull",
                 'url' => route('single-shop-list', [$slug, $shop->uuid, $shopPaymentDetail->session_id])
             ]);
-        } catch (\Throwable $th) {
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ]);
             // Log::error("Error in createCheckout: " . $th->getMessage());
-            throw $th;
+            // throw $e->getMessage();
         }
     }
 
@@ -732,7 +772,11 @@ class ShopsController extends Controller
     {
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         try {
-            $stripeid = ShopPayment::where('uuid', $id)->first();
+            $stripeid = ShopPayment::with('shop', 'user')->where('uuid', $id)->first();
+            if (!$stripeid) {
+                Log::error("No ShopPayment found for UUID: $id");
+                return redirect()->back()->with('error', 'Invalid payment ID.');
+            }
 
             if ($stripeid->anonymous == 1) {
                 $username = "Anonymous user";
@@ -751,19 +795,52 @@ class ShopsController extends Controller
             $symbol = Currency::where('iso', strtoupper($stripeid->currency))->first();
 
             $message = $stripeid->message;
+            $amountUserPay = $symbol->symbol . $stripeid->amount + $stripeid->vat_tax_amount;
             if ($stripeid->anonymous == 0) {
-                ShopBuyed::dispatch($stripeid, false, $symbol->symbol);
+                ShopBuyed::dispatch($stripeid, false, $amountUserPay);
             } else {
-                ShopBuyed::dispatch($stripeid, true, $symbol->symbol);
+                ShopBuyed::dispatch($stripeid, true, $amountUserPay);
             }
 
-            $curr = Currency::where('iso', strtoupper($currency))->first();
-            ShopBuyedUser::dispatch($stripeid, $stripeid->shop->reward_file_url, $curr->symbol);
+            ShopBuyedUser::dispatch($stripeid, $stripeid->shop->reward_file_url, $symbol->symbol);
+
+            /**************************SHOP**PWA**START****************************************************/
+            // below is SHOP pwa for fans
+
+            $CreatorName = $stripeid->shop->user->name ?? 'A Creator';
+            $title = "🛍️ Purchase Confirmed!";
+            $content = "You bought something from {{ $CreatorName }}’s shop. They’ll process it soon.";
+            $email = $stripeid->email ?? $stripeid->user->email;
+
+            Helpers::sendNotification($title, $content, $email);
+
+            // below is wish pwa for creator
+            $FanName = $stripeid->user->name ?? 'A Fan';
+            $title = "📦 New Shop Order!";
+            $content = "{{ $FanName }} placed an order in your shop. Time to fulfill it!";
+            $email = $stripeid->shop->user->email;
+
+            Helpers::sendNotification($title, $content, $email);
+
+            /****************************SHOP**PWA**ENDS****************************************************/
+
+            $userPayment = new UserPayment();
+            $userPayment->from_user_id = $stripeid->user_id ?? null;
+            $userPayment->to_user_id = $stripeid->shop->user_id;
+            $userPayment->product_type = 'shop';
+            $userPayment->amount = $stripeid->amount;
+            $userPayment->currency = $stripeid->currency;
+            $userPayment->payment_method = 'stripe';
+            $userPayment->payment_details = json_encode($stripeid->session_id, true);
+            $userPayment->paid_at = Carbon::now();
+            $userPayment->status = $stripeid->payment_status ?? 'paid';
+            $userPayment->save();
 
             $slug = strtolower(str_replace(" ", "-", $stripeid->shop->name));
 
             return redirect(route('single-shop-list', [$slug, $stripeid->shop->uuid, $stripeid->session_id]))->with('success', 'Payment Successful.');
         } catch (Exception $e) {
+            Log::error("Error in successPayment: " . $e->getMessage());
             return redirect(route('user.show', [$stripeid->shop->user->username]))->with('error', $e->getMessage());
         }
     }

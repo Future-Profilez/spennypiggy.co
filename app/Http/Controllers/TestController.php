@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\CurrencyExchange;
+use App\Helpers;
 use App\IpTracker;
+use App\Jobs\DeleteStripeProductJob;
 use App\Jobs\FetchSelfTwitterData;
 use App\Mail\Welcome;
 use App\Models\Currency;
@@ -17,14 +19,29 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
-use Stripe\Balance;
+use App\Jobs\SendIdentityVerificationEmail;
+use App\Models\Bills;
+use App\Models\Membership;
+use App\Models\Shop;
+use App\Models\UserVerificationStatus;
+use App\Models\WishItem;
+use Carbon\Carbon;
+use Exception;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Response;
 use Stripe\Stripe;
 
 class TestController extends Controller
 {
-
+    public function __construct()
+    {
+        // dd('ok');
+        // Middleware can be applied here if needed
+    }
     /**
      * Search Stripe Customer
      *
@@ -132,7 +149,7 @@ class TestController extends Controller
     }
 
     /**
-     * Test Tweetter OAuth1.1
+     * Test Twitter OAuth1.1
      */
     public function testX()
     {
@@ -211,4 +228,266 @@ class TestController extends Controller
             'ip_indo'   =>  IpTracker::$ipInfo
         ]);
     }
+
+    public function sendFailedVerificationEmails()
+    {
+        try {
+            // Fetch users with non-null identity_verification_error
+            $users = User::whereNotNull('identity_verification_error')->where('is_uk', 0)->get();
+
+            if ($users->isEmpty()) {
+                return response()->json(['status' => 'error', 'message' => 'No users found with identity verification errors.']);
+            }
+
+            // Dispatch email jobs for each user
+            foreach ($users as $user) {
+                dispatch(new SendIdentityVerificationEmail($user, 'failed'));
+            }
+
+            return response()->json(['status' => 'success', 'message' => 'Emails sent to users with identity verification errors.']);
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            Log::error("Error in sending identity verification emails", [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return response()->json(['status' => 'error', 'message' => 'An error occurred while sending emails.']);
+        }
+    }
+
+    public function seedUserVerificationStatus()
+    {
+        $now = Carbon::now();
+
+        // Process CREATORS
+        $creators = User::whereHas('creatorMonthlySubscription', function ($q) {
+            $q->where('status', 'paid');
+        })->where('role', 1)->where('is_uk', 0)->get();
+
+        foreach ($creators as $user) {
+            $hasAvatar = !empty($user->avatar) && $user->avatar_approved == 1;
+            $hasBio = !empty($user->bio);
+
+            $bioStatus = ($hasAvatar && $hasBio) ? 1 : 0; // Approved only if all conditions are met
+
+            UserVerificationStatus::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'role' => 1,
+                    'bio_status' => $bioStatus,
+                    'social_status' => 0,
+                    'address_status' => 0,
+                    'user_profile_status' => 0,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]
+            );
+        }
+
+        // Process GIFTERS
+        $gifters = User::where('role', 0)->where('is_uk', 0)
+            ->whereHas('gifterCardVerification', function ($q) {
+                $q->where('status', 'success');
+            })
+            ->get();
+
+        foreach ($gifters as $user) {
+            UserVerificationStatus::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'role' => 0,
+                    'bio_status' => !empty($user->bio) ? 1 : 0,
+                    'social_status' => 0,
+                    'address_status' => 0,
+                    'user_profile_status' => 0,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]
+            );
+        }
+
+        return "User verification entries seeded successfully.";
+    }
+
+    public function deleteAllProducts()
+    {
+
+        $userIdToTest = 45;
+        $productsGroupedByUser = [];
+
+        foreach (Bills::whereNull('deleted_at')->where('user_id', $userIdToTest)->get() as $bill) {
+            if ($bill->product_id && $bill->user) {
+                $productsGroupedByUser[$bill->user_id][] = $bill->product_id;
+            }
+        }
+
+        foreach (WishItem::whereNull('deleted_at')->where('user_id', $userIdToTest)->get() as $item) {
+            if ($item->stripe_product_id && $item->user) {
+                $productsGroupedByUser[$item->user_id][] = $item->stripe_product_id;
+            }
+        }
+
+        foreach (Membership::whereNull('deleted_at')->where('user_id', $userIdToTest)->get() as $membership) {
+            if ($membership->product_id && $membership->user) {
+                $productsGroupedByUser[$membership->user_id][] = $membership->product_id;
+            }
+        }
+
+        foreach (Shop::whereNull('deleted_at')->where('user_id', $userIdToTest)->get() as $shop) {
+            if ($shop->stripe_product_id && $shop->user) {
+                $productsGroupedByUser[$shop->user_id][] = $shop->stripe_product_id;
+            }
+        }
+
+        foreach ($productsGroupedByUser as $userId => $productIds) {
+            $user = \App\Models\User::find($userId);
+            if (!$user) continue;
+
+            foreach (array_unique($productIds) as $productId) {
+                // dd($productId);
+                DeleteStripeProductJob::dispatch($productId, $user);
+            }
+        }
+
+        Log::info("Tested deletion job dispatch for user ID: $userIdToTest");
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Deletion jobs dispatched for user ID: ' . $userIdToTest,
+            'products_grouped_by_user' => $productsGroupedByUser
+        ]);
+    }
+    // $productsGroupedByUser = [];
+
+    // foreach (Bills::whereNull('deleted_at')->get() as $bill) {
+    //     if ($bill->product_id && $bill->user) {
+    //         $productsGroupedByUser[$bill->user_id][] = $bill->product_id;
+    //     }
+    // }
+
+    // foreach (WishItem::whereNull('deleted_at')->get() as $item) {
+    //     if ($item->stripe_product_id && $item->user) {
+    //         $productsGroupedByUser[$item->user_id][] = $item->stripe_product_id;
+    //     }
+    // }
+
+    // foreach (Membership::whereNull('deleted_at')->get() as $membership) {
+    //     if ($membership->product_id && $membership->user) {
+    //         $productsGroupedByUser[$membership->user_id][] = $membership->product_id;
+    //     }
+    // }
+
+    // foreach (Shop::whereNull('deleted_at')->get() as $shop) {
+    //     if ($shop->stripe_product_id && $shop->user) {
+    //         $productsGroupedByUser[$shop->user_id][] = $shop->stripe_product_id;
+    //     }
+    // }
+
+    // foreach ($productsGroupedByUser as $userId => $productIds) {
+    //     $user = \App\Models\User::find($userId);
+    //     if (!$user) continue;
+
+    //     foreach (array_unique($productIds) as $productId) {
+    //         DeleteStripeProductJob::dispatch($productId, $user);
+    //     }
+    // }
+
+    // Log::info("Dispatched deletion jobs for users: " . implode(', ', array_keys($productsGroupedByUser)));
+    // }
+
+
+
+
+
+    // public function handleRyeProductPayment(Request $request)
+    // {
+    //     $orderDetails = RyeCart::with('creator')->where(['cart_id' => $request->cart_id, 'creator_id' => $request->creator_id])->first();
+    //     if ($orderDetails) {
+    //         $amount = $orderDetails->cart['stores'][0]['cartLines'][0]['variant']['price'] ?? 0;
+    //         $currency = 'usd';
+    //         if (isset($orderDetails->cart)) {
+
+    //             $lineItems[] = [
+    //                 // 'price' => $dd->stripe_product_id ?? '',
+    //                 'quantity' => $orderDetails->cart['stores'][0]['cartLines'][0]['quantity'] ?? 1,
+    //                 'price_data' => [
+    //                     'currency' => 'usd',
+    //                     'product' => $orderDetails->cart['stores'][0]['cartLines'][0]['variant']['id'] ?? '',
+    //                     'unit_amount' => $orderDetails->cart['stores'][0]['cartLines'][0]['variant']['price'] ?? 0,
+    //                 ]
+    //             ];
+
+    //             //     'price_data' => [
+    //             //         'currency' => $currency,
+    //             //         'product' => $shop->stripe_product_id,
+    //             //         'unit_amount_decimal' => Helpers::priceFormat($shop->user->default_currency, $total, $currency) * 100
+    //             //     ]
+    //             // ];
+
+    //             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+    //             $sessionCreate = $stripe->checkout->sessions->create([
+    //                 'success_url' => route('rye.success.payment', [$orderDetails->uuid]),
+    //                 'cancel_url' => route('rye.cancel.payment', [$orderDetails->uuid]),
+    //                 'line_items' => $lineItems,
+    //                 'mode' => 'payment',
+    //                 'payment_method_types' => ['card'], // Add this line
+    //                 'payment_intent_data' => [
+    //                     'transfer_data' => [
+    //                         'destination' => $orderDetails->creator->account_id,
+    //                         'amount' => Helpers::priceFormat($orderDetails->user->default_currency, $amount, $currency) * 100,
+    //                     ],
+    //                     'on_behalf_of'  => $orderDetails->creator->account_id,
+    //                 ],
+    //                 'customer_email' => request()->query('email'),
+    //             ]);
+
+    //             // $sessionCreate = $stripe->checkout->sessions->create([
+    //             //     'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
+    //             //     'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
+    //             //     'line_items' => $lineItems,
+    //             //     'mode' => 'payment',
+    //             //     'payment_intent_data' => [
+    //             //         'transfer_data' => [
+    //             //             'destination' => $shop->user->account_id, // Creator's connected account ID
+    //             //             'amount' => Helpers::priceFormat($shop->user->default_currency, $amount, $currency) * 100,
+    //             //         ],
+    //             //         // 'application_fee_amount' => $taxNew * 100,
+    //             //         'on_behalf_of'  => $shop->user->account_id,
+    //             //     ],
+    //             //     'customer_email' =>  request()->query('email'),
+    //             //     // 'currency' => 'usd',
+    //             // ]);
+
+    //             $orderDetails->session_id =  $sessionCreate->id;
+    //             $orderDetails->save();
+
+    //             return response()->json([
+    //                 'status' => true,
+    //                 'url' => $sessionCreate->url
+    //             ]);
+    //         }
+    //     }
+    // }
+
+
+
+
+    // public function createCart(Request $request)
+    // {
+    //     try {
+    //         $user_id = Auth::id();
+    //         RyeCart::create([
+    //             'user_id' => $user_id,
+    //             'creator_id' => $request->creator_id,
+    //             'cart_id' => $request->cart_id,
+    //             'cart_details' => json_encode($request->data, true)
+    //         ]);
+
+    //         return response()->json(['status' => 'success', 'message' => 'Added To Cart']);
+    //     } catch (Exception $e) {
+    //         return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+    //     }
+    // }
 }

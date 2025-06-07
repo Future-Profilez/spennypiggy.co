@@ -50,7 +50,6 @@ export default function BillCheckout(props) {
         );
     };
     const onVerify = (token) => {
-        console.log("token", token);
         handleSubmit();
     };
 
@@ -123,32 +122,32 @@ export default function BillCheckout(props) {
                                             bill.tax_amount || "", bill && bill.currency
                                         )}
                                     </strong>
-                                    <button className="tooltipbtn flex justify-center items-center !font-normal">
-                                        ?
-                                        <p className="!text-start">
-                                            <strong className="text-white !font-normal ">
+                                     <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">
+                                    ?
+                                    <p className="absolute bg-[#505050] p-[10px] rounded-md top-[22px] right-[-18px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
+                                        <strong className="text-white font-normal">
                                             Card Payments:
-                                            </strong>{" "}
-                                            <br></br>
-                                            Bills - 10%<br></br>
-                                            Memberships - 10%<br></br>
-                                            Piggy Bank - 20%<br></br>
-                                            Crowdfunding - 20%<br></br>
-                                            Subscriptions - 10%<br></br>
-                                            Single Purchases - 20%<br></br>
-                                            Profile Shop - 20%<br></br>
-                                            <br></br>
-                                            {/* <strong className="text-white !font-normal ">
-                                                Card payments
-                                            </strong>{" "}
-                                            <br></br>
-                                            25% + £0.80 card fee.
-                                            <br></br> */}
-                                            <br></br>
-                                            Administrative Fee on all
-                                            Transactions - £1
-                                        </p>
-                                    </button>
+                                        </strong>{" "}
+                                        <br />
+                                        Bills - 10%
+                                        <br />
+                                        Memberships - 10%
+                                        <br />
+                                        Piggy Bank - 20%
+                                        <br />
+                                        Crowdfunding - 20%
+                                        <br />
+                                        Subscriptions - 10%
+                                        <br />
+                                        Single Purchases - 20%
+                                        <br />
+                                        Profile Shop - 20%
+                                        <br />
+                                        <br />
+                                        Administrative Fee on all Transactions -
+                                        £1
+                                    </p>
+                                </button>
                                 </div>
                                 {vat_amount && vat_amount > 0 ? (
                                     <div className="cartSubTotal text-right mt-1">
@@ -406,7 +405,7 @@ export default function BillCheckout(props) {
                                             </div>
                                         </li>
                                     </ul>
-                                    <div className="mt-4 d-flex align-items-center justify-content-center">
+                                    <div className="mt-4 flex items-center justify-content-center">
                                         <button
                                             type="submit"
                                             className={`${

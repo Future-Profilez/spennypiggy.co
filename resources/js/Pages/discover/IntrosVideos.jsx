@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 const LoadingScreen = React.lazy(() => import('@/includes/LoadingScreen'));
 const Nocontent = React.lazy(() => import('@/includes/Nocontent'));
+import userphoto from "../../../assets/img/userphoto.png";
 
 export default function IntroVideos(props) {
 
@@ -30,7 +31,7 @@ export default function IntroVideos(props) {
     },[order, gender]);
 
     const Switch = () => { 
-        return <div className='d-flex mb-3 mb-sm-0 align-items-center toggleswitch' >
+        return <div className='flex mb-3 mb-sm-0 items-center toggleswitch' >
         <button onClick={()=>setorder('new')} className={`${order == 'new' ? 'active' : ''}`} >Newest</button>
         <button onClick={()=>setorder('old')} className={`${order == 'old' ? 'active' : ''}`} >Oldest</button>
     </div>
@@ -40,10 +41,10 @@ export default function IntroVideos(props) {
       const [open, setOpen] = useState(false);
 
       return <div  className=' col-xl-3 col-lg-4 col-6 mb-4' >
-          <div className='introbox rounded-lg position-relative' >
+          <div className='introbox border-3 !border-[#F94F97] rounded-lg position-relative' >
             <LazyLoadImage  onClick={()=>setOpen(!open)} 
             alt={"image"} useIntersectionObserver={true} effect="blur"
-            height={360} src={w && w.poster_url} className='' width={260} />
+            height={360} src={ w && w?.poster_url || w?.user && w?.user?.avatar_url|| userphoto} className='' width={260} />
             <div onClick={()=>setOpen(!open)} className='cursor-pointer playicon' >
               <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="32" cy="32" r="32" fill="#F94F97"/>
@@ -53,7 +54,7 @@ export default function IntroVideos(props) {
             <div className='user-links w-100' >
               <Link href={`/${w && w.user && w.user.username}`}  >
                 <p className='text-white text-normal' >{w && w.user && w.user.name}</p>
-                <p className='text-mint text-normal' >@{w && w.user && w.user.username}</p>
+                <p className='text-white text-normal' >@{w && w.user && w.user.username}</p>
               </Link>
             </div>
 
@@ -69,9 +70,9 @@ export default function IntroVideos(props) {
     }
 
     return <>
-     <div className='filters d-block d-sm-flex  align-items-center justify-content-between w-100 mb-4' >
+     <div className='filters d-block d-sm-flex  items-center justify-between w-100 mb-4' >
                 <Switch />
-            <div className='d-flex align-items-center' >
+            <div className='flex items-center' >
               <div className='filter-select-wrap' >
                   <select onChange={(e)=> setgender(e.target.value)} id="types" className="me-2 filter-select bg-gray-50 border border-gray-300 text-gray-900 
                   text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 
@@ -88,7 +89,7 @@ export default function IntroVideos(props) {
 
         <div className='row' >
           {loading ? 
-          <div className='w-100 d-flex justify-content-center' ><LoadingScreen /></div>  
+          <div className='w-100 flex justify-content-center' ><LoadingScreen /></div>  
           :
           <>
             {intros && intros.length ? intros.map((w, i)=> { 

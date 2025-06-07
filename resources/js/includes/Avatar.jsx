@@ -1,9 +1,11 @@
 import React from 'react'
 import { Link } from "@inertiajs/react";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
-import userphoto from "../../assets/img/userphoto.png";
+import userphoto from "../../assets/siteicon.png";
+import { RiVerifiedBadgeFill } from "react-icons/ri";
 
-export default function Avatar({ src, imageSrc, name, username, subhead, url, link }) {
+export default function Avatar({ src, role, profile_status_lock, imageSrc, name, username, subhead, url, link }) {
+  
   return (
     <>
       <style>{`
@@ -30,7 +32,9 @@ export default function Avatar({ src, imageSrc, name, username, subhead, url, li
               />
             </div>
             <div className="avatar-content">
-              <h2>{name}</h2>
+              <h2 className='flex items-center'>{name} {role && profile_status_lock ? 
+              <RiVerifiedBadgeFill  size={'1.2rem'} className="ms-1 mt-1 text-pink" /> : ''}
+              </h2>
               <p>{subhead || username}</p>
             </div>
           </Link>
@@ -43,7 +47,7 @@ export default function Avatar({ src, imageSrc, name, username, subhead, url, li
             </div>
             <div className="avatar-content">
               <h2>{name}</h2>
-              {subhead && <p>{subhead}</p>}
+              {subhead && <p className=''>{subhead}</p>}
             </div>
           </div>
         </div>

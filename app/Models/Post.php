@@ -10,7 +10,7 @@ use Ramsey\Uuid\Uuid;
 
 class Post extends Model
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'uuid',
@@ -38,11 +38,12 @@ class Post extends Model
     public static function boot()
     {
         parent::boot();
-        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
+        static::creating(fn($w) => $w->uuid = Uuid::uuid4());
     }
 
-    public function user(){
-        return $this->belongsTo(User::class,'user_id');
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id')->where('suspended_account', 0)->where('is_uk', 0);
     }
 
     public function getImageUrlAttribute()
@@ -54,20 +55,23 @@ class Post extends Model
         return $url;
     }
 
-    public function likes(){
-        return $this->hasMany(PostLike::class,'post_id');
+    public function likes()
+    {
+        return $this->hasMany(PostLike::class, 'post_id');
     }
 
-    public function getLikesCountAttribute(){
-        return $this->likes()->where('status',1)->count();
+    public function getLikesCountAttribute()
+    {
+        return $this->likes()->where('status', 1)->count();
     }
 
-    public function comments(){
-        return $this->hasMany(PostComment::class,'post_id');
-
+    public function comments()
+    {
+        return $this->hasMany(PostComment::class, 'post_id');
     }
 
-    public function getCommentsCountAttribute(){
+    public function getCommentsCountAttribute()
+    {
         $count = $this->comments()->count();
         foreach ($this->comments as $key => $value) {
             $count += $value->replies()->count();
@@ -75,13 +79,14 @@ class Post extends Model
         return $count;
     }
 
-    public function getLikedAttribute(){
+    public function getLikedAttribute()
+    {
         $like = null;
         if (Auth::check()) {
-            $like = PostLike::where('post_id',$this->id)->where('user_id',Auth::id())->where('status',1)->first();
+            $like = PostLike::where('post_id', $this->id)->where('user_id', Auth::id())->where('status', 1)->first();
         }
 
-        if(!empty($like)){
+        if (!empty($like)) {
             return true;
         }
 

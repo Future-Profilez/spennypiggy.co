@@ -13,7 +13,7 @@ export default function AdultScan({fileuid, content, onScan, classes, type, scan
       try{
          if(fileuid && type !== 'video'){
             setScanning(true);
-            axios.get(`check-adult-content/${fileuid}`,).then(resp => {
+            axios.get(`/scanning/check-adult-content/${fileuid}`,).then(resp => {
                setTimeout(()=>{
                   setScanning(false);
                },2000);

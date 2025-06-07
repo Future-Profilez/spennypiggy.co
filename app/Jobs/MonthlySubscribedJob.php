@@ -37,7 +37,6 @@ class MonthlySubscribedJob implements ShouldQueue
      */
     public function handle()
     {
-        Log::info("come in handle - " . $this->email);
         if ($this->type === 'success') {
             EmailService::sendMonthlySubscribedMail($this->email, $this->sub);
             // Mail::to($this->email)->send(new MonthlySubscriptionSuccessMail($this->sub));

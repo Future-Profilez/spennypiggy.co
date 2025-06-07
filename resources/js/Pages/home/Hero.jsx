@@ -2,14 +2,13 @@ import React from 'react'
 import { Link, Head } from "@inertiajs/react";
 import itsfree from "../../../assets/img/itsfree.png";
 import itsfreemob from "../../../assets/img/itsfree-mob.png";
-import herobanner from '../../../assets/img/herobanner.png';
+import herobanner from '../../../assets/new/HeroBg.png';
 import proud from '../../../assets/img/proud.png';
 import TrustBox from './TrustBox';
 import Scrollspy from 'react-scrollspy';
 import { useState } from 'react';
 import { useEffect } from 'react';
 import Popup from '@/Components/Popup';
- 
 
 export default function Hero({auth}) {
 
@@ -21,7 +20,7 @@ export default function Hero({auth}) {
      const handleScroll = () => {
        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
        const offset = 150;
- 
+
        const currentSection = sections.find(section => {
          const sectionElement = document.getElementById(section);
          if (sectionElement) {
@@ -32,7 +31,7 @@ export default function Hero({auth}) {
        });
        setActiveSection(currentSection || '');
      };
- 
+
      window.addEventListener('scroll', handleScroll);
      return () => {
        window.removeEventListener('scroll', handleScroll);
@@ -46,7 +45,7 @@ export default function Hero({auth}) {
       targetElement.scrollIntoView({ behavior: 'smooth' });
     }
   };
-  
+
   const [showPopup, setShowPopup] = useState(false);
   useEffect(() => {
       const lastShown = localStorage.getItem("popupLastShown");
@@ -57,7 +56,7 @@ export default function Hero({auth}) {
   }, []);
 
   return <>
-            <Popup action={showPopup} space="4"
+            {/* <Popup action={showPopup} space="4"
             modalclassName="pinkmodal" >
               <div className='p-8'>
               <h2 className='text-center font-GillSans text-purple text-[20px] text-uppercase'>For Open banking payments and same day payouts, sign up via <a href='https://uk.spennypiggy.co'  >uk.spennypiggy.co </a> 🤑🚀</h2>
@@ -66,9 +65,9 @@ export default function Hero({auth}) {
                 <a className='btn btn-pink mt-3 w-full max-w-[200px] ' href='https://uk.spennypiggy.co'> Sign Up</a>
               </div>
               </div>
-            </Popup>
+            </Popup> */}
 
-      <div className="d-block d-lg-none landing-bottom-bar">
+      <div className="block lg:hidden landing-bottom-bar">
         <Scrollspy items={sections} currentClassName="active" offset={-50}>
           <li>
             <a href="#home" className={activeSection === 'home' ? 'active' : ''} onClick={(e) => handleNavItemClick(e, 'home')}>
@@ -97,55 +96,64 @@ export default function Hero({auth}) {
       </div>
 
 
-      <div style={{ backgroundImage:`url(${herobanner})` }}  id="home" className="heroSec position-relative">
+      <div style={{ backgroundImage:`url(${herobanner})` }}  id="home" className="heroSec pb-2 sm:pb-10 position-relative">
         <div className="containerbox">
           <div className="welcome" data-aos="zoom-out" >
-              <div className="welcomeLeft m-auto pt-[100px] pb-[100px] d-table">
-                  <h2 className="text-center welcomeHeading shadow-yellow font-GillSans text-uppercase mb-1">
+              <div className="welcomeLeft m-auto pt-[50px] xl:pt-[80px] d-table">
+                  {/* <h2 className="text-center welcomeHeading shadow-yellow font-GillSans text-uppercase mb-1">
                     Oink! Oink! B*tch{" "}
+                  </h2> */}
+                  <h2 className=" headingSm shadow-none uppercase text-light font-gulfs stroke-none text-5xl md:text-6xl  xl:text-7xl max-w-3xl mx-auto text-center">
+                    The everything {" "}
+                    <div className='text-5xl md:text-7xl xl:text-8xl text-[#F94F96]'>wishlist</div>
                   </h2>
-                  <h3 className="text-center text-[25px] text-uppercase text-yellow font-GillSans my-3">
-                      Get Your Lifestyle funded! 🎁
+                  <h3 className="text-center text-xl uppercase text-yellow font-gulfs mt-2 sm:mt-3 mb-2 sm:mb-3">
+                      Built for Creators
                   </h3>
-
+                  <h3 className="text-center text-2xl uppercase text-white font-anton mb-3 max-w-[600px]">
+                  Want gifts without TMI? Build your privacy-first Wishlist and let your fans spoil you!
+                  </h3>
                   <div className=" pt-4 wishlistbtn wishlistbtnFixed m-auto d-table">
-
-                    {auth?.user?.username 
-                      ?  
-                      <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink py-[8px] px-5 lg log" > 
-                        My Wishlist 
+                    {auth?.user?.username
+                      ?
+                      <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-pink py-[8px] px-5 lg log" >
+                        My Wishlist
                       </Link>
-                      :  <Link href="/register" className="btn-pink wishlistbutton lg px-5 shadow-mint border-mint " > Create  your page </Link> 
+                      :  <Link href="/register" 
+                      // className="bg-[#E6EA7B] font-anton text-black px-5 py-1 uppercase flex text-center items-center tracking-[1px] justify-center text-lg rounded-[30px] border-[2px] border-yellow transition-all duration-300 ease-in-out" 
+                      className="btn-pink wishlistbutton lg px-5 shadow-mint border-mint">
+                          Create  your page 
+                         </Link>
                     }
 
-                    <div className='itsfree-tag d-none d-md-block' >
+                    <div className='absolute top-[35px] -right-[77%] max-w-[300px] hidden md:block' >
                       <img alt={"image"}  className=' '
-                        src={itsfree} 
+                        src={itsfree}
                       />
                     </div>
-                    <div className='itsfree-tag d-block d-md-none' >
+                    <div className='itsfree-tag block md:hidden' >
                       <img alt={"image"}  className=' '
-                        src={itsfreemob} 
+                        src={itsfreemob}
                       />
                     </div>
                   </div>
-                  <div className='mt-5 mt-md-1 pt-3 pt-md-4 pt-md-0 d-flex justify-content-center' >  
+                  <div className="mt-7 md:mt-1 flex justify-center pt-4 md:pt-0">
                     <TrustBox />
-                  </div>
+                </div>
 
                   {/* <div className="mt-4 pt-2 gifts-links text-white ps-0 ">
                   Proudly 🏳️‍🌈 Owned
                   </div> */}
 
                   {/* <div className="itsfree ps-0 mt-0 mt-md-3 pt-1 text-start"> Its’s Free 🎉 </div> */}
-                  
+
               </div>
           </div>
 
-          <div className="proud-banner d-flex  items-center w-full max-w-[500px]" >
+          {/* <div className="proud-banner flex  items-center w-full max-w-[500px]" >
             <img  className='object-contain' alt={"image"} src={proud}  />
             <p className='text-white ps-4 pb-3' >*Requires a monthly £4 subscription to cover stripe fees & compliance costs.</p>
-          </div>
+          </div> */}
         </div>
       </div>
     </>
@@ -157,13 +165,13 @@ export default function Hero({auth}) {
       Oink! Oink! <br /> B*tch{" "}
     </h2>
 
-    <img alt={"image"} 
+    <img alt={"image"}
     height={377.63}
-    src={addwishlistimg} 
+    src={addwishlistimg}
     width={474} />
 
   <div className="proudlines mt-3 mt-md-0 mb-0 welcomeTitle sm text-center mt-1 shadow-yellow text-uppercase font-GillSans ps-0 ">
     Proudly 🏳️‍🌈 Owned
   </div>
-  
+
 </div>  */}

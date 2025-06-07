@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\Currency;
 use App\Models\Notification;
 use App\Models\UserCart;
+use App\Models\UserVerificationStatus;
 use App\Models\WishItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
@@ -38,12 +39,14 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array {
 
         $user = $request->user();
+        $userBioStatus = UserVerificationStatus::where('user_id', $user->id ?? null)->first();
         $items = UserCart::where('user_id', $user->id ?? null)->where('status',1)->count();
         $notification_count = Notification::where('notifiable_id',$user->id ?? null)->where('is_read',0)->count();
         return [
             ...parent::share($request),
             'auth' => [
                 'user' => $user,
+                'verification_status' => $userBioStatus,
             ],
             'notification_count' => $notification_count,
             'ziggy' => fn () => [

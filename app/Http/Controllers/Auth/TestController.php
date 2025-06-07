@@ -34,7 +34,7 @@ class TestController extends Controller
     public function createApplicant()
     {
 
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
         $externalUserId = $user->uuid; // Use your internal UserID instead in production code
         $levelName = 'basic-kyc-level';
         $email = $user->email;
@@ -58,7 +58,7 @@ class TestController extends Controller
 
     public function generateVerificationLink()
     {
-        $user = User::where('id', Auth::id())->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
         $externalUserId = $user->uuid; // Use your internal UserID instead in production code
         $levelName = 'basic-kyc-level';
 
@@ -69,12 +69,11 @@ class TestController extends Controller
         return Inertia::location($verificationLink);
     }
 
-
     public function reviewWebhook()
     {
         $payload = @file_get_contents('php://input');
         $payload = json_decode($payload);
-        $user = User::where('uuid', $payload['externalUserId'])->first();
+        $user = User::where('uuid', $payload['externalUserId'])->where('is_uk', 0)->first();
 
         $user->applicant_id = $payload['applicantId'];
         $user->inspection_id = $payload['inspectionId'];
@@ -105,7 +104,6 @@ class TestController extends Controller
             'message' => 'Webhook received successfully.',
         ]);
     }
-
 
     public function testAiImage()
     {
@@ -170,7 +168,6 @@ class TestController extends Controller
         //     ]);
         // }
     }
-
 
     public function manualPayout()
     {

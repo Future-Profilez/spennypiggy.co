@@ -3,6 +3,7 @@
 namespace App;
 
 use Exception;
+use Illuminate\Support\Facades\Log;
 use Stripe\Exception\ApiConnectionException;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Exception\OAuth\InvalidRequestException;
@@ -56,11 +57,14 @@ class StripeControl
      * @param array $payload User Payload
      * @return throwable||\Stripe\Customer
      */
-    public static function createCustomer($payload)
+    public static function createCustomer(array $payload, string $connectedAccountId)
     {
         self::setClient();
         try {
-            return self::$client->customers->create($payload);
+            return self::$client->customers->create(
+                $payload,
+                ['stripe_account' => $connectedAccountId]
+            );
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());
         } catch (InvalidRequestException $e) {
@@ -71,6 +75,20 @@ class StripeControl
             throw new Exception("Stripe API Error: " . $e->getMessage());
         }
     }
+    // {
+    //     self::setClient();
+    //     try {
+    //         return self::$client->customers->create($payload);
+    //     } catch (RateLimitException $e) {
+    //         throw new Exception("Stripe RateLimit: " . $e->getMessage());
+    //     } catch (InvalidRequestException $e) {
+    //         throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+    //     } catch (ApiConnectionException $e) {
+    //         throw new Exception("Stripe API Connection: " . $e->getMessage());
+    //     } catch (ApiErrorException $e) {
+    //         throw new Exception("Stripe API Error: " . $e->getMessage());
+    //     }
+    // }
 
     /**
      * Search Customer
@@ -190,10 +208,20 @@ class StripeControl
      * @param array $payload Payment Payload
      * @return Throwable|\Stripe\Checkout\Session
      */
-    public static function createCheckoutSession($payload)
+    public static function createCheckoutSession(array $payload, $connectedAccountId = null)
     {
         self::setClient();
         try {
+            $params = ['payload' => $payload];
+
+            if ($connectedAccountId) {
+                // Set the Stripe Account context
+                return self::$client->checkout->sessions->create(
+                    $payload,
+                    ['stripe_account' => $connectedAccountId]
+                );
+            }
+
             return self::$client->checkout->sessions->create($payload);
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());
@@ -206,15 +234,25 @@ class StripeControl
         }
     }
 
+
     /**
      * Get A CheckOut Session
      *
      * @param string $sessionId Stripe Session Checkout Id
      * @return Throwable|\Stripe\Checkout\Session
      */
-    public static function getCheckoutSession($sessionId)
+    public static function getCheckoutSession($sessionId, $connectedAccountId = null)
     {
         self::setClient();
+
+        if ($connectedAccountId) {
+            // Set the Stripe Account context
+            return self::$client->checkout->sessions->retrieve(
+                $sessionId,
+                [],
+                ['stripe_account' => $connectedAccountId]
+            );
+        }
         try {
             return self::$client->checkout->sessions->retrieve($sessionId);
         } catch (RateLimitException $e) {
@@ -234,11 +272,14 @@ class StripeControl
      * @param array $payload Product Payload
      * @return Throwable|\Stripe\Product
      */
-    public static function createProduct($payload)
+    public static function createProduct(array $payload, string $connectedAccountId)
     {
         self::setClient();
         try {
-            return self::$client->products->create($payload);
+            return self::$client->products->create(
+                $payload,
+                ['stripe_account' => $connectedAccountId]
+            );
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());
         } catch (InvalidRequestException $e) {
@@ -246,9 +287,76 @@ class StripeControl
         } catch (ApiConnectionException $e) {
             throw new Exception("Stripe API Connection: " . $e->getMessage());
         } catch (ApiErrorException $e) {
+            Log::info("Stripe API Error: " . $e->getMessage());
             throw new Exception("Stripe API Error: " . $e->getMessage());
         }
     }
+
+    /**s
+     * Create a Stripe Price
+     *
+     * @param array $payload Price Payload
+     * @return Throwable|\Stripe\Price
+     */
+    public static function createPrice(array $priceData, mixed $connectedAccountId = null)
+    {
+        self::setClient();
+
+        if(!$connectedAccountId) {
+            return self::$client->prices->create($priceData);
+        }
+
+        return self::$client->prices->create(
+            $priceData,
+            ['stripe_account' => $connectedAccountId]
+        );
+    }
+
+
+    /**
+     * Create a Stripe Price
+     *
+     * @param array $payload Price Payload
+     * @return Throwable|\Stripe\Price
+     */
+    public static function getProduct(string $productId, string $connectedAccountId)
+    {
+        self::setClient();
+
+        return self::$client->products->retrieve(
+            $productId,
+            [],
+            ['stripe_account' => $connectedAccountId]
+        );
+    }
+
+    /**
+     * Create a Stripe Price
+     *
+     * @param array $payload Price Payload
+     * @return Throwable|\Stripe\Price
+     */
+    public static function createSubscription(array $payload, string $connectedAccountId)
+    {
+        self::setClient();
+
+        try {
+            return self::$client->subscriptions->create(
+                $payload,
+                ['stripe_account' => $connectedAccountId]
+            );
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            Log::info("Stripe API Error: " . $e->getMessage());
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
 
     /**
      * Update A Subscriptions
@@ -323,7 +431,7 @@ class StripeControl
     }
 
 
-     /**
+    /**
      * Deleting and account
      *
      * @param string $account_id account Id
@@ -333,7 +441,6 @@ class StripeControl
     {
         self::setClient();
         try {
-
             return self::$client->accounts->delete($account_id, []);
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());

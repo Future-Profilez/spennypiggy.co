@@ -34,10 +34,12 @@ export default function LargestGifts() {
   }, [period]);
 
   const GiftItem = ({ gift, index }) => (
-    <div className="rank py-3 border-bottom d-flex align-items-center justify-content-between">
-      <div className="d-flex align-items-center justify-content-between">
+    <div className="rank py-3 border-bottom flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div className="wisher wisher-rank">
           <Avatar
+            role={gift.role}
+            profile_status_lock={gift.profile_status_lock == 2 ? true : false}
             name={gift.name}
             link={gift.username || null}
             subhead={`@${gift.username || "anonymous"}`}
@@ -56,7 +58,7 @@ export default function LargestGifts() {
   );
 
   return (
-    <div className="rank_lists largest bg-white p-4 rounded-lg mt-4">
+    <div className="rank_lists largest bg-white p-4 rounded-[25px] mt-4">
       <h2 className="text-bl font-GillSans text-start text-2xl uppercase text-dark mb-4">Largest Gifts</h2>
       
       <div className="time-hrs">

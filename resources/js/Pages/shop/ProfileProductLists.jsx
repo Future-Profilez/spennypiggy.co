@@ -13,13 +13,12 @@ export default function ProfileProductLists({profileuser}) {
    const [loading, setLoading] = useState(false);
 
    const fetchItems = () =>{
-      setLoading(true);  
+      setLoading(true);
       axios.get(`/shop/list/${profileuser && profileuser.username}`)
       .then(res =>{
          setLists(res.data.shops);
          setLoading(false);
       }).catch(err =>{
-         console.log(err);
          setLoading(false);
       });
    }

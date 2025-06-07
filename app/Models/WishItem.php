@@ -55,7 +55,7 @@ class WishItem extends Model
     public static function boot()
     {
         parent::boot();
-        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
+        static::creating(fn($w) => $w->uuid = Uuid::uuid4());
     }
 
     protected $hidden = [
@@ -69,7 +69,7 @@ class WishItem extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id')->where('suspended_account', 0);
+        return $this->belongsTo(User::class, 'user_id')->where('suspended_account', 0)->where('is_uk', 0);
     }
 
 
