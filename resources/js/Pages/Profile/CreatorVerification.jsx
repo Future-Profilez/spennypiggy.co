@@ -219,7 +219,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                  <p className="text-gray-500 text-[14px]">Secure your account and meet compliance requirements.</p>
                            </div>
                         </div>
-                        <div>{auth?.user?.identity_status == 1 ? <span className="text-green-600">Verified</span> : <span className="text-yellow-600 font-bold">Pending</span>}</div>
+                        <div>{auth?.user?.identity_status == 1 ? <span className="text-green-600">Verified</span> : <Link className="text-pink" href="/stripe/identity/verification">Verify</Link>}</div>
                      </div>
 
 
