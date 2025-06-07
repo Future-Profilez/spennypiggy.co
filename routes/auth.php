@@ -48,6 +48,7 @@ use App\SeoMeta;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Request;
 use PHPUnit\Event\Code\Test;
+use Symfony\Component\HttpKernel\Profiler\Profile;
 
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
@@ -248,7 +249,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/earnings', function () {
             return Inertia::render('earnings/Earnings');
         })->name('earnings-page');
-        
+
         Route::get('piggy-bank-setting/', [ProfileController::class, 'piggyBankSetting'])->name("piggy-bank-setting");
 
         Route::get('get-notification/', [ProfileController::class, 'getNotifications'])->name("get-notification");
@@ -311,8 +312,6 @@ Route::middleware('auth')->group(function () {
             return Inertia::render('Redirecting');
         })->name("redirecting");
 
-
-
         Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity');
         Route::get('cancel-subs/{uuid}', [StripeController::class, 'cancelSubs'])->name('cancel-subs');
         Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
@@ -360,6 +359,8 @@ Route::middleware('auth')->group(function () {
             Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay")->middleware('mustCompletedCardVerification');
             Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
         });
+
+        Route::get('/update-profile-lock-status', [ProfileController::class, 'updateProfileLockStatus'])->name('update.profile.lock.status');
     });
 });
 

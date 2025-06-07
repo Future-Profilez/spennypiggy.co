@@ -198,6 +198,23 @@ class ProfileController extends Controller
         }
     }
 
+    /**
+     * Update the user's profile lock status.
+     */
+    public function updateProfileLockStatus()
+    {
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        if ($user->role == 1) {
+            $user->profile_status_lock = 1;
+            $user->save();
+        }
+
+        return back()->with('success', 'Profile lock status updated successfully.');
+        // return response()->json([
+        //     'status' => true,
+        //     'msg' => 'Profile verification status updated successfully.',
+        // ]);
+    }
 
     /**
      * Delete the user's account.
@@ -506,7 +523,7 @@ class ProfileController extends Controller
         ]);
     }
 
-    
+
 
     /**
      * Delete the intro video

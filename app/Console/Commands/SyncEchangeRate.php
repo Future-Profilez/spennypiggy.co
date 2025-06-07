@@ -14,7 +14,7 @@ class SyncEchangeRate extends Command
      *
      * @var string
      */
-    protected $signature = 'app:sync-echange-rate';
+    protected $signature = 'app:sync-exchange-rate';
 
     /**
      * The console command description.
