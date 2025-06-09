@@ -22,7 +22,6 @@ export default function OldSubscribe() {
 
    const ReceivePushNotification  = () =>{
       axios.get(`push-notification-switch/1`).then((resp) => {
-         console.log("resp", resp);
       }).catch((_err) => {
          console.error("error", _err);
       });
@@ -97,7 +96,7 @@ export default function OldSubscribe() {
                               </div> */}
                            </div>
                      </div>
-                     
+
                   </div>
                </div>
          </div>

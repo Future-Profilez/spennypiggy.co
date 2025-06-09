@@ -8,7 +8,6 @@ const Allwishes = React.lazy(() => import('./AllWishes'));
 const IntroVideos = React.lazy(() => import('./IntrosVideos'));
 
 export default function Discover(props) {
-    console.log("props", props);
   const {auth} = props;
   return (
     <Authenticated auth={auth?.user || ''} >
@@ -18,7 +17,7 @@ export default function Discover(props) {
                 <div className='m-auto px-3' >
                     <h1 className='headingMd text-shadow-black text-center mb-1'>Seek & Search </h1>
                     <p className='text-center text-large'>Search through all wishes and creators to make their dreams come true!</p>
-                </div> 
+                </div>
                 <div className='howWorkTab mt-12 pb-12 mx-auto'>
                     <Tabs defaultActiveKey="1" id="uncontrolled-tab-example" className="mb-3">
                         <Tab eventKey="1" title="Wishes" className='px-0'>
@@ -27,9 +26,9 @@ export default function Discover(props) {
                         <Tab eventKey="2" title="Creators" className='px-0'>
                               <IntroVideos />
                         </Tab>
-                    </Tabs>   
+                    </Tabs>
                 </div>
-            </div>  
+            </div>
             <JoinUs />
         </div>
     </Authenticated>

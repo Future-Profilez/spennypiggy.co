@@ -117,13 +117,13 @@ class RegisteredUserController extends Controller
 
             $randomBio = null;
             if ($request->role == 1) {
-                $defaultBios = [
-                    // "I haven’t written my bio yet, but you can still spoil me 😘",
-                    // "No bio. Just vibes… and a wishlist 💅",
-                    "Still working on my About Me. In the meantime… gifts welcome 🛍️",
-                    // "Bio coming soon. But like, feel free to click that wishlist link.",
-                    // "New here. Wishlist isn’t 💸"
-                ];
+                // $defaultBios = [
+                //     // "I haven’t written my bio yet, but you can still spoil me 😘",
+                //     // "No bio. Just vibes… and a wishlist 💅",
+                //     "Still working on my About Me. In the meantime… gifts welcome 🛍️",
+                //     // "Bio coming soon. But like, feel free to click that wishlist link.",
+                //     // "New here. Wishlist isn’t 💸"
+                // ];
 
                 // $randomBio = $defaultBios[array_rand($defaultBios)];
                 $randomBio = "Still working on my About Me. In the meantime… gifts welcome 🛍️";
@@ -280,7 +280,7 @@ class RegisteredUserController extends Controller
         $existingSuccess = GifterCardVerification::where('user_id', $user->id)->where('status', 'success')->whereNull('deleted_at')->first();
         GifterCardVerification::where('user_id', $user->id)->whereIn('status', ['pending', 'rejected by admin'])->delete();
 
-        if ($existingSuccess){
+        if ($existingSuccess) {
             $user->update(['profile_status_lock' => 1]);
             return response()->json([
                 'status' => false,

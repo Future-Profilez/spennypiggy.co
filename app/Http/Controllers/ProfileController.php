@@ -210,7 +210,7 @@ class ProfileController extends Controller
                 $user->save();
             }
 
-            return back()->with('success', 'Profile lock status updated successfully.');
+            return back()->with('success', 'Your Verification Request Successfully.');
         } catch (\Exception $e) {
             Log::error('Error updating profile lock status: ' . $e->getMessage());
             return back()->with('error', 'Failed to update profile lock status. Please try again later.');

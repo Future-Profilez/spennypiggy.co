@@ -8,8 +8,7 @@ import { useRef } from "react";
 import Popup from '@/Components/Popup';
 
 export default function Stripe(props) {
-    const { auth, user, } = props; 
-     console.log("props",props);
+    const { auth, user, } = props;
     const checkRef = useRef();
     const { errorAlert } = useAlerts();
     const { data, setData, get, post, processing, errors, reset } = useForm({
@@ -107,9 +106,9 @@ export default function Stripe(props) {
                             </li>
                         </ul>
 
-                        
 
-                       
+
+
 
                                 <strong className="d-block w-100 pt-3 mb-1">Choose Country</strong>
                                 <Countries send={getCountry} />
@@ -144,7 +143,7 @@ export default function Stripe(props) {
                                             </div>
                                     </Popup>
                                 </div>
-                          
+
 
                     </div>
                 </div>

@@ -12,7 +12,6 @@ const Nocontent = React.lazy(() => import('@/includes/Nocontent'));
 
 export default function Cart(props) {
 
-    console.log("cart props", props);
     const deviceid = DeviceID();
     const { auth, user, carts } = props;
     const [ cartsItems, setCartItems ] = useState(carts);
@@ -61,7 +60,7 @@ export default function Cart(props) {
             <Head title={"Cart"} />
 
             {ryeItems && ryeItems.length ? <CartListing loading2={loading2} ryeItems={ryeItems} fetchRyeItems={fetchRyeItems}/> : '' }
-            
+
             {cartsItems && cartsItems.length ? <div className="blackbg">
                 <div className="container pb-5 ">
                     <h2 className="text-bl font-GillSans pt-5 pt-3 pb-0 text-center text-2xl uppercase text-white">Cart</h2>

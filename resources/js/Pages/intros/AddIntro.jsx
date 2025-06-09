@@ -82,7 +82,6 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
         console.error("error", _err);
     });
   }
-  console.log(IsloggedIn, "intro")
   const ProfileIntro = () => {
     return <>
       <Popup

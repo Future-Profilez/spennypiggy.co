@@ -42,9 +42,11 @@ class DeleteStripeProductJob implements ShouldQueue
             $account = ['stripe_account' => $connectedAccountId];
 
             // Cancel all subscriptions using the product
-            $subscriptions = \Stripe\Subscription::all(['limit' => 100], $account);
+            $subscriptions = \Stripe\Subscription::all(['limit' => 100]);
+            // $subscriptions = \Stripe\Subscription::all(['limit' => 100], $account);
             foreach ($subscriptions->data as $subscription) {
                 foreach ($subscription->items->data as $item) {
+                    dd($item);
                     if ($item->price->product === $this->productId) {
                         \Stripe\Subscription::update($subscription->id, ['cancel_at_period_end' => true], $account);
                     }

@@ -51,16 +51,15 @@ export default function Dashboard(props) {
     const w = useWidthCount();
     const{auth,user,username,global_currency,itemid, slinks,wish_categories, items, page, selectedCategory}= props;
     const [wishitems, setWishitems] = useState(useMemo(() => items || [], [items]));
-    console.log("props", props);
     const [tab, setTab] = useState(0);
- 
+
     const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
     const [loading, setLoading] = useState(false);
     const [giftsloading, setGiftsLoading] = useState(false);
-    const [sLinks, setLinks] = useState(slinks || []); 
+    const [sLinks, setLinks] = useState(slinks || []);
     const [gifts, setGifts] = useState([]);
-   
+
     const fetch_gifts = async (signal) => {
         setGiftsLoading(true);
         axios.get(`/gift-items/${username}`, { signal })
@@ -76,12 +75,12 @@ export default function Dashboard(props) {
     useEffect(() => {
         const controller = new AbortController();
         const { signal } = controller;
-        fetch_gifts(signal); 
+        fetch_gifts(signal);
         return () => controller.abort();
     }, [tab]);
 
- 
- 
+
+
 
     const currencyaction = (e) => {
         if (e == "open") {
@@ -120,7 +119,7 @@ export default function Dashboard(props) {
             coordinateGetter: sortableKeyboardCoordinates,
         })
     );
-    
+
     const handleDragEnd = (event) => {
         if (!IsloggedIn) {
             return false;
@@ -168,7 +167,7 @@ export default function Dashboard(props) {
         }
     }, [errors, flash]);
 
- 
+
 
     const [showAlert, setShowAlert] = useState(true);
     useEffect(() => {
@@ -222,7 +221,7 @@ export default function Dashboard(props) {
 
                                             { wishOptions ?
                                                 <div>
-                                                    <Wishlist text="Cash Gift" 
+                                                    <Wishlist text="Cash Gift"
                                                     currency={global_currency}
                                                     setuped={auth.user &&auth.user.stripe_details_submitted == 1 ? true : false} />
                                                     <div  className="w-full font-bold disabled addop bg-white rounded-xl p-3 mb-2 text-center">
@@ -242,7 +241,7 @@ export default function Dashboard(props) {
                                                 </div>
                                             : <div>
 
-                                        
+
                                                     <div className={`${auth.user && auth.user.stripe_details_submitted == 1 ? "block" : "disabled"}`}>
                                                     <div onClick={()=> setWishOptions(true)} className="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center cursor-pointer">
                                                         <div className=" flex items-center">
@@ -266,7 +265,7 @@ export default function Dashboard(props) {
                                                     <AddMembership  />
                                                     <AddBills  />
                                                     </div>
-                                            
+
                                             </div>}
 
                                     </div>
@@ -352,24 +351,24 @@ export default function Dashboard(props) {
                                                         <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'about' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "about" || page === false ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >About</Link>
 
                                                         <Link preserveScroll href={route('user.show', { username: user.username, page: 'wishes' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "wishes" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >Wishes</Link>
-                                                        
+
                                                         <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'feed' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "feed" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >feed</Link>
-                                                        
+
                                                         <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'memberships' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "memberships" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >memberships</Link>
 
                                                         <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'bills' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "bills" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >bills</Link>
-                                                        
+
                                                         <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'shop' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "shop" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >shop</Link>
-                                                        
+
                                                         <Link preserveScroll preserveState href={route('user.show', { username: user.username, page: 'gifts' })} className={`tab !border-l-0 !border-t-0 !border-e-0 capitalize !border-transparent ${page === "gifts" ? "text-pink border-b-2 !border-[#F94F97]" : "text-[#b5b5b5]"}`} >gifts</Link>
-                                                        
+
                                                     </Tabs>
 
                                                     {IsloggedIn && <Toggle />}
                                                 </div>
 
 
-                                            
+
 
 
 
@@ -391,7 +390,7 @@ export default function Dashboard(props) {
                                                                                     {(user &&user.bio) ||""}
                                                                                 </p>
 
-                                                                                
+
 
                                                                                 {IsloggedIn && user?.edit_bio_reason  ?
                                                                                     <div className="mt-3">
@@ -404,20 +403,20 @@ export default function Dashboard(props) {
 
                                                                                 {IsloggedIn ? (
                                                                                     <div className="userProfileDate pt-0 pt-md-3">
-                                                                                        
-                                                                                        {auth?.user && auth?.user?.role == 1  
-                                                                                        && !auth?.user?.monthly_charge_enabled ? 
+
+                                                                                        {auth?.user && auth?.user?.role == 1
+                                                                                        && !auth?.user?.monthly_charge_enabled ?
                                                                                             <SiteSubscription user={auth?.user} />
                                                                                         : ''}
-                                                                                    
+
                                                                                         {auth.user && auth.user.role == 1 && auth.user.stripe_details_submitted == 1  ? (
                                                                                             <PaymentDashboard classes="btn-pink lg w-100 mt-3" text="Payment Dashboard" />
-                                                                                            ) : 
+                                                                                            ) :
                                                                                             // <div className="finish mt-4 d-block">
                                                                                             //     <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
                                                                                             //     <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-xs lg" > Finish Setup
                                                                                             //     </Link>
-                                                                                            // </div> 
+                                                                                            // </div>
                                                                                             ''
                                                                                         }
 
@@ -452,12 +451,12 @@ export default function Dashboard(props) {
                                                                     </div>
 
                                                                     <div className="ps-md-4 col-md-6">
-                                                                        {IsloggedIn && user && user.stripe_details_submitted == 0 || user.stripe_details_submitted == null ? 
+                                                                        {IsloggedIn && user && user.stripe_details_submitted == 0 || user.stripe_details_submitted == null ?
                                                                             <CreatorVerification  IsloggedIn={IsloggedIn} />
                                                                         : ''}
                                                                         {IsloggedIn && user && user.stripe_details_submitted == 1 ? <ProfileSteps sLinks={sLinks} user={user} IsloggedIn={IsloggedIn} /> : ''}
-                                                                        {!IsloggedIn && user && user.stripe_details_submitted == 1 && w > 767 ? 
-                                                                            <TipInner classes={`mb-4`} /> 
+                                                                        {!IsloggedIn && user && user.stripe_details_submitted == 1 && w > 767 ?
+                                                                            <TipInner classes={`mb-4`} />
                                                                         : ''}
                                                                         <FeedList IsloggedIn={IsloggedIn} />
                                                                     </div>
@@ -465,7 +464,7 @@ export default function Dashboard(props) {
                                                             </Suspense>
                                                         : ''}
 
-                                                        {IsloggedIn || user?.stripe_details_submitted == 1 ? 
+                                                        {IsloggedIn || user?.stripe_details_submitted == 1 ?
                                                             <>
                                                                 {page === "wishes" ?
                                                                 <Suspense fallback={<LoadingScreen />} >
@@ -477,7 +476,7 @@ export default function Dashboard(props) {
                                                                             {wish_categories.map((c,i) => {
                                                                                 return <>
                                                                                 <Link preserveScroll  href={route('user.show', { username: user.username, page: 'wishes', category: c.id })}
-                                                                                className={`${selectedCategory == c.id ? 'active' : ''} me-2  mb-2  wish-tags cursor-pointer focus:bg-pink`} 
+                                                                                className={`${selectedCategory == c.id ? 'active' : ''} me-2  mb-2  wish-tags cursor-pointer focus:bg-pink`}
                                                                                 key={`cats-${i}`} >{c.category}</Link>
                                                                                 </>;
                                                                             })}
@@ -533,7 +532,7 @@ export default function Dashboard(props) {
                                                                 {page === "memberships" ?
                                                                     <Suspense
                                                                         fallback={<LoadingScreen />} >
-                                                                            <MembershipsLists   
+                                                                            <MembershipsLists
                                                                             IsloggedIn={IsloggedIn}
                                                                             username={user?.username || auth?.user ?.username}
                                                                             />
@@ -576,8 +575,8 @@ export default function Dashboard(props) {
                                                                         )}
                                                                     </Suspense>
                                                                 : ''}
-                                                            </>  
-                                                            : 
+                                                            </>
+                                                            :
                                                             <PaymentUnActivated
                                                             heading={`WishList not activated yet. `}
                                                             subheading={`Until they activate their wishlist, this user won't be able to receive gifts.`} />
