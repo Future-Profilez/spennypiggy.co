@@ -118,14 +118,15 @@ class RegisteredUserController extends Controller
             $randomBio = null;
             if ($request->role == 1) {
                 $defaultBios = [
-                    "I haven’t written my bio yet, but you can still spoil me 😘",
-                    "No bio. Just vibes… and a wishlist 💅",
+                    // "I haven’t written my bio yet, but you can still spoil me 😘",
+                    // "No bio. Just vibes… and a wishlist 💅",
                     "Still working on my About Me. In the meantime… gifts welcome 🛍️",
-                    "Bio coming soon. But like, feel free to click that wishlist link.",
-                    "New here. Wishlist isn’t 💸"
+                    // "Bio coming soon. But like, feel free to click that wishlist link.",
+                    // "New here. Wishlist isn’t 💸"
                 ];
 
-                $randomBio = $defaultBios[array_rand($defaultBios)];
+                // $randomBio = $defaultBios[array_rand($defaultBios)];
+                $randomBio = "Still working on my About Me. In the meantime… gifts welcome 🛍️";
             }
             //saving the google secret of an particular user
             $secret = $this->google2FA->generateSecretKey();
