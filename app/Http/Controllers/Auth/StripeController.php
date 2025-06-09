@@ -729,16 +729,20 @@ class StripeController extends Controller
             // Price creation or reuse
             $priceId = $existingPriceEntry->price_id ?? null;
             if (!$priceId) {
-                $priceObj = StripeControl::createPrice([
+                $priceParams = [
                     'unit_amount' => round($finalTotalAmount * 100),
                     'currency' => $currency,
-                    'recurring' => [
+                    'product' => $wish->stripe_product_id,
+                ];
+
+                if ($reccure !== 'onetime') {
+                    $priceParams['recurring'] = [
                         'interval' => StripeControl::$periods[$wish->subscription_period],
                         'interval_count' => 1,
-                    ],
-                    'product' => $wish->stripe_product_id,
-                ], $connectedAccountId);
+                    ];
+                }
 
+                $priceObj = StripeControl::createPrice($priceParams, $connectedAccountId);
                 $priceId = $priceObj->id;
             }
 
@@ -756,8 +760,9 @@ class StripeController extends Controller
             }
 
             // Build session payload
+            // Build session payload
             $payload = [
-                'mode' => 'subscription',
+                'mode' => $reccure === 'onetime' ? 'payment' : 'subscription',
                 'currency' => 'usd',
                 'line_items' => [
                     [
@@ -765,15 +770,26 @@ class StripeController extends Controller
                         'quantity' => 1,
                     ],
                 ],
-                // Use in subscription_data
-                'subscription_data' => [
-                    'application_fee_percent' => round($applicationFeePercent, 2),
-                    'description' => 'Wish Item Subscription Content Purchase.'
-                ],
-                'customer' => $customer_id, // existing customer in connected account
+                'customer' => $customer_id,
                 'success_url' => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => 'success']),
                 'cancel_url' => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
             ];
+
+            // Add either payment_intent_data or subscription_data
+            if ($reccure === 'onetime') {
+                $payload['payment_intent_data'] = [
+                    'application_fee_amount' => round($platformTotal * 100), // in cents
+                    // 'transfer_data' => [
+                    //     'destination' => $connectedAccountId,
+                    // ],
+                ];
+            } else {
+                $payload['subscription_data'] = [
+                    'application_fee_percent' => round($applicationFeePercent, 2),
+                    'description' => 'Wish Item Subscription Content Purchase.',
+                ];
+            }
+
 
             try {
                 // Create the session on connected account
@@ -1186,23 +1202,29 @@ class StripeController extends Controller
 
             // Get email from billing_details
             $email = $charge->billing_details->email ?? null;
-
-            $subs = StripePaymentDetail::where('guest_email', $email)->where('payment_status', '!=', 'paid')->latest()->first();
+            $user = User::where('email', $email)->where('is_uk', 0)->first();
+            if (!$user) {
+                return response()->json([
+                    'status' => true,
+                    'message' => 'user not found',
+                ]);
+            }
+            $subs = StripePaymentDetail::where('user_id', $user->id)->whereIn('payment_status', ['paid', 'pending'])->latest()->first();
             $ret = StripeControl::getSubscription($event->data->object->subscription);
             if ($charge->object == 'charge') {
                 if ($event->type == "customer.subscription.deleted" && !empty($subs)) {
-                    $subs->status = 'cancelled';
+                    $subs->payment_status = 'cancelled';
                     $subs->save();
 
                     SendRenewMail::dispatch($array, 'cancelled', 'main');
                 } elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
-                    $subs->status = 'failed';
+                    $subs->payment_status = 'failed';
                     $subs->save();
 
                     SendRenewMail::dispatch($array, 'failed', 'main');
                 } elseif ($event->type == "charge.updated" && !empty($subs)) {
 
-                    $subs->status = $charge->status ?? 'unknown';
+                    $subs->payment_status = $charge->status ?? 'unknown';
                     $subs->save();
 
                     $array = [
@@ -1212,7 +1234,7 @@ class StripeController extends Controller
                         'notification' => $subs->user->notification_send ?? 0,
                     ];
 
-                    SendRenewMail::dispatch($array, $subs->status, 'main');
+                    SendRenewMail::dispatch($array, $subs->payment_status, 'main');
                 }
 
                 if (!empty($subs)) {
