@@ -110,49 +110,32 @@ Route::middleware('auth')->group(function () {
             Route::get('gifter-card-verification', [RegisteredUserController::class, 'gifterCardVerification'])->name('gifter.card.verification');
             Route::get('card-verification-success/{uuid}', [RegisteredUserController::class, 'cardVerificationSuccess'])->name('card.verification.success');
             Route::get('card-verification-failed/{id}', [RegisteredUserController::class, 'cardVerificationFailed'])->name('card.verification.failed');
-
             Route::get('update-vat/{percent}', [AuthenticatedSessionController::class, 'updateVat'])->name('updateVat');
-
             Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
-
             Route::put('password', [PasswordController::class, 'update'])->name('password.update');
-
             Route::post('save_social_links', [SocialLinksController::class, 'saveSocialLinks'])->name('save_social_links');
-
             Route::post('save_wish_item', [WishitemController::class, 'addWishItem'])->name('save_wish_item');
-
             Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
-
             Route::get('/delete-wish-item/{uuid}', [WishitemController::class, 'deleteWishItem'])->name('delete_wish_item');
-
             Route::prefix("stripe")->name("stripe.")->group(function () {
                 Route::get("authorize", [StripeController::class, "index"])->name("index");
                 Route::match(["get", "post"], "/connect-{step}/{country?}/{currency?}", [StripeController::class, "initConnect"])->name("connect");
                 Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
                 Route::post("/login", [StripeController::class, "loginToStripe"])->name("login");
             });
-
             Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
-
             Route::get('notification-switch', [ProfileController::class, 'notificationSwitch'])->name('switch-notification');
-
             Route::post('user/save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
-
             Route::post('edit-category/{id}', [WishitemController::class, 'editWishCategory'])->name('edit-category');
-
             Route::get('delete-category/{id}', [WishitemController::class, 'deleteCategory'])->name('delete-category');
-
             Route::get('account', function () {
                 $auto_tweet = Auth::user()->auto_tweet == 1 ? true : false;
                 return Inertia::render('accountsetting/Accountsetting', [
                     'auto_tweet' => $auto_tweet
                 ]);
             })->name("account");
-
             Route::get('/scanning/check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content');
-
             Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
-
             Route::get('unlink-twitter', [AuthenticatedSessionController::class, 'unlinkTwitter'])->name('unlink-twitter');
             Route::get('wish-tracker', [WishitemController::class, 'wishtrackerItems'])->name('wish-tracker');
             Route::get('user-tips', [WishitemController::class, 'userTips'])->name('user-tips');
@@ -163,7 +146,6 @@ Route::middleware('auth')->group(function () {
             Route::get('subscribed', [WishitemController::class, 'userSubscribed'])->name('subscribed');
             Route::get('cancel-subscription/{subscription_id}', [WishitemController::class, 'cancelSubscription'])->name('cancel-subscription');
             Route::get('/read-status/{payment_id}/{type}', [WishitemController::class, 'readStatus'])->name('read-status');
-
             Route::get('/stripe', function (Request $request) {
                 $auth = Auth::user();
                 $bills = Bills::where('user_id', $auth->id)->where('approved', 1)->count();
@@ -173,7 +155,6 @@ Route::middleware('auth')->group(function () {
                     'membership_count' => $membership
                 ]);
             })->middleware(['auth', 'verified'])->name('stripe');
-
             Route::get('/pin-item/{wish_id}/', [WishitemController::class, 'pinItem'])->name('pin-item');
 
             // Twitter
@@ -183,7 +164,6 @@ Route::middleware('auth')->group(function () {
                 Route::get('share/{uuid}/{type}', [WishitemController::class, 'shareOnTwitter'])->name('share');
                 // Route::get('authorize', [TwitterController::class, 'handleOauth1'])->name('handle');
             });
-
             Route::post('add-goal', [WishitemController::class, 'addTipGoal'])->name('add-goal');
             Route::get('mark-complete-goal/{uuid}', [WishitemController::class, 'markJarComplete'])->name('mark-goal');
             Route::get('all-goals', [WishitemController::class, 'allGoalsCreators'])->name('all-goals');
@@ -196,7 +176,6 @@ Route::middleware('auth')->group(function () {
                 Route::get('remove', [ProfileController::class, 'removeIntro'])->name('remove');
                 // Route::get('/{uuid}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
             });
-
             Route::prefix("membership")->name("membership.")->group(function () {
                 Route::post('save', [MembershipController::class, 'membershipLevelSave'])->name('save');
                 Route::post('edit/{uuid}', [MembershipController::class, 'updateLevel'])->name('edit');
@@ -204,7 +183,6 @@ Route::middleware('auth')->group(function () {
                 Route::get('dashboard', [MembershipController::class, 'membershipDashboard'])->name('dashboard');
                 Route::get('graph', [MembershipController::class, 'membershipGraph'])->name('graph');
             });
-
             Route::prefix("post")->name("post.")->group(function () {
                 Route::post('save', [PostsController::class, 'savePost'])->name('save');
                 Route::post('edit/{uuid}', [PostsController::class, 'editPost'])->name('edit');
