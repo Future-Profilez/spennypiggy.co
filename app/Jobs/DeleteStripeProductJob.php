@@ -2,72 +2,62 @@
 
 namespace App\Jobs;
 
+use App\Models\User;
+use App\Models\Bills;
+use App\Models\WishItem;
+use App\Models\Membership;
+use App\Models\Shop;
+use Illuminate\Bus\Queueable;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Log;
 use App\Mail\ProductDeletionMail;
-use Illuminate\Bus\Queueable;
-use Stripe\Subscription;
-use App\Models\User; // If not already imported
-use Stripe\Product;
-use Stripe\Stripe;
-use Stripe\Price;
 
 class DeleteStripeProductJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $productId;
-    public $user;
+    protected $user;
+    protected $productIds;
 
-    public function __construct($productId, User $user)
+    public function __construct(User $user, array $productIds)
     {
-        $this->productId = $productId;
         $this->user = $user;
+        $this->productIds = $productIds;
     }
 
     public function handle()
     {
-        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
-        if (empty($this->user->account_id)) {
-            Log::error("Stripe product cleanup failed: Connected account ID not found for user ID {$this->user->id}");
-            return;
-        }
+        $deleted = false;
 
-        try {
-            $connectedAccountId = $this->user->account_id;
-            $account = ['stripe_account' => $connectedAccountId];
+        // Bills
+        $deleted |= Bills::where('user_id', $this->user->id)
+            ->whereIn('product_id', $this->productIds)
+            ->update(['deleted_at' => now()]);
 
-            // Cancel all subscriptions using the product
-            $subscriptions = \Stripe\Subscription::all(['limit' => 100]);
-            // $subscriptions = \Stripe\Subscription::all(['limit' => 100], $account);
-            foreach ($subscriptions->data as $subscription) {
-                foreach ($subscription->items->data as $item) {
-                    dd($item);
-                    if ($item->price->product === $this->productId) {
-                        \Stripe\Subscription::update($subscription->id, ['cancel_at_period_end' => true], $account);
-                    }
-                }
-            }
+        // WishItem
+        $deleted |= WishItem::where('user_id', $this->user->id)
+            ->whereIn('stripe_product_id', $this->productIds)
+            ->update(['deleted_at' => now()]);
 
-            // Deactivate prices for the product
-            $prices = \Stripe\Price::all(['product' => $this->productId, 'limit' => 100], $account);
-            foreach ($prices->data as $price) {
-                \Stripe\Price::update($price->id, ['active' => false], $account);
-            }
+        // Membership
+        $deleted |= Membership::where('user_id', $this->user->id)
+            ->whereIn('product_id', $this->productIds)
+            ->update(['deleted_at' => now()]);
 
-            // Deactivate the product itself
-            \Stripe\Product::update($this->productId, ['active' => false], $account);
+        // Shop
+        $deleted |= Shop::where('user_id', $this->user->id)
+            ->whereIn('stripe_product_id', $this->productIds)
+            ->update(['deleted_at' => now()]);
 
-            // Send deletion email
-            // Mail::to($this->user->email)->queue(new \App\Mail\ProductDeletionMail($this->user));
-
-            Log::info("Deleted product {$this->productId} and emailed user {$this->user->id}");
-        } catch (\Exception $e) {
-            Log::error("Stripe product cleanup failed: " . $e->getMessage());
+        if ($deleted) {
+            Mail::to($this->user->email)->queue(new ProductDeletionMail($this->user));
+            Log::info("Deleted products for user {$this->user->id} and sent email.");
+        } else {
+            Log::info("No products deleted for user {$this->user->id}, skipping email.");
         }
     }
 }

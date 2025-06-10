@@ -311,95 +311,49 @@ class TestController extends Controller
         return "User verification entries seeded successfully.";
     }
 
+    /**
+     * Delete all products for users with at least one product
+     *
+     * @return JsonResponse
+     */
     public function deleteAllProducts()
     {
+        $users = User::where('is_uk', 0)
+            ->whereNull('deleted_at')
+            ->where('suspended_account', 0)
+            ->get();
 
-        $userIdToTest = 45;
         $productsGroupedByUser = [];
 
-        foreach (Bills::whereNull('deleted_at')->where('user_id', $userIdToTest)->get() as $bill) {
-            if ($bill->product_id && $bill->user) {
-                $productsGroupedByUser[$bill->user_id][] = $bill->product_id;
+        foreach ($users as $user) {
+            $productIds = [];
+
+            $productIds = array_merge(
+                $productIds,
+                Bills::whereNull('deleted_at')->where('user_id', $user->id)->pluck('product_id')->filter()->unique()->toArray(),
+                WishItem::whereNull('deleted_at')->where('user_id', $user->id)->pluck('stripe_product_id')->filter()->unique()->toArray(),
+                Membership::whereNull('deleted_at')->where('user_id', $user->id)->pluck('product_id')->filter()->unique()->toArray(),
+                Shop::whereNull('deleted_at')->where('user_id', $user->id)->pluck('stripe_product_id')->filter()->unique()->toArray()
+            );
+
+            $uniqueProductIds = array_unique($productIds);
+
+            if (count($uniqueProductIds) === 0) {
+                continue;
             }
+
+            $productsGroupedByUser[$user->id] = $uniqueProductIds;
+
+            // Dispatch job for the user with all products
+            DeleteStripeProductJob::dispatch($user, $uniqueProductIds);
         }
-
-        foreach (WishItem::whereNull('deleted_at')->where('user_id', $userIdToTest)->get() as $item) {
-            if ($item->stripe_product_id && $item->user) {
-                $productsGroupedByUser[$item->user_id][] = $item->stripe_product_id;
-            }
-        }
-
-        foreach (Membership::whereNull('deleted_at')->where('user_id', $userIdToTest)->get() as $membership) {
-            if ($membership->product_id && $membership->user) {
-                $productsGroupedByUser[$membership->user_id][] = $membership->product_id;
-            }
-        }
-
-        foreach (Shop::whereNull('deleted_at')->where('user_id', $userIdToTest)->get() as $shop) {
-            if ($shop->stripe_product_id && $shop->user) {
-                $productsGroupedByUser[$shop->user_id][] = $shop->stripe_product_id;
-            }
-        }
-
-        foreach ($productsGroupedByUser as $userId => $productIds) {
-            $user = \App\Models\User::find($userId);
-            if (!$user) continue;
-
-            foreach (array_unique($productIds) as $productId) {
-                // dd($productIds);
-                DeleteStripeProductJob::dispatch($productId, $user);
-            }
-        }
-
-        Log::info("Tested deletion job dispatch for user ID: $userIdToTest");
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Deletion jobs dispatched for user ID: ' . $userIdToTest,
-            'products_grouped_by_user' => $productsGroupedByUser
+            'message' => 'Jobs dispatched for deleting products and notifying users.',
+            'products_grouped_by_user' => $productsGroupedByUser,
         ]);
     }
-    // $productsGroupedByUser = [];
-
-    // foreach (Bills::whereNull('deleted_at')->get() as $bill) {
-    //     if ($bill->product_id && $bill->user) {
-    //         $productsGroupedByUser[$bill->user_id][] = $bill->product_id;
-    //     }
-    // }
-
-    // foreach (WishItem::whereNull('deleted_at')->get() as $item) {
-    //     if ($item->stripe_product_id && $item->user) {
-    //         $productsGroupedByUser[$item->user_id][] = $item->stripe_product_id;
-    //     }
-    // }
-
-    // foreach (Membership::whereNull('deleted_at')->get() as $membership) {
-    //     if ($membership->product_id && $membership->user) {
-    //         $productsGroupedByUser[$membership->user_id][] = $membership->product_id;
-    //     }
-    // }
-
-    // foreach (Shop::whereNull('deleted_at')->get() as $shop) {
-    //     if ($shop->stripe_product_id && $shop->user) {
-    //         $productsGroupedByUser[$shop->user_id][] = $shop->stripe_product_id;
-    //     }
-    // }
-
-    // foreach ($productsGroupedByUser as $userId => $productIds) {
-    //     $user = \App\Models\User::find($userId);
-    //     if (!$user) continue;
-
-    //     foreach (array_unique($productIds) as $productId) {
-    //         DeleteStripeProductJob::dispatch($productId, $user);
-    //     }
-    // }
-
-    // Log::info("Dispatched deletion jobs for users: " . implode(', ', array_keys($productsGroupedByUser)));
-    // }
-
-
-
-
 
     // public function handleRyeProductPayment(Request $request)
     // {

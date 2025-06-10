@@ -28,7 +28,7 @@ class ProductDeletionMail extends Mailable
 
     public function build()
     {
-        return $this->subject('Your Stripe Product Was Deleted')
+        return $this->subject('Your Spenny Piggy Product Was Deleted')
             ->view('email.product_deleted');
     }
 }
