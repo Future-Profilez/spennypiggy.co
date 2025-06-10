@@ -533,7 +533,7 @@ class BillsController extends Controller
 
                 /**************************BILL**PWA**START****************************************************/
                 // below is BILL pwa for fans
-                $CreatorName = strtoupper($bill_pay->bill->user->name) ?? 'A Creator';
+                $CreatorName = ucfirst($bill_pay->bill->user->name) ?? 'A Creator';
                 $title = "🧾 Bill Paid!";
                 $content = "You’ve successfully paid your bill to $CreatorName.";
                 $email = $bill_pay->guest_email;
@@ -541,7 +541,7 @@ class BillsController extends Controller
                 Helpers::sendNotification($title, $content, $email);
 
                 // below is BILL pwa for creator
-                $FanName = strtoupper($bill_pay->user->name) ?? 'A Fan';
+                $FanName = ucfirst($bill_pay->user->name) ?? 'A Fan';
                 $title = "💰 Bill Payment Received!";
                 $content = "$FanName has paid their bill. Check your earnings!.";
                 $email = $bill_pay->bill->user->email;

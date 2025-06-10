@@ -176,7 +176,7 @@ class PostsController extends Controller
                     $message = $user->name . " liked your post " . $post->title;
                     NotificationSave::dispatch($message, $post->user, $user, 'Post Like');
 
-                    $name = strtoupper($user->name);
+                    $name = ucfirst($user->name);
                     $title = "❤️ New Like on Your Post!";
                     $content = "$name liked one of your post ({$post->title}).";
                     $email = $post->user->email;
@@ -202,7 +202,7 @@ class PostsController extends Controller
                 ]);
 
                 $is_liked = true;
-                $name = strtoupper($user->name);
+                $name = ucfirst($user->name);
                 $title = "❤️ New Like on Your Post!";
                 $content = "$name liked one of your post ({$post->title}).";
                 $email = $post->user->email;
@@ -247,7 +247,7 @@ class PostsController extends Controller
             $message = $user->name . " commented on your post " . $post->title;
             NotificationSave::dispatch($message, $post->user, $user, 'Post Comment');
 
-            $name = strtoupper($user->name);
+            $name = ucfirst($user->name);
             $title = "💬 New Comment on Your Post!";
             $content = "$name commented one of your post ({$post->title}).";
             $email = $post->user->email;
@@ -284,7 +284,7 @@ class PostsController extends Controller
                 'reply' => $request->reply
             ]);
 
-            $name = strtoupper($user->name);
+            $name = ucfirst($user->name);
             $title = "💬 New Reply on a Comment in Your Post!";
             $content = "$name replied to a comment on one of your post ({$comment->post->title}).";
             $email = $comment->post->user->email;
@@ -293,7 +293,7 @@ class PostsController extends Controller
 
             if ($comment->user_id !== $user->id) {
                 $commenter = $comment->user;
-                $name = strtoupper($user->name);
+                $name = ucfirst($user->name);
                 $title = "↩️ Your Comment Got a Reply!";
                 $content = "$name replied to one of your comment on the post ({$comment->post->title}).";
                 $email = $commenter->email;

@@ -10,7 +10,7 @@ environments:
     domain: dev.spennypiggy.co
     database: spennypiggy-db-dev
     build:
-      - "composer install --no-dev"
+      # - "composer install --no-dev"
       - "php artisan event:cache"
       - "php artisan optimize:clear"
       - "php artisan config:cache"
@@ -19,7 +19,7 @@ environments:
       # - "rm -rf node_modules"   # Linux/macOS
       - "rd /s /q node_modules"  # Windows/
     deploy:
-      - "php artisan migrate --force"
+      # - "php artisan migrate --force"
 
   production:
     memory: 3008
