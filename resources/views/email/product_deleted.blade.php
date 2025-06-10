@@ -36,7 +36,7 @@
             <tr>
                 <td style="padding: 10px 0 30px 0;" align="center">
                     <a href="{{ env('APP_URL') }}/login" style="border-radius:30px;padding:13px 30px 13px 30px;width:210px;text-decoration:none;border:none;background-color:#f94f97;font-weight:bold;font-size:15px;text-align:center;color:#ffffff">
-                        Recreate Now
+                        Setup Wishlist Now
                     </a>
                 </td>
             </tr>

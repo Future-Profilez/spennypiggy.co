@@ -807,7 +807,7 @@ class ShopsController extends Controller
             /**************************SHOP**PWA**START****************************************************/
             // below is SHOP pwa for fans
 
-            $CreatorName = strtoupper($stripeid->shop->user->name) ?? 'A Creator';
+            $CreatorName = ucfirst($stripeid->shop->user->name) ?? 'A Creator';
             $title = "🛍️ Purchase Confirmed!";
             $content = "You bought something from $CreatorName ’s shop. They’ll process it soon.";
             $email = $stripeid->email ?? $stripeid->user->email;
@@ -815,7 +815,7 @@ class ShopsController extends Controller
             Helpers::sendNotification($title, $content, $email);
 
             // below is wish pwa for creator
-            $FanName = strtoupper($stripeid->user->name) ?? 'A Fan';
+            $FanName = ucfirst($stripeid->user->name) ?? 'A Fan';
             $title = "📦 New Shop Order!";
             $content = "$FanName placed an order in your shop. Time to fulfill it!.";
             $email = $stripeid->shop->user->email;

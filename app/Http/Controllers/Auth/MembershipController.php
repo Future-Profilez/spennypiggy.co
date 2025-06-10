@@ -582,7 +582,7 @@ class MembershipController extends Controller
 
                 /**************************MEMBERSHIP**PWA**START****************************************************/
                 // below is membership pwa for fans
-                $CreatorName = strtoupper($mem->membership->user->name) ?? 'A Creator';
+                $CreatorName = ucfirst($mem->membership->user->name) ?? 'A Creator';
                 $title = "🏆 Membership Activated!";
                 $content = "You've subscribed to $CreatorName ’s membership. Enjoy the perks!.";
                 $email = $mem->guest_email ?? $mem->user->email;
@@ -590,7 +590,7 @@ class MembershipController extends Controller
                 Helpers::sendNotification($title, $content, $email);
 
                 // below is membership pwa for creator
-                $FanName = strtoupper($mem->user->name) ?? 'A Fan';
+                $FanName = ucfirst($mem->user->name) ?? 'A Fan';
                 $title = "💎 New Member Joined!";
                 $content = "$FanName just subscribed to your membership!.";
                 $email = $mem->membership->user->email;
