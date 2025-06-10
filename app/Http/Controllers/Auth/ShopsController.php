@@ -423,7 +423,7 @@ class ShopsController extends Controller
         ]);
     }
 
-     
+
 
     public function singleShopList($slug, $uuid, $session_id = null)
     {
@@ -807,17 +807,17 @@ class ShopsController extends Controller
             /**************************SHOP**PWA**START****************************************************/
             // below is SHOP pwa for fans
 
-            $CreatorName = $stripeid->shop->user->name ?? 'A Creator';
+            $CreatorName = strtoupper($stripeid->shop->user->name) ?? 'A Creator';
             $title = "🛍️ Purchase Confirmed!";
-            $content = "You bought something from {{ $CreatorName }}’s shop. They’ll process it soon.";
+            $content = "You bought something from $CreatorName ’s shop. They’ll process it soon.";
             $email = $stripeid->email ?? $stripeid->user->email;
 
             Helpers::sendNotification($title, $content, $email);
 
             // below is wish pwa for creator
-            $FanName = $stripeid->user->name ?? 'A Fan';
+            $FanName = strtoupper($stripeid->user->name) ?? 'A Fan';
             $title = "📦 New Shop Order!";
-            $content = "{{ $FanName }} placed an order in your shop. Time to fulfill it!";
+            $content = "$FanName placed an order in your shop. Time to fulfill it!.";
             $email = $stripeid->shop->user->email;
 
             Helpers::sendNotification($title, $content, $email);

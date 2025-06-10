@@ -1592,17 +1592,17 @@ class StripeController extends Controller
 
                 /**************************TIP**JAR**PWA**START****************************************************/
                 // below is TIP JAR pwa for fans
-                $CreatorName = $tip_pay->creator->name ?? 'A Creator';
+                $CreatorName = strtoupper($tip_pay->creator->name) ?? 'A Creator';
                 $title = "🙌 Tip Sent!";
-                $content = "You just tipped {{ $CreatorName }}. Thanks for supporting them!";
+                $content = "You just tipped $CreatorName. Thanks for supporting them!.";
                 $email = $tip_pay->guest_email ?? $tip_pay->user->email;
 
                 Helpers::sendNotification($title, $content, $email);
 
                 // below is membership pwa for creator
-                $FanName = $tip_pay->user->name ?? 'A Fan';
+                $FanName = strtoupper($tip_pay->user->name) ?? 'A Fan';
                 $title = "🎉 You Got a Tip!";
-                $content = "{{ $FanName }} just dropped a tip in your jar!";
+                $content = "$FanName just dropped a tip in your jar!.";
                 $email = $tip_pay->creator->email;
 
                 Helpers::sendNotification($title, $content, $email);

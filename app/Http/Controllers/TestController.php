@@ -24,6 +24,7 @@ use App\Jobs\SendIdentityVerificationEmail;
 use App\Models\Bills;
 use App\Models\Membership;
 use App\Models\Shop;
+use App\Models\UserCart;
 use App\Models\UserVerificationStatus;
 use App\Models\WishItem;
 use Carbon\Carbon;
@@ -349,7 +350,8 @@ class TestController extends Controller
             $productsGroupedByUser[$user->id] = $uniqueProductIds;
 
             // Dispatch job for the user with all products
-            DeleteStripeProductJob::dispatch($user, $uniqueProductIds);
+            DeleteStripeProductJob::dispatch($user->id, $productIds);
+            UserCart::truncate();
         }
 
         return response()->json([

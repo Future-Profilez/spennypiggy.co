@@ -262,16 +262,16 @@ class CheckoutController extends Controller
                 /**************************WISH**PWA**START****************************************************/
                 // below is wish pwa for fans
 
-                $CreatorName = !empty($dd->owner->name) ? $dd->owner->name : 'A Creator';
+                $CreatorName = !empty($dd->owner->name) ? strtoupper($dd->owner->name) : 'A Creator';
                 $titles = "✨ Wish Sent Successfully!";
-                $contents = "You've sent a wish to {{ $CreatorName }}. They'll be notified right away!";
+                $contents = "You've sent a wish to $CreatorName. They'll be notified right away!.";
                 $emails = $dd->user->email ?? null;
                 Helpers::sendNotification($titles, $contents, $emails);
 
                 // below is wish pwa for creator
-                $FanName = $dd->user->name ?? 'A Fan';
+                $FanName = strtoupper($dd->user->name) ?? 'A Fan';
                 $title = "🎁 New Wish Received!";
-                $content = "{{ $FanName }} has sent you a paid wish. Go check it out!";
+                $content = "$FanName has sent you a paid wish.";
                 $email = $dd->owner->email;
 
                 Helpers::sendNotification($title, $content, $email);

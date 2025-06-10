@@ -20,44 +20,50 @@ class DeleteStripeProductJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $user;
+    protected $userId;
     protected $productIds;
 
-    public function __construct(User $user, array $productIds)
+    public function __construct(int $userId, array $productIds)
     {
-        $this->user = $user;
+        $this->userId = $userId;
         $this->productIds = $productIds;
     }
-
+    /**
+     * The job's maximum number of attempts.
+     *
+     * @var int
+     */
     public function handle()
     {
+        $user = User::find($this->userId);
+        if (!$user) {
+            Log::warning("User not found with ID: {$this->userId}");
+            return;
+        }
+
         $deleted = false;
 
-        // Bills
-        $deleted |= Bills::where('user_id', $this->user->id)
+        $deleted |= Bills::where('user_id', $user->id)
             ->whereIn('product_id', $this->productIds)
             ->update(['deleted_at' => now()]);
 
-        // WishItem
-        $deleted |= WishItem::where('user_id', $this->user->id)
+        $deleted |= WishItem::where('user_id', $user->id)
             ->whereIn('stripe_product_id', $this->productIds)
             ->update(['deleted_at' => now()]);
 
-        // Membership
-        $deleted |= Membership::where('user_id', $this->user->id)
+        $deleted |= Membership::where('user_id', $user->id)
             ->whereIn('product_id', $this->productIds)
             ->update(['deleted_at' => now()]);
 
-        // Shop
-        $deleted |= Shop::where('user_id', $this->user->id)
+        $deleted |= Shop::where('user_id', $user->id)
             ->whereIn('stripe_product_id', $this->productIds)
             ->update(['deleted_at' => now()]);
 
         if ($deleted) {
-            Mail::to($this->user->email)->queue(new ProductDeletionMail($this->user));
-            Log::info("Deleted products for user {$this->user->id} and sent email.");
+            Mail::to($user->email)->queue(new ProductDeletionMail($user));
+            Log::info("Deleted products for user {$user->id} and sent email.");
         } else {
-            Log::info("No products deleted for user {$this->user->id}, skipping email.");
+            Log::info("No products deleted for user {$user->id}, skipping email.");
         }
     }
 }
