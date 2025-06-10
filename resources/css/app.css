@@ -190,7 +190,7 @@ body{position:relative;
 .changePeriod button.active{border-bottom:2px solid var(--mint);color:#fff;}
 /* .postions .position-1 .profile-content *{color:#fff !important;} */
 .loading-state{opacity:0.4;filter:blur(5);pointer-events:none;}
-.rank_lists.largest{position:sticky;top:20px;}
+.rank_lists.largest{position:sticky;top:120px;}
 .time-hrs{display:flex;margin:0 -8px;}
 .time-hrs button{background:#ededed;width:100%;text-align:center;border-radius:11px;padding:8px;margin:0 8px;}
 .time-hrs button.active,.time-hrs button:hover{background:#777;color:#fff;}
@@ -200,7 +200,7 @@ body{position:relative;
   .rank-position h2{font-size:25px;}
   .profile-content h2{font-size:16px;}
   .profile-content p{font-size:15px;}
-  .postions .position{margin:0 5px;box-shadow:5px 5px 0 0 var(--pink) !important;}
+  .postions .position{margin:0 5px; }
   .profile.p-3{padding:10px !important;padding-bottom:0 !important;}
   .rank-position{padding:10px;}
 
