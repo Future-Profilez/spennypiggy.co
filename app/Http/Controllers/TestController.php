@@ -318,10 +318,14 @@ class TestController extends Controller
      */
     public function deleteAllProducts()
     {
-        $users = User::where('is_uk', 0)
+        $users = User::whereIn('id', [1, 4, 11, 26, 32, 33, 34, 35, 36, 37, 44, 45])
+            ->where([
+                ['is_uk', '=', 0],
+                ['suspended_account', '=', 0],
+            ])
             ->whereNull('deleted_at')
-            ->where('suspended_account', 0)
             ->get();
+
 
         $productsGroupedByUser = [];
 
