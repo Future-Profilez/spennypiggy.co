@@ -66,7 +66,7 @@ class CheckoutController extends Controller
 
             $lineItems = [];
             $subtotal = 0;
-            $taxNew = 0;
+            // $taxNew = 0;
             $transfer_amount = 0;
             foreach ($getdata as $dd) {
 
@@ -79,7 +79,7 @@ class CheckoutController extends Controller
                 $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, $currency);
                 $ConvertedTax = Helpers::priceFormat($dd->owner->default_currency, $totalTax, $currency);
                 $TotalConvertedFinalAmount = $ConvertedTax + $ConvertedAmount + $showAdminsFees;
-                $new_total_amount = round($TotalConvertedFinalAmount, 2, PHP_ROUND_HALF_UP);
+                // $new_total_amount = round($TotalConvertedFinalAmount, 2, PHP_ROUND_HALF_UP);
 
                 $connectedAccountId = $getdata[0]->owner->account_id;
 
@@ -91,13 +91,12 @@ class CheckoutController extends Controller
                     ->first();
 
                 // Step 2: Check if price already exists
-                $existingPriceEntry = ConnectedAccountCustomer::where('user_id', Auth::id())
-                    ->where('creator_id', $dd->owner->id)
-                    ->where('connected_account_id', $connectedAccountId)
-                    ->where('product_id', $dd->wish->stripe_product_id)
-                    ->where('product_type', 'wish item')
-                    ->whereNotNull('price_id')
-                    ->first();
+                // $existingPriceEntry = ConnectedAccountCustomer::where('user_id', Auth::id())
+                //     ->where('creator_id', $dd->owner->id)
+                //     ->where('connected_account_id', $connectedAccountId)
+                //     ->where('product_id', $dd->wish->stripe_product_id)
+                //     ->where('product_type', 'wish item')
+                //     ->first();
 
                 // Step 3: Create customer in connected account if not exists
                 $customer = null;
@@ -110,17 +109,17 @@ class CheckoutController extends Controller
 
                 $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
 
-                if ($existingPriceEntry) {
-                    $priceId = $existingPriceEntry->price_id;
-                } else {
-                    $price = StripeControl::createPrice([
-                        'unit_amount' => round($new_total_amount * 100),
-                        'currency' => $currency,
-                        'product' => $dd->priceid,
-                    ], $connectedAccountId);
+                // if ($existingPriceEntry) {
+                //     $priceId = $existingPriceEntry->price_id;
+                // } else {
+                //     $price = StripeControl::createPrice([
+                //         'unit_amount' => round($new_total_amount * 100),
+                //         'currency' => $currency,
+                //         'product' => $dd->priceid,
+                //     ], $connectedAccountId);
 
-                    $priceId = $price->id;
-                }
+                //     $priceId = $price->id;
+                // }
 
                 // Step 5: Store customer & price if not already stored
                 if (!$storeCustomer) {
@@ -131,18 +130,15 @@ class CheckoutController extends Controller
                         'stripe_customer_id' => $customer_id,
                         'product_type' => 'wish item',
                         'product_id' => $dd->wish->stripe_product_id,
-                        'price_id' => $priceId,
+                        // 'price_id' => $priceId,
                     ]);
                 }
 
                 $subtotal += $totalAmount * $dd->quantity;
                 $platformFeePercentage = config('app.single_tax'); // 15%
                 $platformFeeAmount = $subtotal * $platformFeePercentage / 100;
-                // $taxNew += $dd->tax * $dd->quantity;
                 $showTax = $platformFeeAmount + $showAdminsFees;
                 $storeTax = $platformFeeAmount + $StoreAdminsFees;
-                // $taxNew += $showAdminsFees;
-                // $taxNew += 50;
 
                 $lineItems = [
                     // Your main product
@@ -176,27 +172,6 @@ class CheckoutController extends Controller
                 $transfer_amount += $ConvertedAmount * $dd->quantity;
             }
 
-            // $transfering_amount = $subtotal - $taxNew;
-
-            // $payload = [
-            //     'success_url' => route('checkout.success', [$id]),
-            //     'cancel_url' => route('checkout.cancel', [$id]),
-            //     'mode' => 'payment',
-            //     'line_items' => $lineItems,
-            //     'customer_email' => 'user@example.com',
-            //     'automatic_tax' => [
-            //         'enabled' => true,
-            //     ],
-            //     'payment_intent_data' => [
-            //         'application_fee_amount' => round($taxNew * 100), // Admin fee
-            //         // 'transfer_data' => [
-            //         //     'destination' => $connectedAccountId, // Creator's connected account ID
-            //         //     'amount' => round($transfer_amount * 100), // Amount to transfer to creator
-            //         // ],
-            //         // 'on_behalf_of' => $connectedAccountId, // On behalf of the creator
-            //     ],
-            // ];
-
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
             $payload = [
@@ -204,7 +179,7 @@ class CheckoutController extends Controller
                 'cancel_url' => route('checkout.cancel', [$id]),
                 "mode"  =>  "payment",
                 'line_items' => $lineItems,
-                'customer_email' => 'prem@futureprofilez.com',
+                'customer_email' => $user->email,
                 'payment_intent_data' => [
                     'application_fee_amount' => round($showTax * 100), // Admin fee + tax
                     'description' => "Custom Content Purchase."

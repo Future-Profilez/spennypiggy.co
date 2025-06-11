@@ -307,108 +307,81 @@ class MembershipController extends Controller
         if (!$socialData) {
             $isSocilAdded = false;
         }
-        // if (empty($user->stripe_id)) {
-        //     $stripeCustomer = \Stripe\Customer::create([
-        //         'email' => $user->email,
-        //         'name' => $user->name ?? null,
-        //     ]);
 
-        //     $user->stripe_id = $stripeCustomer->id;
-        //     $user->save();
-        // }
-
-        $membership = Membership::whereUuid($uuid)->with('user')->first();
-
-        if (Auth::check() && ($membership->user_id == Auth::id())) {
-            return redirect()->back()->with('error', "You can't buy your own membership!");
-        }
+        $membership = Membership::with('user')->whereUuid($uuid)->first();
 
         if (!$membership) {
             return redirect()->back()->with('error', 'Membership not found!');
         }
 
-        $vat_percentage_amount = 0;
-        $vat_percentage_amounts = 0;
-        $currency   =   strtolower($request->cookie("currency", "GBP"));
-        $tax = round($membership->tax_amount, 2, PHP_ROUND_HALF_UP);
-        $price = round($membership->price, 2, PHP_ROUND_HALF_UP);
-        $adminFeeAmount = config('app.administration_fee'); // Admin fee as a percentage
-        // $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
-
-        // below are the values which user see can the price according to their selected currency
-        $DatabaseAdminFee = Helpers::priceFormat('GBP', $adminFeeAmount, $membership->currency);
-        $DatabasePrice = Helpers::priceFormat($currency, $price, $membership->currency);
-        $DatabaseTax = $DatabasePrice * config('app.member_tax') / 100;
-        // $DatabaseTax = Helpers::priceFormat($currency, $Price_tax, $membership->currency);
-        $DatabaseTotalTaxAmount = $DatabaseAdminFee + $DatabaseTax;
-        if (!empty($membership->user->vat_amount_percentage)) {
-            $vat_percentage_amount = ($DatabasePrice + $DatabaseTax) * $membership->user->vat_amount_percentage / 100;
+        if (Auth::check() && $membership->user_id == Auth::id()) {
+            return redirect()->back()->with('error', "You can't buy your own membership!");
         }
 
-        // below are the value which user can see the price according to their selected currency
-        $paymentAdminFee = Helpers::priceFormat('GBP', $adminFeeAmount, $currency);
-        $paymentPrice = Helpers::priceFormat($membership->currency, $price, $currency);
-        $paymentTax = $paymentPrice * config('app.member_tax') / 100;
-        // $paymentTax = Helpers::priceFormat($membership->currency, $price_tax, $currency);
-        $totalPaymentTaxAmount = $paymentTax + $paymentAdminFee;
+        $currency = strtolower($request->cookie("currency", "GBP"));
+        $memberTaxPercent = config('app.member_tax');
+        $adminFeeAmount = config('app.administration_fee');
+        $vatPercent = $membership->user->vat_amount_percentage ?? 0;
+        $price = $membership->price;
+        $taxAmount = $price * $memberTaxPercent / 100;
+        $vatAmount = ($price + $taxAmount) * $vatPercent / 100;
+        $totalTax = $adminFeeAmount + $taxAmount;
 
-        if (!empty($membership->user->vat_amount_percentage)) {
-            $vat_percentage_amounts = ($paymentPrice + $paymentTax) * $membership->user->vat_amount_percentage / 100;
-        }
+        // Convert amounts to payment currency
+        $ConvertedVatAmount = Helpers::priceFormat($membership->currency, $vatAmount, $currency);
+        $convertedAdminFeeGBP = Helpers::priceFormat('GBP', $adminFeeAmount, $currency);
+        $ConvertedTaxAmount = Helpers::priceFormat($membership->currency, $taxAmount, $currency);
+
+        // Totals
+        $totalPaymentTaxAmount = $convertedAdminFeeGBP + $ConvertedTaxAmount;
+        $creatorTotal = $price + $vatAmount;
+        $ConvertedCreatorAmount = Helpers::priceFormat($membership->currency, $creatorTotal, $currency);
+        $finalTotalAmount = $ConvertedCreatorAmount + $totalPaymentTaxAmount; // example 338.83
+
+        // Fee % for Stripe Connect
+        $applicationFeePercent = round(($totalPaymentTaxAmount / $finalTotalAmount) * 100, 2);
 
         if ($request->isMethod("POST")) {
             $request->validate([
                 'name' => ['nullable', 'sometimes', 'string', 'max:50'],
                 'email' => ['required', 'email:dns'],
-                'message' => ['sometimes', 'nullable', 'string', 'max:800']
+                'message' => ['nullable', 'string', 'max:800'],
             ]);
 
             $sub = MembershipPayment::create([
                 'membership_id' => $membership->id,
-                'user_id' => Auth::id() ?? null,
-                'guest_name' => $request->name ?? null,
+                'user_id' => Auth::id(),
+                'guest_name' => $request->name,
                 'guest_email' => $request->email,
                 'currency' => $membership->currency,
-                'amount' => $membership->price,
-                'tax' => $DatabaseTotalTaxAmount,
-                'vat_tax_amount' => $vat_percentage_amount,
-                'recurring_for' => $reccure,
+                'amount' => $price,
+                'tax' => $totalTax,
+                'vat_tax_amount' => $vatAmount,
+                'recurring_for' => $reccure ?? null,
                 'recurring_type' => in_array($membership->level, ['bronze', 'silver', 'gold', 'platinum']) ? 'monthly' : 'lifetime',
-                'surprise_message' => $request->message ?? null,
-                'anonymous' => $request->anonymous ?? 0
+                'surprise_message' => $request->message,
+                'anonymous' => $request->anonymous ?? 0,
             ]);
 
-            $price += $vat_percentage_amount;
-            Log::info("Membership Payment: " . $paymentPrice);
-            $paymentPrice += $vat_percentage_amounts;
-            Log::info("Membership Payment: " . $paymentPrice);
-            // $amount_per = round(($price / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
-            $amount = $paymentPrice + $totalPaymentTaxAmount;
-            // $unit_amount = $amount * 100;
-
-            $memberTax = config('app.member_tax'); // Membership tax percentage
-            Log::info("Membership Tax Percentage: " . $memberTax);
-            $taxAmount = round(($paymentPrice * $memberTax / 100), 2, PHP_ROUND_HALF_UP); // Tax based on combined percentage
-            Log::info("Membership Tax Amount: " . $taxAmount);
-            $totalPrice = $paymentPrice + $taxAmount + $paymentAdminFee; // Total price including tax
-            Log::info("Membership Total Price: " . $totalPrice);
             try {
                 $connectedAccountId = $membership->user->account_id;
+                $user = Auth::user();
 
-                $storeCustomer = ConnectedAccountCustomer::where('user_id', Auth::id())
-                    ->where('creator_id', $membership->user->id)
-                    ->where('connected_account_id', $connectedAccountId)
-                    ->first();
+                $storeCustomer = ConnectedAccountCustomer::where([
+                    ['user_id', Auth::id()],
+                    ['creator_id', $membership->user->id],
+                    ['connected_account_id', $connectedAccountId],
+                ])->first();
 
-                $existingPriceEntry = ConnectedAccountCustomer::where('user_id', Auth::id())
-                    ->where('creator_id', $membership->user->id)
-                    ->where('connected_account_id', $connectedAccountId)
-                    ->where('product_id', $membership->product_id)
-                    ->whereNotNull('price_id')
-                    ->first();
+                $existingPriceEntry = ConnectedAccountCustomer::where([
+                    ['user_id', Auth::id()],
+                    ['creator_id', $membership->user->id],
+                    ['connected_account_id', $connectedAccountId],
+                    ['product_id', $membership->product_id],
+                ])->whereNotNull('price_id')->first();
 
                 $customer = null;
-                if (empty($storeCustomer)) {
+                if (!$storeCustomer) {
                     $customer = StripeControl::createCustomer([
                         'email' => $user->email,
                         'name' => $user->name,
@@ -417,44 +390,30 @@ class MembershipController extends Controller
 
                 $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
 
-                if ($existingPriceEntry) {
-                    $priceId = $existingPriceEntry->price_id;
-                } else {
-                    $stripePrice = StripeControl::createPrice([
-                        'unit_amount' => round($totalPrice * 100),
+                $priceId = $existingPriceEntry->price_id ?? null;
+                if (!$priceId) {
+                    $priceData = [
+                        'unit_amount' => round($finalTotalAmount * 100),
                         'currency' => $currency,
                         'product' => $membership->product_id,
-                        'recurring' => $membership->level !== 'lifetime' ? [
-                            'interval' => StripeControl::$periods['monthly'],
-                            'interval_count' => 1
-                        ] : null
-                    ], $connectedAccountId);
+                    ];
 
+                    if ($membership->level !== 'lifetime') {
+                        $priceData['recurring'] = [
+                            'interval' => StripeControl::$periods['monthly'],
+                            'interval_count' => 1,
+                        ];
+                    }
+
+                    $stripePrice = StripeControl::createPrice($priceData, $connectedAccountId);
                     if (empty($stripePrice->id)) {
-                        throw new Exception("Failed to create Stripe price.");
+                        throw new \Exception("Failed to create Stripe price.");
                     }
 
                     $priceId = $stripePrice->id;
                 }
 
-                $items = [
-                    [
-                        'price' => $priceId, // ✅ Correct use of existing price ID
-                        'quantity' => 1
-                    ],
-                    // [
-                    //     'price_data' => [
-                    //         'currency' => $currency,
-                    //         'product_data' => ['name' => 'Platform Fee'],
-                    //         'unit_amount' => $totalPaymentTaxAmount * 100,
-                    //         'tax_behavior' => 'exclusive'
-                    //     ],
-                    //     'quantity' => 1
-                    // ]
-                ];
-
-
-                if (empty($storeCustomer)) {
+                if (!$storeCustomer) {
                     ConnectedAccountCustomer::create([
                         'user_id' => Auth::id(),
                         'creator_id' => $membership->user->id,
@@ -466,12 +425,14 @@ class MembershipController extends Controller
                     ]);
                 }
 
+                $items = [['price' => $priceId, 'quantity' => 1]];
+
                 $payload = [
                     'currency' => $currency,
                     'line_items' => $items,
                     'customer' => $customer_id,
-                    'success_url' => route('membership.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
-                    'cancel_url' => route('membership.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
+                    'success_url' => route('membership.handle', ['uuid' => $sub->uuid, 'status' => 'success']),
+                    'cancel_url' => route('membership.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
                     'metadata' => [
                         'user_id' => Auth::id(),
                         'creator_id' => $membership->user->id,
@@ -479,32 +440,18 @@ class MembershipController extends Controller
                     ],
                 ];
 
-                $applicationFeeAmount = round($totalPaymentTaxAmount * 100);
                 if ($membership->level === 'lifetime') {
                     $payload['mode'] = 'payment';
-
                     $payload['payment_intent_data'] = [
-                        'application_fee_amount' => $applicationFeeAmount,
-                        // 'on_behalf_of' => $connectedAccountId,
-                        // 'transfer_data' => [
-                        //     'destination' => $connectedAccountId,
-                        // ],
-                        'description' => "Membership [{$membership->level}] for {$membership->user->username}",
+                        'application_fee_amount' => round($totalPaymentTaxAmount * 100),
+                        'description' => "Lifetime Membership for {$membership->user->username}",
                     ];
                 } else {
                     $payload['mode'] = 'subscription';
                     $payload['subscription_data'] = [
-                        'application_fee_percent' => config('app.member_tax'),
-                        // 'application_fee_amount' => $applicationFeeAmount,
-                        // 'on_behalf_of' => $connectedAccountId,
-                        // 'transfer_data' => [
-                        //     'destination' => $connectedAccountId,
-                        // ],
-                        'description' => "Membership [{$membership->level}] for {$membership->user->username}",
+                        'application_fee_percent' => $applicationFeePercent,
+                        'description' => "Monthly Membership for {$membership->user->username}",
                     ];
-                    // $payload['subscription_data'] = [
-                    //     'description' => "Membership [{$membership->level}] for {$membership->user->username}",
-                    // ];
                 }
 
                 $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
@@ -517,9 +464,8 @@ class MembershipController extends Controller
                 ]);
 
                 return Inertia::location($session->url);
-            } catch (Exception $e) {
-                $sub->delete();
-                Log::error("Stripe Error: " . $e->getMessage());
+            } catch (\Exception $e) {
+                Log::error("Stripe checkout session failed: " . $e->getMessage());
                 return back()->with('error', $e->getMessage());
             }
         }
@@ -527,7 +473,7 @@ class MembershipController extends Controller
         return Inertia::render('membership/MemberCheckout', [
             'membership'  => $membership,
             'isSocilAdded' => $isSocilAdded,
-            'vat_amount' => $vat_percentage_amount,
+            'vat_amount' => $ConvertedVatAmount,
             'reccure'   => $reccure
         ]);
     }

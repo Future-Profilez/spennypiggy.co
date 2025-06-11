@@ -1368,14 +1368,12 @@ class StripeController extends Controller
             $tax = round(($price * $taxPercentage / 100), 2, PHP_ROUND_HALF_UP);
             $adminFeeForStoreDB = Helpers::priceFormat('GBP', $adminFeeAmount, $creator->default_currency);
             $totalTaxForDB = $tax + $adminFeeForStoreDB;
-            $totalAmountForStoreDB = round($price + $totalTaxForDB);
 
             $taxAmount = round(($amount * $taxPercentage / 100), 2, PHP_ROUND_HALF_UP);
             $adminFeeForPay = Helpers::priceFormat('GBP', $adminFeeAmount, $currency);
             $totalTaxForPay = $taxAmount + $adminFeeForPay;
-            $totalPrice = round($amount + $totalTaxForPay, 2, PHP_ROUND_HALF_UP);
-            $unitAmount = $isZeroDecimalCurrency ? round($totalPrice) : round($totalPrice * 100);
-            $amountToTransfer = $isZeroDecimalCurrency ? intval($amount) : round($amount * 100);
+            // $totalPrice = round($amount + $totalTaxForPay, 2, PHP_ROUND_HALF_UP);
+            $unitAmount = $isZeroDecimalCurrency ? round($amount) : round($amount * 100);
 
             $pay = TipGoalsPayment::create([
                 'tip_goal_id' => $goal->id ?? null,
@@ -1401,15 +1399,22 @@ class StripeController extends Controller
                             'product_data' => ['name' => "Support Payment to Creator"],
                             'unit_amount' => $unitAmount,
                         ]
-                    ]
+                    ],
+                    [
+                        'quantity' => 1,
+                        'price_data' => [
+                            'currency' => $currency,
+                            'product_data' => [
+                                'name' => 'Platform Fee',
+                            ],
+                            'unit_amount' => $totalTaxForPay * 100,
+                            'tax_behavior' => 'exclusive',
+                        ],
+                    ],
                 ],
                 'payment_intent_data' => [
-                    // 'transfer_data' => [
-                    //     'destination' => $creator->account_id,
-                    //     'amount' => $amountToTransfer,
-                    // ],
-                    // 'application_fee_amount' => round($totalTaxForPay * 100),
-                    'description' => "Supporter Membership Payment."
+                    'application_fee_amount' => round($totalTaxForPay * 100), // Admin fee + tax
+                    'description' => "Platform Fee."
                 ],
                 'customer_email' =>  $user->email,
                 'success_url' => route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "success"]),
