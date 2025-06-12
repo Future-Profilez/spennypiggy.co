@@ -283,74 +283,62 @@ class MembershipController extends Controller
      */
     public function buyLevel(Request $request, $uuid, $reccure = 'continue')
     {
+        // Check if user needs to complete Gifter Card verification
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
-        if ($checkGifterStatus == true) {
+        if ($checkGifterStatus === true) {
             $user = Auth::user();
-            return to_route('user.show', ['username' => $user->username])->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
+            return to_route('user.show', ['username' => $user->username])
+                ->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
         }
 
-        $user = Auth::user(); // or $requestingUser if handling guests
+        $user = Auth::user();
 
-        // $user socila membershipDashboard
-
-        $isSocilAdded = true;
-        $socialData = SocialLinks::where('user_id', $user->id)
+        // Check if user added social links
+        $isSocilAdded = SocialLinks::where('user_id', $user->id)
             ->where(function ($query) {
                 $query->whereNotNull('tumblr')
                     ->orWhereNotNull('instagram')
                     ->orWhereNotNull('twitch')
                     ->orWhereNotNull('facebook')
                     ->orWhereNotNull('twitter');
-            })->first();
-
-
-        if (!$socialData) {
-            $isSocilAdded = false;
-        }
+            })->exists();
 
         $membership = Membership::with('user')->whereUuid($uuid)->first();
+        if (!$membership) return redirect()->back()->with('error', 'Membership not found!');
+        if ($membership->user_id === $user->id) return redirect()->back()->with('error', "You can't buy your own membership!");
 
-        if (!$membership) {
-            return redirect()->back()->with('error', 'Membership not found!');
-        }
-
-        if (Auth::check() && $membership->user_id == Auth::id()) {
-            return redirect()->back()->with('error', "You can't buy your own membership!");
-        }
-
+        // Tax + Fee Calculations
         $currency = strtolower($request->cookie("currency", "GBP"));
         $memberTaxPercent = config('app.member_tax');
         $adminFeeAmount = config('app.administration_fee');
         $vatPercent = $membership->user->vat_amount_percentage ?? 0;
+
         $price = $membership->price;
         $taxAmount = $price * $memberTaxPercent / 100;
         $vatAmount = ($price + $taxAmount) * $vatPercent / 100;
         $totalTax = $adminFeeAmount + $taxAmount;
 
-        // Convert amounts to payment currency
         $ConvertedVatAmount = Helpers::priceFormat($membership->currency, $vatAmount, $currency);
         $convertedAdminFeeGBP = Helpers::priceFormat('GBP', $adminFeeAmount, $currency);
         $ConvertedTaxAmount = Helpers::priceFormat($membership->currency, $taxAmount, $currency);
 
-        // Totals
         $totalPaymentTaxAmount = $convertedAdminFeeGBP + $ConvertedTaxAmount;
         $creatorTotal = $price + $vatAmount;
         $ConvertedCreatorAmount = Helpers::priceFormat($membership->currency, $creatorTotal, $currency);
-        $finalTotalAmount = $ConvertedCreatorAmount + $totalPaymentTaxAmount; // example 338.83
+        $finalTotalAmount = $ConvertedCreatorAmount + $totalPaymentTaxAmount;
 
-        // Fee % for Stripe Connect
         $applicationFeePercent = round(($totalPaymentTaxAmount / $finalTotalAmount) * 100, 2);
 
         if ($request->isMethod("POST")) {
             $request->validate([
-                'name' => ['nullable', 'sometimes', 'string', 'max:50'],
+                'name' => ['nullable', 'string', 'max:50'],
                 'email' => ['required', 'email:dns'],
                 'message' => ['nullable', 'string', 'max:800'],
             ]);
 
             $sub = MembershipPayment::create([
                 'membership_id' => $membership->id,
-                'user_id' => Auth::id(),
+                'user_id' => $user->id,
                 'guest_name' => $request->name,
                 'guest_email' => $request->email,
                 'currency' => $membership->currency,
@@ -365,32 +353,56 @@ class MembershipController extends Controller
 
             try {
                 $connectedAccountId = $membership->user->account_id;
-                $user = Auth::user();
 
                 $storeCustomer = ConnectedAccountCustomer::where([
-                    ['user_id', Auth::id()],
+                    ['user_id', $user->id],
                     ['creator_id', $membership->user->id],
                     ['connected_account_id', $connectedAccountId],
                 ])->first();
 
                 $existingPriceEntry = ConnectedAccountCustomer::where([
-                    ['user_id', Auth::id()],
+                    ['user_id', $user->id],
                     ['creator_id', $membership->user->id],
                     ['connected_account_id', $connectedAccountId],
                     ['product_id', $membership->product_id],
                 ])->whereNotNull('price_id')->first();
 
-                $customer = null;
-                if (!$storeCustomer) {
-                    $customer = StripeControl::createCustomer([
+                $customer_id = $storeCustomer->stripe_customer_id ?? null;
+
+                $existingSubscription = $customer_id
+                    ? StripeControl::getActiveSubscriptionByCustomer($customer_id, $connectedAccountId)
+                    : null;
+
+                // Handle currency mismatch
+                if ($existingSubscription && $existingSubscription->currency !== $currency) {
+                    $newCustomer = StripeControl::createCustomer([
                         'email' => $user->email,
                         'name' => $user->name,
                     ], $connectedAccountId);
+
+                    $customer_id = $newCustomer->id;
+
+                    $storeCustomer = ConnectedAccountCustomer::create([
+                        'user_id' => $user->id,
+                        'creator_id' => $membership->user->id,
+                        'connected_account_id' => $connectedAccountId,
+                        'stripe_customer_id' => $customer_id,
+                        'product_type' => 'membership',
+                        'product_id' => $membership->product_id,
+                    ]);
                 }
 
-                $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
+                if (!$customer_id) {
+                    $newCustomer = StripeControl::createCustomer([
+                        'email' => $user->email,
+                        'name' => $user->name,
+                    ], $connectedAccountId);
+
+                    $customer_id = $newCustomer->id;
+                }
 
                 $priceId = $existingPriceEntry->price_id ?? null;
+
                 if (!$priceId) {
                     $priceData = [
                         'unit_amount' => round($finalTotalAmount * 100),
@@ -415,7 +427,7 @@ class MembershipController extends Controller
 
                 if (!$storeCustomer) {
                     ConnectedAccountCustomer::create([
-                        'user_id' => Auth::id(),
+                        'user_id' => $user->id,
                         'creator_id' => $membership->user->id,
                         'connected_account_id' => $connectedAccountId,
                         'stripe_customer_id' => $customer_id,
@@ -434,7 +446,7 @@ class MembershipController extends Controller
                     'success_url' => route('membership.handle', ['uuid' => $sub->uuid, 'status' => 'success']),
                     'cancel_url' => route('membership.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
                     'metadata' => [
-                        'user_id' => Auth::id(),
+                        'user_id' => $user->id,
                         'creator_id' => $membership->user->id,
                         'membership_id' => $membership->id,
                     ],
@@ -471,14 +483,12 @@ class MembershipController extends Controller
         }
 
         return Inertia::render('membership/MemberCheckout', [
-            'membership'  => $membership,
+            'membership' => $membership,
             'isSocilAdded' => $isSocilAdded,
             'vat_amount' => $ConvertedVatAmount,
-            'reccure'   => $reccure
+            'reccure' => $reccure,
         ]);
     }
-
-
 
     /**
      * Handle Checkout Session

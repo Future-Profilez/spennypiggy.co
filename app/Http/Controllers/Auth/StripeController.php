@@ -585,171 +585,145 @@ class StripeController extends Controller
     public function wishItemSubscribe(Request $request, $uuid, $reccure = 'continue')
     {
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
-        if ($checkGifterStatus == true) {
-            $user = Auth::user();
-            return to_route('user.show', ['username' => $user->username])->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
+        if ($checkGifterStatus === true) {
+            return to_route('user.show', ['username' => Auth::user()->username])
+                ->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
         }
-        $user = Auth::user(); // or $requestingUser if handling guests
+
+        $user = Auth::user();
+        $wish = WishItem::with('user')->whereUuid($uuid)->firstOrFail();
 
         if (empty($user->stripe_id)) {
             $stripeCustomer = \Stripe\Customer::create([
                 'email' => $user->email,
-                'name' => $user->name ?? null,
+                'name'  => $user->name,
             ]);
-
-            $user->stripe_id = $stripeCustomer->id;
-            $user->save();
+            $user->update(['stripe_id' => $stripeCustomer->id]);
         }
 
-        $wish = WishItem::whereUuid($uuid)->with('user')->first();
+        $currency = strtolower($request->cookie("currency", "GBP"));
+        $tax = (float) str_replace(',', '', $wish->tax_amount);
+        $price = (float) str_replace(',', '', $wish->price);
+        $adminFee = (float) config('app.administration_fee');
+        $totalTax = $tax + $adminFee;
 
-        if (!$wish) {
-            return redirect()->back()->with('error', 'Wish item not found!');
+        $vatAmount = 0;
+        if ($reccure === 'continue' && !empty($wish->user->vat_amount_percentage)) {
+            $vatAmount = ($price + $tax) * $wish->user->vat_amount_percentage / 100;
         }
-
-        $vat_percentage_amount = 0;
-
-        $currency   =   strtolower($request->cookie("currency", "GBP"));
-        // $tax = number_format($wish->tax_amount, 2);
-        // $price = number_format($wish->price, 2);
-
-        // $adminFee = config('app.administration_fee');
-        // $adminFee =   Helpers::priceFormat('GBP', $adminFee, $wish->currency);
-        // dd($adminFee, $tax);
-        // $totalTax = number_format($tax + $adminFee, 2);
-
-        // Clean tax and price values and convert to float
-        $tax = (float) str_replace(',', '', $wish->tax_amount);   // e.g., 4800.00
-        $price = (float) str_replace(',', '', $wish->price);      // if needed
-
-        // Get admin fee as numeric
-        $adminFee = (float) config('app.administration_fee');     // e.g., 1.33
-
-        // Correct math using numeric values
-        $totalTax = $tax + $adminFee;                             // 4801.33
-
-        // Format only for display
-        $formattedTotalTax = number_format($totalTax, 2);         // "4,801.33"
-
-        // Optional debug
-        // dd($adminFee, $tax, $formattedTotalTax);
-
-
-
-        // dd($reccure);
-        if ($reccure == 'continue') {
-            if (!empty($wish->user->vat_amount_percentage)) {
-                $vat_percentage_amount = ($price + $tax) * $wish->user->vat_amount_percentage / 100;
-            }
-        }
-
-        $vatAmount = $vat_percentage_amount; // 50.00
 
         if ($request->isMethod("POST")) {
             $request->validate([
-                'name' => [
-                    'nullable',
-                    'sometimes',
-                    'string',
-                    'max:50'
-                ],
-                'email' =>  [
-                    'required',
-                    'email:dns'
-                ],
-                'message'   =>  [
-                    'sometimes',
-                    'nullable',
-                    'string',
-                    'max:800'
-                ]
+                'name' => ['nullable', 'sometimes', 'string', 'max:50'],
+                'email' => ['required', 'email:dns'],
+                'message' => ['nullable', 'sometimes', 'string', 'max:800'],
             ]);
 
             $sub = WishItemSubscription::create([
-                'wish_item_id'   =>  $wish->id,
-                'user_id'        =>  Auth::id(),
-                'guest_name'     =>  $request->name ?? NULL,
-                'guest_email'    =>  $request->email,
-                'currency'       =>  $wish->currency,
-                'amount'         =>  $wish->price,
-                'tax'            =>  $totalTax,
-                'vat_tax_amount' =>  ceil($vat_percentage_amount),
-                'recurring_for'  =>  $reccure,
-                'recurring_type' =>  $wish->subscription_period,
-                'payment_method' =>  'stripe',
-                'surprise_message'  =>  $request->message ?? NULL,
-                'anonymous' => $request->anonymous ?? 0
+                'wish_item_id' => $wish->id,
+                'user_id' => $user->id,
+                'guest_name' => $request->name,
+                'guest_email' => $request->email,
+                'currency' => $wish->currency,
+                'amount' => $wish->price,
+                'tax' => $totalTax,
+                'vat_tax_amount' => ceil($vatAmount),
+                'recurring_for' => $reccure,
+                'recurring_type' => $wish->subscription_period,
+                'payment_method' => 'stripe',
+                'surprise_message' => $request->message,
+                'anonymous' => $request->anonymous ?? 0,
             ]);
 
             $connectedAccountId = $wish->user->account_id;
 
-            // Customer logic
-            $storeCustomer = ConnectedAccountCustomer::where('user_id', Auth::id())
-                ->where('creator_id', $wish->user->id)
-                ->where('connected_account_id', $connectedAccountId)
-                ->where('product_type', 'wish item')
-                ->first();
+            // Get existing customer if exists
+            $storeCustomer = ConnectedAccountCustomer::where([
+                ['user_id', $user->id],
+                ['creator_id', $wish->user->id],
+                ['connected_account_id', $connectedAccountId],
+                ['product_type', 'wish item subscription'],
+            ])->first();
 
-            if (!$storeCustomer) {
+            $customer_id = $storeCustomer->stripe_customer_id ?? null;
+
+            if ($customer_id) {
+                $existingSubscription = StripeControl::getActiveSubscriptionByCustomer($customer_id, $connectedAccountId);
+
+                if ($existingSubscription && $existingSubscription->currency !== $currency) {
+                    // Currency mismatch — create new customer
+                    $customer = StripeControl::createCustomer([
+                        'email' => $user->email,
+                        'name'  => $user->name,
+                    ], $connectedAccountId);
+
+                    $customer_id = $customer->id;
+
+                    // Save new customer entry
+                    ConnectedAccountCustomer::create([
+                        'user_id' => Auth::id(),
+                        'creator_id' => $wish->user->id,
+                        'connected_account_id' => $connectedAccountId,
+                        'stripe_customer_id' => $customer_id,
+                        'product_type' => 'wish item subscription',
+                        'product_id' => $wish->stripe_product_id,
+                        'price_id' => null, // optional
+                    ]);
+                }
+            } else {
                 $customer = StripeControl::createCustomer([
                     'email' => $user->email,
-                    'name' => $user->name,
+                    'name'  => $user->name,
                 ], $connectedAccountId);
+
+                $customer_id = $customer->id;
             }
 
-            $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
-
-            $vat_percentage_amount = 0;
-            if ($reccure == 'continue') {
-                if (!empty($wish->user->vat_amount_percentage)) {
-                    $vat_percentage_amount = $wish->user->vat_amount_percentage;
-                    // $vat_percentage_amount = ($price + $tax) * $wish->user->vat_amount_percentage / 100;
-                }
-            }
-
-            // Stripe Checkout session payload
+            // Fee & VAT logic
             $basePrice = Helpers::priceFormat($wish->currency, $wish->price, $currency);
-            $vatPercentage = $vat_percentage_amount; // 20%
-            $platformFeePercentage = config('app.subs_tax'); // 15%
-            $adminFeeGBP = config('app.administration_fee'); // fixed
-            $gbpToUsdRate = Helpers::priceFormat('GBP', $adminFeeGBP, $wish->currency);
+            $platformFee = config('app.subs_tax'); // %
+            $adminFeeGBP = config('app.administration_fee');
+            $gbpToUserCurrency = Helpers::priceFormat('GBP', $adminFeeGBP, $currency);
 
-            $platformFeeAmount = $basePrice * $platformFeePercentage / 100;
-            $vatAmount = ($basePrice + $platformFeeAmount) * $vatPercentage / 100;
-            $adminFeeUSD = $adminFeeGBP * $gbpToUsdRate;
+            $platformFeeAmount = $basePrice * $platformFee / 100;
+            $vatPercent = $wish->user->vat_amount_percentage ?? 0;
+            $vatAmount = ($basePrice + $platformFeeAmount) * $vatPercent / 100;
+            $adminFeeInUserCurrency = $adminFeeGBP * $gbpToUserCurrency;
 
             $creatorTotal = $basePrice + $vatAmount;
-            $platformTotal = $platformFeeAmount + $adminFeeUSD; // example 37.50 + 1.33 = 38.83
+            $platformTotal = round($platformFeeAmount + $adminFeeInUserCurrency, 2);
+            $finalTotal = round($creatorTotal + $platformTotal, 2);
+            $applicationFeePercent = round(($platformTotal / $finalTotal) * 100, 2);
 
-            $finalTotalAmount = $creatorTotal + $platformTotal; // example 338.83
+            // Reuse or create new price
+            $existingPrice = ConnectedAccountCustomer::where('user_id', $user->id)
+                ->where('creator_id', $wish->user->id)
+                ->where('connected_account_id', $connectedAccountId)
+                ->where('product_id', $wish->stripe_product_id)
+                ->whereNotNull('price_id')
+                ->latest()->first();
 
-            // Application fee percent (for Checkout session)
-            $applicationFeePercent = ($platformTotal / $finalTotalAmount) * 100;
-
-            // Price creation or reuse
-            $priceId = $existingPriceEntry->price_id ?? null;
+            $priceId = $existingPrice->price_id ?? null;
             if (!$priceId) {
                 $priceParams = [
-                    'unit_amount' => round($finalTotalAmount * 100),
+                    'unit_amount' => round($finalTotal * 100),
                     'currency' => $currency,
                     'product' => $wish->stripe_product_id,
                 ];
-
                 if ($reccure !== 'onetime') {
                     $priceParams['recurring'] = [
                         'interval' => StripeControl::$periods[$wish->subscription_period],
                         'interval_count' => 1,
                     ];
                 }
-
-                $priceObj = StripeControl::createPrice($priceParams, $connectedAccountId);
-                $priceId = $priceObj->id;
+                $price = StripeControl::createPrice($priceParams, $connectedAccountId);
+                $priceId = $price->id;
             }
 
-            // Step 5: Store customer & price if not already stored
+            // Store customer if not already
             if (!$storeCustomer) {
                 ConnectedAccountCustomer::create([
-                    'user_id' => Auth::id(),
+                    'user_id' => $user->id,
                     'creator_id' => $wish->user->id,
                     'connected_account_id' => $connectedAccountId,
                     'stripe_customer_id' => $customer_id,
@@ -759,29 +733,19 @@ class StripeController extends Controller
                 ]);
             }
 
-            // Build session payload
-            // Build session payload
+            // Checkout session
             $payload = [
                 'mode' => $reccure === 'onetime' ? 'payment' : 'subscription',
-                'currency' => 'usd',
-                'line_items' => [
-                    [
-                        'price' => $priceId,
-                        'quantity' => 1,
-                    ],
-                ],
+                'currency' => $currency,
+                'line_items' => [['price' => $priceId, 'quantity' => 1]],
                 'customer' => $customer_id,
                 'success_url' => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => 'success']),
                 'cancel_url' => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
             ];
 
-            // Add either payment_intent_data or subscription_data
             if ($reccure === 'onetime') {
                 $payload['payment_intent_data'] = [
-                    'application_fee_amount' => round($platformTotal * 100), // in cents
-                    // 'transfer_data' => [
-                    //     'destination' => $connectedAccountId,
-                    // ],
+                    'application_fee_amount' => round($platformTotal * 100),
                 ];
             } else {
                 $payload['subscription_data'] = [
@@ -790,28 +754,24 @@ class StripeController extends Controller
                 ];
             }
 
-
             try {
-                // Create the session on connected account
                 $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
-
-                // Save session id
                 $sub->update(['session_id' => $session->id]);
-
                 return Inertia::location($session->url);
             } catch (Exception $e) {
                 $sub->delete();
                 Log::error("Stripe Checkout Error: " . $e->getMessage());
-                return back()->with('error', $e->getMessage());
+                return back()->with('error', 'Checkout failed. ' . $e->getMessage());
             }
         }
 
         return Inertia::render('cart/SubCheckout', [
-            'wish'  => $wish,
+            'wish' => $wish,
             'vat_amount' => $vatAmount,
-            'reccure'   => $reccure
+            'reccure' => $reccure,
         ]);
     }
+
 
     // public function wishItemSubscribe(Request $request, $uuid, $reccure = 'continue')
     // {

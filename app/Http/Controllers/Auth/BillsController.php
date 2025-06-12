@@ -262,151 +262,133 @@ class BillsController extends Controller
         }
 
         try {
-
-            $user = Auth::user(); // or $requestingUser if handling guests
-
+            $user = Auth::user();
             if (empty($user->stripe_id)) {
                 $stripeCustomer = \Stripe\Customer::create([
                     'email' => $user->email,
                     'name' => $user->name ?? null,
                 ]);
-
                 $user->stripe_id = $stripeCustomer->id;
                 $user->save();
             }
 
             $bill = Bills::whereUuid($uuid)->with('user')->first();
 
-            if (Auth::check() && ($bill->user_id == Auth::id())) {
-                return redirect()->back()->with('error', "You can't buy your own bill!");
+            if (!$bill || (Auth::check() && $bill->user_id == Auth::id())) {
+                return redirect()->back()->with('error', $bill ? "You can't buy your own bill!" : "Bill not found!");
             }
 
-            if (!$bill) {
-                return redirect()->back()->with('error', 'Bill not found!');
-            }
+            $currency = strtolower($request->cookie("currency", "GBP"));
+            $adminFeeAmount = config('app.administration_fee');
+            $billTaxPercent = config('app.bill_tax');
+            $vatPercent = $bill->user->vat_amount_percentage ?? 0;
+            $price = $bill->price;
+            $taxAmount = $price * $billTaxPercent / 100;
+            $vatAmount = ($price + $taxAmount) * $vatPercent / 100;
+            $totalTax = $adminFeeAmount + $taxAmount;
 
-            $vat_percentage_amount = 0;
-            $vat_percentage_amounts = 0;
-            $currency   =   strtolower($request->cookie("currency", "GBP"));
-            $price = round($bill->price, 2, PHP_ROUND_HALF_UP);
-            $tax = round($bill->tax_amount, 2, PHP_ROUND_HALF_UP);
+            $ConvertedVatAmount = Helpers::priceFormat($bill->currency, $vatAmount, $currency);
+            $convertedAdminFeeGBP = Helpers::priceFormat('GBP', $adminFeeAmount, $currency);
+            $ConvertedTaxAmount = Helpers::priceFormat($bill->currency, $taxAmount, $currency);
 
-            // $fee_per = round(($tax / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
-            if (!empty($bill->user->vat_amount_percentage)) {
-                $vat_percentage_amount = ($price + $tax) * $bill->user->vat_amount_percentage / 100;
-            }
+            $totalPaymentTaxAmount = $convertedAdminFeeGBP + $ConvertedTaxAmount;
+            $creatorTotal = $price + $vatAmount;
+            $ConvertedCreatorAmount = Helpers::priceFormat($bill->currency, $creatorTotal, $currency);
+            $finalTotalAmount = round($ConvertedCreatorAmount + $totalPaymentTaxAmount, 2);
 
-            $adminFee = config('app.administration_fee');
-            $adminFees = Helpers::priceFormat('GBP', $adminFee, strtoupper($bill->currency));
-            $totalTax = $tax + $adminFees;
+            $applicationFeePercent = round(($totalPaymentTaxAmount / $finalTotalAmount) * 100, 2);
 
             if ($request->isMethod("POST")) {
                 $request->validate([
-                    'name' => [
-                        'nullable',
-                        'sometimes',
-                        'string',
-                        'max:50'
-                    ],
-                    'email' =>  [
-                        'required',
-                        'email:dns'
-                    ],
-                    'message' =>  [
-                        'sometimes',
-                        'nullable',
-                        'string',
-                        'max:800'
-                    ]
+                    'name' => ['nullable', 'sometimes', 'string', 'max:50'],
+                    'email' => ['required', 'email:dns'],
+                    'message' => ['sometimes', 'nullable', 'string', 'max:800']
                 ]);
 
                 $sub = BillPayment::create([
-                    'bills_id'       =>  $bill->id,
-                    'user_id'        =>  Auth::id() ?? null,
-                    'guest_name'     =>  $request->name ?? NULL,
-                    'guest_email'    =>  $request->email,
-                    'currency'       =>  $bill->currency,
-                    'amount'         =>  $bill->price,
-                    'tax'            =>  $totalTax,
-                    'vat_tax_amount' =>  $vat_percentage_amount,
-                    'recurring_for'  =>  $reccure,
-                    'recurring_type' =>  $bill->period,
-                    'message'        =>  $request->message ?? NULL,
+                    'bills_id'       => $bill->id,
+                    'user_id'        => Auth::id(),
+                    'guest_name'     => $request->name ?? NULL,
+                    'guest_email'    => $request->email,
+                    'currency'       => $bill->currency,
+                    'amount'         => $bill->price,
+                    'tax'            => $totalTax,
+                    'vat_tax_amount' => $vatAmount,
+                    'recurring_for'  => $reccure,
+                    'recurring_type' => $bill->period,
+                    'message'        => $request->message ?? NULL,
                     'anonymous'      => $request->anonymous ?? 0
                 ]);
 
-                // payment currency conversion
-                $paymentUnitAmount = Helpers::priceFormat($bill->currency, $price, $currency) * 100;
-                $paymentTax = Helpers::priceFormat($bill->currency, $tax, $currency) * 100;
-                if (!empty($bill->user->vat_amount_percentage)) {
-                    $vat_percentage_amounts = ($paymentUnitAmount + $paymentTax) * $bill->user->vat_amount_percentage / 100;
-                }
-
-                // $transfering_amount = Helpers::priceFormat($bill->currency, $price, $currency) * 100;
-                $price += $vat_percentage_amount;
-                $amount_per = round(($price / ($tax + $price)) * 100, 2, PHP_ROUND_HALF_UP);
-                $amount = $price + $totalTax;
-                $unit_amount = Helpers::priceFormat($bill->currency, $amount, $currency) * 100;
-
                 $connectedAccountId = $bill->user->account_id;
 
-                // Step 1: Check if customer already exists in the connected account table
-                $storeCustomer = ConnectedAccountCustomer::where('user_id', Auth::id())
-                    ->where('creator_id', $bill->user->id)
-                    ->where('connected_account_id', $connectedAccountId)
-                    ->where('product_type', 'bill')
-                    ->first();
+                $storeCustomer = ConnectedAccountCustomer::where([
+                    ['user_id', Auth::id()],
+                    ['creator_id', $bill->user->id],
+                    ['connected_account_id', $connectedAccountId],
+                    ['product_type', 'bill']
+                ])->first();
 
-                // Step 2: Check if price already exists for this product & user in the connected account
-                $existingPriceEntry = ConnectedAccountCustomer::where('user_id', Auth::id())
-                    ->where('creator_id', $bill->user->id)
-                    ->where('connected_account_id', $connectedAccountId)
-                    ->where('product_id', $bill->product_id)
-                    ->where('product_type', 'bill')
-                    ->whereNotNull('price_id')
-                    ->first();
+                $existingPriceEntry = ConnectedAccountCustomer::where([
+                    ['user_id', Auth::id()],
+                    ['creator_id', $bill->user->id],
+                    ['connected_account_id', $connectedAccountId],
+                    ['product_id', $bill->product_id],
+                    ['product_type', 'bill']
+                ])->whereNotNull('price_id')->first();
 
-                // Step 3: Create customer in the connected account if not exists
                 $customer = null;
-                if (empty($storeCustomer)) {
-                    $customer = StripeControl::createCustomer([
-                        'email' => $user->email,
-                        'name' => $user->name,
-                    ], $connectedAccountId);
-                }
+                // if (empty($storeCustomer)) {
+                //     $customer = StripeControl::createCustomer([
+                //         'email' => $user->email,
+                //         'name' => $user->name,
+                //     ], $connectedAccountId);
+                // }
 
-                $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
+                $priceId = $existingPriceEntry->price_id ?? StripeControl::createPrice([
+                    'unit_amount' => round($finalTotalAmount * 100),
+                    'currency' => $currency,
+                    'recurring' => [
+                        'interval' => StripeControl::$periods[$bill->period],
+                        'interval_count' => 1,
+                    ],
+                    'product' => $bill->product_id,
+                ], $connectedAccountId)->id;
 
-                // Step 4: Use existing price or create new one
-                if ($existingPriceEntry) {
-                    $priceId = $existingPriceEntry->price_id;
-                } else {
-                    //     $price = StripeControl::createPrice([
-                    //         'unit_amount' => round($amount * 100),
-                    //         'currency' => $currency,
-                    //         'product' => $membership->product_id,
-                    //     ], $connectedAccountId);
-                    // } else {
-                    $price = StripeControl::createPrice([
-                        'unit_amount' => round($amount * 100),
-                        'currency' => $currency,
-                        'recurring' => [
-                            'interval' => StripeControl::$periods[$bill->period],
-                            'interval_count' => 1,
-                        ],
-                        'product' => $bill->product_id,
-                    ], $connectedAccountId);
-                    // }
+                if (empty($priceId)) throw new Exception("Failed to create Stripe price.");
 
-                    if (empty($price->id)) {
-                        throw new Exception("Failed to create Stripe price.");
+                // 🔁 Currency mismatch handling
+                if (!empty($storeCustomer)) {
+                    $existingSubscription = StripeControl::getActiveSubscriptionByCustomer($storeCustomer->stripe_customer_id, $connectedAccountId);
+
+                    if ($existingSubscription && $existingSubscription->currency !== $currency) {
+                        $customer = StripeControl::createCustomer([
+                            'email' => $user->email,
+                            'name' => $user->name,
+                        ], $connectedAccountId);
+
+                        $customer_id = $customer->id;
+
+                        ConnectedAccountCustomer::create([
+                            'user_id' => Auth::id(),
+                            'creator_id' => $bill->user->id,
+                            'connected_account_id' => $connectedAccountId,
+                            'stripe_customer_id' => $customer_id,
+                            'product_type' => 'bill',
+                            'product_id' => $bill->product_id,
+                            'price_id' => $priceId,
+                        ]);
+                    } else {
+                        $customer = StripeControl::createCustomer([
+                            'email' => $user->email,
+                            'name' => $user->name,
+                        ], $connectedAccountId);
+                        $customer_id = $customer?->id;
                     }
-
-                    $priceId = $price->id;
                 }
 
-                // Step 5: Store customer and price if not already stored
                 if (empty($storeCustomer)) {
+                    // First-time customer store
                     ConnectedAccountCustomer::create([
                         'user_id' => Auth::id(),
                         'creator_id' => $bill->user->id,
@@ -418,72 +400,49 @@ class BillsController extends Controller
                     ]);
                 }
 
-                $items  =   [
-                    'quantity' =>   1
-                ];
-                // if($currency == strtolower($bill->currency)) {
-                //     $items['price']  =   $bill->price_id;
-                // } else {
-                $items['price_data']    =   [
-                    'currency'  =>  $currency,
-                    'product'   =>  $bill->product_id,
-                    'unit_amount_decimal'   =>  $unit_amount,
-                    'recurring' => [
-                        'interval'  =>  StripeControl::$periods[$bill->period],
-                        'interval_count'    =>  1
+                $items = [
+                    'quantity' => 1,
+                    'price_data' => [
+                        'currency' => $currency,
+                        'product' => $bill->product_id,
+                        'unit_amount_decimal' => $finalTotalAmount * 100,
+                        'recurring' => [
+                            'interval' => StripeControl::$periods[$bill->period],
+                            'interval_count' => 1
+                        ]
                     ]
                 ];
-                // }
 
-                $payload    =   [
-                    "currency"  =>  $currency,
-                    'line_items' =>  [$items],
+                $payload = [
+                    'currency' => $currency,
+                    'line_items' => [$items],
                     'customer' => $customer_id,
-                    'success_url'       =>  route('bill.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
-                    'cancel_url'       =>  route('bill.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
+                    'success_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
+                    'cancel_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
+                    'mode' => 'subscription',
+                    'subscription_data' => [
+                        'application_fee_percent' => $applicationFeePercent,
+                        'description' => "Monthly Bill for {$bill->user->username}",
+                    ]
                 ];
 
-                $payload['mode']    =   'subscription';
-                $payload['subscription_data']     =   [
-                    // 'application_fee_percent'   =>  $fee_per,
-                    // 'transfer_data' => [
-                    //     'destination' => $bill->user->account_id, // Creator's connected account ID
-                    //     'amount_percent' => $amount_per,
-                    // ],
-                    // 'on_behalf_of'  => $bill->user->account_id,
-                    // 'cancel_at_period_end'  =>  $reccure == 'onetime',
-                    // 'description'   => "{$bill->name} of {$bill->user->username}."
-                    'description'   => "Bill Content Purchase."
-                ];
+                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
 
-                // try {
-                $session = StripeControl::createCheckoutSession($payload, $bill->user->account_id);
-                $sub->update([
-                    'session_id' =>  $session->id
-                ]);
+                $sub->update(['session_id' => $session->id]);
 
                 return Inertia::location($session->url);
-                // } catch (Exception $e) {
-                //     $sub->delete();
-                //     return back()->with('error', $e->getMessage());
-                // }
-                // return response()->json([
-                //     'success'   => true,
-                //     'session'   => $session
-                // ]);
-
-
             }
 
             return Inertia::render('bills/BillCheckout', [
-                'bill'  => $bill,
-                'vat_amount' => $vat_percentage_amount,
-                'reccure'   => $reccure
+                'bill' => $bill,
+                'vat_amount' => $ConvertedVatAmount,
+                'reccure' => $reccure
             ]);
         } catch (Exception $e) {
             return to_route('user.show', ['username' => $bill->user->username])->with('error', $e->getMessage());
         }
     }
+
 
     /**
      * Handle Checkout Session

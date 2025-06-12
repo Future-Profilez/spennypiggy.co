@@ -234,7 +234,6 @@ class StripeControl
         }
     }
 
-
     /**
      * Get A CheckOut Session
      *
@@ -267,6 +266,26 @@ class StripeControl
     }
 
     /**
+     * Get Active subscription of customer
+     *
+     */
+    public static function getActiveSubscriptionByCustomer($customerId, $connectedAccountId)
+    {
+        try {
+            $subscriptions = \Stripe\Subscription::all([
+                'customer' => $customerId,
+                'status' => 'active',
+                'limit' => 1,
+            ], ['stripe_account' => $connectedAccountId]);
+
+            return $subscriptions->data[0] ?? null;
+        } catch (\Exception $e) {
+            Log::error("Stripe fetch subscription error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Create a Stripe Product
      *
      * @param array $payload Product Payload
@@ -292,7 +311,7 @@ class StripeControl
         }
     }
 
-    /**s
+    /**
      * Create a Stripe Price
      *
      * @param array $payload Price Payload
@@ -302,7 +321,7 @@ class StripeControl
     {
         self::setClient();
 
-        if(!$connectedAccountId) {
+        if (!$connectedAccountId) {
             return self::$client->prices->create($priceData);
         }
 
@@ -311,7 +330,6 @@ class StripeControl
             ['stripe_account' => $connectedAccountId]
         );
     }
-
 
     /**
      * Create a Stripe Price
@@ -357,7 +375,6 @@ class StripeControl
         }
     }
 
-
     /**
      * Update A Subscriptions
      *
@@ -380,7 +397,6 @@ class StripeControl
             throw new Exception("Stripe API Error: " . $e->getMessage());
         }
     }
-
 
     /**
      * Update A Subscriptions

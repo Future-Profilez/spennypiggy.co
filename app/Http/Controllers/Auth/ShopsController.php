@@ -597,7 +597,7 @@ class ShopsController extends Controller
                 $amount = round(request()->query('amount'), 2, PHP_ROUND_HALF_UP);
             }
 
-            $tax = round(($amount * config('app.shop_tax') / 100), 2, PHP_ROUND_HALF_UP);
+            $tax = $amount * config('app.shop_tax') / 100;
 
             $total = $amount + $tax;
 
@@ -606,8 +606,14 @@ class ShopsController extends Controller
             }
 
             $adminFee = config('app.administration_fee');
+            $ConvertedStoreAdminFees = Helpers::priceFormat($currency, $adminFee, $shop->currency);
+            $ConvertedAdminFees = Helpers::priceFormat('GBP', $adminFee, $currency);
+            $ConvertedTaxAmount = Helpers::priceFormat($shop->currency, $tax, $currency);
+            $ConvertedAmount = Helpers::priceFormat($shop->currency, $amount, $currency);
 
-            $totalTaxAmount = $tax + $adminFee;
+            $convertedStoreTaxAmount = $ConvertedStoreAdminFees + $tax;
+            $ConvertedTotalTaxAmount = $ConvertedAdminFees + $ConvertedTaxAmount;
+            $totalAmount = $ConvertedAmount + $vat_percentage_amount + $ConvertedTotalTaxAmount;
 
             if (!Auth::check()) {
                 $logged_out_user = User::where('email', request()->query('email'))->where('is_uk', 0)->first();
@@ -615,7 +621,7 @@ class ShopsController extends Controller
 
             $shopPaymentDetail = ShopPayment::create([
                 'amount' => $amount,
-                'tax_amount' => $totalTaxAmount,
+                'tax_amount' => $convertedStoreTaxAmount,
                 'vat_tax_amount' => $vat_percentage_amount,
                 'currency' => $shop->user->default_currency,
                 'shop_id' => $shop->id,
@@ -631,9 +637,12 @@ class ShopsController extends Controller
 
             $shopPaymentDetail->refresh();
 
-            $total += $vat_percentage_amount;
-            $total += $adminFee;
-            $total += $shipping_price;
+            // $total += $vat_percentage_amount;
+            // $total += $ConvertedAdminFees;
+            // $total += $shipping_price;
+
+            // $ConvertedTotalAmount = Helpers::priceFormat($shop->currency, $total, $currency);
+
             $sessionCreate = null;
             if ($shop->price > 0) {
 
@@ -671,7 +680,7 @@ class ShopsController extends Controller
                     $priceId = $existingPriceEntry->price_id;
                 } else {
                     $pricePayload = [
-                        'unit_amount' => round($total * 100),
+                        'unit_amount' => round($totalAmount * 100, 2),
                         'currency' => $currency,
                         'product' => $shop->stripe_product_id,
                     ];
@@ -713,6 +722,10 @@ class ShopsController extends Controller
                     'mode' => 'payment',
                     'payment_method_types' => ['card'], // Add this line
                     "customer" => $customer_id,
+                    'payment_intent_data' => [
+                        'application_fee_amount' => round($ConvertedTotalTaxAmount * 100),
+                        'description' => "Shop Payment for {$shop->user->username}",
+                    ],
                 ];
 
                 $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccountId);
