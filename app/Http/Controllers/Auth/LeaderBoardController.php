@@ -46,6 +46,9 @@ class LeaderBoardController extends Controller
                 'rank' => $rank,
                 'name' => $query->name ?? '',
                 'username' => $query->username ?? '',
+                'profile_status_lock' => $query->profile_status_lock,
+                'role' => $query->role,
+                'avatar' => $query->avatar_url,
                 'avatar' => $query->avatar_url,
                 'coverimg' =>  $query->cover_url,
                 'top' => $rank / 100,
@@ -377,6 +380,8 @@ class LeaderBoardController extends Controller
                         'avatar_url' => $value->wish->user->avatar_url,
                         'cover_url' => $value->wish->user->cover_url,
                         'amount' => $value->amount,
+                        'profile_status_lock' => $value->wish->user->profile_status_lock,
+                        'role' => $value->wish->user->role,
                         'currency' => $value->payment->currency
                     ];
                 }
@@ -387,6 +392,8 @@ class LeaderBoardController extends Controller
                         'username' => $value->wish_item->user->username,
                         'avatar_url' => $value->wish_item->user->avatar_url,
                         'cover_url' => $value->wish_item->user->cover_url,
+                        'profile_status_lock' => $value->wish_item->user->profile_status_lock,
+                        'role' => $value->wish_item->user->role,
                         'amount' => $value->amount,
                         'currency' => $value->currency
                     ];
@@ -398,6 +405,8 @@ class LeaderBoardController extends Controller
                         'username' => $value->creator->username,
                         'avatar_url' => $value->creator->avatar_url,
                         'cover_url' => $value->creator->cover_url,
+                        'profile_status_lock' => $value->creator->profile_status_lock,
+                        'role' => $value->creator->role,
                         'amount' => $value->amount,
                         'currency' => $value->currency
                     ];
@@ -408,6 +417,8 @@ class LeaderBoardController extends Controller
                         'name' => $value->membership->user->name,
                         'username' => $value->membership->user->username,
                         'avatar_url' => $value->membership->user->avatar_url,
+                        'profile_status_lock' => $value->membership->user->profile_status_lock,
+                        'role' => $value->membership->user->role,
                         'cover_url' => $value->membership->user->cover_url,
                         'amount' => $value->amount,
                         'currency' => $value->currency
@@ -420,6 +431,8 @@ class LeaderBoardController extends Controller
                         'username' => $value->bill->user->username,
                         'avatar_url' => $value->bill->user->avatar_url,
                         'cover_url' => $value->bill->user->cover_url,
+                        'profile_status_lock' => $value->bill->user->profile_status_lock,
+                        'role' => $value->bill->user->role,
                         'amount' => $value->amount,
                         'currency' => $value->currency
                     ];

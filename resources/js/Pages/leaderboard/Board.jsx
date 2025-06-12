@@ -12,6 +12,7 @@ import { RiVerifiedBadgeFill } from "react-icons/ri";
 export default function Board(props) {
     const { auth, data, is_daily } = props;
 
+    console.log("data", data);
     const [positions, setPositions] = useState([]);
     const [ranks, setRanks] = useState([]);
 
@@ -77,7 +78,8 @@ export default function Board(props) {
                 {p && p.username ? (
                     <Link
                         href={p && p.username}
-                        className={`position-${position} position text-center rounded-[40px] border-4 border-[#F94F97] shadow-pinks bg-white`}
+                        className={`position-${position} position text-center rounded-[20px] md:rounded-[40px] border-2 
+                            md:border-4 border-[#F94F97] !shadow-none shadow-pinks bg-white`}
                     >
                         <div className="profile p-3 pb-0">
                             <div className="position-relative">
@@ -101,10 +103,10 @@ export default function Board(props) {
                             </div>
                             <div className="profile-content">
                                 <h2 className=" text-large pt-2 capitalize flex justify-center">
-                                    {(p && p.name) || "Anonymous"} 
+                                    {(p && p.name) || "Anonymous"}  
                                     {p?.role == 1 && p?.profile_status_lock === 2 ? 
                                         <RiVerifiedBadgeFill  size={'1.2rem'} className="ms-1 mt-1 text-pink" />
-                                    : ''}
+                                        : ''}
                                 </h2>
                                 <p className="toppercentage text-center font-gulfs">
                                     {p && p.top}%{" "}
@@ -112,19 +114,19 @@ export default function Board(props) {
                             </div>
                             {position === 1 ? 
                                 <div className={`rank-position  `}>
-                                    <h2 className="font-gulfs !text-[130px]">{position}</h2>
+                                    <h2 className="font-gulfs !text-[80px] md:!text-[95px] xl:!text-[130px]">{position}</h2>
                                 </div>
                                 : ''
                             }
                             {position === 2 ? 
                                 <div className={`rank-position  `}>
-                                    <h2 className="font-gulfs !text-[80px]">{position}</h2>
+                                    <h2 className="font-gulfs  !text-[45px] md:!text-[60px] xl:!text-[80px]">{position}</h2>
                                 </div>
                                 : ''
                             }
                             {position === 3 ? 
                                 <div className={`rank-position  `}>
-                                    <h2 className="font-gulfs !text-[50px]">{position}</h2>
+                                    <h2 className="font-gulfs  !text-[30px] md:!text-[35px] xl:!text-[50px]">{position}</h2>
                                 </div>
                                 : ''
                             }
@@ -173,67 +175,32 @@ export default function Board(props) {
             <div className="blackbg pt-4">
                 <div className="containerbox pb-5 pt-2 ">
                     <div className="row">
-                        <div className="col-lg-8 mb-4">
+                        <div className="col-xl-8 mb-4">
                             <div className="pe-md-4">
                                 <div className="pt-4 pt-md-0 d-block d-mflex items-center justify-between mb-4 pb-4">
                                     <h1 className="text-bl font-GillSans text-start text-4xl mb-3 uppercase text-white ">
                                         Leaderboard
                                     </h1>
-
-                                     
                                     <div className="changePeriod">
-                                        <button
-                                            className={
-                                                period == "all" ? "active" : ""
-                                            }
-                                            onClick={() => switchTime("all")}
-                                        >
-                                            All Time
-                                        </button>
-                                        <button
-                                            className={
-                                                period == "monthly"
-                                                    ? "active"
-                                                    : ""
-                                            }
-                                            onClick={() =>
-                                                switchTime("monthly")
-                                            }
-                                        >
-                                            Monthly
-                                        </button>
-                                        <button
-                                            className={
-                                                period == "weekly"
-                                                    ? "active"
-                                                    : ""
-                                            }
-                                            onClick={() => switchTime("weekly")}
-                                        >
-                                            Weekly
-                                        </button>
-                                        {is_daily == 1 ? (
-                                            <button
-                                                className={
-                                                    period == "daily"
-                                                        ? "active"
-                                                        : ""
-                                                }
-                                                onClick={() =>
-                                                    switchTime("daily")
-                                                }
-                                            >
-                                                Daily
-                                            </button>
-                                        ) : (
-                                            ""
-                                        )}
+                                        <button className={`!text-sm md:!text-[18px] ${period == "all" ? "active":""}`}
+                                        onClick={() => switchTime("all")}
+                                        > All Time </button>
+                                        <button className={`!text-sm md:!text-[18px] ${period == "monthly" ? "active":""}`}
+                                        onClick={() => switchTime("monthly")}
+                                        > Monthly </button>
+                                        <button className={`!text-sm md:!text-[18px] ${period == "weekly" ? "active":""}`}
+                                        onClick={() => switchTime("weekly")}
+                                        > Weekly </button>
+                                        {is_daily == 1 ? ( <button className={`!text-sm md:!text-[18px] ${period == "daily" ? "active":""}`}
+                                        onClick={() => switchTime("daily")}
+                                        > Daily </button> ):( "" )}
+
                                     </div>
                                 </div>
                                 <div
                                     className={`${
                                         loading ? "loading-state" : ""
-                                    }  postions pb-5 pt-5 mt-3`}
+                                    }  postions pb-3 sm:pb-3 lg:pb-5 pt-5 mt-3`}
                                 >
                                     {positions && positions[1] ? (
                                         <Position
@@ -275,8 +242,7 @@ export default function Board(props) {
                                 )}
                             </div>
                         </div>
-
-                        <div className="col-lg-4">
+                        <div className="col-xl-4">
                             <LargestGifts />
                         </div>
                     </div>
