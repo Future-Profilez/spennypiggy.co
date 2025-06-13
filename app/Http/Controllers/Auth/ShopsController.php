@@ -653,6 +653,7 @@ class ShopsController extends Controller
                     ->where('creator_id', $shop->user->id)
                     ->where('connected_account_id', $connectedAccountId)
                     ->where('product_type', 'shop item')
+                    ->where('currency', $currency)
                     ->first();
 
                 // Step 2: Check if price already exists
@@ -661,6 +662,7 @@ class ShopsController extends Controller
                     ->where('connected_account_id', $connectedAccountId)
                     ->where('product_id', $shop->stripe_product_id)
                     ->where('product_type', 'shop item')
+                    ->where('currency', $currency)
                     ->whereNotNull('price_id')
                     ->first();
 
@@ -705,6 +707,7 @@ class ShopsController extends Controller
                         'product_type' => 'shop item',
                         'product_id' => $shop->stripe_product_id,
                         'price_id' => $priceId,
+                        'currency' => $currency,
                     ]);
                 }
 
@@ -723,7 +726,7 @@ class ShopsController extends Controller
                     'payment_method_types' => ['card'], // Add this line
                     "customer" => $customer_id,
                     'payment_intent_data' => [
-                        'application_fee_amount' => round($ConvertedTotalTaxAmount * 100),
+                        'application_fee_amount' => (int) round($ConvertedTotalTaxAmount * 100),
                         'description' => "Shop Payment for {$shop->user->username}",
                     ],
                 ];

@@ -74,7 +74,7 @@ class MembershipController extends Controller
         }
 
         $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
-        $exist = Membership::where('user_id', $user->id)->pluck('level')->toArray();
+        $exist = Membership::where('user_id', $user->id)->pluck('level')->whereNull('deleted_at')->toArray();
 
 
 
@@ -468,7 +468,6 @@ class MembershipController extends Controller
             'reccure' => $reccure,
         ]);
     }
-
 
     /**
      * Handle Checkout Session
