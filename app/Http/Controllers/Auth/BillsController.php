@@ -435,7 +435,7 @@ class BillsController extends Controller
 
         return Inertia::render('bills/BillCheckout', [
             'bill' => $bill,
-            'vat_amount' => $ConvertedVatAmount,
+            'vat_amount' => $vatAmount,
             'reccure' => $reccure,
         ]);
     }

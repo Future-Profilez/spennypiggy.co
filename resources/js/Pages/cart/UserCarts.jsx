@@ -165,19 +165,7 @@ export default function UserCarts(props) {
                                             Card Payments:
                                         </strong>{" "}
                                         <br />
-                                        Bills - 8%
-                                        <br />
-                                        Memberships - 10%
-                                        <br />
-                                        Piggy Bank - 15%
-                                        <br />
-                                        Crowdfunding - 20%
-                                        <br />
-                                        Subscriptions - 10%
-                                        <br />
-                                        Single Purchases - 12.5%
-                                        <br />
-                                        Profile Shop - 20%
+                                        15% Card Fees For All Payments
                                         <br />
                                         <br />
                                         Administrative Fee on all Transactions -

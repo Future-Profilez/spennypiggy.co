@@ -129,19 +129,7 @@ export default function BillCheckout(props) {
                                             Card Payments:
                                         </strong>{" "}
                                         <br />
-                                        Bills - 10%
-                                        <br />
-                                        Memberships - 10%
-                                        <br />
-                                        Piggy Bank - 20%
-                                        <br />
-                                        Crowdfunding - 20%
-                                        <br />
-                                        Subscriptions - 10%
-                                        <br />
-                                        Single Purchases - 20%
-                                        <br />
-                                        Profile Shop - 20%
+                                        15% Card Fees For All Payments
                                         <br />
                                         <br />
                                         Administrative Fee on all Transactions -
