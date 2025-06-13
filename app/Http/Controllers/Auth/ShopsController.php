@@ -612,8 +612,8 @@ class ShopsController extends Controller
             $ConvertedAmount = Helpers::priceFormat($shop->currency, $amount, $currency);
 
             $convertedStoreTaxAmount = $ConvertedStoreAdminFees + $tax;
-            $ConvertedTotalTaxAmount = $ConvertedAdminFees + $ConvertedTaxAmount;
-            $totalAmount = $ConvertedAmount + $vat_percentage_amount + $ConvertedTotalTaxAmount;
+            $ConvertedTotalTaxAmount = round($ConvertedAdminFees + $ConvertedTaxAmount, 2);
+            $totalAmount = round($ConvertedAmount + $vat_percentage_amount + $ConvertedTotalTaxAmount, 2);
 
             if (!Auth::check()) {
                 $logged_out_user = User::where('email', request()->query('email'))->where('is_uk', 0)->first();
@@ -726,9 +726,10 @@ class ShopsController extends Controller
                     'payment_method_types' => ['card'], // Add this line
                     "customer" => $customer_id,
                     'payment_intent_data' => [
-                        'application_fee_amount' => (int) round($ConvertedTotalTaxAmount * 100),
+                        'application_fee_amount' => (int) round($ConvertedTotalTaxAmount * 100), // Fixed here
                         'description' => "Shop Payment for {$shop->user->username}",
                     ],
+
                 ];
 
                 $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccountId);
