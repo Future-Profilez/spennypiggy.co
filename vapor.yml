@@ -19,7 +19,7 @@ environments:
       # - "rm -rf node_modules"   # Linux/macOS
       - "rd /s /q node_modules"  # Windows/
     deploy:
-      # - "php artisan migrate --force"
+      - "php artisan migrate --force"
 
   production:
     memory: 3008
