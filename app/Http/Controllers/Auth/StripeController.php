@@ -635,7 +635,7 @@ class StripeController extends Controller
                 'user_id' => $user->id,
                 'creator_id' => $wish->user->id,
                 'connected_account_id' => $connectedAccountId,
-                'product_type' => 'wish item subscription',
+                'product_type' => $reccure != 'onetime' ? 'wish item subscription' : 'wish item subscription onetime',
                 'currency' => $currency
             ])->first();
 
@@ -665,7 +665,7 @@ class StripeController extends Controller
                 'user_id' => $user->id,
                 'creator_id' => $wish->user->id,
                 'connected_account_id' => $connectedAccountId,
-                'product_type' => 'wish item subscription',
+                'product_type' => $reccure != 'onetime' ? 'wish item subscription' : 'wish item subscription onetime',
                 'product_id' => $wish->stripe_product_id,
                 'currency' => $currency
             ])->first();
@@ -706,7 +706,7 @@ class StripeController extends Controller
                     'creator_id' => $wish->user->id,
                     'connected_account_id' => $connectedAccountId,
                     'stripe_customer_id' => $customer_id,
-                    'product_type' => 'wish item subscription',
+                    'product_type' => $reccure != 'onetime' ? 'wish item subscription' : 'wish item subscription onetime',
                     'product_id' => $wish->stripe_product_id,
                     'price_id' => $priceId,
                     'currency' => $currency
@@ -719,7 +719,7 @@ class StripeController extends Controller
                     'creator_id' => $wish->user->id,
                     'connected_account_id' => $connectedAccountId,
                     'stripe_customer_id' => $customer_id,
-                    'product_type' => 'wish item subscription',
+                    'product_type' => $reccure != 'onetime' ? 'wish item subscription' : 'wish item subscription onetime',
                     'product_id' => $wish->stripe_product_id,
                     'price_id' => $priceId,
                     'currency' => $currency
@@ -1100,8 +1100,13 @@ class StripeController extends Controller
 
                 $message = $username . " just subscribed to your subscription wish " . $sub->wish_item->name;
                 NotificationSave::dispatch($message, $sub->wish_item->user, $sub->user, 'Wish Subscription');
-
-                return to_route('thank-you', ['username' => $sub->wish_item->user->username])->with('success', "Subscription Success! If you have paid for onetime subscription, it will be automatically cancelled after 24 hours.");
+                $message = null;
+                if ($sub->recurring_for == 'onetime') {
+                    $message = 'Subscription Success! If you have paid for onetime subscription, it will be automatically cancelled after 24 hours.';
+                } else {
+                    $message = 'Subscription Payment Successfully Paid.';
+                }
+                return to_route('thank-you', ['username' => $sub->wish_item->user->username])->with('success', $message);
             }
 
             SubscriptionFailed::dispatch($sub);
