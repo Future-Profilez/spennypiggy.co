@@ -2578,7 +2578,7 @@ class WishitemController extends Controller
         ]);
     }
 
-    
+
 
     /**
      * Mark as completed the tip jar goal

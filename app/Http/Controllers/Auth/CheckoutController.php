@@ -74,12 +74,9 @@ class CheckoutController extends Controller
                 $showAdminsFees = Helpers::priceFormat('GBP', $adminFee, $currency);
                 $StoreAdminsFees = Helpers::priceFormat('GBP', $adminFee, $dd->owner->default_currency);
                 $totalAmount = $dd->amount;
-                $totalTax =  $dd->tax;
+                $taxPercentage = config('app.single_tax');
 
                 $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, $currency);
-                $ConvertedTax = Helpers::priceFormat($dd->owner->default_currency, $totalTax, $currency);
-                $TotalConvertedFinalAmount = $ConvertedTax + $ConvertedAmount + $showAdminsFees;
-                // $new_total_amount = round($TotalConvertedFinalAmount, 2, PHP_ROUND_HALF_UP);
 
                 $connectedAccountId = $getdata[0]->owner->account_id;
 
@@ -89,14 +86,6 @@ class CheckoutController extends Controller
                     ->where('connected_account_id', $connectedAccountId)
                     ->where('product_type', 'wish item')
                     ->first();
-
-                // Step 2: Check if price already exists
-                // $existingPriceEntry = ConnectedAccountCustomer::where('user_id', Auth::id())
-                //     ->where('creator_id', $dd->owner->id)
-                //     ->where('connected_account_id', $connectedAccountId)
-                //     ->where('product_id', $dd->wish->stripe_product_id)
-                //     ->where('product_type', 'wish item')
-                //     ->first();
 
                 // Step 3: Create customer in connected account if not exists
                 $customer = null;
@@ -108,18 +97,6 @@ class CheckoutController extends Controller
                 }
 
                 $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
-
-                // if ($existingPriceEntry) {
-                //     $priceId = $existingPriceEntry->price_id;
-                // } else {
-                //     $price = StripeControl::createPrice([
-                //         'unit_amount' => round($new_total_amount * 100),
-                //         'currency' => $currency,
-                //         'product' => $dd->priceid,
-                //     ], $connectedAccountId);
-
-                //     $priceId = $price->id;
-                // }
 
                 // Step 5: Store customer & price if not already stored
                 if (!$storeCustomer) {
@@ -134,9 +111,8 @@ class CheckoutController extends Controller
                     ]);
                 }
 
-                $subtotal += $totalAmount * $dd->quantity;
-                $platformFeePercentage = config('app.single_tax'); // 15%
-                $platformFeeAmount = $subtotal * $platformFeePercentage / 100;
+                $subtotal += $ConvertedAmount * $dd->quantity;
+                $platformFeeAmount = $ConvertedAmount * $taxPercentage / 100;
                 $showTax = $platformFeeAmount + $showAdminsFees;
                 $storeTax = $platformFeeAmount + $StoreAdminsFees;
 
@@ -147,7 +123,7 @@ class CheckoutController extends Controller
                         'price_data' => [
                             'currency' => $currency,
                             'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
-                            'unit_amount_decimal' => Helpers::priceFormat($dd->owner->default_currency, $ConvertedAmount, $currency) * 100,
+                            'unit_amount_decimal' => round($ConvertedAmount * 100),
                         ]
                     ],
                     // Platform fee + Vat as a separate item
@@ -158,15 +134,11 @@ class CheckoutController extends Controller
                             'product_data' => [
                                 'name' => 'Platform Fee',
                             ],
-                            'unit_amount' => $showTax * 100,
+                            'unit_amount' => round($showTax * 100),
                             'tax_behavior' => 'exclusive',
                         ],
                     ],
                 ];
-
-                // $subtotal += $dd->amount * $dd->quantity;
-                // $taxNew += $dd->tax * $dd->quantity;
-
 
                 // this amount will be transfer to the creators account
                 $transfer_amount += $ConvertedAmount * $dd->quantity;
@@ -182,7 +154,7 @@ class CheckoutController extends Controller
                 'customer_email' => $user->email,
                 'payment_intent_data' => [
                     'application_fee_amount' => round($showTax * 100), // Admin fee + tax
-                    'description' => "Custom Content Purchase."
+                    'description' => "Platform Fee."
                 ],
                 'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
             ];
