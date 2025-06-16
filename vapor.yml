@@ -14,7 +14,7 @@ environments:
       # - "php artisan event:cache"
       # - "php artisan optimize:clear"
       # - "php artisan config:cache"
-      # - "npm ci"
+      - "npm ci"
       - "npm run build"
       # - "rm -rf node_modules"   # Linux/macOS
       - "rd /s /q node_modules"  # Windows/
