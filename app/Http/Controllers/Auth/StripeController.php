@@ -652,11 +652,14 @@ class StripeController extends Controller
             $gbpToUsdRate = Helpers::priceFormat('GBP', $adminFeeGBP, $currency);
 
             $platformFeeAmount = $basePrice * $platformFeePercentage / 100;
-            $vatAmount = ($basePrice + $platformFeeAmount) * $wish->user->vat_amount_percentage / 100;
-            $adminFeeUSD = $adminFeeGBP * $gbpToUsdRate;
+            $vatAmount = 0;
+            if ($reccure === 'continue' && !empty($wish->user->vat_amount_percentage)) {
+                $vat_percentage_amount = Helpers::priceFormat($wish->currency, $vat_percentage_amount, $currency);
+                // $vatAmount = ($basePrice + $platformFeeAmount) * $wish->user->vat_amount_percentage / 100;
+            }
 
-            $creatorTotal = $basePrice + $vatAmount;
-            $platformTotal = $platformFeeAmount + $adminFeeUSD;
+            $creatorTotal = $basePrice + $vat_percentage_amount;
+            $platformTotal = $platformFeeAmount + $gbpToUsdRate;
             $finalTotalAmount = $creatorTotal + $platformTotal;
             $applicationFeePercent = ($platformTotal / $finalTotalAmount) * 100;
 

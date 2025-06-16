@@ -364,7 +364,7 @@ class ShopsController extends Controller
                             'stripe_account' => $user->account_id,
                         ]);
                     } else {
-                        $stripe_client = StripeControl::createProduct($productPayload);
+                        $stripe_client = StripeControl::createProduct($productPayload, $user->account_id);
                         $shop->price_id = $stripe_client->default_price;
                     }
                     $shop->stripe_product_id = $stripe_client->id;

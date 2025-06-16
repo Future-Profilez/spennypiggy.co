@@ -321,7 +321,7 @@ class MembershipController extends Controller
         $creatorTotal = $price + $vatAmount;
         $convertedCreatorTotal = Helpers::priceFormat($creatorCurrency, $creatorTotal, $currency);
         $platformTotal = $convertedTaxAmount + $convertedAdminFee;
-        $finalTotalAmount = $convertedCreatorTotal + $platformTotal;
+        $finalTotalAmount = round($convertedCreatorTotal + $platformTotal, 2);
         $applicationFeePercent = round(($platformTotal / $finalTotalAmount) * 100, 2);
 
         if ($request->isMethod("POST")) {
@@ -464,7 +464,7 @@ class MembershipController extends Controller
         return Inertia::render('membership/MemberCheckout', [
             'membership' => $membership,
             'isSocilAdded' => $isSocilAdded,
-            'vat_amount' => $convertedVatAmount,
+            'vat_amount' => $vatAmount,
             'reccure' => $reccure,
         ]);
     }

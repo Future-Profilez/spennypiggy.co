@@ -468,12 +468,12 @@ class WishitemController extends Controller
                     }
                 } catch (Exception $e) {
                     $wish->delete();
-                    return redirect(route("user.show", ["username" => Auth::user()->username, 'page'=>'wishes']))->with('error', "Stripe Error: " . $e->getMessage());
+                    return redirect(route("user.show", ["username" => Auth::user()->username, 'page' => 'wishes']))->with('error', "Stripe Error: " . $e->getMessage());
                 }
             }
             //send email
             // SaveWishlist::dispatch($user);
-            return redirect(route("user.show", ["username" => Auth::user()->username, 'page'=>'wishes']))->with('success', "Wish Item has been updated.");
+            return redirect(route("user.show", ["username" => Auth::user()->username, 'page' => 'wishes']))->with('success', "Wish Item has been updated.");
         }
     }
 
@@ -833,6 +833,8 @@ class WishitemController extends Controller
         $request->validate([
             'url' => 'required',
         ]);
+
+        $user = Auth::user();
         // Extract the URL from the request (assuming it's passed as a query parameter)
         $url = $request->input('url');  // You can change this as per your need
         $checkProductId = RyeProduct::where('creator_id', Auth::id())->where('product_id', $url['id'])->exists();
@@ -852,7 +854,7 @@ class WishitemController extends Controller
             "url"   => env('APP_URL') . "/gift-item/$url[id]",
         ];
 
-        $product = StripeControl::createProduct($productPayload);
+        $product = StripeControl::createProduct($productPayload, $user->account_id);
         $ryeProducts = new RyeProduct();
         $ryeProducts->creator_id = Auth::id();
         $ryeProducts->product_id = $url['id'];
@@ -1135,10 +1137,10 @@ class WishitemController extends Controller
                 'name' => $user->name ?? null,
             ]);
 
-                $user->stripe_id = $stripeCustomer->id;
-                if ($user instanceof \App\Models\User) {
-                    $user->save();
-                }
+            $user->stripe_id = $stripeCustomer->id;
+            if ($user instanceof \App\Models\User) {
+                $user->save();
+            }
         }
 
         // $request->validate([
