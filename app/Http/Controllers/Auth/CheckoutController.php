@@ -193,7 +193,6 @@ class CheckoutController extends Controller
         }
     }
 
-
     public function successCheckout($id)
     {
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';

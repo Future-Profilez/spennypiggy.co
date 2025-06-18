@@ -93,7 +93,7 @@ class BillsController extends Controller
         $productPayload = [
             "name"  => $bill->name,
             "images" => [$bill->perma_link],
-            "default_price_data"    =>  [
+            "default_price"    =>  [
                 "currency"  =>  $user->default_currency,
                 "unit_amount_decimal"   => round($createPriceId, 2, PHP_ROUND_HALF_UP) * 100,
                 'recurring' => [
@@ -127,19 +127,11 @@ class BillsController extends Controller
     public function billEdit(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            "name" => [
-                "required",
-                "string",
-            ],
-            "price" => [
-                "required",
-                "numeric",
-                "min:0"
-            ],
+            "name" => ["required", "string"],
+            "price" => ["required", "numeric", "min:0"],
         ]);
 
         if ($validator->fails()) {
-
             return response()->json([
                 "status" => false,
                 "msg" => "Validation failed",
@@ -148,82 +140,87 @@ class BillsController extends Controller
         }
 
         $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
-
         $bill = Bills::where('uuid', $id)->first();
+
+        if (!$user || !$bill) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'User or Bill not found'
+            ]);
+        }
+
         $old_price = $bill->price;
         $old_period = $bill->period;
 
-        if (!empty($bill)) {
-            $media = $request->thumbnail;
+        $media = $request->thumbnail;
+        $price = $request->price;
+        $taxamount = round(($price * config('app.bill_tax') / 100), 2, PHP_ROUND_HALF_UP);
+        $totalAmount = round($price + $taxamount, 2);
 
-            $price = $request->price;
-            $taxamount = round(($price * config('app.bill_tax') / 100), 2, PHP_ROUND_HALF_UP);
-            $createpriceid = $price + $taxamount;
+        $bill->fill([
+            'user_id' => $user->id,
+            'name' => $request->name,
+            'currency' => $user->default_currency,
+            'price' => $price,
+            'tax_amount' => $taxamount,
+            'thumbnail' => $media ?? null,
+            'period' => $request->period,
+        ])->save();
 
-            $bill->user_id = Auth::id();
-            $bill->name = $request->name;
-            $bill->currency = $user->default_currency;
-            $bill->price = $price;
-            $bill->tax_amount = $taxamount;
-            $bill->thumbnail = !empty($media) ? $media : null;
-            $bill->period = $request->period;
+        try {
+            $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
-            $bill->save();
+            // Only update price/product if price or period changed
+            if ($old_price != $price || $old_period != $bill->period) {
+                // Step 1: Create new price
+                $newPrice = $stripe->prices->create([
+                    'unit_amount_decimal' => (string)($totalAmount * 100),
+                    'currency' => $user->default_currency,
+                    'product' => $bill->product_id,
+                    'recurring' => [
+                        'interval' => StripeControl::$periods[$bill->period],
+                        'interval_count' => 1
+                    ]
+                ], [
+                    'stripe_account' => $user->account_id
+                ]);
 
-            try {
-                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                // Step 2: Update product
+                $product = $stripe->products->update($bill->product_id, [
+                    'name' => $bill->name,
+                    'images' => [$bill->perma_link],
+                    'default_price' => $newPrice->id,
+                    'url' => env('APP_URL') . '/' . $user->username,
+                ], [
+                    'stripe_account' => $user->account_id
+                ]);
 
-                if ($old_price != $bill->price || $old_period != $bill->period) {
-                    $productPayload = [
-                        "name"  => $bill->name,
-                        "images" => [$bill->perma_link],
-                        "default_price_data"    =>  [
-                            "currency"  =>  $user->default_currency,
-                            "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
-                            'recurring' => [
-                                'interval'  =>  StripeControl::$periods[$bill->period],
-                                'interval_count'    =>  1
-                            ]
-                        ],
-                        "url"   =>  env('APP_URL') . '/' . $user->username,
-                    ];
-                    $stripe_client = $stripe->products->create($productPayload, [
-                        'stripe_account' => $user->account_id, // 🟢 Target the connected account
-                    ]);
-                    $bill->price_id = $stripe_client->default_price;
-                } else {
-                    $stripe_client = $stripe->products->update($bill->product_id, [
-                        'name' => $request->name ?? $bill->wishname,
-                        'images' => [$bill->perma_link],
-                        "default_price" => $bill->price_id,
-                        // "url" => $request->item_url ?? null
-                    ]);
-                }
-
-                $bill->product_id = $stripe_client->id;
-                $bill->approved = 0;
-                $bill->save();
-
-                $logs = Logs::where('edited_bill_id', $bill->id)->where('status', 'pending')->first();
-                if (!empty($logs)) {
-                    $logs->status = 'updated';
-                    $logs->save();
-                }
-            } catch (Exception $e) {
-                $bill->delete();
-
-                return response()->json([
-                    'status' => false,
-                    'msg' => "Stripe Error: " . $e->getMessage()
+                $bill->update([
+                    'price_id' => $newPrice->id,
+                    'product_id' => $product->id,
+                    'approved' => 0,
                 ]);
             }
 
+            // Update log status if it exists
+            Logs::where('edited_bill_id', $bill->id)
+                ->where('status', 'pending')
+                ->update(['status' => 'updated']);
+        } catch (Exception $e) {
+            $bill->delete();
+
             return response()->json([
-                'status' => true,
-                'msg' => "Bill edited successfully."
+                'status' => false,
+                'msg' => "Stripe Error: " . $e->getMessage()
             ]);
         }
+
+        return response()->json([
+            'status' => true,
+            'msg' => "Bill edited successfully."
+        ]);
     }
+
 
     public function removeBill($uuid)
     {

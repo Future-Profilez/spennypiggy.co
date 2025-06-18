@@ -24,15 +24,9 @@ class CheckStripeIdentityVerification
     {
         $user = Auth::user();
 
-        if (!$user || $user->role == 0) {
-            return $next($request);
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'please login first');
         }
-
-        // $isBioSocialVerified = UserVerificationStatus::where('user_id', $user->id)
-        //     ->where('bio_status', 1)
-        //     ->where('social_status', 1)
-        //     ->where('address_status', 1)
-        //     ->exists();
 
         $hasPaidSubscription = MonthlyCharge::where('user_id', $user->id)
             ->where('status', 'paid')

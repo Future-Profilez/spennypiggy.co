@@ -364,7 +364,7 @@ class ShopsController extends Controller
                             'stripe_account' => $user->account_id,
                         ]);
                     } else {
-                        $stripe_client = StripeControl::createProduct($productPayload, $user->account_id);
+                        $stripe_client = StripeControl::updateSubscription($shop->stripe_product_id, $productPayload, $user->account_id);
                         $shop->price_id = $stripe_client->default_price;
                     }
                     $shop->stripe_product_id = $stripe_client->id;
@@ -422,8 +422,6 @@ class ShopsController extends Controller
             'msg' => "Shop item removed successfully."
         ]);
     }
-
-
 
     public function singleShopList($slug, $uuid, $session_id = null)
     {
@@ -872,7 +870,6 @@ class ShopsController extends Controller
         // return view('cancel');
     }
 
-
     public function deactivateShop($uuid)
     {
         $shop = Shop::where('uuid', $uuid)->first();
@@ -891,7 +888,6 @@ class ShopsController extends Controller
         }
     }
 
-
     public function answerPayment(Request $request, $payment_id)
     {
         $payment = ShopPayment::where('session_id', $payment_id)->first();
@@ -904,7 +900,6 @@ class ShopsController extends Controller
             'msg' => "Answer saved successfully."
         ]);
     }
-
 
     public function ordersList()
     {

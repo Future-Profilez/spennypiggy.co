@@ -372,6 +372,7 @@ class WishitemController extends Controller
         }
 
         $old_price = $wish->price;
+        $new_price = $request->price;
         if (!empty($request->price)) {
             if ($request->subscription == 0) {
                 $tax_percent = config('app.single_tax');
@@ -412,8 +413,6 @@ class WishitemController extends Controller
 
                 WishCategory::where('wish_item_id', $wish->id)->delete();
                 foreach ($request->category as $key => $value) {
-
-
                     $wish_cat = new WishCategory();
                     $wish_cat->uuid = Uuid::uuid4();
                     $wish_cat->wish_item_id = $wish->id;
@@ -443,23 +442,44 @@ class WishitemController extends Controller
                 }
 
                 try {
-                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
-                    if ($old_price == $wish->price) {
-                        $stripe_client = $stripe->products->update($wish->stripe_product_id, [
-                            'name' => !empty($request->wishname) ? $request->wishname . "(Custom Content Purchase)" : $wish->wishname . "(Custom Content Purchase)",
-                            'images' => [$wish->perma_link],
-                            "default_price" => $wish->price_id,
-                            // "url" => $request->item_url ?? null
-                        ]);
-                    } else {
-                        $stripe_client = StripeControl::createProduct($productPayload, $user->account_id);
-                        $wish->price_id = $stripe_client->default_price;
+                    $stripeClient = new StripeClient(env('STRIPE_SECRET_KEY'));
+
+                    // Always update the product name and image
+                    $productUpdatePayload = [
+                        'name' => !empty($request->wishname) ? $request->wishname . "(Custom Content Purchase)" : $wish->wishname . "(Custom Content Purchase)",
+                        'images' => [$wish->perma_link],
+                    ];
+
+                    if ($old_price != $new_price) {
+                        // Create new price
+                        $newPricePayload = [
+                            "currency" => $user->default_currency,
+                            "unit_amount_decimal" => round($createpriceid * 100, 2),
+                            "product" => $wish->stripe_product_id,
+                        ];
+
+                        if ($request->subscription == 1) {
+                            $newPricePayload["recurring"] = [
+                                "interval" => StripeControl::$periods[$request->subscription_period],
+                                "interval_count" => 1
+                            ];
+                        }
+
+                        $newPrice = StripeControl::createPrice($newPricePayload, $wish->user->account_id);
+                        $wish->price_id = $newPrice->id;
+
+                        // Update product default price
+                        $productUpdatePayload['default_price'] = $newPrice->id;
                     }
 
-                    $wish->stripe_product_id = $stripe_client->id;
+                    $stripeProduct = StripeControl::updateSubscription($wish->stripe_product_id, $productUpdatePayload, $wish->user->account_id);
+
+                    // Save updated product ID
+                    $wish->stripe_product_id = $stripeProduct->id;
                     $wish->is_approved = 0;
                     $wish->save();
+
 
                     $logs = Logs::where('edited_wish_id', $wish->id)->where('status', 'pending')->first();
                     if (!empty($logs)) {
@@ -501,7 +521,11 @@ class WishitemController extends Controller
 
         WishItemSubscription::where('wish_item_id', $wishitem->id)->delete();
 
+        // StripeControl::deleteProductAndPrices($wishitem->stripe_product_id, $wishitem->user->account_id);
+
         $wishitem->delete();
+
+
 
         return response()->json([
             'status' => true,
@@ -671,7 +695,6 @@ class WishitemController extends Controller
 
     public function categoryItems($category, $user_id)
     {
-
         $query = WishCategory::orderBy('created_at', 'DESC');
         if ($category != 'all') {
             $query->where('user_category_id', $category);
