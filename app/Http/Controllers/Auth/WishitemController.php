@@ -365,6 +365,10 @@ class WishitemController extends Controller
     public function updateWishItem(Request $request, $uuid = null)
     {
         $wish = WishItem::where('uuid', $uuid)->first();
+        $old_wish = $wish->subscription;
+        $old_wish_name = $wish->wish_name;
+        $old_price_id = $wish->price_id;
+
         $checkdata = Helpers::checkBlockData($request);
         if ($checkdata == 1) {
             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
@@ -422,6 +426,8 @@ class WishitemController extends Controller
             }
 
             $user = User::whereId(Auth::id())->where('is_uk', 0)->first();
+            $unit_amount_decimal = round($createpriceid * 100); // Stripe expects integer cents
+
             if (in_array($request->subscription, [0, 1])) {
 
                 $productPayload = [
@@ -429,7 +435,7 @@ class WishitemController extends Controller
                     "images" => [$wish->perma_link],
                     "default_price_data"    =>  [
                         "currency"  =>  $user->default_currency,
-                        "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
+                        "unit_amount_decimal"   => $unit_amount_decimal,
                     ],
                     "url"   =>  $request->item_url ?? env('APP_URL') . '/' . $user->username . "?item=$wish->uuid/"
                 ];
@@ -451,7 +457,9 @@ class WishitemController extends Controller
                         'images' => [$wish->perma_link],
                     ];
 
-                    if ($old_price != $new_price) {
+                    $stripeProduct = (object)['id' => $wish->stripe_product_id];
+
+                    if ($old_price != $new_price || $request->subscription != $old_wish || $request->wishname != $old_wish_name) {
                         // Create new price
                         $newPricePayload = [
                             "currency" => $user->default_currency,
@@ -467,13 +475,19 @@ class WishitemController extends Controller
                         }
 
                         $newPrice = StripeControl::createPrice($newPricePayload, $wish->user->account_id);
+
                         $wish->price_id = $newPrice->id;
 
                         // Update product default price
                         $productUpdatePayload['default_price'] = $newPrice->id;
-                    }
+                        $stripeProduct = StripeControl::updateSubscription($wish->stripe_product_id, $productUpdatePayload, $wish->user->account_id);
 
-                    $stripeProduct = StripeControl::updateSubscription($wish->stripe_product_id, $productUpdatePayload, $wish->user->account_id);
+                        $stripeClient->prices->update($old_price_id, [
+                            'active' => false
+                        ], [
+                            'stripe_account' => $user->account_id
+                        ]);
+                    }
 
                     // Save updated product ID
                     $wish->stripe_product_id = $stripeProduct->id;
@@ -487,7 +501,7 @@ class WishitemController extends Controller
                         $logs->save();
                     }
                 } catch (Exception $e) {
-                    $wish->delete();
+                    // $wish->delete();
                     return redirect(route("user.show", ["username" => Auth::user()->username, 'page' => 'wishes']))->with('error', "Stripe Error: " . $e->getMessage());
                 }
             }

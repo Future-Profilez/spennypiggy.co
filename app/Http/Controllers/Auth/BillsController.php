@@ -93,7 +93,7 @@ class BillsController extends Controller
         $productPayload = [
             "name"  => $bill->name,
             "images" => [$bill->perma_link],
-            "default_price"    =>  [
+            "default_price_data"    =>  [
                 "currency"  =>  $user->default_currency,
                 "unit_amount_decimal"   => round($createPriceId, 2, PHP_ROUND_HALF_UP) * 100,
                 'recurring' => [
@@ -101,7 +101,7 @@ class BillsController extends Controller
                     'interval_count'    =>  1
                 ]
             ],
-            "url"   =>  env('APP_URL') . '/' . $user->username,
+            "url"   =>  env('APP_URL') . '/' . $user->username . '/bill',
         ];
 
         try {
@@ -126,6 +126,8 @@ class BillsController extends Controller
 
     public function billEdit(Request $request, $id)
     {
+        Log::info("from start request->period: $request->period");
+
         $validator = Validator::make($request->all(), [
             "name" => ["required", "string"],
             "price" => ["required", "numeric", "min:0"],
@@ -141,6 +143,7 @@ class BillsController extends Controller
 
         $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
         $bill = Bills::where('uuid', $id)->first();
+        $old_periods = $bill->period;
 
         if (!$user || !$bill) {
             return response()->json([
@@ -150,7 +153,7 @@ class BillsController extends Controller
         }
 
         $old_price = $bill->price;
-        $old_period = $bill->period;
+        $old_price_id = $bill->price_id;
 
         $media = $request->thumbnail;
         $price = $request->price;
@@ -168,29 +171,45 @@ class BillsController extends Controller
         ])->save();
 
         try {
+            Log::info("starting from try request->period: $request->period");
+
+            if (!$bill->product_id) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => "Missing product ID on bill."
+                ]);
+            }
+
+            Log::info("after if condition in try request->period: $request->period");
+            Log::info("old_period: $old_periods");
             $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
-            // Only update price/product if price or period changed
-            if ($old_price != $price || $old_period != $bill->period) {
-                // Step 1: Create new price
+            if ($old_price != $price || $old_periods != $request->period) {
+                Log::info("request->period: $request->period");
                 $newPrice = $stripe->prices->create([
-                    'unit_amount_decimal' => (string)($totalAmount * 100),
+                    'unit_amount_decimal' => (string) round($totalAmount * 100),
                     'currency' => $user->default_currency,
                     'product' => $bill->product_id,
                     'recurring' => [
-                        'interval' => StripeControl::$periods[$bill->period],
+                        'interval' => StripeControl::$periods[$request->period],
                         'interval_count' => 1
                     ]
                 ], [
                     'stripe_account' => $user->account_id
                 ]);
+                Log::info(json_encode($newPrice));
 
-                // Step 2: Update product
                 $product = $stripe->products->update($bill->product_id, [
                     'name' => $bill->name,
                     'images' => [$bill->perma_link],
                     'default_price' => $newPrice->id,
                     'url' => env('APP_URL') . '/' . $user->username,
+                ], [
+                    'stripe_account' => $user->account_id
+                ]);
+
+                $stripe->prices->update($old_price_id, [
+                    'active' => false
                 ], [
                     'stripe_account' => $user->account_id
                 ]);
@@ -202,12 +221,11 @@ class BillsController extends Controller
                 ]);
             }
 
-            // Update log status if it exists
             Logs::where('edited_bill_id', $bill->id)
                 ->where('status', 'pending')
                 ->update(['status' => 'updated']);
         } catch (Exception $e) {
-            $bill->delete();
+            Log::error("Stripe Error during bill edit: " . $e->getMessage());
 
             return response()->json([
                 'status' => false,
@@ -215,11 +233,15 @@ class BillsController extends Controller
             ]);
         }
 
+        Log::info("to end request->period: $request->period");
+
+
         return response()->json([
             'status' => true,
             'msg' => "Bill edited successfully."
         ]);
     }
+
 
 
     public function removeBill($uuid)

@@ -153,106 +153,134 @@ class MembershipController extends Controller
 
     public function updateLevel(Request $request, $uuid)
     {
-        $request->validate([
-            "level" => ["required", "string"],
-            "month_price" => ["required", "numeric", "min:0"],
-            "rewards" => ["required"],
-        ]);
+        $request->validate(
+            [
+                "level" => [
+                    "required",
+                    "string",
+                ],
+                "month_price" => [
+                    "required",
+                    "numeric",
+                    "min:0"
+                ],
+                "rewards" => [
+                    "required"
+                ],
+            ]
+        );
 
-        if (Helpers::checkBlockData($request) === 1) {
-            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute, dick, goddess, master, mistress, 😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
-        }
+        $checkdata = Helpers::checkBlockData($request);
+        if ($checkdata == 1) {
+            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress, 😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
+        } else {
+            try {
+                $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+                $mem = Membership::where('uuid', $uuid)->first();
 
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
-        if (!$user) {
-            return redirect()->back()->with('error', 'User not found or unauthorized.');
-        }
+                if (empty($mem)) {
+                    return redirect()->back()->with("error", "Membership not found.");
+                }
 
-        $mem = Membership::where('uuid', $uuid)->first();
-        if (!$mem) {
-            return redirect()->back()->with('error', 'Membership not found.');
-        }
+                $oldPriceId = $mem->price_id;
+                $old_price = $mem->price;
+                $old_level = $mem->level;
+                $newLevel = $request->level;
 
-        $old_price = $mem->price;
-        $old_level = $mem->level;
+                $price = $request->month_price;
+                $taxamount = round(($price * config('app.member_tax') / 100), 2, PHP_ROUND_HALF_UP);
+                $adminFee = config('app.administration_fee');
+                $totalTaxAmount = $taxamount + $adminFee;
+                $createpriceid = $price + $taxamount + $adminFee;
 
-        $rewards = json_encode($request->rewards);
-        $price = $request->month_price;
+                $mem->level = $newLevel;
+                $mem->price = $price;
+                $mem->tax_amount = $totalTaxAmount;
+                $mem->rewards = json_encode($request->rewards);
+                if (!empty($request->thumbnail)) {
+                    $mem->thumbnail = $request->thumbnail;
+                }
+                $mem->save();
 
-        $taxRate = config('app.member_tax', 0);
-        $adminFee = config('app.administration_fee', 0);
+                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                $connectedAccountId = $user->account_id;
 
-        $taxAmount = round(($price * $taxRate / 100), 2, PHP_ROUND_HALF_UP);
-        $totalTaxAmount = $taxAmount + $adminFee;
-        $createPriceAmount = round($price + $taxAmount + $adminFee, 2);
+                $priceChanged = $old_price != $price || $old_level != $newLevel;
 
-        // Update local membership values
-        $mem->fill([
-            'user_id' => $user->id,
-            'level' => $request->level,
-            'price' => $price,
-            'tax_amount' => $totalTaxAmount,
-            'rewards' => $rewards,
-        ]);
+                if ($priceChanged) {
+                    $pricePayload = [
+                        'unit_amount_decimal' => (string) round($createpriceid * 100),
+                        'currency' => $user->default_currency,
+                        'product' => $mem->product_id,
+                    ];
 
-        if (!empty($request->thumbnail)) {
-            $mem->thumbnail = $request->thumbnail;
-        }
+                    if ($newLevel !== 'lifetime') {
+                        $pricePayload['recurring'] = [
+                            'interval' => StripeControl::$periods['monthly'],
+                            'interval_count' => 1,
+                        ];
+                    }
 
-        $mem->save();
+                    $newPrice = $stripe->prices->create($pricePayload, [
+                        'stripe_account' => $connectedAccountId
+                    ]);
 
-        try {
-            $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                    $mem->price_id = $newPrice->id;
 
-            if ($old_price != $price || $old_level != $request->level) {
-                // Step 1: Create new price
-                $newPrice = $stripe->prices->create([
-                    'unit_amount_decimal' => (string)($createPriceAmount * 100),
-                    'currency' => $user->default_currency ?? 'usd',
-                    'product' => $mem->product_id,
-                    'recurring' => [
-                        'interval' => StripeControl::$periods['monthly'],
-                        'interval_count' => 1
-                    ]
-                ], [
-                    'stripe_account' => $user->account_id
-                ]);
+                    $stripe->products->update($mem->product_id, [
+                        'default_price' => $newPrice->id,
+                    ], [
+                        'stripe_account' => $connectedAccountId
+                    ]);
 
-                // Step 2: Update product
+                    $stripe->prices->update($oldPriceId, [
+                        'active' => false
+                    ], [
+                        'stripe_account' => $connectedAccountId
+                    ]);
+                }
+
                 $product = $stripe->products->update($mem->product_id, [
-                    'name' => $user->username . '_' . $request->level,
-                    'images' => [$mem->perma_link],
-                    'default_price' => $newPrice->id,
-                    'url' => env('APP_URL') . '/' . $user->username,
+                    "name" => $user->username . '_' . $newLevel,
+                    "images" => [$mem->perma_link],
+                    "url" => env('APP_URL') . '/' . $user->username . '/memberships',
                 ], [
-                    'stripe_account' => $user->account_id
+                    'stripe_account' => $connectedAccountId
                 ]);
 
-                $mem->update([
-                    'price_id' => $newPrice->id,
-                    'product_id' => $product->id,
-                    'approved' => 0,
-                ]);
+                $mem->product_id = $product->id;
+                $mem->approved = 0;
+                $mem->save();
+
+                Logs::where('edited_membership_id', $mem->id)
+                    ->where('status', 'pending')
+                    ->update(['status' => 'updated']);
+            } catch (\Exception $e) {
+                Log::info("Stripe Error: " . $e->getMessage());
+                return redirect()->back()->with("error", "Stripe Error: " . $e->getMessage());
             }
 
-            Logs::where('edited_membership_id', $mem->id)
-                ->where('status', 'pending')
-                ->update(['status' => 'updated']);
-        } catch (\Exception $e) {
-            $mem->delete();
-
-            return redirect(route("user.show", ["username" => $user->username, "page" => "memberships"]))
-                ->with('error', "Stripe Error: " . $e->getMessage());
+            return redirect()->back()->with("success", "Membership level is Updated.");
         }
-
-        return redirect(route("user.show", ["username" => $user->username, "page" => "memberships"]))
-            ->with('success', 'Membership level updated successfully.');
     }
 
+
+    // return redirect(route("user.show", [
+    //     "username" => Auth::user()->username,
+    //     "page" => "memberships"
+    // ]))->with('error', "Stripe Error: " . $e->getMessage());
+    // return redirect()->back()->with('success', 'Membership level is added in your profile.')
+
+
+    // return redirect(route("user.show", [
+    //     "username" => Auth::user()->username,
+    //     "page" => "memberships"
+    // ]))->with('success', 'Membership level is Updated.');
 
 
     public function removeLevel($uuid)
     {
+
         $mem = Membership::whereUuid($uuid)->first();
 
         if (empty($mem)) {
@@ -263,9 +291,6 @@ class MembershipController extends Controller
         }
 
         MembershipPayment::where('membership_id', $mem->id)->delete();
-
-        // StripeControl::deleteProductAndPrices($mem->product_id, $mem->user->account_id);
-
         $mem->delete();
 
         return response()->json([
@@ -578,9 +603,11 @@ class MembershipController extends Controller
         // ]);
     }
 
+
     public function membershipDashboard()
     {
         $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+
 
         $count = MembershipPayment::whereHas('membership', function ($q) use ($user) {
             $q->where('user_id', $user->id);
@@ -606,6 +633,7 @@ class MembershipController extends Controller
             'data' => $arr
         ]);
     }
+
 
     public function membershipGraph()
     {
@@ -646,6 +674,7 @@ class MembershipController extends Controller
             'data' => $result
         ]);
     }
+
 
     public function membershipStatus(Request $request)
     {
