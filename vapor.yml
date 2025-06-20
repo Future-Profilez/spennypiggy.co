@@ -10,14 +10,14 @@ environments:
     domain: dev.spennypiggy.co
     database: spennypiggy-db-dev
     build:
-      # - "composer install --no-dev"
-      # - "php artisan event:cache"
-      # - "php artisan optimize:clear"
-      # - "php artisan config:cache"
+      - "composer install --no-dev"
+      - "php artisan event:cache"
+      - "php artisan optimize:clear"
+      - "php artisan config:cache"
       - "npm ci"
       - "npm run build"
-      # - "rm -rf node_modules"   # Linux/macOS
-      - "rd /s /q node_modules"  # Windows/
+      - "rm -rf node_modules"   # Linux/macOS
+      # - "rd /s /q node_modules"  # Windows/
     deploy:
       - "php artisan migrate --force"
 
@@ -41,8 +41,8 @@ environments:
       - "php artisan route:cache"
       - "npm ci"
       - "npm run build"
-      # - "rm -rf node_modules" # Linux/mac/OS
-      - "rd /s /q node_modules" # Windows
+      - "rm -rf node_modules" # Linux/mac/OS
+      # - "rd /s /q node_modules" # Windows
     deploy:
       - "php artisan migrate --force"
 
