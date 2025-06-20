@@ -81,6 +81,13 @@ Route::get('/giftstore', function () {
 //     return response()->json(['status' => 'done', 'message' => $a], 200);
 // })->name('test.stripe');
 
+Route::post('subscription-update-status', [StripeController::class, 'subscriptionUpdateStatus']);
+
+// routes/web.php or routes/api.php
+Route::post('/webhook/payment', [TestController::class, 'handle']);
+
+
+
 Route::get('delete-all-products', [TestController::class, 'deleteAllProducts'])->name('delete.all.products');
 
 

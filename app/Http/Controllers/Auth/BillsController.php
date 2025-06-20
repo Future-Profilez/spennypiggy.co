@@ -680,55 +680,62 @@ class BillsController extends Controller
 
         $array = [];
         if (!empty($event)) {
-            $subs = BillPayment::where('stripe_id', $event->data->object->subscription)->latest()->first();
+            // $subs = BillPayment::where('stripe_id', $event->data->object->subscription)->latest()->first();
 
             $ret = StripeControl::getSubscription($event->data->object->subscription);
 
-            if ($event->type == "invoice.updated" && !empty($subs)) {
+            if ($event->type == "invoice.updated") {
+                $metadata = $event->data->object->metadata;
 
-                $array = [
-                    'email' => $event->data->object->customer_email,
-                    'name' => $event->data->object->customer_name,
-                    'invoice_pdf' => $event->data->object->invoice_pdf,
-                    'uuid' => $subs->uuid,
-                    'notification' => $subs->user->notification_send ?? 0
-                ];
+                $userId = $metadata->user_id ?? null;
+                $creatorId = $metadata->creator_id ?? null;
+                $membership_id = $metadata->membership_id ?? null;
 
-                $subs->status = "ended";
-                $subs->save();
+                Log::info("Subscription updated for user ID: {$userId}, creator ID: {$creatorId}, bill ID: {$membership_id}");
+                // $array = [
+                //     'email' => $event->data->object->customer_email,
+                //     'name' => $event->data->object->customer_name,
+                //     'invoice_pdf' => $event->data->object->invoice_pdf,
+                //     'uuid' => $subs->uuid,
+                //     'notification' => $subs->user->notification_send ?? 0
+                // ];
 
-                $newSubs = new BillPayment();
-                $newSubs->stripe_id = $subs->stripe_id;
-                $newSubs->session_id = $subs->session_id;
-                $newSubs->bills_id = $subs->bills_id;
-                $newSubs->user_id = $subs->user_id;
-                $newSubs->guest_name = $subs->guest_name;
-                $newSubs->guest_email = $subs->guest_email;
-                $newSubs->currency = $subs->currency;
-                $newSubs->amount = $subs->amount;
-                $newSubs->tax = $subs->tax;
-                $newSubs->recurring_for = $subs->recurring_for;
-                $newSubs->recurring_type = $subs->recurring_type;
-                $newSubs->message = $subs->message;
-                $newSubs->anonymous = $subs->anonymous;
-                $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
-                $newSubs->status = "paid";
-                $newSubs->created_at = $subs->created_at;
-                $newSubs->updated_at = Carbon::now();
-                $newSubs->save();
+                // $subs->status = "ended";
+                // $subs->save();
 
-                SendRenewMail::dispatch($array, 'renew', 'bill');
-            } elseif ($event->type == "customer.subscription.deleted" && !empty($subs)) {
-                $subs->status = 'cancelled';
-                $subs->save();
+                // $newSubs = new BillPayment();
+                // $newSubs->stripe_id = $subs->stripe_id;
+                // $newSubs->session_id = $subs->session_id;
+                // $newSubs->bills_id = $subs->bills_id;
+                // $newSubs->user_id = $subs->user_id;
+                // $newSubs->guest_name = $subs->guest_name;
+                // $newSubs->guest_email = $subs->guest_email;
+                // $newSubs->currency = $subs->currency;
+                // $newSubs->amount = $subs->amount;
+                // $newSubs->tax = $subs->tax;
+                // $newSubs->recurring_for = $subs->recurring_for;
+                // $newSubs->recurring_type = $subs->recurring_type;
+                // $newSubs->message = $subs->message;
+                // $newSubs->anonymous = $subs->anonymous;
+                // $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+                // $newSubs->status = "paid";
+                // $newSubs->created_at = $subs->created_at;
+                // $newSubs->updated_at = Carbon::now();
+                // $newSubs->save();
 
-                SendRenewMail::dispatch($array, 'cancelled', 'bill');
-            } elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
-                $subs->status = 'failed';
-                $subs->save();
-
-                SendRenewMail::dispatch($array, 'failed', 'bill');
+                // SendRenewMail::dispatch($array, 'renew', 'bill');
             }
+            // elseif ($event->type == "customer.subscription.deleted" && !empty($subs)) {
+            //     $subs->status = 'cancelled';
+            //     $subs->save();
+
+            //     SendRenewMail::dispatch($array, 'cancelled', 'bill');
+            // } elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
+            //     $subs->status = 'failed';
+            //     $subs->save();
+
+            //     SendRenewMail::dispatch($array, 'failed', 'bill');
+            // }
         }
 
         return response()->json([

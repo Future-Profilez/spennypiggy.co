@@ -20,5 +20,6 @@ class VerifyCsrfToken extends Middleware
         '/membership-status',
         '/creator-monthly-verification-webhook',
         '/subscription-update-status',
+        '/webhook/payment',
     ];
 }

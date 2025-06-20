@@ -341,7 +341,6 @@ Route::middleware('auth')->group(function () {
 
 
 // subscription webhook
-Route::post('subscription-update-status', [StripeController::class, 'subscriptionUpdateStatus'])->name('subscription.update.status');
 
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
 // Route::post('creator-monthly-verification-webhook', [StripeWebhookController::class, 'creatorMonthlyVerificationWebhook'])->name('creator.monthly.verification.webhook');
