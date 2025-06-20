@@ -433,6 +433,8 @@ class BillsController extends Controller
                         'user_id' => $user->id,
                         'creator_id' => $bill->user->id,
                         'bill_id' => $bill->id,
+                        'bill_payment_id' => $sub->id, // or 'bill_payment_uuid' => $sub->uuid
+                        'type' => 'bill'
                     ],
                 ];
 
@@ -458,8 +460,6 @@ class BillsController extends Controller
             'reccure' => $reccure,
         ]);
     }
-
-
 
     /**
      * Handle Checkout Session

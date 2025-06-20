@@ -212,8 +212,6 @@ class StripeControl
     {
         self::setClient();
         try {
-            $params = ['payload' => $payload];
-
             if ($connectedAccountId) {
                 // Set the Stripe Account context
                 return self::$client->checkout->sessions->create(
