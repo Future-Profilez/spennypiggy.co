@@ -333,6 +333,9 @@ class TestController extends Controller
             ->whereNull('deleted_at')
             ->get();
 
+            Log::info('Total User Count: ' . $users->pluck('id')->count());
+
+
 
         $productsGroupedByUser = [];
 

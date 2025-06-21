@@ -92,7 +92,7 @@ Route::get('discover/creators/categories', [WishitemController::class, 'all_crea
    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
             ->name('password.request');
 
-            
+
 Route::middleware('auth')->group(function () {
 
 
@@ -293,7 +293,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity');
         Route::get('cancel-subs/{uuid}', [StripeController::class, 'cancelSubs'])->name('cancel-subs');
-     
+
 
         Route::get('/remove-from-cart/{uuid}', [WishitemController::class, 'removeSurpriseFromCart'])->name('remove-from-cart');
 
