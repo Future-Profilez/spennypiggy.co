@@ -20,6 +20,7 @@ class ConnectedAccountCustomer extends Model
         'product_id',
         'price_id',
         'is_active',
+        'currency',
     ];
     protected $hidden = [
         'created_at',

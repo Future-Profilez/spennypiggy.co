@@ -212,8 +212,6 @@ class StripeControl
     {
         self::setClient();
         try {
-            $params = ['payload' => $payload];
-
             if ($connectedAccountId) {
                 // Set the Stripe Account context
                 return self::$client->checkout->sessions->create(
@@ -233,7 +231,6 @@ class StripeControl
             throw new Exception("Stripe API Error: " . $e->getMessage());
         }
     }
-
 
     /**
      * Get A CheckOut Session
@@ -267,6 +264,31 @@ class StripeControl
     }
 
     /**
+     * Get Active subscription of customer
+     *
+     */
+    public static function getActiveSubscriptionByCustomer($customerId, $connectedAccountId)
+    {
+        self::setClient();
+
+        try {
+            $subscriptions = self::$client->subscriptions->all(
+                [
+                    'customer' => $customerId,
+                    'status' => 'active',
+                    'limit' => 1,
+                ],
+                ['stripe_account' => $connectedAccountId]
+            );
+
+            return $subscriptions->data[0] ?? null;
+        } catch (\Exception $e) {
+            Log::error("Stripe fetch subscription error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Create a Stripe Product
      *
      * @param array $payload Product Payload
@@ -292,7 +314,7 @@ class StripeControl
         }
     }
 
-    /**s
+    /**
      * Create a Stripe Price
      *
      * @param array $payload Price Payload
@@ -302,7 +324,7 @@ class StripeControl
     {
         self::setClient();
 
-        if(!$connectedAccountId) {
+        if (!$connectedAccountId) {
             return self::$client->prices->create($priceData);
         }
 
@@ -311,7 +333,6 @@ class StripeControl
             ['stripe_account' => $connectedAccountId]
         );
     }
-
 
     /**
      * Create a Stripe Price
@@ -357,7 +378,6 @@ class StripeControl
         }
     }
 
-
     /**
      * Update A Subscriptions
      *
@@ -365,11 +385,14 @@ class StripeControl
      * @param array $payload Update Payload
      * @return Throwable|\Stripe\Subscription
      */
-    public static function updateSubscription($sub_id, $payload)
+    public static function updateSubscription($productId, $payload, $accountId)
     {
         self::setClient();
+
         try {
-            return self::$client->subscriptions->update($sub_id, $payload);
+            return self::$client->products->update($productId, $payload, [
+                'stripe_account' => $accountId,
+            ]);
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());
         } catch (InvalidRequestException $e) {
@@ -452,4 +475,52 @@ class StripeControl
             throw new Exception("Stripe API Error: " . $e->getMessage());
         }
     }
+
+    /**
+     *
+     * Delete Product
+     *
+     */
+    // public static function deleteProductAndPrices(string $productId, string $connectedAccountId)
+    // {
+    //     self::setClient();
+
+    //     try {
+    //         // First, list all prices attached to the product
+    //         // $prices = self::$client->prices->all([
+    //         //     'product' => $productId,
+    //         //     'limit' => 100
+    //         // ], ['stripe_account' => $connectedAccountId]);
+
+    //         // Try to deactivate each price (Stripe does not allow deleting prices directly)
+    //         // foreach ($prices->data as $price) {
+    //         //     try {
+    //         //         self::$client->prices->update($price->id, [
+    //         //             'active' => false,
+    //         //         ], ['stripe_account' => $connectedAccountId]);
+    //         //     } catch (\Exception $e) {
+    //         //         // Log the error and skip to the next price
+    //         //         Log::warning("Could not deactivate price {$price->id}: " . $e->getMessage());
+    //         //         continue;
+    //         //     }
+    //         // }
+
+    //         // Then delete the product
+    //         $delete =  self::$client->products->delete(
+    //             $productId,
+    //             ['stripe_account' => $connectedAccountId]
+    //         );
+    //         if ($delete) {
+    //             return true;
+    //         }
+    //     } catch (RateLimitException $e) {
+    //         throw new Exception("Stripe RateLimit: " . $e->getMessage());
+    //     } catch (InvalidRequestException $e) {
+    //         throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+    //     } catch (ApiConnectionException $e) {
+    //         throw new Exception("Stripe API Connection: " . $e->getMessage());
+    //     } catch (ApiErrorException $e) {
+    //         throw new Exception("Stripe API Error: " . $e->getMessage());
+    //     }
+    // }
 }

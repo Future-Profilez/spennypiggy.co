@@ -140,7 +140,10 @@ export default function UserCarts(props) {
                             items.map((c, i) => {
                                 return (
                                     <CartItem
-                                        currency={datas?.user && datas?.user?.default_currency}
+                                        currency={
+                                            datas?.user &&
+                                            datas?.user?.default_currency
+                                        }
                                         quantityUpdate={quantityUpdate}
                                         removeCart={removeCart}
                                         data={c}
@@ -151,41 +154,32 @@ export default function UserCarts(props) {
                     </div>
 
                     <div className="cartTotal px-0 py-3">
-                        <div className="cartSubTotal text-right mt-1">
+                        <div className="cartSubTotal whitespace-nowrap text-right mt-1">
                             <span>Platform Fee :</span>{" "}
                             <strong className="text-end">
                                 {formatMultiPrice(
                                     fee || "",
                                     datas?.user && datas?.user?.default_currency
-                                )}
+                                )}{" "}
+                                + £1.00
                                 <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">
                                     ?
-                                    <p className="absolute bg-[#505050] p-[10px] rounded-md top-[20px] right-[-28px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
+                                    <p className="max-w-[200px] !whitespace-normal absolute bg-[#505050] p-[10px] rounded-md top-[20px] right-[-28px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
                                         <strong className="text-white font-normal">
                                             Card Payments:
                                         </strong>{" "}
                                         <br />
-                                        Bills - 8%
-                                        <br />
-                                        Memberships - 10%
-                                        <br />
-                                        Piggy Bank - 15%
-                                        <br />
-                                        Crowdfunding - 20%
-                                        <br />
-                                        Subscriptions - 10%
-                                        <br />
-                                        Single Purchases - 12.5%
-                                        <br />
-                                        Profile Shop - 20%
+                                        15% Card Fees For All Payments
                                         <br />
                                         <br />
-                                        Administrative Fee on all Transactions -
-                                        £1
+                                        An administrative fee of £1 applies to
+                                        all transactions and will be converted
+                                        to your selected currency at checkout.
                                     </p>
                                 </button>
                             </strong>
                         </div>
+
                         <div className="cartSubTotal text-right mt-1">
                             <span>Subtotal :</span>{" "}
                             <strong className="text-end">
@@ -201,7 +195,8 @@ export default function UserCarts(props) {
                                 {formatMultiPrice(
                                     fee + subtotal || "",
                                     datas?.user && datas?.user?.default_currency
-                                )}
+                                )}{" "}
+                                + £1.00
                             </strong>
                         </div>
                     </div>

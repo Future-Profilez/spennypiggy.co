@@ -365,6 +365,10 @@ class WishitemController extends Controller
     public function updateWishItem(Request $request, $uuid = null)
     {
         $wish = WishItem::where('uuid', $uuid)->first();
+        $old_wish = $wish->subscription;
+        $old_wish_name = $wish->wish_name;
+        $old_price_id = $wish->price_id;
+
         $checkdata = Helpers::checkBlockData($request);
         if ($checkdata == 1) {
             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
@@ -372,6 +376,7 @@ class WishitemController extends Controller
         }
 
         $old_price = $wish->price;
+        $new_price = $request->price;
         if (!empty($request->price)) {
             if ($request->subscription == 0) {
                 $tax_percent = config('app.single_tax');
@@ -412,8 +417,6 @@ class WishitemController extends Controller
 
                 WishCategory::where('wish_item_id', $wish->id)->delete();
                 foreach ($request->category as $key => $value) {
-
-
                     $wish_cat = new WishCategory();
                     $wish_cat->uuid = Uuid::uuid4();
                     $wish_cat->wish_item_id = $wish->id;
@@ -423,6 +426,8 @@ class WishitemController extends Controller
             }
 
             $user = User::whereId(Auth::id())->where('is_uk', 0)->first();
+            $unit_amount_decimal = round($createpriceid * 100); // Stripe expects integer cents
+
             if (in_array($request->subscription, [0, 1])) {
 
                 $productPayload = [
@@ -430,7 +435,7 @@ class WishitemController extends Controller
                     "images" => [$wish->perma_link],
                     "default_price_data"    =>  [
                         "currency"  =>  $user->default_currency,
-                        "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
+                        "unit_amount_decimal"   => $unit_amount_decimal,
                     ],
                     "url"   =>  $request->item_url ?? env('APP_URL') . '/' . $user->username . "?item=$wish->uuid/"
                 ];
@@ -443,23 +448,52 @@ class WishitemController extends Controller
                 }
 
                 try {
-                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
-                    if ($old_price == $wish->price) {
-                        $stripe_client = $stripe->products->update($wish->stripe_product_id, [
-                            'name' => !empty($request->wishname) ? $request->wishname . "(Custom Content Purchase)" : $wish->wishname . "(Custom Content Purchase)",
-                            'images' => [$wish->perma_link],
-                            "default_price" => $wish->price_id,
-                            // "url" => $request->item_url ?? null
+                    $stripeClient = new StripeClient(env('STRIPE_SECRET_KEY'));
+
+                    // Always update the product name and image
+                    $productUpdatePayload = [
+                        'name' => !empty($request->wishname) ? $request->wishname . "(Custom Content Purchase)" : $wish->wishname . "(Custom Content Purchase)",
+                        'images' => [$wish->perma_link],
+                    ];
+
+                    $stripeProduct = (object)['id' => $wish->stripe_product_id];
+
+                    if ($old_price != $new_price || $request->subscription != $old_wish || $request->wishname != $old_wish_name) {
+                        // Create new price
+                        $newPricePayload = [
+                            "currency" => $user->default_currency,
+                            "unit_amount_decimal" => round($createpriceid * 100, 2),
+                            "product" => $wish->stripe_product_id,
+                        ];
+
+                        if ($request->subscription == 1) {
+                            $newPricePayload["recurring"] = [
+                                "interval" => StripeControl::$periods[$request->subscription_period],
+                                "interval_count" => 1
+                            ];
+                        }
+
+                        $newPrice = StripeControl::createPrice($newPricePayload, $wish->user->account_id);
+
+                        $wish->price_id = $newPrice->id;
+
+                        // Update product default price
+                        $productUpdatePayload['default_price'] = $newPrice->id;
+                        $stripeProduct = StripeControl::updateSubscription($wish->stripe_product_id, $productUpdatePayload, $wish->user->account_id);
+
+                        $stripeClient->prices->update($old_price_id, [
+                            'active' => false
+                        ], [
+                            'stripe_account' => $user->account_id
                         ]);
-                    } else {
-                        $stripe_client = StripeControl::createProduct($productPayload, $user->account_id);
-                        $wish->price_id = $stripe_client->default_price;
                     }
 
-                    $wish->stripe_product_id = $stripe_client->id;
+                    // Save updated product ID
+                    $wish->stripe_product_id = $stripeProduct->id;
                     $wish->is_approved = 0;
                     $wish->save();
+
 
                     $logs = Logs::where('edited_wish_id', $wish->id)->where('status', 'pending')->first();
                     if (!empty($logs)) {
@@ -467,13 +501,13 @@ class WishitemController extends Controller
                         $logs->save();
                     }
                 } catch (Exception $e) {
-                    $wish->delete();
-                    return redirect(route("user.show", ["username" => Auth::user()->username, 'page'=>'wishes']))->with('error', "Stripe Error: " . $e->getMessage());
+                    // $wish->delete();
+                    return redirect(route("user.show", ["username" => Auth::user()->username, 'page' => 'wishes']))->with('error', "Stripe Error: " . $e->getMessage());
                 }
             }
             //send email
             // SaveWishlist::dispatch($user);
-            return redirect(route("user.show", ["username" => Auth::user()->username, 'page'=>'wishes']))->with('success', "Wish Item has been updated.");
+            return redirect(route("user.show", ["username" => Auth::user()->username, 'page' => 'wishes']))->with('success', "Wish Item has been updated.");
         }
     }
 
@@ -501,7 +535,11 @@ class WishitemController extends Controller
 
         WishItemSubscription::where('wish_item_id', $wishitem->id)->delete();
 
+        // StripeControl::deleteProductAndPrices($wishitem->stripe_product_id, $wishitem->user->account_id);
+
         $wishitem->delete();
+
+
 
         return response()->json([
             'status' => true,
@@ -671,7 +709,6 @@ class WishitemController extends Controller
 
     public function categoryItems($category, $user_id)
     {
-
         $query = WishCategory::orderBy('created_at', 'DESC');
         if ($category != 'all') {
             $query->where('user_category_id', $category);
@@ -833,6 +870,8 @@ class WishitemController extends Controller
         $request->validate([
             'url' => 'required',
         ]);
+
+        $user = Auth::user();
         // Extract the URL from the request (assuming it's passed as a query parameter)
         $url = $request->input('url');  // You can change this as per your need
         $checkProductId = RyeProduct::where('creator_id', Auth::id())->where('product_id', $url['id'])->exists();
@@ -852,7 +891,7 @@ class WishitemController extends Controller
             "url"   => env('APP_URL') . "/gift-item/$url[id]",
         ];
 
-        $product = StripeControl::createProduct($productPayload);
+        $product = StripeControl::createProduct($productPayload, $user->account_id);
         $ryeProducts = new RyeProduct();
         $ryeProducts->creator_id = Auth::id();
         $ryeProducts->product_id = $url['id'];
@@ -1135,10 +1174,10 @@ class WishitemController extends Controller
                 'name' => $user->name ?? null,
             ]);
 
-                $user->stripe_id = $stripeCustomer->id;
-                if ($user instanceof \App\Models\User) {
-                    $user->save();
-                }
+            $user->stripe_id = $stripeCustomer->id;
+            if ($user instanceof \App\Models\User) {
+                $user->save();
+            }
         }
 
         // $request->validate([
@@ -2578,7 +2617,7 @@ class WishitemController extends Controller
         ]);
     }
 
-    
+
 
     /**
      * Mark as completed the tip jar goal

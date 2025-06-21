@@ -344,12 +344,13 @@ Route::middleware('auth')->group(function () {
 
 
 // subscription webhook
-Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
+
+// Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
 // Route::post('creator-monthly-verification-webhook', [StripeWebhookController::class, 'creatorMonthlyVerificationWebhook'])->name('creator.monthly.verification.webhook');
-Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status');
-Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-status');
-Route::post('mandatory-status', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status');
-Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status');
+// Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status');
+// Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-status');
+// Route::post('mandatory-status', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status');
+// Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status');
 
 Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
 // Route::get('user/tip-jar/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');

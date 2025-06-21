@@ -187,7 +187,7 @@ export default function AddBills(props) {
                                             type="number"
                                             name="price"
                                             placeholder="Eg. 50"
-                                            value={
+                                            defaultValue={
                                                 (item && item.price) ||
                                                 data.price
                                             }

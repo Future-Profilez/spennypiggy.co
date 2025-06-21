@@ -18,6 +18,4 @@ yarn-error.log
 /.idea
 /.vscode
 /.vapor
-/vapor.yml
-vapor.yml
 .env.uk_live
