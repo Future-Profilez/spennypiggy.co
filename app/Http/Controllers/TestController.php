@@ -326,8 +326,7 @@ class TestController extends Controller
      */
     public function deleteAllProducts()
     {
-        $users = User::whereIn('id', [1, 4, 11, 26, 32, 33, 34, 35, 36, 37, 44, 45])
-            ->where([
+        $users = User::where([
                 ['is_uk', '=', 0],
                 ['suspended_account', '=', 0],
             ])
@@ -370,7 +369,7 @@ class TestController extends Controller
 
     public function handle(Request $request)
     {
-        $endpoint_secret = 'whsec_xRYw7XUOjpI2icZQ7c8YwG3y4NtiXOMG';
+        $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
         $payload = @file_get_contents('php://input');
         $sig_header = $request->header('Stripe-Signature');
         $event = null;
@@ -526,7 +525,7 @@ class TestController extends Controller
     {
         $subscriptionId = $data->id;
         $status = $data->status;
-        $currentPeriodEnd = Carbon::createFromTimestamp($data->current_period_end);
+        // $currentPeriodEnd = Carbon::createFromTimestamp($data->current_period_end);
 
         $user = User::find($metadata->creator_id ?? 0);
 
