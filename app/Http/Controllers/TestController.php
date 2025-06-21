@@ -477,6 +477,13 @@ class TestController extends Controller
 
         $subs = BillPayment::where('stripe_id', $subscriptionId)->where('user_id', $metadata->user_id)->latest()->first();
 
+        if (!$subs) {
+            Log::warning("No active bill subscription found for stripe_id: {$subscriptionId}");
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No active bill subscription found.'
+            ], 404);
+        }
         $ret = StripeControl::getSubscription($subscriptionId, $user->account_id);
 
         $array = [
@@ -525,7 +532,7 @@ class TestController extends Controller
 
         $subs = MembershipPayment::where('stripe_id', $subscriptionId)->where('user_id', $metadata->user_id)->latest()->first();
 
-        if(!$subs) {
+        if (!$subs) {
             Log::warning("No active membership subscription found for stripe_id: {$subscriptionId}");
             return response()->json([
                 'status' => 'error',
