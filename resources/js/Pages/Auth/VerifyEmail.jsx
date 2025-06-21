@@ -6,11 +6,7 @@ import { useState } from "react";
 import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
 
-export default function VerifyEmail({ status }) {
-
-    const { get, processing } = useForm({});
-    const { successAlert, errorAlert, errorsHandling } = useAlerts();
-
+export default function VerifyEmail({auth}) {
     const [loading, setLoading] = useState(false);
     const [send, setSent] = useState(false);
     const submit = (e) => {
@@ -25,13 +21,14 @@ export default function VerifyEmail({ status }) {
         });
     };
 
-
     useEffect(() => {
         let timer = setInterval(() => {
           window.location.reload(false)
         }, 10000);
         return () => clearInterval(timer);
-      }, []);
+    }, []);
+
+  
 
 
     return <div className="blackbg pageheight p-4">

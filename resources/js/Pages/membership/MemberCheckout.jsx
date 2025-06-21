@@ -45,14 +45,17 @@ export default function SubCheckout(props) {
     const [checking, setChecking] = useState(false);
     const handleSubmit = (e) => {
         e && e.preventDefault();
-        post(route(`membership.checkout`,{
-            uuid:membership?.uuid || null,
-            reccure : membership?.level == 'lifetime' ? 'onetime' : 'continue'
-          }),
-        {
-            preserveScroll:true
-        });
-    }
+        post(
+            route(`membership.checkout`, {
+                uuid: membership?.uuid || null,
+                reccure:
+                    membership?.level == "lifetime" ? "onetime" : "continue",
+            }),
+            {
+                preserveScroll: true,
+            }
+        );
+    };
 
     const onVerify = (token) => {
         handleSubmit();
@@ -80,17 +83,18 @@ export default function SubCheckout(props) {
         }
     }, [flash]);
 
-
     const [socialLinks, setSocialLinks] = useState([]);
     const [sLinks, setLinks] = useState([]);
     const fetchingLinks = () => {
-        axios.get(`/sociallinks/${username}`)
-        .then((resp) => {
-            setSocialLinks(resp.data.sociallinks);
-            setLinks(resp.data.slinks);
-        }).catch((_err) => {
-            console.error("error", _err);
-        });
+        axios
+            .get(`/sociallinks/${username}`)
+            .then((resp) => {
+                setSocialLinks(resp.data.sociallinks);
+                setLinks(resp.data.slinks);
+            })
+            .catch((_err) => {
+                console.error("error", _err);
+            });
     };
 
     useEffect(() => {
@@ -140,19 +144,7 @@ export default function SubCheckout(props) {
                                                 Card Payments:
                                             </strong>{" "}
                                             <br />
-                                            Bills - 10%
-                                            <br />
-                                            Memberships - 10%
-                                            <br />
-                                            Piggy Bank - 20%
-                                            <br />
-                                            Crowdfunding - 20%
-                                            <br />
-                                            Subscriptions - 10%
-                                            <br />
-                                            Single Purchases - 20%
-                                            <br />
-                                            Profile Shop - 20%
+                                            15% Card Fees For All Payments
                                             <br />
                                             <br />
                                             Administrative Fee on all
@@ -424,7 +416,7 @@ export default function SubCheckout(props) {
                                             </div>
                                         </li>
                                     </ul>
-                                    <div className="mt-4 d-flex align-items-center justify-content-center">
+                                    <div className="mt-4 flex items-center justify-content-center">
                                         <button
                                             type="submit"
                                             className={`${
@@ -458,10 +450,16 @@ export default function SubCheckout(props) {
                         </div>
                     </div>
                 </div>
-                <Social openSocial={isSocilAdded ? 'no' :"open"}
-                removetext={true} type="membership"
-                redirect_url={ `/membership/checkout/${membership?.uuid}${membership?.level == 'lifetime' ? '/onetime' : ''}` }
-                updatedLinks={fetchingLinks} links={sLinks} />
+                <Social
+                    openSocial={isSocilAdded ? "no" : "open"}
+                    removetext={true}
+                    type="membership"
+                    redirect_url={`/membership/checkout/${membership?.uuid}${
+                        membership?.level == "lifetime" ? "/onetime" : ""
+                    }`}
+                    updatedLinks={fetchingLinks}
+                    links={sLinks}
+                />
                 <Toaster />
             </Authenticated>
         </>

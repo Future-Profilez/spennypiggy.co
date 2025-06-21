@@ -1,62 +1,69 @@
 @extends('email.default-2')
+
 @section('content')
 @php
-$statusText = match($type) {
-'renew' => 'Renewed',
-'failed' => 'Failed',
-default => 'Cancelled',
-};
+$messages = [
+'renew' => ['text' => 'Renewed', 'desc' => 'renewed successfully'],
+'failed' => ['text' => 'Failed', 'desc' => 'failed'],
+'cancel' => ['text' => 'Cancelled', 'desc' => 'cancelled'],
+'trial_ending' => ['text' => 'Trial Ending Soon', 'desc' => 'ending soon'],
+];
+
+$status = $messages[$type] ?? ['text' => 'Status', 'desc' => 'updated'];
 @endphp
+
 <tr>
-    <td align="center" style="padding:10px 10px 20px 10px;"><a href="{{ env('APP_URL') . '/' }}"><img alt="image"
-                width="119" src="https://ucarecdn.com/2c2af8ee-fbdb-4d38-9ba4-3de474410a20/emaillogo.png" style="border:none"></a></td>
+    <td align="center" style="padding:10px 10px 20px 10px;">
+        <a href="{{ env('APP_URL') }}/">
+            <img alt="image" width="119" src="https://ucarecdn.com/2c2af8ee-fbdb-4d38-9ba4-3de474410a20/emaillogo.png" style="border:none">
+        </a>
+    </td>
 </tr>
 <tr>
     <td align="center" style="padding:10px 10px 20px 10px;">
-        <table width="100%" cellspacing="0" cellpadding="0" border="0"
-            style="max-width: 296px; width: 100%; text-align: center;">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 296px; width: 100%; text-align: center;">
             <tr>
-                <td
-                    style=" font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
+                <td style="font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
                     <span style="color: #8C52FF">
-                        Subscription {{ $module == "bill" || $module == "membership" || $module == "site" ? "for $module " : "" }}
-                    </span>{{ $statusText }} on <br> Spenny Piggy 🎁
+                        Subscription {{ in_array($module, ['bill', 'membership', 'site']) ? "for $module " : "" }}
+                    </span>{{ $status['text'] }} on <br> Spenny Piggy 🎁
                 </td>
             </tr>
+
             <tr>
                 <td style="line-height:20px;height:20px;"></td>
             </tr>
 
             <tr>
-                <td style=" padding: 0 0 25px 0; text-align: center;"><img
-                        style="max-width: 200px;" src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" alt="img"></td>
-            </tr>
-            <tr>
-                <td
-                    style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                    Hello {{ $data['name'] }}! <br><br>
-                    Please note your subscription has {{ $type == "renew" ? "renewed" : $type == "failed" ? "failed" : "cancelled" }} successfully on Spenny Piggy. 🎁
+                <td style="padding: 0 0 25px 0; text-align: center;">
+                    <img style="max-width: 200px;" src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" alt="img">
                 </td>
             </tr>
-            <tr>
-                <td
-                    style="padding: 0 0 20px 0;  font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                    You can see your latest invoice via the following link. You can also manage your subscription’s via this link 🔗</td>
-            </tr>
-            <tr>
-                <td
-                    style="padding: 0 0 20px 0;  font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                    <b>Invoice :~ <a href="{{ $data['invoice_pdf'] ?? '' }}">See Invoice</a></b>
-                </td>
-            </tr>
-            <br><br>
 
             <tr>
-                <td
-                    style="padding: 0 0 20px 0;  font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                    To cancel the subscription <a
-                        href={{ env('APP_URL') . '/cancel-subs/' . $data['uuid'] }}>
-                        Click Here</a>.</td>
+                <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
+                    Hello {{ $data['name'] }}! <br><br>
+                    Please note your subscription is {{ $status['desc'] }} on Spenny Piggy. 🎁
+                </td>
+            </tr>
+
+            @if(isset($data['invoice_pdf']))
+            <tr>
+                <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
+                    You can see your latest invoice and manage your subscription using the link below 🔗
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
+                    <b>Invoice: <a href="{{ $data['invoice_pdf'] }}">See Invoice</a></b>
+                </td>
+            </tr>
+            @endif
+
+            <tr>
+                <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
+                    To cancel the subscription, <a href="{{ env('APP_URL') . '/cancel-subs/' . $data['uuid'] }}">click here</a>.
+                </td>
             </tr>
         </table>
     </td>

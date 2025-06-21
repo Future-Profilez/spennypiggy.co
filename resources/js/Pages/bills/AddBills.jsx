@@ -1,6 +1,6 @@
 import st from "../../../css/uploader.module.css";
 // import data  from "../../../css/uploader.module.css"
-import { useForm, usePage } from "@inertiajs/react";
+import { router, useForm, usePage } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
 import React, { useEffect } from "react";
 import LoaderButton from "@/Components/LoaderButton";
@@ -22,12 +22,9 @@ import { SlCalender } from "react-icons/sl";
 export default function AddBills(props) {
     const { successAlert, errorAlert, infoAlert, errorsHandling } = useAlerts();
     const { global_currency, auth } = usePage().props;
-
     const [thumbnail, setThumbnail] = useState("");
-
     const [close, setClose] = useState();
-    const { updatebill, item, isEdit, editpop, text, classes, fetchBills } =
-        props;
+    const { updatebill, item, isEdit, editpop, text, classes, fetchBills } = props;
     const { formatMultiPrice } = PriceFormat();
     const BillsImages = [
         "901c0a0e-e5de-4d7a-8ac3-de11a4632542",
@@ -92,9 +89,16 @@ export default function AddBills(props) {
             .then((resp) => {
                 fetchBills && fetchBills();
                 if (resp.data.status) {
-                    if (updatebill) {
-                        updatebill("updated");
-                    }
+                    router.visit(
+                        route("user.show", {
+                            username: auth.user.username,
+                            page: "bills",
+                        }),
+                        {
+                            preserveState: true,
+                            preserveScroll: true,
+                        }
+                    );
                     successAlert(resp.data.msg);
                     setClose(false);
                     setTimeout(() => {
@@ -148,7 +152,7 @@ export default function AddBills(props) {
                     </h2>
 
                     <div className="wishinfo border-top p-4 max-h-[70vh] overflow-auto">
-                        
+
                         <form onSubmit={createBills}>
                             <ul className="ps-0">
                                 <li className="mb-4">
@@ -183,7 +187,7 @@ export default function AddBills(props) {
                                             type="number"
                                             name="price"
                                             placeholder="Eg. 50"
-                                            value={
+                                            defaultValue={
                                                 (item && item.price) ||
                                                 data.price
                                             }
@@ -194,7 +198,7 @@ export default function AddBills(props) {
                                             }
                                         />
                                     </div>
-                                    {defaultCurrency !== 'USD' && 
+                                    {defaultCurrency !== 'USD' &&
                                     <p className="mt-1">
                                         The Bill amount is set to{" "}
                                         {formatMultiPrice(

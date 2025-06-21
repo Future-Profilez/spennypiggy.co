@@ -6,7 +6,6 @@ import { useAlerts } from "@/Components/Alerts";
 import ActivateCard from "./ActivateCard";
 
 export default function GifterCardVerification({ auth, gifterCardVerification}) {
-    console.log("gifterCardVerificationssssssssssss", gifterCardVerification);
     const user = auth?.user || null;
     const [loading, setLoading] = useState(false);
     const { successAlert, errorAlert } = useAlerts();

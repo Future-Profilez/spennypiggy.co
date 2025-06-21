@@ -7,7 +7,6 @@ import { Toaster } from "react-hot-toast";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 
 export default function SubCheckout(props) {
-
     const {auth, user, wish, reccure, vat_amount  } = props;
     const { formatMultiPrice } = PriceFormat();
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
@@ -101,28 +100,27 @@ export default function SubCheckout(props) {
                         </div>
 
                         <div className="cartTotal px-0 py-3">
-                            <div className="cartSubTotal text-right mt-1">
-                                <span>Platform Fee :</span>{" "}
+                            <div className="cartSubTotal text-right mt-1 !text-sm">
+                                <span> Amount :</span>
+                                <strong className="text-end">
+                                    {formatMultiPrice(wish.price || "", wish && wish.currency)}
+                                </strong>
+                            </div>
+                            <div className="cartSubTotal text-right mt-1 !text-sm">
+                                <span>VAT Applicable : </span>
+                                <strong className="text-end">
+                                    {formatMultiPrice(vat_amount || "", wish && wish.currency)}
+                                </strong>
+                            </div>
+                            <div className="cartSubTotal text-right mt-1 !text-sm">
+                                <span>Platform Fee :</span>
                                 <strong className="text-end">
                                     {formatMultiPrice(wish.tax_amount || "", wish && wish.currency)}
                                 </strong>
                             </div>
                             <div className="cartSubTotal text-right mt-1">
-                                <span>VAT : </span>{" "}
-                                <strong className="text-end">
-                                    {formatMultiPrice(vat_amount || "", wish && wish.currency)}
-                                </strong>
-                            </div>
-                            <div className="cartSubTotal text-right mt-1">
-                                <span>Subtotal :</span>{" "}
-                                <strong className="text-end">
-                                    {formatMultiPrice(wish.price || "", wish && wish.currency)}
-                                </strong>
-                            </div>
-                            <div className="cartSubTotal text-right mt-1">
-                                <strong className="text-dark">Total :</strong>{" "}
-                                <strong className="text-end">
-                                    {/* {formatMultiPrice(wish.tax_amount + wish.price || "", wish && wish.currency)} */}
+                                <strong className="text-dark">Total :</strong>
+                                <strong className="text-end text-black">
                                     {formatMultiPrice(wish.tax_amount + wish.price + vat_amount || "", wish && wish.currency)}
                                 </strong>
                             </div>
@@ -211,7 +209,7 @@ export default function SubCheckout(props) {
                                         </div>
                                     </li>
                                 </ul>
-                                <div className="mt-4 d-flex align-items-center justify-content-center" >
+                                <div className="mt-4 flex items-center justify-content-center" >
                                     <button type="submit"
                                         className={`${!data.agree || processing ? "disabled" : ""} btn-pink md px-4 mt-3 text-center`}
                                         disabled={!data.agree || processing}>

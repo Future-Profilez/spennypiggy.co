@@ -47,7 +47,7 @@ export default function ShopTracker() {
                         aria-expanded={open}
                         className=" cursor-pointer trackbar "
                     >
-                        <div className="d-flex align-items-center justify-content-between">
+                        <div className="flex items-center justify-between">
                             <div className="text-dark">
                                 {g.anonymous == 1 && g && g.sender == false ? (
                                     <Avatar 
@@ -93,7 +93,7 @@ export default function ShopTracker() {
                                     </>
                                 )}
                             </div>
-                            <div className="text-muted rightbar d-flex align-items-center ">
+                            <div className="text-muted rightbar flex items-center ">
                                 <div>
                                     {g && g.sender ? (
                                         <div className="identity text-danger text-nowrap">
@@ -151,7 +151,7 @@ export default function ShopTracker() {
                         <div id="example-collapse-text">
                             <div className="track-summary mt-4">
                                 <div className="wishitem-des box border rounded-lg">
-                                    <div className="d-flex justify-content-between align-items-center">
+                                    <div className="flex justify-between items-center">
                                         <div className="wish-item">
                                             <img
                                                 src={
@@ -183,7 +183,7 @@ export default function ShopTracker() {
                                         </div>
                                     </div>
                                     {g && g.message ? (
-                                        <div className="border-top pt-3 mt-3 d-flex justify-content-between align-items-center">
+                                        <div className="border-top pt-3 mt-3 flex justify-between items-center">
                                             <p className="mb-0 pe-2">
                                                 Message :
                                             </p>
@@ -195,13 +195,13 @@ export default function ShopTracker() {
                                         ""
                                     )}
 
-                                    <div className="border-top pt-3 mt-3  d-flex justify-content-between align-items-center">
+                                    <div className="border-top pt-3 mt-3  flex justify-between items-center">
                                         <p className="mb-0 pe-2">Paid in </p>
                                         <p className="text-muted text-small">
                                             {g && g && g.currency}
                                         </p>
                                     </div>
-                                    <div className="border-top pt-3 mt-3  d-flex justify-content-between align-items-center">
+                                    <div className="border-top pt-3 mt-3  flex justify-between items-center">
                                         <p className="mb-0 pe-2">
                                             Guest Email{" "}
                                         </p>
@@ -209,7 +209,7 @@ export default function ShopTracker() {
                                             {g && g.email}
                                         </p>
                                     </div>
-                                    <div className="border-top pt-3 mt-3  d-flex justify-content-between align-items-center">
+                                    <div className="border-top pt-3 mt-3  flex justify-between items-center">
                                         <p className="mb-0 pe-2">Guest Name </p>
                                         <p className="text-muted text-small capitalize">
                                             {g && g.name}

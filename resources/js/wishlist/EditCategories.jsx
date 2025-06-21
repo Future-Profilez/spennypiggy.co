@@ -49,7 +49,7 @@ export default function EditCategories({username, fetch_categories}) {
        return <>
          <div className="cats_edit box mt-3" >
 
-            <div className="d-flex justify-content-between align-items-center" >
+            <div className="flex justify-between items-center" >
                <p>{item?.category || ""}</p>
                <div>
                   <button className="ms-2 button esm" onClick={()=>setIsRename(true)} >Edit</button>       
@@ -58,7 +58,7 @@ export default function EditCategories({username, fetch_categories}) {
             </div>
 
             {isRename ? 
-               <div className=" border-top pt-3 d-flex justify-content-between align-items-center mt-2" >
+               <div className=" border-top pt-3 flex justify-between items-center mt-2" >
                   <input className="w-100" onChange={(e)=>setChangeValue(e.target.value)} defaultValue={item?.category || ""} disabled={!isRename} />
                   <button className="button esm ms-3" onClick={renameCategory} >Save</button>       
                </div>

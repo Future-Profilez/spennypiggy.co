@@ -81,7 +81,7 @@ export default function TipInner({classes, idd}) {
         return false;
     }
     setLoading(true);
-    const resp = axios.post(`tip-jar/pay/${user.uuid}`, data);
+    const resp = axios.post(`/tip-jar/pay/${user.uuid}`, data);
     resp.then((res) => {
       if(res.data.status){
         window.location.href = res.data.url
@@ -107,11 +107,11 @@ export default function TipInner({classes, idd}) {
           <h2 className='p-3 text-pink font-GillSans uppercase text-large mb-1 mt-4 pe-5'>Fill My Piggy bank 🐖</h2>
           <div className='border-top p-3 pt-3' >
 
-            <div className='tip-counter d-flex align-items-center justify-content-between mb-3' >
-                <p className='tipheading flex align-items-center' >
+            <div className='tip-counter flex items-center justify-between mb-3' >
+                <p className='tipheading flex items-center' >
                   <span className='me-2' dangerouslySetInnerHTML={{ __html: tipheading }} />
                 {defaultAmount} &nbsp;Each</p>
-                <div className='incresecounter d-flex align-items-center' >
+                <div className='incresecounter flex items-center' >
                       <button className='pinkbg text-white min-w-[40px] px-2 font-large min-h-[40px]  border  rounded-4 ' onClick={decresevalue} >-</button>
                       <div className='border px-3 py-2 rounded-5 mx-1' >{tipQuantity}</div>
                       <button className='pinkbg text-white min-w-[40px] px-2 font-large min-h-[40px] border  rounded-4 ' onClick={incresevalue} >+</button>
@@ -188,7 +188,7 @@ export default function TipInner({classes, idd}) {
                 <p className="text-muted text-small mt-1 mb-3" >Your personal email and name will be private.</p>
             </div>
             <button disabled={loading} onClick={send} className={`items-center px-4  shadow-black
-               rounded-[30px] btn-pink md justify-content-center   
+               rounded-[30px] btn-pink md justify-content-center
               ease-in-out duration-150 flex button text-center w-100
               font-CeraGR mx-auto ${checkRef.current && checkRef.current.checked ? '' :'disabled'}`}
                > {loading ? "Processing" : 'Support Me'} </button>

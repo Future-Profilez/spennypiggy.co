@@ -13,18 +13,18 @@ import RemoveBill from './RemoveBill';
 import { useAlerts } from '@/Components/Alerts';
 
 export default function Bill(props) {
-  
+
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
-  
+
   const {auth} = usePage().props;
   const { format, formatMultiPrice } = PriceFormat();
-  const { itm, itemid, IsloggedIn, classes, key, fetchBills  } = props;
+  const { itm, itemid, IsloggedIn, classes, key   } = props;
   const { attributes, listeners, isDragging, index, over, setNodeRef, transform, transition } = useSortable({ id: itm && itm.id });
-  const style = { 
+  const style = {
     transform: CSS.Translate.toString(transform)
   };
 
-  const stylenone = { 
+  const stylenone = {
     transform: '',
   };
 
@@ -43,27 +43,27 @@ export default function Bill(props) {
     }
   },[itemUID]);
 
-  const gotologin = () => { 
+  const gotologin = () => {
     errorAlert("You must login first.");
     router.visit(`/login?redirect=${`/bill/checkout/${itm.uuid}`}`);
   }
 
   return <>
-    <div key={key} style={IsloggedIn ? style : stylenone}  className={` position-relative billbox wish-item-box ${classes} ${isDragging ? 'dragging' : ''}`}> 
-      <div  className='wishlistcntbox  mb-3 mb-sm-4 whbg relative'>
-            {IsloggedIn && itm && itm.approved === 0 ?  
+    <div key={key} style={IsloggedIn ? style : stylenone}  className={` position-relative billbox wish-item-box ${classes} ${isDragging ? 'dragging' : ''}`}>
+      <div  className='wishlistcntbox  mb-3 mb-sm-4 whbg relative !rounded-[23px] shadow-pinks overflow-hidden    border-3 md:border-4 !border-[#F94F97] w-full'>
+            {IsloggedIn && itm && itm.approved === 0 ?
               <div className='approvalmessge membership m-3 rounded-3 p-3 py-2 mb-2 ' >
-                Bill item waiting for approval. Currently only you can see this bill.</div> 
+                Bill item waiting for approval. Currently only you can see this bill.</div>
             : ''}
-              
-            <div onClick={openAddtocart} className='wishlistimg cursor-pointer'>
+
+            <div onClick={openAddtocart} className='wishlistimg cursor-pointer relative'>
               <LazyLoadImage
               alt={"image"} useIntersectionObserver={true} effect="blur"
               height={193}
               src={itm?.perma_link ? itm?.perma_link : uploadedimg} className=''
               width={243} />
-
-              {IsloggedIn ? 
+              <div className='bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full capitalize absolute bottom-3 right-3' >{itm && itm.period || "Monthly"} Subscribable </div>
+              {IsloggedIn ?
                 <DropdownButton
                 className='edit-post pe-0 absolute top-5 m-1 right-3 z-1 ' id="dropdown-basic-button"
                 title={
@@ -72,44 +72,41 @@ export default function Bill(props) {
                 <span className='bg-dark' ></span>
                 <span className='bg-dark' ></span>
                 </div>}>
-                        <RemoveBill classes={`px-[18px] py-2 text-start w-full`} updateItems={fetchBills} uuid={itm.uuid} text="Remove Bill" />
-                </DropdownButton> 
-              : ''} 
-
+                   <RemoveBill classes={`px-[18px] py-2 text-start w-full`}   uuid={itm.uuid} text="Remove Bill" />
+                </DropdownButton>
+              : ''}
             </div>
-
             <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
               <div>
-                <h4 className={`fon-bold text-dark el1 `} >{itm.name}</h4>
-                <h5 className='font-CeraGRBold text-dark titleprice'>{formatMultiPrice(itm.price, itm?.currency || 'GBP')}
+                <h4 className={`text-lg  !text-gray-800 text-center el1 `} >{itm.name}</h4>
+                <h5 className='text-center font-bold font-poppins  text-black my-2 titleprice'>{formatMultiPrice(itm.price, itm?.currency || 'GBP')}
                     <button className='tooltipbtn' >?<p>*just not including service fee.</p></button>
                 </h5>
               </div>
-              <div className='subscribletag text-capitalize text-small' >  {itm && itm.period || "Monthly"} Subscribable  </div>  
-            <p className='text-start text-xs mt-3' >Pay bill and gain access to member only posts</p>
+            <p className=' text-sm mt-3 text-center' >Pay bill and gain access to member only posts</p>
             </div>
 
-            <div className='p-sm-3 p-3 pt-0 pt-sm-0' >
+            <div className='flex justify-center pb-4' >
               {IsloggedIn ?
-                  <AddBills fetchBills={props.fetchBills} classes="btn-pink px-2 sm text-center w-100" text="Update Bill"
+                  <AddBills   classes="btn-pink px-2 sm text-center w-100" text="Update Bill"
                   item={itm} isEdit={true} />
                 :
                 <>
                 {
                   auth && auth.user !== null ?
-                  <Link method='get' 
+                  <Link method='get'
                     href={route('bill.checkout',{uuid: itm.uuid})}
-                    className='btn-pink px-2 sm text-center' >Pay Bill</Link>
+                    className='pinkbg hover:opacity-[0.8] text-white font-bold text-[13px] md:text-normal py-2 px-4 rounded-full shadow' >Pay Bill</Link>
                   :
-                  <button  
+                  <button
                      onClick={gotologin}
-                    className='btn-pink px-2 sm text-center w-full' >Pay Bill</button>
+                    className='pinkbg hover:opacity-[0.8] text-white font-bold text-[13px] md:text-normal py-2 px-4 rounded-full shadow' >Pay Bill</button>
 
                 }
                 </>
-              } 
+              }
             </div>
-        
+
       </div>
     </div>
   </>

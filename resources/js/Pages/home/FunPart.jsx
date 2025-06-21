@@ -22,7 +22,7 @@ export default function FunPart({imgbg, mainbg, textbg, heading, eclasses, text,
     }
   `}</style>
 
-  <div className={`${classes} d-flex ${reverse ? "col-reverse" : ''} ${mainbg ? mainbg : 'bg-white'} d-flex borderbox justify-content-between align-items-center`}>
+  <div className={`${classes} flex ${reverse ? "col-reverse" : ''} ${mainbg ? mainbg : 'bg-white'} flex borderbox justify-between items-center`}>
     <div data-aos="flip-down" className={`box-s ${eclasses} ${reverse ? "justify-content-start" : "justify-content-end"} pb-0 w-50`}>
       <div className="image-container">
         <LazyLoadImage

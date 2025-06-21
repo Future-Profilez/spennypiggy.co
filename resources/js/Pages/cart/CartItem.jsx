@@ -37,7 +37,7 @@ export default function CartItem({data, removeCart, quantityUpdate, currency}) {
     }
 
     return (
-        <div className={`border cartlist flex flex-wrap justify-between items-center content-between items-center border-purple shadow-purple rounded-xl 
+        <div className={`border cartlist flex flex-wrap justify-between items-center content-between items-center border-purple shadow-purple rounded-xl
             mb-3 mb-md-4 mb-ml-5 p-3 p-md-4`}>
             <div className='prodcartbox items-center'>
                 <div className='productimg'>

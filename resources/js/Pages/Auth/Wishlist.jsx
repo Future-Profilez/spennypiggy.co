@@ -3,7 +3,7 @@ import "swiper/css/pagination";
 import "swiper/css/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import LoaderButton from "@/Components/LoaderButton";
-import { useForm, usePage } from "@inertiajs/react";
+import { router, useForm, usePage } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
 import GlobalUploader from "@/uploadcare/Uploader";
 import st from "../../../css/uploader.module.css";
@@ -28,10 +28,8 @@ const imageLinks = [
 ];
 
 export default function Wishlist(props) {
-    const { global_currency, auth } = usePage().props;
-    const {
-        fetchingcats,
-        fetchcategories,
+    const { global_currency, auth, wish_categories } = usePage().props;
+    const { 
         currency,
         item, text,
         editpop,
@@ -70,12 +68,12 @@ export default function Wishlist(props) {
         }
     };
 
-    const [categories, setcategories] = useState([]);
+    const [categories, setcategories] = useState(wish_categories || []);
     const fetch_categories = async () => {
         const controller = new AbortController();
         const { signal } = controller;
         axios
-            .get(`/user_category/${auth && auth.user && auth.user.username}`, {
+            .get(`/user/category/${auth && auth.user && auth.user.username}`, {
                 signal,
             })
             .then((resp) => {
@@ -86,21 +84,17 @@ export default function Wishlist(props) {
             });
     };
 
-    useEffect(() => {
-        fetch_categories();
-    }, []);
-
     const AddCategory = async () => {
         const value = inputRef.current.value;
         setAdding(true);
         axios
-            .post("save-category", { category: value })
+            .post("/user/save-category", { category: value })
             .then((res) => {
                 setAdding(false);
                 if (res.data.status) {
-                    successAlert(res.data.msg || "Added");
-                    fetch_categories();
+                    successAlert(res.data.msg || "Added"); 
                     inputRef.current.value = "";
+                     fetch_categories();
                 } else {
                     errorAlert(res.data.msg || "Something went wrong.");
                 }
@@ -227,17 +221,17 @@ export default function Wishlist(props) {
                 preserveScroll: true,
                 onSuccess: (resp) => {
                     if (resp.props.flash?.success !== null) {
-                        successAlert(
-                            resp.props.flash?.success || "Updated successfully."
-                        );
+                        router.visit(
+                            route("user.show", {
+                            username: auth?.user?.username,
+                            page : 'wishes'
+                        })); 
                         reset();
                         setClose(false);
                         setTimeout(() => {
                             setClose();
                         }, 100);
-                        fetchingcats();
                         resetUploader();
-                        fetchcategories && fetchcategories();
                     }
                     if (resp.props.flash?.error) {
                         errorAlert(
@@ -256,17 +250,17 @@ export default function Wishlist(props) {
                 preserveScroll: true,
                 onSuccess: (resp) => {
                     if (resp.props.flash?.success !== null) {
-                        successAlert(
-                            resp.props.flash?.success ||
-                                "Wish added successfully."
-                        );
+                        router.visit(
+                            route("user.show", {
+                            username: auth?.user?.username,
+                            page : 'wishes'
+                        }));
                         reset();
                         setClose(false);
                         resetUploader();
                         setTimeout(() => {
                             setClose();
                         }, 100);
-                        fetchingcats();
                     }
                     if (resp.props.flash?.error) {
                         errorAlert(
@@ -720,7 +714,7 @@ export default function Wishlist(props) {
                                             : ""}
                                     </div>
 
-                                    <div className="cate-items mb-3 mt-4 d-flex ">
+                                    <div className="cate-items mb-3 mt-4 flex ">
                                         <input
                                             id="cats"
                                             type="text"

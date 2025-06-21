@@ -197,11 +197,11 @@ export default function Register(props) {
         }
 
         
-        if (role == 0 && !gifterref.current.checked) {
-            errorAlert("Please accept all terms and conditions.");
-            gifterref.current.focus();
-            return false;
-        }
+        // if (role == 0 && !gifterref.current.checked) {
+        //     errorAlert("Please accept all terms and conditions.");
+        //     gifterref.current.focus();
+        //     return false;
+        // }
         if (role == 0 && !addressCheck.current.checked) {
             errorAlert("Please accept all terms and conditions.");
             addressCheck.current.focus();
@@ -346,7 +346,7 @@ export default function Register(props) {
                             <div className='px-0 px-md-4 px-lg-5 pb-4'>
                                 <p className='text-center text-[17px] text-muted ' >Choose from the following categories. This helps people find your profile. You can change these at any time.</p>
 
-                                <div className='d-flex creator-tags justify-content-center flex-wrap mt-4' >
+                                <div className='flex creator-tags justify-content-center flex-wrap mt-4' >
                                     {creatortypes.map((s, index) => (
                                         <div key={index} className="flex items-center">
                                             <input
@@ -469,7 +469,7 @@ export default function Register(props) {
 
                                     {role == 0 && role !== 1 ? 
                                         <>  
-                                        <p className='border-t mt-3 pt-4 text-grey uppercase text-normal mb-2'>Address Information</p>
+                                        <p className='border-t mt-3 pt-4 text-grey uppercase text-normal mb-2'>Billing address information</p>
                                             <div className='row'>
                                                 <div className='col-md-12 mb-4 formfield'>
                                                     <label>street_address</label>
@@ -524,10 +524,10 @@ export default function Register(props) {
                                     }
                                     
                                     <div className='promocode mb-4' >
-                                        <div className='d-flex align-items-center justify-content-between' >
+                                        <div className='flex items-center justify-between' >
                                             <label className='mb-2'>Referral (optional) {codevalid ? <span className='text-success text-small' >Code Applied.</span> : ''}</label>
                                         </div>
-                                        <div className='d-flex align-items-center relative' >
+                                        <div className='flex items-center relative' >
                                             <input ref={promoinput}
                                             placeholder="Enter Referral Code..." className='form-control ' />
                                             {codevalid ? <div  onClick={removecode}
@@ -549,18 +549,18 @@ export default function Register(props) {
                                         </label>
                                         {role == 0 ?
                                             <>
-                                                <label htmlFor="gifterCheck">
+                                                {/* <label htmlFor="gifterCheck">
                                                     <p className='tersms-accept mt-3' >
                                                         <input type="checkbox" ref={gifterref} id="gifterCheck" name="gifterCheck" value="gifterCheck"
                                                         required ></input>
                                                         The above matches the details on the bank card they will use. If it doesn’t their account will be suspended.
                                                     </p>
-                                                </label>
+                                                </label> */}
                                                 <label htmlFor="addressCheck">
                                                     <p className='tersms-accept mt-3' >
                                                         <input type="checkbox" ref={addressCheck} id="addressCheck" name="addressCheck" value="addressCheck"
                                                         required ></input>
-                                                        I confirm the address supplied is my billing address associated with the bank card I will use for purchases..
+                                                        The above address and name matches on the bank card I will later use for purchases. My account will be suspended if I use any other details.
                                                     </p>
                                                 </label>
                                             </>

@@ -73,7 +73,7 @@ export default function ThankyouMessages(props) {
     const type = w && w.media_type;
     return <div className='wish-grant box rounded-lg p-3 my-2' key={key} >
       <p className='mb-3 text-grey ' ><span className='text-capitalize' >{w && w.owner && w.owner.name}</span> send a thankyou message {w && w.message ? <b>{w && w.message}</b> : ''} {type =='image' ? 'with attached pic' : type =='video' ? 'with attached video' : '' }.</p>
-      <div className='d-flex justify-content-between align-items-center' >
+      <div className='flex justify-between items-center' >
         <Avatar name={w && w.owner && w.owner.name}
           subhead={`@${w && w.owner && w.owner.username}`}
           username={`${w && w.owner && w.owner.username}`}

@@ -21,7 +21,11 @@ class CheckGifterCardVerification
         $user = Auth::user();
 
         // Only apply the logic for gifter users (role = 0) who are not from the UK
-        if ($user->role === 0 && $user->is_uk == 0) {
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'please login first');
+        }
+
+        if ($user->role === 0 && $user->is_uk == 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
             // Check if the user has a successful gifterCardVerification
             $isVerified = $user->gifterCardVerification()
                 ->where('status', 'success')

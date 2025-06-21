@@ -40,7 +40,6 @@ export default function GiftListing({
                 errorAlert(removeItem?.data?.message);
             }
         } catch (error) {
-            console.log("error", error);
             errorAlert("An unknown error occured");
         }
     };

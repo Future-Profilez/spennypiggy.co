@@ -9,7 +9,7 @@ import { useRef } from "react";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 import { FaHouseChimneyUser } from "react-icons/fa6";
 import PriceFormat from "@/includes/PriceFormat";
-import { usePage } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 
 const memberships = [
   {
@@ -145,14 +145,16 @@ export default function AddMembership({updateState, item, text, classes}) {
         setLoading(true);
         axios.post(`/membership/save`, {...data, thumbnail: thumb}).then((resp)=>{
           if(resp.data.status) {
-            successAlert(resp.data.msg)
-            updateState && updateState(new Date());
+            successAlert(resp.data.msg) 
             setClose(false);
             setTimeout(() => {
               setClose();
             }, 100);
-            reset();
             resetUploader();
+            router.visit(route('user.show', { username: auth?.user?.username, page: 'memberships' }), {
+              preserveState: true,
+              preserveScroll: true,
+            });
           } else {
             if(resp.data.errors){
               Object.entries(resp.data.errors).forEach(([key, value]) => {
@@ -193,7 +195,7 @@ export default function AddMembership({updateState, item, text, classes}) {
 
                       <div className="col-md-12 form-field mb-4">
                           <label className="d-block text-start mb-2">Choose Membership Level</label>
-                          <ul className="ps-0 d-flex flex-wrap tiers" >
+                          <ul className="ps-0 flex flex-wrap tiers" >
                               {memberships && memberships.map((m, i)=>{
                                 return <li key={`membership-${i}`} className="mb-2 me-2" >
                                   {/* <button
@@ -247,7 +249,7 @@ export default function AddMembership({updateState, item, text, classes}) {
                       </div>
 
                       <p className="font-bold mb-3 " >Choose membership Rewards</p>
-                      <div className="d-flex memberships-lists flex-wrap mb-4 ">
+                      <div className="flex memberships-lists flex-wrap mb-4 ">
                         {membershipBenifits && membershipBenifits.map((m, i)=>{
                           return <div className="member-reward me-2 mb-2 text-start">
                               <input className="cursor-pointer d-none"

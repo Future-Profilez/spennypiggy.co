@@ -8,11 +8,7 @@ import { useRef } from "react";
 import Popup from '@/Components/Popup';
 
 export default function Stripe(props) {
-    const { auth, user, 
-        bills_count, membership_count
-     } = props;
-     const verification_status = auth && auth.verification_status;
-     console.log("props",props);
+    const { auth, user, } = props;
     const checkRef = useRef();
     const { errorAlert } = useAlerts();
     const { data, setData, get, post, processing, errors, reset } = useForm({
@@ -110,27 +106,10 @@ export default function Stripe(props) {
                             </li>
                         </ul>
 
-                        {auth?.user?.profile_status_lock !== 2 &&
-                            <div className="alert alert-warning mt-3">
-                                {verification_status?.bio_status == 0 ? <p className="text-yellow-600 "> ⚠️ Your bio hasn't been approved yet.</p> : ''}
-                                {verification_status?.social_status == null ? <p className="text-yellow-600 mt-2 "> ⚠️ Please update at least one of your social media handles.</p> : ''}
-                                {verification_status?.social_status == 0 ? <p className="text-yellow-600 mt-2 "> ⚠️ Your social media handles are not approved yet.</p> : ''}
-                                {auth?.user?.avatar == null ? <p className="text-yellow-600 mt-2 "> ⚠️ Please update your profile picture before activating your account.</p> : ''}
-                                {auth?.user?.avatar && auth?.user?.avatar_approved == 0 ? <p className="text-yellow-600 mt-2 "> ⚠️ Your profile image hasn't been approved yet.</p> : ''}
-                                {bills_count < 1 ? <p className="text-yellow-600 mt-2 "> ⚠️ Please add at least one bill before activating your account.</p> : ''}
-                                {membership_count < 1 ? <p className="text-yellow-600 mt-2 "> ⚠️ Please add at least one membership before activating your account.</p> : ''}
-                            </div>
-                         }
 
-                        {auth?.user?.profile_status_lock == 0 && auth?.user?.profile_reject_reason ?
-                            <div className="mt-4 alert alert-danger">
-                             <h2 className="text-red-600 text-xl">Application Rejected</h2>
-                             <p className="text-red-500 text-lg">{auth?.user?.profile_reject_reason}</p> 
-                            </div>
-                        :'' }
 
-                        {auth?.user?.profile_status_lock == 2 ?
-                            <>
+
+
                                 <strong className="d-block w-100 pt-3 mb-1">Choose Country</strong>
                                 <Countries send={getCountry} />
                                 <div className="text-center flex justify-center mb-4 ">
@@ -164,9 +143,7 @@ export default function Stripe(props) {
                                             </div>
                                     </Popup>
                                 </div>
-                            </>
-                            : ''
-                        }
+
 
                     </div>
                 </div>

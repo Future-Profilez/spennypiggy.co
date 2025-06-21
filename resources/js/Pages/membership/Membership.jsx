@@ -51,7 +51,7 @@ const rewards_lists = [
   },
 ];
 
-export default function Membership({item, hidebtn, IsloggedIn, fetch_membership}) {
+export default function Membership({item, hidebtn, IsloggedIn }) {
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
   const gotologin = () => {
     errorAlert("You must login first.");
@@ -93,7 +93,7 @@ export default function Membership({item, hidebtn, IsloggedIn, fetch_membership}
               <span className='bg-dark' ></span>
               <span className='bg-dark' ></span>
             </div>}>
-                <RemoveMembership classes={`px-[18px] py-2 text-start w-full`} updateItems={fetch_membership} uuid={item?.uuid} text="Remove" />
+                <RemoveMembership classes={`px-[18px] py-2 text-start w-full`}   uuid={item?.uuid} text="Remove" />
             </DropdownButton> : ''}
         </div>
 
@@ -102,14 +102,14 @@ export default function Membership({item, hidebtn, IsloggedIn, fetch_membership}
 
       <div className='p-2 pt-0' >
         <ul className='lists_rewards mt-3' >
-          <li  className='d-flex ' >
+          <li  className='flex ' >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M7.95801 14.9993L3.20801 10.2493L4.39551 9.06185L7.95801 12.6243L15.6038 4.97852L16.7913 6.16602L7.95801 14.9993Z" fill="#F94F97"/>
             </svg>
             <p className='ps-2'>Access to Member only posts</p>
           </li>
           {rewards && rewards.map((r, i)=>{
-            return <li key={`reward-${i}`} className='d-flex ' >
+            return <li key={`reward-${i}`} className='flex ' >
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M7.95801 14.9993L3.20801 10.2493L4.39551 9.06185L7.95801 12.6243L15.6038 4.97852L16.7913 6.16602L7.95801 14.9993Z" fill="#F94F97"/>
                 </svg>
@@ -118,9 +118,7 @@ export default function Membership({item, hidebtn, IsloggedIn, fetch_membership}
           })}
         </ul>
 
-
-
-          {IsloggedIn ? <EditMembership fetch_membership={fetch_membership} item={item} /> :
+          {IsloggedIn ? <EditMembership   item={item} /> :
             <>
               {auth && auth.user !== null ?
                 <Link className='btn-pink sm mt-3 ' method='get'

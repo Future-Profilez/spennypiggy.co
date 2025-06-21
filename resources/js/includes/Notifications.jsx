@@ -102,7 +102,7 @@ export default function Notifications() {
 
         {open ? <div id="toast-notification" className="w-full p-4 text-gray-900 bg-white rounded-xl shadow " role="alert">
 
-            <div className='d-md-none d-flex justify-between mb-3' >
+            <div className='d-md-none flex justify-between mb-3' >
                 <button onClick={()=>setOpen(false)} className="items-center flex text-gray-400 hover:text-gray-900 mb-2 " >
                     <svg width="8" height="12" viewBox="0 0 8 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M6.12069 11.243C5.98936 11.2431 5.85929 11.2173 5.73796 11.167C5.61663 11.1168 5.50643 11.043 5.41369 10.95L1.17169 6.707C0.984222 6.51947 0.878906 6.26516 0.878906 6C0.878906 5.73483 0.984222 5.48053 1.17169 5.293L5.41369 1.05C5.60229 0.867841 5.8549 0.767046 6.11709 0.769325C6.37929 0.771603 6.6301 0.876773 6.81551 1.06218C7.00092 1.24759 7.10609 1.4984 7.10837 1.7606C7.11065 2.02279 7.00985 2.2754 6.82769 2.464L3.29269 6L6.82769 9.536C6.9675 9.67585 7.06271 9.85401 7.10128 10.048C7.13984 10.2419 7.12004 10.443 7.04437 10.6257C6.9687 10.8084 6.84056 10.9645 6.67615 11.0744C6.51174 11.1843 6.31844 11.243 6.12069 11.243Z" fill="#808080"/>
@@ -123,7 +123,7 @@ export default function Notifications() {
               {lists && lists.length ? lists.map((n, i)=>{
                 return  <>
                 <div className={`flex items-start justify-between ${n && n.is_read ? 'read' : 'unread' } my-2 ${ i == lists.length-1 ? '' : "border-gray-200 border-b" } py-3  `}>
-                    <div className='d-flex' >
+                    <div className='flex' >
                       {n && n.is_read ? "" :
                         <div className="w-2 h-2 bg-indigo-700 rounded-[50%] min-w-2 mt-2 me-2">
                         </div>

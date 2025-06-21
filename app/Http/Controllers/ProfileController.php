@@ -103,7 +103,6 @@ class ProfileController extends Controller
         return back()->with('success', 'Profile information updated.');
     }
 
-
     /**
      * Update the user's profile information.
      */
@@ -112,13 +111,7 @@ class ProfileController extends Controller
         // $fullUrl = $request->fullUrl(); // Includes query parameters
         // $method = $request->method();   // GET, POST, etc.
 
-        // Log::info("🔗 URL Hit: $method $fullUrl");
-
-        $user = User::where('id', Auth::id())->where(
-            'is_uk',
-            0
-            // $q->whereNot('country', 'GB')->orWhereNull('country');
-        )->first();
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
         $currency = strtolower($request->cookie("currency", "GBP"));
 
         // if($request->min_surprise_amount < 5){
@@ -142,7 +135,7 @@ class ProfileController extends Controller
 
             $user->name = $request->name;
             $user->username = $request->username;
-            $user_profile_status = UserVerificationStatus::where('user_id', $user->id)->where('role', $user->role)->first();
+            $userProfileStatus = UserVerificationStatus::where('user_id', $user->id)->where('role', $user->role)->first();
             if ($request->bio !== $user->bio || $request->social_handle !== $user->social_handle) {
 
                 UserVerificationStatus::UpdateOrCreate([
@@ -162,19 +155,22 @@ class ProfileController extends Controller
                     dispatch(new SendBioSocialUpdateEmail($user, $updatedFields));
                 }
                 $user->bio = $request->bio;
-                $user_profile_status->user_profile_status = 0;
-                $user_profile_status->save();
+                $user->profile_status_lock = 1;
+                $userProfileStatus->user_profile_status = 0;
+                $userProfileStatus->save();
             }
+
             $user->min_surprise_amount = $request->min_surprise_amount ?? 0;
 
             if (!empty($avatar)) {
                 $user->avatar = $avatar['uuid'] ?? null;
                 $user->avatar_approved = 0;
+                $user->profile_status_lock = 1;
                 $user->avatar_cdn_modifier = $avatar['cdnUrlModifiers'] ?? null;
 
                 // user profile status column update when avatar update
-                $user_profile_status->user_profile_status = 0;
-                $user_profile_status->save();
+                $userProfileStatus->user_profile_status = 0;
+                $userProfileStatus->save();
             }
             if (!empty($cover)) {
                 $user->cover = $cover['uuid'] ?? null;
@@ -202,6 +198,24 @@ class ProfileController extends Controller
         }
     }
 
+    /**
+     * Update the user's profile lock status.
+     */
+    public function updateProfileLockStatus()
+    {
+        try {
+            $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+            if ($user->role == 1) {
+                $user->profile_status_lock = 1;
+                $user->save();
+            }
+
+            return back()->with('success', 'Your Verification Request Submit Successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error updating profile lock status: ' . $e->getMessage());
+            return back()->with('error', 'Failed to update profile lock status. Please try again later.');
+        }
+    }
 
     /**
      * Delete the user's account.
@@ -511,29 +525,6 @@ class ProfileController extends Controller
     }
 
 
-    /**
-     * List the intro video by uuid
-     *
-     * @param $uuid uuid of the intro video
-     * @return JsonResponse
-     */
-    public function getIntroById($id)
-    {
-        if (Auth::id() == $id) {
-            $intro = UserIntro::where('user_id', $id)->first();
-            return response()->json([
-                'status' => true,
-                'intro' => $intro,
-                'login' => true,
-            ]);
-        } else {
-            $intro = UserIntro::where('user_id', $id)->whereApproved(1)->first();
-            return response()->json([
-                'status' => true,
-                'intro' => $intro
-            ]);
-        }
-    }
 
     /**
      * Delete the intro video
@@ -912,7 +903,7 @@ class ProfileController extends Controller
         foreach ($user_subs as $key => $value) {
             $trackData[$key] = [
                 'owner' => [
-                    'name' => $value->wish_item->user->name,
+                    'name' => $value->wish_item->user->name ?? '',
                     'avatar' => $value->wish_item->user->avatar_url,
                     'cover' => $value->wish_item->user->cover_url,
                     'username' => $value->wish_item->user->username,
@@ -948,21 +939,16 @@ class ProfileController extends Controller
     public function profileStepsStatus()
     {
         $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
-
         $memPost = Post::where('user_id', $user->id)->where('for_module', 'membership')->first();
         $subPost = Post::where('user_id', $user->id)->where('for_module', 'subscription')->first();
         $supPost = Post::where('user_id', $user->id)->where('for_module', 'support')->first();
-
         $membership = Membership::where('user_id', $user->id)->where('deleted_at', null)->where('status', 1)->whereIn('approved', [0, 1])->first();
         $bill = Bills::where('user_id', $user->id)->where('deleted_at', null)->where('status', 1)->whereIn('approved', [0, 1])->first();
-
         $total = 0;
-
         $basic_profile = empty($user->avatar) || empty($user->bio) || empty($user->cover) ? 0 : 1;
         if ($basic_profile) {
             $total += 1;
         }
-
         $social_links = empty($user->social_links) ? 0 : 1;
         if ($social_links) {
             $total += 1;

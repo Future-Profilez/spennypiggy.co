@@ -33,7 +33,6 @@ class SendPendingApprovalNotifications extends Command
     public function handle()
     {
         try {
-            Log::info('Running pending approval notifications summary command');
 
             $pendingSummary = [];
 
@@ -82,7 +81,24 @@ class SendPendingApprovalNotifications extends Command
                     'model' => \App\Models\UserVerificationStatus::class,
                     'relation' => 'user',
                     'conditions_callback' => function ($query) {
-                        $query->where('user_profile_status', 0);
+                        $query->where(function ($q) {
+                            // Creator condition: role = 1
+                            $q->whereHas('user', function ($userQuery) {
+                                $userQuery->where('role', 1)
+                                    ->whereNotNull('avatar')->where('avatar_approved', 0)
+                                    ->whereNotNull('bio')->where('bio_approved', 0)
+                                    ->where('profile_status_lock', 1)
+                                    ->where('is_subscribed', 1);
+                            });
+                        })->orWhere(function ($q) {
+                            // Gifter condition: role = 0
+                            $q->whereHas('user', function ($userQuery) {
+                                $userQuery->where('role', 0)
+                                    ->where('is_500_limit_exceeded', 1)
+                                    ->where('is_subscribed', 1)
+                                    ->where('profile_status_lock', 1);
+                            });
+                        });
                     },
                     'label' => 'User Profiles',
                 ],
@@ -142,7 +158,6 @@ class SendPendingApprovalNotifications extends Command
                     Notification::route('mail', $toEmail)
                         ->notify(new PendingApprovalNotification($pendingSummary));
                 }
-                Log::info('Sent summary notification with ' . count($pendingSummary) . ' categories');
             } else {
                 Log::info('No pending items found.');
             }

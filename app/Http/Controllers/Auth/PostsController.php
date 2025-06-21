@@ -175,6 +175,13 @@ class PostsController extends Controller
 
                     $message = $user->name . " liked your post " . $post->title;
                     NotificationSave::dispatch($message, $post->user, $user, 'Post Like');
+
+                    $name = ucfirst($user->name);
+                    $title = "❤️ New Like on Your Post!";
+                    $content = "$name liked one of your post ({$post->title}).";
+                    $email = $post->user->email;
+
+                    Helpers::sendNotification($title, $content, $email);
                 } else {
                     $like->status = 0;
                     $like->save();
@@ -193,7 +200,15 @@ class PostsController extends Controller
                     'post_id' => $post->id,
                     'status' => 1
                 ]);
+
                 $is_liked = true;
+                $name = ucfirst($user->name);
+                $title = "❤️ New Like on Your Post!";
+                $content = "$name liked one of your post ({$post->title}).";
+                $email = $post->user->email;
+
+                Helpers::sendNotification($title, $content, $email);
+
 
                 $message = $user->name . " liked your post " . $post->title;
                 NotificationSave::dispatch($message, $post->user, $user, 'Post Like');
@@ -232,6 +247,13 @@ class PostsController extends Controller
             $message = $user->name . " commented on your post " . $post->title;
             NotificationSave::dispatch($message, $post->user, $user, 'Post Comment');
 
+            $name = ucfirst($user->name);
+            $title = "💬 New Comment on Your Post!";
+            $content = "$name commented one of your post ({$post->title}).";
+            $email = $post->user->email;
+
+            Helpers::sendNotification($title, $content, $email);
+
             return response()->json([
                 'status' => true,
                 'msg' => "Comment added successfully."
@@ -261,6 +283,24 @@ class PostsController extends Controller
                 'user_id' => $user->id,
                 'reply' => $request->reply
             ]);
+
+            $name = ucfirst($user->name);
+            $title = "💬 New Reply on a Comment in Your Post!";
+            $content = "$name replied to a comment on one of your post ({$comment->post->title}).";
+            $email = $comment->post->user->email;
+
+            Helpers::sendNotification($title, $content, $email);
+
+            if ($comment->user_id !== $user->id) {
+                $commenter = $comment->user;
+                $name = ucfirst($user->name);
+                $title = "↩️ Your Comment Got a Reply!";
+                $content = "$name replied to one of your comment on the post ({$comment->post->title}).";
+                $email = $commenter->email;
+
+                Helpers::sendNotification($title, $content, $email);
+            }
+
 
             $message = $user->name . " commented on your post " . $comment->post->title;
             NotificationSave::dispatch($message, $comment->post->user, $user, 'Post Comment');

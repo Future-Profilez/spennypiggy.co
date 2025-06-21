@@ -10,12 +10,14 @@ use App\Jobs\CheckoutUser;
 use App\Jobs\CrowdfundTweet;
 use App\Jobs\SurpriseTweet;
 use App\Mail\CommandFailed;
+use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Models\UserCart;
+use App\Models\UserPayment;
 use App\StripeControl;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -28,35 +30,17 @@ use Stripe\Stripe;
 
 class CheckoutController extends Controller
 {
-
     /* create checkout */
     public function createCheckout($id)
     {
-        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
-        $user = Auth::user(); // or $requestingUser if handling guests
-
-        if (empty($user->stripe_id)) {
-            $stripeCustomer = \Stripe\Customer::create([
-                'email' => $user->email,
-                'name' => $user->name ?? null,
-            ]);
-
-            $user->stripe_id = $stripeCustomer->id;
-            $user->save();
+        $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
+        if ($checkGifterStatus == true) {
+            $user = Auth::user();
+            return to_route('user.show', ['username' => $user->username])->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
         }
 
-        // Email notification on success
-        // $now = Carbon::now()->format('h:i A d-m-Y');
-        // $emailSubject = "Wish Payment Initiation Start - $now";
-        // $message = "Wish Payment Process Initiation Start. $id";
-        // Mail::to('prem@futureprofilez.com', 'Prem Prakash')
-        //     // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
-        //     //     ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
-        //     ->send(new CommandFailed($emailSubject, $message));
-
+        $user = Auth::user(); // or $requestingUser if handling guests
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
-        $getdata = collect(); // Or $getdata = []; if you're using plain arrays
-
         try {
             if (!empty(request()->query('message'))) {
                 $wordLimit = 100;
@@ -70,95 +54,133 @@ class CheckoutController extends Controller
             if (Auth::check()) {
                 $getdata = UserCart::where('user_id', Auth::id())
                     ->where('owner_id', $id)
-                    ->where('country', 'global')
                     ->where('status', 1)
                     ->with(['wish'])
-                    ->orderBy('id', 'desc')
                     ->get();
             } else {
                 $getdata = UserCart::where('device_id', $id)
-                    ->where('country', 'global')
                     ->where('status', 1)
                     ->with(['wish'])
-                    ->orderBy('id', 'desc')
                     ->get();
             }
 
             $lineItems = [];
             $subtotal = 0;
-            $taxNew = 0;
-            $adminFee = 0;
+            // $taxNew = 0;
             $transfer_amount = 0;
             foreach ($getdata as $dd) {
+
                 $adminFee = config('app.administration_fee');
                 $showAdminsFees = Helpers::priceFormat('GBP', $adminFee, $currency);
                 $StoreAdminsFees = Helpers::priceFormat('GBP', $adminFee, $dd->owner->default_currency);
                 $totalAmount = $dd->amount;
-                $totalTax =  $dd->tax;
+                $taxPercentage = config('app.single_tax');
 
                 $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, $currency);
-                $ConvertedTax = Helpers::priceFormat($dd->owner->default_currency, $totalTax, $currency);
-                $TotalConvertedFinalAmount = $ConvertedTax + $ConvertedAmount + $showAdminsFees;
-                $new_total_amount = round($TotalConvertedFinalAmount, 2, PHP_ROUND_HALF_UP);
-                Log::info('priceid: and stripeProductId: ');
-                Log::info($dd);
-                Log::info($dd->priceid);
-                Log::info($dd->wish->stripe_product_id);
-                $lineItems[] = [
-                    // 'price' => $dd->stripe_product_id ?? '',
-                    'quantity' => $dd->quantity,
-                    'price_data' => [
-                        'currency' => $currency,
-                        'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
-                        'unit_amount_decimal' => $new_total_amount * 100,
-                    ]
-                ];
 
-                $subtotal += $dd->amount * $dd->quantity;
-                $taxNew += $dd->tax * $dd->quantity;
-                $taxNew += $StoreAdminsFees;
+                $connectedAccountId = $getdata[0]->owner->account_id;
+
+                // Step 1: Check if customer already exists in connected account
+                $storeCustomer = ConnectedAccountCustomer::where('user_id', Auth::id())
+                    ->where('creator_id', $dd->owner->id)
+                    ->where('connected_account_id', $connectedAccountId)
+                    ->where('product_type', 'wish item')
+                    ->first();
+
+                // Step 3: Create customer in connected account if not exists
+                $customer = null;
+                if (!$storeCustomer) {
+                    $customer = StripeControl::createCustomer([
+                        'email' => $user->email,
+                        'name' => $user->name,
+                    ], $connectedAccountId);
+                }
+
+                $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
+
+                // Step 5: Store customer & price if not already stored
+                if (!$storeCustomer) {
+                    ConnectedAccountCustomer::create([
+                        'user_id' => Auth::id(),
+                        'creator_id' => $dd->owner->id,
+                        'connected_account_id' => $connectedAccountId,
+                        'stripe_customer_id' => $customer_id,
+                        'product_type' => 'wish item',
+                        'product_id' => $dd->wish->stripe_product_id,
+                        // 'price_id' => $priceId,
+                    ]);
+                }
+
+                $subtotal += $ConvertedAmount * $dd->quantity;
+                $platformFeeAmount = $ConvertedAmount * $taxPercentage / 100;
+                $showTax = $platformFeeAmount + $showAdminsFees;
+                $storeTax = $platformFeeAmount + $StoreAdminsFees;
+
+                $lineItems = [
+                    // Your main product
+                    [
+                        'quantity' => $dd->quantity,
+                        'price_data' => [
+                            'currency' => $currency,
+                            'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
+                            'unit_amount_decimal' => round($ConvertedAmount * 100),
+                        ]
+                    ],
+                    // Platform fee + Vat as a separate item
+                    [
+                        'quantity' => 1,
+                        'price_data' => [
+                            'currency' => $currency,
+                            'product_data' => [
+                                'name' => 'Platform Fee',
+                            ],
+                            'unit_amount' => round($showTax * 100),
+                            'tax_behavior' => 'exclusive',
+                        ],
+                    ],
+                ];
 
                 // this amount will be transfer to the creators account
                 $transfer_amount += $ConvertedAmount * $dd->quantity;
             }
 
-            $transfering_amount = $transfer_amount;
-
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
-
-            $sessionCreate = $stripe->checkout->sessions->create([
+            $payload = [
                 'success_url' => route('checkout.success', [$id]),
                 'cancel_url' => route('checkout.cancel', [$id]),
+                "mode"  =>  "payment",
                 'line_items' => $lineItems,
-                'mode' => 'payment',
+                'customer_email' => $user->email,
                 'payment_intent_data' => [
-                    'transfer_data' => [
-                        'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
-                        'amount' => $transfering_amount * 100,
-                    ],
-                    // 'application_fee_amount' => $taxNew,
-                    'description' => "Custom Content Purchase."
+                    'application_fee_amount' => round($showTax * 100), // Admin fee + tax
+                    'description' => "Platform Fee."
                 ],
                 'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
-                // 'currency' => 'usd',
-            ]);
+            ];
+
+            $connectedAccount = $connectedAccountId;
+
+            try {
+                $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccount);
+            } catch (\Stripe\Exception\InvalidRequestException $e) {
+                Log::error("Stripe Checkout Error: " . $e->getMessage());
+                return redirect()->back()->with('error', 'Payment failed. Please try again.');
+            }
 
             session()->forget('session_id');
             session(['session_id' => $sessionCreate->id]);
-            $amountSubtotal = $subtotal + $taxNew;
             $stripePaymentDetail = StripePaymentDetail::create([
                 'session_id' => $sessionCreate->id,
                 'amount_subtotal' => $subtotal,
-                'amount_total' => $amountSubtotal,
-                'tax' => $taxNew,
+                'amount_total' => $sessionCreate->amount_total / 100,
+                'tax' => $storeTax,
                 'currency' => $getdata[0]->owner->default_currency,
                 'payment_method_config_detail_id' => optional($sessionCreate->payment_method_configuration_details)->id,
                 'payment_method_type' => optional($sessionCreate->payment_method_types)[0],
                 'user_id' => Auth::id() ?? null,
                 'owner_id' => $getdata[0]->owner->id,
                 'name' => request()->query('from') ?? '',
-                'guest_email' => request()->query('email') ?? '',
                 'message' => $message ?? '',
                 'anonymous' => request()->query('anonymous') ?? 0,
                 'session_created' => $sessionCreate->created,
@@ -171,24 +193,8 @@ class CheckoutController extends Controller
 
             return Inertia::location($sessionCreate->url);
         } catch (\Throwable $th) {
-            if (!empty($getdata) && isset($getdata[0]->owner->username)) {
-                return redirect(route('user.show', [$getdata[0]->owner->username]))
-                    ->with('error', $th->getMessage());
-            } else {
-                return redirect()->back()->with('error', $th->getMessage());
-            }
-
-            // return redirect(route('user.show', [$getdata[0]->owner->username]))->with('error', $th->getMessage());
-            // $now = Carbon::now()->format('h:i A d-m-Y');
-            // $emailSubject = "Payment Process Failed - $now";
-            // $message = "An error occurred while processing the payment: " . $th->getMessage();
-            // Mail::to('prem@futureprofilez.com', 'Prem Prakash')
-            //     // Mail::to('pradeep@fpdemo.com', 'Pradeep Sharma')
-            //     ->cc('naveen@internetbusinesssolutionsindia.com')
-            //     // ->cc(['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'])
-            //     ->send(new CommandFailed($emailSubject, $message));
-            // Log::error("Error in createCheckout: " . $th->getMessage());
-            // throw $th;
+            Log::error("Error in createCheckout: " . $th->getMessage());
+            throw $th;
         }
     }
 
@@ -207,19 +213,17 @@ class CheckoutController extends Controller
                 /**************************WISH**PWA**START****************************************************/
                 // below is wish pwa for fans
 
-                $CreatorName = !empty($dd->owner->name) ? $dd->owner->name : 'A Creator';
+                $CreatorName = !empty($dd->owner->name) ? ucfirst($dd->owner->name) : 'A Creator';
                 $titles = "✨ Wish Sent Successfully!";
-                $contents = "You've sent a wish to {{ $CreatorName }}. They'll be notified right away!";
+                $contents = "You've sent a wish to $CreatorName. They'll be notified right away!.";
                 $emails = $dd->user->email ?? null;
-                Log::info("emails: $emails");
                 Helpers::sendNotification($titles, $contents, $emails);
 
                 // below is wish pwa for creator
-                $FanName = $dd->user->name ?? 'A Fan';
+                $FanName = ucfirst($dd->user->name) ?? 'A Fan';
                 $title = "🎁 New Wish Received!";
-                $content = "{{ $FanName }} has sent you a paid wish. Go check it out!";
+                $content = "$FanName has sent you a paid wish.";
                 $email = $dd->owner->email;
-                Log::info("email: $email");
 
                 Helpers::sendNotification($title, $content, $email);
 
@@ -275,19 +279,13 @@ class CheckoutController extends Controller
                 $payment_data->refresh();
 
                 $symbol = Currency::where('iso', strtoupper($payment_data->payment->currency))->first();
-
-                // $symbol = Currency::where('iso', strtoupper($stripeid->currency))->first();
-                // if (Auth::check()) {
-                //     $user = Auth::user();
                 $vat_percentage = $dd->owner ? $dd->owner->vat_amount_percentage : 0; // Default to 0 if not set
-                // // }
 
                 $tax = $stripeid->amount_subtotal * config('app.single_tax') / 100;
 
                 // // Calculate VAT if the user has set a percentage
                 $vat_amount = ($stripeid->amount_subtotal + $tax) * $vat_percentage / 100;
                 $amountWithVat = $stripeid->amount_subtotal + $vat_amount;
-                // $amountTotal = $symbol->symbol . $amountWithVat;
 
                 $message = $stripeid->message;
 
@@ -300,9 +298,7 @@ class CheckoutController extends Controller
                 } else {
                     CheckoutUser::dispatch($payment_data, true, false, false, $stripeid->name, $symbol->symbol, $vat_amount);
                 }
-                $dd->status = 0;
-                $dd->quantity = 0;
-                $dd->save();
+
 
                 if ($dd->owner->auto_tweet == 1) {
                     if (empty($dd->wish_item_id)) {
@@ -313,6 +309,23 @@ class CheckoutController extends Controller
                         CheckoutTweet::dispatch($payment_data);
                     }
                 }
+
+                $total_amount = $dd->amount * $dd->quantity;
+                $userPayment = new UserPayment();
+                $userPayment->from_user_id = $dd->user_id ?? null;
+                $userPayment->to_user_id = $dd->owner_id;
+                $userPayment->product_type = 'wish item';
+                $userPayment->amount = $total_amount;
+                $userPayment->currency = $dd->wish->currency;
+                $userPayment->payment_method = 'stripe';
+                $userPayment->payment_details = json_encode($sessionId, true);
+                $userPayment->paid_at = Carbon::now();
+                $userPayment->status = $stripeid->payment_status;
+                $userPayment->save();
+
+                $dd->status = 0;
+                $dd->quantity = 0;
+                $dd->save();
             }
 
 
@@ -323,6 +336,7 @@ class CheckoutController extends Controller
 
             return redirect(route('thank-you', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
+            Log::info("Error in successCheckout: " . $th->getMessage());
             return redirect(route('user.show', [$stripeid->owner->username]))->with('error', 'Something went wrong!');
         }
     }

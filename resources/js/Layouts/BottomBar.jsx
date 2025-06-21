@@ -13,7 +13,7 @@ export default function BottomBar(){
 
    return <>
          {auth && auth.user ?
-            <div class="fixed md:hidden bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-gray-200 ">
+            <div class="fixed md:hidden bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-gray-200 pb-[14px] ">
                <div class="grid h-full max-w-lg grid-cols-4 mx-auto font-medium">
 
                   <Link href={`/${auth && auth.user && auth.user.username}`} as="button" className="relative inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 group" >

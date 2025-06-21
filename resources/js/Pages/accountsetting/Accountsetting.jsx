@@ -76,14 +76,14 @@ export default function Accountsetting(props) {
                                 {auth.user && auth.user.monthly_charge_enabled ?
                                     <li>
                                         {auth && auth.user && auth.user.stripe_details_submitted == 1 ?
-                                            <PaymentDashboard classes='w-100 text-black rounded-3  border-0 paymentbutton' text={<>PAYMENT DASHBOARD <span className='text-mint text-sm'>Linked</span></>} />
+                                            <PaymentDashboard classes='w-100 text-black rounded-3  border-0 !bg-white paymentbuttons' text={<>PAYMENT DASHBOARD <span className='text-mint text-sm'>Linked</span></>} />
                                             :
                                             <Link href={route("stripe")} >LINK STRIPE <span className='text-voilet'>Link</span></Link>
                                         }
                                     </li>
                                  :
                                     <li>
-                                        <Link href={'/stripe-subscription'} >Activate Subscription  <span className='text-voilet'>Activate</span></Link>
+                                        <Link href={'/activate-subscription'} >Activate Subscription  <span className='text-voilet'>Activate</span></Link>
                                     </li>
                                   }
                                 </>
@@ -133,7 +133,7 @@ export default function Accountsetting(props) {
                                         text={
                                         <>
                                             { auth && auth.user && auth.user.twitter_username ? `AUTO TWEET` : 'SET UP AUTO TWEET'}
-                                            <div className='d-flex items-center' >
+                                            <div className='flex items-center' >
                                                 <img src={closeblacksm} alt="img" className='me-2 w-5 h-5' />
                                                 { auth && auth.user && auth.user.twitter_username ? `@${auth.user.twitter_username}` : ''}
                                             </div>
@@ -172,11 +172,7 @@ export default function Accountsetting(props) {
                             : ''}
 
                             <li>
-                                <TFA text={<>
-                                    <div className='notification uppercase'>
-                                        TWO FACTOR AUTHENTICATION
-                                    </div>
-                                </>} />
+                                <TFA  />
                             </li>
 
                             <li>

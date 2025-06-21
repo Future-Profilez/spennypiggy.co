@@ -1,8 +1,10 @@
 import { useAlerts } from '@/Components/Alerts';
+import { router, usePage } from '@inertiajs/react';
 import axios from 'axios';
-export default function RemoveBill({text, uuid, updateItems, classes}){
+export default function RemoveBill({text, uuid,   classes}){
    
    const { successAlert, errorAlert } = useAlerts();
+   const { auth } = usePage().props;
    const remove = (e) => {
       if(!uuid){ 
          return false;
@@ -10,7 +12,14 @@ export default function RemoveBill({text, uuid, updateItems, classes}){
       axios.get(`/bill/remove/${uuid}`).then((resp) => {
          if(resp.data.status){
             successAlert(resp.data.msg);
-            updateItems && updateItems()
+            router.visit(route('user.show',
+               { 
+                  username: auth.user.username,
+                  page: 'bills', 
+               }),{
+               preserveState: true,
+               preserveScroll: true,
+            });
          }else{
             errorAlert(resp.data.msg)
          }

@@ -42,7 +42,7 @@ export default function Tiplisting({ auth }) {
             aria-expanded={open}
             className="cursor-pointer trackbar"
           >
-            <div className="d-flex tip align-items-center justify-content-between">
+            <div className="flex tip items-center justify-between">
               <div className="text-dark">
                 {g.anonymous == 0 && g.sender == false ? (
                   <Avatar
@@ -72,7 +72,7 @@ export default function Tiplisting({ auth }) {
                 )}
               </div>
               <div>
-                <div className="angle-icon w-auto d-flex justify-content-end align-items-center">
+                <div className="angle-icon w-auto flex justify-content-end items-center">
                   <div>
                     {g && g.sender ? (
                       <div className="identity text-danger text-nowrap">
@@ -117,11 +117,11 @@ export default function Tiplisting({ auth }) {
           <Collapse in={open}>
             <div id="example-collapse-text" className="">
               <div className="mt-3">
-                <div className="border-top pt-3 mt-3  d-flex justify-content-between align-items-center">
+                <div className="border-top pt-3 mt-3  flex justify-between items-center">
                   <p className="mb-0 pe-2">Guest Email </p>
                   <p className="text-muted text-small">{g && g.guest_email}</p>
                 </div>
-                <div className="border-top pt-3 mt-3  d-flex justify-content-between align-items-center">
+                <div className="border-top pt-3 mt-3  flex justify-between items-center">
                   <p className="mb-0 pe-2">Guest Name </p>
                   <p className="text-muted text-small capitalize">
                     {g && g.guest_name}

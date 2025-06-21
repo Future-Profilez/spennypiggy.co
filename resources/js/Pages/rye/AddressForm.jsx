@@ -445,8 +445,8 @@ export default function AddressForm({
 
     return (
         <form onSubmit={handleSubmit} className="overflow-auto max-h-[70vh]">
-            <div className="flex flex-col align-items-center">
-                <div className="flex align-items-center">
+            <div className="flex flex-col items-center">
+                <div className="flex items-center">
                     <div
                         className={`gift-icon me-2 voilet`}
                         dangerouslySetInnerHTML={{ __html: piggy }}

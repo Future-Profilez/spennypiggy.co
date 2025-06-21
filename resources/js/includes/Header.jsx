@@ -67,9 +67,9 @@ export default function Header({classMagicword}) {
                 <div className="containerbox">
                     <div className="header flex w-full items-center  justify-between ">
                         
-                        <div className="d-none d-md-flex  leftspaces items-center justify-content-start">
+                        <div className="md:flex hidden leftspaces items-center justify-content-start">
                             <div
-                                className="  menu-toggle cursor-pointer cartLink position-relative"
+                                className=" menu-toggle cursor-pointer cartLink position-relative"
                                 onClick={toggleClass}
                             >
                                 <svg
@@ -132,10 +132,10 @@ export default function Header({classMagicword}) {
                                 </div>
                             : ""}
 
+{/* hidden md:block */}
                             <Link
                                 href={route("discover")}
-                                className="me-2 md:me-3  discover-icon"
-                            >
+                                className="me-2 md:me-3 discover-icon  " >
                                 <div className="bg-[#F94F96] rounded-full p-2 md:p-1 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
                                     <svg
                                         width="24"
@@ -169,7 +169,7 @@ export default function Header({classMagicword}) {
                                 <Link
                                     href={route("cart")}
                                     as="button"
-                                    className="cartLink d-flex me-3 position-relative" >
+                                    className="cartLink hidden me-3 position-relative  md:flex" >
                                     <div className="bg-[#F94F96] p-1 rounded-full w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
                                         <LiaShoppingCartSolid
                                             color="#ffffff"  size={32}
@@ -185,20 +185,21 @@ export default function Header({classMagicword}) {
                                     )}
                                 </Link>
                             )}
+
+
+
                             {auth?.user?.username || false ? (
                                 ""
                             ) : (
                                 <div className="hidden lg:flex gap-2">
                                     <Link
                                         href={route("login")}
-                                        // className="btn-pink sm text-uppercase bg-none px-4 mx-3 d-none d-xl-flex"
                                         className="bg-white uppercase text-lg  font-gulfs rounded-full px-4 py-2"
                                     >
                                         Login
                                     </Link>
                                     <Link
                                         href={route("register")}
-                                        // className="btn-pink sm text-uppercase bg-none px-4 mx-3 d-none d-xl-flex"
                                         className="hidden xl:block bg-[#F94F96] text-white uppercase text-lg  font-gulfs rounded-full px-4 py-2"
                                     >
                                         Sign Up{" "}
@@ -206,7 +207,7 @@ export default function Header({classMagicword}) {
                                 </div>
                             )}
                             <div
-                                className="d-block d-md-none menu-toggle cursor-pointer cartLink position-relative"
+                                className= "block md:hidden menu-toggle cursor-pointer cartLink position-relative"
                                 onClick={toggleClass}
                             >
                                 <svg
@@ -335,7 +336,7 @@ export default function Header({classMagicword}) {
                                                     </span>
                                                 </Link>
                                             </li>
-                                            <li>
+                                            {/* <li>
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={"giftstore"}
@@ -351,7 +352,7 @@ export default function Header({classMagicword}) {
                                                         Gift Store
                                                     </span>
                                                 </Link>
-                                            </li>
+                                            </li> */}
                                             <li>
                                                 <Link
                                                     onClick={toggleClass}
@@ -364,10 +365,7 @@ export default function Header({classMagicword}) {
                                                             size={"1.2rem"}
                                                         />
                                                     </span>
-                                                    <span
-                                                        class="ml-2 text-[17px]
-                            tracking-wide truncate text-white"
-                                                    >
+                                                    <span class="ml-2 text-[17px] tracking-wide truncate text-white" >
                                                         Earnings
                                                     </span>
                                                 </Link>
@@ -418,26 +416,7 @@ export default function Header({classMagicword}) {
                                         </Link>
                                     </li>
                                 </>
-                                <li>
-                                    <a
-                                        href="https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk"
-                                        class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                    >
-                                        <span class="inline-flex justify-center items-center ml-4">
-                                            <SlCalender
-                                                color="#fff"
-                                                size={"1.2rem"}
-                                            />
-                                        </span>
-                                        <span
-                                            class="ml-2 text-[17px]
-                    tracking-wide truncate text-white"
-                                        >
-                                            Subscription Billing
-                                        </span>
-                                    </a>
-                                </li>
-
+                                 
                                 {auth?.user?.username ? 
                                 '' : (
                                     <>
@@ -535,7 +514,7 @@ export default function Header({classMagicword}) {
                                 <li>
                                     <Link
                                         onClick={toggleClass}
-                                        href="https://blog.spennypiggy.co"
+                                        
                                         class="livechat relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                     >
                                         <span class="inline-flex justify-center items-center ml-4">
@@ -552,7 +531,7 @@ export default function Header({classMagicword}) {
                                 <div className="bg-[#ff87b8] h-[1px] w-full max-w-[85%] m-auto mt-3"></div>
                                 <ul className="pt-3 text-white ">
                                     <li>
-                                        <Link
+                                        <a target="_blank"
                                             onClick={toggleClass}
                                             href="https://blog.spennypiggy.co"
                                             class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
@@ -567,7 +546,7 @@ export default function Header({classMagicword}) {
                                                 class="ml-2 text-[17px] tracking-wide truncate text-white" >
                                                 Blog
                                             </span>
-                                        </Link>
+                                        </a>
                                     </li>
                                     <li>
                                         <a

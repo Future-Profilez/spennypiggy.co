@@ -81,6 +81,15 @@ Route::get('/giftstore', function () {
 //     return response()->json(['status' => 'done', 'message' => $a], 200);
 // })->name('test.stripe');
 
+Route::post('subscription-update-status', [StripeController::class, 'subscriptionUpdateStatus']);
+
+// routes/web.php or routes/api.php
+Route::post('/webhook/payment', [TestController::class, 'handle']);
+
+
+
+Route::get('delete-all-products', [TestController::class, 'deleteAllProducts'])->name('delete.all.products');
+
 
 Route::get('send-identity-verification-failed-emails', [TestController::class, 'sendFailedVerificationEmails']);
 
@@ -194,10 +203,18 @@ Route::get('/favicon-16x16.png', function () {
     ]);
 })->name('16.image.file');
 
-
 Route::get('/favicon-32x32.png', function () {
     $assetRoot = rtrim(asset("/"), "/");
     $content = file_get_contents(filename: resource_path("proxy/favicon-32x32.png"));
+    $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
+    return response($content, 200, [
+        "Content-Type" => "image/png",
+    ]);
+})->name('32.image.file');
+
+Route::get('/splashscreen.png', function () {
+    $assetRoot = rtrim(asset("/"), "/");
+    $content = file_get_contents(filename: resource_path("proxy/splash.png"));
     $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
     return response($content, 200, [
         "Content-Type" => "image/png",

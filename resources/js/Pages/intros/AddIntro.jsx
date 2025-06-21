@@ -9,18 +9,20 @@ import LoaderButton from '@/Components/LoaderButton';
 import { useEffect } from 'react';
 import wishlistbannerimg from "../../../assets/img/wishlistbannerimg.jpg";
 import { useRef } from 'react';
+import { router, usePage } from '@inertiajs/react';
 
-export default function AddIntro({IsloggedIn, uuid, text, classes, setIntroStatus}){
+export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
 
   const [open, setOpen] = useState(false);
   const [loading,setloading] = useState(false);
+  const { intro, auth } = usePage().props;
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
   const [close, setClose] = useState();
   const [clear, setClear] = useState();
   const [msgMedia, setMsgMedia] = useState(null);
   const getFileUID = async (data) => {
     setMsgMedia(data);
-  }; 
+  };
 
   const uploaderRef = useRef();
   const resetUploader = () => {
@@ -29,45 +31,28 @@ export default function AddIntro({IsloggedIn, uuid, text, classes, setIntroStatu
       }
   };
 
-  const [introVideo, setIntroVideo] = useState(null);
   const [videoLoading, setVideoLoading] = useState(false);
 
-  async function getVideo (signal) { 
-    setVideoLoading(true);
-    axios.get(`my-intro/${uuid}`, {signal}).then(resp => {
-      if(resp.data.status) { 
-        setIntroVideo(resp.data.intro);
-      }
-      setVideoLoading(false);
-    }).catch(_err => {
-        console.error("error", _err);
-        setVideoLoading(false);
-    });
-  }
-
-  useEffect(()=>{
-    const controller = new AbortController();
-    const {signal} = controller;
-    getVideo(signal)
-    return () => controller.abort();
-  },[]); 
-
-  const addVideo = () => { 
+  const addVideo = () => {
     if(msgMedia == null || undefined){
       return false;
     }
     setloading(true);
-    axios.post(`intro/save`, { "media":msgMedia }).then(resp => {
+    axios.post(`/update/intro/video`, { "media":msgMedia }).then(resp => {
       if(resp.data.status){
-          getVideo();
           successAlert(resp.data.msg);
           setClose(false);
+          resetUploader();
+          setOpen(false);
+          setMsgMedia(null);
+          router.visit(route('user.show', auth?.user?.username), {
+            method: 'get',
+            preserveScroll: true,
+          });
+          setIntroStatus && setIntroStatus(1)
           setTimeout(()=>{
             setClose();
           },1000);
-          resetUploader();
-          setOpen(false);
-          setIntroStatus && setIntroStatus(1)
       } else {
           errorAlert(resp.data.msg);
       }
@@ -78,10 +63,13 @@ export default function AddIntro({IsloggedIn, uuid, text, classes, setIntroStatu
     });
   }
 
-  const removeVideo = () => { 
+  const removeVideo = () => {
     axios.get(`intro/remove`).then(resp => {
       if(resp.data.status){
-          getVideo();
+          router.visit(route('user.show', auth?.user?.username), {
+            method: 'get',
+            preserveScroll: true,
+          });
           successAlert(resp.data.msg);
           setClose(false);
           setTimeout(()=>{
@@ -94,7 +82,6 @@ export default function AddIntro({IsloggedIn, uuid, text, classes, setIntroStatu
         console.error("error", _err);
     });
   }
-
   const ProfileIntro = () => {
     return <>
       <Popup
@@ -103,18 +90,18 @@ export default function AddIntro({IsloggedIn, uuid, text, classes, setIntroStatu
         <div className='isintro relative cursor-pointer shadow-voilet'>
           <img
           alt={"image"} useIntersectionObserver={true} effect="blur"
-          height={350} src={ introVideo && introVideo.poster_url || wishlistbannerimg} className='' width={400} />
+          height={350} src={ intro && intro.poster_url || wishlistbannerimg} className='' width={400} />
           <div className='cursor-pointer playicon' >
             <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="32" cy="32" r="32" fill="#F94F97"/>
             <path d="M40 32.0234L22.72 22.0468V42L40 32.0234Z" fill="black"/>
             </svg>
           </div>
-          {IsloggedIn && introVideo && introVideo.approved !== 1 ? <div className='text-sm mb-0 alert alert-warning text-yellow-900 w-full  absolute z-1 bottom-0 left-0 rounded p-2' >Profile intro video is waiting for approval. Currently only you can see this intro.</div> : ''}
+          {IsloggedIn && intro && intro.approved !== 1 ? <div className='text-sm mb-0   alert bg-black text-yellow-400 w-full  absolute z-1 bottom-0 left-0 rounded p-2 px-3' >Profile intro video is waiting for approval. Currently only you can see this intro.</div> : ''}
         </div>
-        </>} > 
+        </>} >
           <div className='video-payer-pop' >
-            <video playsInline='false' autoPlay src={introVideo && introVideo?.perma_link || ''} controls controlsList='nodownload' />
+            <video playsInline='false' autoPlay src={intro && intro?.perma_link || ''} controls controlsList='nodownload' />
           </div>
       </Popup>
     </>
@@ -122,26 +109,26 @@ export default function AddIntro({IsloggedIn, uuid, text, classes, setIntroStatu
 
   return (
     <div className={`pb-4 ${videoLoading ? 'd-none' : '' } `}>
-      {introVideo ? 
+      {intro ?
         <div className='position-relative'>
-          <ProfileIntro /> 
+          <ProfileIntro />
           {IsloggedIn ? <button onClick={removeVideo} className='badge bg-danger remove-story' >Remove</button> : ''}
         </div>
-        : 
+        :
         <>
-        { IsloggedIn ? 
+        { IsloggedIn ?
               <Popup modalclassName="pinkmodal sendSurprize-modal shadow-pink" space="4" size="md" action={close} classes={`${classes} w-100`}
-                text={text ? text : 
-                  <div className='cursor-pointer box shadow-voilet rounded-lg p-3 py-4 d-flex align-items-center justify-content-center' >
+                text={text ? text :
+                  <div className='cursor-pointer box shadow-voilet rounded-lg p-3 py-4 flex items-center justify-content-center' >
                     <div>
                         <div className='svg-icon m-auto d-table' >
                         <svg xmlns="http://www.w3.org/2000/svg" width="50px" height="50px" viewBox="0 0 24 24" className="stroke-green-400 fill-none group-hover:fill-green-800 group-active:stroke-green-200 group-active:fill-green-600 group-active:duration-0 duration-300"> <path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" stroke-width="1.5" ></path> <path d="M8 12H16" stroke-width="1.5"></path> <path d="M12 16V8" stroke-width="1.5"></path> </svg>
                         </div>
                         <p className='w-100 text-center mt-2' >Add Intro</p>
                     </div>
-                  </div> 
-                } 
-              >  
+                  </div>
+                }
+              >
               <div className='wrap' >
                 <h2 className="text-uppercase font-GillSans pb-1 font-large">Add Intro Video</h2>
                 <p className='text-muted mb-3' >Add a 15 to 30 sec video to introduce yourself.</p>
@@ -151,11 +138,11 @@ export default function AddIntro({IsloggedIn, uuid, text, classes, setIntroStatu
                     ref={uploaderRef} type='minimal'
                     sendFile={getFileUID}
                     options={st.profileVideo}
-                  />  
-                </div>  
+                  />
+                </div>
                 <LoaderButton onClick={addVideo}
                     disabled={loading}
-                    className="flex px-4  mb-3 btn-pink sm mx-auto"
+                    className={`${!msgMedia ? 'disabled' : ''} flex px-4  mb-3 btn-pink sm mx-auto w-full`}
                     spinnerClassName="fill-red-600" >
                     {loading ? "Adding..." : " Add Video "}
                 </LoaderButton>
@@ -167,4 +154,3 @@ export default function AddIntro({IsloggedIn, uuid, text, classes, setIntroStatu
     </div>
   )
 }
- 
