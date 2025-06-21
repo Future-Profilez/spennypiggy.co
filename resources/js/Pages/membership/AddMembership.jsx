@@ -191,7 +191,7 @@ export default function AddMembership({updateState, item, text, classes}) {
               <div className="addgoal" >
                 <h2 className="text-uppercase font-GillSans pb-4 font-large">Add Membership</h2>
 
-                    <div className="row max-h-[70vh] overflow-y-auto" >
+                    <div className="row  " >
 
                       <div className="col-md-12 form-field mb-4">
                           <label className="d-block text-start mb-2">Choose Membership Level</label>
@@ -263,7 +263,7 @@ export default function AddMembership({updateState, item, text, classes}) {
                       </div>
 
                       <button onClick={AddMembership} disabled={loading}
-                          className="flex w-100 btn-pink lg mx-auto"  >
+                          className="flex w-100 btn-pink lg mx-auto !text-center justify-center sm"  >
                         {loading ? "Processing" : "Create"}
                       </button>
 

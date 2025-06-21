@@ -5,7 +5,7 @@ import React from 'react';
 import { useState } from 'react';
 import { useRef } from 'react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
-import userphoto from "../../../assets/img/userphoto.png";
+import userphoto from "../../../assets/siteicon.png";
 
 export default function Thankyou(props) {
 

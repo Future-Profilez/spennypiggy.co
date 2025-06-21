@@ -1,233 +1,175 @@
 import { useAlerts } from "@/Components/Alerts";
 import LoaderButton from "@/Components/LoaderButton";
 import Popup from "@/Components/Popup";
-import { router, useForm, usePage } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 import axios from "axios";
-import { useEffect } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const regexValidators = {
+  twitter: /^@?(\w){1,15}$/,
+  instagram: /^@?([a-zA-Z0-9._]){1,30}$/,
+  facebook: /^(https?:\/\/)?(www\.)?facebook\.com\/[A-Za-z0-9_.-]+$/,
+  youtube: /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/,
+  twitch: /^(https?:\/\/)?(www\.)?twitch\.tv\/[A-Za-z0-9_]+$/,
+  tumblr: /^@?([a-zA-Z0-9-]){1,32}$/,
+  discord: /^.{3,32}#[0-9]{4}$/
+};
+
+const validateField = (name, value) => {
+  const regex = regexValidators[name];
+  if (!value) return ""; // no error for empty field
+  if (regex && !regex.test(value.trim())) {
+    return `Invalid ${name} format.`;
+  }
+  return "";
+};
 
 export default function AddSocial({ removetext, openSocial, sLinks, type, redirect_url }) {
-    const { auth  } = usePage().props;
-    const { successAlert, errorAlert, errorsHandling  } = useAlerts();
-    const [close, setClose] = useState();
-    const [loading, setloading] = useState(false);
+  const { auth } = usePage().props;
+  const { successAlert, errorAlert, errorsHandling } = useAlerts();
+  const [close, setClose] = useState();
+  const [loading, setloading] = useState(false);
 
-    useEffect(()=>{
-        if(openSocial == 'open'){
-            setClose(true);
+  const [data, setData] = useState({
+    instagram: sLinks?.instagram || "",
+    discord: sLinks?.discord || "",
+    facebook: sLinks?.facebook || "",
+    youtube: sLinks?.youtube || "",
+    twitch: sLinks?.twitch || "",
+    tumblr: sLinks?.tumblr || "",
+    twitter: sLinks?.twitter || "",
+  });
+
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (openSocial === "open") {
+      setClose(true);
+    }
+  }, [openSocial]);
+
+  useEffect(() => {
+    if (!sLinks) {
+      setData({
+        instagram: "",
+        discord: "",
+        facebook: "",
+        youtube: "",
+        twitch: "",
+        tumblr: "",
+        twitter: "",
+      });
+    }
+  }, [sLinks]);
+
+  const handleInput = (e) => {
+    const { name, value } = e.target;
+    const err = validateField(name, value);
+    setData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: err }));
+  };
+
+  const isFormValid = () => {
+    const hasAnyFilled = Object.values(data).some(val => val.trim() !== "");
+    const hasError = Object.values(errors).some(err => err);
+    return hasAnyFilled && !hasError;
+  };
+
+  const createSocial = (e) => {
+    e.preventDefault();
+    const isValid = isFormValid();
+    if(!isValid) {
+      errorAlert("Please fill at least one social link correctly.");
+      return false;
+    }
+    e.preventDefault();
+    setloading(true);
+    axios.post(route("save_social_links"), {
+      ...data,
+      redirect_url
+    })
+      .then((res) => {
+        setloading(false);
+        if (res.data.status) {
+          successAlert(res.data.message || "Updated successfully.");
+          setClose(false);
+          router.visit(route("user.show", auth?.user?.username), {
+            preserveScroll: true,
+          });
+          setTimeout(() => {
+            setClose();
+          }, 1000);
+        } else {
+          errorAlert(res.data.msg);
         }
-    },[openSocial])
+      })
+      .catch((err) => {
+        setloading(false);
+        errorsHandling(err);
+      });
+  };
 
-    const [data, setData] = useState({
-        instagram: sLinks?.instagram ? sLinks.instagram : "",
-        discord: sLinks?.discord ? sLinks.discord : "",
-        facebook: sLinks?.facebook ? sLinks.facebook : "",
-        youtube: sLinks?.youtube ? sLinks.youtube : "",
-        twitch: sLinks?.twitch ? sLinks.twitch : "",
-        tumblr: sLinks?.tumblr ? sLinks.tumblr : "",
-        twitter: sLinks?.twitter ? sLinks.twitter : "",
-    });
+  return (
+    <Popup
+      action={close}
+      space="4"
+      modalclass="pinkmodal full"
+      size="md"
+      classes=""
+      text={removetext ? "" : "Add Socials"}
+    >
+      <div className="editprofileModalInner">
+        <div className="swishinfo">
+          <h2 className="pb-4 font-GillSans text-xl text-uppercase">
+            Social Links
+          </h2>
+          {type === "membership" && (
+            <p className="text-yellow-500 mb-4">
+              Please add at least one social media handle. We will share your social media handles to the creator so they can chat with you.
+            </p>
+          )}
+          <form onSubmit={createSocial}>
+            <ul className="ps-0 row">
+              {[
+                { name: "twitter", label: "X (Twitter)", placeholder: "@username" },
+                { name: "instagram", label: "Instagram", placeholder: "@username" },
+                { name: "facebook", label: "Facebook", placeholder: "https://facebook.com/yourpage" },
+                { name: "youtube", label: "YouTube", placeholder: "https://youtube.com/yourchannel" },
+                { name: "twitch", label: "Twitch", placeholder: "https://twitch.tv/yourchannel" },
+                { name: "tumblr", label: "Tumblr", placeholder: "@yourname" },
+                { name: "discord", label: "Discord", placeholder: "Username#1234" },
+              ].map((field, idx) => (
+                <li className={`mb-4 ${idx < 2 ? "col-md-6" : "col-md-12"}`} key={field.name}>
+                  <label htmlFor={field.name} className="mb-2 text-start d-block">
+                    {field.label}
+                  </label>
+                  <input
+                    id={field.name}
+                    name={field.name}
+                    type="text"
+                    value={data[field.name]}
+                    placeholder={field.placeholder}
+                    className={`form-input px-2 py-2 border w-full rounded-md ${errors[field.name] ? "border-red-500" : "border-gray-300"}`}
+                    onChange={handleInput}
+                  />
+                  {errors[field.name] && (
+                    <p className="text-sm text-red-500 mt-1">{errors[field.name]}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
 
-    let nameattr, valueattr;
-    const handleInput = (e) => {
-        nameattr = e.target.name;
-        valueattr = e.target.value;
-        setData({ ...data, [nameattr]: valueattr });
-    };
-
-    useEffect(() => {
-        if(sLinks == undefined || sLinks == null){
-            setData({
-                instagram: sLinks?.instagram ? sLinks.instagram : "",
-                discord: sLinks?.discord ? sLinks.discord : "",
-                facebook: sLinks?.facebook ? sLinks.facebook : "",
-                youtube: sLinks?.youtube ? sLinks.youtube : "",
-                twitch: sLinks?.twitch ? sLinks.twitch : "",
-                tumblr: sLinks?.tumblr ? sLinks.tumblr : "",
-                twitter: sLinks?.twitter ? sLinks.twitter : "",
-            });
-        }
-    }, [sLinks]);
-
-    const createSocial = (e) => {
-        e.preventDefault();
-        const response = axios.post(route("save_social_links"), {
-            ...data,
-            redirect_url
-        });
-        response
-            .then((res) => {
-                if (res.data.status) {
-                    successAlert(res.data.message || "Updated successfully.");
-                    setClose(false);
-                    // if(res.data?.url){
-                    //     window.location.href = res.data?.url;
-                    // }
-                    router.visit(route("user.show", auth?.user?.username), {
-                        // preserveState: true, 
-                        preserveScroll: true,
-                    });
-                    setTimeout(() => {
-                        setClose();
-                    }, 1000);
-                } else {
-                    errorAlert(res.data.msg);
-                }
-            })
-            .catch((err) => {
-                console.log("err", err);
-                errorsHandling(err);
-            });
-    };
-
-    return (
-        <>
-            <Popup
-                action={close}
-                space="4"
-                modalclass="pinkmodal full"
-                size="md"
-                classes=""
-                text={removetext ? '':"Add Socials"}
+            <LoaderButton
+              disabled={loading  }
+              type="submit"
+              className="flex button sm w-100 justify-content-center p-3 text-center mx-auto"
+              spinnerClassName="fill-red-600"
             >
-                <div className="editprofileModalInner  ">
-                    <div className="swishinfo">
-
-                        <h2 className="pb-4 font-GillSans text-xl text-uppercase">
-                            Social Links
-                        </h2>
-                        {type == 'membership'  ? <p className="text-yellow-500 mb-4">
-                            Please add at least one social media handle. We will share your social media handles to the creator so they can chat with you.
-                        </p> : ''}
-                        <form onSubmit={createSocial}>
-                            <ul className=" ps-0  row">
-                                <li className="mb-4 col-md-6">
-                                    <label className="mb-2 text-start d-block">
-                                        X (Twitter)
-                                    </label>
-                                    <input
-                                        id="twitter"
-                                        name="twitter"
-                                        type="text"
-                                        placeholder="Enter username"
-                                        defaultValue={sLinks?.twitter || ""}
-                                        className="form-input px-2 py-2 border w-full rounded-md"
-                                        onChange={handleInput}
-                                    />
-                                </li>
-                                <li className="mb-4 col-md-6">
-                                    <label className="mb-2 text-start d-block">
-                                        Instagram{" "}
-                                    </label>
-                                    <input
-                                        id="instagram"
-                                        type="text"
-                                        placeholder="Enter username"
-                                        name="instagram"
-                                        defaultValue={sLinks?.instagram || ""}
-                                        className="form-input px-2 py-2 border w-full rounded-md"
-                                        onChange={handleInput}
-                                    />
-                                </li>
-                                {/* <li className="mb-4 col-md-6">
-                                <label className="mb-2 text-start d-block">Reddit</label>
-                                <input id="reddit"
-                                    name="reddit"
-                                    type="text" placeholder="Enter reddit profile url"
-                                    defaultValue={sLinks?.reddit||''}
-                                    className="form-input px-2 py-2 border w-full rounded-md"
-                                    onChange={(e) => setData('reddit', e.target.value)}
-                                />
-                            </li> */}
-
-                                <li className="mb-4 col-md-12">
-                                    <label className="mb-2 text-start d-block">
-                                        Facebook
-                                    </label>
-                                    <input
-                                        id="facebook"
-                                        name="facebook"
-                                        defaultValue={sLinks?.facebook || ""}
-                                        type="text"
-                                        placeholder={
-                                            "Enter facebook profile or page url"
-                                        }
-                                        className="form-input px-2 py-2 border w-full rounded-md"
-                                        onChange={handleInput}
-                                    />
-                                </li>
-
-                                <li className="mb-4 col-md-12">
-                                    <label className="mb-2 text-start d-block">
-                                        Youtube
-                                    </label>
-                                    <input
-                                        id="youtube"
-                                        name="youtube"
-                                        defaultValue={sLinks?.youtube || ""}
-                                        type="text"
-                                        placeholder={
-                                            "Enter channel or video url"
-                                        }
-                                        className="form-input px-2 py-2 border w-full rounded-md"
-                                        onChange={handleInput}
-                                    />
-                                </li>
-
-                                <li className="mb-4 col-md-6">
-                                    <label className="mb-2 text-start d-block">
-                                        Twitch
-                                    </label>
-                                    <input
-                                        id="twitch"
-                                        name="twitch"
-                                        defaultValue={sLinks?.twitch || ""}
-                                        type="text"
-                                        placeholder={"Enter url"}
-                                        className="form-input px-2 py-2 border w-full rounded-md"
-                                        onChange={handleInput}
-                                    />
-                                </li>
-
-                                <li className="mb-4 col-md-6">
-                                    <label className="mb-2 text-start d-block">
-                                        Tumblr
-                                    </label>
-                                    <input
-                                        id="tumblr"
-                                        name="tumblr"
-                                        defaultValue={sLinks?.tumblr || ""}
-                                        type="text"
-                                        placeholder={"Enter username"}
-                                        className="form-input px-2 py-2 border w-full rounded-md"
-                                        onChange={handleInput}
-                                    />
-                                </li>
-
-                                {/* <li className="mb-4 col-md-6">
-                                <label className="mb-2 text-start d-block">Other</label>
-                                <input id="other"
-                                    name="other"
-                                    type="text" placeholder="Enter URL"
-                                    defaultValue={sLinks?.other||''}
-                                    className="form-input px-2 py-2 border w-full rounded-md"
-                                    onChange={(e) => setData('other', e.target.value)}
-                                />
-                            </li> */}
-                            </ul>
-
-                            <LoaderButton
-                                disabled={loading}
-                                type="submit"
-                                className=" flex button sm w-100 justify-content-center p-3 text-center mx-auto"
-                                spinnerClassName="fill-red-600"
-                            >
-                                {loading ? "Processing" : "Add Social Links"}
-                            </LoaderButton>
-                        </form>
-                    </div>
-                </div>
-            </Popup>
-        </>
-    );
+              {loading ? "Processing" : "Add Social Links"}
+            </LoaderButton>
+          </form>
+        </div>
+      </div>
+    </Popup>
+  );
 }

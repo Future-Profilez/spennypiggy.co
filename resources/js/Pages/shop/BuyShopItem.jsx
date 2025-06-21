@@ -2,7 +2,7 @@ import Popup from '@/Components/Popup'
 import { Link, usePage } from '@inertiajs/react';
 import React from 'react'
 import { useState } from 'react';
-import userdefaultphoto from '../../../assets/img/userphoto.png';
+import userdefaultphoto from '../../../assets/siteicon.png';
 import axios from 'axios';
 import { useAlerts } from '@/Components/Alerts';
 import toast from 'react-hot-toast';

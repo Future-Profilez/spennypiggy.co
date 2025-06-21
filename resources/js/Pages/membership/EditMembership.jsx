@@ -74,7 +74,7 @@ const membershipBenifits = [
     'value':'weekly_video_call'
   },
 ];
-export default function EditMembership({   item }) {
+export default function EditMembership({   item, classes }) {
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
   const { auth } = usePage().props;
   const uploaderRef = useRef();
@@ -170,7 +170,7 @@ export default function EditMembership({   item }) {
     <Popup
       modalclassName="pinkmodal full sendSurprize-modal shadow-pink ps-0"
       space="4" size="md" 
-      action={close} classes={`btn-pink w-100 sm mt-3`}
+      action={close} classes={classes || `btn-pink w-100 sm mt-3`}
       text={`Edit`} >
       <div className="addgoal">
         <h2 className="text-uppercase font-GillSans pb-4 font-large">Update Membership</h2>

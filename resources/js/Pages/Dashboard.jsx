@@ -46,6 +46,7 @@ import { CiGift } from "react-icons/ci";
 import OldSubscribe from "./webpush/OldSubscribe";
 import AddSocial from "./Auth/Social";
 import CreatorVerification from "./Profile/CreatorVerification";
+import Side from "@/Components/Side";
 
 export default function Dashboard(props) {
     const w = useWidthCount();
@@ -292,6 +293,7 @@ export default function Dashboard(props) {
                 <div className="wishlistPage blackbg pt-6 pb-0 pb-sm-5 ">
                         <div className="containerbox">
                             <VersionUpdate />
+                            {/* <Side /> */}
                             <div className="wishbanner relative ">
                                 <div className="relative">
                                     <LazyLoadImage
@@ -488,7 +490,7 @@ export default function Dashboard(props) {
 
                                                                         {wishitems && wishitems.length ? (
                                                                         <>
-                                                                            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                                                            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-4">
                                                                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                                                                                     <SortableContext strategy={rectSortingStrategy} items={wishitems}>
                                                                                         {!loading && wishitems.map((c, i) => {

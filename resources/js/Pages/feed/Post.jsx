@@ -10,7 +10,7 @@ import Dropdown from 'react-bootstrap/Dropdown';
 import DropdownButton from 'react-bootstrap/DropdownButton';
 import AddPost from './AddPost';
 import {  Link, usePage } from "@inertiajs/react";
-import userphoto from "../../../assets/img/userphoto.png";
+import userphoto from "../../../assets/siteicon.png";
 import RemovePost from './RemovePost'
 
 export default function Post({item}) {

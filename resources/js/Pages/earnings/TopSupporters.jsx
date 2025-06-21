@@ -5,7 +5,7 @@ import axios from "axios";
 import * as React from "react";
 import { useEffect } from "react";
 import { useState } from "react";
-import userphoto from "../../../assets/img/userphoto.png";
+import userphoto from "../../../assets/siteicon.png";
 
 export default function TopSupporters() {
 

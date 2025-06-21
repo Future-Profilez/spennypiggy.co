@@ -8,11 +8,11 @@ export default function Billslist({IsloggedIn }) {
     return (
         <>
         {bills && bills.length ? 
-            <div className={`bills_lists row`} >
+            <div className={`grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-4`} >
                 {bills && bills.map((b, i)=>{
                     return <Bill  IsloggedIn={IsloggedIn}
                     key={`wish-item-${i}`}
-                    classes="col-xl-3 col-lg-3 col-md-4 col-6"
+                    classes=" "
                     itm={b} />
                 })}
             </div>

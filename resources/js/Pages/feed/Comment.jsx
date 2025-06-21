@@ -22,7 +22,7 @@ export default function Comment({c, update, updateComments}) {
                 <div className="w-auto rounded-xl px-2 ps-0  pb-2">
                   <div className="font-medium">
                     <a href="#" className="hover:underline text-sm">
-                      <p className='text-base font-bold' >{item.user?.name || ''}</p>
+                      <p className='text-base font-bold capitalize' >{item.user?.name || ''}</p>
                     </a>
                   </div>
                   <div className="text-small font-ligth text-gray-600">
@@ -30,14 +30,14 @@ export default function Comment({c, update, updateComments}) {
                   </div>
                 </div>
                 <div className="flex justify-start items-center text-xs w-full">
-                  <div className="font-semibold text-gray-700 pe-2 flex items-center justify-center space-x-1">
+                  <div className=" text-gray-700 pe-2 flex items-center justify-center space-x-1">
                     <button onClick={()=>sethandleReply(true)} href="#" className="hover:underline"> 
-                      <p className='text-small' >Reply</p>
+                      <p className='text-small ' >Reply</p>
                     </button>
                     <p className="self-center mx-2">.</p>
-                    <a className="hover:underline pointer-none">
+                    <p className="ppointer-none">
                       <p className='text-small' ><TimeFormat dateString={item.created_at || ''} /></p>
-                    </a>
+                    </p>
                   </div>
                 </div>
               </div>
@@ -62,7 +62,7 @@ export default function Comment({c, update, updateComments}) {
               <div className="w-auto rounded-xl px-2 ps-0  pb-2">
                 <div className="font-medium">
                   <a href="#" className="hover:underline text-sm">
-                    <p className='text-base font-bold' >{c?.user?.name || ''}</p>
+                    <p className='text-base font-bold capitalize' >{c?.user?.name || ''}</p>
                   </a>
                 </div>
                 <div className="text-small font-ligth text-gray-600">
@@ -70,12 +70,12 @@ export default function Comment({c, update, updateComments}) {
                 </div>
               </div>
               <div className="flex justify-start items-center text-xs w-full">
-                <div className="font-semibold text-gray-700 px-2 flex items-center justify-center space-x-1">
+                <div className="  text-gray-700 px-2 flex items-center justify-center space-x-1">
                   <button onClick={()=>sethandleReply(true)} href="#" className="hover:underline"> 
                     <p className='text-small' >Reply</p>
                   </button>
                   <p className="self-center mx-2">.</p>
-                  <a href="#" className="hover:underline">
+                  <a   className=" ">
                     <p className='text-small' ><TimeFormat dateString={c?.created_at || ''} /></p>
                   </a>
                 </div>

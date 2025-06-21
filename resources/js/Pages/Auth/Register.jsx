@@ -313,12 +313,12 @@ export default function Register(props) {
             {/* <IpRedirection />/ */}
             <Head title="Create Wishlist" />
             <div className='loginPage  blackbg pb-4 pb-md-5'>
-                <div className='containerbox '>
-                    <div className='loginform mt-3 mt-md-5 mx-auto border-black whbg shadow-mint'>
-
-                        <div className='loginheadbox pinkbg p-4'>
-                            <span className='mintbg '></span>
-                            <span className='bluebg '></span>
+                <div className='containerbox md:h-[75vh] md:flex !pb-4 md:!pb-12  !pt-12 items-center justify-content-center'>
+                    <div className='shadow-layout inputs max-w-[570px] w-full pink-shadow-layout mx-auto  !border-3 border-black  bg-white shadow-pink overflow-hidden'>
+                        <div className='p-4 pinkbg flex  !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>
+                            <span className=' border-black border-2 bg-red-700 me-2 w-5 h-5 rounded-full block'></span>
+                            <span className=' border-black border-2 bg-yellow-400 me-2 w-5 h-5 rounded-full block'></span>
+                            <span className=' border-black border-2 bg-mint me-2 w-5 h-5 rounded-full block'></span>
                         </div>
 
                         <h1 className='text-[30px] font-GillSans text-uppercase d-none pt-8 text-center px-2'>Create Wishlist</h1>

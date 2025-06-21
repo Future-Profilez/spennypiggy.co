@@ -13,17 +13,22 @@ const customTheme = {
     backgroundColor: 'var(--pink)',
     borderColor: '#fba8e0',
     textColor: '#ffffff',
+    fontFamily: 'poppins',
   },
   footer: {
     backgroundColor: 'var(--pink)',
     borderColor: '#fba8e0',
     textColor: '#ffffff',
+    fontFamily: 'poppins',
   },
   notification: {
     default: {
-      backgroundColor: '#fff4fc',
+      backgroundColor: '#f5f5f5',
+      // backgroundColor: '#fff4fc',
       textColor: '#3f0a43',
+      fontSize: '13px',
       borderColor: '#fcd7f6',
+      fontFamily: 'poppins',
       hover: {
         backgroundColor: '#ffeafd',
       },
@@ -32,22 +37,25 @@ const customTheme = {
       backgroundColor: '#ffe5fc',
       textColor: '#bf168d',
       borderColor: '#fba8e0',
+      fontFamily: 'poppins',
     },
   },
   branding: {
     borderRadius: '18px',
-    fontFamily: 'gulfs',
+    fontFamily: 'poppins',
     textColor: '#3f0a43',
   },
   dark: {
     header: {
       backgroundColor: '#2c002e',
       textColor: '#ffc9f3',
+      fontFamily: 'poppins',
     },
     notification: {
       default: {
         backgroundColor: '#3a003a',
         textColor: '#ffc9f3',
+        fontFamily: 'poppins',
       },
     },
   },

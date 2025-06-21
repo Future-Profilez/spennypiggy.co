@@ -84,8 +84,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
   }
   const ProfileIntro = () => {
     return <>
-      <Popup
-        modalclassName="pinkmodal shadow-pink" space="0" size="md" action={close} classes={`w-100`}
+      <Popup space="0" size="md" action={close} classes={`w-100`}
         text={<>
         <div className='isintro relative cursor-pointer shadow-voilet'>
           <img

@@ -6,7 +6,8 @@ import { useEffect } from 'react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 const LoadingScreen = React.lazy(() => import('@/includes/LoadingScreen'));
 const Nocontent = React.lazy(() => import('@/includes/Nocontent'));
-import userphoto from "../../../assets/img/userphoto.png";
+import userphoto from "../../../assets/siteicon.png";
+import Popup from '@/Components/Popup';
 
 export default function IntroVideos(props) {
 
@@ -36,37 +37,41 @@ export default function IntroVideos(props) {
         <button onClick={()=>setorder('old')} className={`${order == 'old' ? 'active' : ''}`} >Oldest</button>
     </div>
     }
+
+    const ProfileIntro = ({ data, text}) => {
+    return <>
+      <Popup space="0" size="md"  classes={`w-100`}
+        text={text} >
+            <div className='video-payer-pop' >
+              <video playsInline='false'  controlsList='nodownload' autoPlay   controls src={data && data.perma_link} />
+            </div>
+        </Popup>
+      </>
+    }
+
     
     const Intro = ({w}) => { 
-      const [open, setOpen] = useState(false);
-
-      return <div  className=' col-xl-3 col-lg-4 col-6 mb-4' >
-          <div className='introbox border-3 !border-[#F94F97] rounded-lg position-relative' >
-            <LazyLoadImage  onClick={()=>setOpen(!open)} 
-            alt={"image"} useIntersectionObserver={true} effect="blur"
-            height={360} src={ w && w?.poster_url || w?.user && w?.user?.avatar_url|| userphoto} className='' width={260} />
-            <div onClick={()=>setOpen(!open)} className='cursor-pointer playicon' >
-              <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="32" cy="32" r="32" fill="#F94F97"/>
-              <path d="M40 32.0234L22.72 22.0468V42L40 32.0234Z" fill="black"/>
-              </svg>
+      return   <ProfileIntro data={w}   text={<>
+        <div className=' ' >
+            <div className='introvideobox overflow-hidden h-[350px] rounded-[25px] border-3 !border-[#F94F97] position-relative' >
+              <LazyLoadImage   
+              alt={"image"} useIntersectionObserver={true} effect="blur"
+              height={360} src={ w && w?.poster_url || w?.user && w?.user?.avatar_url|| userphoto} className='w-full h-full object-cover' width={260} />
+              <div  className='cursor-pointer playicon ' >
+                <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="32" cy="32" r="32" fill="#F94F97"/>
+                <path d="M40 32.0234L22.72 22.0468V42L40 32.0234Z" fill="black"/>
+                </svg>
+              </div>
+              <div className='absolute bg-[#0004] bottom-0 left-0  p-3  w-100 text-white transition-colors hover:bg-[#000] ' >
+                <Link href={`/${w && w.user && w.user.username}`}  >
+                  <p className='text-lg font-GillSans hover !uppercase mb-0' >{w && w.user && w.user.name}</p>
+                  <p className='text-normal' >@{w && w.user && w.user.username}</p>
+                </Link>
+              </div>
             </div>
-            <div className='user-links w-100' >
-              <Link href={`/${w && w.user && w.user.username}`}  >
-                <p className='text-white text-normal' >{w && w.user && w.user.name}</p>
-                <p className='text-white text-normal' >@{w && w.user && w.user.username}</p>
-              </Link>
-            </div>
-
-            {open ? <div className='videoPopup-outer'>
-                <div className='videoPopup'>
-                  <video controlsList='nodownload' autoPlay playsInline={false} controls src={w && w.perma_link} />
-                  <button  onClick={()=>setOpen(!open)} className='close-btn' >&times;</button>
-                </div>
-            </div> : ''}
-
-          </div>
-      </div>
+        </div>
+      </>} />
     }
 
     return <>
@@ -92,9 +97,13 @@ export default function IntroVideos(props) {
           <div className='w-100 flex justify-content-center' ><LoadingScreen /></div>  
           :
           <>
-            {intros && intros.length ? intros.map((w, i)=> { 
-              return <Intro w={w} />
-            }) : <div className='my-5' ><Nocontent text={'No Result Found'} /></div> }
+            {intros && intros.length ? 
+            <div className='grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 lg:!gap-4' >
+              {intros.map((w, i)=> { 
+                return <Intro w={w} />
+              })}
+            </div>
+            : <div className='my-5' ><Nocontent text={'No Result Found'} /></div> }
           </>}
 
       </div>
