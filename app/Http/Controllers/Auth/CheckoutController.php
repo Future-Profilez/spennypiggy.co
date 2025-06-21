@@ -161,7 +161,12 @@ class CheckoutController extends Controller
 
             $connectedAccount = $connectedAccountId;
 
-            $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccount);
+            try {
+                $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccount);
+            } catch (\Stripe\Exception\InvalidRequestException $e) {
+                Log::error("Stripe Checkout Error: " . $e->getMessage());
+                return redirect()->back()->with('error', 'Payment failed. Please try again.');
+            }
 
             session()->forget('session_id');
             session(['session_id' => $sessionCreate->id]);

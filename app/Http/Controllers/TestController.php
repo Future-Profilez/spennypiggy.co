@@ -363,10 +363,12 @@ class TestController extends Controller
 
     public function handle(Request $request)
     {
-        Log::info("webhook run: " . json_encode($request->all()));
-        // Example of handling a request
-        $a = $request->all();
-        return response()->json(['status' => 'done', 'message' => $a], 200);
+        // Log to test if webhook is received
+        Log::info('Stripe Webhook Received', [
+            'payload' => $request->all(),
+        ]);
+
+        return response()->json(['status' => 'Webhook received'], 200);
     }
 
     // public function handleRyeProductPayment(Request $request)
