@@ -535,6 +535,9 @@ class TestController extends Controller
             'notification' => $subs->user->notification_send ?? 0
         ];
 
+        Log::info(json_encode($array));
+        Log::info("Handling membership subscription update for user: {$subs->user_id}, subscription ID: {$subscriptionId}");
+
 
         $subs->status = "ended";
         $subs->save();
