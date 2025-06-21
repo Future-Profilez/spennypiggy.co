@@ -5,7 +5,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import ProgressBar from "react-bootstrap/ProgressBar";
 import Nocontent from "@/includes/Nocontent";
 import Avatar from "@/includes/Avatar";
-import userphoto from "../../../assets/img/userphoto.png";
+import userphoto from "../../../assets/siteicon.png";
 import TweetNow from "./TweetNow";
 import { TimeFormat } from "@/includes/TimeFormat";
 const defaultsec = "https://ucarecdn.com/55965522-e075-4ef3-8afc-195dacbf267b/";

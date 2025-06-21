@@ -15,9 +15,9 @@ export default function MembershipsLists(props) {
 
   return (
     <div className='min-height'>
-      <div className='row' >
+      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 !gap-2 sm:!gap-3 md:!gap-4' >
         {memberships && memberships.length && memberships.map((m, i)=>{
-          return <div key={`membership-${i}`} className='col-lg-4 col-sm-6 mb-4' >
+          return <div key={`membership-${i}`} className=' ' >
             <Membership IsloggedIn={IsloggedIn} item={m} />
           </div>
         }) || ''}

@@ -63,10 +63,11 @@ export default function Login({ status, canResetPassword }) {
                 } else {
                     submit();
                 }
+                setLoading(true);
            } else {
                errorAlert(resp.data.msg);
+               setLoading(false);
            }
-            setLoading(false);
         }).catch((err) => {
             console.error("err", err);
         });
@@ -86,15 +87,16 @@ export default function Login({ status, canResetPassword }) {
                         Signup
                     </Link>
                 </p>
-                <div className="loginform mx-auto border-black whbg shadow-mint">
-                    <div className="loginheadbox pinkbg">
-                        <span className="mintbg"></span>
-                        <span className="bluebg"></span>
+                <div className="shadow-layout inputs max-w-[600px] pink-shadow-layout mx-auto  !border-3 border-black  bg-white shadow-pink overflow-hidden">
+                    <div className='p-4 pinkbg flex  !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>
+                        <span className=' border-black border-2 bg-red-700 me-2 w-5 h-5 rounded-full block'></span>
+                        <span className=' border-black border-2 bg-yellow-400 me-2 w-5 h-5 rounded-full block'></span>
+                        <span className=' border-black border-2 bg-mint me-2 w-5 h-5 rounded-full block'></span>
                     </div>
-                    <form onSubmit={checkTFA} >
+                    <form className='!p-4 sm:!p-6 md:!p-10' onSubmit={checkTFA} >
                         <div className='login-step1'>
                             <ul>
-                                <li className="formfield">
+                                <li className="formfield mb-6">
                                     <label>Enter Email</label>
                                     <input
                                         id="email"
@@ -109,7 +111,7 @@ export default function Login({ status, canResetPassword }) {
                                         }
                                     />
                                 </li>
-                                <l className="formfield">
+                                <li className="formfield mb-6">
                                     <label>Password</label>
                                     <input
                                         id="password"
@@ -133,17 +135,17 @@ export default function Login({ status, canResetPassword }) {
                                             </Link>
                                         </div>
                                     )}
-                                </l>
+                                </li>
                             </ul>
 
                             {/* <InputError message={errors.email} className="mt-2" />
                             <InputError message={errors.password} className="mt-2" /> */}
 
-                            <div className="rotate-btn text-center flex justify-center mt-10">
+                            <div className="  text-center flex justify-center ">
                                 {/* <button type='submit' className='btn-pink lg'>Login</button> */}
                                 <LoaderButton
                                     disabled={loading}
-                                    className="btn-pink lg2 lg w-80 mb-4 mb-md-0 max-width login"
+                                    className="btn-pink lg2 lg w-80  mb-md-0 max-width login"
                                     spinnerClassName="fill-red-600" >
                                     {loading ? "Wait" : "Log in"}
                                 </LoaderButton>

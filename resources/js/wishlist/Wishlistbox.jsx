@@ -68,9 +68,9 @@ export default function Wishlistbox(props) {
         { IsloggedIn ? <DropdownButton
           className='wishedit' id="dropdown-basic-button"
           title={<div className='dots' >
-          <span className='bg-dark' ></span>
-          <span className='bg-dark' ></span>
-          <span className='bg-dark' ></span>
+          <span className='bg-white' ></span>
+          <span className='bg-white' ></span>
+          <span className='bg-white' ></span>
         </div>}>
           <Dropdown.Item>
             <RemoveWish   uuid={itm.uuid} text="Remove Wish" />

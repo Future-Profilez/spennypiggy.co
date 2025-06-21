@@ -2,7 +2,7 @@ import axios from 'axios';
 import React from 'react'
 import { useEffect } from 'react';
 import { useState } from 'react'
-import userphoto from "../../assets/img/userphoto.png";
+import userphoto from "../../assets/siteicon.png";
 import { TimeFormat } from './TimeFormat';
 import { Link, usePage } from '@inertiajs/react';
 import { useRef } from 'react';

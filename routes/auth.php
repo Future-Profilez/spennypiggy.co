@@ -89,8 +89,12 @@ Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class,
 Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');
 Route::get('discover/creators/categories', [WishitemController::class, 'all_creators_categories'])->name('allcreators_categories');
 // Route::get('discover/creators_videos', [WishitemController::class, 'discover_creators_videos'])->name('discover_videos');save_social_links
+   Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
+            ->name('password.request');
 
+            
 Route::middleware('auth')->group(function () {
+
 
     Route::get('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     // Route::post('verify-2fa', [AuthenticatedSessionController::class, 'verify2FA'])->name('verify2FA');
@@ -289,8 +293,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity');
         Route::get('cancel-subs/{uuid}', [StripeController::class, 'cancelSubs'])->name('cancel-subs');
-        Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
-            ->name('password.request');
+     
 
         Route::get('/remove-from-cart/{uuid}', [WishitemController::class, 'removeSurpriseFromCart'])->name('remove-from-cart');
 

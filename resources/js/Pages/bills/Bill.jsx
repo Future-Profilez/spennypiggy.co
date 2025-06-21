@@ -65,12 +65,12 @@ export default function Bill(props) {
               <div className='bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full capitalize absolute bottom-3 right-3' >{itm && itm.period || "Monthly"} Subscribable </div>
               {IsloggedIn ?
                 <DropdownButton
-                className='edit-post pe-0 absolute top-5 m-1 right-3 z-1 ' id="dropdown-basic-button"
+                className='edit-post pe-0 absolute top-2 m-1 right-3 z-1 ' id="dropdown-basic-button"
                 title={
                 <div className='dots' >
-                <span className='bg-dark' ></span>
-                <span className='bg-dark' ></span>
-                <span className='bg-dark' ></span>
+                <span className='bg-white' ></span>
+                <span className='bg-white' ></span>
+                <span className='bg-white' ></span>
                 </div>}>
                    <RemoveBill classes={`px-[18px] py-2 text-start w-full`}   uuid={itm.uuid} text="Remove Bill" />
                 </DropdownButton>
@@ -83,12 +83,10 @@ export default function Bill(props) {
                     <button className='tooltipbtn' >?<p>*just not including service fee.</p></button>
                 </h5>
               </div>
-            <p className=' text-sm mt-3 text-center' >Pay bill and gain access to member only posts</p>
-            </div>
-
-            <div className='flex justify-center pb-4' >
+            <p className=' text-[12px] mt-3 text-center' >Pay bill and gain access to member only posts</p>
+            <div className='flex justify-center mt-2' >
               {IsloggedIn ?
-                  <AddBills   classes="btn-pink px-2 sm text-center w-100" text="Update Bill"
+                  <AddBills classes="pinkbg hover:opacity-[0.8] text-white   text-[13px] md:text-normal py-2 px-4 rounded-full shadow" text="Update Bill"
                   item={itm} isEdit={true} />
                 :
                 <>
@@ -96,17 +94,19 @@ export default function Bill(props) {
                   auth && auth.user !== null ?
                   <Link method='get'
                     href={route('bill.checkout',{uuid: itm.uuid})}
-                    className='pinkbg hover:opacity-[0.8] text-white font-bold text-[13px] md:text-normal py-2 px-4 rounded-full shadow' >Pay Bill</Link>
+                    className='pinkbg hover:opacity-[0.8] text-white  text-[13px] md:text-normal py-2 px-4 rounded-full shadow' >Pay Bill</Link>
                   :
                   <button
                      onClick={gotologin}
-                    className='pinkbg hover:opacity-[0.8] text-white font-bold text-[13px] md:text-normal py-2 px-4 rounded-full shadow' >Pay Bill</button>
+                    className='pinkbg hover:opacity-[0.8] text-white   text-[13px] md:text-normal py-2 px-4 rounded-full shadow' >Pay Bill</button>
 
                 }
                 </>
               }
             </div>
+            </div>
 
+        
       </div>
     </div>
   </>

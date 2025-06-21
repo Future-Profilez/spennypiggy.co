@@ -10,7 +10,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import Confetti from '@/includes/Confetti';
 import Nocontent from '@/includes/Nocontent';
-import userphoto from '../../../assets/img/userphoto.png';
+import userphoto from '../../../assets/siteicon.png';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import { useAlerts } from '@/Components/Alerts';
 import BillsTracker from './BillsTracker';

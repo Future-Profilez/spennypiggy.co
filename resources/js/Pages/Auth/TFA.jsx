@@ -144,8 +144,9 @@ export default function TFA({text}) {
                                                     security code from your autheticator app.
                                                 </li>
                                             </ul>
-                                            <button onClick={getQr}
-                                            className="border-0 pinkbg rounded-2xl px-3 py-2 text-lg text-white m-auto table w-full mt-4 " > Next</button>
+                                            <div className="flex justify-center ">
+                                            <button onClick={getQr} className="btn-pink sm !m-auto !mt-4 w-full" > Next</button>
+                                            </div>
                                         </div>
 
                                         <div className={`step1 ${step === 2 ? "visible" : "hidden"}`}>

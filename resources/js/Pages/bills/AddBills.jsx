@@ -147,11 +147,11 @@ export default function AddBills(props) {
         >
             <div className="editprofileModal  wishlistModal ">
                 <div className="editprofileModalInner">
-                    <h2 className="p-4 text-pink text-start font-GillSans uppercase text-large black-stroke font-semibold mb-1 pe-5">
+                    <h2 className="p-4 !pb-0 text-black text-start !border-0 font-GillSans uppercase text-large  mb-1 pe-5">
                         {isEdit ? "Update Bill" : "Add A Bill"}
                     </h2>
 
-                    <div className="wishinfo border-top p-4 max-h-[70vh] overflow-auto">
+                    <div className="wishinfo  p-4  ">
 
                         <form onSubmit={createBills}>
                             <ul className="ps-0">

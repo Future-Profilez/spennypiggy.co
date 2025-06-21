@@ -142,13 +142,11 @@ class User extends Authenticatable
         return $url;
     }
 
-    public function stripePaymentDetails()
-    {
+    public function stripePaymentDetails(){
         return $this->hasMany(StripePaymentDetail::class, 'owner_id');
     }
 
-    public function wishItems()
-    {
+    public function wishItems(){
         return $this->hasMany(WishItem::class, 'user_id');
         // return $this->hasManyThrough(WishItem::class, UserCategory::class, 'user_id', 'user_id', 'id', 'id');
     }
