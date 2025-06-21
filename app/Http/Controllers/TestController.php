@@ -528,8 +528,8 @@ class TestController extends Controller
         $ret = StripeControl::getSubscription($subscriptionId, $user->account_id);
 
         $array = [
-            'email' => $data->customer_email ?? $subs->guest_email,
-            'name' => $data->customer_name ?? $subs->guest_name,
+            'email' => $subs->guest_email ?? $data->customer_email,
+            'name' => $subs->guest_name ?? $data->customer_name,
             'invoice_pdf' => $data->invoice_pdf ?? null,
             'uuid' => $subs->uuid,
             'notification' => $subs->user->notification_send ?? 0
@@ -616,29 +616,6 @@ class TestController extends Controller
 
         SendRenewMail::dispatch($array, 'renew', 'main');
     }
-
-
-    // public function customerSubscriptionUpdated($data)
-    // {
-    //     $subscriptionId = $data->id;
-    //     $status = $data->status;
-    //     $metadata = $data->metadata ?? null;
-    //     $type = $metadata->type ?? null;
-    //     $currentPeriodEnd = Carbon::createFromTimestamp($data->current_period_end);
-
-    //     Log::info("Processing subscription update: {$subscriptionId}, Status: {$status}, Type: {$type}");
-    //     Log::info("Processing subscription update: {$metadata}");
-
-    //     if ($type === 'bill') {
-    //         // It's a bill subscription
-    //         $billId = $metadata->bill_id;
-    //         $billPaymentId = $metadata->bill_payment_id;
-    //     }
-    //     // Update the subscription in your database
-    //     // Example: Subscription::where('stripe_id', $subscriptionId)->update(['status' => $status, 'current_period_end' => $currentPeriodEnd]);
-
-    //     Log::info("Subscription updated: {$subscriptionId}, Status: {$status}, Current Period End: {$currentPeriodEnd}");
-    // }
 
     public function customerSubscriptionDeleted($data)
     {
