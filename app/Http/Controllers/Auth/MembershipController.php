@@ -450,11 +450,7 @@ class MembershipController extends Controller
                     ]],
                     'success_url' => route('membership.handle', ['uuid' => $sub->uuid, 'status' => 'success']),
                     'cancel_url' => route('membership.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
-                    'metadata' => [
-                        'user_id' => $user->id,
-                        'creator_id' => $membership->user->id,
-                        'membership_id' => $membership->id,
-                    ],
+
                 ];
 
                 if ($membership->level === 'lifetime') {
@@ -468,6 +464,12 @@ class MembershipController extends Controller
                     $payload['subscription_data'] = [
                         'application_fee_percent' => $applicationFeePercent,
                         'description' => "Monthly Membership for {$membership->user->username}",
+                        'metadata' => [
+                            'user_id' => $user->id,
+                            'creator_id' => $membership->user->id,
+                            'membership_id' => $membership->id,
+                            'type' => 'membership',
+                        ],
                     ];
                 }
 
@@ -686,7 +688,8 @@ class MembershipController extends Controller
 
         // $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
         // $payload = $request->getContent();
-        $endpoint_secret = env('MEMBER_SUB_WEBHOOK_SECRET');
+        // $endpoint_secret = env('MEMBER_SUB_WEBHOOK_SECRET');
+        $endpoint_secret = 'whsec_xRYw7XUOjpI2icZQ7c8YwG3y4NtiXOMG';
         $payload = @file_get_contents('php://input');
         $sig_header = $request->header('Stripe-Signature');
         $event = null;
@@ -732,7 +735,6 @@ class MembershipController extends Controller
                     'uuid' => $subs->uuid,
                     'notification' => $subs->user->notification_send ?? 0
                 ];
-
 
                 $subs->status = "ended";
                 $subs->save();

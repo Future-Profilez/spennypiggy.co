@@ -34,6 +34,6 @@ class SubscriptionCancelAtEnd implements ShouldQueue
      */
     public function handle(): void
     {
-        StripeControl::updateSubscription($this->subscription->stripe_id,['cancel_at_period_end' => true]);
+        StripeControl::updateSubscription($this->subscription->stripe_id, ['cancel_at_period_end' => true]);
     }
 }
