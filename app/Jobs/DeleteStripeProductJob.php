@@ -60,7 +60,7 @@ class DeleteStripeProductJob implements ShouldQueue
             ->update(['deleted_at' => now()]);
 
         if ($deleted) {
-            Mail::to($user->email)->queue(new ProductDeletionMail($user));
+            // Mail::to($user->email)->queue(new ProductDeletionMail($user));
             Log::info("Deleted products for user {$user->id} and sent email.");
         } else {
             Log::info("No products deleted for user {$user->id}, skipping email.");

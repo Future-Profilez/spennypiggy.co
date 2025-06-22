@@ -327,13 +327,12 @@ class TestController extends Controller
     public function deleteAllProducts()
     {
         $users = User::where([
-                ['is_uk', '=', 0],
-                ['suspended_account', '=', 0],
-            ])
+            ['is_uk', '=', 0],
+        ])
             ->whereNull('deleted_at')
             ->get();
 
-            Log::info('Total User Count: ' . $users->pluck('id')->count());
+        Log::info('Total User Count: ' . $users->pluck('id')->count());
 
 
 
