@@ -63,24 +63,30 @@ export default function Accountsetting(props) {
     return (
         <Authenticated user={user}  auth={auth.user} >
             <Head title={"My Account"} />
-            <div className='blackbg py-2 pb-md-5'>
-                <div className='accountsetting mx-auto border-mint whbg shadow-mint rounded-3xl mb-4 mb-md-5'>
-                    <div className='loginheadbox pinkbg'>
-                        <span className='mintbg'></span>
-                        <span className='bluebg'></span>
+            <div className='blackbg pt-4'>
+                <div className='accountsetting mx-auto border-3 !border-[var(--purple)] !border-black whbg shadow-pink overflow-hidden rounded-[40px] mb-4 mb-md-5'>
+                    <div className='p-4 pinkbg flex  !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>
+                        <span className=' border-black border-2 bg-red-700 me-2 w-5 h-5 rounded-full block'></span>
+                        <span className=' border-black border-2 bg-yellow-400 me-2 w-5 h-5 rounded-full block'></span>
+                        <span className=' border-black border-2 bg-mint me-2 w-5 h-5 rounded-full block'></span>
                     </div>
-                    <div className='accsettingList p-4'>
+                    <div className='accsettingList !p-6'>
                         <ul>
-                            {auth && auth?.user?.role == 1 ?
+                            {auth && auth?.user?.role == 1  ?
                                 <>
                                 {auth.user && auth.user.monthly_charge_enabled ?
-                                    <li>
+                                    <>
                                         {auth && auth.user && auth.user.stripe_details_submitted == 1 ?
-                                            <PaymentDashboard classes='w-100 text-black rounded-3  border-0 !bg-white paymentbuttons' text={<>PAYMENT DASHBOARD <span className='text-mint text-sm'>Linked</span></>} />
+                                            <li>
+                                                <PaymentDashboard classes='w-100 !bg-white !py-0 !mt-0 !text-black hover:!text-black' text={<>PAYMENT DASHBOARD <span className='text-mint text-sm'>Linked</span></>} />
+                                            </li>
                                             :
-                                            <Link href={route("stripe")} >LINK STRIPE <span className='text-voilet'>Link</span></Link>
+                                            ''
+                                            // <li>
+                                            //     <Link href={route("stripe")} >LINK STRIPE <span className='text-voilet'>Link</span></Link>
+                                            // </li>
                                         }
-                                    </li>
+                                    </>
                                  :
                                     <li>
                                         <Link href={'/activate-subscription'} >Activate Subscription  <span className='text-voilet'>Activate</span></Link>
@@ -176,7 +182,7 @@ export default function Accountsetting(props) {
                             </li>
 
                             <li>
-                                <Popup space='4' modalclassName="pinkmodal"
+                                <Popup space='4' modalclass="pinkmodal"
                                 text={<>DELETE ACCOUNT  </>} >
                                     <DeleteUserForm />
                                 </Popup >

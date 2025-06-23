@@ -46,7 +46,7 @@ body{background:#000;}
 .menuList.shows{opacity:1;transition:0.1s;}
 .menuList{opacity:0;transition:0.1s;}
 .rotate-btn a,.rotate-btn button{transform:rotate(-7deg);}
-.btn-pink-lg:focus,.btn-pink-lg:hover{box-shadow:none;transition:all ease 0.3s;}
+
 .funpart{padding:70px 0;}
 .funpart h2.headingMd{text-align:center;margin-bottom:30px;}
 .funboxs{ margin:0 auto 35px;padding:40px 100px;border-radius:30px;display:flex;align-items:center;align-content:flex-start;justify-content:space-between;text-align:left;}
@@ -86,15 +86,19 @@ body{background:#000;}
 .copyright{padding:10px 0;border-top:1px solid var(--gray);color:var(--black);font-family:var(--font-CeraGR);font-size:16px;font-style:normal;font-weight:400;line-height:250%;text-align:center;}
 .loginform{max-width:576px;}
 .loginheadbox{padding:30px 40px;border-radius:25px 25px 0 0;}
-.loginform{border-radius:30px 30px;}
 .loginheadbox .mintbg{margin:0 10px 0 0;}
 .loginheadbox .bluebg,.loginheadbox .mintbg{width:30px;height:30px;border-radius:60px;border:1px solid var(--black);display:inline-block;vertical-align:middle;}
-.loginform form{padding:40px 50px;}
 .loginform form .formfield{margin:0 0 40px;}
 .loginform form .formfield label{display:block;width:100%;color:#333;font-family:var(--parabold-font);font-size:16px;font-style:normal;font-weight:400;line-height:120%;letter-spacing:-1.26px;text-transform:uppercase;margin:0 0 10px;}
-.loginform form .formfield input,.loginform form .formfield select{border-radius:12px;border:1px solid var(--black);background:var(--white);box-shadow:4px 4px 0 0 var(--black);display:block;width:100%;padding:14px 20px;transition:all ease 0.3s;}
-.loginform form .formfield input:focus,.loginform form .formfield input:hover{outline:0;}
-.loginform form .formfield input:focus,.loginform form .formfield input:focus-within{outline:0;box-shadow:8px 8px 0 0 var(--black);transition:all ease 0.3s;}
+.inputs input,.inputs form .inputs select,
+.loginform form .formfield input,.loginform form .formfield select
+{border-radius:12px;border:1px solid var(--black);background:var(--white);box-shadow:4px 4px 0 0 var(--black);display:block;width:100%;padding:14px 20px;transition:all ease 0.3s;}
+.inputs form .formfield input:focus,.inputs form .formfield input:hover,
+.loginform form .formfield input:focus,.loginform form .formfield input:hover
+{outline:0;}
+.inputs form .formfield input:focus,.inputs form .formfield input:focus-within,
+.loginform form .formfield input:focus,.loginform form .formfield input:focus-within
+{outline:0;box-shadow:8px 8px 0 0 var(--black);transition:all ease 0.3s;}
 .wishManage{width:100%;}
 .wishbanner img{height:305px;object-fit:cover;}
 .userManageRt{width:773px;padding:0 0 0 35px;}
@@ -230,7 +234,7 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 .termselect label{color:#676767;font-size:17px;font-style:normal;letter-spacing:-0.28px;line-height:24px;}
 .termselect label input{display:inline-block;vertical-align:middle;margin:-1px 6px 0 0;}
 .accountsetting{max-width:675px;width:96%;}
-.accsettingList ul li{margin:0 0 10px;border-radius:10px;border:2px solid var(--black);background:var(--white);box-shadow:3px 3px 0 0 var(--black);}
+.accsettingList ul li{margin:0 0 10px;border-radius:15px;border:2px solid var(--black);background:var(--white);box-shadow:3px 3px 0 0 var(--black);}
 .accsettingList ul li a,.accsettingList ul li button,.notification{position:relative;display:flex;width:100% !important;padding:15px 30px 15px 15px !important;align-items:center;align-content:center;justify-content:space-between; font-family:var(--font-CeraGRBold);font-size:18px;font-style:normal;letter-spacing:-0.36px;line-height:27px;}
 .accsettingList ul li button:focus,.accsettingList ul li button:hover{background:0 0 !important;}
 .accsettingList ul li a:after,.accsettingList ul li button:after,.notification:after{content:"";position:absolute;right:15px;top:37%;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:7px solid var(--black);}
@@ -403,7 +407,7 @@ div#msgText p.valid svg path{stroke:#27b227;}
   justify-content: center;
   align-items: center;
 }
-.modal-content{border-radius:30px;}
+.modal-content{border-radius:30px; overflow: hidden;}
 .swiper-button-next,.swiper-button-prev{border-radius:10px;background:#fff;padding:10px;width:35px !important;height:35px !important;}
 .swiper-button-next:after,.swiper-button-prev:after{width:20px !important;height:20px !important;font-size:21px !important;margin-left:3px;color:#000;font-weight:bolder !important;}
 .swiper-button-prev:after{margin-left:0 !important;margin-right:3px !important;}
@@ -743,7 +747,6 @@ html body .intercom-lightweight-app-launcher{margin-bottom:70px !important;}
 .footlinks ul li a,.wishlistbtn .btn-pink.lg{font-size:16px;}
 .loginPage.py-14{padding-top:30px;}
 .loginPage h2.headingLg{font-size:40px;line-height:50px;margin-bottom:10px !important;}
-.loginform form{padding:30px;}
 .loginheadbox{padding:20px;border-radius:28px 28px 0 0;}
 .loginform{border-radius:30px;}
 .loginform form ul li input{padding:12px;border-radius:5px;}
@@ -834,7 +837,7 @@ button.cartLink svg{width:34px;height:34px;}
 .loginform form{padding:20px;}
 .pass.greybox{padding:0 !important;background:0 0;}
 .wishlistimg img{height:160px !important;}
-.btn-pink.lg,.btn-pink.lg2{padding:15px;letter-spacing:1px;font-size:16px !important;}
+
 .welcomeRt{padding:10px 0;}
 .hcaptcha-wrap{transform:scale(0.85);}
 ul.socialmedia a{font-size:15px;}

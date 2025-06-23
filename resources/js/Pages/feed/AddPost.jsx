@@ -164,7 +164,7 @@ export default function AddPost({item, text, classes, isEdit, title}) {
 
             <LoaderButton onClick={submitPost}
                 disabled={loading}
-                className={`${rewardImage == '' || rewardImage == null ? 'opacity-50 cursor-not-allowed' : ''} flex btn-pink lg mt-4 w-full `}
+                className={`${rewardImage == '' || rewardImage == null ? 'opacity-50 cursor-not-allowed' : ''}  mt-4 w-full `}
                 spinnerClassName="fill-red-600">
                 {isEdit ? 
                     loading ? "Updating.." :"Update Post" 

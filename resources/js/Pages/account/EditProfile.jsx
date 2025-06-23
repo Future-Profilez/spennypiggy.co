@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react'
-import userdefaultphoto from '../../../assets/img/userphoto.png';
+import userdefaultphoto from '../../../assets/siteicon.png';
 import coverimage from '../../../assets/img/wishlistbannerimg.jpg';
 import editicon from '../../../assets/img/editicon.png';
 import Popup from '@/Components/Popup';
@@ -75,10 +75,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         <Popup modalclass='pinkmodal editprofile full' size='md' action={close}
             text={text||<> Update Profile </>}
             classes={`${classes ? classes : "button bg-pink d-table d-sm-flex m-auto m-sm-0"}`} >
-            <div className='editprofileHead'>
-                <h2>Edit Profile</h2>
-            </div>
-            <div className='editForm max-h-[70vh] overflow-y-auto'>
+            <div className='editForm  mt-4'>
                 <div className='mainprofile mb-5 position-relative w-100 '>
                     <div className='profilePhotoImg cover'>
                         <img src={coverImage ? coverImage : (user?.cover_url || coverimage)} alt='img' />
@@ -131,8 +128,9 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                     </ul>
 
                     <div className=" text-center mb-7">
-                        <LoaderButton type='submit' disabled={processing} className='btn-pink lg m-auto' spinnerClassName='fill-red-600'>
-                            {processing ? "Updating" : "Update Profile"}
+                        <LoaderButton type='submit' disabled={processing} className='btn-pink sm m-auto'
+                         spinnerClassName='fill-red-600'>
+                            {processing ? "Updating" : "Update"}
                         </LoaderButton>
                     </div>
                 </form>

@@ -52,17 +52,19 @@ export default function ForgotPassword(props) {
                             Log In
                         </Link>
                     </p>
-                    <div className="loginform mt-4 mt-md-5 mx-auto border-black whbg shadow-mint">
-                        <div className="loginheadbox pinkbg">
-                            <span className="mintbg"></span>
-                            <span className="bluebg"></span>
-                        </div>
-                        {status && (
-                            <div className="mb-4 font-medium text-sm text-green-600">
-                                {status}
-                            </div>
-                        )}
-                        <form onSubmit={submit}>
+                    <div className="shadow-layout inputs max-w-[600px] pink-shadow-layout mx-auto  !border-3 border-black  bg-white shadow-pink overflow-hidden">
+                        <div className='p-4 pinkbg flex  !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>
+                        <span className=' border-black border-2 bg-red-700 me-2 w-5 h-5 rounded-full block'></span>
+                        <span className=' border-black border-2 bg-yellow-400 me-2 w-5 h-5 rounded-full block'></span>
+                        <span className=' border-black border-2 bg-mint me-2 w-5 h-5 rounded-full block'></span>
+                    </div>
+                        <form className="!p-4 sm:!p-6" onSubmit={submit}>
+                               
+                            {status && (
+                                <div className="mb-4 font-medium text-sm text-green-600">
+                                    {status}
+                                </div>
+                            )}
                             <div className="login-step1">
                                 <p className="text-start text-dark mb-2 text-md m-auto">
                                     Forgot your password?

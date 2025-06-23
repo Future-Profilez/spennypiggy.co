@@ -6,7 +6,7 @@ import { Link, usePage } from '@inertiajs/react';
 import Nocontent from '@/includes/Nocontent';
 import LoadingScreen from '@/includes/LoadingScreen';
 import PriceFormat from '@/includes/PriceFormat';
-import userdefaultphoto from '../../../../assets/img/userphoto.png';
+import userdefaultphoto from '../../../../assets/siteicon.png';
 import { TimeFormat } from '@/includes/TimeFormat';
 import { Menu, Transition } from '@headlessui/react'
 import { HiDotsVertical } from "react-icons/hi";
