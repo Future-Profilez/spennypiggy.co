@@ -21,12 +21,18 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use App\Jobs\SendIdentityVerificationEmail;
+use App\Jobs\SendRenewMail;
+use App\Models\BillPayment;
 use App\Models\Bills;
 use App\Models\Membership;
+use App\Models\MembershipPayment;
+use App\Models\MonthlyCharge;
 use App\Models\Shop;
+use App\Models\StripePaymentDetail;
 use App\Models\UserCart;
 use App\Models\UserVerificationStatus;
 use App\Models\WishItem;
+use App\Models\WishItemSubscription;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Client\ConnectionException;
@@ -35,6 +41,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Stripe\Stripe;
+use Stripe\Webhook;
 
 class TestController extends Controller
 {
@@ -319,13 +326,14 @@ class TestController extends Controller
      */
     public function deleteAllProducts()
     {
-        $users = User::whereIn('id', [1, 4, 11, 26, 32, 33, 34, 35, 36, 37, 44, 45])
-            ->where([
-                ['is_uk', '=', 0],
-                ['suspended_account', '=', 0],
-            ])
+        $users = User::where([
+            ['is_uk', '=', 0],
+        ])
             ->whereNull('deleted_at')
             ->get();
+
+        Log::info('Total User Count: ' . $users->pluck('id')->count());
+
 
 
         $productsGroupedByUser = [];
@@ -363,101 +371,290 @@ class TestController extends Controller
 
     public function handle(Request $request)
     {
-        // Log to test if webhook is received
-        Log::info('Stripe Webhook Received', [
-            'payload' => $request->all(),
-        ]);
+        $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
+        $payload = @file_get_contents('php://input');
+        $sig_header = $request->header('Stripe-Signature');
+        $event = null;
 
-        return response()->json(['status' => 'Webhook received'], 200);
+        try {
+            $event = Webhook::constructEvent(
+                $payload,
+                $sig_header,
+                $endpoint_secret
+            );
+        } catch (\UnexpectedValueException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+            // Invalid payload
+            http_response_code(400);
+            exit();
+        } catch (\Stripe\Exception\SignatureVerificationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+            // Invalid signature
+            http_response_code(400);
+            exit();
+        }
+
+        if (!$event || !isset($event->type)) {
+            Log::warning('Stripe webhook: invalid payload');
+            return response()->json(['error' => 'Invalid payload'], 400);
+        }
+
+        $type = $event->type;
+        $data = $event->data->object;
+
+        $metadata = $event->data->object->metadata ?? null;
+
+        switch ($type) {
+            case 'customer.subscription.updated':
+                $productType = $metadata->type ?? null;
+
+                switch ($productType) {
+                    case 'bill':
+                        Log::info("Handling Bill Subscription Update");
+                        $this->handleBillSubscriptionUpdate($data, $metadata);
+                        break;
+
+                    case 'membership':
+                        Log::info("Handling Membership Subscription Update");
+                        $this->handleMembershipSubscriptionUpdate($data, $metadata);
+                        break;
+
+                    case 'wish':
+                        Log::info("Handling Wish Subscription Update");
+                        $this->handleWishSubscriptionUpdate($data, $metadata);
+                        break;
+
+                    default:
+                        Log::warning("Unknown product type in metadata: " . json_encode($metadata));
+                        break;
+                }
+                break;
+
+            case 'customer.subscription.deleted':
+                $this->customerSubscriptionDeleted($data);
+                Log::info("Subscription canceled: " . $data->id);
+                break;
+
+            case 'customer.subscription.trial_will_end':
+                $subscriptionId = data_get($event, 'data.object.id');
+                $customerEmail = data_get($event, 'data.object.customer_email');
+                $customerName = data_get($event, 'data.object.customer_name');
+                $invoicePdf = data_get($event, 'data.object.invoice_pdf');
+
+                $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->first();
+
+                $array = [
+                    'email' => $customerEmail,
+                    'name' => $customerName,
+                    'invoice_pdf' => $invoicePdf,
+                    'uuid' => $subs->uuid,
+                    'notification' => $subs->user->notification_send ?? 0,
+                ];
+
+                SendRenewMail::dispatch($array, 'trial_ending', 'site');
+                Log::info("Trial will end soon for subscription: " . $data->id);
+                break;
+            // $this->customerSubscriptionTrialWillEnd($data);
+            default:
+                Log::info("Unhandled event type: " . $type);
+        }
+
+        return response()->json(['status' => 'success']);
     }
 
-    // public function handleRyeProductPayment(Request $request)
-    // {
-    //     $orderDetails = RyeCart::with('creator')->where(['cart_id' => $request->cart_id, 'creator_id' => $request->creator_id])->first();
-    //     if ($orderDetails) {
-    //         $amount = $orderDetails->cart['stores'][0]['cartLines'][0]['variant']['price'] ?? 0;
-    //         $currency = 'usd';
-    //         if (isset($orderDetails->cart)) {
+    public function handleBillSubscriptionUpdate($data, $metadata)
+    {
+        $subscriptionId = $data->id;
+        $status = $data->status;
+        $currentPeriodEnd = Carbon::createFromTimestamp($data->current_period_end);
 
-    //             $lineItems[] = [
-    //                 // 'price' => $dd->stripe_product_id ?? '',
-    //                 'quantity' => $orderDetails->cart['stores'][0]['cartLines'][0]['quantity'] ?? 1,
-    //                 'price_data' => [
-    //                     'currency' => 'usd',
-    //                     'product' => $orderDetails->cart['stores'][0]['cartLines'][0]['variant']['id'] ?? '',
-    //                     'unit_amount' => $orderDetails->cart['stores'][0]['cartLines'][0]['variant']['price'] ?? 0,
-    //                 ]
-    //             ];
+        $user = User::find($metadata->creator_id ?? 0);
 
-    //             //     'price_data' => [
-    //             //         'currency' => $currency,
-    //             //         'product' => $shop->stripe_product_id,
-    //             //         'unit_amount_decimal' => Helpers::priceFormat($shop->user->default_currency, $total, $currency) * 100
-    //             //     ]
-    //             // ];
+        $subs = BillPayment::where('stripe_id', $subscriptionId)->where('user_id', $metadata->user_id)->latest()->first();
 
-    //             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-    //             $sessionCreate = $stripe->checkout->sessions->create([
-    //                 'success_url' => route('rye.success.payment', [$orderDetails->uuid]),
-    //                 'cancel_url' => route('rye.cancel.payment', [$orderDetails->uuid]),
-    //                 'line_items' => $lineItems,
-    //                 'mode' => 'payment',
-    //                 'payment_method_types' => ['card'], // Add this line
-    //                 'payment_intent_data' => [
-    //                     'transfer_data' => [
-    //                         'destination' => $orderDetails->creator->account_id,
-    //                         'amount' => Helpers::priceFormat($orderDetails->user->default_currency, $amount, $currency) * 100,
-    //                     ],
-    //                     'on_behalf_of'  => $orderDetails->creator->account_id,
-    //                 ],
-    //                 'customer_email' => request()->query('email'),
-    //             ]);
+        if (!$subs) {
+            Log::warning("No active bill subscription found for stripe_id: {$subscriptionId}");
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No active bill subscription found.'
+            ], 404);
+        }
+        $ret = StripeControl::getSubscription($subscriptionId, $user->account_id);
 
-    //             // $sessionCreate = $stripe->checkout->sessions->create([
-    //             //     'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
-    //             //     'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
-    //             //     'line_items' => $lineItems,
-    //             //     'mode' => 'payment',
-    //             //     'payment_intent_data' => [
-    //             //         'transfer_data' => [
-    //             //             'destination' => $shop->user->account_id, // Creator's connected account ID
-    //             //             'amount' => Helpers::priceFormat($shop->user->default_currency, $amount, $currency) * 100,
-    //             //         ],
-    //             //         // 'application_fee_amount' => $taxNew * 100,
-    //             //         'on_behalf_of'  => $shop->user->account_id,
-    //             //     ],
-    //             //     'customer_email' =>  request()->query('email'),
-    //             //     // 'currency' => 'usd',
-    //             // ]);
+        $array = [
+            'email' => $data->customer_email,
+            'name' => $data->customer_name,
+            'invoice_pdf' => $data->invoice_pdf,
+            'uuid' => $subs->uuid,
+            'notification' => $subs->user->notification_send ?? 0
+        ];
 
-    //             $orderDetails->session_id =  $sessionCreate->id;
-    //             $orderDetails->save();
+        $subs->status = "ended";
+        $subs->save();
 
-    //             return response()->json([
-    //                 'status' => true,
-    //                 'url' => $sessionCreate->url
-    //             ]);
-    //         }
-    //     }
-    // }
+        $newSubs = new BillPayment();
+        $newSubs->stripe_id = $subs->stripe_id;
+        $newSubs->session_id = $subs->session_id;
+        $newSubs->bills_id = $subs->bills_id;
+        $newSubs->user_id = $subs->user_id;
+        $newSubs->guest_name = $subs->guest_name;
+        $newSubs->guest_email = $subs->guest_email;
+        $newSubs->currency = $subs->currency;
+        $newSubs->amount = $subs->amount;
+        $newSubs->tax = $subs->tax;
+        $newSubs->recurring_for = $subs->recurring_for;
+        $newSubs->recurring_type = $subs->recurring_type;
+        $newSubs->message = $subs->message;
+        $newSubs->anonymous = $subs->anonymous;
+        $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+        $newSubs->status = "paid";
+        $newSubs->created_at = $subs->created_at;
+        $newSubs->updated_at = Carbon::now();
+        $newSubs->save();
+
+        SendRenewMail::dispatch($array, 'renew', 'bill');
+
+        Log::info("Bill subscription updated: {$subscriptionId}, Status: {$status}");
+    }
+
+    public function handleMembershipSubscriptionUpdate($data, $metadata)
+    {
+        $subscriptionId = $data->id;
+        $status = $data->status;
+        // $currentPeriodEnd = Carbon::createFromTimestamp($data->current_period_end);
+
+        $user = User::find($metadata->creator_id ?? 0);
+
+        $subs = MembershipPayment::where('stripe_id', $subscriptionId)->where('user_id', $metadata->user_id)->latest()->first();
+
+        if (!$subs) {
+            Log::warning("No active membership subscription found for stripe_id: {$subscriptionId}");
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No active membership subscription found.'
+            ], 404);
+        }
+        $ret = StripeControl::getSubscription($subscriptionId, $user->account_id);
+
+        $array = [
+            'email' => $subs->guest_email ?? $data->customer_email,
+            'name' => $subs->guest_name ?? $data->customer_name,
+            'invoice_pdf' => $data->invoice_pdf ?? null,
+            'uuid' => $subs->uuid,
+            'notification' => $subs->user->notification_send ?? 0
+        ];
+
+        Log::info(json_encode($array));
+        Log::info("Handling membership subscription update for user: {$subs->user_id}, subscription ID: {$subscriptionId}");
+
+
+        $subs->status = "ended";
+        $subs->save();
+
+        $newSubs = new MembershipPayment();
+        $newSubs->stripe_id = $subs->stripe_id;
+        $newSubs->session_id = $subs->session_id;
+        $newSubs->membership_id = $subs->membership_id;
+        $newSubs->user_id = $subs->user_id;
+        $newSubs->guest_name = $subs->guest_name;
+        $newSubs->guest_email = $subs->guest_email;
+        $newSubs->currency = $subs->currency;
+        $newSubs->amount = $subs->amount;
+        $newSubs->tax = $subs->tax;
+        $newSubs->recurring_for = $subs->recurring_for;
+        $newSubs->recurring_type = $subs->recurring_type;
+        $newSubs->message = $subs->message;
+        $newSubs->anonymous = $subs->anonymous;
+        $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+        $newSubs->status = "paid";
+        $newSubs->created_at = $subs->created_at;
+        $newSubs->updated_at = Carbon::now();
+        $newSubs->save();
+
+        SendRenewMail::dispatch($array, 'renew', 'membership');
+
+        Log::info("Membership subscription updated: {$subscriptionId}, Status: {$status}");
+    }
+
+    public function handleWishSubscriptionUpdate($data, $metadata)
+    {
+        $subscriptionId = $data->id;
+        // $status = $data->status;
+        $currentPeriodEnd = Carbon::createFromTimestamp($data->current_period_end);
+
+        $subs = StripePaymentDetail::where('user_id', $metadata->user_id)->whereIn('payment_status', ['paid', 'pending'])->latest()->first();
+        $wish_subscription = WishItemSubscription::where('stripe_id', $subscriptionId)->where('status', 'paid')->latest()->first();
+        if (!$wish_subscription) {
+            Log::warning("No active wish subscription found for stripe_id: {$subscriptionId}");
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No active wish subscription found.'
+            ], 404);
+        }
+
+        $ret = StripeControl::getSubscription($data->id, $subs->owner->account_id);
+
+        $array = [
+            'email' => $data->customer_email,
+            'name' => $data->customer_name,
+            'invoice_pdf' => $data->invoice_pdf,
+            'uuid' => $subs->uuid,
+            'notification' => $subs->user->notification_send ?? 0
+        ];
+
+        $wish_subscription->status = "ended";
+        $wish_subscription->save();
+
+        $newSubs = new WishItemSubscription();
+        $newSubs->stripe_id = $wish_subscription->stripe_id;
+        $newSubs->session_id = $wish_subscription->session_id;
+        $newSubs->wish_item_id = $wish_subscription->wish_item_id;
+        $newSubs->user_id = $wish_subscription->user_id;
+        $newSubs->guest_name = $wish_subscription->guest_name;
+        $newSubs->guest_email = $wish_subscription->guest_email;
+        $newSubs->currency = $wish_subscription->currency;
+        $newSubs->amount = $wish_subscription->amount;
+        $newSubs->tax = $wish_subscription->tax;
+        $newSubs->recurring_for = $wish_subscription->recurring_for;
+        $newSubs->recurring_type = $wish_subscription->recurring_type;
+        $newSubs->payment_method = 'stripe';
+        $newSubs->surprise_message = $wish_subscription->surprise_message;
+        $newSubs->anonymous = $wish_subscription->anonymous;
+        $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+        $newSubs->status = "paid";
+        $newSubs->created_at = $wish_subscription->created_at;
+        $newSubs->updated_at = Carbon::now();
+        $newSubs->save();
+
+        SendRenewMail::dispatch($array, 'renew', 'main');
+    }
+
+    public function customerSubscriptionDeleted($data)
+    {
+        $subscriptionId = $data->id;
+
+        // Delete the subscription from your database
+        // Example: Subscription::where('stripe_id', $subscriptionId)->delete();
+
+        Log::info("Subscription deleted: {$subscriptionId}");
+    }
+
+    public function customerSubscriptionTrialWillEnd($data)
+    {
+        $subscriptionId = $data->id;
+        $currentPeriodEnd = Carbon::createFromTimestamp($data->current_period_end);
 
 
 
+        // Notify the user about the trial ending
+        // Example: Notification::send(User::find($data->customer), new TrialEndingNotification($subscriptionId, $currentPeriodEnd));
 
-    // public function createCart(Request $request)
-    // {
-    //     try {
-    //         $user_id = Auth::id();
-    //         RyeCart::create([
-    //             'user_id' => $user_id,
-    //             'creator_id' => $request->creator_id,
-    //             'cart_id' => $request->cart_id,
-    //             'cart_details' => json_encode($request->data, true)
-    //         ]);
-
-    //         return response()->json(['status' => 'success', 'message' => 'Added To Cart']);
-    //     } catch (Exception $e) {
-    //         return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
-    //     }
-    // }
+        Log::info("Trial will end soon for subscription: {$subscriptionId}, Current Period End: {$currentPeriodEnd}");
+    }
 }

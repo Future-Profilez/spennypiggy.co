@@ -92,7 +92,7 @@ Route::get('discover/creators/categories', [WishitemController::class, 'all_crea
    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
             ->name('password.request');
 
-            
+
 Route::middleware('auth')->group(function () {
 
 
@@ -293,7 +293,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity');
         Route::get('cancel-subs/{uuid}', [StripeController::class, 'cancelSubs'])->name('cancel-subs');
-     
+
 
         Route::get('/remove-from-cart/{uuid}', [WishitemController::class, 'removeSurpriseFromCart'])->name('remove-from-cart');
 
@@ -345,12 +345,12 @@ Route::middleware('auth')->group(function () {
 
 // subscription webhook
 
-// Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
-// Route::post('creator-monthly-verification-webhook', [StripeWebhookController::class, 'creatorMonthlyVerificationWebhook'])->name('creator.monthly.verification.webhook');
-// Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status');
-// Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-status');
-// Route::post('mandatory-status', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status');
-// Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status');
+Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
+Route::post('creator-monthly-verification-webhook', [StripeWebhookController::class, 'creatorMonthlyVerificationWebhook'])->name('creator.monthly.verification.webhook');
+Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status');
+Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-status');
+Route::post('mandatory-status', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status');
+Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status');
 
 Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
 // Route::get('user/tip-jar/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');

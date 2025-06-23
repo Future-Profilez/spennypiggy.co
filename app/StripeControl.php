@@ -385,11 +385,15 @@ class StripeControl
      * @param array $payload Update Payload
      * @return Throwable|\Stripe\Subscription
      */
-    public static function updateSubscription($productId, $payload, $accountId)
+    public static function updateSubscription($productId, $payload, $accountId = null)
     {
         self::setClient();
 
         try {
+            if (!$accountId) {
+                // If no account ID is provided, update the product directly
+                return self::$client->products->update($productId, $payload);
+            }
             return self::$client->products->update($productId, $payload, [
                 'stripe_account' => $accountId,
             ]);
@@ -412,21 +416,28 @@ class StripeControl
      * @param array $payload Update Payload
      * @return Throwable|\Stripe\Subscription
      */
-    public static function getSubscription($sub_id)
+    public static function getSubscription($sub_id, $connectedAccountId = null)
     {
         self::setClient();
+
+        $options = [];
+        if ($connectedAccountId) {
+            $options['stripe_account'] = $connectedAccountId;
+        }
+
         try {
-            return self::$client->subscriptions->retrieve($sub_id, []);
-        } catch (RateLimitException $e) {
-            throw new Exception("Stripe RateLimit: " . $e->getMessage());
-        } catch (InvalidRequestException $e) {
-            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
-        } catch (ApiConnectionException $e) {
-            throw new Exception("Stripe API Connection: " . $e->getMessage());
-        } catch (ApiErrorException $e) {
-            throw new Exception("Stripe API Error: " . $e->getMessage());
+            return self::$client->subscriptions->retrieve($sub_id, [], $options);
+        } catch (\Stripe\Exception\RateLimitException $e) {
+            throw new \Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (\Stripe\Exception\InvalidRequestException $e) {
+            throw new \Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (\Stripe\Exception\ApiConnectionException $e) {
+            throw new \Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (\Stripe\Exception\ApiErrorException $e) {
+            throw new \Exception("Stripe API Error: " . $e->getMessage());
         }
     }
+
 
 
     /**

@@ -436,13 +436,13 @@ class BillsController extends Controller
                     'subscription_data' => [
                         'application_fee_percent' => $applicationFeePercent,
                         'description' => "Recurring Bill for {$bill->user->username}",
-                    ],
-                    'metadata' => [
-                        'user_id' => $user->id,
-                        'creator_id' => $bill->user->id,
-                        'bill_id' => $bill->id,
-                        'bill_payment_id' => $sub->id, // or 'bill_payment_uuid' => $sub->uuid
-                        'type' => 'bill'
+                        'metadata' => [
+                            'user_id' => $user->id,
+                            'creator_id' => $bill->user->id,
+                            'bill_id' => $bill->id,
+                            'bill_payment_id' => $sub->id, // or 'bill_payment_uuid' => $sub->uuid
+                            'type' => 'bill'
+                        ],
                     ],
                 ];
 
