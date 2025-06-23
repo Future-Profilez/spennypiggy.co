@@ -125,15 +125,8 @@ export default function BillCheckout(props) {
                                      <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">
                                     ?
                                     <p className="absolute bg-[#505050] p-[10px] rounded-md top-[22px] right-[-18px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
-                                        <strong className="text-white font-normal">
-                                            Card Payments:
-                                        </strong>{" "}
-                                        <br />
-                                        15% Card Fees For All Payments
-                                        <br />
-                                        <br />
-                                        Administrative Fee on all Transactions -
-                                        £1
+                                        15% Card Fees and £1 administrative fee of applies to
+                                        all transactions.
                                     </p>
                                 </button>
                                 </div>

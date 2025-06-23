@@ -123,25 +123,19 @@ export default function UserCarts(props) {
                 <div className="cartMain">
                     <h2 className="pb-1 wishtitle">
                         Your Basket for {datas?.user?.name || ""}
-                        <Link
-                            className="text-voilet"
-                            href={`/${datas?.user?.username || ""}`}
-                        >
+                        <Link className="text-voilet" href={`/${datas?.user?.username || ""}`}>
                             @{datas?.user?.username || ""}
                         </Link>
                     </h2>
                     <p className="pb-4">
-                        You are about to send a payout to
-                        <strong> {datas?.user?.name || ""} </strong> to fund
-                        their lifestyle.
+                        You are about to send a payout to <strong> {datas?.user?.name || ""} </strong> to fund their lifestyle.
                     </p>
                     <div className="CartItemBox">
                         {items &&
                             items.map((c, i) => {
                                 return (
                                     <CartItem
-                                        currency={
-                                            datas?.user &&
+                                        currency={datas?.user &&
                                             datas?.user?.default_currency
                                         }
                                         quantityUpdate={quantityUpdate}
@@ -156,25 +150,12 @@ export default function UserCarts(props) {
                     <div className="cartTotal px-0 py-3">
                         <div className="cartSubTotal whitespace-nowrap text-right mt-1">
                             <span>Platform Fee :</span>{" "}
-                            <strong className="text-end">
-                                {formatMultiPrice(
-                                    fee || "",
-                                    datas?.user && datas?.user?.default_currency
-                                )}{" "}
-                                + £1.00
-                                <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">
-                                    ?
-                                    <p className="max-w-[200px] !whitespace-normal absolute bg-[#505050] p-[10px] rounded-md top-[20px] right-[-28px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
-                                        <strong className="text-white font-normal">
-                                            Card Payments:
-                                        </strong>{" "}
-                                        <br />
-                                        15% Card Fees For All Payments
-                                        <br />
-                                        <br />
-                                        An administrative fee of £1 applies to
-                                        all transactions and will be converted
-                                        to your selected currency at checkout.
+                            <strong className="text-end"> 
+                                {formatMultiPrice(fee || "",datas?.user && datas?.user?.default_currency, 'adminfee')} 
+                                <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">?
+                                    <p className="max-w-[200px] min-w-[200px] !whitespace-normal absolute bg-[#505050] p-[10px] rounded-md top-[20px] right-[-28px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
+                                        15% Card Fees and £1 administrative fee of applies to
+                                        all transactions.
                                     </p>
                                 </button>
                             </strong>
@@ -183,10 +164,7 @@ export default function UserCarts(props) {
                         <div className="cartSubTotal text-right mt-1">
                             <span>Subtotal :</span>{" "}
                             <strong className="text-end">
-                                {formatMultiPrice(
-                                    subtotal || "",
-                                    datas?.user && datas?.user?.default_currency
-                                )}
+                                {formatMultiPrice(subtotal || "",datas?.user && datas?.user?.default_currency, )}
                             </strong>
                         </div>
                         <div className="cartSubTotal text-right mt-1">

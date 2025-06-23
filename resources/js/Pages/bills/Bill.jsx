@@ -105,8 +105,6 @@ export default function Bill(props) {
               }
             </div>
             </div>
-
-        
       </div>
     </div>
   </>
