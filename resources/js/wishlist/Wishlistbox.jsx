@@ -52,9 +52,7 @@ export default function Wishlistbox(props) {
   style={IsloggedIn ? style : stylenone}  
   className={`wish-item-box !p-0 ${classes} ${isDragging ? 'dragging' : ''}`}> 
       <div  className=' rounded-3xl shadow-pinks overflow-hidden   relative border-3 md:border-4 border-[#F94F97] w-full '>
-
       {IsloggedIn && itm && itm.is_approved === 0 ?  <div className='approvalmessge membership m-2 rounded-3 p-3 py-2 mb-2 ' >Wish item waiting for approval. Currently only you can see this wish.</div> : ''}
-
         {IsloggedIn ?
         <>
           <div className='movesvg' ref={setNodeRef} {...listeners} {...attributes} >
@@ -73,10 +71,9 @@ export default function Wishlistbox(props) {
           <span className='bg-dark' ></span>
         </div>}>
           <Dropdown.Item>
-            <RemoveWish   uuid={itm.uuid} text="Remove Wish" />
+            <RemoveWish uuid={itm.uuid} text="Remove Wish" />
           </Dropdown.Item>
         </DropdownButton> : ''}
-
         <div onClick={openAddtocart} className='rounded-[12px] h-[150px] md:h-[200px] wishbox overflow-hidden cursor-pointer'>
           <LazyLoadImage
           alt={"image"} useIntersectionObserver={true} effect="blur"
