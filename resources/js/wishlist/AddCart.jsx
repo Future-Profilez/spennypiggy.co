@@ -60,10 +60,10 @@ export default function AddCart(props) {
                     Add to Cart{" "}
                 </h2>
             </div>
-            <div className="cartModimg absolute left-0 top-0">
-                <img src={giftimg} alt="img" />
-            </div>
-            <div className="bannerrr p-4">
+            {/* <div className="cartModimgs absolute left-0  w-full top-0">
+                <img src={giftimg} className="w-full" alt="img" />
+            </div> */}
+            <div className="bannerrr !rounded-none p-4">
                 <div className="cartbanner">
                     <img
                         src={item.perma_link ? item.perma_link : uploadedimg}
@@ -126,8 +126,7 @@ export default function AddCart(props) {
                             <>
                                 <div className=" pb-2">
                                     <Link
-                                        className="inline-flex items-center px-4 border
-                    border-transparentfont-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 false flex btn-pink lg w-100 mb-2 font-CeraGR  mx-auto"
+                                        className="btn-pink lg2 block text-center !w-full "
                                         href={route("wish.subscribe.checkout", {
                                             uuid: item.uuid,
                                             reccure: "onetime",
@@ -136,13 +135,7 @@ export default function AddCart(props) {
                                         OneTime Purchase
                                     </Link>
                                     <Link
-                                        className="inline-flex items-center px-4 border
-                    border-transparent text-xs text-white
-                    uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 `
-                    active:bg-gray-900 focus:outline-none focus:ring-2
-                    focus:ring-indigo-500 focus:ring-offset-2 transition
-                    ease-in-out duration-150 false flex btn-pink lg w-100
-                    mb-3 font-CeraGR  mx-auto"
+                                        className="btn-pink mt-2 mb-2 lg2 block text-center !w-full"
                                         href={route("wish.subscribe.checkout", {
                                             uuid: item.uuid,
                                         })}
@@ -168,20 +161,13 @@ export default function AddCart(props) {
                             <>
                                 <div className=" pb-2">
                                     <button
-                                        className="inline-flex items-center px-4 border
-                    border-transparentfont-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 false flex btn-pink lg w-100 mb-2 font-CeraGR  mx-auto"
+                                        className="btn-pink lg2 block text-center !w-full"
                                         onClick={() => gotologin("onetime")}
                                     >
                                         OneTime Purchase
                                     </button>
                                     <button
-                                        className="inline-flex items-center px-4 border
-                    border-transparent text-xs text-white
-                    uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 `
-                    active:bg-gray-900 focus:outline-none focus:ring-2
-                    focus:ring-indigo-500 focus:ring-offset-2 transition
-                    ease-in-out duration-150 false flex btn-pink lg w-100
-                    mb-3 font-CeraGR  mx-auto"
+                                        className="btn-pink lg2 block text-center !w-full"
                                         onClick={() => gotologin()}
                                     >
                                         Pay Every{" "}
