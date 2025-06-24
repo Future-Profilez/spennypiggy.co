@@ -87,7 +87,7 @@ export default function Wishlistbox(props) {
 
         <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative bg-white'>
           <div>
-            <h4 className={`text-lg  !text-gray-800 text-center ${itm.subscription !== '0' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>
+            <h4 className={`text-lg  !text-gray-800 text-center capitalize  ${itm.subscription !== '0' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>
             <h5 className='text-center font-bold font-poppins  text-black my-2 titleprice'>{formatMultiPrice(itm.price, itm?.currency || 'GBP')}
                 <button className='tooltipbtn' >?<p>*just not including service fee.</p></button>
             </h5>

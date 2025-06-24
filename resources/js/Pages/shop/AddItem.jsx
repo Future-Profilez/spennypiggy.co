@@ -448,8 +448,8 @@ export default function AddItem(props) {
         };
         return (
             <Popup
-            modalclass="addShopItem modal full"
-            size="lg"
+            modalclass="addShopItems modals full"
+            // size="lg"
             action={open}
             text={title || <AddItem />}
             classes={`${classes ? classes : "px-3 py-2"}`} >
