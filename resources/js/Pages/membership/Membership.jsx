@@ -104,21 +104,23 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                       </li>
                     })}
                 </ul>
-                <div className='flex justify-center items-center'>
-                  {IsloggedIn ? <EditMembership  classes='w-full pinkbg hover:opacity-[0.8] text-white  text-[13px] md:text-normal py-2 px-4 rounded-full shadow'  item={item} /> :
-                    <>
-                      {auth && auth.user !== null ?
-                        <Link className='w-full pinkbg hover:opacity-[0.8] text-white  text-[13px] md:text-normal py-2 px-4 rounded-full shadow ' method='get'
-                            href={route('membership.checkout',{uuid: item?.uuid})}>Join Now
-                        </Link>
-                        :
-                        <button className='w-full pinkbg hover:opacity-[0.8] text-white  text-[13px] md:text-normal py-2 px-4 rounded-full shadow'
-                            onClick={gotologin}>Join Now
-                        </button>
-                      }
-                    </>
-                  }
-                </div>
+                {hidebtn ? '' : <>
+                  <div className='flex justify-center items-center'>
+                    {IsloggedIn ? <EditMembership  classes='btn-pink mt-2 block text-center !w-full'  item={item} /> :
+                      <>
+                        {auth && auth.user !== null ?
+                          <Link className='btn-pink mt-2  text-center !w-full' method='get'
+                              href={route('membership.checkout',{uuid: item?.uuid})}>Join Now
+                          </Link>
+                          :
+                          <button className='btn-pink mt-2 block text-center !w-full'
+                              onClick={gotologin}>Join Now
+                          </button>
+                        }
+                      </>
+                    }
+                  </div>
+                </>}
               </div>
 
             </div>

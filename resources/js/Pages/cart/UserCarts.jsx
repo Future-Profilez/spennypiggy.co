@@ -80,7 +80,7 @@ export default function UserCarts(props) {
     };
 
     const [subtotal, setsubtotal] = useState();
-    const [fee, setFee] = useState(0.2 * subtotal);
+    const [fee, setFee] = useState(0.15 * subtotal);
 
     function updateTotals(p) {
         const value =
@@ -135,9 +135,7 @@ export default function UserCarts(props) {
                             items.map((c, i) => {
                                 return (
                                     <CartItem
-                                        currency={datas?.user &&
-                                            datas?.user?.default_currency
-                                        }
+                                        currency={datas?.user && datas?.user?.default_currency}
                                         quantityUpdate={quantityUpdate}
                                         removeCart={removeCart}
                                         data={c}
@@ -147,7 +145,16 @@ export default function UserCarts(props) {
                             })}
                     </div>
 
+
+
+                   
                     <div className="cartTotal px-0 py-3">
+                        <div className="cartSubTotal text-right mt-1">
+                            <span>Subtotal :</span>
+                            <strong className="text-end">
+                                {formatMultiPrice(subtotal || "",datas?.user && datas?.user?.default_currency)}
+                            </strong>
+                        </div>
                         <div className="cartSubTotal whitespace-nowrap text-right mt-1">
                             <span>Platform Fee :</span>{" "}
                             <strong className="text-end"> 
@@ -162,19 +169,9 @@ export default function UserCarts(props) {
                         </div>
 
                         <div className="cartSubTotal text-right mt-1">
-                            <span>Subtotal :</span>{" "}
+                            <strong className="text-dark">Total :</strong>
                             <strong className="text-end">
-                                {formatMultiPrice(subtotal || "",datas?.user && datas?.user?.default_currency, )}
-                            </strong>
-                        </div>
-                        <div className="cartSubTotal text-right mt-1">
-                            <strong className="text-dark">Total :</strong>{" "}
-                            <strong className="text-end">
-                                {formatMultiPrice(
-                                    fee + subtotal || "",
-                                    datas?.user && datas?.user?.default_currency
-                                )}{" "}
-                                + £1.00
+                                {formatMultiPrice((fee + subtotal) || "",datas?.user && datas?.user?.default_currency, 'adminfees')} 
                             </strong>
                         </div>
                     </div>

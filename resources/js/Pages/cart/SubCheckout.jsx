@@ -115,13 +115,13 @@ export default function SubCheckout(props) {
                             <div className="cartSubTotal text-right mt-1 !text-sm">
                                 <span>Platform Fee :</span>
                                 <strong className="text-end">
-                                    {formatMultiPrice(wish.tax_amount || "", wish && wish.currency)}
+                                    {formatMultiPrice(wish.tax_amount || "", wish && wish.currency, 'adminFee')}
                                 </strong>
                             </div>
                             <div className="cartSubTotal text-right mt-1">
                                 <strong className="text-dark">Total :</strong>
                                 <strong className="text-end text-black">
-                                    {formatMultiPrice(wish.tax_amount + wish.price + vat_amount || "", wish && wish.currency)}
+                                    {formatMultiPrice(wish.tax_amount + wish.price + vat_amount || "", wish && wish.currency, 'adminFee')}
                                 </strong>
                             </div>
                         </div>
