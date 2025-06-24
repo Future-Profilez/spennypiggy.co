@@ -411,7 +411,7 @@ class AuthenticatedSessionController extends Controller
         if($page == 'wishes'){
 
             if ($category) {
-                $query = WishCategory::orderBy('created_at', 'DESC');
+                $query = WishCategory::whereHas()->orderBy('created_at', 'DESC');
                 if ($category != 'all' && $category != false) {
                     $query->where('user_category_id', $category);
                 }
@@ -1123,6 +1123,6 @@ class AuthenticatedSessionController extends Controller
     }
 
 
-    
+
 
 }

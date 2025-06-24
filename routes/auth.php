@@ -95,7 +95,6 @@ Route::get('discover/creators/categories', [WishitemController::class, 'all_crea
 
 Route::middleware('auth')->group(function () {
 
-
     Route::get('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     // Route::post('verify-2fa', [AuthenticatedSessionController::class, 'verify2FA'])->name('verify2FA');
 
