@@ -492,46 +492,55 @@ class StripeControl
      * Delete Product
      *
      */
-    // public static function deleteProductAndPrices(string $productId, string $connectedAccountId)
-    // {
-    //     self::setClient();
+    public static function deleteProductAndPrices(string $productId, string $connectedAccountId)
+    {
+        self::setClient();
 
-    //     try {
-    //         // First, list all prices attached to the product
-    //         // $prices = self::$client->prices->all([
-    //         //     'product' => $productId,
-    //         //     'limit' => 100
-    //         // ], ['stripe_account' => $connectedAccountId]);
+        try {
+            // First, list all prices attached to the product
+            // Step 1: Fetch all prices of the product
+            $prices = self::$client->prices->all(
+                ['product' => $productId, 'limit' => 100],
+                // [], // no extra params
+                ['stripe_account' => $connectedAccountId]
+            );
+            Log::info('prices');
+            Log::info(json_encode($prices));
 
-    //         // Try to deactivate each price (Stripe does not allow deleting prices directly)
-    //         // foreach ($prices->data as $price) {
-    //         //     try {
-    //         //         self::$client->prices->update($price->id, [
-    //         //             'active' => false,
-    //         //         ], ['stripe_account' => $connectedAccountId]);
-    //         //     } catch (\Exception $e) {
-    //         //         // Log the error and skip to the next price
-    //         //         Log::warning("Could not deactivate price {$price->id}: " . $e->getMessage());
-    //         //         continue;
-    //         //     }
-    //         // }
+            if (empty($prices->data)) {
+                Log::info("No prices found for product {$productId}.");
+                return false; // No prices to delete
+            }
 
-    //         // Then delete the product
-    //         $delete =  self::$client->products->delete(
-    //             $productId,
-    //             ['stripe_account' => $connectedAccountId]
-    //         );
-    //         if ($delete) {
-    //             return true;
-    //         }
-    //     } catch (RateLimitException $e) {
-    //         throw new Exception("Stripe RateLimit: " . $e->getMessage());
-    //     } catch (InvalidRequestException $e) {
-    //         throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
-    //     } catch (ApiConnectionException $e) {
-    //         throw new Exception("Stripe API Connection: " . $e->getMessage());
-    //     } catch (ApiErrorException $e) {
-    //         throw new Exception("Stripe API Error: " . $e->getMessage());
-    //     }
-    // }
+            // Step 2: Deactivate each price
+            foreach ($prices->data as $price) {
+                try {
+                    self::$client->prices->update(
+                        $price->id,
+                        ['active' => false],
+                        ['stripe_account' => $connectedAccountId]
+                    );
+                } catch (\Exception $e) {
+                    Log::warning("Failed to deactivate price {$price->id}: " . $e->getMessage());
+                }
+            }
+
+            // Step 3: Now delete the product
+            $deleted = self::$client->products->delete(
+                $productId,
+                [],
+                ['stripe_account' => $connectedAccountId]
+            );
+
+            return $deleted->deleted ?? false;
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
 }

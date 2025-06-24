@@ -535,6 +535,13 @@ class WishitemController extends Controller
 
         WishItemSubscription::where('wish_item_id', $wishitem->id)->delete();
 
+        $stripeProduct = StripeControl::getProduct($wishitem->stripe_product_id, $wishitem->user->account_id);
+        Log::info("Stripe Product: " . json_encode($stripeProduct));
+        if ($stripeProduct) {
+            // Delete the product and prices from Stripe
+            $check = StripeControl::deleteProductAndPrices($wishitem->stripe_product_id, $wishitem->user->account_id);
+            Log::info("Stripe Product: " . json_encode($check));
+        }
         // StripeControl::deleteProductAndPrices($wishitem->stripe_product_id, $wishitem->user->account_id);
 
         $wishitem->delete();
@@ -682,6 +689,9 @@ class WishitemController extends Controller
     public function all_creators_categories()
     {
         $categories = User::whereNotNull('creator_category')
+            ->whereHas('wishItems', function ($query) {
+                $query->where('is_approved', 1);
+            })
             ->where('is_uk', 0)
             ->where('suspended_account', 0)
             ->pluck('creator_category')

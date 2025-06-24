@@ -326,13 +326,14 @@ class TestController extends Controller
      */
     public function deleteAllProducts()
     {
-        $users = User::whereIn('id', [1, 4, 11, 26, 32, 33, 34, 35, 36, 37, 44, 45])
-            ->where([
-                ['is_uk', '=', 0],
-                ['suspended_account', '=', 0],
-            ])
+        $users = User::where([
+            ['is_uk', '=', 0],
+        ])
             ->whereNull('deleted_at')
             ->get();
+
+        Log::info('Total User Count: ' . $users->pluck('id')->count());
+
 
 
         $productsGroupedByUser = [];
@@ -370,7 +371,7 @@ class TestController extends Controller
 
     public function handle(Request $request)
     {
-        $endpoint_secret = 'whsec_xRYw7XUOjpI2icZQ7c8YwG3y4NtiXOMG';
+        $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
         $payload = @file_get_contents('php://input');
         $sig_header = $request->header('Stripe-Signature');
         $event = null;
@@ -477,6 +478,13 @@ class TestController extends Controller
 
         $subs = BillPayment::where('stripe_id', $subscriptionId)->where('user_id', $metadata->user_id)->latest()->first();
 
+        if (!$subs) {
+            Log::warning("No active bill subscription found for stripe_id: {$subscriptionId}");
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No active bill subscription found.'
+            ], 404);
+        }
         $ret = StripeControl::getSubscription($subscriptionId, $user->account_id);
 
         $array = [
@@ -519,13 +527,13 @@ class TestController extends Controller
     {
         $subscriptionId = $data->id;
         $status = $data->status;
-        $currentPeriodEnd = Carbon::createFromTimestamp($data->current_period_end);
+        // $currentPeriodEnd = Carbon::createFromTimestamp($data->current_period_end);
 
         $user = User::find($metadata->creator_id ?? 0);
 
         $subs = MembershipPayment::where('stripe_id', $subscriptionId)->where('user_id', $metadata->user_id)->latest()->first();
 
-        if(!$subs) {
+        if (!$subs) {
             Log::warning("No active membership subscription found for stripe_id: {$subscriptionId}");
             return response()->json([
                 'status' => 'error',
