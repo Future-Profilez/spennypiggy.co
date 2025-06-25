@@ -291,6 +291,14 @@ class MembershipController extends Controller
         }
 
         MembershipPayment::where('membership_id', $mem->id)->delete();
+
+        $stripeProduct = StripeControl::getProduct($mem->product_id, $mem->user->account_id);
+        // dd($stripeProduct);
+        if ($stripeProduct) {
+            // Delete the product and prices from Stripe
+            StripeControl::deleteProductAndPrices($stripeProduct->id, $mem->user->account_id);
+        }
+
         $mem->delete();
 
         return response()->json([

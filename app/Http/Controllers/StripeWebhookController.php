@@ -176,9 +176,9 @@ class StripeWebhookController extends Controller
 
                 switch ($event->type) {
                     case "customer.subscription.trial_will_end":
-                        // $subs->status = "paid";
-                        // $subs->save();
-                        SendRenewMail::dispatch($array, 'trial_ending', 'site');
+                        $subs->status = "trial";
+                        $subs->save();
+                        SendRenewMail::dispatch($array, 'trial', 'site');
                         break;
 
                     case "invoice.paid":

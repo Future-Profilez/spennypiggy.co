@@ -11,6 +11,7 @@ use App\Jobs\MonthlySubscribedJob;
 use App\Jobs\MonthlySubscribedJobs;
 use App\Jobs\MonthlySubscriptionFailedJobs;
 use App\Jobs\NotificationSave;
+use App\Jobs\SendMailSubscriptions;
 use App\Jobs\SendPaymentSuccessEmail;
 use App\Jobs\SendRenewMail;
 use App\Jobs\SubscribeAutoTweet;
@@ -1418,6 +1419,17 @@ class StripeController extends Controller
         $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
 
         $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        if (!$user->account_id) {
+            $customer = StripeControl::createCustomer([
+                'email' => $user->email,
+                'name' => $user->name,
+            ], '');
+
+            $customer_id = $customer->id;
+            $user->account_id = $customer_id;
+            $user->save();
+        }
+
         $sub = MonthlyCharge::create([
             'user_id'   =>  $user->id,
             'name'      =>  $user->name ?? NULL,
@@ -1503,6 +1515,7 @@ class StripeController extends Controller
                     $user->save();
                 }
 
+
                 MonthlySubscribedJob::dispatch($sub->email, $sub, 'success');
 
                 return to_route('user.show', ['username' => $sub->user->username])->with('success', "Subscription Success!");
@@ -1550,6 +1563,11 @@ class StripeController extends Controller
         if (!empty($event)) {
             $eventType = $event->type;
             $object = $event->data->object;
+            $subscription = $event['data']['object'];
+
+            $trialStart = Carbon::createFromTimestamp($subscription['trial_start'])->toDateTimeString();
+            $trialEnd = Carbon::createFromTimestamp($subscription['trial_end'])->toDateTimeString();
+
 
             $customer_id = $object->customer ?? null;
             $customer = Customer::retrieve($customer_id);
@@ -1580,28 +1598,25 @@ class StripeController extends Controller
 
                 switch ($eventType) {
                     case "customer.subscription.trial_will_end":
-                        $subs->status = "trial_ending";
+                        $subs->status = "trial";
                         $subs->save();
-                        SendRenewMail::dispatch($array, 'trial_ending', 'site');
+                        SendRenewMail::dispatch($array, 'trial', 'site');
                         break;
                     case "invoice.payment_succeeded":
-                        if ($subs->status != 'paid') {
-                            $periodEnd = data_get($object, 'lines.data.0.period.end');
-                            $subs->upcoming_payment = $periodEnd ? Carbon::createFromTimestamp($periodEnd)->format('Y-m-d H:i:s') : null;
-                            $subs->status = "paid";
-                            $subs->save();
+                        // if ($subs->status != 'paid') {
+                        $periodEnd = data_get($object, 'lines.data.0.period.end');
+                        $subs->upcoming_payment = $periodEnd ? Carbon::createFromTimestamp($periodEnd)->format('Y-m-d H:i:s') : null;
+                        $subs->current_start_trial_date = $trialStart;
+                        $subs->current_end_trial_date = $trialEnd;
+                        $subs->status = "paid";
+                        $subs->save();
 
-                            $planAmount = data_get($object, 'lines.data.0.plan.amount', 0);
-                            $planCurrency = strtoupper(data_get($object, 'lines.data.0.plan.currency', 'usd'));
-                            $amount = $planAmount / 100;
+                        $planAmount = data_get($object, 'lines.data.0.plan.amount', 0);
+                        $planCurrency = strtoupper(data_get($object, 'lines.data.0.plan.currency', 'usd'));
+                        $amount = $planAmount / 100;
 
-                            dispatch(new SendPaymentSuccessEmail(
-                                $subs->user,
-                                $amount,
-                                $planCurrency,
-                                $subs->upcoming_payment
-                            ));
-                        }
+                        SendPaymentSuccessEmail::dispatch($subs->user, $amount, $planCurrency, $subs->upcoming_payment);
+                        // }
                         break;
 
                     case "invoice.payment_failed":
