@@ -536,17 +536,14 @@ class WishitemController extends Controller
         WishItemSubscription::where('wish_item_id', $wishitem->id)->delete();
 
         $stripeProduct = StripeControl::getProduct($wishitem->stripe_product_id, $wishitem->user->account_id);
-        Log::info("Stripe Product: " . json_encode($stripeProduct));
+
         if ($stripeProduct) {
             // Delete the product and prices from Stripe
-            $check = StripeControl::deleteProductAndPrices($wishitem->stripe_product_id, $wishitem->user->account_id);
-            Log::info("Stripe Product: " . json_encode($check));
+            StripeControl::deleteProductAndPrices($stripeProduct->id, $wishitem->user->account_id);
         }
         // StripeControl::deleteProductAndPrices($wishitem->stripe_product_id, $wishitem->user->account_id);
 
         $wishitem->delete();
-
-
 
         return response()->json([
             'status' => true,

@@ -6,7 +6,7 @@ $messages = [
 'renew' => ['text' => 'Renewed', 'desc' => 'renewed successfully'],
 'failed' => ['text' => 'Failed', 'desc' => 'failed'],
 'cancel' => ['text' => 'Cancelled', 'desc' => 'cancelled'],
-'trial_ending' => ['text' => 'Trial Ending Soon', 'desc' => 'ending soon'],
+'trial' => ['text' => 'Trial Ending Soon', 'desc' => 'ending soon'],
 ];
 
 $status = $messages[$type] ?? ['text' => 'Status', 'desc' => 'updated'];
@@ -19,6 +19,7 @@ $status = $messages[$type] ?? ['text' => 'Status', 'desc' => 'updated'];
         </a>
     </td>
 </tr>
+
 <tr>
     <td align="center" style="padding:10px 10px 20px 10px;">
         <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 296px; width: 100%; text-align: center;">
@@ -47,10 +48,24 @@ $status = $messages[$type] ?? ['text' => 'Status', 'desc' => 'updated'];
                 </td>
             </tr>
 
+            @if($type == 'trial')
+            <tr>
+                <td style="padding: 0 0 20px 0; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
+                    Your trial will end on <strong>{{ \Carbon\Carbon::parse($data['trial_end'])->format('F j, Y') }}</strong>. <br>
+                    After this date, you will be automatically charged <strong>${{ number_format($data['amount'] / 100, 2) }} {{ strtoupper($data['currency']) }}</strong> using your default payment method.
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 0 0 20px 0; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
+                    To avoid this charge, make sure to cancel your subscription before the trial ends.
+                </td>
+            </tr>
+            @endif
+
             @if(isset($data['invoice_pdf']))
             <tr>
                 <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                    You can see your latest invoice and manage your subscription using the link below 🔗
+                    You can view your upcoming invoice and manage your subscription using the link below 🔗
                 </td>
             </tr>
             <tr>

@@ -61,6 +61,10 @@ class StripeControl
     {
         self::setClient();
         try {
+            if (!$connectedAccountId) {
+                // If no connected account ID is provided, create the customer directly
+                return self::$client->customers->create($payload);
+            }
             return self::$client->customers->create(
                 $payload,
                 ['stripe_account' => $connectedAccountId]
@@ -342,6 +346,7 @@ class StripeControl
      */
     public static function getProduct(string $productId, string $connectedAccountId)
     {
+        // $stripe = new StripeClient(env("STRIPE_SECRET_KEY"));
         self::setClient();
 
         return self::$client->products->retrieve(
@@ -494,53 +499,119 @@ class StripeControl
      */
     public static function deleteProductAndPrices(string $productId, string $connectedAccountId)
     {
-        self::setClient();
+        $client = new StripeClient(env("STRIPE_SECRET_KEY"));
 
         try {
-            // First, list all prices attached to the product
-            // Step 1: Fetch all prices of the product
-            $prices = self::$client->prices->all(
+            // 1. Fetch all prices for the product
+            $prices = $client->prices->all(
                 ['product' => $productId, 'limit' => 100],
-                // [], // no extra params
                 ['stripe_account' => $connectedAccountId]
             );
-            Log::info('prices');
-            Log::info(json_encode($prices));
 
-            if (empty($prices->data)) {
-                Log::info("No prices found for product {$productId}.");
-                return false; // No prices to delete
-            }
-
-            // Step 2: Deactivate each price
             foreach ($prices->data as $price) {
-                try {
-                    self::$client->prices->update(
-                        $price->id,
-                        ['active' => false],
-                        ['stripe_account' => $connectedAccountId]
-                    );
-                } catch (\Exception $e) {
-                    Log::warning("Failed to deactivate price {$price->id}: " . $e->getMessage());
+                // 2. Cancel all subscriptions using this price
+                $cancelSubscription = self::cancelSubscriptionsByPrice($client, $price->id, $connectedAccountId);
+                Log::info("Cancelled subscriptions for price: ");
+                Log::info(json_encode($cancelSubscription));
+                // 3. Deactivate the price if active
+                if ($price->active) {
+                    try {
+                        $updated = $client->prices->update(
+                            $price->id,
+                            ['active' => false],
+                            ['stripe_account' => $connectedAccountId]
+                        );
+
+                        Log::info($updated->active
+                            ? "Price still active after update: {$price->id}"
+                            : "Deactivated price: {$price->id}");
+                    } catch (\Exception $e) {
+                        Log::error("Failed to deactivate price {$price->id}: " . $e->getMessage());
+                    }
                 }
             }
 
-            // Step 3: Now delete the product
-            $deleted = self::$client->products->delete(
-                $productId,
-                [],
+            // 4. Optionally delete the product
+            try {
+                $updated = $client->products->update(
+                    $productId,
+                    ['active' => false],
+                    ['stripe_account' => $connectedAccountId]
+                );
+
+                return $updated->active === false;
+            } catch (\Exception $e) {
+                Log::error("Failed to archive product: " . $e->getMessage());
+                return false;
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error("Stripe Error in deleteProductAndPrices: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private static function cancelSubscriptionsByPrice(StripeClient $client, string $priceId, string $connectedAccountId)
+    {
+        try {
+            // Step 1: Get all subscriptions (paginated if needed)
+            $subscriptions = $client->subscriptions->all(
+                ['limit' => 100], // consider using pagination for more
                 ['stripe_account' => $connectedAccountId]
             );
 
-            return $deleted->deleted ?? false;
-        } catch (RateLimitException $e) {
-            throw new Exception("Stripe RateLimit: " . $e->getMessage());
-        } catch (InvalidRequestException $e) {
-            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
-        } catch (ApiConnectionException $e) {
-            throw new Exception("Stripe API Connection: " . $e->getMessage());
-        } catch (ApiErrorException $e) {
-            throw new Exception("Stripe API Error: " . $e->getMessage());
+            $startingAfter = null;
+
+            do {
+                $params = ['limit' => 100, 'status' => 'active'];
+                if ($startingAfter) {
+                    $params['starting_after'] = $startingAfter;
+                }
+
+                $subscriptions = $client->subscriptions->all($params, ['stripe_account' => $connectedAccountId]);
+
+                foreach ($subscriptions->data as $subscription) {
+                    $startingAfter = $subscription->id;
+
+                    foreach ($subscription->items->data as $item) {
+                        if ($item->price->id === $priceId) {
+                            try {
+                                $client->subscriptions->cancel(
+                                    $subscription->id,
+                                    [],
+                                    ['stripe_account' => $connectedAccountId]
+                                );
+                                Log::info("Cancelled subscription: {$subscription->id}");
+                                break;
+                            } catch (\Exception $e) {
+                                Log::error("Failed to cancel subscription {$subscription->id}: " . $e->getMessage());
+                            }
+                        }
+                    }
+                }
+            } while ($subscriptions->has_more);
+
+            // // Step 2: Filter subscriptions using this price ID
+            // foreach ($subscriptions->data as $subscription) {
+            //     foreach ($subscription->items->data as $item) {
+            //         if ($item->price->id === $priceId) {
+            //             try {
+            //                 $client->subscriptions->cancel(
+            //                     $subscription->id,
+            //                     [],
+            //                     ['stripe_account' => $connectedAccountId]
+            //                 );
+            //                 Log::info("Cancelled subscription: {$subscription->id}");
+            //                 break; // skip to next subscription
+            //             } catch (\Exception $e) {
+            //                 Log::error("Failed to cancel subscription {$subscription->id}: " . $e->getMessage());
+            //             }
+            //         }
+            //     }
+            // }
+        } catch (\Exception $e) {
+            Log::error("Failed to retrieve subscriptions: " . $e->getMessage());
         }
     }
 }

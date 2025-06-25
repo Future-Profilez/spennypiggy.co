@@ -207,7 +207,6 @@ Route::middleware('auth')->group(function () {
                 return Inertia::render('Profile/ActivateSubscription');
             })->name('activate-subscription');
 
-
             Route::post('/dalle-image', [ProfileController::class, 'getImageGenerateAI'])->name('dalle.image');
             Route::post('/upload-dalle-image', [ProfileController::class, 'uploadDalleImage'])->name('upload.dalle.image');
         });
@@ -340,7 +339,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/update-profile-lock-status', [ProfileController::class, 'updateProfileLockStatus'])->name('update.profile.lock.status');
     });
 });
-
 
 // subscription webhook
 

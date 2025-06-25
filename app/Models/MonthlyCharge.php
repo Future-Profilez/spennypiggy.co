@@ -21,8 +21,16 @@ class MonthlyCharge extends Model
         'currency',
         'amount',
         'tax',
-        'end',
+        'current_start_trial_date',
+        'current_end_trial_date',
+        'current_start_subscription_date',
+        'current_end_subscription_date',
         'upcoming_payment',
+    ];
+
+    protected $casts = [
+        'current_start_subscription_date' => 'date',
+        'current_end_subscription_date' => 'date',
     ];
 
     public static function boot()

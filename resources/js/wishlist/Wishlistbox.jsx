@@ -16,15 +16,15 @@ import { CSS } from '@dnd-kit/utilities';
 import RemoveWish from './RemoveWish';
 
 export default function Wishlistbox(props) {
-   
+
   const { format, formatMultiPrice } = PriceFormat();
   const { currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped, classes, showall, key } = props;
   const { attributes, listeners, isDragging, index, over, setNodeRef, transform, transition } = useSortable({ id: itm && itm.id });
-  
-  const style = { 
+
+  const style = {
     transform: CSS.Translate.toString(transform)
   };
-  const stylenone = { 
+  const stylenone = {
     transform: '',
   };
 
@@ -48,9 +48,9 @@ export default function Wishlistbox(props) {
     return r.toFixed(1);
   }
 
-  return <div key={key} 
-  style={IsloggedIn ? style : stylenone}  
-  className={`wish-item-box !p-0 ${classes} ${isDragging ? 'dragging' : ''}`}> 
+  return <div key={key}
+  style={IsloggedIn ? style : stylenone}
+  className={`wish-item-box !p-0 ${classes} ${isDragging ? 'dragging' : ''}`}>
       <div  className=' rounded-3xl shadow-pinks overflow-hidden   relative border-3 md:border-4 border-[#F94F97] w-full '>
       {IsloggedIn && itm && itm.is_approved === 0 ?  <div className='approvalmessge membership m-2 rounded-3 p-3 py-2 mb-2 ' >Wish item waiting for approval. Currently only you can see this wish.</div> : ''}
         {IsloggedIn ?
@@ -62,7 +62,7 @@ export default function Wishlistbox(props) {
         </>
           :
           <AddCart showall={showall} currency={currency} IsloggedIn={IsloggedIn} auth={auth} item={itm} uuid={itm.uuid} action={open} />
-        } 
+        }
         { IsloggedIn ? <DropdownButton
           className='wishedit' id="dropdown-basic-button"
           title={<div className='dots' >
@@ -78,7 +78,7 @@ export default function Wishlistbox(props) {
           <LazyLoadImage
           alt={"image"} useIntersectionObserver={true} effect="blur"
           height={193} className='rounded-t-3xl block w-full h-full object-cover'
-          src={itm?.perma_link ? itm?.perma_link : uploadedimg}  
+          src={itm?.perma_link ? itm?.perma_link : uploadedimg}
           width={243} />
         </div>
 
@@ -95,7 +95,7 @@ export default function Wishlistbox(props) {
             <p className='mt-1 mb-0 text-small text-center' >{getPercentage(itm.price, itm.fullfill_amount)}% granted</p>
             </div>
           : '' }
-          
+
           {itm && itm.subscription == '1' ? <div class="bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full absolute top-[-35px] right-2">Subscribable</div> : ''}
           <div class="absolute top-1 left-1 text-xl">👀</div>
           <div class="absolute bottom-2 right-2 text-xl">⭐</div>
@@ -112,7 +112,7 @@ export default function Wishlistbox(props) {
 
 
 // <div class="bg-white rounded-3xl shadow-pink  sshadow-lg relative border-2 border-[#F94F97] w-full max-w-[250px]">
-                                                 
+
 
 //                                                 <div class="flex justify-center ">
 //                                                     <img src="https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/" alt="Piggy Bank Illustration" class="w-full rounded-[20px]" />

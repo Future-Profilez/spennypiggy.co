@@ -242,8 +242,6 @@ class BillsController extends Controller
         ]);
     }
 
-
-
     public function removeBill($uuid)
     {
 
@@ -251,6 +249,13 @@ class BillsController extends Controller
 
         if (!empty($bill)) {
             BillPayment::where('bills_id', $bill->id)->delete();
+
+            $stripeProduct = StripeControl::getProduct($bill->product_id, $bill->user->account_id);
+            // dd($stripeProduct);
+            if ($stripeProduct) {
+                // Delete the product and prices from Stripe
+                StripeControl::deleteProductAndPrices($stripeProduct->id, $bill->user->account_id);
+            }
 
             $bill->delete();
             return response()->json([
