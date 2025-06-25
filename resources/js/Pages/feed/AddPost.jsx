@@ -120,7 +120,7 @@ export default function AddPost({item, text, classes, isEdit, title}) {
                 <h2 className="text-xl font-bold text-dark-500" >{title ? title: "Add Post"}</h2>
             </div>
             
-            <div className="mt-1 max-h-[70vh] overflow-y-auto">
+            <div className="mt-1 ">
                 <input onChange={handleInput} defaultValue={item?.title || ''} name="title" placeholder="Post Title ..."
                 className="text-normal form-input text-lg border px-3 py-3 text-dark rounded-4 mt-4 text-post-content form-control"/>   
                 <textarea onChange={handleInput} defaultValue={item?.content || ''}  name="content" placeholder="Say Something..." className="text-lg border form-input h-[150px] mt-4 text-post-content form-control" ></textarea>   

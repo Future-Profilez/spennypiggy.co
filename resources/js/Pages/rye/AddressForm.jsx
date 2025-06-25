@@ -444,7 +444,7 @@ export default function AddressForm({
 
 
     return (
-        <form onSubmit={handleSubmit} className="overflow-auto max-h-[70vh]">
+        <form onSubmit={handleSubmit} className="soverflow-auto smax-h-[70vh]">
             <div className="flex flex-col items-center">
                 <div className="flex items-center">
                     <div

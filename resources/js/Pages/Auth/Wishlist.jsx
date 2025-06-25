@@ -302,10 +302,10 @@ export default function Wishlist(props) {
         >
             <div className="editprofileModal  wishlistModal  ">
                 <div className="editprofileModalInner ">
-                    <h2 className="p-4 text-pink text-start font-GillSans uppercase text-large black-stroke font-semibold mb-1 pe-5">
-                        {editpop ? " Edit Wish" : "Add A Wish"}
-                    </h2>
-                    <div className="wishinfo border-top p-4 max-h-[70vh] overflow-auto">
+                    <div className="wishinfo border-top p-4  ">
+                        <h2 className="mb-4 text-pink text-start font-GillSans uppercase text-large black-stroke font-semibold mb-1 pe-5">
+                            {editpop ? " Edit Wish" : "Add A Wish"}
+                        </h2>
                         <p className="p-3 mb-4 text-sm text-yellow-800 rounded-lg bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300">
                             When adding items please ensure they are specific
                             i.e Holiday Clothes or New Gym Equipment. Items that

@@ -94,7 +94,7 @@ export default function Login({ status, canResetPassword }) {
                         <span className=' border-black border-2 bg-mint me-2 w-5 h-5 rounded-full block'></span>
                     </div>
                     <form className='!p-4 sm:!p-6 md:!p-10' onSubmit={checkTFA} >
-                        <div className='login-step1'>
+                        <div className='login-step1 loginform'>
                             <ul>
                                 <li className="formfield mb-6">
                                     <label>Enter Email</label>

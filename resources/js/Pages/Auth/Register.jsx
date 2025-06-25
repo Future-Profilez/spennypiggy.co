@@ -313,7 +313,7 @@ export default function Register(props) {
             {/* <IpRedirection />/ */}
             <Head title="Create Wishlist" />
             <div className='loginPage  blackbg pb-4 pb-md-5'>
-                <div className='containerbox md:h-[75vh] md:flex !pb-4 md:!pb-12  !pt-12 items-center justify-content-center'>
+                <div className='containerbox   md:flex !pb-4 md:!pb-12  !pt-12 items-center justify-content-center'>
                     <div className='shadow-layout inputs max-w-[570px] w-full pink-shadow-layout mx-auto  !border-3 border-black  bg-white shadow-pink overflow-hidden'>
                         <div className='p-4 pinkbg flex  !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>
                             <span className=' border-black border-2 bg-red-700 me-2 w-5 h-5 rounded-full block'></span>
@@ -325,7 +325,7 @@ export default function Register(props) {
                         <h2 className='text-[30px] font-GillSans text-uppercase pt-8 text-center px-2'>Create Account</h2>
                         <p className='text-center text-[18px] text-dark mb-4 '>Already registered? <Link className={'text-pink'} href={route('login')}  > Log In</Link></p>
 
-                        <div className={`${step === 0 ? '' : 'd-none'}  what-are-you px-3 py-3 pb-5`} >
+                        <div className={`${step === 0 ? '' : 'd-none'}    px-3 py-3 pb-5`} >
                             <div className='p-2 w-full max-w-[400px] m-auto'>
                                 <div  onClick={()=>handleBecomeCreator(1)}  className={`${role==1 ? 'active' : '' }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}>
                                     <h2 className='text-[22px] font-GillSans text-uppercase' >I'm a Creator</h2>
@@ -342,7 +342,7 @@ export default function Register(props) {
                             <p className='text-muted text-base text-center max-w-[450px] m-auto mt-4' >You can support other creators with either of the account types and can change your account type anytime.</p>
                         </div>
 
-                        <div className={`${step === 1 ? '' : 'd-none'}  what-are-you px-3`} >
+                        <div className={`${step === 1 ? '' : 'd-none'}    px-3`} >
                             <div className='px-0 px-md-4 px-lg-5 pb-4'>
                                 <p className='text-center text-[17px] text-muted ' >Choose from the following categories. This helps people find your profile. You can change these at any time.</p>
 
@@ -371,8 +371,8 @@ export default function Register(props) {
                         </div>
 
                         <div className={`${step === 2 ? '' : 'd-none'}`} >
-                            <form onSubmit={submit} >
-                                <div className='login-step1 '>
+                            <form onSubmit={submit} className='p-4' >
+                                <div className='login-step1 loginform'>
                                     
                                     <div className='row'>
                                         <div className='col-md-6 mb-4 formfield'>

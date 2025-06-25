@@ -167,7 +167,7 @@ export default function AddCart(props) {
                                         OneTime Purchase
                                     </button>
                                     <button
-                                        className="btn-pink lg2 block text-center !w-full"
+                                        className="btn-pink mt-2 mb-2  lg2 block text-center !w-full"
                                         onClick={() => gotologin()}
                                     >
                                         Pay Every{" "}
