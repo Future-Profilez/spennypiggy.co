@@ -140,19 +140,14 @@ export default function AddBills(props) {
             modalclass="pinkmodal full"
             size="md"
             action={close}
-            classes={
-                classes ? classes : `  ${editpop? "editpop": "addop w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center"}`
-            }
-            text={text ? text : <AddItem />}
-        >
+            classes={classes ? classes : `  ${editpop? "editpop": "addop w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center"}`}
+            text={text ? text : <AddItem />} >
             <div className="editprofileModal  wishlistModal ">
                 <div className="editprofileModalInner">
-                    <h2 className="p-4 !pb-0 text-black text-start !border-0 font-GillSans uppercase text-large  mb-1 pe-5">
+                    <h2 className="p-4 !pb-0 text-black text-start !border-0 font-GillSans uppercase text-large mb-1 pe-5">
                         {isEdit ? "Update Bill" : "Add A Bill"}
                     </h2>
-
                     <div className="wishinfo  p-4  ">
-
                         <form onSubmit={createBills}>
                             <ul className="ps-0">
                                 <li className="mb-4">
