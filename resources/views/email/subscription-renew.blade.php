@@ -49,10 +49,10 @@ $status = $messages[$type] ?? ['text' => 'Status', 'desc' => 'updated'];
             </tr>
             @endif
 
-            @if($type == 'renew')
+            @if($type == 'renew' && isset($data['trial_end']))
             <tr>
                 <td style="padding: 0 0 20px 0; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                    🎉 Good news! Your subscription has been <strong>renewed successfully</strong> on <strong>{{ \Carbon\Carbon::parse($data['renewed_on'])->format('F j, Y') }}</strong>. <br>
+                    🎉 Good news! Your subscription has been <strong>renewed successfully</strong> on <strong>{{ \Carbon\Carbon::parse($data['trial_end'])->format('F j, Y') }}</strong>. <br>
                     We've charged <strong>${{ number_format($data['amount'] / 100, 2) }} {{ strtoupper($data['currency']) }}</strong> using your saved payment method.
                 </td>
             </tr>
@@ -64,11 +64,11 @@ $status = $messages[$type] ?? ['text' => 'Status', 'desc' => 'updated'];
             @endif
 
 
-            @if($type == 'trial')
+            @if($type == 'trial' && isset($data['trial_end']))
             <tr>
                 <td style="padding: 0 0 20px 0; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
                     Your trial will end on <strong>{{ \Carbon\Carbon::parse($data['trial_end'])->format('F j, Y') }}</strong>. <br>
-                    After this date, you will be automatically charged <strong>${{ number_format($data['amount'] / 100, 2) }} {{ strtoupper($data['currency']) }}</strong> using your default payment method.
+                    After this date, you will be automatically charged <strong>${{ number_format($data['amount'], 2) }} {{ strtoupper($data['currency']) }}</strong> using your default payment method.
                 </td>
             </tr>
             <tr>

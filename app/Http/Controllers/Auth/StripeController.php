@@ -1579,6 +1579,9 @@ class StripeController extends Controller
                     'invoice_pdf' => $invoicePdf,
                     'uuid' => $subs->uuid,
                     'notification' => $subs->user->notification_send ?? 0,
+                    'trial_end' => $subs->upcoming_payment ?? null,
+                    'amount' => $subs->amount ?? null,
+                    'currency' => $subs->currency ?? 'GBP',
                 ];
 
                 switch ($eventType) {
@@ -1589,9 +1592,12 @@ class StripeController extends Controller
                         break;
 
                     case "invoice.payment_succeeded":
-                        Log::info("Payment succeeded for subscription: {$subscriptionId}");
+                        Carbon::setTestNow(Carbon::create(2026, 2, 1, 10, 30, 0));
 
-                        if (($subs->current_end_subscription_date && Carbon::parse($subs->current_end_subscription_date)->lte(now())) || ($subs->current_end_trial_date && Carbon::parse($subs->current_end_trial_date)->lte(now()) && $subs->current_end_subscription_date == null)) {
+                        if (($subs->current_end_trial_date && Carbon::parse($subs->current_end_trial_date)->lte(now()) && !$subs->current_end_subscription_date) || ($subs->current_end_subscription_date &&
+                            Carbon::parse($subs->current_end_subscription_date)->lte(now()))) {
+                            Log::info("Updating subscription for: {$subscriptionId}");
+
                             $periodEnd = data_get($object, 'lines.data.0.period.end');
                             $subs->upcoming_payment = $periodEnd ? Carbon::createFromTimestamp($periodEnd)->format('Y-m-d H:i:s') : null;
                             $subs->current_start_subscription_date = now();
@@ -1599,12 +1605,11 @@ class StripeController extends Controller
                             $subs->status = "paid";
                             $subs->save();
 
-                            // Optional: Notify user of successful renewal
-                            // $amount = data_get($object, 'lines.data.0.amount', 0) / 100;
-                            // $currency = strtoupper(data_get($object, 'lines.data.0.currency', 'usd'));
                             SendRenewMail::dispatch($array, 'renew', 'site');
-                            // SendPaymentSuccessEmail::dispatch($subs->user, $amount, $currency, $subs->upcoming_payment);
+                            // Optionally: SendPaymentSuccessEmail::dispatch(...)
                         }
+                        // Carbon::setTestNow(); // optional
+
                         break;
 
                     case "invoice.payment_failed":
