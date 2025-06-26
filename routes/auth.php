@@ -89,8 +89,8 @@ Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class,
 Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');
 Route::get('discover/creators/categories', [WishitemController::class, 'all_creators_categories'])->name('allcreators_categories');
 // Route::get('discover/creators_videos', [WishitemController::class, 'discover_creators_videos'])->name('discover_videos');save_social_links
-   Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
-            ->name('password.request');
+Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
+    ->name('password.request');
 
 
 Route::middleware('auth')->group(function () {
@@ -343,7 +343,7 @@ Route::middleware('auth')->group(function () {
 // subscription webhook
 
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
-Route::post('creator-monthly-verification-webhook', [StripeWebhookController::class, 'creatorMonthlyVerificationWebhook'])->name('creator.monthly.verification.webhook');
+// Route::post('creator-monthly-verification-webhook', [StripeWebhookController::class, 'creatorMonthlyVerificationWebhook'])->name('creator.monthly.verification.webhook');
 Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status');
 Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-status');
 Route::post('mandatory-status', [StripeController::class, 'mandatorySubscriptionStatus'])->name('mandatory-status');

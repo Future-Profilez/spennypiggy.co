@@ -12,10 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('monthly_charges', function (Blueprint $table) {
-            $table->date('current_end_trial_date')->nullable()->after('tax');
-            $table->date('current_start_trial_date')->nullable()->after('tax');
-            $table->date('current_end_subscription_date')->nullable()->after('tax');
-            $table->date('current_start_subscription_date')->nullable()->after('tax');
+            $table->timestamp('current_end_trial_date')->nullable()->after('tax');
+            $table->timestamp('current_start_trial_date')->nullable()->after('tax');
+            $table->timestamp('current_end_subscription_date')->nullable()->after('tax');
+            $table->timestamp('current_start_subscription_date')->nullable()->after('tax');
+            $table->timestamp('cancelled_at')->nullable()->after('tax');
         });
     }
 

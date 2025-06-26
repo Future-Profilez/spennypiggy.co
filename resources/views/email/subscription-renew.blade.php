@@ -40,13 +40,29 @@ $status = $messages[$type] ?? ['text' => 'Status', 'desc' => 'updated'];
                     <img style="max-width: 200px;" src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" alt="img">
                 </td>
             </tr>
-
+            @if($type != 'renew')
             <tr>
                 <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
                     Hello {{ $data['name'] }}! <br><br>
                     Please note your subscription is {{ $status['desc'] }} on Spenny Piggy. 🎁
                 </td>
             </tr>
+            @endif
+
+            @if($type == 'renew')
+            <tr>
+                <td style="padding: 0 0 20px 0; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
+                    🎉 Good news! Your subscription has been <strong>renewed successfully</strong> on <strong>{{ \Carbon\Carbon::parse($data['renewed_on'])->format('F j, Y') }}</strong>. <br>
+                    We've charged <strong>${{ number_format($data['amount'] / 100, 2) }} {{ strtoupper($data['currency']) }}</strong> using your saved payment method.
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 0 0 20px 0; font-size: 14px; line-height: 22px; scolor: #4D4D4D; text-align: center;">
+                    Thank you for continuing your journey with Spenny Piggy! 🐷 Your subscription keeps all your premium features active without interruption.
+                </td>
+            </tr>
+            @endif
+
 
             @if($type == 'trial')
             <tr>
@@ -74,12 +90,6 @@ $status = $messages[$type] ?? ['text' => 'Status', 'desc' => 'updated'];
                 </td>
             </tr>
             @endif
-
-            <tr>
-                <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                    To cancel the subscription, <a href="{{ env('APP_URL') . '/cancel-subs/' . $data['uuid'] }}">click here</a>.
-                </td>
-            </tr>
         </table>
     </td>
 </tr>

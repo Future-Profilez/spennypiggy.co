@@ -1470,7 +1470,11 @@ class StripeController extends Controller
 
         try {
             $session = StripeControl::createCheckoutSession($payload);
-            $sub->update(['session_id' => $session->id]);
+            $sub->update([
+                'session_id' => $session->id,
+                'current_start_trial_date' => now(),
+                'current_end_trial_date' => now()->addDays($trial_period_days),
+            ]);
 
             return Inertia::location($session->url);
         } catch (Exception $e) {
@@ -1486,7 +1490,7 @@ class StripeController extends Controller
      * @param string $status Status of Subscription
      * @return mixed
      */
-    public function handleMandatorySubscription($uuid, $status)
+    public function handleMandatorySubscription(Request $request, $uuid, $status)
     {
         $sub = MonthlyCharge::whereUuid($uuid)->first();
         if (!$sub) {
@@ -1514,9 +1518,9 @@ class StripeController extends Controller
                     $user->is_subscribed = 1;
                     $user->save();
                 }
-
-
-                MonthlySubscribedJob::dispatch($sub->email, $sub, 'success');
+                $currency = strtolower($request->cookie("currency", "GBP"));
+                $convertedAmount = strtoupper(Helpers::priceFormat('gbp', $sub->amount, $currency));
+                SendPaymentSuccessEmail::dispatch($sub->user, $convertedAmount, $currency, $sub->upcoming_payment);
 
                 return to_route('user.show', ['username' => $sub->user->username])->with('success', "Subscription Success!");
             }
@@ -1540,52 +1544,33 @@ class StripeController extends Controller
      */
     public function mandatorySubscriptionStatus(Request $request)
     {
-        // Log::info('Webhook received: mandatorySubscriptionStatus');
         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
         $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
 
         $payload = $request->getContent();
-        // $sigHeader = $request->header('Stripe-Signature');
         $sig_header = $request->header('Stripe-Signature');
         $event = null;
 
         try {
-            $event = Webhook::constructEvent(
-                $payload,
-                $sig_header,
-                $endpoint_secret
-            );
+            $event = Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
         } catch (\UnexpectedValueException | \Stripe\Exception\SignatureVerificationException $e) {
             Log::error("Webhook signature verification failed: " . $e->getMessage());
             return response()->json(['error' => 'Invalid signature'], 400);
         }
 
-        if (!empty($event)) {
+        if ($event) {
             $eventType = $event->type;
             $object = $event->data->object;
-            $subscription = $event['data']['object'];
-
-            $trialStart = Carbon::createFromTimestamp($subscription['trial_start'])->toDateTimeString();
-            $trialEnd = Carbon::createFromTimestamp($subscription['trial_end'])->toDateTimeString();
-
 
             $customer_id = $object->customer ?? null;
             $customer = Customer::retrieve($customer_id);
 
-            $subscriptionId = data_get($object, 'id');
+            $subscriptionId = data_get($object, 'subscription');
             $customerEmail = $customer->email ?? null;
             $customerName = data_get($object, 'customer_name');
             $invoicePdf = data_get($object, 'invoice_pdf');
 
-            $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->latest()->first();
-
-            // try {
-            //     $ret = StripeControl::getSubscription($subscriptionId);
-
-            // } catch (\Exception $e) {
-            //     Log::error("Failed to retrieve subscription: " . $e->getMessage());
-            //     return response()->json(['error' => 'Failed to retrieve subscription'], 500);
-            // }
+            $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->orderBy('updated_at', 'desc')->first();
 
             if ($subs) {
                 $array = [
@@ -1598,54 +1583,35 @@ class StripeController extends Controller
 
                 switch ($eventType) {
                     case "customer.subscription.trial_will_end":
-                        $subs->status = "trial";
-                        $subs->save();
+                        Log::info("Trial will end for subscription: {$subscriptionId}");
+                        // Notify user 3 days before charge
                         SendRenewMail::dispatch($array, 'trial', 'site');
                         break;
+
                     case "invoice.payment_succeeded":
-                        // if ($subs->status != 'paid') {
-                        $periodEnd = data_get($object, 'lines.data.0.period.end');
-                        $subs->upcoming_payment = $periodEnd ? Carbon::createFromTimestamp($periodEnd)->format('Y-m-d H:i:s') : null;
-                        $subs->current_start_trial_date = $trialStart;
-                        $subs->current_end_trial_date = $trialEnd;
-                        $subs->status = "paid";
-                        $subs->save();
+                        Log::info("Payment succeeded for subscription: {$subscriptionId}");
 
-                        $planAmount = data_get($object, 'lines.data.0.plan.amount', 0);
-                        $planCurrency = strtoupper(data_get($object, 'lines.data.0.plan.currency', 'usd'));
-                        $amount = $planAmount / 100;
+                        if (($subs->current_end_subscription_date && Carbon::parse($subs->current_end_subscription_date)->lte(now())) || ($subs->current_end_trial_date && Carbon::parse($subs->current_end_trial_date)->lte(now()) && $subs->current_end_subscription_date == null)) {
+                            $periodEnd = data_get($object, 'lines.data.0.period.end');
+                            $subs->upcoming_payment = $periodEnd ? Carbon::createFromTimestamp($periodEnd)->format('Y-m-d H:i:s') : null;
+                            $subs->current_start_subscription_date = now();
+                            $subs->current_end_subscription_date = now()->addMonths(1);
+                            $subs->status = "paid";
+                            $subs->save();
 
-                        SendPaymentSuccessEmail::dispatch($subs->user, $amount, $planCurrency, $subs->upcoming_payment);
-                        // }
+                            // Optional: Notify user of successful renewal
+                            // $amount = data_get($object, 'lines.data.0.amount', 0) / 100;
+                            // $currency = strtoupper(data_get($object, 'lines.data.0.currency', 'usd'));
+                            SendRenewMail::dispatch($array, 'renew', 'site');
+                            // SendPaymentSuccessEmail::dispatch($subs->user, $amount, $currency, $subs->upcoming_payment);
+                        }
                         break;
 
                     case "invoice.payment_failed":
+                        Log::warning("Payment failed for subscription: {$subscriptionId}");
                         $subs->status = "failed";
                         $subs->save();
                         SendRenewMail::dispatch($array, 'failed', 'site');
-                        break;
-
-                    case "invoice.updated":
-                        $subs->status = "ended";
-                        $subs->save();
-                        $periodEnd = data_get($object, 'lines.data.0.period.end');
-
-                        $newSubs = new MonthlyCharge();
-                        $newSubs->stripe_id = $subs->stripe_id;
-                        $newSubs->session_id = $subs->session_id;
-                        $newSubs->user_id = $subs->user_id;
-                        $newSubs->name = $subs->name;
-                        $newSubs->email = $subs->email;
-                        $newSubs->currency = $subs->currency;
-                        $newSubs->amount = $subs->amount;
-                        $newSubs->tax = $subs->tax;
-                        $newSubs->upcoming_payment = Carbon::createFromTimestamp($periodEnd)->format('Y-m-d H:i:s');
-                        $newSubs->status = "paid";
-                        $newSubs->created_at = $subs->created_at;
-                        $newSubs->updated_at = $subs->updated_at;
-                        $newSubs->save();
-
-                        SendRenewMail::dispatch($array, 'renew', 'site');
                         break;
 
                     default:
@@ -1657,6 +1623,126 @@ class StripeController extends Controller
 
         return response()->json(['status' => 'success']);
     }
+
+    // public function mandatorySubscriptionStatus(Request $request)
+    // {
+    //     // Log::info('Webhook received: mandatorySubscriptionStatus');
+    //     $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+    //     $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
+
+    //     $payload = $request->getContent();
+    //     // $sigHeader = $request->header('Stripe-Signature');
+    //     $sig_header = $request->header('Stripe-Signature');
+    //     $event = null;
+
+    //     try {
+    //         $event = Webhook::constructEvent(
+    //             $payload,
+    //             $sig_header,
+    //             $endpoint_secret
+    //         );
+    //     } catch (\UnexpectedValueException | \Stripe\Exception\SignatureVerificationException $e) {
+    //         Log::error("Webhook signature verification failed: " . $e->getMessage());
+    //         return response()->json(['error' => 'Invalid signature'], 400);
+    //     }
+
+    //     if (!empty($event)) {
+    //         $eventType = $event->type;
+    //         $object = $event->data->object;
+    //         // $subscription = $event['data']['object'];s
+
+    //         $customer_id = $object->customer ?? null;
+    //         $customer = Customer::retrieve($customer_id);
+
+    //         $subscriptionId = data_get($object, 'subscription');
+    //         $customerEmail = $customer->email ?? null;
+    //         $customerName = data_get($object, 'customer_name');
+    //         $invoicePdf = data_get($object, 'invoice_pdf');
+
+    //         $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->orderBy('updated_at', 'desc')->first();
+
+    //         if ($subs) {
+    //             $array = [
+    //                 'email' => $customerEmail,
+    //                 'name' => $customerName,
+    //                 'invoice_pdf' => $invoicePdf,
+    //                 'uuid' => $subs->uuid,
+    //                 'notification' => $subs->user->notification_send ?? 0,
+    //             ];
+
+    //             switch ($eventType) {
+    //                 case "customer.subscription.trial_will_end":
+    //                     Log::info("Trial will end for subscription: {$subscriptionId}");
+    //                     // $subs->status = "trial";
+    //                     // $subs->save();
+    //                     // SendRenewMail::dispatch($array, 'trial', 'site');
+    //                     break;
+    //                 case "invoice.payment_succeeded":
+    //                     Log::info("Payment succeeded for subscription: {$subscriptionId}");
+    //                     // if ($subs->status != 'paid') {
+    //                     if (
+    //                         $subs->current_end_subscription_date &&
+    //                         Carbon::parse($subs->current_end_subscription_date)->lte(now())
+    //                     ) {
+    //                         $periodEnd = data_get($object, 'lines.data.0.period.end');
+    //                         $subs->upcoming_payment = $periodEnd ? Carbon::createFromTimestamp($periodEnd)->format('Y-m-d H:i:s') : null;
+    //                         $subs->current_start_subscription_date = now();
+    //                         $subs->current_end_subscription_date = now()->addMonths(1);
+    //                         $subs->status = "paid";
+    //                         $subs->save();
+    //                     }
+    //                     // $planAmount = data_get($object, 'lines.data.0.plan.amount', 0);
+    //                     // $planCurrency = strtoupper(data_get($object, 'lines.data.0.plan.currency', 'usd'));
+    //                     // $amount = $planAmount / 100;
+
+    //                     // SendRenewMail::dispatch($array, 'renew', 'site');
+
+    //                     // SendPaymentSuccessEmail::dispatch($subs->user, $amount, $planCurrency, $subs->upcoming_payment);
+    //                     // }
+    //                     break;
+
+    //                 case "invoice.payment_failed":
+    //                     $subs->status = "failed";
+    //                     $subs->save();
+    //                     SendRenewMail::dispatch($array, 'failed', 'site');
+    //                     break;
+
+    //                 case "invoice.updated":
+    //                     Log::info("Invoice updated for subscription: {$subscriptionId}");
+    //                     $subs->status = "ended";
+    //                     $subs->save();
+    //                     $periodEnd = data_get($object, 'lines.data.0.period.end');
+
+    //                     $newSubs = new MonthlyCharge();
+    //                     $newSubs->stripe_id = $subs->stripe_id;
+    //                     $newSubs->session_id = $subs->session_id;
+    //                     $newSubs->user_id = $subs->user_id;
+    //                     $newSubs->name = $subs->name;
+    //                     $newSubs->email = $subs->email;
+    //                     $newSubs->currency = $subs->currency;
+    //                     $newSubs->amount = $subs->amount;
+    //                     $newSubs->tax = $subs->tax;
+    //                     $subs->current_start_subscription_date = now();
+    //                     $subs->current_end_subscription_date = now()->addMonths(1);
+    //                     $newSubs->upcoming_payment = Carbon::createFromTimestamp($periodEnd)->format('Y-m-d H:i:s');
+    //                     $newSubs->status = "paid";
+    //                     $newSubs->created_at = $subs->created_at;
+    //                     $newSubs->updated_at = $subs->updated_at;
+    //                     $newSubs->save();
+
+    //                     // SendPaymentSuccessEmail::dispatch($subs->user, $amount, $planCurrency, $subs->upcoming_payment);
+    //                     SendRenewMail::dispatch($array, 'renew', 'site');
+    //                     break;
+
+    //                 default:
+    //                     Log::info("Unhandled event type: {$eventType}");
+    //                     break;
+    //             }
+    //         }
+    //     }
+
+    //     return response()->json(['status' => 'success']);
+    // }
 
     public function createVerificationSession(Request $request)
     {
