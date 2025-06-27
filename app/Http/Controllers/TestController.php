@@ -328,13 +328,12 @@ class TestController extends Controller
     {
         $users = User::where([
             ['is_uk', '=', 0],
-        ])
-            ->whereNull('deleted_at')
-            ->get();
+        ])->where(function ($q) {
+            $q->whereNull('deleted_at')
+                ->orWhere('deleted_at', '!=', null);
+        })->get();
 
         Log::info('Total User Count: ' . $users->pluck('id')->count());
-
-
 
         $productsGroupedByUser = [];
 
@@ -343,20 +342,19 @@ class TestController extends Controller
 
             $productIds = array_merge(
                 $productIds,
-                Bills::whereNull('deleted_at')->where('user_id', $user->id)->pluck('product_id')->filter()->unique()->toArray(),
-                WishItem::whereNull('deleted_at')->where('user_id', $user->id)->pluck('stripe_product_id')->filter()->unique()->toArray(),
-                Membership::whereNull('deleted_at')->where('user_id', $user->id)->pluck('product_id')->filter()->unique()->toArray(),
-                Shop::whereNull('deleted_at')->where('user_id', $user->id)->pluck('stripe_product_id')->filter()->unique()->toArray()
+                Bills::withTrashed()->where('user_id', $user->id)->pluck('product_id')->filter()->unique()->toArray(),
+                WishItem::withTrashed()->where('user_id', $user->id)->pluck('stripe_product_id')->filter()->unique()->toArray(),
+                Membership::withTrashed()->where('user_id', $user->id)->pluck('product_id')->filter()->unique()->toArray(),
+                Shop::withTrashed()->where('user_id', $user->id)->pluck('stripe_product_id')->filter()->unique()->toArray()
             );
 
             $uniqueProductIds = array_unique($productIds);
-
             if (count($uniqueProductIds) === 0) {
                 continue;
             }
 
             $productsGroupedByUser[$user->id] = $uniqueProductIds;
-
+            Log::info("User ID: {$user->id}, Products: " . implode(', ', $uniqueProductIds));
             // Dispatch job for the user with all products
             DeleteStripeProductJob::dispatch($user->id, $productIds);
             UserCart::truncate();
@@ -455,9 +453,12 @@ class TestController extends Controller
                     'invoice_pdf' => $invoicePdf,
                     'uuid' => $subs->uuid,
                     'notification' => $subs->user->notification_send ?? 0,
+                    'trial_end' => $subs->upcoming_payment ?? null,
+                    'amount' => $subs->amount ?? null,
+                    'currency' => $subs->currency ?? 'GBP',
                 ];
 
-                SendRenewMail::dispatch($array, 'trial_ending', 'site');
+                SendRenewMail::dispatch($array, 'trial', 'site');
                 Log::info("Trial will end soon for subscription: " . $data->id);
                 break;
             // $this->customerSubscriptionTrialWillEnd($data);
@@ -492,7 +493,10 @@ class TestController extends Controller
             'name' => $data->customer_name,
             'invoice_pdf' => $data->invoice_pdf,
             'uuid' => $subs->uuid,
-            'notification' => $subs->user->notification_send ?? 0
+            'notification' => $subs->user->notification_send ?? 0,
+            'trial_end' => $subs->upcoming_payment ?? null,
+            'amount' => $subs->amount ?? null,
+            'currency' => $subs->currency ?? 'GBP',
         ];
 
         $subs->status = "ended";
@@ -547,7 +551,10 @@ class TestController extends Controller
             'name' => $subs->guest_name ?? $data->customer_name,
             'invoice_pdf' => $data->invoice_pdf ?? null,
             'uuid' => $subs->uuid,
-            'notification' => $subs->user->notification_send ?? 0
+            'notification' => $subs->user->notification_send ?? 0,
+            'trial_end' => $subs->upcoming_payment ?? null,
+            'amount' => $subs->amount ?? null,
+            'currency' => $subs->currency ?? 'GBP',
         ];
 
         Log::info(json_encode($array));
@@ -605,7 +612,10 @@ class TestController extends Controller
             'name' => $data->customer_name,
             'invoice_pdf' => $data->invoice_pdf,
             'uuid' => $subs->uuid,
-            'notification' => $subs->user->notification_send ?? 0
+            'notification' => $subs->user->notification_send ?? 0,
+            'trial_end' => $subs->upcoming_payment ?? null,
+            'amount' => $subs->amount ?? null,
+            'currency' => $subs->currency ?? 'GBP',
         ];
 
         $wish_subscription->status = "ended";

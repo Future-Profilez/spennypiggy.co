@@ -729,6 +729,7 @@ class MembershipController extends Controller
         $array = [];
         if (!empty($event)) {
             $subs = MembershipPayment::where('stripe_id', $event->data->object->id)->latest()->first();
+            $convertedAmount = Helpers::priceFormat('GBP', $subs->amount, $subs->currency);
 
             // $ret = StripeControl::getSubscription($event->data->object->id);
             $ret = $event->data->object;
@@ -741,7 +742,10 @@ class MembershipController extends Controller
                     'name' => $event->data->object->customer_name ?? $subs->guest_name,
                     'invoice_pdf' => $event->data->object->invoice_pdf ?? null,
                     'uuid' => $subs->uuid,
-                    'notification' => $subs->user->notification_send ?? 0
+                    'notification' => $subs->user->notification_send ?? 0,
+                    'trial_end' => $subs->upcoming_payment ?? null,
+                    'amount' => $subs->amount ?? null,
+                    'currency' => $subs->currency ?? 'GBP',
                 ];
 
                 $subs->status = "ended";

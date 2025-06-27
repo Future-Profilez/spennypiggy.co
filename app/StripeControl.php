@@ -344,15 +344,19 @@ class StripeControl
      * @param array $payload Price Payload
      * @return Throwable|\Stripe\Price
      */
-    public static function getProduct(string $productId, string $connectedAccountId)
+    public static function getProduct(string $productId, string $connectedAccountId = null)
     {
         // $stripe = new StripeClient(env("STRIPE_SECRET_KEY"));
         self::setClient();
+        $options = [];
+        if ($connectedAccountId) {
+            $options['stripe_account'] = $connectedAccountId;
+        }
 
         return self::$client->products->retrieve(
             $productId,
             [],
-            ['stripe_account' => $connectedAccountId]
+            $options
         );
     }
 
@@ -551,6 +555,66 @@ class StripeControl
             return false;
         }
     }
+
+    public static function deleteProductAndPricesOfCreator(string $productId, string $connectedAccountId = null)
+    {
+        $client = new StripeClient(env("STRIPE_SECRET_KEY"));
+
+        try {
+            $options = [];
+            if ($connectedAccountId) {
+                $options['stripe_account'] = $connectedAccountId;
+            }
+
+            // 1. Fetch all prices for the product
+            $prices = $client->prices->all(
+                ['product' => $productId, 'limit' => 100],
+                $options
+            );
+
+            foreach ($prices->data as $price) {
+                // 2. Cancel all subscriptions using this price
+                $cancelSubscription = self::cancelSubscriptionsByPrice($client, $price->id, $connectedAccountId);
+                Log::info("Cancelled subscriptions for price: ");
+                Log::info(json_encode($cancelSubscription));
+
+                // 3. Deactivate the price if active
+                if ($price->active) {
+                    try {
+                        $updated = $client->prices->update(
+                            $price->id,
+                            ['active' => false],
+                            $options
+                        );
+
+                        Log::info($updated->active
+                            ? "Price still active after update: {$price->id}"
+                            : "Deactivated price: {$price->id}");
+                    } catch (\Exception $e) {
+                        Log::error("Failed to deactivate price {$price->id}: " . $e->getMessage());
+                    }
+                }
+            }
+
+            // 4. Archive the product
+            try {
+                $updated = $client->products->update(
+                    $productId,
+                    ['active' => false],
+                    $options
+                );
+
+                return $updated->active === false;
+            } catch (\Exception $e) {
+                Log::error("Failed to archive product: " . $e->getMessage());
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::error("Stripe Error in deleteProductAndPrices: " . $e->getMessage());
+            return false;
+        }
+    }
+
 
     private static function cancelSubscriptionsByPrice(StripeClient $client, string $priceId, string $connectedAccountId)
     {

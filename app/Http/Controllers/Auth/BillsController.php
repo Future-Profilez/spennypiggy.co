@@ -572,85 +572,6 @@ class BillsController extends Controller
         }
     }
 
-    // public function handlePayment($uuid, $status)
-    // {
-    //     $bill_pay = BillPayment::whereUuid($uuid)->first();
-    //     if (!$bill_pay) {
-    //         return to_route('home')->with("error", 'Insufficient data!');
-    //     }
-    //     if ($bill_pay->status !== 'initiated') {
-    //         return to_route('home')->with("error", 'Subscription already processed!');
-    //     }
-    //     try {
-    //         $session = StripeControl::getCheckoutSession($bill_pay->session_id);
-    //         $bill_pay->status = $session->payment_status;
-    //         if ($session->payment_status == 'paid') {
-    //             $bill_pay->stripe_id = $session->subscription;
-    //             $current = Carbon::now();
-    //             if ($bill_pay->recurring_type == "monthly") {
-    //                 $current->addMonth();
-    //             }
-    //             if ($bill_pay->recurring_type == "weekly") {
-    //                 $current->addWeek();
-    //             }
-    //             if ($bill_pay->recurring_type == "yearly") {
-    //                 $current->addYear();
-    //             }
-    //             $bill_pay->upcoming_payment = $current;
-    //             $bill_pay->save();
-
-    //             $vatAmountPercentage = 0;
-    //             $user_name = $bill_pay->bill->user->name; // creator name
-    //             $symbol = Currency::where('iso', strtoupper($bill_pay->currency))->first();
-    //             $tax = $bill_pay->amount * config('app.bill_tax_plaid') / 100;
-    //             $amountWithTax = $bill_pay->amount + $tax;
-    //             if (!empty($bill_pay->bill->user->vat_amount_percentage) && isset($bill_pay->bill->user->vat_amount_percentage)) {
-    //                 $vat_percentage = $bill_pay->bill->user->vat_amount_percentage ?? 0;
-    //                 if ($vat_percentage > 0) {
-    //                     $vatAmountPercentage = $amountWithTax * $vat_percentage / 100;
-    //                 }
-    //             }
-
-    //             $amountWithVat = $symbol->symbol . $bill_pay->amount + $vatAmountPercentage;
-    //             $amountWithCurr = $symbol->symbol . $bill_pay->amount;
-
-    //             BillPayMail::dispatch($bill_pay, $amountWithVat);
-
-    //             // send mail jobs for user
-    //             BillPayToUser::dispatch($bill_pay, $amountWithCurr, $user_name);
-
-    //             if ($bill_pay->anonymous == 1) {
-    //                 $username = "Anonymous user";
-    //             } else {
-    //                 $username = $bill_pay->guest_name ?? "Anonymous user";
-    //             }
-
-    //             $message = $username . " just subscribed to your bill " . $bill_pay->bill->name;
-    //             NotificationSave::dispatch($message, $bill_pay->bill->user, $bill_pay->user, 'Bill');
-    //             // if ($bill_pay->wish_item->user->auto_tweet == 1) {
-    //             //     // MakeAutoTweets::dispatch($user);
-    //             //     SubscribeAutoTweet::dispatch($bill_pay);
-    //             //     bill_paybershipAutoTweet::dispatch($bill_pay);
-    //             // }
-
-    //             return to_route('thank-you', ['username' => $bill_pay->bill->user->username])->with('success', "Payment for subscription of bill is success.");
-    //         }
-
-    //         // SubscriptionFailed::dispatch($bill_pay);
-
-    //         $bill_pay->save();
-    //         return to_route('user.show', ['username' => $bill_pay->bill->user->username])->with('warning', "Bill is in {$session->payment_status} status.");
-    //     } catch (Exception $e) {
-    //         return to_route('user.show', ['username' => $bill_pay->bill->user->username])->with('error', $e->getMessage());
-    //     }
-    //     // return response()->json([
-    //     //     'success'   =>  true,
-    //     //     'session'   =>  $session,
-    //     //     'status'    =>  $status
-    //     // ]);
-    // }
-
-
     public function billStatus(Request $request)
     {
         Log::info("Bill status request received");
@@ -704,7 +625,10 @@ class BillsController extends Controller
                     'name' => $event->data->object->customer_name,
                     'invoice_pdf' => $event->data->object->invoice_pdf,
                     'uuid' => $subs->uuid,
-                    'notification' => $subs->user->notification_send ?? 0
+                    'notification' => $subs->user->notification_send ?? 0,
+                    'trial_end' => $subs->upcoming_payment ?? null,
+                    'amount' => $subs->amount ?? null,
+                    'currency' => $subs->currency ?? 'GBP',
                 ];
 
                 $subs->status = "ended";

@@ -53,7 +53,7 @@ $status = $messages[$type] ?? ['text' => 'Status', 'desc' => 'updated'];
             <tr>
                 <td style="padding: 0 0 20px 0; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
                     🎉 Good news! Your subscription has been <strong>renewed successfully</strong> on <strong>{{ \Carbon\Carbon::parse($array['trial_end'])->format('F j, Y') }}</strong>. <br>
-                    We've charged <strong>${{ number_format($array['amount'] / 100, 2) }} {{ strtoupper($array['currency']) }}</strong> using your saved payment method.
+                    We've charged <strong>{{ number_format($array['amount'], 2) }} {{ strtoupper($array['currency']) }}</strong> using your saved payment method.
                 </td>
             </tr>
             <tr>
@@ -68,25 +68,12 @@ $status = $messages[$type] ?? ['text' => 'Status', 'desc' => 'updated'];
             <tr>
                 <td style="padding: 0 0 20px 0; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
                     Your trial will end on <strong>{{ \Carbon\Carbon::parse($array['trial_end'])->format('F j, Y') }}</strong>. <br>
-                    After this date, you will be automatically charged <strong>${{ number_format($array['amount'], 2) }} {{ strtoupper($array['currency']) }}</strong> using your default payment method.
+                    After this date, you will be automatically charged <strong>{{ number_format($array['amount'], 2) }} {{ strtoupper($array['currency']) }}</strong> using your default payment method.
                 </td>
             </tr>
             <tr>
                 <td style="padding: 0 0 20px 0; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
                     To avoid this charge, make sure to cancel your subscription before the trial ends.
-                </td>
-            </tr>
-            @endif
-
-            @if(isset($array['invoice_pdf']))
-            <tr>
-                <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                    You can view your upcoming invoice and manage your subscription using the link below 🔗
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                    <b>Invoice: <a href="{{ $array['invoice_pdf'] }}">See Invoice</a></b>
                 </td>
             </tr>
             @endif

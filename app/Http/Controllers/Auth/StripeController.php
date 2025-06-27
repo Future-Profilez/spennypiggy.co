@@ -389,82 +389,6 @@ class StripeController extends Controller
         // return view('cancel');
     }
 
-    /* Anonymous checkout */
-    // public function createAnonymousCheckout($wishid = null, $amount = null)
-    // {
-    //     try {
-    //         $wishdata = WishItem::whereId($wishid)->first();
-    //         $lineItems = [];
-    //         if ($wishdata->subscription == 2) {
-    //             if (!empty($amount)) {
-    //                 session()->forget('user_fullfill_amount');
-    //                 session(['user_fullfill_amount' => $amount]);
-
-    //                 $totalamount = $amount + ($amount * env('TAX_PERCENTAGE') / 100);
-
-    //                 try {
-    //                     $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-    //                     $stripe_client = $stripe->products->create([
-    //                         'name' => $wishdata->wishname,
-    //                         'images' => [$wishdata->perma_link],
-    //                         "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => $totalamount * 100],
-    //                     ]);
-    //                 } catch (\Throwable $th) {
-    //                     echo $th;
-    //                     die;
-    //                     return back()->with('error', $th);
-    //                 }
-
-    //                 $lineItems[] = [
-    //                     'price' => $stripe_client->default_price ?? '',
-    //                     'quantity' => 1,
-    //                 ];
-    //             } else {
-    //                 return back()->with('error', 'Please enter a valid amount.');
-    //             }
-    //         } else {
-    //             $lineItems[] = [
-    //                 'price' => $wishdata->price_id ?? '',
-    //                 'quantity' => 1,
-    //             ];
-    //         }
-
-    //         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-    //         $sessioncreate = $stripe->checkout->sessions->create([
-    //             'success_url' => route('checkout.anonymous.success', [$wishdata->id]),
-    //             'cancel_url' => route('checkout.anonymous.cancel', [$wishdata->id]),
-    //             'line_items' => $lineItems,
-    //             'mode' => 'payment',
-    //         ]);
-
-    //         $callbackData = $sessioncreate;
-    //         $subtotal = ($callbackData->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
-    //         $taxnew = ($callbackData->amount_total / 100) - ($subtotal);
-
-    //         session()->forget('anonymous_session_id');
-    //         session(['anonymous_session_id' => $callbackData->id]);
-    //         $stripeid = StripePaymentDetail::create([
-    //             'session_id' => $callbackData->id,
-    //             'amount_subtotal' => $subtotal,
-    //             'amount_total' => $callbackData->amount_total / 100,
-    //             'tax' => $taxnew,
-    //             'currency' => $callbackData->currency,
-    //             'owner_id' => $wishdata->user_id,
-    //             'payment_method_config_detail_id' => optional($callbackData->payment_method_configuration_details)->id,
-    //             'payment_method_type' => optional($callbackData->payment_method_types)[0],
-    //             'session_created' => $callbackData->created,
-    //             'session_expires_at' => $callbackData->expires_at,
-    //             'created_at' => Carbon::now(),
-    //             'updated_at' => Carbon::now(),
-    //         ]);
-    //         $stripeid->refresh();
-
-    //         return Inertia::location($sessioncreate->url);
-    //     } catch (\Throwable $th) {
-    //         throw $th;
-    //     }
-    // }
-
     public function createAnonymousCheckout($device_id)
     {
         try {
@@ -952,6 +876,9 @@ class StripeController extends Controller
                         'name' => $charge->billing_details->name ?? null,
                         'uuid' => $subs->uuid,
                         'notification' => $subs->user->notification_send ?? 0,
+                        'trial_end' => $subs->upcoming_payment ?? null,
+                        'amount' => $subs->amount ?? null,
+                        'currency' => $subs->currency ?? 'GBP',
                     ];
 
                     SendRenewMail::dispatch($array, $subs->payment_status, 'main');
@@ -1586,18 +1513,15 @@ class StripeController extends Controller
 
                 switch ($eventType) {
                     case "customer.subscription.trial_will_end":
-                        Log::info("Trial will end for subscription: {$subscriptionId}");
                         // Notify user 3 days before charge
                         SendRenewMail::dispatch($array, 'trial', 'site');
                         break;
 
                     case "invoice.payment_succeeded":
-                        Carbon::setTestNow(Carbon::create(2026, 1, 5, 10, 30, 0));
+                        // Carbon::setTestNow(Carbon::create(2026, 1, 5, 10, 30, 0));
 
                         if (($subs->current_end_trial_date && Carbon::parse($subs->current_end_trial_date)->lte(now()) && !$subs->current_end_subscription_date) || ($subs->current_end_subscription_date &&
                             Carbon::parse($subs->current_end_subscription_date)->lte(now()))) {
-                            Log::info("Updating subscription for: {$subscriptionId}");
-                            Log::info(json_encode($array, JSON_PRETTY_PRINT));
 
                             $periodEnd = data_get($object, 'lines.data.0.period.end');
                             $subs->upcoming_payment = $periodEnd ? Carbon::createFromTimestamp($periodEnd)->format('Y-m-d H:i:s') : null;
@@ -1607,11 +1531,9 @@ class StripeController extends Controller
                             $subs->save();
 
                             SendRenewMail::dispatch($array, 'renew', 'site');
-                            Log::info("Payment succeeded for subscription: {$subscriptionId}");
-                            // SendRenewMail::dispatch($array, 'renew', 'site');
                             // Optionally: SendPaymentSuccessEmail::dispatch(...)
                         }
-                        Carbon::setTestNow(); // optional
+                        // Carbon::setTestNow(); // optional
 
                         break;
 
@@ -1887,7 +1809,7 @@ class StripeController extends Controller
             exit();
         }
 
-        $array = [];
+        // $array = [];
         if (!empty($event)) {
             // $subs = BillPayment::where('stripe_id', $event->data->object->subscription)->latest()->first();
 
