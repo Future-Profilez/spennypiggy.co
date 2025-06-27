@@ -220,16 +220,16 @@ class EmailService
         }
     }
 
-    public static function sendRenewMail($data, $type, $module)
+    public static function sendRenewMail($array, $type, $module)
     {
         try {
-            if (!isset($data['email']) || empty($data['email'])) {
+            if (!isset($array['email']) || empty($array['email'])) {
                 throw new \InvalidArgumentException("Email address is missing in sendRenewMail.");
             }
 
-            Mail::to($data['email'])->send(new RenewMail($data, $type, $module));
+            Mail::to($array['email'])->send(new RenewMail($array, $type, $module));
         } catch (\InvalidArgumentException $e) {
-            Log::error('Email not sent: ' . $e->getMessage(), ['data' => $data]);
+            Log::error('Email not sent: ' . $e->getMessage(), ['array' => $array]);
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         } catch (\Exception $e) {

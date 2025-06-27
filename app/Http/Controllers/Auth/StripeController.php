@@ -1592,11 +1592,12 @@ class StripeController extends Controller
                         break;
 
                     case "invoice.payment_succeeded":
-                        Carbon::setTestNow(Carbon::create(2026, 2, 1, 10, 30, 0));
+                        Carbon::setTestNow(Carbon::create(2026, 1, 5, 10, 30, 0));
 
                         if (($subs->current_end_trial_date && Carbon::parse($subs->current_end_trial_date)->lte(now()) && !$subs->current_end_subscription_date) || ($subs->current_end_subscription_date &&
                             Carbon::parse($subs->current_end_subscription_date)->lte(now()))) {
                             Log::info("Updating subscription for: {$subscriptionId}");
+                            Log::info(json_encode($array, JSON_PRETTY_PRINT));
 
                             $periodEnd = data_get($object, 'lines.data.0.period.end');
                             $subs->upcoming_payment = $periodEnd ? Carbon::createFromTimestamp($periodEnd)->format('Y-m-d H:i:s') : null;
@@ -1606,9 +1607,11 @@ class StripeController extends Controller
                             $subs->save();
 
                             SendRenewMail::dispatch($array, 'renew', 'site');
+                            Log::info("Payment succeeded for subscription: {$subscriptionId}");
+                            // SendRenewMail::dispatch($array, 'renew', 'site');
                             // Optionally: SendPaymentSuccessEmail::dispatch(...)
                         }
-                        // Carbon::setTestNow(); // optional
+                        Carbon::setTestNow(); // optional
 
                         break;
 

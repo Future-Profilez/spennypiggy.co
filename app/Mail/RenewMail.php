@@ -12,15 +12,15 @@ use Illuminate\Queue\SerializesModels;
 class RenewMail extends Mailable
 {
     use Queueable, SerializesModels;
-    public $data;
+    public $array;
     public $type;
     public $module;
     /**
      * Create a new message instance.
      */
-    public function __construct($data,$type,$module)
+    public function __construct($array,$type,$module)
     {
-        $this->data = $data;
+        $this->array = $array;
         $this->type = $type;
         $this->module = $module;
     }
