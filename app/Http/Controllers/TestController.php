@@ -41,6 +41,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Stripe\Stripe;
+use Stripe\StripeClient;
 use Stripe\Webhook;
 
 class TestController extends Controller
@@ -367,6 +368,42 @@ class TestController extends Controller
         ]);
     }
 
+    public function archiveAllStripeProducts()
+    {
+        $client = new StripeClient(env('STRIPE_SECRET_KEY'));
+
+        try {
+            $startingAfter = null;
+
+            do {
+                $params = ['limit' => 100];
+                if ($startingAfter) {
+                    $params['starting_after'] = $startingAfter;
+                }
+
+                $products = $client->products->all($params);
+
+                foreach ($products->data as $product) {
+                    $startingAfter = $product->id;
+
+                    if ($product->active) {
+                        try {
+                            $client->products->update($product->id, ['active' => false]);
+                            Log::info("Archived product: {$product->id}");
+                        } catch (\Exception $e) {
+                            Log::error("Failed to archive product {$product->id}: " . $e->getMessage());
+                        }
+                    }
+                }
+            } while ($products->has_more);
+
+            return response()->json(['message' => 'All products archived successfully.']);
+        } catch (\Exception $e) {
+            Log::error("Error archiving Stripe products: " . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     public function handle(Request $request)
     {
         $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
@@ -439,28 +476,28 @@ class TestController extends Controller
                 Log::info("Subscription canceled: " . $data->id);
                 break;
 
-            case 'customer.subscription.trial_will_end':
-                $subscriptionId = data_get($event, 'data.object.id');
-                $customerEmail = data_get($event, 'data.object.customer_email');
-                $customerName = data_get($event, 'data.object.customer_name');
-                $invoicePdf = data_get($event, 'data.object.invoice_pdf');
+            // case 'customer.subscription.trial_will_end':
+            //     $subscriptionId = data_get($event, 'data.object.id');
+            //     $customerEmail = data_get($event, 'data.object.customer_email');
+            //     $customerName = data_get($event, 'data.object.customer_name');
+            //     $invoicePdf = data_get($event, 'data.object.invoice_pdf');
 
-                $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->first();
+            //     $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->first();
 
-                $array = [
-                    'email' => $customerEmail,
-                    'name' => $customerName,
-                    'invoice_pdf' => $invoicePdf,
-                    'uuid' => $subs->uuid,
-                    'notification' => $subs->user->notification_send ?? 0,
-                    'trial_end' => $subs->upcoming_payment ?? null,
-                    'amount' => $subs->amount ?? null,
-                    'currency' => $subs->currency ?? 'GBP',
-                ];
+            //     $array = [
+            //         'email' => $customerEmail,
+            //         'name' => $customerName,
+            //         'invoice_pdf' => $invoicePdf,
+            //         'uuid' => $subs->uuid,
+            //         'notification' => $subs->user->notification_send ?? 0,
+            //         'trial_end' => $subs->upcoming_payment ?? null,
+            //         'amount' => $subs->amount ?? null,
+            //         'currency' => $subs->currency ?? 'GBP',
+            //     ];
 
-                SendRenewMail::dispatch($array, 'trial', 'site');
-                Log::info("Trial will end soon for subscription: " . $data->id);
-                break;
+            //     SendRenewMail::dispatch($array, 'trial', 'site');
+            //     Log::info("Trial will end soon for subscription: " . $data->id);
+            //     break;
             // $this->customerSubscriptionTrialWillEnd($data);
             default:
                 Log::info("Unhandled event type: " . $type);

@@ -514,7 +514,7 @@ class StripeControl
 
             foreach ($prices->data as $price) {
                 // 2. Cancel all subscriptions using this price
-                $cancelSubscription = self::cancelSubscriptionsByPrice($client, $price->id, $connectedAccountId);
+                $cancelSubscription = self::cancelSubscriptionsByPrices($client, $price->id);
                 Log::info("Cancelled subscriptions for price: ");
                 Log::info(json_encode($cancelSubscription));
                 // 3. Deactivate the price if active
@@ -574,7 +574,7 @@ class StripeControl
 
             foreach ($prices->data as $price) {
                 // 2. Cancel all subscriptions using this price
-                $cancelSubscription = self::cancelSubscriptionsByPrice($client, $price->id, $connectedAccountId);
+                $cancelSubscription = self::cancelSubscriptionsByPrices($client, $price->id);
                 Log::info("Cancelled subscriptions for price: ");
                 Log::info(json_encode($cancelSubscription));
 
@@ -616,14 +616,13 @@ class StripeControl
     }
 
 
-    private static function cancelSubscriptionsByPrice(StripeClient $client, string $priceId, string $connectedAccountId)
+    private static function cancelSubscriptionsByPrice(StripeClient $client, string $priceId, $connectedAccountId = null)
     {
         try {
-            // Step 1: Get all subscriptions (paginated if needed)
-            $subscriptions = $client->subscriptions->all(
-                ['limit' => 100], // consider using pagination for more
-                ['stripe_account' => $connectedAccountId]
-            );
+            $options = [];
+            if ($connectedAccountId) {
+                $options['stripe_account'] = $connectedAccountId;
+            }
 
             $startingAfter = null;
 
@@ -633,7 +632,7 @@ class StripeControl
                     $params['starting_after'] = $startingAfter;
                 }
 
-                $subscriptions = $client->subscriptions->all($params, ['stripe_account' => $connectedAccountId]);
+                $subscriptions = $client->subscriptions->all($params, $options);
 
                 foreach ($subscriptions->data as $subscription) {
                     $startingAfter = $subscription->id;
@@ -644,7 +643,7 @@ class StripeControl
                                 $client->subscriptions->cancel(
                                     $subscription->id,
                                     [],
-                                    ['stripe_account' => $connectedAccountId]
+                                    $options
                                 );
                                 Log::info("Cancelled subscription: {$subscription->id}");
                                 break;
@@ -655,25 +654,46 @@ class StripeControl
                     }
                 }
             } while ($subscriptions->has_more);
+        } catch (\Exception $e) {
+            Log::error("Failed to retrieve subscriptions: " . $e->getMessage());
+        }
+    }
 
-            // // Step 2: Filter subscriptions using this price ID
-            // foreach ($subscriptions->data as $subscription) {
-            //     foreach ($subscription->items->data as $item) {
-            //         if ($item->price->id === $priceId) {
-            //             try {
-            //                 $client->subscriptions->cancel(
-            //                     $subscription->id,
-            //                     [],
-            //                     ['stripe_account' => $connectedAccountId]
-            //                 );
-            //                 Log::info("Cancelled subscription: {$subscription->id}");
-            //                 break; // skip to next subscription
-            //             } catch (\Exception $e) {
-            //                 Log::error("Failed to cancel subscription {$subscription->id}: " . $e->getMessage());
-            //             }
-            //         }
-            //     }
-            // }
+    private static function cancelSubscriptionsByPrices(StripeClient $client, string $priceId)
+    {
+        try {
+            $options = [];
+
+            $startingAfter = null;
+
+            do {
+                $params = ['limit' => 100, 'status' => 'active'];
+                if ($startingAfter) {
+                    $params['starting_after'] = $startingAfter;
+                }
+
+                $subscriptions = $client->subscriptions->all($params, $options);
+
+                foreach ($subscriptions->data as $subscription) {
+                    $startingAfter = $subscription->id;
+
+                    foreach ($subscription->items->data as $item) {
+                        if ($item->price->id === $priceId) {
+                            try {
+                                $client->subscriptions->cancel(
+                                    $subscription->id,
+                                    [],
+                                    $options
+                                );
+                                Log::info("Cancelled subscription: {$subscription->id}");
+                                break;
+                            } catch (\Exception $e) {
+                                Log::error("Failed to cancel subscription {$subscription->id}: " . $e->getMessage());
+                            }
+                        }
+                    }
+                }
+            } while ($subscriptions->has_more);
         } catch (\Exception $e) {
             Log::error("Failed to retrieve subscriptions: " . $e->getMessage());
         }

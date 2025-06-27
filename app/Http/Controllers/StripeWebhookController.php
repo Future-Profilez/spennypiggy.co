@@ -14,17 +14,24 @@ use Stripe\Exception\SignatureVerificationException;
 use App\Jobs\SendRenewMail;
 use App\StripeControl as AppStripeControl;
 use Carbon\Carbon;
+use Stripe\Customer;
 use Stripe\StripeClient;
 use Stripe\Stripe;
 use Stripe\Webhook;
 
 class StripeWebhookController extends Controller
 {
+    /**
+     * Handle Stripe Identity Verification Webhook
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function handleWebhook(Request $request)
     {
         Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
 
-        $endpointSecret = env('STRIPE_WEBHOOK_SECRET');
+        $endpointSecret = env('STRIPE_IDENTITY_VERIFICATION_WEBHOOK_SECRET');
         $sigHeader = $request->header('Stripe-Signature');
         $payload = $request->getContent();
 
@@ -65,6 +72,11 @@ class StripeWebhookController extends Controller
         }
     }
 
+    /**
+     * Handle the 'requires_input' event
+     *
+     * @param $session
+     */
     private function handleRequiresInputEvent($session)
     {
         $user = User::where('stripe_user_id', $session->id)->where('is_uk', 0)->first();
@@ -87,6 +99,11 @@ class StripeWebhookController extends Controller
         }
     }
 
+    /**
+     * Handle the verified event for identity verification sessions
+     *
+     * @param $session
+     */
     private function handleVerifiedEvent($session)
     {
         $user = User::where('stripe_user_id', $session->id)->where('is_uk', 0)->first();
@@ -108,6 +125,12 @@ class StripeWebhookController extends Controller
         }
     }
 
+    /**
+     * Check for fraud based on session details
+     *
+     * @param $session
+     * @return bool
+     */
     private function checkForFraud($session)
     {
         // Analyze the session details for fraud
@@ -134,362 +157,231 @@ class StripeWebhookController extends Controller
         return false; // No fraud detected
     }
 
-    // public function creatorMonthlyVerificationWebhook(Request $request)
-    // {
-    //     $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-    //     $endpoint_secret = env('CREATOR_TRIAL_END_MONTHLY_SUBSCRIPTION_SECRET');
+    /**
+     * Handle Stripe Webhook for all subscription updates
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function handle(Request $request)
+    {
+        $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
+        $payload = @file_get_contents('php://input');
+        $sig_header = $request->header('Stripe-Signature');
+        $event = null;
 
-    //     $payload = $request->getContent();
-    //     $sig_header = $request->header('Stripe-Signature');
-    //     $event = null;
+        try {
+            $event = Webhook::constructEvent(
+                $payload,
+                $sig_header,
+                $endpoint_secret
+            );
+        } catch (\UnexpectedValueException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+            // Invalid payload
+            http_response_code(400);
+            exit();
+        } catch (\Stripe\Exception\SignatureVerificationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+            // Invalid signature
+            http_response_code(400);
+            exit();
+        }
 
-    //     try {
-    //         $event = Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
-    //     } catch (\UnexpectedValueException | SignatureVerificationException $e) {
-    //         Log::error("Webhook signature verification failed: " . $e->getMessage());
-    //         return response()->json(['error' => 'Invalid signature'], 400);
-    //     }
+        if (!$event || !isset($event->type)) {
+            Log::warning('Stripe webhook: invalid payload');
+            return response()->json(['error' => 'Invalid payload'], 400);
+        }
 
-    //     if (!empty($event)) {
-    //         $subscriptionId = data_get($event, 'data.object.id');
-    //         $customerEmail = data_get($event, 'data.object.customer_email');
-    //         $customerName = data_get($event, 'data.object.customer_name');
-    //         $invoicePdf = data_get($event, 'data.object.invoice_pdf');
+        $type = $event->type;
+        $data = $event->data->object;
 
-    //         $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->first();
+        $metadata = $event->data->object->metadata ?? null;
 
-    //         try {
-    //             $ret = AppStripeControl::getSubscription($subscriptionId);
-    //         } catch (\Exception $e) {
-    //             Log::error("Failed to retrieve subscription: " . $e->getMessage());
-    //             return response()->json(['error' => 'Failed to retrieve subscription'], 500);
-    //         }
+        switch ($type) {
+            case 'customer.subscription.updated':
+                $productType = $metadata->type ?? null;
 
-    //         if ($subs) {
-    //             $array = [
-    //                 'email' => $customerEmail,
-    //                 'name' => $customerName,
-    //                 'invoice_pdf' => $invoicePdf,
-    //                 'uuid' => $subs->uuid,
-    //                 'notification' => $subs->user->notification_send ?? 0,
-    //             ];
+                switch ($productType) {
+                    case 'bill':
+                        Log::info("Handling Bill Subscription Update");
+                        $this->handleBillSubscriptionUpdate($data, $metadata);
+                        break;
 
-    //             switch ($event->type) {
-    //                 // case "customer.subscription.trial_will_end":
-    //                 // $subs->status = "trial";
-    //                 // $subs->save();
-    //                 // SendRenewMail::dispatch($array, 'trial', 'site');
-    //                 // break;
+                    case 'membership':
+                        Log::info("Handling Membership Subscription Update");
+                        $this->handleMembershipSubscriptionUpdate($data, $metadata);
+                        break;
 
-    //                 case "invoice.paid":
-    //                 case "invoice.payment_succeeded":
-    //                     $subs->status = "paid";
-    //                     $subs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
-    //                     $subs->save();
+                    case 'wish':
+                        Log::info("Handling Wish Subscription Update");
+                        $this->handleWishSubscriptionUpdate($data, $metadata);
+                        break;
 
-    //                     $planAmount = data_get($event, 'data.object.lines.data.0.plan.amount', 0);
-    //                     $planCurrency = strtoupper(data_get($event, 'data.object.lines.data.0.plan.currency', 'usd'));
-    //                     $amount = $planAmount / 100;
+                    default:
+                        Log::warning("Unknown product type in metadata: " . json_encode($metadata));
+                        break;
+                }
+                break;
 
-    //                     SendPaymentSuccessEmail::dispatch($subs->user, $amount, $planCurrency, $subs->upcoming_payment);
-    //                     // dispatch(new SendPaymentSuccessEmail(
-    //                     //     $subs->user,
-    //                     //     $amount,
-    //                     //     $planCurrency,
-    //                     //     $subs->upcoming_payment
-    //                     // ));
-    //                     break;
+            case 'customer.subscription.deleted':
+                $this->customerSubscriptionDeleted($data);
+                Log::info("Subscription canceled: " . $data->id);
+                break;
 
-    //                 case "customer.subscription.deleted":
-    //                     $subs->status = "cancelled";
-    //                     $subs->save();
-    //                     SendRenewMail::dispatch($array, 'cancelled', 'site');
-    //                     break;
+            // case 'customer.subscription.trial_will_end':
+            //     $subscriptionId = data_get($event, 'data.object.id');
+            //     $customerEmail = data_get($event, 'data.object.customer_email');
+            //     $customerName = data_get($event, 'data.object.customer_name');
+            //     $invoicePdf = data_get($event, 'data.object.invoice_pdf');
 
-    //                 case "invoice.payment_failed":
-    //                     $subs->status = "failed";
-    //                     $subs->save();
-    //                     SendRenewMail::dispatch($array, 'failed', 'site');
-    //                     break;
+            //     $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->first();
 
-    //                 case "invoice.updated":
-    //                     $subs->status = "ended";
-    //                     $subs->save();
+            //     $array = [
+            //         'email' => $customerEmail,
+            //         'name' => $customerName,
+            //         'invoice_pdf' => $invoicePdf,
+            //         'uuid' => $subs->uuid,
+            //         'notification' => $subs->user->notification_send ?? 0,
+            //         'trial_end' => $subs->upcoming_payment ?? null,
+            //         'amount' => $subs->amount ?? null,
+            //         'currency' => $subs->currency ?? 'GBP',
+            //     ];
 
-    //                     $newSubs = new MonthlyCharge();
-    //                     $newSubs->stripe_id = $subs->stripe_id;
-    //                     $newSubs->session_id = $subs->session_id;
-    //                     $newSubs->user_id = $subs->user_id;
-    //                     $newSubs->name = $subs->name;
-    //                     $newSubs->email = $subs->email;
-    //                     $newSubs->currency = $subs->currency;
-    //                     $newSubs->amount = $subs->amount;
-    //                     $newSubs->tax = $subs->tax;
-    //                     $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
-    //                     $newSubs->status = "paid";
-    //                     $newSubs->created_at = $subs->created_at;
-    //                     $newSubs->updated_at = $subs->updated_at;
-    //                     $newSubs->save();
+            //     SendRenewMail::dispatch($array, 'trial', 'site');
+            //     Log::info("Trial will end soon for subscription: " . $data->id);
+            //     break;
+            // $this->customerSubscriptionTrialWillEnd($data);
+            default:
+                Log::info("Unhandled event type: " . $type);
+        }
+        return response()->json(['status' => 'success']);
+    }
 
-    //                     SendRenewMail::dispatch($array, 'renew', 'site');
-    //                     break;
+    /**
+     * Handle Stripe Webhook for mandatory subscription status
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function mandatorySubscriptionStatus(Request $request)
+    {
+        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+        $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
 
-    //                 default:
-    //                     Log::info("Unhandled event type: {$event->type}");
-    //                     break;
-    //             }
-    //         }
-    //     }
+        $payload = $request->getContent();
+        $sig_header = $request->header('Stripe-Signature');
+        $event = null;
 
-    //     return response()->json(['status' => 'success']);
-    // }
-    // public function creatorMonthlyVerificationWebhook(Request $request)
-    // {
-    //     // $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-    //     // $endpoint_secret = 'whsec_uudLXC7MsoAON61MKFLJ8RYQxuDeyFgf';
-    //     // // $endpoint_secret = env('CREATOR_TRIAL_END_MONTHLY_SUBSCRIPTION_SECRET');
+        try {
+            $event = Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
+        } catch (\UnexpectedValueException | \Stripe\Exception\SignatureVerificationException $e) {
+            Log::error("Webhook signature verification failed: " . $e->getMessage());
+            return response()->json(['error' => 'Invalid signature'], 400);
+        }
 
-    //     // // $endpoint_secret = env('MEMBER_SUB_WEBHOOK_SECRET');
-    //     // $payload = @file_get_contents('php://input');
-    //     // $sig_header = $request->server('HTTP_STRIPE_SIGNATURE');
-    //     // $sig_header = $request->header('Stripe-Signature');
-    //     Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+        if ($event) {
+            $eventType = $event->type;
+            $object = $event->data->object;
 
-    //     $endpointSecret = 'whsec_2wIP8BkntEN3ZmvsGSRwP2U2kVe9ifmU';
-    //     $sigHeader = $request->header('Stripe-Signature');
-    //     $payload = $request->getContent();
-    //     $event = null;
+            $customer_id = $object->customer ?? null;
+            $customer = Customer::retrieve($customer_id);
 
-    //     // Validate the Stripe event
-    //     $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
+            $subscriptionId = data_get($object, 'subscription');
+            $customerEmail = $customer->email ?? null;
+            $customerName = data_get($object, 'customer_name');
+            $invoicePdf = data_get($object, 'invoice_pdf');
 
-    //     $session = $event->data->object;
-    //     Log::info('Webhook received: ');
-    //     Log::info(json_encode($event));
+            $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->orderBy('updated_at', 'desc')->first();
 
-    //     // try {
-    //     //     $event = Webhook::constructEvent(
-    //     //         $payload,
-    //     //         $sig_header,
-    //     //         $endpoint_secret
-    //     //     );
-    //     // } catch (\UnexpectedValueException $e) {
-    //     //     return response()->json([
-    //     //         'status' => false,
-    //     //         'message' => $e->getMessage()
-    //     //     ]);
-    //     //     // Invalid payload
-    //     //     http_response_code(400);
-    //     //     exit();
-    //     // } catch (\Stripe\Exception\SignatureVerificationException $e) {
-    //     //     return response()->json([
-    //     //         'status' => false,
-    //     //         'message' => $e->getMessage()
-    //     //     ]);
-    //     //     // Invalid signature
-    //     //     http_response_code(400);
-    //     //     exit();
-    //     // }
-    //     // $payload = $request->getContent();
-    //     // $sig_header = $request->header('Stripe-Signature');
-    //     // $event = null;
+            if ($subs) {
+                $array = [
+                    'email' => $customerEmail,
+                    'name' => $customerName,
+                    'invoice_pdf' => $invoicePdf,
+                    'uuid' => $subs->uuid,
+                    'notification' => $subs->user->notification_send ?? 0,
+                    'trial_end' => $subs->upcoming_payment ?? null,
+                    'amount' => $subs->amount ?? null,
+                    'currency' => $subs->currency ?? 'GBP',
+                ];
 
-    //     // try {
-    //     //     $event = Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
-    //     // } catch (\UnexpectedValueException | SignatureVerificationException $e) {
-    //     //     Log::error("Webhook signature verification failed: " . $e->getMessage());
-    //     //     return response()->json(['error' => 'Invalid signature'], 400);
-    //     // }
+                switch ($eventType) {
+                    case "customer.subscription.trial_will_end":
+                        // Notify user 3 days before charge
+                        SendRenewMail::dispatch($array, 'trial', 'site');
+                        break;
 
-    //     // if (!empty($event)) {
-    //     //     $subscriptionId = data_get($event, 'data.object.id');
-    //     //     $customerEmail = data_get($event, 'data.object.customer_email');
-    //     //     $customerName = data_get($event, 'data.object.customer_name');
-    //     //     $invoicePdf = data_get($event, 'data.object.invoice_pdf');
+                    case "invoice.payment_succeeded":
+                        // Carbon::setTestNow(Carbon::create(2026, 1, 5, 10, 30, 0));
 
-    //     //     Log::info('Webhook received: ');
-    //     //     Log::info(json_encode($event));
+                        if (($subs->current_end_trial_date && Carbon::parse($subs->current_end_trial_date)->lte(now()) && !$subs->current_end_subscription_date) || ($subs->current_end_subscription_date &&
+                            Carbon::parse($subs->current_end_subscription_date)->lte(now()))) {
 
-    //     //     $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->first();
+                            $periodEnd = data_get($object, 'lines.data.0.period.end');
+                            $subs->upcoming_payment = $periodEnd ? Carbon::createFromTimestamp($periodEnd)->format('Y-m-d H:i:s') : null;
+                            $subs->current_start_subscription_date = now();
+                            $subs->current_end_subscription_date = now()->addMonths(1);
+                            $subs->status = "paid";
+                            $subs->save();
 
-    //     //     try {
-    //     //         $ret = AppStripeControl::getSubscription($subscriptionId);
-    //     //     } catch (\Exception $e) {
-    //     //         Log::error("Failed to retrieve subscription: " . $e->getMessage());
-    //     //         return response()->json(['error' => 'Failed to retrieve subscription'], 500);
-    //     //     }
+                            SendRenewMail::dispatch($array, 'renew', 'site');
+                            // Optionally: SendPaymentSuccessEmail::dispatch(...)
+                        }
+                        // Carbon::setTestNow(); // optional
 
-    //     //     if ($subs) {
-    //     //         $array = [
-    //     //             'email' => $customerEmail,
-    //     //             'name' => $customerName,
-    //     //             'invoice_pdf' => $invoicePdf,
-    //     //             'uuid' => $subs->uuid,
-    //     //             'notification' => $subs->user->notification_send ?? 0,
-    //     //         ];
+                        break;
 
-    //     //         switch ($event->type) {
-    //     //             case "customer.subscription.trial_will_end":
-    //     //                 $subs->status = "trial_ending";
-    //     //                 $subs->save();
-    //     //                 SendRenewMail::dispatch($array, 'trial_ending', 'site');
-    //     //                 break;
+                    case "invoice.payment_failed":
+                        Log::warning("Payment failed for subscription: {$subscriptionId}");
+                        $subs->status = "failed";
+                        $subs->save();
+                        SendRenewMail::dispatch($array, 'failed', 'site');
+                        break;
 
-    //     //             case "invoice.paid":
-    //     //             case "invoice.payment_succeeded":
-    //     //                 $subs->status = "paid";
-    //     //                 $subs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
-    //     //                 $subs->save();
+                    default:
+                        Log::info("Unhandled event type: {$eventType}");
+                        break;
+                }
+            }
+        }
 
-    //     //                 $planAmount = data_get($event, 'data.object.lines.data.0.plan.amount', 0);
-    //     //                 $planCurrency = strtoupper(data_get($event, 'data.object.lines.data.0.plan.currency', 'usd'));
-    //     //                 $amount = $planAmount / 100;
+        return response()->json(['status' => 'success']);
+    }
 
-    //     //                 dispatch(new SendPaymentSuccessEmail(
-    //     //                     $subs->user,
-    //     //                     $amount,
-    //     //                     $planCurrency,
-    //     //                     $subs->upcoming_payment
-    //     //                 ));
-    //     //                 break;
+    public function CreateProductForCreatorAndGifter()
+    {
+        $client = new StripeClient(env('STRIPE_SECRET_KEY'));
+        try {
+            // Step 1: Create the product
+            $product = $client->products->create([
+                'name' => 'Creator Monthly Subscription 4 Pound Product',
+            ]);
 
-    //     //             case "customer.subscription.deleted":
-    //     //                 $subs->status = "cancelled";
-    //     //                 $subs->save();
-    //     //                 SendRenewMail::dispatch($array, 'cancelled', 'site');
-    //     //                 break;
+            // Step 2: Create the recurring price
+            $price = $client->prices->create([
+                'unit_amount' => 400, // 4 GBP = 400 pence
+                'currency' => 'gbp',
+                'recurring' => [
+                    'interval' => 'month', // monthly plan
+                    'interval_count' => 1
+                ],
+                'product' => $product->id,
+            ]);
 
-    //     //             case "invoice.payment_failed":
-    //     //                 $subs->status = "failed";
-    //     //                 $subs->save();
-    //     //                 SendRenewMail::dispatch($array, 'failed', 'site');
-    //     //                 break;
-
-    //     //             case "invoice.updated":
-    //     //                 $subs->status = "ended";
-    //     //                 $subs->save();
-
-    //     //                 $newSubs = new MonthlyCharge();
-    //     //                 $newSubs->stripe_id = $subs->stripe_id;
-    //     //                 $newSubs->session_id = $subs->session_id;
-    //     //                 $newSubs->user_id = $subs->user_id;
-    //     //                 $newSubs->name = $subs->name;
-    //     //                 $newSubs->email = $subs->email;
-    //     //                 $newSubs->currency = $subs->currency;
-    //     //                 $newSubs->amount = $subs->amount;
-    //     //                 $newSubs->tax = $subs->tax;
-    //     //                 $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
-    //     //                 $newSubs->status = "paid";
-    //     //                 $newSubs->created_at = $subs->created_at;
-    //     //                 $newSubs->updated_at = $subs->updated_at;
-    //     //                 $newSubs->save();
-
-    //     //                 SendRenewMail::dispatch($array, 'renew', 'site');
-    //     //                 break;
-
-    //     //             default:
-    //     //                 Log::info("Unhandled event type: {$event->type}");
-    //     //                 break;
-    //     //         }
-    //     //     }
-    //     // }
-
-    //     return response()->json(['status' => 'success']);
-    // }
-
-
-    // public function handleWebhook(Request $request)
-    // {
-    //     Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
-
-    //     $endpointSecret = env('STRIPE_WEBHOOK_SECRET');
-    //     $sigHeader = $request->header('Stripe-Signature');
-    //     $payload = $request->getContent();
-
-    //     try {
-    //         // Validate and construct the Stripe event
-    //         $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
-    //         $session = $event->data->object;
-
-    //         switch ($event->type) {
-    //             // case 'identity.verification_session.processing':
-    //             //     $this->handleProcessingEvent($session);
-    //             //     break;
-
-    //             case 'identity.verification_session.requires_input':
-    //                 $this->handleRequiresInputEvent($session);
-    //                 break;
-
-    //             case 'identity.verification_session.verified':
-    //                 $this->handleVerifiedEvent($session);
-    //                 break;
-
-    //             default:
-    //                 Log::warning('Unhandled event type', ['type' => $event->type]);
-    //                 break;
-    //         }
-
-    //         return response()->json(['status' => 'success']);
-    //     } catch (\Exception $e) {
-    //         Log::error('Stripe Webhook Error', ['message' => $e->getMessage()]);
-    //         return response()->json(['error' => $e->getMessage()], 400);
-    //     }
-    // }
-
-    // private function handleProcessingEvent($session)
-    // {
-    //     $user = User::where('stripe_user_id', $session->id)->first();
-
-    //     if ($user) {
-    //         $user->update([
-    //             'identity_status' => 2, // Processing
-    //             'identity_verification_error' => null, // Clear previous errors
-    //         ]);
-
-    //         Log::info('Verification session is processing', ['user_id' => $user->id, 'session_id' => $session->id]);
-
-    //         SendIdentityVerificationEmail::dispatch($user, 'process');
-    //     } else {
-    //         Log::error('User not found for processing verification session', ['session_id' => $session->id]);
-    //     }
-    // }
-
-    // private function handleRequiresInputEvent($session)
-    // {
-    //     $user = User::where('stripe_user_id', $session->id)->first();
-
-    //     if ($user) {
-    //         $user->update([
-    //             'identity_status' => 0, // Failed
-    //             'identity_verification_error' => $session->last_error ? json_encode($session->last_error) : null,
-    //             'identity_verification_details' => null,
-    //             'identity_verified_at' => null,
-    //         ]);
-
-    //         Log::info('Verification session requires input', ['user_id' => $user->id, 'session_id' => $session->id]);
-
-    //         SendIdentityVerificationEmail::dispatch($user, 'failed');
-    //     } else {
-    //         Log::error('User not found for verification session requiring input', ['session_id' => $session->id]);
-    //     }
-    // }
-
-    // private function handleVerifiedEvent($session)
-    // {
-    //     $user = User::where('stripe_user_id', $session->id)->first();
-
-    //     if ($user) {
-    //         $user->update([
-    //             'identity_status' => 1, // Verified
-    //             'identity_verified_at' => now(),
-    //             'identity_verification_details' => json_encode($session),
-    //         ]);
-
-    //         Log::info('Verification session verified', ['user_id' => $user->id, 'session_id' => $session->id]);
-
-    //         SendIdentityVerificationEmail::dispatch($user, 'success');
-    //     } else {
-    //         Log::error('User not found for verified verification session', ['session_id' => $session->id]);
-    //     }
-    // }
+            return [
+                'product_id' => $product->id,
+                'price_id' => $price->id,
+            ];
+        } catch (\Exception $e) {
+            Log::error("Error creating £4/month subscription: " . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
 }

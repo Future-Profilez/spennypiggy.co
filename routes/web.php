@@ -83,13 +83,14 @@ Route::get('/giftstore', function () {
 
 Route::post('subscription-update-status', [StripeController::class, 'subscriptionUpdateStatus']);
 
+Route::get('create-product-for-creator-and-gifter', [StripeWebhookController::class, 'CreateProductForCreatorAndGifter']);
+
 // routes/web.php or routes/api.php
-Route::post('/webhook/payment', [TestController::class, 'handle']);
-
-
 
 Route::get('delete-all-products', [TestController::class, 'deleteAllProducts'])->name('delete.all.products');
 
+// delete all products from stripe
+Route::get('archived-all-products', [TestController::class, 'archiveAllStripeProducts'])->name('archived.all.products');
 
 Route::get('send-identity-verification-failed-emails', [TestController::class, 'sendFailedVerificationEmails']);
 
@@ -143,7 +144,6 @@ Route::get('/magicbell/user-key', [NotificationController::class, 'getUserKey'])
 Route::post('/magicbell/send-notification', [NotificationController::class, 'sendNotification']);
 Route::get('/test-push', [NotificationController::class, 'testSendNotification']);
 
-
 Route::get('/service-worker.js', function () {
     $assetRoot = rtrim(asset("/"), "/");
     $content = file_get_contents(resource_path("proxy/service-worker.js"));
@@ -162,7 +162,6 @@ Route::get('/new-service-worker.js', function () {
     ]);
 })->name('service.worker');
 
-
 Route::get('/manifest.json', function () {
     $assetRoot = rtrim(asset("/"), "/");
     $content = file_get_contents(resource_path("proxy/manifest.json"));
@@ -171,7 +170,6 @@ Route::get('/manifest.json', function () {
         "Content-Type" => "text/json",
     ]);
 })->name('manifest.file');
-
 
 Route::get('/android-chrome-192x192.png', function () {
     $assetRoot = rtrim(asset("/"), "/");
@@ -182,8 +180,6 @@ Route::get('/android-chrome-192x192.png', function () {
     ]);
 })->name('192.image.file');
 
-
-
 Route::get('/android-chrome-512x512.png', function () {
     $assetRoot = rtrim(asset("/"), "/");
     $content = file_get_contents(filename: resource_path("proxy/android-chrome-512x512.png"));
@@ -192,7 +188,6 @@ Route::get('/android-chrome-512x512.png', function () {
         "Content-Type" => "image/png",
     ]);
 })->name('512.image.file');
-
 
 Route::get('/favicon-16x16.png', function () {
     $assetRoot = rtrim(asset("/"), "/");

@@ -15,11 +15,6 @@ class VerifyCsrfToken extends Middleware
         '/stripe/webhook',
         '/rye-webhook',
         '/mandatory-status',
-        '/subs-status',
-        '/bill-status',
-        '/membership-status',
-        '/creator-monthly-verification-webhook',
-        '/subscription-update-status',
         '/webhook/payment',
     ];
 }
