@@ -232,7 +232,7 @@ class StripeWebhookController extends Controller
                 break;
 
             case 'customer.subscription.deleted':
-                $this->customerSubscriptionDeleted($data);
+                // $this->customerSubscriptionDeleted($data);
                 Log::info("Subscription canceled: " . $data->id);
                 break;
 
