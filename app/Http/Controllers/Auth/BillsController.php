@@ -356,7 +356,7 @@ class BillsController extends Controller
                 ])->whereNotNull('price_id')->first();
 
                 $customer_id = $storeCustomer->stripe_customer_id ?? null;
-                $product_id = $storeCustomer->product_id ?? null;
+                // $product_id = $storeCustomer->product_id ?? null;
 
                 // $existingSubscription = $customer_id
                 //     ? StripeControl::getSubscription($product_id, $connectedAccountId)

@@ -406,8 +406,7 @@ class StripeWebhookController extends Controller
         }
 
         $user = User::find($subs->owner->id ?? $subs->owner_id ?? 0);
-        if($user->account_id)
-        {
+        if ($user->account_id) {
             $ret = AppStripeControl::getSubscription($data->id, $user->account_id);
         }
 
