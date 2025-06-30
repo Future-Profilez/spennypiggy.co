@@ -12,6 +12,10 @@ use Illuminate\Support\Facades\Log;
 use Stripe\Exception\SignatureVerificationException;
 use App\Services\StripeControl;
 use App\Jobs\SendRenewMail;
+use App\Models\BillPayment;
+use App\Models\MembershipPayment;
+use App\Models\StripePaymentDetail;
+use App\Models\WishItemSubscription;
 use App\StripeControl as AppStripeControl;
 // use App\StripeControl as AppStripeControl;
 use Carbon\Carbon;
@@ -264,6 +268,183 @@ class StripeWebhookController extends Controller
         }
         return response()->json(['status' => 'success']);
     }
+
+    public function handleBillSubscriptionUpdate($data, $metadata)
+    {
+        $subscriptionId = $data->id;
+        $status = $data->status;
+        $currentPeriodEnd = Carbon::createFromTimestamp($data->current_period_end);
+
+        $user = User::find($metadata->creator_id ?? 0);
+
+        $subs = BillPayment::where('stripe_id', $subscriptionId)->where('user_id', $metadata->user_id)->latest()->first();
+
+        if (!$subs) {
+            Log::warning("No active bill subscription found for stripe_id: {$subscriptionId}");
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No active bill subscription found.'
+            ], 404);
+        }
+        $ret = AppStripeControl::getSubscription($subscriptionId, $user->account_id);
+
+        $array = [
+            'email' => $data->customer_email,
+            'name' => $data->customer_name,
+            'invoice_pdf' => $data->invoice_pdf,
+            'uuid' => $subs->uuid,
+            'notification' => $subs->user->notification_send ?? 0,
+            'trial_end' => $subs->upcoming_payment ?? null,
+            'amount' => $subs->amount ?? null,
+            'currency' => $subs->currency ?? 'GBP',
+        ];
+
+        $subs->status = "ended";
+        $subs->save();
+
+        $newSubs = new BillPayment();
+        $newSubs->stripe_id = $subs->stripe_id;
+        $newSubs->session_id = $subs->session_id;
+        $newSubs->bills_id = $subs->bills_id;
+        $newSubs->user_id = $subs->user_id;
+        $newSubs->guest_name = $subs->guest_name;
+        $newSubs->guest_email = $subs->guest_email;
+        $newSubs->currency = $subs->currency;
+        $newSubs->amount = $subs->amount;
+        $newSubs->tax = $subs->tax;
+        $newSubs->recurring_for = $subs->recurring_for;
+        $newSubs->recurring_type = $subs->recurring_type;
+        $newSubs->message = $subs->message;
+        $newSubs->anonymous = $subs->anonymous;
+        $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+        $newSubs->status = "paid";
+        $newSubs->created_at = $subs->created_at;
+        $newSubs->updated_at = Carbon::now();
+        $newSubs->save();
+
+        SendRenewMail::dispatch($array, 'renew', 'bill');
+
+        Log::info("Bill subscription updated: {$subscriptionId}, Status: {$status}");
+    }
+
+    public function handleMembershipSubscriptionUpdate($data, $metadata)
+    {
+        $subscriptionId = $data->id;
+        $status = $data->status;
+        // $currentPeriodEnd = Carbon::createFromTimestamp($data->current_period_end);
+
+        $user = User::find($metadata->creator_id ?? 0);
+
+        $subs = MembershipPayment::where('stripe_id', $subscriptionId)->where('user_id', $metadata->user_id)->latest()->first();
+
+        if (!$subs) {
+            Log::warning("No active membership subscription found for stripe_id: {$subscriptionId}");
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No active membership subscription found.'
+            ], 404);
+        }
+        $ret = AppStripeControl::getSubscription($subscriptionId, $user->account_id);
+
+        $array = [
+            'email' => $subs->guest_email ?? $data->customer_email,
+            'name' => $subs->guest_name ?? $data->customer_name,
+            'invoice_pdf' => $data->invoice_pdf ?? null,
+            'uuid' => $subs->uuid,
+            'notification' => $subs->user->notification_send ?? 0,
+            'trial_end' => $subs->upcoming_payment ?? null,
+            'amount' => $subs->amount ?? null,
+            'currency' => $subs->currency ?? 'GBP',
+        ];
+
+        Log::info(json_encode($array));
+        Log::info("Handling membership subscription update for user: {$subs->user_id}, subscription ID: {$subscriptionId}");
+
+
+        $subs->status = "ended";
+        $subs->save();
+
+        $newSubs = new MembershipPayment();
+        $newSubs->stripe_id = $subs->stripe_id;
+        $newSubs->session_id = $subs->session_id;
+        $newSubs->membership_id = $subs->membership_id;
+        $newSubs->user_id = $subs->user_id;
+        $newSubs->guest_name = $subs->guest_name;
+        $newSubs->guest_email = $subs->guest_email;
+        $newSubs->currency = $subs->currency;
+        $newSubs->amount = $subs->amount;
+        $newSubs->tax = $subs->tax;
+        $newSubs->recurring_for = $subs->recurring_for;
+        $newSubs->recurring_type = $subs->recurring_type;
+        $newSubs->message = $subs->message;
+        $newSubs->anonymous = $subs->anonymous;
+        $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+        $newSubs->status = "paid";
+        $newSubs->created_at = $subs->created_at;
+        $newSubs->updated_at = Carbon::now();
+        $newSubs->save();
+
+        SendRenewMail::dispatch($array, 'renew', 'membership');
+
+        Log::info("Membership subscription updated: {$subscriptionId}, Status: {$status}");
+    }
+
+    public function handleWishSubscriptionUpdate($data, $metadata)
+    {
+        $subscriptionId = $data->id;
+        // $status = $data->status;
+        $currentPeriodEnd = Carbon::createFromTimestamp($data->current_period_end);
+
+        $subs = StripePaymentDetail::where('user_id', $metadata->user_id)->whereIn('payment_status', ['paid', 'pending'])->latest()->first();
+        $wish_subscription = WishItemSubscription::where('stripe_id', $subscriptionId)->where('status', 'paid')->latest()->first();
+        if (!$wish_subscription) {
+            Log::warning("No active wish subscription found for stripe_id: {$subscriptionId}");
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No active wish subscription found.'
+            ], 404);
+        }
+
+        $ret = AppStripeControl::getSubscription($data->id, $subs->owner->account_id);
+
+        $array = [
+            'email' => $data->customer_email,
+            'name' => $data->customer_name,
+            'invoice_pdf' => $data->invoice_pdf,
+            'uuid' => $subs->uuid,
+            'notification' => $subs->user->notification_send ?? 0,
+            'trial_end' => $subs->upcoming_payment ?? null,
+            'amount' => $subs->amount ?? null,
+            'currency' => $subs->currency ?? 'GBP',
+        ];
+
+        $wish_subscription->status = "ended";
+        $wish_subscription->save();
+
+        $newSubs = new WishItemSubscription();
+        $newSubs->stripe_id = $wish_subscription->stripe_id;
+        $newSubs->session_id = $wish_subscription->session_id;
+        $newSubs->wish_item_id = $wish_subscription->wish_item_id;
+        $newSubs->user_id = $wish_subscription->user_id;
+        $newSubs->guest_name = $wish_subscription->guest_name;
+        $newSubs->guest_email = $wish_subscription->guest_email;
+        $newSubs->currency = $wish_subscription->currency;
+        $newSubs->amount = $wish_subscription->amount;
+        $newSubs->tax = $wish_subscription->tax;
+        $newSubs->recurring_for = $wish_subscription->recurring_for;
+        $newSubs->recurring_type = $wish_subscription->recurring_type;
+        $newSubs->payment_method = 'stripe';
+        $newSubs->surprise_message = $wish_subscription->surprise_message;
+        $newSubs->anonymous = $wish_subscription->anonymous;
+        $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
+        $newSubs->status = "paid";
+        $newSubs->created_at = $wish_subscription->created_at;
+        $newSubs->updated_at = Carbon::now();
+        $newSubs->save();
+
+        SendRenewMail::dispatch($array, 'renew', 'main');
+    }
+
 
     /**
      * Handle Stripe Webhook for mandatory subscription status
