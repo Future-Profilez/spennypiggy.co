@@ -10,9 +10,10 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Stripe\Exception\SignatureVerificationException;
-// use App\Services\StripeControl;
+use App\Services\StripeControl;
 use App\Jobs\SendRenewMail;
 use App\StripeControl as AppStripeControl;
+// use App\StripeControl as AppStripeControl;
 use Carbon\Carbon;
 use Stripe\Customer;
 use Stripe\StripeClient;
@@ -291,7 +292,7 @@ class StripeWebhookController extends Controller
             $object = $event->data->object;
 
             $customer_id = $object->customer ?? null;
-            $customer = Customer::retrieve($customer_id);
+            $customer = $stripe->customers->retrieve($customer_id, []);
 
             $subscriptionId = data_get($object, 'subscription');
             $customerEmail = $customer->email ?? null;
