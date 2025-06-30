@@ -236,7 +236,7 @@ class StripeWebhookController extends Controller
                 break;
 
             case 'customer.subscription.deleted':
-                // $this->customerSubscriptionDeleted($data);
+                $this->customerSubscriptionDeleted($data);
                 Log::info("Subscription canceled: " . $data->id);
                 break;
 
@@ -405,7 +405,11 @@ class StripeWebhookController extends Controller
             ], 404);
         }
 
-        $ret = AppStripeControl::getSubscription($data->id, $subs->owner->account_id);
+        $user = User::find($subs->owner->id ?? $subs->owner_id ?? 0);
+        if($user->account_id)
+        {
+            $ret = AppStripeControl::getSubscription($data->id, $user->account_id);
+        }
 
         $array = [
             'email' => $data->customer_email,
@@ -445,6 +449,16 @@ class StripeWebhookController extends Controller
         SendRenewMail::dispatch($array, 'renew', 'main');
     }
 
+
+    public function customerSubscriptionDeleted($data)
+    {
+        $subscriptionId = $data->id;
+
+        // Delete the subscription from your database
+        // Example: Subscription::where('stripe_id', $subscriptionId)->delete();
+
+        Log::info("Subscription deleted: {$subscriptionId}");
+    }
 
     /**
      * Handle Stripe Webhook for mandatory subscription status
