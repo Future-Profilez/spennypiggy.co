@@ -49,8 +49,8 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         console.log("avataruid",avataruid)
         container.innerHTML = `
             <div id="card-to-capture" style="
-                    width: 500px;
-                    height: 235px;
+                    width: 360px;
+                    height: 229px;
                     background: linear-gradient(135deg, #6f42c1, #1e90ff);
                     color: white;
                     font-family: sans-serif;
@@ -58,8 +58,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                     padding: 30px 30px;
                     display: flex;
                     align-items: center;
-                    gap: 22px;
-                    ">
+                    gap: 22px;">
                     <img  crossOrigin="anonymous" src="https://ucarecdn.com/${avataruid}/-/format/jpeg/" style="
                         width: 130px;
                         height: 130px;
