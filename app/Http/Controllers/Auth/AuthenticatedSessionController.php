@@ -223,7 +223,11 @@ class AuthenticatedSessionController extends Controller
         $userfield = $user->name;
         // $userName = str_replace(' ', '%20', $userfield);
         // $image = "https://ucarecdn.com/8dfae4ba-cd77-406f-8b70-7cf360b4c18c/-/preview/900x900/-/text_align/center/center/-/font/14/000000/-/text/100px30p/100p,100p/spennypiggy.co~s" . $user->username . "/-/text_align/center/center/-/font/19/e6ea82/-/text/100px78p/100p,100p/" . $userName . "/";
-        $image = "https://ucarecdn.com/". $user->social_image ."/-/preview/";
+        
+        $image = null;
+        if(!empty($user->social_image)){
+            $image = "https://ucarecdn.com/". $user->social_image ."/-/preview/";
+        }
 
         $slinks = [];
         $sociallinks = [];
