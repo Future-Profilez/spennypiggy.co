@@ -59,7 +59,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                     display: flex;
                     align-items: center;
                     gap: 12px;">
-                    <img  crossOrigin="anonymous" src="https://ucarecdn.com/${avataruid}/-/format/jpeg/" style="
+                    <img  crossOrigin="anonymous" src="https://ucarecdn.com/${avataruid}/-/crop/face/1:1/-/preview/" style="
                         width: 80px;
                         height: 80px;
                         border-radius: 12px;
