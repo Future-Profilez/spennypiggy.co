@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import * as LR from 'https://cdn.jsdelivr.net/npm/@uploadcare/blocks@0.25.0/web/lr-cloud-image-editor.min.js';
 
-export default function UploadcareEditor({uuid, updateFile, setIsEditable}){
+export default function UploadcareEditor({uuid, updateFile, setIsEditable, height}){
 
   useEffect(() => {
     LR.registerBlocks(LR);
@@ -23,7 +23,7 @@ export default function UploadcareEditor({uuid, updateFile, setIsEditable}){
       <style>
         {`
           body {
-            height: 100vh;
+            height: ${height || '100vh'};
             width: 100vw;
             margin: 0;
           }
