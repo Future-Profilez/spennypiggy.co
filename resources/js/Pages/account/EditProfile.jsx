@@ -8,6 +8,7 @@ import { useAlerts } from '@/Components/Alerts';
 import UpdateAvatar from './UpdateAvatar';
 import LoaderButton from '@/Components/LoaderButton';
 import PriceFormat from '@/includes/PriceFormat';
+import html2canvas from 'html2canvas';
 
 export default function EditProfile({ user, text, classes, updateProfileSteps }) {
  
@@ -16,9 +17,85 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
     const [profileDP, setProfileDP] = useState();
     const [coverImage, setCoverImage] = useState();
 
+    const [socialFile, setSocialFile] = useState();
+    const generateCardAndUpload = async (avataruid) => {
+        const container = document.createElement('div');
+        container.style.position = 'absolute';
+        container.style.left = '-9999px';
+        container.style.top = '0';
+        container.style.zIndex = '-1';
+        document.body.appendChild(container);
+
+        const nameuper = user?.name.toUpperCase();
+        console.log("avataruid",avataruid)
+        container.innerHTML = `
+            <div id="card-to-capture" style="
+                    width: 500px;
+                    height: 235px;
+                    background: linear-gradient(135deg, #6f42c1, #1e90ff);
+                    color: white;
+                    font-family: sans-serif;
+                    border-radius: 16px;
+                    padding: 30px 30px;
+                    display: flex;
+                    align-items: center;
+                    gap: 22px;
+                    ">
+                    <img  crossOrigin="anonymous" src="https://ucarecdn.com/${avataruid}/-/format/jpeg/" style="
+                        width: 130px;
+                        height: 130px;
+                        border-radius: 12px;
+                        object-fit: cover;
+                        border: 2px solid white;
+                    ">
+                    <div>
+                        <h3 style="margin: 0;font-size: 22px;font-family: cursive;">${nameuper}</h3>
+                        <p style="margin: 4px 0;font-family: cursive;font-size: 19px;">is now on <b style="
+            font-weight: 800;
+        ">🎁 SpennyPiggy</b></p> 
+                        <p style="font-size: 16px;font-family: system-ui;margin-top: 20px;">https://spennypiggy.co/${user?.username}</p>
+                    </div>
+                    </div>
+        `;
+
+        const card = container.querySelector('#card-to-capture');
+        const img = card.querySelector('img');
+        await new Promise((resolve, reject) => {
+            if (img.complete) return resolve(); // already loaded
+            img.onload = () => resolve();
+            img.onerror = () => reject(new Error('Image failed to load'));
+        });
+        // 4. Convert to canvas
+        const canvas = await html2canvas(card, {
+        useCORS: true,
+        allowTaint: false,
+        });
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        console.log("blob",blob)
+        if (!blob) {
+            console.error('❌ Failed to convert card to image');
+            return;
+        }
+        setSocialFile(new File([blob],  `${user?.username}-social_avatar`, { type: blob.type }))
+        setData('social_image', new File([blob], `${user?.username}-social_avatar`, { type: blob.type }));
+        // 6. Download to user device
+        // const localUrl = URL.createObjectURL(blob);
+        // const a = document.createElement('a');
+        // a.href = localUrl;
+        // a.download = `card.png`;
+        // a.click();
+        // URL.revokeObjectURL(localUrl);
+
+        // // 7. Cleanup
+        // document.body.removeChild(container);
+    };
+    
     const getImageUID = (e) => {
         setData('avatar', e);
         setProfileDP(e.cdnUrl);
+        if(e){
+            generateCardAndUpload(e?.uuid);
+        }
     }
 
     const getCoverUID = (e) => {
@@ -35,10 +112,15 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         avatar: '',
         cover: '',
         min_surprise_amount: user?.min_surprise_amount || '',
+        social_image: socialFile || null,
     });
 
-    const updateProfile = (e) => {
+    const updateProfile = async (e) => {
         e.preventDefault();
+        if(user.avatar && user?.social_image == null){
+            await generateCardAndUpload(user.avatar);
+        }
+         
         post(route('edit-profile'), {
             preserveScroll: true,
             onSuccess: (resp) => {

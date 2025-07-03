@@ -213,19 +213,17 @@ class AuthenticatedSessionController extends Controller
         }
         $arr = array_unique($arr);
         $supporters = count($arr);
-
         $authUser = Auth::id();
         $notification_count = Notification::where('notifiable_id', $authUser)->where('is_read', 0)->count();
-
         if (!empty(request()->query('item'))) {
             $itemdid = request()->query('item');
         } else {
             $itemdid = false;
         }
         $userfield = $user->name;
-        $userName = str_replace(' ', '%20', $userfield);
-        $image = "https://ucarecdn.com/8dfae4ba-cd77-406f-8b70-7cf360b4c18c/-/preview/900x900/-/text_align/center/center/-/font/14/000000/-/text/100px30p/100p,100p/spennypiggy.co~s" . $user->username . "/-/text_align/center/center/-/font/19/e6ea82/-/text/100px78p/100p,100p/" . $userName . "/";
-
+        // $userName = str_replace(' ', '%20', $userfield);
+        // $image = "https://ucarecdn.com/8dfae4ba-cd77-406f-8b70-7cf360b4c18c/-/preview/900x900/-/text_align/center/center/-/font/14/000000/-/text/100px30p/100p,100p/spennypiggy.co~s" . $user->username . "/-/text_align/center/center/-/font/19/e6ea82/-/text/100px78p/100p,100p/" . $userName . "/";
+        $image = "https://ucarecdn.com/". $user->social_image ."/-/preview/";
 
         $slinks = [];
         $sociallinks = [];
@@ -233,8 +231,6 @@ class AuthenticatedSessionController extends Controller
         $goal = null;
         $profile_steps = null;
         if($page == 'about'){
-
-
 
             // Social links
             $slinks = $user->social_links()->first();

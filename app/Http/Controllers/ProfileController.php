@@ -104,11 +104,37 @@ class ProfileController extends Controller
         return back()->with('success', 'Profile information updated.');
     }
 
+
+
+    public function uploadToUploadcare($file)
+    {
+        $uploadcareHost = "https://upload.uploadcare.com/base/";
+        $response = Http::asMultipart()->post($uploadcareHost, [
+            [
+                'name' => 'UPLOADCARE_PUB_KEY',
+                'contents' => env('UPLOADCARE_PUBLIC_KEY'),
+            ],
+            [
+                'name' => 'UPLOADCARE_STORE',
+                'contents' => '1',
+            ],
+            [
+                'name' => 'file',
+                'contents' => fopen($file->getRealPath(), 'r'),
+                'filename' => $file->getClientOriginalName(),
+            ],
+        ]);
+        return json_decode($response);
+    }
+
+
+
     /**
      * Update the user's profile information.
      */
     public function updateProfile(Request $request)
     {
+
         // $fullUrl = $request->fullUrl(); // Includes query parameters
         // $method = $request->method();   // GET, POST, etc.
 
@@ -118,6 +144,9 @@ class ProfileController extends Controller
         // if($request->min_surprise_amount < 5){
         //     return redirect()->back()->with("error", "Please set the minimum amount greater than 5.");
         // }
+
+        
+
 
         $checkdata = Helpers::checkBlockData($request);
         if ($checkdata == 1) {
@@ -177,6 +206,27 @@ class ProfileController extends Controller
                 $user->cover = $cover['uuid'] ?? null;
                 $user->cover_approved = 0;
                 $user->cover_cdn_modifier = $cover['cdnUrlModifiers'] ?? null;
+            }
+
+            if(!empty($request->social_image)){
+                $file = $request->file('social_image');
+                $uploadcareHost = "https://upload.uploadcare.com/base/";
+                $response = Http::asMultipart()->post($uploadcareHost, [
+                    [
+                        'name' => 'UPLOADCARE_PUB_KEY',
+                        'contents' => env('UPLOADCARE_PUBLIC_KEY'),
+                    ],
+                    [
+                        'name' => 'UPLOADCARE_STORE',
+                        'contents' => '1',
+                    ],
+                    [
+                        'name' => 'file',
+                        'contents' => fopen($file->getRealPath(), 'r'),
+                        'filename' => $file->getClientOriginalName(),
+                    ],
+                ]);
+                $user->social_image = $response['file'];
             }
 
             $user->save();
