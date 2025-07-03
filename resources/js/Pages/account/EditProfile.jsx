@@ -49,29 +49,29 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         console.log("avataruid",avataruid)
         container.innerHTML = `
             <div id="card-to-capture" style="
-                    width: 360px;
-                    height: 229px;
+                    width: 320px;
+                    height: 180px;
                     background: linear-gradient(135deg, #6f42c1, #1e90ff);
                     color: white;
                     font-family: sans-serif;
                     border-radius: 16px;
-                    padding: 30px 30px;
+                    padding: 20px;
                     display: flex;
                     align-items: center;
-                    gap: 22px;">
+                    gap: 12px;">
                     <img  crossOrigin="anonymous" src="https://ucarecdn.com/${avataruid}/-/format/jpeg/" style="
-                        width: 130px;
-                        height: 130px;
+                        width: 80px;
+                        height: 80px;
                         border-radius: 12px;
                         object-fit: cover;
                         border: 2px solid white;
                     ">
                     <div>
-                        <h3 style="margin: 0;font-size: 22px;font-family: cursive;">${nameuper}</h3>
-                        <p style="margin: 4px 0;font-family: cursive;font-size: 19px;">is now on <b style="
+                        <h3 style="margin: 0;font-size: 17px;font-family: cursive;">{nameuper}</h3>
+                        <p style="margin: 0px 0;font-family: cursive;font-size: 14px;">is now on <b style="
             font-weight: 800;
         ">🎁 SpennyPiggy</b></p> 
-                        <p style="font-size: 16px;font-family: system-ui;margin-top: 20px;">https://spennypiggy.co/${data?.username || user?.username}</p>
+                        <p style="font-size: 12px;font-family: system-ui;margin-top: 10px;">https://spennypiggy.co/${data?.username || user?.username}</p>
                     </div>
                     </div>
         `;
