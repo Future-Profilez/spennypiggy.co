@@ -67,7 +67,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                         border: 2px solid white;
                     ">
                     <div>
-                        <h3 style="margin: 0;font-size: 17px;font-family: cursive;">{nameuper}</h3>
+                        <h3 style="margin: 0;font-size: 17px;font-family: cursive;">${nameuper}</h3>
                         <p style="margin: 0px 0;font-family: cursive;font-size: 14px;">is now on <b style="
             font-weight: 800;
         ">🎁 SpennyPiggy</b></p> 
