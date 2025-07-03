@@ -338,14 +338,19 @@ class MembershipController extends Controller
         $membership = Membership::with('user')->whereUuid($uuid)->first();
         if (!$membership) return redirect()->back()->with('error', 'Membership not found!');
         if ($membership->user_id === $user->id) return redirect()->back()->with('error', "You can't buy your own membership!");
-
         $currency = strtolower($request->cookie("currency", "GBP"));
+        $creatorCurrency = $membership->currency;
+        $price = $membership->price;
+        $convertedAmount = Helpers::priceFormat($creatorCurrency, $price, $currency);
+        if (!Auth::check() && $convertedAmount > 51) {
+            return to_route('login')->with('error', 'You are not eligible for this payment as you need to login first.');
+            // return redirect()->back()->with('error', 'Invalid currency conversion!');
+        }
+
         $memberTaxPercent = config('app.member_tax');
         $adminFeeGBP = config('app.administration_fee');
         $vatPercent = $membership->user->vat_amount_percentage ?? 0;
-        $creatorCurrency = $membership->currency;
 
-        $price = $membership->price;
         $taxAmount = $price * $memberTaxPercent / 100;
         $vatAmount = ($price + $taxAmount) * $vatPercent / 100;
 

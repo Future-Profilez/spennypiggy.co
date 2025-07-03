@@ -244,17 +244,15 @@ class BillsController extends Controller
 
     public function removeBill($uuid)
     {
-
         $bill = Bills::whereUuid($uuid)->first();
 
         if (!empty($bill)) {
             BillPayment::where('bills_id', $bill->id)->delete();
-
-            $stripeProduct = StripeControl::getProduct($bill->product_id, $bill->user->account_id);
-            // dd($stripeProduct);
+            $account_id = $bill->user->account_id;
+            $stripeProduct = StripeControl::getProduct($bill->product_id, $account_id);
             if ($stripeProduct) {
                 // Delete the product and prices from Stripe
-                StripeControl::deleteProductAndPrices($stripeProduct->id, $bill->user->account_id);
+                StripeControl::deleteProductAndPrices($stripeProduct->id, $account_id);
             }
 
             $bill->delete();
@@ -280,6 +278,13 @@ class BillsController extends Controller
     public function buyBill(Request $request, $uuid, $reccure = 'continue')
     {
         new StripeClient(env('STRIPE_SECRET_KEY'));
+        $bill = Bills::with('user')->whereUuid($uuid)->first();
+        $price = $bill->price;
+        $currency = strtolower($request->cookie("currency", "GBP"));
+        $ConvertedAmount = Helpers::priceFormat($bill->currency, $price, $currency);
+        if(!Auth::check() && $ConvertedAmount > 51) {
+            return to_route('login')->with('error', 'You are not eligible for this payment as you need to login first.');
+        }
 
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus === true) {
@@ -289,17 +294,15 @@ class BillsController extends Controller
         }
 
         $user = Auth::user();
-        $bill = Bills::with('user')->whereUuid($uuid)->first();
 
         if (!$bill) return redirect()->back()->with('error', 'Bill not found!');
         if ($bill->user_id === $user->id) return redirect()->back()->with('error', "You can't buy your own bill!");
 
-        $currency = strtolower($request->cookie("currency", "GBP"));
         $adminFeeAmount = config('app.administration_fee');
         $billTaxPercent = config('app.bill_tax');
         $vatPercent = $bill->user->vat_amount_percentage ?? 0;
 
-        $price = $bill->price;
+
         $taxAmount = $price * $billTaxPercent / 100;
         $vatAmount = ($price + $taxAmount) * $vatPercent / 100;
         $totalTax = $adminFeeAmount + $taxAmount;

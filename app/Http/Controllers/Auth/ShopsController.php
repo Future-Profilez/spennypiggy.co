@@ -557,6 +557,12 @@ class ShopsController extends Controller
             }
 
             $shop = Shop::where('uuid', $shop_id)->first();
+            $amount = $shop->price;
+            $ConvertedAmount = Helpers::priceFormat($shop->currency, $amount, $currency);
+
+            if (!Auth::check() && $ConvertedAmount > 51) {
+                return redirect()->back()->with('error', 'You are not eligible for this payment as you need to login first.');
+            }
 
             $shipping_price = 0;
 

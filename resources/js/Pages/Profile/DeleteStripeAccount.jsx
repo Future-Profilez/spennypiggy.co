@@ -45,7 +45,7 @@ export default function DeleteStripeAccount({ className = '' }) {
     return (
         <section className={`space-y-6 ${className}`}>
 
-           
+
             {confirmingUserDeletion ? <>
             <form onSubmit={deleteUser} className="p-6">
                 <h2 className="text-lg font-medium text-gray-900">
@@ -61,7 +61,7 @@ export default function DeleteStripeAccount({ className = '' }) {
                     <TextInput
                         id="password"
                         type="password"
-                        name="password" 
+                        name="password"
                         ref={passwordInput}
                         value={data.password}
                         onChange={(e) => setData('password', e.target.value)}
@@ -85,7 +85,7 @@ export default function DeleteStripeAccount({ className = '' }) {
              <header>
                  <h2 className="text-lg font-medium text-gray-900">Delete Stripe Account</h2>
                  <p className="mt-1 text-sm text-gray-600">Are you sure you want to delete your Stripe account? This action cannot be undone. Deleting your account will result in the permanent removal of your account data, settings, and all associated transactions.
-                 
+
                  </p>
              </header>
              <DangerButton onClick={confirmUserDeletion}>Delete Account</DangerButton>

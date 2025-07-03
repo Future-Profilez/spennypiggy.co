@@ -10,6 +10,7 @@ use App\Jobs\SendBioSocialUpdateMail;
 use App\Jobs\SendIntroMailAdmin;
 use App\Models\BillPayment;
 use App\Models\Bills;
+use App\Models\Follow;
 use App\Models\GifterCardVerification;
 use App\Models\Logs;
 use App\Models\Membership;
@@ -411,6 +412,84 @@ class ProfileController extends Controller
             'msg' => "Notifications for email are $status."
         ]);
     }
+
+    public function userFollowUnFollow(Request $request)
+    {
+        $followed_id = $request->user_id;
+        $LoggedInUser = Auth::user();
+        $userFollow = Follow::where('follower_id', Auth::id())->where('followed_id', $followed_id)->first();
+        $followedUser = User::select('id', 'name', 'email')->where('id', $followed_id)->first();
+        $userName = ucfirst($followedUser->name);
+        // dd($userFollow, $LoggedInUser, $followedUser, $userName);
+        if ($userFollow === null) {
+            // User is not following, so we will follow
+            Follow::create([
+                'follower_id' => Auth::id(),
+                'followed_id' => $followed_id,
+            ]);
+
+            $title = "👥 New Follower!";
+            $content = ucfirst($LoggedInUser->name) . " just followed you. Check out their profile!";
+            $email = $followedUser->email; // user being followed
+
+            Helpers::sendNotification($title, $content, $email);
+
+            $status = 'followed';
+        } else {
+            // User is already following, so we will unfollow
+            $userFollow->delete();
+            $status = 'unfollowed';
+        }
+
+        // Get the updated follow count
+        return response()->json([
+            'status' => true,
+            'msg' => "You have $status $userName.",
+            'status' => $status,
+        ]);
+    }
+
+    public function sendPwaToFollower(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'body' => 'required|string',
+        ]);
+
+        $followerIds = Follow::where('followed_id', Auth::id())
+            ->pluck('follower_id');
+
+        $users = User::whereIn('id', $followerIds)
+            ->where('is_uk', 0)
+            ->get();
+
+        if ($users->isEmpty()) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'No users have followed you yet.',
+            ]);
+        }
+
+
+        try {
+            foreach ($users as $user) {
+                Helpers::sendNotification($request->title, $request->body, $user->email);
+            }
+
+            return response()->json([
+                'status' => true,
+                'msg' => 'Push notifications sent successfully.',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Push notification error: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => false,
+                'msg' => 'Failed to send push notifications. Please try again later.',
+            ]);
+        }
+    }
+
 
 
     public function checkAdultContent($uuid)

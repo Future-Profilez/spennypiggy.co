@@ -69,14 +69,17 @@ class CheckoutController extends Controller
             // $taxNew = 0;
             $transfer_amount = 0;
             foreach ($getdata as $dd) {
+                $totalAmount = $dd->amount;
+                $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, $currency);
+                if (!Auth::check() && $ConvertedAmount > 51) {
+                    return to_route('login')->with('error', 'You are not eligible for this payment as you need to login first.');
+                }
 
                 $adminFee = config('app.administration_fee');
                 $showAdminsFees = Helpers::priceFormat('GBP', $adminFee, $currency);
                 $StoreAdminsFees = Helpers::priceFormat('GBP', $adminFee, $dd->owner->default_currency);
-                $totalAmount = $dd->amount;
                 $taxPercentage = config('app.single_tax');
 
-                $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, $currency);
 
                 $connectedAccountId = $getdata[0]->owner->account_id;
 
