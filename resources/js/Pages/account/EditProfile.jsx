@@ -49,8 +49,8 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         console.log("avataruid",avataruid)
         container.innerHTML = `
             <div id="card-to-capture" style="
-                    width: 320px;
-                    height: 180px;
+                    width: 600px;
+                    height: 337.5px;
                     background: linear-gradient(135deg, #6f42c1, #1e90ff);
                     color: white;
                     font-family: sans-serif;
