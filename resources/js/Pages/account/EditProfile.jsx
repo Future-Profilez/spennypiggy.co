@@ -98,15 +98,15 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         },500);
         // return true;
         // 6. Download to user device
-        const localUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = localUrl;
-        a.download = `card.png`;
-        a.click();
-        URL.revokeObjectURL(localUrl);
+        // const localUrl = URL.createObjectURL(blob);
+        // const a = document.createElement('a');
+        // a.href = localUrl;
+        // a.download = `card.png`;
+        // a.click();
+        // URL.revokeObjectURL(localUrl);
 
-        // 7. Cleanup
-        document.body.removeChild(container);
+        // // 7. Cleanup
+        // document.body.removeChild(container);
     };
     
     const getImageUID = (e) => {
