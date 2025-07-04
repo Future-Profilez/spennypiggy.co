@@ -74,6 +74,36 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                         <p style="font-size: 12px;font-family: system-ui;margin-top: 10px;">https://spennypiggy.co/${data?.username || user?.username}</p>
                     </div>
                     </div>
+
+
+                    <div id="card-to-capture" style="
+                    width: 600px;
+                    height: 337.5px;
+                    background: linear-gradient(135deg, #6f42c1, #1e90ff);
+                    color: white;
+                    font-family: sans-serif;
+                    border-radius: 16px;
+                    padding: 30px 50px;
+                    display: flex;
+                    align-items: center;
+                    gap: 20px;">
+                    <img  crossOrigin="anonymous" src="https://ucarecdn.com/${avataruid}/-/crop/face/1:1/-/preview/" style="
+                        width: 130px;
+                        height: 130px;
+                        border-radius: 12px;
+                        object-fit: cover;
+                        border: 2px solid white;
+                    ">
+                    <div>
+                        <h3 style="margin: 0; margin-top:10px;font-size: 30px;font-family: cursive;">${nameuper}</h3>
+                        <p style="margin: 0px 0;font-family: cursive;font-size: 22px;">is now on <b style="
+            font-weight: 800;
+        ">🎁 SpennyPiggy</b></p> 
+                        <p style="font-size: 19px;font-family: system-ui;margin-top: 20px;">https://spennypiggy.co/${data?.username || user?.username}</p>
+                    </div>
+                    </div>
+
+
         `;
 
         const card = container.querySelector('#card-to-capture');
