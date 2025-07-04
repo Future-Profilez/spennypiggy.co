@@ -66,7 +66,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                         object-fit: cover;
                         border: 2px solid white;">
                     <div>
-                        <h3 style="margin: 0; margin-top:-12px;font-size: 30px;font-family: cursive;">${nameuper}</h3>
+                        <h3 style="margin: 0; margin-top:-14px;font-size: 30px;font-family: cursive;">${nameuper}</h3>
                         <p style="margin: 0px 0;font-family: cursive;font-size: 22px;">is now on <b style="font-weight: 800;">🎁 SpennyPiggy</b></p> 
                         <p style="font-size: 19px;font-family: system-ui;margin-top: 20px;">https://spennypiggy.co/${data?.username || user?.username}</p>
                     </div>
@@ -96,17 +96,17 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
             setSocialFile(new File([blob],  `${user?.username}-social_avatar`, { type: blob.type }))
             setData('social_image', new File([blob], `${user?.username}-social_avatar`, { type: blob.type }));
         },500);
-        return true;
+        // return true;
         // 6. Download to user device
-        // const localUrl = URL.createObjectURL(blob);
-        // const a = document.createElement('a');
-        // a.href = localUrl;
-        // a.download = `card.png`;
-        // a.click();
-        // URL.revokeObjectURL(localUrl);
+        const localUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = localUrl;
+        a.download = `card.png`;
+        a.click();
+        URL.revokeObjectURL(localUrl);
 
-        // // 7. Cleanup
-        // document.body.removeChild(container);
+        // 7. Cleanup
+        document.body.removeChild(container);
     };
     
     const getImageUID = (e) => {
