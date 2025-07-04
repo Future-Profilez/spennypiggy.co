@@ -1,3 +1,4 @@
+
 import React, { useRef, useState } from 'react';
 import { useForm, Link, usePage, router } from "@inertiajs/react";
 import PriceFormat from '@/includes/PriceFormat';
@@ -9,9 +10,12 @@ import toast from 'react-hot-toast';
 
 export default function TipInner({classes, idd}) {
 
-  const { global_currency, auth, user } = usePage().props;
+  const {rates, global_currency, auth, user } = usePage().props;
   const checkRef = useRef();
   const { formatMultiPrice } = PriceFormat();
+  const { usdtogbp } = PriceFormat();
+ 
+
 
   const [defaultAmount, setdefaultAmount] = useState(5);
   const [amount, setAmount] = useState(defaultAmount);
@@ -73,13 +77,23 @@ export default function TipInner({classes, idd}) {
 
   const [loading, setLoading] = useState(false);
 
+
+  const usdToGbp = (amount, currency) => {
+        const upCorrency = currency && currency.toUpperCase() || global_currency && global_currency.toUpperCase();
+        const conversion_rate = rates[upCorrency];
+        const gbpamount  = amount/conversion_rate;
+        return gbpamount
+  }
+
   const send = (e) => {
     e.preventDefault();
-    if(auth && auth.user == null ){
-        errorAlert("You must login first.");
-        router.visit("/login?redirect=" + window.location.pathname);
+      
+    if(auth && !auth.user && usdToGbp(data.amount) > 50){
+        errorAlert("Larger payments more than £50 need to login.");
+        router.visit(`/login?redirect=${window.location.pathname}&message=Larger payments more than £50 need to login.`);
         return false;
     }
+
     setLoading(true);
     const resp = axios.post(`/tip-jar/pay/${user.uuid}`, data);
     resp.then((res) => {
@@ -190,11 +204,11 @@ export default function TipInner({classes, idd}) {
             <button disabled={loading} onClick={send} className={`items-center px-4  shadow-black
                rounded-[30px] btn-pink md justify-content-center
               ease-in-out duration-150 flex button text-center w-100
-              font-CeraGR mx-auto ${checkRef.current && checkRef.current.checked ? '' :'disabled'}`}
+              font-CeraGR mx-auto  ${checkRef.current && checkRef.current.checked ? '' :'disabled'}`}
                > {loading ? "Processing" : 'Support Me'} </button>
-            {/* <div className='securestripe text-center mt-3' >
+            <div className='securestripe text-center mt-3' >
               🔒 Secured via <b>Stripe</b>
-            </div> */}
+            </div>
           </div>
       </div>
       <></>

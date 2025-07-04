@@ -27,6 +27,7 @@ export default function PriceFormat(){
         }).format(final+finaladminfee);
     }
 
+
     const usdtogbp = (amount, currency) => {
         const { rates, global_currency } = usePage().props;
         const upCorrency = currency && currency.toUpperCase() || global_currency && global_currency.toUpperCase();

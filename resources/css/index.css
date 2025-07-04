@@ -111,7 +111,7 @@ h2.wishtitle{font-size:24px;font-weight:900;}
 .text-large{font-size:20px;}
 .croud-add input,.croud-add select{border-radius:10px;background:#f2f2f2;border:1px solid #ccc;padding:12px 15px;}
 /* modal css */
-.modal.mymodal .modal-content {
+.modal.mymodal:not(.basic) .modal-content {
     border-radius: 39px;
     border: 3px solid #000000;
     box-shadow: 6px 6px 0 0 #f94f97;

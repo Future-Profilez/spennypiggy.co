@@ -332,16 +332,18 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/send-surprize', [WishitemController::class, 'sendSurprise'])->name('send-surprize');
 
-        Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
-            Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay")->middleware('mustCompletedCardVerification');
-            Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
-        });
-
+        
         Route::get('/update-profile-lock-status', [ProfileController::class, 'updateProfileLockStatus'])->name('update.profile.lock.status');
-
+        
         Route::post('/user-follow-unfollow', [ProfileController::class, 'userFollowUnFollow'])->name('user.follow.unfollow');
     });
 });
+
+Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
+    Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay")->middleware('mustCompletedCardVerification');
+    Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
+});
+
 
 // subscription webhook
 
