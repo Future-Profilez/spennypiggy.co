@@ -106,7 +106,7 @@ export default function Footer(props) {
     }
 
     useEffect(() => {
-        configIntercom();
+        // configIntercom();
     }, [auth && auth?.name]);
     useEffect(() => {
         confgureGtag();
@@ -125,7 +125,7 @@ export default function Footer(props) {
                     src="https://www.googletagmanager.com/gtag/js?id=G-9F1M3QZZB3"
                 ></script>
             </Head>
-            
+
             <footer className="bg-[#924DFF] text-white pt-10 pb-3 px-6">
                 <div className="max-w-5xl mx-auto">
                     <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">

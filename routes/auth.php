@@ -262,6 +262,7 @@ Route::middleware('auth')->group(function () {
         Route::get('show-2fa-qr', [ProfileController::class, 'show2faQR']);
         Route::post('switch-2fa', [ProfileController::class, 'update2faStatus']);
         Route::post('verification-2fa', [ProfileController::class, 'verification2FA']);
+        Route::post('send-pwa-to-follower', [ProfileController::class, 'sendPwaToFollower'])->name('send.pwa.to.follower');
 
         Route::post('/report-content/', [ProfileController::class, 'reportContent'])->name('report-content');
 
@@ -337,6 +338,8 @@ Route::middleware('auth')->group(function () {
         });
 
         Route::get('/update-profile-lock-status', [ProfileController::class, 'updateProfileLockStatus'])->name('update.profile.lock.status');
+
+        Route::post('/user-follow-unfollow', [ProfileController::class, 'userFollowUnFollow'])->name('user.follow.unfollow');
     });
 });
 

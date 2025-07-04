@@ -3,7 +3,9 @@
 namespace App\Http\Middleware;
 
 use App\Models\Currency;
+use App\Models\Follow;
 use App\Models\Notification;
+use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserVerificationStatus;
 use App\Models\WishItem;
@@ -36,24 +38,35 @@ class HandleInertiaRequests extends Middleware
      * @return array<string, mixed>
      */
 
-    public function share(Request $request): array {
+    public function share(Request $request): array
+    {
 
         $user = $request->user();
+        $followedUser = User::where('username', $request->username)
+            ->first();
+        $follow_status = false;
+        if ($followedUser) {
+            $follow_status = Follow::where('follower_id', $user->id ?? null)
+                ->where('followed_id', $followedUser->id ?? null)
+                ->exists();
+        }
         $userBioStatus = UserVerificationStatus::where('user_id', $user->id ?? null)->first();
-        $items = UserCart::where('user_id', $user->id ?? null)->where('status',1)->count();
-        $notification_count = Notification::where('notifiable_id',$user->id ?? null)->where('is_read',0)->count();
+        $items = UserCart::where('user_id', $user->id ?? null)->where('status', 1)->count();
+        $notification_count = Notification::where('notifiable_id', $user->id ?? null)->where('is_read', 0)->count();
         return [
             ...parent::share($request),
             'auth' => [
                 'user' => $user,
+                'opposite_user' => $followedUser,
                 'verification_status' => $userBioStatus,
             ],
+            'follow_status' => $follow_status,
             'notification_count' => $notification_count,
-            'ziggy' => fn () => [
+            'ziggy' => fn() => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
-            "flash" => function() use($request){
+            "flash" => function () use ($request) {
                 return [
                     "success" => $request->session()->get("success"),
                     "error" => $request->session()->get("error"),
@@ -61,7 +74,7 @@ class HandleInertiaRequests extends Middleware
                     "info" => $request->session()->get("info"),
                 ];
             },
-            'cart_count'=>  $items,
+            'cart_count' =>  $items,
             // 'symbols'   =>  Currency::symbols(),
             'rates'     =>  Currency::rates(),
             'global_currency'   =>  Cookie::get('currency'),

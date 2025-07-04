@@ -731,11 +731,6 @@ class AuthenticatedSessionController extends Controller
         }
     }
 
-
-
-
-
-
     public function userGiftItems($username)
     {
         $authUser = Auth::user(); // Get the logged-in user
@@ -771,7 +766,6 @@ class AuthenticatedSessionController extends Controller
             'items'   => $allProducts
         ]);
     }
-
 
     public function sociallinks($username)
     {

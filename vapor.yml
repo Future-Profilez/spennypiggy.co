@@ -12,7 +12,7 @@ environments:
     build:
       # - "composer install --no-dev"
       # - "php artisan event:cache"
-      # - "php artisan optimize:clear"
+      - "php artisan optimize:clear"
       # - "php artisan config:cache"
       - "npm ci"
       - "npm run build"
