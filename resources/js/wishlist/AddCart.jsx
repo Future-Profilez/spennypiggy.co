@@ -1,5 +1,4 @@
 import React from "react";
-import giftimg from "../../assets/img/giftimg.jpg";
 const Popup = React.lazy(() => import("@/Components/Popup"));
 import ToCart from "./ToCart";
 import uploadedimg from "../../assets/img/uploadedimg.png";
@@ -14,8 +13,9 @@ export default function AddCart(props) {
     const [sub, setSub] = useState("daily");
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
-    const { format, formatMultiPrice } = PriceFormat();
+    const { usdtogbp, formatMultiPrice } = PriceFormat();
     const [cartamount, setcartamount] = useState(null);
+    const gbpprice = usdtogbp(cartamount || item.price );
     const [close, setClose] = useState(action);
     const [is_cart, setIs_cart] = useState(item && item?.is_cart);
 
@@ -42,9 +42,9 @@ export default function AddCart(props) {
     };
 
     const gotologin = (recure) => {
-        successAlert("You must login first.");
+        errorAlert("You must login first.");
         const url = `/wish/checkout/${item.uuid}/${recure ? recure : ""}`;
-        router.visit(`/login?redirect=${url}`);
+        router.visit(`/login?redirect=${url}&message=Larger payments more than £50 need to login.`);
     };
 
     return (
@@ -120,10 +120,12 @@ export default function AddCart(props) {
                 ) : (
                     ""
                 )}
+
+
                 {item.subscription == 1 ? (
-                    <>
-                        {auth && auth.user !== null ? (
-                            <>
+                    <>     
+                        {auth?.user || parseInt(gbpprice) < 50 ? (
+                            <>   
                                 <div className=" pb-2">
                                     <Link
                                         className="btn-pink lg2 block text-center !w-full "
@@ -158,28 +160,19 @@ export default function AddCart(props) {
                                 </div>
                             </>
                         ) : (
-                            <>
+                            <>   
                                 <div className=" pb-2">
                                     <button
-                                        className="btn-pink lg2 block text-center !w-full"
-                                        onClick={() => gotologin("onetime")}
-                                    >
-                                        OneTime Purchase
+                                        className="btn-pink mt-2 mb-2 lg2 block text-center !w-full"
+                                        onClick={() => gotologin("onetime")}>OneTime Purchase
                                     </button>
                                     <button
-                                        className="btn-pink mt-2 mb-2  lg2 block text-center !w-full"
-                                        onClick={() => gotologin()}
-                                    >
-                                        Pay Every{" "}
-                                        {item.subscription_period == "daily"
-                                            ? " Day"
-                                            : ""}
-                                        {item.subscription_period == "weekly"
-                                            ? " Week"
-                                            : ""}
-                                        {item.subscription_period == "monthly"
-                                            ? " Month"
-                                            : ""}
+                                        className="btn-pink mt-2 mb-2 lg2 block text-center !w-full"
+                                        onClick={() => gotologin()}>
+                                        Pay Every 
+                                        {item.subscription_period == "daily"? " Day": ""}
+                                        {item.subscription_period == "weekly"? " Week": ""}
+                                        {item.subscription_period == "monthly"? " Month": ""}
                                     </button>
                                     <p className="text-center">
                                         Gain access to my exclusive subscriber
@@ -203,14 +196,11 @@ export default function AddCart(props) {
                             isEqual={item.price <= item.fullfill_amount}
                             is_cart={is_cart}
                             text={`Add To Cart And Keep Shopping`}
-                            classes={`btn-pink lg w-100 mb-3 font-CeraGR ${
+                            classes={`btn-pink mt-2 mb-2 lg2 block text-center !w-full ${
                                 item.subscription == "2" &&
-                                item.price <= item.fullfill_amount
-                                    ? "d-none"
-                                    : ""
-                            }`}
+                                item.price <= item.fullfill_amount? "d-none": ""}`}
                             uuid={uuid}
-                        />
+                        />   
                         <ToCart
                             currency={currency}
                             sub={sub}
@@ -224,16 +214,26 @@ export default function AddCart(props) {
                             is_cart={is_cart}
                             text={`Add To Cart And Checkout`}
                             checkoutbtn={true}
-                            classes={`btn-pink lg w-100 mb-3 font-CeraGR ${
+                            classes={`btn-pink mt-2 mb-2 lg2 block text-center !w-full ${
                                 item.subscription == "2" &&
-                                item.price <= item.fullfill_amount
-                                    ? "d-none"
-                                    : ""
+                                item.price <= item.fullfill_amount? "d-none": ""
                             }`}
                             uuid={uuid}
                         />
                     </div>
                 )}
+
+
+
+
+
+
+
+
+
+
+
+
                 {showall ? (
                     <Link
                         href={`/${item.user && item.user.username}`}

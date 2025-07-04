@@ -26,5 +26,14 @@ export default function PriceFormat(){
             maximumFractionDigits: 2,
         }).format(final+finaladminfee);
     }
-    return {formatMultiPrice}
+
+    const usdtogbp = (amount, currency) => {
+        const { rates, global_currency } = usePage().props;
+        const upCorrency = currency && currency.toUpperCase() || global_currency && global_currency.toUpperCase();
+        const conversion_rate = rates[upCorrency];
+        const gbpamount  = amount/conversion_rate;
+        return gbpamount
+    }
+
+    return {formatMultiPrice, usdtogbp}
 }

@@ -8,6 +8,7 @@ import DeviceID from "@/includes/DeviceID";
 import { useDispatch, useSelector } from "react-redux";
 import { add_to_cart } from "@/Pages/redux/UserSlice";
 import { router, usePage } from "@inertiajs/react";
+import PriceFormat from "@/includes/PriceFormat";
 
 export default function ToCart({
     sub,
@@ -36,13 +37,15 @@ export default function ToCart({
     const dispatch = useDispatch();
     const cart = useSelector((state) => state.data.cart.cart);
     const {auth} = usePage().props;
-
-    const addtocart = async (sets) => {
-        if(auth && !auth.user){
+    const { usdtogbp } = PriceFormat();
+    const gbpprice = usdtogbp(item.price);
+    const addtocart = async () => {
+        if(auth && !auth.user && gbpprice > 50){
+            router.visit(`/login?redirect=${window.location.pathname}&message=Larger payments more than £50 need to login.`);
             errorAlert("You must login first.");
-            router.visit("/login?redirect=" + window.location.pathname);
             return false;
-        }
+        }  
+
         function check() {
             if (checkoutbtn) {
                 window.location = "/cart";
@@ -55,17 +58,14 @@ export default function ToCart({
         if (!item?.is_cart && crowd && !amount) {
             toast.error(`Please enter a amount to gift this item.`);
             return false;
-        }
+        } 
+
         // if (crowd && amount > pending) {
         //     toast.error(`Amount can not be more than remaining amount.`);
         //     return false;
         // }
-
         setLoading(true);
-        axios.get(`/add-to-cart/${uuid}/${deviceID}${
-                    sub ? `/${sub}` : "/onetime"
-                }${amount ? `/${amount}/` : ""}`
-            )
+        axios.get(`/add-to-cart/${uuid}/${deviceID}${sub ? `/${sub}` : "/onetime"}${amount ? `/${amount}/` : ""}`)
             .then((resp) => {
                 if (resp.data.success) {
                     if (resp.data.added == true) {

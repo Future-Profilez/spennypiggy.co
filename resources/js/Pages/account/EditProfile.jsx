@@ -123,10 +123,6 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
     }
 
     const [username, setUsername] = useState(user?.username);
-
-   
-    console.log("data",data)
-
     const updateProfile = async (e) => {
         e.preventDefault();
         
