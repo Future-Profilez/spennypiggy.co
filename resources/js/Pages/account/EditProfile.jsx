@@ -66,7 +66,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                         object-fit: cover;
                         border: 2px solid white;">
                     <div>
-                        <h3 style="margin: 0; margin-top:-8px;font-size: 30px;font-family: cursive;">${nameuper}</h3>
+                        <h3 style="margin: 0; margin-top:-12px;font-size: 30px;font-family: cursive;">${nameuper}</h3>
                         <p style="margin: 0px 0;font-family: cursive;font-size: 22px;">is now on <b style="font-weight: 800;">🎁 SpennyPiggy</b></p> 
                         <p style="font-size: 19px;font-family: system-ui;margin-top: 20px;">https://spennypiggy.co/${data?.username || user?.username}</p>
                     </div>
@@ -83,9 +83,10 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         // 4. Convert to canvas
         const canvas = await html2canvas(card, {
         useCORS: true,
+        scale: 2,
         allowTaint: false,
         });
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png',1.0));
         console.log("blob",blob)
         if (!blob) {
             console.log('❌ Failed to convert card to image');
