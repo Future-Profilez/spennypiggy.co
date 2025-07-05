@@ -145,7 +145,7 @@ class ProfileController extends Controller
         //     return redirect()->back()->with("error", "Please set the minimum amount greater than 5.");
         // }
 
-        
+
 
 
         $checkdata = Helpers::checkBlockData($request);
@@ -208,7 +208,7 @@ class ProfileController extends Controller
                 $user->cover_cdn_modifier = $cover['cdnUrlModifiers'] ?? null;
             }
 
-            if(!empty($request->social_image)){
+            if (!empty($request->social_image)) {
                 $file = $request->file('social_image');
                 $uploadcareHost = "https://upload.uploadcare.com/base/";
                 $response = Http::asMultipart()->post($uploadcareHost, [
@@ -479,7 +479,7 @@ class ProfileController extends Controller
             ]);
 
             $title = "👥 New Follower!";
-            $content = ucfirst($LoggedInUser->name) . " just followed you. Check out their profile!";
+            $content = ucfirst($LoggedInUser->name) . "($LoggedInUser->username)" . " just followed you. Just Check their profile!";
             $email = $followedUser->email; // user being followed
 
             Helpers::sendNotification($title, $content, $email);

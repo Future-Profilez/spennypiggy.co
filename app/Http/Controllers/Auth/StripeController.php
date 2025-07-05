@@ -952,6 +952,9 @@ class StripeController extends Controller
 
     public function tipToJar(Request $request, $creator_uid)
     {
+        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+        $creator = User::where('uuid', $creator_uid)->where('is_uk', 0)->first();
+
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus == true) {
             $user = Auth::user();
@@ -962,19 +965,20 @@ class StripeController extends Controller
         }
 
         $user = Auth::user();
-        $checkCardVerification = User::where('id', Auth::id())->where('role', 0)
-            ->whereHas('gifterCardVerification', function ($q) use ($user) {
-                $q->where('user_id', $user->id)->where('status', 'success');
-            })->first();
+        if ($user) {
+            $checkCardVerification = User::where('id', Auth::id())->where('role', 0)
+                ->whereHas('gifterCardVerification', function ($q) use ($user) {
+                    $q->where('user_id', $user->id ?? null)->where('status', 'success');
+                })->first();
 
-        if (empty($checkCardVerification) && $user->role == 0) {
-            return response()->json([
-                'status' => false,
-                'msg' => "You must have to activate your account before making any payment."
-            ]);
+            if (empty($checkCardVerification) && $user->role == 0) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => "You must have to activate your account before making any payment."
+                ]);
+            }
         }
 
-        $creator = User::where('uuid', $creator_uid)->where('is_uk', 0)->first();
 
         if (Auth::check()) {
             if ($creator->id == Auth::id()) {
@@ -987,7 +991,6 @@ class StripeController extends Controller
 
         $goal = TipGoal::where('user_id', $creator->id)->where('completed', 0)->latest()->first();
 
-        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         // if (!$goal) {
         //     return redirect()->back()->with('error', 'No tip jar found!');
         // }
@@ -1005,18 +1008,22 @@ class StripeController extends Controller
                 'message' => 'sometimes|nullable|string|max:800'
             ]);
 
+
+            $amount = $request->amount;
+            $ConvertedAmount = Helpers::priceFormat($creator->default_currency, $amount, 'gbp');
+
+            if (!Auth::check() && $ConvertedAmount > 50) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => "You are not eligible for this payment as you need to login first."
+                ]);
+            }
+
             $isZeroDecimalCurrency = in_array(strtolower($currency), ['jpy', 'krw', 'vnd']);
             $amount = $request->amount;
             $adminFeeAmount = config('app.administration_fee', 1);
             $taxPercentage = config('app.jar_tax');
             $price = Helpers::priceFormat($currency, $amount, $creator->default_currency);
-            if (!Auth::check() && $price > 51) {
-                return response()->json([
-                    'status' => false,
-                    'msg' => 'You are not eligible for this payment as you need to login first',
-                ]);
-            }
-
 
             $tax = round(($price * $taxPercentage / 100), 2, PHP_ROUND_HALF_UP);
             $adminFeeForStoreDB = Helpers::priceFormat('GBP', $adminFeeAmount, $creator->default_currency);
@@ -1069,7 +1076,7 @@ class StripeController extends Controller
                     'application_fee_amount' => round($totalTaxForPay * 100), // Admin fee + tax
                     'description' => "Platform Fee."
                 ],
-                'customer_email' =>  $user->email,
+                'customer_email' =>  $user->email ?? $request->email,
                 'success_url' => route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "success"]),
                 'cancel_url' => route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "cancel"]),
             ];

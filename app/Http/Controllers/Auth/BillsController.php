@@ -281,8 +281,8 @@ class BillsController extends Controller
         $bill = Bills::with('user')->whereUuid($uuid)->first();
         $price = $bill->price;
         $currency = strtolower($request->cookie("currency", "GBP"));
-        $ConvertedAmount = Helpers::priceFormat($bill->currency, $price, $currency);
-        if(!Auth::check() && $ConvertedAmount > 51) {
+        $ConvertedAmount = Helpers::priceFormat($bill->currency, $price, 'gbp');
+        if (!Auth::check() && $ConvertedAmount > 50) {
             return to_route('login')->with('error', 'You are not eligible for this payment as you need to login first.');
         }
 

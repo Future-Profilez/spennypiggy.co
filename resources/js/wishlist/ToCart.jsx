@@ -44,7 +44,7 @@ export default function ToCart({
             router.visit(`/login?redirect=${window.location.pathname}&message=Larger payments more than £50 need to login.`);
             errorAlert("You must login first.");
             return false;
-        }  
+        }
 
         function check() {
             if (checkoutbtn) {
@@ -58,7 +58,7 @@ export default function ToCart({
         if (!item?.is_cart && crowd && !amount) {
             toast.error(`Please enter a amount to gift this item.`);
             return false;
-        } 
+        }
 
         // if (crowd && amount > pending) {
         //     toast.error(`Amount can not be more than remaining amount.`);

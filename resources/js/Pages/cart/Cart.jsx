@@ -6,27 +6,27 @@ import DeviceID from "@/includes/DeviceID";
 import { useEffect } from "react";
 import Axios from "axios";
 import CartListing from "../rye/CartListing";
-const UserCarts = React.lazy(() => import('../cart/UserCarts'));
-const LoadingScreen = React.lazy(() => import('@/includes/LoadingScreen'));
-const Nocontent = React.lazy(() => import('@/includes/Nocontent'));
+const UserCarts = React.lazy(() => import("../cart/UserCarts"));
+const LoadingScreen = React.lazy(() => import("@/includes/LoadingScreen"));
+const Nocontent = React.lazy(() => import("@/includes/Nocontent"));
 
 export default function Cart(props) {
-
     const deviceid = DeviceID();
     const { auth, user, carts } = props;
-    const [ cartsItems, setCartItems ] = useState(carts);
-    const [loading, setLoading]= useState(false);
+    const [cartsItems, setCartItems] = useState(carts);
+    const [loading, setLoading] = useState(false);
     const fetchCartItem = (e) => {
         setLoading(true);
-        Axios.get(`anonymous-cart/${deviceid}`).then(resp => {
-            setCartItems(resp.data.carts);
-            setLoading(false);
-        }).catch(_err => {
-            console.error("error", _err);
-            setLoading(false);
-        });
+        Axios.get(`anonymous-cart/${deviceid}`)
+            .then((resp) => {
+                setCartItems(resp.data.carts);
+                setLoading(false);
+            })
+            .catch((_err) => {
+                console.error("error", _err);
+                setLoading(false);
+            });
     };
-
 
     const [ryeItems, setRyeItems] = useState([]);
     const [loading2, setLoading2] = useState(false);
@@ -34,11 +34,10 @@ export default function Cart(props) {
         setLoading2(true);
         Axios.get(`get-cart-details`)
             .then((resp) => {
-                if(resp?.data?.status){
+                if (resp?.data?.status) {
                     // console.log(JSON.parse(resp?.data?.data[0]?.cart_details));
                     setRyeItems(resp.data.data);
-                }
-                else{
+                } else {
                     setRyeItems([]);
                 }
                 setLoading2(false);
@@ -50,8 +49,11 @@ export default function Cart(props) {
     };
 
     useEffect(() => {
-        if (auth) {
+        if (auth?.user) {
             fetchRyeItems();
+        }
+        if (!auth || (auth && !auth.user)) {
+            fetchCartItem();
         }
     }, []);
 
@@ -59,29 +61,63 @@ export default function Cart(props) {
         <Authenticated auth={auth.user} user={user}>
             <Head title={"Cart"} />
 
-            {ryeItems && ryeItems.length ? <CartListing loading2={loading2} ryeItems={ryeItems} fetchRyeItems={fetchRyeItems}/> : '' }
+            {ryeItems && ryeItems.length ? (
+                <CartListing
+                    loading2={loading2}
+                    ryeItems={ryeItems}
+                    fetchRyeItems={fetchRyeItems}
+                />
+            ) : (
+                ""
+            )}
 
-            {cartsItems && cartsItems.length ? <div className="blackbg">
-                <div className="container pb-5 ">
-                    <h2 className="text-bl font-GillSans pt-5 pt-3 pb-0 text-center text-2xl uppercase text-white">Cart</h2>
-                    {loading ? <LoadingScreen /> : ""}
-                    {!loading && <>
-                        { cartsItems && cartsItems.length ? <>
-                                {cartsItems.map((c, i) => {
-                                    return <UserCarts auth={auth && auth.user} key={`user-cart-${i}`} data={c} />;
-                                })}
+            {cartsItems && cartsItems.length ? (
+                <div className="blackbg">
+                    <div className="container pb-5 ">
+                        <h2 className="text-bl font-GillSans pt-5 pt-3 pb-0 text-center text-2xl uppercase text-white">
+                            Cart
+                        </h2>
+                        {loading ? <LoadingScreen /> : ""}
+                        {!loading && (
+                            <>
+                                {cartsItems && cartsItems.length ? (
+                                    <>
+                                        {cartsItems.map((c, i) => {
+                                            return (
+                                                <UserCarts
+                                                    auth={auth && auth.user}
+                                                    key={`user-cart-${i}`}
+                                                    data={c}
+                                                />
+                                            );
+                                        })}
+                                    </>
+                                ) : (
+                                    ""
+                                )}
                             </>
-                        : ''}
-                    </>}
+                        )}
+                    </div>
                 </div>
-            </div> : ''}
+            ) : (
+                ""
+            )}
 
-            {ryeItems && ryeItems.length < 1 && cartsItems && cartsItems.length < 1 && !loading && !loading2 &&  <div className="py-5 text-center">
-                <div className="containerbox">
-                    <Nocontent  classes={`py-5`} text={"Cart is empty."} />
-                </div>
-            </div>}
-
+            {ryeItems &&
+                ryeItems.length < 1 &&
+                cartsItems &&
+                cartsItems.length < 1 &&
+                !loading &&
+                !loading2 && (
+                    <div className="py-5 text-center">
+                        <div className="containerbox">
+                            <Nocontent
+                                classes={`py-5`}
+                                text={"Cart is empty."}
+                            />
+                        </div>
+                    </div>
+                )}
         </Authenticated>
     );
 }

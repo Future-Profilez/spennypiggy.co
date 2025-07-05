@@ -14,7 +14,7 @@ export default function TipInner({classes, idd}) {
   const checkRef = useRef();
   const { formatMultiPrice } = PriceFormat();
   const { usdtogbp } = PriceFormat();
- 
+
 
 
   const [defaultAmount, setdefaultAmount] = useState(5);
@@ -87,7 +87,7 @@ export default function TipInner({classes, idd}) {
 
   const send = (e) => {
     e.preventDefault();
-      
+
     if(auth && !auth.user && usdToGbp(data.amount) > 50){
         errorAlert("Larger payments more than £50 need to login.");
         router.visit(`/login?redirect=${window.location.pathname}&message=Larger payments more than £50 need to login.`);

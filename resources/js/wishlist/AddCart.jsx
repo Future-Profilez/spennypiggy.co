@@ -123,9 +123,9 @@ export default function AddCart(props) {
 
 
                 {item.subscription == 1 ? (
-                    <>     
+                    <>
                         {auth?.user || parseInt(gbpprice) < 50 ? (
-                            <>   
+                            <>
                                 <div className=" pb-2">
                                     <Link
                                         className="btn-pink lg2 block text-center !w-full "
@@ -160,7 +160,7 @@ export default function AddCart(props) {
                                 </div>
                             </>
                         ) : (
-                            <>   
+                            <>
                                 <div className=" pb-2">
                                     <button
                                         className="btn-pink mt-2 mb-2 lg2 block text-center !w-full"
@@ -169,7 +169,7 @@ export default function AddCart(props) {
                                     <button
                                         className="btn-pink mt-2 mb-2 lg2 block text-center !w-full"
                                         onClick={() => gotologin()}>
-                                        Pay Every 
+                                        Pay Every
                                         {item.subscription_period == "daily"? " Day": ""}
                                         {item.subscription_period == "weekly"? " Week": ""}
                                         {item.subscription_period == "monthly"? " Month": ""}
@@ -200,7 +200,7 @@ export default function AddCart(props) {
                                 item.subscription == "2" &&
                                 item.price <= item.fullfill_amount? "d-none": ""}`}
                             uuid={uuid}
-                        />   
+                        />
                         <ToCart
                             currency={currency}
                             sub={sub}

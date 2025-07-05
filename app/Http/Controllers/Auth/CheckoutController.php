@@ -69,9 +69,16 @@ class CheckoutController extends Controller
             // $taxNew = 0;
             $transfer_amount = 0;
             foreach ($getdata as $dd) {
+                if (!$user) {
+                    $email = request()->query('email');
+                    $user = User::where('email', $email)->first();
+                    if (!$user) {
+                        $user = null;
+                    }
+                }
                 $totalAmount = $dd->amount;
-                $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, $currency);
-                if (!Auth::check() && $ConvertedAmount > 51) {
+                $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, 'gbp');
+                if (!Auth::check() && $ConvertedAmount > 50) {
                     return to_route('login')->with('error', 'You are not eligible for this payment as you need to login first.');
                 }
 
@@ -79,7 +86,6 @@ class CheckoutController extends Controller
                 $showAdminsFees = Helpers::priceFormat('GBP', $adminFee, $currency);
                 $StoreAdminsFees = Helpers::priceFormat('GBP', $adminFee, $dd->owner->default_currency);
                 $taxPercentage = config('app.single_tax');
-
 
                 $connectedAccountId = $getdata[0]->owner->account_id;
 
@@ -94,17 +100,17 @@ class CheckoutController extends Controller
                 $customer = null;
                 if (!$storeCustomer) {
                     $customer = StripeControl::createCustomer([
-                        'email' => $user->email,
-                        'name' => $user->name,
+                        'email' => $user->email ?? $dd->email,
+                        'name' => $user->name ?? $dd->name,
                     ], $connectedAccountId);
                 }
 
                 $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
 
                 // Step 5: Store customer & price if not already stored
-                if (!$storeCustomer) {
+                if (!$storeCustomer && $user) {
                     ConnectedAccountCustomer::create([
-                        'user_id' => Auth::id(),
+                        'user_id' => Auth::id() ?? $user->id,
                         'creator_id' => $dd->owner->id,
                         'connected_account_id' => $connectedAccountId,
                         'stripe_customer_id' => $customer_id,
@@ -154,12 +160,12 @@ class CheckoutController extends Controller
                 'cancel_url' => route('checkout.cancel', [$id]),
                 "mode"  =>  "payment",
                 'line_items' => $lineItems,
-                'customer_email' => $user->email,
+                // 'customer_email' => $user->email ?? request()->query('email'),
                 'payment_intent_data' => [
                     'application_fee_amount' => round($showTax * 100), // Admin fee + tax
                     'description' => "Platform Fee."
                 ],
-                'customer_email' =>  request()->query('email') ?? $getdata[0]->user->email,
+                'customer_email' =>  $getdata[0]->user->email ?? request()->query('email'),
             ];
 
             $connectedAccount = $connectedAccountId;
@@ -204,26 +210,28 @@ class CheckoutController extends Controller
     public function successCheckout($id)
     {
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+        if (Auth::check()) {
+            $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $id)->where('status', 1)->get();
+        } else {
+            $getdata = UserCart::where('device_id', $id)->where('status', 1)->get();
+        }
         try {
-            if (Auth::check()) {
-                $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $id)->where('status', 1)->get();
-            } else {
-                $getdata = UserCart::where('device_id', $id)->where('status', 1)->get();
-            }
 
             foreach ($getdata as $dd) {
 
                 /**************************WISH**PWA**START****************************************************/
                 // below is wish pwa for fans
 
-                $CreatorName = !empty($dd->owner->name) ? ucfirst($dd->owner->name) : 'A Creator';
-                $titles = "✨ Wish Sent Successfully!";
-                $contents = "You've sent a wish to $CreatorName. They'll be notified right away!.";
-                $emails = $dd->user->email ?? null;
-                Helpers::sendNotification($titles, $contents, $emails);
+                if (isset($dd->user) && $dd->user->email) {
+                    $CreatorName = !empty($dd->owner->name) ? ucfirst($dd->owner->name) : 'A Creator';
+                    $titles = "✨ Wish Sent Successfully!";
+                    $contents = "You've sent a wish to $CreatorName. They'll be notified right away!.";
+                    $emails = $dd->user->email ?? null;
+                    Helpers::sendNotification($titles, $contents, $emails);
+                }
 
                 // below is wish pwa for creator
-                $FanName = ucfirst($dd->user->name) ?? 'A Fan';
+                $FanName = $dd->user ? ucfirst($dd->user->name) : 'A Fan';
                 $title = "🎁 New Wish Received!";
                 $content = "$FanName has sent you a paid wish.";
                 $email = $dd->owner->email;
@@ -245,7 +253,7 @@ class CheckoutController extends Controller
                             }
 
                             $subscription = new Subscription();
-                            $subscription->user_id = $dd->user_id;
+                            $subscription->user_id = $dd->user_id ?? null;
                             $subscription->owner_id = $dd->owner_id;
                             $subscription->wish_id = $dd->wish_item_id;
                             $subscription->start_at = Carbon::now();
@@ -313,18 +321,20 @@ class CheckoutController extends Controller
                     }
                 }
 
-                $total_amount = $dd->amount * $dd->quantity;
-                $userPayment = new UserPayment();
-                $userPayment->from_user_id = $dd->user_id ?? null;
-                $userPayment->to_user_id = $dd->owner_id;
-                $userPayment->product_type = 'wish item';
-                $userPayment->amount = $total_amount;
-                $userPayment->currency = $dd->wish->currency;
-                $userPayment->payment_method = 'stripe';
-                $userPayment->payment_details = json_encode($sessionId, true);
-                $userPayment->paid_at = Carbon::now();
-                $userPayment->status = $stripeid->payment_status;
-                $userPayment->save();
+                if ($dd->user_id && !empty($dd->user->email)) {
+                    $total_amount = $dd->amount * $dd->quantity;
+                    $userPayment = new UserPayment();
+                    $userPayment->from_user_id = $dd->user_id ?? null;
+                    $userPayment->to_user_id = $dd->owner_id;
+                    $userPayment->product_type = 'wish item';
+                    $userPayment->amount = $total_amount;
+                    $userPayment->currency = $dd->wish->currency;
+                    $userPayment->payment_method = 'stripe';
+                    $userPayment->payment_details = json_encode($sessionId, true);
+                    $userPayment->paid_at = Carbon::now();
+                    $userPayment->status = $stripeid->payment_status;
+                    $userPayment->save();
+                }
 
                 $dd->status = 0;
                 $dd->quantity = 0;
@@ -340,7 +350,7 @@ class CheckoutController extends Controller
             return redirect(route('thank-you', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
             Log::info("Error in successCheckout: " . $th->getMessage());
-            return redirect(route('user.show', [$stripeid->owner->username]))->with('error', 'Something went wrong!');
+            return redirect(route('user.show', [$stripeid->owner->username ?? $getdata[0]->owner->username]))->with('error', 'Something went wrong!');
         }
     }
 

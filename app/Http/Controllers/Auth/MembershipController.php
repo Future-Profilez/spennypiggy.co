@@ -325,26 +325,29 @@ class MembershipController extends Controller
         }
 
         $user = Auth::user();
-
-        $isSocilAdded = SocialLinks::where('user_id', $user->id)
-            ->where(function ($query) {
-                $query->whereNotNull('tumblr')
-                    ->orWhereNotNull('instagram')
-                    ->orWhereNotNull('twitch')
-                    ->orWhereNotNull('facebook')
-                    ->orWhereNotNull('twitter');
-            })->exists();
+        if ($user) {
+            $isSocilAdded = SocialLinks::where('user_id', $user->id)
+                ->where(function ($query) {
+                    $query->whereNotNull('tumblr')
+                        ->orWhereNotNull('instagram')
+                        ->orWhereNotNull('twitch')
+                        ->orWhereNotNull('facebook')
+                        ->orWhereNotNull('twitter');
+                })->exists();
+        } else {
+            $isSocilAdded = true;
+            $user = User::where('email', $request->email)->first();
+        }
 
         $membership = Membership::with('user')->whereUuid($uuid)->first();
         if (!$membership) return redirect()->back()->with('error', 'Membership not found!');
-        if ($membership->user_id === $user->id) return redirect()->back()->with('error', "You can't buy your own membership!");
+        if ($user != null && $membership->user_id === $user->id) return redirect()->back()->with('error', "You can't buy your own membership!");
         $currency = strtolower($request->cookie("currency", "GBP"));
         $creatorCurrency = $membership->currency;
         $price = $membership->price;
-        $convertedAmount = Helpers::priceFormat($creatorCurrency, $price, $currency);
-        if (!Auth::check() && $convertedAmount > 51) {
-            return to_route('login')->with('error', 'You are not eligible for this payment as you need to login first.');
-            // return redirect()->back()->with('error', 'Invalid currency conversion!');
+        $convertedAmount = Helpers::priceFormat($creatorCurrency, $price, 'gbp');
+        if (!Auth::check() && $convertedAmount > 50) {
+            return to_route('login', ['message' => 'You are not eligible for this payment as you need to login first']);
         }
 
         $memberTaxPercent = config('app.member_tax');
