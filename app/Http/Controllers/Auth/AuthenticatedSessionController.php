@@ -234,8 +234,15 @@ class AuthenticatedSessionController extends Controller
         $intro = null;
         $goal = null;
         $profile_steps = null;
-        if($page == 'about'){
+        $followers = 0;
+        $following = 0;
 
+        $user['followers'] = $followers;
+        $user['following'] = $following;
+
+
+
+        if($page == 'about'){
             // Social links
             $slinks = $user->social_links()->first();
             if (!empty($slinks)) {
@@ -554,6 +561,7 @@ class AuthenticatedSessionController extends Controller
 
         }
 
+        
 
         // SEO Meta Tags
         SeoMeta::addTag('title', "{$user->name} - Spenny Piggy - Financial Gifts, Exclusive Content & Memberships");

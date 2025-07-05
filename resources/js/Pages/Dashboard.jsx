@@ -25,7 +25,6 @@ const AddPost = React.lazy(() => import("./feed/AddPost"));
 const AddIntro = React.lazy(() => import("./intros/AddIntro"));
 const MyGoal = React.lazy(() => import("./TipJar/MyGoal"));
 const SocialLinks = React.lazy(() => import("@/includes/SocialLinks"));
-const SiteSubscription = React.lazy(() => import("./Profile/SiteSubscription"));
 import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
 import { LazyLoadImage } from "react-lazy-load-image-component";
@@ -33,20 +32,18 @@ import useWidthCount from "@/Components/useWidthCount";
 import{arrayMove,SortableContext,sortableKeyboardCoordinates,useSortable,rectSortingStrategy,}from "@dnd-kit/sortable";
 import{closestCenter,DndContext,KeyboardSensor,MouseSensor,TouchSensor,useSensor,useSensors,}from "@dnd-kit/core";
 import PaymentUnActivated from "@/Components/PaymentUnActivated";
-import { Tabs, Tab } from "react-tabs-scrollable";
+import { Tabs } from "react-tabs-scrollable";
 import "react-tabs-scrollable/dist/rts.css";
 import ProfileSteps from "./Profile/ProfileSteps";
 import ProfileProductLists from "./shop/profile/ProfileProductLists";
 import AddItem from "./shop/AddItem";
 import AddGift from "./feed/AddGift";
-import PriceFormat from "@/includes/PriceFormat";
 import GiftListing from "./rye/GiftListing";
 import { FaRegHeart } from "react-icons/fa";
 import { CiGift } from "react-icons/ci";
 import OldSubscribe from "./webpush/OldSubscribe";
 import AddSocial from "./Auth/Social";
 import CreatorVerification from "./Profile/CreatorVerification";
-import Side from "@/Components/Side";
 
 export default function Dashboard(props) {
     const w = useWidthCount();
@@ -285,6 +282,8 @@ export default function Dashboard(props) {
     }
 
 
+    console.log(props)
+
 
     return (
         <>
@@ -470,7 +469,7 @@ export default function Dashboard(props) {
                                                             <>
                                                                 {page === "wishes" ?
                                                                 <Suspense fallback={<LoadingScreen />} >
-                                                                    <div className="wishes-items ">
+                                                                    <div className="wishes-items pb-6 ">
                                                                         {wish_categories && wish_categories.length ?
                                                                         <>
                                                                         <div className="new-wish-cats flex mb-2" >

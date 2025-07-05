@@ -16,7 +16,7 @@ import DeleteStripeAccount from "../Profile/DeleteStripeAccount";
 import SiteSubscription from "../Profile/SiteSubscription";
 import TFA from "../Auth/TFA";
 import AddressForm from "../rye/AddressForm";
-import PushNotificationModal from "@/Components/PushNotificationModal";
+import FollowersBulkNotification from "@/Components/FollowersBulkNotification";
 
 export default function Accountsetting(props) {
     const { successAlert, errorAlert } = useAlerts();
@@ -325,20 +325,9 @@ export default function Accountsetting(props) {
                             )}
 
                             {auth && auth?.user?.role == 1 ? (
-                                <>
                                     <li>
-                                        <button
-                                            onClick={() => setShowModal(true)}
-                                            className=" notification uppercase px-4 py-2 rounded-full"
-                                        >
-                                            Open Push Notification
-                                        </button>
-                                        <PushNotificationModal
-                                            isOpen={showModal}
-                                            onClose={() => setShowModal(false)}
-                                        />
+                                        <FollowersBulkNotification  />
                                     </li>
-                                </>
                             ) : (
                                 ""
                             )}

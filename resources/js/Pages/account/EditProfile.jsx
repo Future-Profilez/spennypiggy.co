@@ -19,8 +19,6 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
     const [coverImage, setCoverImage] = useState();
 
     const [socialFile, setSocialFile] = useState();
-    console.log("socialFile",socialFile);
-
     useEffect(() => {
         if (socialFile) {
             setData('social_image', socialFile);

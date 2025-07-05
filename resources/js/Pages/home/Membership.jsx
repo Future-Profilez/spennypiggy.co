@@ -108,7 +108,7 @@ export default function Membership() {
 
     </div> */}
     <section  id='features' className="bg-black text-white py-16 px-4 text-center">
-    <div   className="containerbox">
+    <div className=" ">
       <div className="flex justify-center mb-6">
         <img src={support} alt="Pig Mascot" className="w-24 h-24 object-contain" />
       </div>
@@ -116,9 +116,9 @@ export default function Membership() {
       <h2 className="headingSm shadow-none text-light font-gulfs stroke-none text-3xl md:text-4xl uppercase mb-6 max-w-3xl mx-auto text-center">
         Supporting Creators! Empowering Gifters! Made for Everyone!
       </h2>
-      <div data-aos="zoom-out-up" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
+      <div data-aos="zoom-out-up" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-8 max-w-7xl mx-auto">
         {supportData.map((item, index) => (
-          <div  key={index} className="flex flex-col items-center text-center">
+          <div  key={index} className="flex flex-col membershipitems items-center text-center mb-3 ">
           <div className={`relative w-full max-w-[250px] min-h-[150px] ${item.bg} rounded-2xl flex items-center justify-center`}>
           <div className="absolute bg-white/20 rounded-full" />
             <div className="relative z-10 text-white">

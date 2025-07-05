@@ -76,8 +76,6 @@ export default function TipInner({classes, idd}) {
   },[amount]);
 
   const [loading, setLoading] = useState(false);
-
-
   const usdToGbp = (amount, currency) => {
         const upCorrency = currency && currency.toUpperCase() || global_currency && global_currency.toUpperCase();
         const conversion_rate = rates[upCorrency];
@@ -87,13 +85,11 @@ export default function TipInner({classes, idd}) {
 
   const send = (e) => {
     e.preventDefault();
-
     if(auth && !auth.user && usdToGbp(data.amount) > 50){
         errorAlert("Larger payments more than £50 need to login.");
         router.visit(`/login?redirect=${window.location.pathname}&message=Larger payments more than £50 need to login.`);
         return false;
     }
-
     setLoading(true);
     const resp = axios.post(`/tip-jar/pay/${user.uuid}`, data);
     resp.then((res) => {
