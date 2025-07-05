@@ -89,19 +89,17 @@ export default function Bill(props) {
                   <AddBills classes="pinkbg hover:opacity-[0.8] text-white   text-[13px] md:text-normal py-2 px-4 rounded-full shadow" text="Update Bill"
                   item={itm} isEdit={true} />
                 :
-                <>
-                {
-                  auth && auth.user !== null ?
-                  <Link method='get'
-                    href={route('bill.checkout',{uuid: itm.uuid})}
-                    className='pinkbg hover:opacity-[0.8] text-white  text-[13px] md:text-normal py-2 px-4 rounded-full shadow' >Pay Bill</Link>
-                  :
-                  <button
-                     onClick={gotologin}
-                    className='pinkbg hover:opacity-[0.8] text-white   text-[13px] md:text-normal py-2 px-4 rounded-full shadow' >Pay Bill</button>
-
-                }
-                </>
+                <Link method='get'
+                  href={route('bill.checkout',{uuid: itm.uuid})}
+                  className='pinkbg hover:opacity-[0.8] text-white  text-[13px] md:text-normal py-2 px-4 rounded-full shadow' >Pay Bill</Link>
+                // <>
+                // { auth && auth.user !== null ?
+                //   :
+                //   <button
+                //      onClick={gotologin}
+                //     className='pinkbg hover:opacity-[0.8] text-white   text-[13px] md:text-normal py-2 px-4 rounded-full shadow' >Pay Bill</button>
+                //   }
+                // </>
               }
             </div>
             </div>

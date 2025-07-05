@@ -107,17 +107,17 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                 {hidebtn ? '' : <>
                   <div className='flex justify-center items-center'>
                     {IsloggedIn ? <EditMembership  classes='btn-pink mt-2 block text-center !w-full'  item={item} /> :
-                      <>
-                        {auth && auth.user !== null ?
-                          <Link className='btn-pink mt-2  text-center !w-full' method='get'
-                              href={route('membership.checkout',{uuid: item?.uuid})}>Join Now
-                          </Link>
-                          :
-                          <button className='btn-pink mt-2 block text-center !w-full'
-                              onClick={gotologin}>Join Now
-                          </button>
-                        }
-                      </>
+                    <Link className='btn-pink mt-2  text-center !w-full' method='get'
+                        href={route('membership.checkout',{uuid: item?.uuid})}>Join Now
+                    </Link>
+                      // <>
+                      //   {auth && auth.user !== null ?
+                      //     :
+                      //     <button className='btn-pink mt-2 block text-center !w-full'
+                      //         onClick={gotologin}>Join Now
+                      //     </button>
+                      //   }
+                      // </>
                     }
                   </div>
                 </>}
