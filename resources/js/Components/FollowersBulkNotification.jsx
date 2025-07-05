@@ -35,7 +35,6 @@ export default function FollowersBulkNotification() {
                 successAlert(response.data.msg);
                 setFormData({ title: "", body: "" });
                 onClose(); // close modal
-                // window.location.href = "/{response.data?.username}"; // redirect to followers page
             } else {
                 errorAlert(response?.data?.msg);
             }
@@ -65,14 +64,13 @@ export default function FollowersBulkNotification() {
             {/* Title Field */}
             <div className="mb-2">
                 <input
-                    type="text"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    maxLength={maxTitleLength}
-                    className="px-3 py-[13px] bg-gray-100 !border-gray-200 border-1 rounded-lg w-full"
-                    placeholder="Notification Title"
-                />
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+                maxLength={maxTitleLength}
+                className="px-3 py-[13px] bg-gray-100 !border-gray-200 border-1 rounded-lg w-full"
+                placeholder="Notification Title" />
                 <div className="text-right text-xs text-gray-500">
                     {formData.title.length}/{maxTitleLength}
                 </div>
@@ -88,8 +86,7 @@ export default function FollowersBulkNotification() {
                     onChange={handleInputChange}
                     maxLength={maxBodyLength}
                     className="px-3 py-[10px] bg-gray-100 !border-gray-200 border-1 rounded-lg w-full"
-                    placeholder="Enter something..."
-                ></textarea>
+                    placeholder="Enter something..." ></textarea>
                 <div className="text-right text-xs text-gray-500">
                     {formData.body.length}/{maxBodyLength}
                 </div>
@@ -97,22 +94,11 @@ export default function FollowersBulkNotification() {
             </div>
 
             {/* Submit Button */}
-            <div
-                className={`flex justify-end ${
-                    formData.title === "" || formData.body === ""
-                        ? "disabled"
-                        : ""
-                }`}
-            >
+            <div className={`flex justify-end ${formData.title === '' || formData.body === '' ? "disabled" : ""}`}>
                 <button
                     onClick={handleSubmit}
                     disabled={loading}
-                    className={`${
-                        loading
-                            ? "bg-gray-400 text-black"
-                            : "bg-pink-500 hover:bg-pink-600"
-                    } uppercase w-full btn-shadow font-gulfs rounded-full px-4 pt-[10px] pb-[7px] pinkbg text-white`}
-                >
+                    className={`${loading? "bg-gray-400 text-black": "bg-pink-500 hover:bg-pink-600"} uppercase w-full btn-shadow font-gulfs rounded-full px-4 pt-[10px] pb-[7px] pinkbg text-white`} >
                     {loading ? "Sending..." : "Send Notification"}
                 </button>
             </div>
