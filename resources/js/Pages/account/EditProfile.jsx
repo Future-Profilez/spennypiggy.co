@@ -12,7 +12,7 @@ import html2canvas from 'html2canvas';
 import { useEffect } from 'react';
 
 export default function EditProfile({ user, text, classes, updateProfileSteps }) {
- 
+
     const [close, setClose] = useState()
     const { successAlert, errorAlert } = useAlerts();
     const [profileDP, setProfileDP] = useState();
@@ -65,7 +65,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                         border: 2px solid white;">
                     <div>
                         <h3 style="margin: 0; margin-top:-14px;font-size: 30px;font-family: cursive;">${nameuper}</h3>
-                        <p style="margin: 0px 0;font-family: cursive;font-size: 22px;">is now on <b style="font-weight: 800;">🎁 SpennyPiggy</b></p> 
+                        <p style="margin: 0px 0;font-family: cursive;font-size: 22px;">is now on <b style="font-weight: 800;">🎁 SpennyPiggy</b></p>
                         <p style="font-size: 19px;font-family: system-ui;margin-top: 20px;">https://spennypiggy.co/${data?.username || user?.username}</p>
                     </div>
                     </div>
@@ -94,6 +94,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
             setSocialFile(new File([blob],  `${user?.username}-social_avatar`, { type: blob.type }))
             setData('social_image', new File([blob], `${user?.username}-social_avatar`, { type: blob.type }));
         },500);
+        
         // return true;
         // 6. Download to user device
         // const localUrl = URL.createObjectURL(blob);
@@ -106,7 +107,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         // // 7. Cleanup
         // document.body.removeChild(container);
     };
-    
+
     const getImageUID = (e) => {
         setData('avatar', e);
         setProfileDP(e.cdnUrl);
@@ -123,8 +124,8 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
     const [username, setUsername] = useState(user?.username);
     const updateProfile = async (e) => {
         e.preventDefault();
-        
-         
+
+
         post(route('edit-profile', {data}), {
             preserveScroll: true,
             onSuccess: (resp) => {
