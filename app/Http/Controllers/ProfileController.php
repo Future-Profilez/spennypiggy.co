@@ -468,7 +468,7 @@ class ProfileController extends Controller
         $followed_id = $request->user_id;
         $LoggedInUser = Auth::user();
         $userFollow = Follow::where('follower_id', Auth::id())->where('followed_id', $followed_id)->first();
-        $followedUser = User::select('id', 'name', 'email')->where('id', $followed_id)->first();
+        $followedUser = User::select('id', 'name', 'username', 'email')->where('id', $followed_id)->first();
         $userName = ucfirst($followedUser->name);
         // dd($userFollow, $LoggedInUser, $followedUser, $userName);
         if ($userFollow === null) {
@@ -496,6 +496,7 @@ class ProfileController extends Controller
             'status' => true,
             'msg' => "You have $status $userName.",
             'status' => $status,
+            'username' => $followedUser->username,
         ]);
     }
 
