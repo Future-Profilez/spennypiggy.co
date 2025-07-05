@@ -15,8 +15,6 @@ export default function TipInner({classes, idd}) {
   const { formatMultiPrice } = PriceFormat();
   const { usdtogbp } = PriceFormat();
 
-
-
   const [defaultAmount, setdefaultAmount] = useState(5);
   const [amount, setAmount] = useState(defaultAmount);
   const [tipQuantity, setTipQuantity] = useState(1);
