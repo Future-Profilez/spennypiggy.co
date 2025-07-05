@@ -12,6 +12,7 @@ export default function Login({ status, canResetPassword }) {
 
     const urlParams = new URLSearchParams(window.location.search);
     const paramValue = urlParams.get('redirect');
+    const redirectmessage = urlParams.get('message');
 
     const [open, setOpen] = useState(false);
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
@@ -95,6 +96,7 @@ export default function Login({ status, canResetPassword }) {
                     </div>
                     <form className='!p-4 sm:!p-6 md:!p-10' onSubmit={checkTFA} >
                         <div className='login-step1 loginform'>
+                            <p className='text-center font-CeraGRBold text-red-600 text-lg mb-4'>{redirectmessage}</p>
                             <ul>
                                 <li className="formfield mb-6">
                                     <label>Enter Email</label>

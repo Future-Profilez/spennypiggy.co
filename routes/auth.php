@@ -332,16 +332,18 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/send-surprize', [WishitemController::class, 'sendSurprise'])->name('send-surprize');
 
-        Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
-            Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay")->middleware('mustCompletedCardVerification');
-            Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
-        });
-
+        
         Route::get('/update-profile-lock-status', [ProfileController::class, 'updateProfileLockStatus'])->name('update.profile.lock.status');
-
+        
         Route::post('/user-follow-unfollow', [ProfileController::class, 'userFollowUnFollow'])->name('user.follow.unfollow');
     });
 });
+
+Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
+    Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay")->middleware('mustCompletedCardVerification');
+    Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
+});
+
 
 // subscription webhook
 
@@ -415,8 +417,6 @@ Route::get('sociallinks/{username}', [AuthenticatedSessionController::class, 'so
 // Route::get('bills/{username}', [AuthenticatedSessionController::class, 'user_bills'])->name('user.bills');
 
 Route::get('gift-items/{username}', [AuthenticatedSessionController::class, 'userGiftItems'])->name('gift.items');
-
-
 Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('user.posts.comments');
 
 Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
@@ -424,7 +424,6 @@ Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUs
 Route::get('/items/{username}/{category_id?}', [AuthenticatedSessionController::class, 'userItems'])->name('user.items');
 Route::get('/user/category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.category');
 Route::get('/user_shop_category/{username}', [AuthenticatedSessionController::class, 'user_shop_category'])->name('user.shop.category');
-
 
 Route::prefix("wish")->name("wish.")->group(function () {
     Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name("subscribe.checkout")->middleware('mustCompletedCardVerification');

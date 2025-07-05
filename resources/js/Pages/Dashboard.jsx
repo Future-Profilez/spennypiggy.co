@@ -453,7 +453,7 @@ export default function Dashboard(props) {
                                                                     </div>
 
                                                                     <div className="ps-md-4 col-md-6">
-                                                                        {IsloggedIn && user && user.stripe_details_submitted !==1 ?
+                                                                        {IsloggedIn && user && user.stripe_details_submitted == 0 || user.stripe_details_submitted == null ?
                                                                             <CreatorVerification  IsloggedIn={IsloggedIn} />
                                                                         : ''}
                                                                         {IsloggedIn && user && user.stripe_details_submitted == 1 ? <ProfileSteps sLinks={sLinks} user={user} IsloggedIn={IsloggedIn} /> : ''}
@@ -486,7 +486,6 @@ export default function Dashboard(props) {
                                                                         </div>
                                                                         </>
                                                                         : ''}
-
 
                                                                         {wishitems && wishitems.length ? (
                                                                         <>

@@ -2,7 +2,9 @@
 to{opacity:1;transition:0.6s;}
 }
 
-
+.bg-voilet {
+  background: var(--voilet);
+}
 .new-wish-cats {
   overflow: auto;
 }
@@ -695,6 +697,11 @@ html body .intercom-lightweight-app-launcher{margin-bottom:70px !important;}
 
 .creatorslider .swiper-pagination{position:static !important;padding-top:20px;}
 .fillbankbtn{position:fixed;bottom:67px;left:15px;z-index:1;width:100%;border-radius:17px;max-width:calc(100% - 30px);padding:16px !important;font-size:17px !important;}
+.fillbankbtn.logout{ 
+   bottom:10px !important;
+} 
+
+
 .full.sendSurprize-modal .tip-wrapper{border-radius:0 !important;}
 .proud-banner{max-width:170px;}
 .userphoto{margin:0 !important;}

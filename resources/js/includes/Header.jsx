@@ -132,7 +132,6 @@ export default function Header({classMagicword}) {
                                 </div>
                             : ""}
 
-{/* hidden md:block */}
                             <Link
                                 href={route("discover")}
                                 className="me-2 md:me-3 discover-icon  " >
@@ -165,27 +164,14 @@ export default function Header({classMagicword}) {
                                 </div>
                             </Link>
 
-                            {auth?.user && (
-                                <Link
-                                    href={route("cart")}
-                                    as="button"
-                                    className="cartLink hidden me-3 position-relative  md:flex" >
-                                    <div className="bg-[#F94F96] p-1 rounded-full w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
-                                        <LiaShoppingCartSolid
-                                            color="#ffffff"  size={32}
-                                        />
-                                    </div>
-
-                                    {count ? (
-                                        <span className="site-counter d-block">
-                                            {cart}
-                                        </span>
-                                    ) : (
-                                        ""
-                                    )}
-                                </Link>
-                            )}
-
+                            <Link
+                                href={route("cart")} as="button"
+                                className={`cartLink me-3 relative flex ${auth?.user && window?.innerWidth < 768 ? 'hidden' :''}`}>
+                                <div className="bg-[#F94F96] p-1 rounded-full w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
+                                    <LiaShoppingCartSolid color="#ffffff"  size={32} />
+                                </div>
+                                {count ?  <span className="site-counter d-block">{cart}</span> : ''}
+                            </Link>
 
 
                             {auth?.user?.username || false ? (
@@ -252,7 +238,7 @@ export default function Header({classMagicword}) {
                                 <MdClose color="#fff" size={"2rem"} />
                             </button>
                             <div class="overflow-y-auto overflow-x-hidden flex-grow">
-                                <ul class=" flex flex-col pt-8 space-y-1">
+                                <ul class=" flex flex-col pt-8 space-y-1 pb-[100px]">
                                     <>
                                         {auth?.user?.username ? 
                                             <>
@@ -432,8 +418,7 @@ export default function Header({classMagicword}) {
                                                         />
                                                     </span>
                                                     <span class="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                        {" "}
-                                                        Sign Up{" "}
+                                                        Sign Up 
                                                     </span>
                                                 </Link>
                                             </li>
@@ -504,7 +489,6 @@ export default function Header({classMagicword}) {
                                                 />
                                             </span>
                                             <span class="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                {" "}
                                                 How it works
                                             </span>
                                         </Link>
