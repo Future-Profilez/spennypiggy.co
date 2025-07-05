@@ -487,7 +487,7 @@ button.editpop{display:none !important;}
 .subsctabs button{background:#404040;color:#fff;border-radius:30px !important;padding:6px 20px;}
 .subsctabs button.active,.subsctabs button:hover{color:#fff;background:#f45595;}
 .plantitle{font-size:22px;}
-.wishbanner span{width:100% !important;display:block !important;height:100% !important;}
+.wishbanner span.lazy-load-image-background {width:100% !important;display:block !important;height:100% !important;}
 .movesvg{cursor:grab;border-radius:7px;width:30px;height:30px;padding:6px;background:#ffffffbd;position:absolute;top:10px;left:10px;z-index:1;}
 .currency-wrapper input{padding-left:50px !important;}
 .currency-wrapper.dollar input{padding-left:25px !important;}
@@ -648,9 +648,25 @@ ul.socialmedia li svg{width:25px !important;height:24px !important;}
 .headingSm{font-size:39px;}
 .loginPage h2.headingLg{font-size:50px;line-height:60px;}
 }
-@media (max-width:991px){.nextimage-wrap,.nextimage-wrap img,.nextimage-wrap span{width:100% !important;}
-.wishManage{padding:0;}
+
+
+@media (max-width:1024px){
+.userphoto{margin:0 !important;}
+
+.userphoto span {
+  width: 130px !important;
+}
 .userphoto{padding-bottom:12px;margin:auto !important;}
+.userphoto {
+    width: fit-content !important;
+    margin: auto !important;
+}
+}
+
+
+@media (max-width:991px){
+  .nextimage-wrap,.nextimage-wrap img,.nextimage-wrap span{width:100% !important;}
+.wishManage{padding:0;}
 .containerbox{max-width:740px;}
 .MegaMenu{flex-wrap:wrap;align-items:flex-start;align-content:flex-start;}
 .menuImg{width:100%;padding:7px 11px;justify-content:flex-start;}
@@ -691,6 +707,10 @@ select#country{width:150px;}
 .publish-image span{display:block !important;width:100% !important;height:auto !important;}
 .membership-image span{width:100% !important;display:block;height:auto !important;}
 html body .intercom-lightweight-app-launcher{margin-bottom:70px !important;}
+
+}
+.btn-shadow {
+    text-shadow: 0.5px 0.5px #000000 !important;
 }
 @media (max-width:767px){
 .box-e{ padding:60px 60px !important;}
@@ -701,10 +721,8 @@ html body .intercom-lightweight-app-launcher{margin-bottom:70px !important;}
    bottom:10px !important;
 } 
 
-
 .full.sendSurprize-modal .tip-wrapper{border-radius:0 !important;}
 .proud-banner{max-width:170px;}
-.userphoto{margin:0 !important;}
 .inlinetab .nav-tabs{padding-left:24px;}
 .loveboxes h3{font-size:20px !important;line-height:22px !important;}
 .menuList .menuslists{display:block !important;}
@@ -817,9 +835,6 @@ html body .intercom-lightweight-app-launcher{margin-bottom:70px !important;}
 .proud-banner{align-items:end;}
 .proud-banner p{font-size:12px;}
 
-.userphoto span {
-  width: 130px !important;
-}
 
 }
 @media(max-width:575px){

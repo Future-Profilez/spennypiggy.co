@@ -10,35 +10,24 @@ import { RiVerifiedBadgeFill } from "react-icons/ri";
 import FollowButton from "@/Pages/Profile/FollowButton";
 
 export default function Userprofile({ IsloggedIn }) {
-    const { auth, user, global_currency, supporters, follow_status } =
-        usePage().props;
-    const opponantUser = usePage().props.auth.opposite_user;
+
+    const { auth, user, global_currency, supporters, follow_status } = usePage().props;
+    const opponantUser = auth?.opposite_user;
+
     return (
         <div className="userprofilesec mb-2 ">
-            <div className="userPr px-4 py-0 py-md-4 md:flex items-center justify-center md:justify-between mt-[-80px] md:mt-[-50px]">
-                <div className="update-profile text-center md:flex items-center justify-center md:justify-start">
-                    <div className="userphoto relative !flex md:!block items-center justify-center w-full md:w-auto ">
-                        <LazyLoadImage
-                            alt={"image"}
-                            useIntersectionObserver={true}
-                            effect="blur"
-                            src={
-                                user && user.avatar_url
-                                    ? user.avatar_url
-                                    : userphoto
-                            }
-                            height={150}
-                            width={150}
+            <div className="userPr px-4 py-0 py-md-4 lg:flex items-center justify-center lg:justify-between mt-[-80px] md:mt-[-50px]">
+                <div className="update-profile text-center lg:flex items-center justify-center lg:justify-start">
+                    <div className="userphoto relative !flex  items-center justify-center mb-4 ">
+                        <LazyLoadImage 
+                            alt={"image"} useIntersectionObserver={true} effect="blur"
+                            src={user && user.avatar_url? user.avatar_url: userphoto}
+                            height={150} width={150}
                             className="rounded-full !border-3 !border-[var(--mint)]
                         !h-[130px] !w-[130px] min-w-[130px] !min-h-[130px] !max-w-[130px] !max-h-[130px]
-                        md:!h-[150px] md:!w-[150px] md:min-w-[150px] md:!min-h-[150px] md:!max-w-[150px] md:!max-h-[150px]
-                        "
-                        />
+                        md:!h-[150px] md:!w-[150px] md:min-w-[150px] md:!min-h-[150px] md:!max-w-[150px] md:!max-h-[150px]" />
 
-                        {IsloggedIn &&
-                        auth &&
-                        auth?.user.avatar_url &&
-                        auth?.user?.avatar_approved == 0 ? (
+                        {IsloggedIn && auth && auth?.user.avatar_url && auth?.user?.avatar_approved == 0 ? (
                             <div className="absolute approvetag top-3 mx-auto">
                                 <button className="tooltipbtn">
                                     <svg
@@ -64,18 +53,18 @@ export default function Userprofile({ IsloggedIn }) {
                         )}
                     </div>
                     <div className="ps-3">
-                        <h2 className="font-GillSans mb-2 flex flex-col md:flex-row items-center md:items-start justify-center md:justify-start text-center md:text-left">
+                        <h2 className="font-GillSans mb-2 flex   items-center  justify-center lg:justify-start text-center lg:text-left">
                             {user?.name}
                             {user?.role === 1 &&
                                 user?.profile_status_lock === 2 && (
                                     <RiVerifiedBadgeFill
-                                        size="1.7rem"
-                                        className="ms-2 text-pink"
+                                        size="1.5rem"
+                                        className="ms-2 mt-[-2px] text-pink"
                                     />
                                 )}
                         </h2>
 
-                        <div className="userId mb-2 flex flex-col sm:flex-row items-center justify-center md:justify-start text-center md:text-left gap-2">
+                        <div className="userId mb-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start text-center lg:text-left gap-2">
                             <ShareProfile
                                 username={user?.name}
                                 classes="flex text-gray-300 mr-4 items-center"
@@ -95,58 +84,56 @@ export default function Userprofile({ IsloggedIn }) {
                                 </div>
                             </ShareProfile>
 
-                            {/* Follow Button on small screens below username */}
-                            {!IsloggedIn && auth?.user?.id && (
-                                <div className="mt-2 sm:mt-0">
-                                    <FollowButton
-                                        targetUserId={opponantUser?.id}
-                                        isInitiallyFollowing={follow_status}
-                                    />
-                                </div>
-                            )}
+                          
                         </div>
                     </div>
                 </div>
-                {!IsloggedIn
-                    ? user &&
-                      user.stripe_details_submitted == 1 && (
-                          <div>
-                              {user && user.role == 1 ? (
-                                  <>
-                                      <SendTip />
-                                      {user && user.role == 1 ? (
-                                          <p className="text-center text-mint">
-                                              🐷 {supporters} Supporters
-                                          </p>
-                                      ) : (
-                                          ""
-                                      )}
-                                  </>
-                              ) : (
-                                  ""
-                              )}
-                          </div>
-                      )
-                    : (
-                          <>
-                              <div className="absolute top-4 right-6">
-                                  <EditProfile
-                                      user={user}
-                                      classes={
-                                          "!text-sm text-white dark2 rounded-xl px-3 py-2"
-                                      }
-                                      global_currency={global_currency}
-                                  />
-                              </div>
-                              {user && user.role == 1 ? (
-                                  <p className="text-center text-mint mt-2">
-                                      🐷 {supporters} Supporters
-                                  </p>
-                              ) : (
-                                  ""
-                              )}
-                          </>
-                      ) || ""}
+
+                <div className="flex lg:block justify-center mt-4 lg:mt-0">
+                    <div>
+                        {user && user.role == 1 ? (
+                            <div className="flex mb-4 justify-center md:mb-2">
+                                <p className="md:flex text-center font-poppins mt-1 text-white">
+                                    <span className='!w-auto !h-auto block md:inline-block pe-1 '>
+                                        {user?.followers}
+                                    </span>
+                                      Followers
+                                </p>
+                                <p className="md:flex text-center font-poppins mt-1 ms-3 text-white">
+                                     <span className='!w-auto !h-auto block md:inline-block pe-1 ' >{user?.following}</span> Following
+                                </p>
+                                <p className="md:flex text-center font-poppins mt-1 ms-3 text-white">
+                                    <span className='!w-auto !h-auto block md:inline-block pe-1 '>🐷 {supporters}</span> Supporters
+                                </p>
+                            </div>
+                        ) : (
+                            ""
+                        )}
+                        <div className="flex items-center justify-center">
+                            <div className="">
+                                <FollowButton targetUserId={opponantUser?.id} isInitiallyFollowing={follow_status} />
+                            </div>
+                            {!IsloggedIn
+                                ? user &&
+                                user.stripe_details_submitted == 1 && (
+                                    <div>
+                                        {user && user.role == 1 ? <SendTip /> : ''}
+                                    </div>
+                                )
+                                : (
+                                    <EditProfile
+                                        user={user}
+                                        classes={"uppercase text-sm btn-shadow font-gulfs rounded-full px-4 pt-[10px] pb-[7px] pinkbg text-white"}
+                                        global_currency={global_currency}
+                                    />
+                            ) || ""}
+                        </div>
+
+
+                        
+                    </div>
+                </div>
+
             </div>
         </div>
     );

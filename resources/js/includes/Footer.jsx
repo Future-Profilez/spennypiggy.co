@@ -130,7 +130,7 @@ export default function Footer(props) {
                 <div className="max-w-5xl mx-auto">
                     <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
                         <div>
-                            <h3 className="font-gulfs text-light text-3xl mb-4"> LEGAL </h3>
+                            <h3 className="font-gulfs text-light text-lg md:text-3xl md:mb-4"> LEGAL </h3>
                             <ul className="space-y-2 font-poppins cursor-pointer">
                                 <li> <a href="https://app.termly.io/policy-viewer/policy.html?policyUUID=88583b44-9385-430c-aa79-3c41dc8a167e" target="blank" > Privacy policy </a> </li>
                                 <li> <a href="https://app.termly.io/policy-viewer/policy.html?policyUUID=f11eb44f-4ddd-4d59-86d1-34c11e3fa80e" target="blank" > Cookies Policy </a> </li>
@@ -141,7 +141,7 @@ export default function Footer(props) {
                         </div>
 
                         <div>
-                            <h3 className="font-gulfs text-light text-3xl mb-4">
+                            <h3 className="font-gulfs text-light text-lg md:text-3xl md:mb-4">
                                 GENERAL
                             </h3>
                             <ul className="space-y-2 font-poppins cursor-pointer">
@@ -153,7 +153,7 @@ export default function Footer(props) {
                         </div>
 
                         <div>
-                            <h3 className="font-gulfs text-light text-3xl mb-4">
+                            <h3 className="font-gulfs text-light text-lg md:text-3xl md:mb-4">
                                 HELP
                             </h3>
                             <ul className="space-y-2 font-poppins cursor-pointer">
@@ -164,7 +164,7 @@ export default function Footer(props) {
                         </div>
 
                         <div>
-                            <h3 className="font-gulfs text-light text-3xl mb-4">
+                            <h3 className="font-gulfs text-light text-lg md:text-3xl md:mb-4">
                                 CONTACT
                             </h3>
                             <ul className="space-y-2 font-poppins cursor-pointer">

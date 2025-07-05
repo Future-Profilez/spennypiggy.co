@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
+import { router, usePage } from "@inertiajs/react";
+import toast from "react-hot-toast";
 
 const FollowButton = ({ targetUserId, isInitiallyFollowing }) => {
     const [isFollowing, setIsFollowing] = useState(isInitiallyFollowing);
     const [loading, setLoading] = useState(false);
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
+    const { auth } = usePage().props;
 
     const handleFollowToggle = async () => {
+        if(auth?.user ==  null){
+            toast.error("You must have to login first.");
+            return false;
+        }
         setLoading(true);
         try {
             const route = "/user-follow-unfollow";
@@ -38,19 +45,10 @@ const FollowButton = ({ targetUserId, isInitiallyFollowing }) => {
         <button
             onClick={handleFollowToggle}
             disabled={loading}
-            className={`sm m-auto px-4 py-2 rounded-lg text-sm ${
-                isFollowing
-                    ? "btn-pink" // Pink for Unfollow
-                    : "btn-pink bg-[#8c53fb] text-white hover:bg-[#6c53fb]" // Neon blue for Follow
-            }`}
+            className={`uppercase text-sm font-gulfs btn-shadow rounded-full px-4 pt-[10px] pb-[7px] me-3 ${
+                isFollowing? "!bg-gray-300" : "bg-whites bg-voilet text-white"  }`}
         >
-            {loading
-                ? isFollowing
-                    ? "Unfollowing..."
-                    : "Following..."
-                : isFollowing
-                ? "Unfollow"
-                : "Follow"}
+            {loading ? isFollowing? "Unfollowing...": "Following...": isFollowing? "Following": "Follow"}
         </button>
     );
 };
