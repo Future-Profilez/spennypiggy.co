@@ -75,8 +75,8 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
     <>
             <div class="bg-white bg-opacity-90 relative rounded-[30px] overflow-hidden  border-3 md:border-4 !border-[#F94F97] h-full">
               <div className='m-imag rounded-lg relative ' >
-                {IsloggedIn && item && item?.approved === 0 ?  
-                <div className='absolute bottom-2 m-3 bg-yellow-500 text-sm p-2 text-center rounded-[20px]' >Membership waiting for approval. Currently only you can see this membership.</div> 
+                {IsloggedIn && item && item?.approved === 0 ?
+                <div className='absolute bottom-2 m-3 bg-yellow-500 text-sm p-2 text-center rounded-[20px]' >Membership waiting for approval. Currently only you can see this membership.</div>
                 : ''}
                 <img src={item && item?.perma_link || dummy } alt='image' className='max-h-[200px] img-fluid w-100  ' />
               </div>

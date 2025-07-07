@@ -277,13 +277,16 @@ class BillsController extends Controller
      */
     public function buyBill(Request $request, $uuid, $reccure = 'continue')
     {
+        DB::beginTransaction();
+
+
         new StripeClient(env('STRIPE_SECRET_KEY'));
         $bill = Bills::with('user')->whereUuid($uuid)->first();
         $price = $bill->price;
         $currency = strtolower($request->cookie("currency", "GBP"));
         $ConvertedAmount = Helpers::priceFormat($bill->currency, $price, 'gbp');
         if (!Auth::check() && $ConvertedAmount > 50) {
-            return to_route('login')->with('error', 'You are not eligible for this payment as you need to login first.');
+            return to_route('login', ['message' => 'You are not eligible for this payment as you need to login first']);
         }
 
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
@@ -293,10 +296,12 @@ class BillsController extends Controller
                 ->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
         }
 
-        $user = Auth::user();
-
         if (!$bill) return redirect()->back()->with('error', 'Bill not found!');
-        if ($bill->user_id === $user->id) return redirect()->back()->with('error', "You can't buy your own bill!");
+
+        $user = Auth::user();
+        if ($user) {
+            if ($bill->user_id === $user->id) return redirect()->back()->with('error', "You can't buy your own bill!");
+        }
 
         $adminFeeAmount = config('app.administration_fee');
         $billTaxPercent = config('app.bill_tax');
@@ -327,7 +332,7 @@ class BillsController extends Controller
 
             $sub = BillPayment::create([
                 'bills_id'       => $bill->id,
-                'user_id'        => $user->id,
+                'user_id'        => $user->id ?? null,
                 'guest_name'     => $request->name,
                 'guest_email'    => $request->email,
                 'currency'       => $bill->currency,
@@ -344,45 +349,49 @@ class BillsController extends Controller
                 $connectedAccountId = $bill->user->account_id;
 
                 $storeCustomer = ConnectedAccountCustomer::where([
-                    ['user_id', $user->id],
+                    ['user_id', $user->id ?? null],
                     ['creator_id', $bill->user->id],
                     ['connected_account_id', $connectedAccountId],
                     ['currency', $currency],
                 ])->first();
 
                 $existingPriceEntry = ConnectedAccountCustomer::where([
-                    ['user_id', $user->id],
+                    ['user_id', $user->id ?? null],
                     ['creator_id', $bill->user->id],
                     ['connected_account_id', $connectedAccountId],
                     ['product_id', $bill->product_id],
                     ['currency', $currency],
                 ])->whereNotNull('price_id')->first();
 
-                $customer_id = $storeCustomer->stripe_customer_id ?? null;
+                $customer_id = $storeCustomer ? $storeCustomer->stripe_customer_id : null;
                 // $product_id = $storeCustomer->product_id ?? null;
 
                 // $existingSubscription = $customer_id
                 //     ? StripeControl::getSubscription($product_id, $connectedAccountId)
                 //     : null;
-                $existingSubscription = StripeControl::getActiveSubscriptionByCustomer(
-                    $storeCustomer->stripe_customer_id,
-                    $storeCustomer->connected_account_id
-                );
+                $existingSubscription = null;
+                if (isset($storeCustomer->stripe_customer_id)) {
+                    $existingSubscription = StripeControl::getActiveSubscriptionByCustomer(
+                        $storeCustomer->stripe_customer_id,
+                        $storeCustomer->connected_account_id
+                    );
+                }
 
+                DB::commit();
 
                 if ($existingSubscription && $existingSubscription->currency !== $currency) {
                     $newCustomer = StripeControl::createCustomer([
-                        'email' => $user->email,
-                        'name' => $user->name,
+                        'email' => $user->email ?? $request->email,
+                        'name' => $user->name ?? $request->name,
                     ], $connectedAccountId);
 
                     $customer_id = $newCustomer->id;
 
                     $storeCustomer = ConnectedAccountCustomer::create([
-                        'user_id' => $user->id,
+                        'user_id' => $user->id ?? null,
                         'creator_id' => $bill->user->id,
                         'connected_account_id' => $connectedAccountId,
-                        'stripe_customer_id' => $customer_id,
+                        'stripe_customer_id' => $customer_id ?? null,
                         'product_type' => 'bill',
                         'product_id' => $bill->product_id,
                         'currency' => $currency,
@@ -391,8 +400,8 @@ class BillsController extends Controller
 
                 if (!$customer_id) {
                     $newCustomer = StripeControl::createCustomer([
-                        'email' => $user->email,
-                        'name' => $user->name,
+                        'email' => $user->email ?? $request->email,
+                        'name' => $user->name ?? $request->name,
                     ], $connectedAccountId);
 
                     $customer_id = $newCustomer->id;
@@ -421,10 +430,10 @@ class BillsController extends Controller
 
                 if (!$storeCustomer) {
                     ConnectedAccountCustomer::create([
-                        'user_id' => $user->id,
+                        'user_id' => $user->id ?? null,
                         'creator_id' => $bill->user->id,
                         'connected_account_id' => $connectedAccountId,
-                        'stripe_customer_id' => $customer_id,
+                        'stripe_customer_id' => $customer_id ?? null,
                         'product_type' => 'bill',
                         'product_id' => $bill->product_id,
                         'price_id' => $priceId,
@@ -437,7 +446,7 @@ class BillsController extends Controller
                 $payload = [
                     'currency' => $currency,
                     'line_items' => $items,
-                    'customer' => $customer_id,
+                    'customer' => $customer_id ?? null,
                     'success_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
                     'cancel_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
                     'mode' => 'subscription',
@@ -445,7 +454,8 @@ class BillsController extends Controller
                         'application_fee_percent' => $applicationFeePercent,
                         'description' => "Recurring Bill for {$bill->user->username}",
                         'metadata' => [
-                            'user_id' => $user->id,
+                            'user_id' => $user->id ?? null,
+                            'email' => $request->email ?? $bill->guest_email,
                             'creator_id' => $bill->user->id,
                             'bill_id' => $bill->id,
                             'bill_payment_id' => $sub->id, // or 'bill_payment_uuid' => $sub->uuid
@@ -458,13 +468,14 @@ class BillsController extends Controller
 
                 $sub->update([
                     'session_id' => $session->id,
-                    'product_id' => $bill->product_id,
-                    'price_id' => $priceId,
-                    'customer_id' => $customer_id,
+                    // 'product_id' => $bill->product_id,
+                    // 'price_id' => $priceId,
+                    // 'customer_id' => $customer_id ?? null,
                 ]);
 
                 return Inertia::location($session->url);
             } catch (\Exception $e) {
+                DB::rollBack();
                 Log::error("Stripe checkout session failed: " . $e->getMessage());
                 return back()->with('error', $e->getMessage());
             }
@@ -533,7 +544,7 @@ class BillsController extends Controller
                 Helpers::sendNotification($title, $content, $email);
 
                 // below is BILL pwa for creator
-                $FanName = ucfirst($bill_pay->user->name) ?? 'A Fan';
+                $FanName = ucfirst($bill_pay->user->name ?? $bill_pay->guest_name) ?? 'A Fan';
                 $title = "💰 Bill Payment Received!";
                 $content = "$FanName has paid their bill. Check your earnings!.";
                 $email = $bill_pay->bill->user->email;
@@ -548,12 +559,12 @@ class BillsController extends Controller
                 // Notification setup
                 $username = $bill_pay->anonymous ? "Anonymous user" : ($bill_pay->guest_name ?? "Anonymous user");
                 $message = "$username just subscribed to your bill {$bill_pay->bill->name}";
-                NotificationSave::dispatch($message, $bill_pay->bill->user, $bill_pay->user, 'Bill');
+                NotificationSave::dispatch($message, $bill_pay->bill->user, $bill_pay->user ?? null, 'Bill');
 
                 $bill_pay->save();
 
                 $userPayment = new UserPayment();
-                $userPayment->from_user_id = $bill_pay->user_id;
+                $userPayment->from_user_id = $bill_pay->user_id ?? null;
                 $userPayment->to_user_id = $bill_pay->bill->user_id;
                 $userPayment->product_type = 'bill';
                 $userPayment->amount = $bill_pay->amount;

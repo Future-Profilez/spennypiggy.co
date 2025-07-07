@@ -156,6 +156,10 @@ class Helpers
     public static function checkGifterCardVerificationStatus(): bool
     {
         $user = Auth::user();
+        if (!$user) {
+            Log::error('No authenticated user found.');
+            return false;
+        }
         try {
 
             if ($user->role != 0) {

@@ -12,7 +12,12 @@ const FollowButton = ({ targetUserId, isInitiallyFollowing }) => {
 
     const handleFollowToggle = () => {
         if (!auth?.user) {
-            toast.error("You must be logged in to follow.");
+            errorAlert("You must be logged in to follow.");
+            return;
+        }
+
+        if (auth?.user?.id === targetUserId) {
+            errorAlert("You cannot follow yourself.");
             return;
         }
 
@@ -24,10 +29,11 @@ const FollowButton = ({ targetUserId, isInitiallyFollowing }) => {
             {
                 preserveScroll: true,
                 onSuccess: (page) => {
-                    setIsFollowing((prev) => !prev); // Toggle status
+                    setIsFollowing(false); // Toggle status
                 },
                 onError: (errors) => {
-                    errorAlert(errors?.msg || "Something went wrong.");
+                    setIsFollowing((prev) => prev); // Toggle status
+                    errorAlert(errors?.flash?.error || "Something went wrong.");
                 },
                 onFinish: () => {
                     setLoading(false);
@@ -41,9 +47,16 @@ const FollowButton = ({ targetUserId, isInitiallyFollowing }) => {
             onClick={handleFollowToggle}
             disabled={loading}
             className={`uppercase text-sm font-gulfs btn-shadow rounded-full px-4 pt-[10px] pb-[7px] me-3 ${
-                isFollowing? "!bg-gray-300" : "bg-whites bg-voilet text-white"  }`}
+                isFollowing ? "!bg-gray-300" : "bg-whites bg-voilet text-white"
+            }`}
         >
-            {loading ? isFollowing? "Unfollowing...": "Following...": isFollowing? "Following": "Follow"}
+            {loading
+                ? isFollowing
+                    ? "Unfollowing..."
+                    : "Following..."
+                : isFollowing
+                ? "Following"
+                : "Follow"}
         </button>
     );
 };
