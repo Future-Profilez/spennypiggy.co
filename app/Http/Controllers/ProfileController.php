@@ -492,12 +492,13 @@ class ProfileController extends Controller
         }
 
         // Get the updated follow count
-        return response()->json([
-            'status' => true,
-            'msg' => "You have $status $userName.",
-            'status' => $status,
-            'username' => $followedUser->username,
-        ]);
+        return redirect()->back()->with('success', "You have $status $userName.");
+        // return response()->json([
+        //     'status' => true,
+        //     'msg' => "You have $status $userName.",
+        //     'status' => $status,
+        //     'username' => $followedUser->username,
+        // ]);
     }
 
     public function sendPwaToFollower(Request $request)

@@ -10,35 +10,30 @@ const FollowButton = ({ targetUserId, isInitiallyFollowing }) => {
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const { auth } = usePage().props;
 
-    const handleFollowToggle = async () => {
-        if(auth?.user ==  null){
-            toast.error("You must have to login first.");
-            return false;
+    const handleFollowToggle = () => {
+        if (!auth?.user) {
+            toast.error("You must be logged in to follow.");
+            return;
         }
+
         setLoading(true);
-        try {
-            const route = "/user-follow-unfollow";
-            await axios
-                .post(route, { user_id: targetUserId })
-                .then((response) => {
-                    setIsFollowing(!isFollowing);
-                    if (response.data.status) {
-                        successAlert(response.data.msg);
-                    } else {
-                        errorAlert(response.data.msg);
-                    }
-                });
-            // if (isFollowing) {
-            //     successAlert("Unfollowed successfully.");
-            // } else {
-            //     successAlert("Followed successfully.");
-            // }
-        } catch (error) {
-            errorAlert(error);
-            console.error("Follow/unfollow failed:", error);
-        } finally {
-            setLoading(false);
-        }
+
+        router.post(
+            route("user.follow.unfollow"),
+            { user_id: targetUserId },
+            {
+                preserveScroll: true,
+                onSuccess: (page) => {
+                    setIsFollowing((prev) => !prev); // Toggle status
+                },
+                onError: (errors) => {
+                    errorAlert(errors?.msg || "Something went wrong.");
+                },
+                onFinish: () => {
+                    setLoading(false);
+                },
+            }
+        );
     };
 
     return (
