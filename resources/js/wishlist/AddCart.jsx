@@ -6,19 +6,19 @@ import ProgressBar from "react-bootstrap/ProgressBar";
 import { useState } from "react";
 import { useEffect } from "react";
 import PriceFormat from "@/includes/PriceFormat";
-import { Link, router } from "@inertiajs/react";
+import { Link, router, usePage } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
 export default function AddCart(props) {
-    const { auth, action, uuid, item, currency, showall } = props;
+    const {  action, uuid, item, currency, showall, IsloggedIn } = props;
+    const { auth} = usePage().props;
     const [sub, setSub] = useState("daily");
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
-
     const { usdtogbp, formatMultiPrice } = PriceFormat();
     const [cartamount, setcartamount] = useState(null);
     const gbpprice = usdtogbp(cartamount || item.price );
     const [close, setClose] = useState(action);
     const [is_cart, setIs_cart] = useState(item && item?.is_cart);
-
+    console.log("is_cart", auth);
     const ItemAdded = (e) => {
         if (e == "added") {
             setIs_cart(true);
@@ -42,10 +42,11 @@ export default function AddCart(props) {
     };
 
     const gotologin = (recure) => {
-        errorAlert("You must login first.");
+        errorAlert("For larger payments more than £50 need to login  first.");
         const url = `/wish/checkout/${item.uuid}/${recure ? recure : ""}`;
         router.visit(`/login?redirect=${url}&message=Larger payments more than £50 need to login.`);
     };
+    const processingFee = (item?.price||0) * 0.15;
 
     return (
         <Popup
@@ -72,7 +73,14 @@ export default function AddCart(props) {
                 </div>
                 <div className="cartTitle text-center">{item.wishname}</div>
                 <div className="cartPrice font-CeraGRBold text-voilet mt-1 mb-3 text-center">
-                    {formatMultiPrice(item.price, item?.currency || "GBP")}
+                    {IsloggedIn ?
+                        <>
+                            {formatMultiPrice(item.price, item?.currency || 'USD')}
+                        </> :
+                        <>
+                            {formatMultiPrice((parseInt(item.price)+parseInt(processingFee || 0)), item?.currency || 'USD', 'adminfee')}
+                        </>
+                    }
                 </div>
                 {item.subscription == "2" ? (
                     <>
@@ -124,7 +132,7 @@ export default function AddCart(props) {
 
                 {item.subscription == 1 ? (
                     <>
-                        {auth?.user || parseInt(gbpprice) < 50 ? (
+                        {auth?.user?.username || parseInt(gbpprice) < 51 ? (
                             <>
                                 <div className=" pb-2">
                                     <Link
