@@ -311,7 +311,6 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-
 Route::prefix('shop')->group(function () {
     // Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
     Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class, 'singleShopList'])->name('single-shop-list');
