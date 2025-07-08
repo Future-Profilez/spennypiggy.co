@@ -28,12 +28,11 @@ const FollowButton = ({ targetUserId, isInitiallyFollowing }) => {
             { user_id: targetUserId },
             {
                 preserveScroll: true,
-                onSuccess: (page) => {
-                    setIsFollowing(false); // Toggle status
+                onSuccess: () => {
+                    setIsFollowing((prev) => !prev); // Correctly toggles status
                 },
                 onError: (errors) => {
-                    setIsFollowing((prev) => prev); // Toggle status
-                    errorAlert(errors?.flash?.error || "Something went wrong.");
+                    // errorAlert(errors?.flash?.error || "Something went wrong.");
                 },
                 onFinish: () => {
                     setLoading(false);

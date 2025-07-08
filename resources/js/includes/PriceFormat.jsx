@@ -28,13 +28,10 @@ export default function PriceFormat(){
     }
 
 
-    const usdtogbp = (amount, currency) => {
-        const { rates, global_currency } = usePage().props;
-        const upCorrency = currency && currency.toUpperCase() || global_currency && global_currency.toUpperCase();
-        const conversion_rate = rates[upCorrency];
-        const gbpamount  = amount/conversion_rate;
-        return gbpamount
+    const usdtogbp = (amount) => {
+        const { rates  } = usePage().props;
+        const conversion_rate = rates['USD'];
+        return amount/conversion_rate;
     }
-
     return {formatMultiPrice, usdtogbp}
 }

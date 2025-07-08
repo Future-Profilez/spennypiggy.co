@@ -15,7 +15,9 @@ export default function AddCart(props) {
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const { usdtogbp, formatMultiPrice } = PriceFormat();
     const [cartamount, setcartamount] = useState(null);
-    const gbpprice = usdtogbp(cartamount || item.price );
+
+    const gbpprice = usdtogbp(item.price, "GBP");
+
     const [close, setClose] = useState(action);
     const [is_cart, setIs_cart] = useState(item && item?.is_cart);
     console.log("is_cart", auth);
@@ -129,7 +131,6 @@ export default function AddCart(props) {
                     ""
                 )}
 
-
                 {item.subscription == 1 ? (
                     <>
                         {auth?.user?.username || parseInt(gbpprice) < 51 ? (
@@ -192,6 +193,7 @@ export default function AddCart(props) {
                     </>
                 ) : (
                     <div className=" pb-2">
+
                         <ToCart
                             currency={currency}
                             sub={sub}
@@ -230,16 +232,6 @@ export default function AddCart(props) {
                         />
                     </div>
                 )}
-
-
-
-
-
-
-
-
-
-
 
 
                 {showall ? (
