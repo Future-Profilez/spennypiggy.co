@@ -59,51 +59,51 @@ export default function Cart(props) {
 
     return (
         <Authenticated auth={auth.user} user={user}>
-            <Head title={"Cart"} />
+            <div className="bg-white">
+                <Head title={"Cart"} />
+                {ryeItems && ryeItems.length ? (
+                    <CartListing
+                        loading2={loading2}
+                        ryeItems={ryeItems}
+                        fetchRyeItems={fetchRyeItems}
+                    />
+                ) : (
+                    ""
+                )}
 
-            {ryeItems && ryeItems.length ? (
-                <CartListing
-                    loading2={loading2}
-                    ryeItems={ryeItems}
-                    fetchRyeItems={fetchRyeItems}
-                />
-            ) : (
-                ""
-            )}
-
-            {cartsItems && cartsItems.length ? (
-                <div className="blackbg">
-                    <div className="container pb-5 ">
-                        <h2 className="text-bl font-GillSans pt-5 pt-3 pb-0 text-center text-2xl uppercase text-white">
-                            Cart
-                        </h2>
-                        {loading ? <LoadingScreen /> : ""}
-                        {!loading && (
-                            <>
-                                {cartsItems && cartsItems.length ? (
-                                    <>
-                                        {cartsItems.map((c, i) => {
-                                            return (
-                                                <UserCarts
-                                                    auth={auth && auth.user}
-                                                    key={`user-cart-${i}`}
-                                                    data={c}
-                                                />
-                                            );
-                                        })}
-                                    </>
-                                ) : (
-                                    ""
-                                )}
-                            </>
-                        )}
+                {cartsItems && cartsItems.length ? (
+                    <div className=" ">
+                        <div className="container pb-5 ">
+                            <h2 className="text-bl font-GillSans pt-5 pt-3 pb-0 text-center text-2xl uppercase text-whites">
+                                Cart
+                            </h2>
+                            {loading ? <LoadingScreen /> : ""}
+                            {!loading && (
+                                <>
+                                    {cartsItems && cartsItems.length ? (
+                                        <>
+                                            {cartsItems.map((c, i) => {
+                                                return (
+                                                    <UserCarts
+                                                        auth={auth && auth.user}
+                                                        key={`user-cart-${i}`}
+                                                        data={c}
+                                                    />
+                                                );
+                                            })}
+                                        </>
+                                    ) : (
+                                        ""
+                                    )}
+                                </>
+                            )}
+                        </div>
                     </div>
-                </div>
-            ) : (
-                ""
-            )}
+                ) : (
+                    ""
+                )}
 
-            {ryeItems &&
+                {ryeItems &&
                 ryeItems.length < 1 &&
                 cartsItems &&
                 cartsItems.length < 1 &&
@@ -118,6 +118,8 @@ export default function Cart(props) {
                         </div>
                     </div>
                 )}
+            </div>
+
         </Authenticated>
     );
 }

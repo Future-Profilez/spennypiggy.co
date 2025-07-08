@@ -57,7 +57,6 @@ export default function AddCart(props) {
         >
             <div className="addCartModalHead rounded-3xl relative ">
                 <h2 className="font-GillSans text-bl uppercase pt-8 text-lg relative z-1 px-3 text-center">
-                    {" "}
                     Add to Cart{" "}
                 </h2>
             </div>
@@ -132,63 +131,81 @@ export default function AddCart(props) {
 
                 {item.subscription == 1 ? (
                     <>
-                        {auth?.user?.username || parseInt(gbpprice) < 51 ? (
-                            <>
-                                <div className=" pb-2">
-                                    <Link
-                                        className="btn-pink lg2 block text-center !w-full "
-                                        href={route("wish.subscribe.checkout", {
-                                            uuid: item.uuid,
-                                            reccure: "onetime",
-                                        })}
-                                    >
-                                        OneTime Purchase
-                                    </Link>
-                                    <Link
-                                        className="btn-pink mt-2 mb-2 lg2 block text-center !w-full"
-                                        href={route("wish.subscribe.checkout", {
-                                            uuid: item.uuid,
-                                        })}
-                                    >
-                                        Pay Every{" "}
-                                        {item.subscription_period == "daily"
-                                            ? " Day"
-                                            : ""}
-                                        {item.subscription_period == "weekly"
-                                            ? " Week"
-                                            : ""}
-                                        {item.subscription_period == "monthly"
-                                            ? " Month"
-                                            : ""}
-                                    </Link>
-                                    <p className="text-center">
-                                        Gain access to my exclusive subscriber
-                                        only posts
-                                    </p>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <div className=" pb-2">
-                                    <button
-                                        className="btn-pink mt-2 mb-2 lg2 block text-center !w-full"
-                                        onClick={() => gotologin("onetime")}>OneTime Purchase
-                                    </button>
-                                    <button
-                                        className="btn-pink mt-2 mb-2 lg2 block text-center !w-full"
-                                        onClick={() => gotologin()}>
-                                        Pay Every
-                                        {item.subscription_period == "daily"? " Day": ""}
-                                        {item.subscription_period == "weekly"? " Week": ""}
-                                        {item.subscription_period == "monthly"? " Month": ""}
-                                    </button>
-                                    <p className="text-center">
-                                        Gain access to my exclusive subscriber
-                                        only posts
-                                    </p>
-                                </div>
-                            </>
-                        )}
+                    <div className=" pb-2">
+                        <Link
+                            className="btn-pink lg2 block text-center !w-full "
+                            href={route("wish.subscribe.checkout", {uuid: item.uuid,reccure: "onetime"})}>OneTime Purchase
+                        </Link>
+                        <Link
+                            className="btn-pink mt-2 mb-2 lg2 block text-center !w-full"
+                            href={route("wish.subscribe.checkout", {uuid: item.uuid})}>
+                            Pay Every
+                            {item.subscription_period == "daily"? " Day": ""}
+                            {item.subscription_period == "weekly"? " Week": ""}
+                            {item.subscription_period == "monthly"? " Month": ""}
+                        </Link>
+                        <p className="text-center">
+                            Gain access to my exclusive subscriber
+                            only posts
+                        </p>
+                    </div>
+                    {/* {auth?.user?.username || parseInt(gbpprice) < 51 ? (
+                        <>
+                            <div className=" pb-2">
+                                <Link
+                                    className="btn-pink lg2 block text-center !w-full "
+                                    href={route("wish.subscribe.checkout", {
+                                        uuid: item.uuid,
+                                        reccure: "onetime",
+                                    })}
+                                >
+                                    OneTime Purchase
+                                </Link>
+                                <Link
+                                    className="btn-pink mt-2 mb-2 lg2 block text-center !w-full"
+                                    href={route("wish.subscribe.checkout", {
+                                        uuid: item.uuid,
+                                    })}
+                                >
+                                    Pay Every{" "}
+                                    {item.subscription_period == "daily"
+                                        ? " Day"
+                                        : ""}
+                                    {item.subscription_period == "weekly"
+                                        ? " Week"
+                                        : ""}
+                                    {item.subscription_period == "monthly"
+                                        ? " Month"
+                                        : ""}
+                                </Link>
+                                <p className="text-center">
+                                    Gain access to my exclusive subscriber
+                                    only posts
+                                </p>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div className=" pb-2">
+                                <button
+                                    className="btn-pink mt-2 mb-2 lg2 block text-center !w-full"
+                                    onClick={() => gotologin("onetime")}>OneTime Purchase
+                                </button>
+                                <button
+                                    className="btn-pink mt-2 mb-2 lg2 block text-center !w-full"
+                                    onClick={() => gotologin()}>
+                                    Pay Every
+                                    {item.subscription_period == "daily"? " Day": ""}
+                                    {item.subscription_period == "weekly"? " Week": ""}
+                                    {item.subscription_period == "monthly"? " Month": ""}
+                                </button>
+                                <p className="text-center">
+                                    Gain access to my exclusive subscriber
+                                    only posts
+                                </p>
+                            </div>
+                        </>
+                    )} */}
                     </>
                 ) : (
                     <div className=" pb-2">
@@ -204,9 +221,7 @@ export default function AddCart(props) {
                             isEqual={item.price <= item.fullfill_amount}
                             is_cart={is_cart}
                             text={`Add To Cart And Keep Shopping`}
-                            classes={`btn-pink mt-2 mb-2 lg2 block text-center !w-full ${
-                                item.subscription == "2" &&
-                                item.price <= item.fullfill_amount? "d-none": ""}`}
+                            classes={`btn-pink mt-2 mb-2 lg2 block text-center !w-full ${item.subscription == "2" &&item.price <= item.fullfill_amount? "d-none": ""}`}
                             uuid={uuid}
                         />
                         <ToCart
@@ -222,10 +237,7 @@ export default function AddCart(props) {
                             is_cart={is_cart}
                             text={`Add To Cart And Checkout`}
                             checkoutbtn={true}
-                            classes={`btn-pink mt-2 mb-2 lg2 block text-center !w-full ${
-                                item.subscription == "2" &&
-                                item.price <= item.fullfill_amount? "d-none": ""
-                            }`}
+                            classes={`btn-pink mt-2 mb-2 lg2 block text-center !w-full ${item.subscription == "2" &&item.price <= item.fullfill_amount? "d-none": ""}`}
                             uuid={uuid}
                         />
                     </div>
