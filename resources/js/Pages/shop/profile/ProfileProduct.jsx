@@ -4,8 +4,7 @@ import { Link, router, usePage } from "@inertiajs/react";
 import React from "react";
 
 export default function ProfileProduct({ item, IsloggedIn }) {
-    const { auth, global_currency, rates } = usePage().props;
-    console.log("ProfileProduct", usePage().props);
+    const { auth } = usePage().props;
     const { formatMultiPrice } = PriceFormat();
 
     const slug = (inputString) => {
@@ -19,17 +18,20 @@ export default function ProfileProduct({ item, IsloggedIn }) {
 
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const url = `/shop/item/${slug(item.name)}/${item.uuid}`;
+    //    const gotologin = () => {
+    //       errorAlert("You must login first.");
+    //       router.visit(`/login?redirect=${url}`);
+    //    }
 
     const usdToGbp = (amount, currency) => {
-        const upCorrency =
-            (currency && currency.toUpperCase()) ||
-            (global_currency && global_currency.toUpperCase());
-        const conversion_rate = rates[upCorrency];
+        // const upCorrency =
+        //     (currency && currency.toUpperCase()) ||
+        //     (global_currency && global_currency.toUpperCase());
+        const conversion_rate = rates["USD"];
         const gbpamount = amount / conversion_rate;
         return gbpamount;
     };
 
-    console.log(usdToGbp(item.price));
     const gotologin = () => {
         if (auth && !auth.user && usdToGbp(item.price) > 50) {
             errorAlert("Larger payments more than £50 need to login.");
