@@ -467,6 +467,9 @@ class ProfileController extends Controller
     {
         $followed_id = $request->user_id;
         $LoggedInUser = Auth::user();
+        if($LoggedInUser->id == $followed_id){
+            return redirect()->back()->with('error', 'You cannot follow yourself.');
+        }
         $userFollow = Follow::where('follower_id', Auth::id())->where('followed_id', $followed_id)->first();
         $followedUser = User::select('id', 'name', 'username', 'email')->where('id', $followed_id)->first();
         $userName = ucfirst($followedUser->name);

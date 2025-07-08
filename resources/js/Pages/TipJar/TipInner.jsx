@@ -80,6 +80,7 @@ export default function TipInner({classes, idd}) {
         const gbpamount  = amount/conversion_rate;
         return gbpamount
   }
+  console.log(data.amount, "amount", usdToGbp(data.amount, global_currency));
 
   const send = (e) => {
     e.preventDefault();
