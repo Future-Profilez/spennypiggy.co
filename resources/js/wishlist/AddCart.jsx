@@ -20,7 +20,6 @@ export default function AddCart(props) {
 
     const [close, setClose] = useState(action);
     const [is_cart, setIs_cart] = useState(item && item?.is_cart);
-    console.log("is_cart", auth);
     const ItemAdded = (e) => {
         if (e == "added") {
             setIs_cart(true);

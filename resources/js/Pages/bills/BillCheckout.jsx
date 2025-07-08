@@ -47,7 +47,6 @@ export default function BillCheckout(props) {
             {
                 preserveScroll: true,
                 onSuccess: (data) => {
-                    console.log("Checkout succeeded", data);
                     if (props?.flash?.error) {
                         errorAlert(props?.flash?.error || "Checkout failed.");
                     }
@@ -57,7 +56,6 @@ export default function BillCheckout(props) {
                                 "Checkout successful! Your payment is being processed."
                         );
                     }
-                    console.log("Checkout succeeded!");
                     // optionally redirect or show success alert
                 },
                 onError: (errorBag) => {
