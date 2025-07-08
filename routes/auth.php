@@ -266,15 +266,6 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/report-content/', [ProfileController::class, 'reportContent'])->name('report-content');
 
-        Route::prefix('shop')->group(function () {
-            // Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
-            Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class, 'singleShopList'])->name('single-shop-list')->middleware('mustCompletedCardVerification');
-            Route::match(['get', 'post'], '/buy/{uuid}/{varient_id}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item');
-            Route::post('/answer-to-payment/{payment_id}', [ShopsController::class, 'answerPayment'])->name('answerPayment');
-            Route::get('/success-payment/{uuid}', [ShopsController::class, 'successPayment'])->name('shop.success-payment');
-            Route::get('/cancel-payment/{uuid}', [ShopsController::class, 'cancelPayment'])->name('shop.cancel-payment');
-            Route::get('/shipping-price/{shop_id}', [ShopsController::class, 'shippingPrice'])->name('shop.shipping-price');
-        });
 
         Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');
         Route::get('gifter-subs/{username}', [ProfileController::class, 'gifterSubs'])->name('gifter-subscriptions');
@@ -318,6 +309,17 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/user-follow-unfollow', [ProfileController::class, 'userFollowUnFollow'])->name('user.follow.unfollow');
     });
+});
+
+
+Route::prefix('shop')->group(function () {
+    // Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
+    Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class, 'singleShopList'])->name('single-shop-list');
+    Route::match(['get', 'post'], '/buy/{uuid}/{varient_id}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item');
+    Route::post('/answer-to-payment/{payment_id}', [ShopsController::class, 'answerPayment'])->name('answerPayment');
+    Route::get('/success-payment/{uuid}', [ShopsController::class, 'successPayment'])->name('shop.success-payment');
+    Route::get('/cancel-payment/{uuid}', [ShopsController::class, 'cancelPayment'])->name('shop.cancel-payment');
+    Route::get('/shipping-price/{shop_id}', [ShopsController::class, 'shippingPrice'])->name('shop.shipping-price');
 });
 
 Route::get('/create-checkout-session/{id}', [CheckoutController::class, 'createCheckout'])->name('create.checkout');

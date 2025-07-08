@@ -39,7 +39,8 @@ export default function ProfileProduct({ item, IsloggedIn }) {
             <div className="relative">
                 {IsloggedIn && item?.approved === 0 && (
                     <div className="approvalmessge membership m-3 rounded-3 p-3 py-2 mb-2">
-                        Shop item waiting for approval. Currently only you can see this.
+                        Shop item waiting for approval. Currently only you can
+                        see this.
                     </div>
                 )}
                 <Link href={url}>
@@ -70,7 +71,8 @@ export default function ProfileProduct({ item, IsloggedIn }) {
 
             <div className="mt-2 sm:mt-4 p-3 sm:p-4 border-t flex justify-between border-gray-200">
                 <h2 className="font-bold text-sm sm:text-xl">
-                    {formatMultiPrice(item.price, item?.currency || "GBP") || "FREE"}
+                    {formatMultiPrice(item.price, item?.currency || "GBP") ||
+                        "FREE"}
                 </h2>
 
                 {auth?.user ? (
@@ -89,7 +91,7 @@ export default function ProfileProduct({ item, IsloggedIn }) {
                                 router.visit(url);
                             }
                         }}
-                        className="font-bold cursor-pointer hover:underline text-black text-sm sm:text-lg"
+                        className="font-bold cursor-pointer hover:underline text-black text-sm sm:text-lg bg-transparent border-none"
                     >
                         Buy Now
                     </button>
