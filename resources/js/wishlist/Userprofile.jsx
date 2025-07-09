@@ -109,7 +109,7 @@ export default function Userprofile({ IsloggedIn }) {
                         ) : (
                             ""
                         )}
-                        <div className="flex items-center justify-center">
+                        <div className="flex items-center justify-center mb-2">
                             <div className="">
                                 <FollowButton targetUserId={opponantUser?.id} isInitiallyFollowing={follow_status} />
                             </div>

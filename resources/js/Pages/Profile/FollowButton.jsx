@@ -42,20 +42,8 @@ const FollowButton = ({ targetUserId, isInitiallyFollowing }) => {
     };
 
     return (
-        <button
-            onClick={handleFollowToggle}
-            disabled={loading}
-            className={`uppercase text-sm font-gulfs btn-shadow rounded-full px-4 pt-[10px] pb-[7px] me-3 ${
-                isFollowing ? "!bg-gray-300" : "bg-whites bg-voilet text-white"
-            }`}
-        >
-            {loading
-                ? isFollowing
-                    ? "Unfollowing..."
-                    : "Following..."
-                : isFollowing
-                ? "Following"
-                : "Follow"}
+        <button onClick={handleFollowToggle} disabled={loading}
+            className={`uppercase text-sm font-gulfs rounded-full px-4 pt-[10px] pb-[7px] me-3 ${isFollowing ? "!bg-gray-300 " : "btn-shadow  bg-voilet text-white"}`} > {isFollowing ? "Following" : "Follow"}
         </button>
     );
 };
