@@ -221,7 +221,7 @@ export default function Dashboard(props) {
                                                 <div>
                                                     <Wishlist text="Cash Gift"
                                                     currency={global_currency}
-                                                    setuped={auth.user &&auth.user.stripe_details_submitted == 1 ? true : false} />
+                                                    setuped={AuthUserStripeConnected == 1 ? true : false} />
                                                     <div  className="w-full font-bold disabled addop bg-white rounded-xl p-3 mb-2 text-center">
                                                         <div className=" flex items-center">
                                                             <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
@@ -240,7 +240,7 @@ export default function Dashboard(props) {
                                             : <div>
 
 
-                                                    <div className={`${auth.user && auth.user.stripe_details_submitted == 1 ? "block" : "disabled"}`}>
+                                                    <div className={`${AuthUserStripeConnected == 1 ? "block" : "disabled"}`}>
                                                     <div onClick={()=> setWishOptions(true)} className="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center cursor-pointer">
                                                         <div className=" flex items-center">
                                                             <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
@@ -285,35 +285,38 @@ export default function Dashboard(props) {
     console.log(props)
 
 
+    const [UserStripeConnected, setUserStripeConnected] = useState(parseInt(user && user?.stripe_details_submitted) || 0)
+    const [AuthUserStripeConnected, setAuthUserStripeConnected] = useState(parseInt(auth && auth?.user && auth?.user?.stripe_details_submitted) || 0)
+
+
     return (
         <>
             <Guest auth={auth.user} user={user}>
 
-            {/* <div id="card-to-capture"  className="dot-pattern relative my-[300px] flex items-center  bg-gradient-to-r from-[#730032] to-[#f94f96]  p-6 w-[600px] h-[337.5px]  text-white shadow-2xl  ">
-                <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.2)_3px,transparent_3px)] bg-[size:30px_30px]"></div>
-                <div className="absolute top-6 left-6 text-yellow-300 text-4xl">✨</div>
-                <div className="absolute bottom-6 right-6 text-cyan-300 text-2xl">⭐</div>
-                <div className="absolute top-12 right-16 text-cyan-300 text-4xl">🎁</div>
-                <div className="absolute top-18 right-20 text-cyan-300 text-3xl">💰</div>
-                <div className="inner-image w-full">
-                    <div className="flex items-center justify-center  mb-4">
-                        <div className="w-28 h-28 rounded-full border-4 border-[#00ff5e] overflow-hidden  shadow-lg">
-                            <img src="https://ucarecdn.com/${avataruid}/-/crop/face/1:1/-/preview/" alt="Profile" className="w-full h-full object-cover" />
+                {/* <div id="card-to-capture"  className="dot-pattern relative my-[300px] flex items-center  bg-gradient-to-r from-[#730032] to-[#f94f96]  p-6 w-[600px] h-[337.5px]  text-white shadow-2xl  ">
+                    <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.2)_3px,transparent_3px)] bg-[size:30px_30px]"></div>
+                    <div className="absolute top-6 left-6 text-yellow-300 text-4xl">✨</div>
+                    <div className="absolute bottom-6 right-6 text-cyan-300 text-2xl">⭐</div>
+                    <div className="absolute top-12 right-16 text-cyan-300 text-4xl">🎁</div>
+                    <div className="absolute top-18 right-20 text-cyan-300 text-3xl">💰</div>
+                    <div className="inner-image w-full">
+                        <div className="flex items-center justify-center  mb-4">
+                            <div className="w-28 h-28 rounded-full border-4 border-[#00ff5e] overflow-hidden  shadow-lg">
+                                <img src="https://ucarecdn.com/${avataruid}/-/crop/face/1:1/-/preview/" alt="Profile" className="w-full h-full object-cover" />
+                            </div>
+                            <div className="ps-3">
+                                <h1 className="image-name max-w-[200px] uppercase font-fre text-3xl text-start text-outline leading-snug">
+                                    Naveen Tehrpariya
+                                </h1>
+                            </div>
                         </div>
-                        <div className="ps-3">
-                            <h1 className="image-name max-w-[200px] uppercase font-fre text-3xl text-start text-outline leading-snug">
-                                Naveen Tehrpariya
-                            </h1>
+                        <p className="text-center text-[#ffd600] text-xl font-bold mt-1">is now on  Spenny Piggy</p>
+                        <div className="bg-[#730032] mt-4 link-shadow border-2 border-[#730032]  text-white
+                            px-4 py-2 rounded-[15px] text-center text-[20px] shadow-md">
+                        https://spennypiggy.co/dfgdfgdfg
                         </div>
                     </div>
-                    <p className="text-center text-[#ffd600] text-xl font-bold mt-1">is now on  Spenny Piggy</p>
-                    <div className="bg-[#730032] mt-4 link-shadow border-2 border-[#730032]  text-white
-                        px-4 py-2 rounded-[15px] text-center text-[20px] shadow-md">
-                    https://spennypiggy.co/dfgdfgdfg
-                    </div>
-                </div>
-            </div> */}
-
+                </div> */}
 
 
                 <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
@@ -394,9 +397,10 @@ export default function Dashboard(props) {
                                                                 <div className="col-md-6  h-auto">
                                                                     <div className="about-sticky" >
 
-                                                                        {user && user?.stripe_details_submitted == '1' ?
+                                                                        {UserStripeConnected == 1 ?
                                                                             <MyGoal IsloggedIn={IsloggedIn}  />
-                                                                        : ""}
+                                                                        :
+                                                                        ""}
 
                                                                         <div className="box p-3 p-md-4 shadow-voilet rounded-lg mb-4">
                                                                             <p className="font-bold">About me</p>
@@ -423,7 +427,7 @@ export default function Dashboard(props) {
                                                                                         <SiteSubscription user={auth?.user} />
                                                                                     : ''} */}
 
-                                                                                    {auth.user && auth.user.role == 1 && auth.user.stripe_details_submitted == 1  ? (
+                                                                                    {auth.user && auth.user.role == 1 && AuthUserStripeConnected == 1  ? (
                                                                                         <PaymentDashboard classes="btn-pink lg w-100 mt-3" text="Payment Dashboard" />
                                                                                         ) :
                                                                                         // <div className="finish mt-4 d-block">
@@ -465,11 +469,11 @@ export default function Dashboard(props) {
                                                                 </div>
 
                                                                 <div className="ps-md-4 col-md-6">
-                                                                    {IsloggedIn && user?.stripe_details_submitted !== 1 ?
+                                                                    {IsloggedIn && UserStripeConnected !== 1 ?
                                                                         <CreatorVerification  IsloggedIn={IsloggedIn} />
                                                                     : ''}
-                                                                    {IsloggedIn && user && user.stripe_details_submitted == 1 ? <ProfileSteps sLinks={sLinks} user={user} IsloggedIn={IsloggedIn} /> : ''}
-                                                                    {!IsloggedIn && user && user.stripe_details_submitted == 1 && w > 767 ?
+                                                                    {IsloggedIn && UserStripeConnected == 1 ? <ProfileSteps sLinks={sLinks} user={user} IsloggedIn={IsloggedIn} /> : ''}
+                                                                    {!IsloggedIn && UserStripeConnected == 1 && w > 767 ?
                                                                         <TipInner classes={`mb-4`} />
                                                                     : ''}
                                                                     <FeedList IsloggedIn={IsloggedIn} />
@@ -478,7 +482,7 @@ export default function Dashboard(props) {
                                                         </Suspense>
                                                     : ''}
 
-                                                    {IsloggedIn || user?.stripe_details_submitted == 1 ?
+                                                    {IsloggedIn || UserStripeConnected == 1 ?
                                                         <>
                                                             {page === "wishes" ?
                                                             <Suspense fallback={<LoadingScreen />} >
@@ -508,7 +512,7 @@ export default function Dashboard(props) {
                                                                                                 return (
                                                                                                     <Wishlistbox key={`wish-item-${i}`} classes=" "
                                                                                                         currency={global_currency}  IsloggedIn={IsloggedIn}
-                                                                                                        auth={auth.user} itemid={itemid} setuped={auth && auth.user && auth.user.stripe_details_submitted == 1
+                                                                                                        auth={auth.user} itemid={itemid} setuped={AuthUserStripeConnected == 1
                                                                                                                 ? true : false} itm={c}
                                                                                                     />
                                                                                                 );
