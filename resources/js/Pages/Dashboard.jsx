@@ -288,6 +288,34 @@ export default function Dashboard(props) {
     return (
         <>
             <Guest auth={auth.user} user={user}>
+
+            {/* <div id="card-to-capture"  className="dot-pattern relative my-[300px] flex items-center  bg-gradient-to-r from-[#730032] to-[#f94f96]  p-6 w-[600px] h-[337.5px]  text-white shadow-2xl  ">
+                <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.2)_3px,transparent_3px)] bg-[size:30px_30px]"></div>
+                <div className="absolute top-6 left-6 text-yellow-300 text-4xl">✨</div>
+                <div className="absolute bottom-6 right-6 text-cyan-300 text-2xl">⭐</div>
+                <div className="absolute top-12 right-16 text-cyan-300 text-4xl">🎁</div>
+                <div className="absolute top-18 right-20 text-cyan-300 text-3xl">💰</div>
+                <div className="inner-image w-full">
+                    <div className="flex items-center justify-center  mb-4">
+                        <div className="w-28 h-28 rounded-full border-4 border-[#00ff5e] overflow-hidden  shadow-lg">
+                            <img src="https://ucarecdn.com/${avataruid}/-/crop/face/1:1/-/preview/" alt="Profile" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="ps-3">
+                            <h1 className="image-name max-w-[200px] uppercase font-fre text-3xl text-start text-outline leading-snug">
+                                Naveen Tehrpariya
+                            </h1>
+                        </div>
+                    </div>
+                    <p className="text-center text-[#ffd600] text-xl font-bold mt-1">is now on  Spenny Piggy</p>
+                    <div className="bg-[#730032] mt-4 link-shadow border-2 border-[#730032]  text-white
+                        px-4 py-2 rounded-[15px] text-center text-[20px] shadow-md">
+                    https://spennypiggy.co/dfgdfgdfg
+                    </div>
+                </div>
+            </div> */}
+
+
+
                 <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
                 <div className="wishlistPage blackbg pt-6 pb-0 pb-sm-5 ">
                         <div className="containerbox">

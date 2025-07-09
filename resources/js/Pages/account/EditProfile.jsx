@@ -45,30 +45,56 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
 
         const nameuper = data?.name ? data?.name.toUpperCase() : user?.name.toUpperCase();
         console.log("avataruid",avataruid)
+        // container.innerHTML = `
+        //             <div id="card-to-capture" style="
+        //             width: 600px;
+        //             height: 337.5px;
+        //             background: linear-gradient(135deg, #6f42c1, #1e90ff);
+        //             color: white;
+        //             font-family: sans-serif;
+        //             border-radius: 16px;
+        //             padding: 30px 50px;
+        //             display: flex;
+        //             align-items: center;
+        //             gap: 20px;">
+        //             <img  crossOrigin="anonymous" src="https://ucarecdn.com/${avataruid}/-/crop/face/1:1/-/preview/" style="
+        //                 width: 130px;
+        //                 height: 130px;
+        //                 border-radius: 12px;
+        //                 object-fit: cover;
+        //                 border: 2px solid white;">
+        //             <div>
+        //                 <h3 style="margin: 0; margin-top:-14px;font-size: 30px;font-family: cursive;">${nameuper}</h3>
+        //                 <p style="margin: 0px 0;font-family: cursive;font-size: 22px;">is now on <b style="font-weight: 800;">🎁 SpennyPiggy</b></p>
+        //                 <p style="font-size: 19px;font-family: system-ui;margin-top: 20px;">https://spennypiggy.co/${data?.username || user?.username}</p>
+        //             </div>
+        //             </div>
+        // `;
         container.innerHTML = `
-                    <div id="card-to-capture" style="
-                    width: 600px;
-                    height: 337.5px;
-                    background: linear-gradient(135deg, #6f42c1, #1e90ff);
-                    color: white;
-                    font-family: sans-serif;
-                    border-radius: 16px;
-                    padding: 30px 50px;
-                    display: flex;
-                    align-items: center;
-                    gap: 20px;">
-                    <img  crossOrigin="anonymous" src="https://ucarecdn.com/${avataruid}/-/crop/face/1:1/-/preview/" style="
-                        width: 130px;
-                        height: 130px;
-                        border-radius: 12px;
-                        object-fit: cover;
-                        border: 2px solid white;">
-                    <div>
-                        <h3 style="margin: 0; margin-top:-14px;font-size: 30px;font-family: cursive;">${nameuper}</h3>
-                        <p style="margin: 0px 0;font-family: cursive;font-size: 22px;">is now on <b style="font-weight: 800;">🎁 SpennyPiggy</b></p>
-                        <p style="font-size: 19px;font-family: system-ui;margin-top: 20px;">https://spennypiggy.co/${data?.username || user?.username}</p>
+            <div id="card-to-capture"  class="dot-pattern relative my-[300px] flex items-center  bg-gradient-to-r from-[#730032] to-[#f94f96]  p-6 w-[600px] h-[337.5px]  text-white shadow-2xl  ">
+                <div class="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.2)_3px,transparent_3px)] bg-[size:30px_30px]"></div>
+                <div class="absolute top-6 left-6 text-yellow-300 text-4xl">✨</div>
+                <div class="absolute bottom-6 right-6 text-cyan-300 text-2xl">⭐</div>
+                <div class="absolute top-12 right-16 text-cyan-300 text-4xl">🎁</div>
+                <div class="absolute top-18 right-20 text-cyan-300 text-3xl">💰</div>
+                <div class="inner-image w-full">
+                    <div class="flex items-center justify-center  mb-4">
+                        <div class="w-28 h-28 rounded-full border-4 border-[#00ff5e] overflow-hidden  shadow-lg">
+                            <img src="https://ucarecdn.com/${avataruid}/-/crop/1:1/-/preview/" alt="Profile" class="w-full h-full object-cover" />
+                        </div>
+                        <div class="ps-3">
+                            <h1 class="image-name max-w-[200px] mt-[-10px] uppercase font-fre text-3xl text-start text-outline  ">
+                                ${nameuper}
+                            </h1>
+                        </div>
                     </div>
+                    <p class="text-center text-[#ffd600] text-xl font-bold mt-1 mb-4">is now on  Spenny Piggy</p>
+                    <div class="w-full bg-[#730032] link-shadow border-2 border-[#730032] text-white
+                        px-4  leading-[15px] h-[40px] rounded-[15px] text-center text-[20px] shadow-md">
+                    https://spennypiggy.co/${data?.username || user?.username}
                     </div>
+                </div>
+            </div>
         `;
 
         const card = container.querySelector('#card-to-capture');
@@ -94,8 +120,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
             setSocialFile(new File([blob],  `${user?.username}-social_avatar`, { type: blob.type }))
             setData('social_image', new File([blob], `${user?.username}-social_avatar`, { type: blob.type }));
         },500);
-        
-        // return true;
+
         // 6. Download to user device
         // const localUrl = URL.createObjectURL(blob);
         // const a = document.createElement('a');
@@ -168,6 +193,65 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         <Popup modalclass='pinkmodal editprofile full' size='md' action={close}
             text={text||<> Update Profile </>}
             classes={`${classes ? classes : "button bg-pink d-table d-sm-flex m-auto m-sm-0"}`} >
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             <div className='editForm  mt-4'>
                 <div className='mainprofile mb-5 position-relative w-100 '>
                     <div className='profilePhotoImg cover'>
