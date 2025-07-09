@@ -19,6 +19,7 @@ use Inertia\Response;
 use Ramsey\Uuid\Uuid;
 use App\Jobs\WelcomeUser;
 use App\Models\AllowedDomain;
+use App\Models\Follow;
 use App\Models\GifterAddress;
 use App\Models\GifterCardVerification;
 use App\Models\PromoCode;
@@ -147,6 +148,14 @@ class RegisteredUserController extends Controller
                 'profile_status_lock' => 0,
             ]);
             $user->refresh();
+
+            $spennyPiggyAcc = User::where('email', 'spennypiggyofficial@gmail.com')->first();
+            if ($user) {
+                Follow::UpdateOrCreate(
+                    ['follower_id' => $user->id, 'followed_id' => $spennyPiggyAcc->id],
+                    ['follower_id' => $user->id, 'followed_id' => $spennyPiggyAcc->id]
+                );
+            }
 
             if ($request->role == 1) {
                 UserVerificationStatus::create(

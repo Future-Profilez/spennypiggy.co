@@ -311,6 +311,9 @@ Route::middleware('auth')->group(function () {
     });
 });
 
+// Route::post('send-automatically-follow-request-to-all', [ProfileController::class, 'sendAutomaticallyFollowRequestToAll'])->name('send.automatically.follow.request.to.all');
+
+
 Route::prefix('shop')->group(function () {
     // Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
     Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class, 'singleShopList'])->name('single-shop-list');

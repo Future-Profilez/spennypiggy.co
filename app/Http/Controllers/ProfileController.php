@@ -463,6 +463,7 @@ class ProfileController extends Controller
         ]);
     }
 
+
     public function userFollowUnFollow(Request $request)
     {
         $followed_id = $request->user_id;
