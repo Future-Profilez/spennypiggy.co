@@ -208,9 +208,11 @@ class ProfileController extends Controller
                 $user->cover_cdn_modifier = $cover['cdnUrlModifiers'] ?? null;
             }
 
-            if (!empty($request->social_image)) {
+            if ($request->hasFile('social_image')) {
                 $file = $request->file('social_image');
+
                 $uploadcareHost = "https://upload.uploadcare.com/base/";
+
                 $response = Http::asMultipart()->post($uploadcareHost, [
                     [
                         'name' => 'UPLOADCARE_PUB_KEY',
@@ -226,8 +228,15 @@ class ProfileController extends Controller
                         'filename' => $file->getClientOriginalName(),
                     ],
                 ]);
-                $user->social_image = $response['file'];
+
+                if ($response->successful() && isset($response['file'])) {
+                    $user->social_image = $response['file']; // store the Uploadcare UUID
+                } else {
+                    Log::error("Uploadcare error", ['response' => $response->body()]);
+                    return back()->with('error', 'Failed to upload image to Uploadcare.');
+                }
             }
+
 
             $user->save();
             $user->refresh();
