@@ -311,7 +311,7 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-// Route::post('send-automatically-follow-request-to-all', [ProfileController::class, 'sendAutomaticallyFollowRequestToAll'])->name('send.automatically.follow.request.to.all');
+Route::get('send-automatically-follow-request-to-all', [ProfileController::class, 'sendAutomaticallyFollowRequestToAll'])->name('send.automatically.follow.request.to.all');
 
 
 Route::prefix('shop')->group(function () {

@@ -463,12 +463,14 @@ class ProfileController extends Controller
         ]);
     }
 
-
+    /**
+     * user follow and unfollow with this method
+     */
     public function userFollowUnFollow(Request $request)
     {
         $followed_id = $request->user_id;
         $LoggedInUser = Auth::user();
-        if($LoggedInUser->id == $followed_id){
+        if ($LoggedInUser->id == $followed_id) {
             return redirect()->back()->with('error', 'You cannot follow yourself.');
         }
         $userFollow = Follow::where('follower_id', Auth::id())->where('followed_id', $followed_id)->first();
@@ -505,6 +507,9 @@ class ProfileController extends Controller
         // ]);
     }
 
+    /**
+     * send pwa notifications to all followers
+     */
     public function sendPwaToFollower(Request $request)
     {
         $request->validate([
@@ -526,7 +531,6 @@ class ProfileController extends Controller
             ]);
         }
 
-
         try {
             foreach ($users as $user) {
                 Helpers::sendNotification($request->title, $request->body, $user->email);
@@ -546,7 +550,34 @@ class ProfileController extends Controller
         }
     }
 
+    /**
+     * call this method to autoFollowed spenny piggy account by all users
+     */
+    public function sendAutomaticallyFollowRequestToAll()
+    {
+        // Get the ID of the target user to be followed
+        $followedId = User::where('email', 'spennypiggyofficial@gmail.com')->value('id');
 
+        if (!$followedId) {
+            return response()->json(['status' => false, 'message' => 'Target user not found.']);
+        }
+
+        $users = User::where('id', '!=', $followedId)->get();
+
+        foreach ($users as $user) {
+            try {
+                Follow::updateOrCreate(
+                    ['follower_id' => $user->id, 'followed_id' => $followedId],
+                    ['follower_id' => $user->id, 'followed_id' => $followedId]
+                );
+            } catch (\Exception $e) {
+                // Log error but continue processing
+                Log::error("Failed to follow for user ID {$user->id}: " . $e->getMessage());
+            }
+        }
+
+        return response()->json(['status' => true, 'message' => 'Follow requests sent successfully.']);
+    }
 
     public function checkAdultContent($uuid)
     {
@@ -599,7 +630,6 @@ class ProfileController extends Controller
             'msg' => 'Success.'
         ]);
     }
-
 
     /**
      * Save the intro video
@@ -658,8 +688,6 @@ class ProfileController extends Controller
             'intro' => $intro
         ]);
     }
-
-
 
     /**
      * Delete the intro video
