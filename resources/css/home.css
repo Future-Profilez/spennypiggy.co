@@ -855,3 +855,17 @@ select#country{width:100%;}
 .dark6{background:#595959 !important;/* Soft dark gray */
 }
 .dark7{background:#666666 !important;}
+
+
+
+
+
+ .font-fre {
+     font-family: var(--body-font) !important;
+ }
+.image-name {
+    letter-spacing: 1px;
+}
+
+
+

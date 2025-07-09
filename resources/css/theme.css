@@ -3,7 +3,7 @@
 @font-face {
   font-family: 'CeraGRBold';
   font-display: swap;
-  src: 
+  src:
        url('../assets/fonts/CeraGRBold.woff') format('woff'),
        url('../assets/fonts/CeraGRBold.woff2') format('woff2');
 }
@@ -22,6 +22,7 @@
        url('../assets/fonts/newfont.woff2') format('woff2'),
        url('../assets/fonts/newfont.woff') format('woff');
 }
+
 
 
 body {
@@ -44,3 +45,4 @@ body {
   --text-gray: #616161;
   --text-graydark: #333333;
 }
+
