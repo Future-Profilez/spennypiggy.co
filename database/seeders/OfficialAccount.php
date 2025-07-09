@@ -7,6 +7,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Ramsey\Uuid\Uuid;
 
 class OfficialAccount extends Seeder
 {
@@ -16,6 +17,7 @@ class OfficialAccount extends Seeder
     public function run(): void
     {
         User::insert([
+            'uuid' => Uuid::uuid4(),
             'name' => 'Official Account',
             'username' => 'spenny_piggy',
             'email' => 'spennypiggyofficial@gmail.com',

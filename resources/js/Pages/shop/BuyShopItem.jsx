@@ -1,5 +1,5 @@
 import Popup from "@/Components/Popup";
-import { Link, usePage } from "@inertiajs/react";
+import { Link, router, usePage } from "@inertiajs/react";
 import React from "react";
 import { useState } from "react";
 import userdefaultphoto from "../../../assets/img/userphoto.png";
@@ -110,7 +110,12 @@ export default function BuyShopItem({
                     }
                 )
                 .then((res) => {
-                    if (res.data.url) {
+                    if (res.data.status == false) {
+                        router.visit(
+                            `/login?redirect=${window.location.pathname}&message=Larger payments more than £50 need to login.`
+                        );
+                        // errorAlert(res.data.msg || "Something went wrong");
+                    } else if (res.data.url) {
                         window.location.href = res.data.url;
                     } else {
                         setLoading(false);
@@ -128,7 +133,11 @@ export default function BuyShopItem({
                     `/shop/buy/${s.uuid}/no_varient?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}`
                 )
                 .then((res) => {
-                    if (res.data.url) {
+                    if (res.data.status == false) {
+                        router.visit(
+                            `/login?redirect=${window.location.pathname}&message=Larger payments more than £50 need to login.`
+                        );
+                    } else if (res.data.url) {
                         window.location.href = res.data.url;
                     } else {
                         setLoading(false);
@@ -328,8 +337,9 @@ export default function BuyShopItem({
                                         <button className="tooltipbtn flex justify-center items-center !font-normal">
                                             ?
                                             <p className="!text-start">
-                                                15% Card Fees and £1 administrative fee of applies to
-                                        all transactions.
+                                                15% Card Fees and £1
+                                                administrative fee of applies to
+                                                all transactions.
                                             </p>
                                         </button>
                                     </p>

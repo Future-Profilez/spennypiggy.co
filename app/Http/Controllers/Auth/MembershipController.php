@@ -346,9 +346,7 @@ class MembershipController extends Controller
         $creatorCurrency = $membership->currency;
         $price = $membership->price;
         $convertedAmount = Helpers::priceFormat($creatorCurrency, $price, 'gbp');
-        if (!Auth::check() && $convertedAmount > 50) {
-            return to_route('login', ['message' => 'You are not eligible for this payment as you need to login first']);
-        }
+
 
         $memberTaxPercent = config('app.member_tax');
         $adminFeeGBP = config('app.administration_fee');
@@ -367,6 +365,9 @@ class MembershipController extends Controller
         $applicationFeePercent = round(($platformTotal / $finalTotalAmount) * 100, 2);
 
         if ($request->isMethod("POST")) {
+            if (!Auth::check() && $convertedAmount > 50) {
+                return to_route('login', ['message' => 'Larger payments more than £50 need to login']);
+            }
             $request->validate([
                 'name' => ['nullable', 'string', 'max:50'],
                 'email' => ['required', 'email:dns'],

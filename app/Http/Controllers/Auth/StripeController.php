@@ -520,6 +520,11 @@ class StripeController extends Controller
         $user = Auth::user();
         $wish = WishItem::whereUuid($uuid)->with('user')->first();
         if (!$wish) return redirect()->back()->with('error', 'Wish item not found!');
+        $subtotals = 0;
+        $totalAmount = $wish->price;
+        $ConvertedToGBpAmount = Helpers::priceFormat($wish->currency, $totalAmount, 'gbp');
+        $subtotals += $ConvertedToGBpAmount;
+
 
         $currency = strtolower($request->cookie("currency", "usd"));
         $tax = (float) str_replace(',', '', $wish->tax_amount);
@@ -533,6 +538,9 @@ class StripeController extends Controller
         }
 
         if ($request->isMethod("POST")) {
+            if (!Auth::check() && $subtotals > 50) {
+                return to_route('login', ['message' => 'Larger payments more than £50 need to login']);
+            }
             $request->validate([
                 'name' => ['nullable', 'sometimes', 'string', 'max:50'],
                 'email' => ['required', 'email:dns'],
@@ -544,7 +552,7 @@ class StripeController extends Controller
                 'user_id'        => Auth::id(),
                 'guest_name'     => $request->name ?? NULL,
                 'guest_email'    => $request->email,
-                'currency'       => $currency,
+                'currency'       => $wish->currency,
                 'amount'         => $wish->price,
                 'tax'            => $totalTax,
                 'vat_tax_amount' => ceil($vat_percentage_amount),
@@ -1015,7 +1023,7 @@ class StripeController extends Controller
             if (!Auth::check() && $ConvertedAmount > 50) {
                 return response()->json([
                     'status' => false,
-                    'msg' => "You are not eligible for this payment as you need to login first."
+                    'msg' => "Larger payments more than £50 need to login."
                 ]);
             }
 

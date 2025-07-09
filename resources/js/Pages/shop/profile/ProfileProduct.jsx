@@ -85,11 +85,11 @@ export default function ProfileProduct({ item, IsloggedIn }) {
                 ) : (
                     <button
                         onClick={() => {
-                            if (itemPriceGbp > 50) {
-                                gotologin();
-                            } else {
-                                router.visit(url);
-                            }
+                            // if (itemPriceGbp > 50) {
+                            //     gotologin();
+                            // } else {
+                            router.visit(url);
+                            // }
                         }}
                         className="font-bold cursor-pointer hover:underline text-black text-sm sm:text-lg bg-transparent border-none"
                     >

@@ -14,7 +14,7 @@ export default function ProfileProductLists({profileuser, IsloggedIn}) {
    {shops && shops.length ?
       <div className='grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3' >
          {shops && shops.map((item, index) => <ProfileProduct IsloggedIn={IsloggedIn} key={index} item={item} />)}
-      </div> 
+      </div>
       :  <Nocontent text="Nothing to see" />
    }
   </>

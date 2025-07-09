@@ -285,9 +285,7 @@ class BillsController extends Controller
         $price = $bill->price;
         $currency = strtolower($request->cookie("currency", "GBP"));
         $ConvertedAmount = Helpers::priceFormat($bill->currency, $price, 'gbp');
-        if (!Auth::check() && $ConvertedAmount > 50) {
-            return to_route('login', ['message' => 'You are not eligible for this payment as you need to login first']);
-        }
+
 
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus === true) {
@@ -324,6 +322,9 @@ class BillsController extends Controller
         $applicationFeePercent = round(($totalPaymentTaxAmount / $finalTotalAmount) * 100, 2);
 
         if ($request->isMethod("POST")) {
+            if (!Auth::check() && $ConvertedAmount > 50) {
+                return to_route('login', ['message' => 'Larger payments more than £50 need to login']);
+            }
             $request->validate([
                 'name' => ['nullable', 'string', 'max:50'],
                 'email' => ['required', 'email:dns'],
