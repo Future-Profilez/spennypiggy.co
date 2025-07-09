@@ -30,15 +30,15 @@ export default function FollowersBulkNotification() {
                 route("send.pwa.to.follower"),
                 formData
             );
-
             if (response?.data?.status) {
-                successAlert(response.data.msg);
+                successAlert(response?.data?.msg);
                 setFormData({ title: "", body: "" });
-                onClose(); // close modal
+                // onclose(); // close modal
             } else {
                 errorAlert(response?.data?.msg);
             }
         } catch (error) {
+            console.log('error',error);
             errorAlert(error?.response?.data?.msg || "An error occurred");
             setError(error?.response?.data?.errors || {});
         } finally {

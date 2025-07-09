@@ -82,7 +82,7 @@ class CheckoutController extends Controller
                 $ConvertedToGBpAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, 'gbp');
                 $subtotals += $ConvertedToGBpAmount * $dd->quantity;
                 if (!Auth::check() && $subtotals > 50) {
-                    return to_route('login', ['message' => 'You are not eligible for this payment as you need to login first']);
+                    return to_route('login', ['message' => 'Larger payments more than £50 need to login']);
                 }
 
                 $adminFee = config('app.administration_fee');
