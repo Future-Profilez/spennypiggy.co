@@ -20,7 +20,8 @@ import FollowersBulkNotification from "@/Components/FollowersBulkNotification";
 
 export default function Accountsetting(props) {
     const { successAlert, errorAlert } = useAlerts();
-    const { auth, user, global_currency, auto_tweet } = props;
+    const { auth, user, global_currency, auto_tweet, pwa_notification_details } = props;
+    console.log('pwa_notification_details',pwa_notification_details);
     const [showModal, setShowModal] = useState(false);
 
     const [emailEnabled, setSetEnabled] = useState(
@@ -326,7 +327,7 @@ export default function Accountsetting(props) {
 
                             {auth && auth?.user?.role == 1 ? (
                                     <li>
-                                        <FollowersBulkNotification  />
+                                        <FollowersBulkNotification pwa_notification_details={pwa_notification_details} />
                                     </li>
                             ) : (
                                 ""

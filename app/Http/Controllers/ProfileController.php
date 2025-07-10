@@ -104,8 +104,6 @@ class ProfileController extends Controller
         return back()->with('success', 'Profile information updated.');
     }
 
-
-
     public function uploadToUploadcare($file)
     {
         $uploadcareHost = "https://upload.uploadcare.com/base/";
@@ -126,8 +124,6 @@ class ProfileController extends Controller
         ]);
         return json_decode($response);
     }
-
-
 
     /**
      * Update the user's profile information.
@@ -472,91 +468,6 @@ class ProfileController extends Controller
         ]);
     }
 
-
-    public function userFollowUnFollow(Request $request)
-    {
-        $followed_id = $request->user_id;
-        $LoggedInUser = Auth::user();
-        if($LoggedInUser->id == $followed_id){
-            return redirect()->back()->with('error', 'You cannot follow yourself.');
-        }
-        $userFollow = Follow::where('follower_id', Auth::id())->where('followed_id', $followed_id)->first();
-        $followedUser = User::select('id', 'name', 'username', 'email')->where('id', $followed_id)->first();
-        $userName = ucfirst($followedUser->name);
-        // dd($userFollow, $LoggedInUser, $followedUser, $userName);
-        if ($userFollow === null) {
-            // User is not following, so we will follow
-            Follow::create([
-                'follower_id' => Auth::id(),
-                'followed_id' => $followed_id,
-            ]);
-
-            $title = "👥 New Follower!";
-            $content = ucfirst($LoggedInUser->name) . "($LoggedInUser->username)" . " just followed you. Just Check their profile!";
-            $email = $followedUser->email; // user being followed
-
-            Helpers::sendNotification($title, $content, $email);
-
-            $status = 'followed';
-        } else {
-            // User is already following, so we will unfollow
-            $userFollow->delete();
-            $status = 'unfollowed';
-        }
-
-        // Get the updated follow count
-        return redirect()->back()->with('success', "You have $status $userName.");
-        // return response()->json([
-        //     'status' => true,
-        //     'msg' => "You have $status $userName.",
-        //     'status' => $status,
-        //     'username' => $followedUser->username,
-        // ]);
-    }
-
-    public function sendPwaToFollower(Request $request)
-    {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'body' => 'required|string',
-        ]);
-
-        $followerIds = Follow::where('followed_id', Auth::id())
-            ->pluck('follower_id');
-
-        $users = User::whereIn('id', $followerIds)
-            ->where('is_uk', 0)
-            ->get();
-
-        if ($users->isEmpty()) {
-            return response()->json([
-                'status' => false,
-                'msg' => 'No users have followed you yet.',
-            ]);
-        }
-
-
-        try {
-            foreach ($users as $user) {
-                Helpers::sendNotification($request->title, $request->body, $user->email);
-            }
-
-            return response()->json([
-                'status' => true,
-                'msg' => 'Push notifications sent successfully.',
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Push notification error: ' . $e->getMessage());
-
-            return response()->json([
-                'status' => false,
-                'msg' => 'Failed to send push notifications. Please try again later.',
-            ]);
-        }
-    }
-
-
-
     public function checkAdultContent($uuid)
     {
         $rest_words = ['Adult', '18+', 'Pornographic', 'xxx', 'nsfw', 'NSFW', 'XXX', 'Blood', 'Brutality', 'Explicit', 'Mature', 'Weapons', 'Aggression', 'Combat', 'Sexual', 'Porn', 'Fucking', 'Graphic'];
@@ -608,7 +519,6 @@ class ProfileController extends Controller
             'msg' => 'Success.'
         ]);
     }
-
 
     /**
      * Save the intro video
@@ -667,8 +577,6 @@ class ProfileController extends Controller
             'intro' => $intro
         ]);
     }
-
-
 
     /**
      * Delete the intro video
@@ -1034,7 +942,6 @@ class ProfileController extends Controller
         ]);
     }
 
-
     public function gifterSubscription($username)
     {
         $user = User::where('username', $username)->where('is_uk', 0)->first();
@@ -1151,7 +1058,6 @@ class ProfileController extends Controller
             'total' => $total,
         ]);
     }
-
 
     /**
      * Get the list of notifications

@@ -280,7 +280,6 @@ class MembershipController extends Controller
 
     public function removeLevel($uuid)
     {
-
         $mem = Membership::whereUuid($uuid)->first();
 
         if (empty($mem)) {

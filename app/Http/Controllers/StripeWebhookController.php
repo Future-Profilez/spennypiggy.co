@@ -322,6 +322,7 @@ class StripeWebhookController extends Controller
         $newSubs->updated_at = Carbon::now();
         $newSubs->save();
 
+        if()
         SendRenewMail::dispatch($array, 'renew', 'bill');
 
         Log::info("Bill subscription updated: {$subscriptionId}, Status: {$status}");
