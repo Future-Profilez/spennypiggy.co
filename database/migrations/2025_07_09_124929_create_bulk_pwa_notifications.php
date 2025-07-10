@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('bulk_pwa_notifications', function (Blueprint $table) {
             $table->id();
-            $table->string('creator_id');
-            $table->unsignedBigInteger('creator_id');
+            $table->string('title');
+            $table->longText('body');
             $table->foreignId('creator_id')->constrained('users')->onDelete('cascade');
-            $table->bigInteger('users_count')->comment('how many users the notification sent');
-            $table->longText('user_ids')->nullable()->comment('all users id to pwa sent to that users');
+            $table->unsignedBigInteger('users_count')->default(0)->comment('Number of users the notification was sent to');
+            $table->json('user_ids')->nullable()->comment('List of user IDs to whom the PWA was sent');
             $table->timestamps();
         });
     }
