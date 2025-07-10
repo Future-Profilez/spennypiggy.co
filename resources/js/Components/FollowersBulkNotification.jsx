@@ -3,7 +3,7 @@ import InputError from "@/Components/InputError";
 import { useAlerts } from "@/Components/Alerts";
 import axios from "axios";
 import Popup from "./Popup";
-import { usePage } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 import Nocontent from "@/includes/Nocontent";
 
 export default function FollowersBulkNotification() {
@@ -36,6 +36,7 @@ export default function FollowersBulkNotification() {
             );
             if (response?.data?.status) {
                 successAlert(response?.data?.msg);
+                router.visit(`/account`);
                 setFormData({ title: "", body: "" });
                 // onclose(); // close modal
             } else {
