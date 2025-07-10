@@ -4,6 +4,7 @@ import { useAlerts } from "@/Components/Alerts";
 import axios from "axios";
 import Popup from "./Popup";
 import { usePage } from "@inertiajs/react";
+import Nocontent from "@/includes/Nocontent";
 
 export default function FollowersBulkNotification() {
     const { pwa_notification_details } = usePage().props;
@@ -119,34 +120,39 @@ export default function FollowersBulkNotification() {
                 </button>
             </div>
 
-            <div className="mt-6">
-                <h3 className="text-md font-semibold !text-black mb-2">
-                    Notification History
-                </h3>
+            {pwa_notification_details && pwa_notification_details.length ? (
+                <div className="mt-6">
+                    <h3 className="text-md font-semibold !text-black mb-2">
+                        Notification History
+                    </h3>
 
-                <div className=" rounded-lg ">
-                    {pwa_notification_details &&
-                        pwa_notification_details?.map((value, key) => {
-                            return (
-                                <div className="p-3 rounded-[20px] border border-gray-400 shadow-sm mb-2">
-                                    <h2 className="line-clamp-1 font-bold text-black text-[15px]">
-                                        {value?.title}
-                                    </h2>
-                                    <p className="line-clamp-1  text-[13px] text-gray-600">
-                                        {value?.body}
-                                    </p>
-                                    <p className="text-sm mt-2">
-                                        {" "}
-                                        Sent at <b>
-                                            {value?.created_at}
-                                        </b> to <b>{value?.users_count}</b>{" "}
-                                        followers
-                                    </p>
-                                </div>
-                            );
-                        })}
+                    <div className=" rounded-lg ">
+                        {pwa_notification_details &&
+                            pwa_notification_details?.map((value, key) => {
+                                return (
+                                    <div className="p-3 rounded-[20px] border border-gray-400 shadow-sm mb-2">
+                                        <h2 className="line-clamp-1 font-bold text-black text-[15px]">
+                                            {value?.title}
+                                        </h2>
+                                        <p className="line-clamp-1  text-[13px] text-gray-600">
+                                            {value?.body}
+                                        </p>
+                                        <p className="text-sm mt-2">
+                                            {" "}
+                                            Sent at <b>
+                                                {value?.created_at}
+                                            </b>{" "}
+                                            to <b>{value?.users_count}</b>{" "}
+                                            followers
+                                        </p>
+                                    </div>
+                                );
+                            })}
+                    </div>
                 </div>
-            </div>
+            ) : (
+                ""
+            )}
         </Popup>
     );
 }
