@@ -285,10 +285,10 @@ class ProfileController extends Controller
         $user = $request->user();
 
         $bills = BillPayment::where('user_id', $user->id)->where('status', 'paid')->get();
-
+        $connectedAccount = $bills->bill->user->account_id;
         if (!empty($bills)) {
             foreach ($bills as $bill) {
-                StripeControl::cancelSubscription($bill->stripe_id);
+                StripeControl::cancelSubscription($bill->stripe_id, $connectedAccount);
             }
         }
 

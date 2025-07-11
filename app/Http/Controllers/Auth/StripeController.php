@@ -1374,7 +1374,7 @@ class StripeController extends Controller
             ], '');
 
             $customer_id = $customer->id;
-            $user->account_id = $customer_id;
+            $user->stripe_id = $customer_id;
             $user->save();
         }
 

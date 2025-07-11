@@ -322,7 +322,6 @@ class StripeWebhookController extends Controller
         $newSubs->updated_at = Carbon::now();
         $newSubs->save();
 
-        if()
         SendRenewMail::dispatch($array, 'renew', 'bill');
 
         Log::info("Bill subscription updated: {$subscriptionId}, Status: {$status}");
@@ -517,17 +516,46 @@ class StripeWebhookController extends Controller
                     case "invoice.payment_succeeded":
                         // Carbon::setTestNow(Carbon::create(2026, 1, 5, 10, 30, 0));
 
-                        if (($subs->current_end_trial_date && Carbon::parse($subs->current_end_trial_date)->lte(now()) && !$subs->current_end_subscription_date) || ($subs->current_end_subscription_date &&
-                            Carbon::parse($subs->current_end_subscription_date)->lte(now()))) {
+                        // if (($subs->current_end_trial_date && Carbon::parse($subs->current_end_trial_date)->lte(now()) && !$subs->current_end_subscription_date) || ($subs->current_end_subscription_date &&
+                        //     Carbon::parse($subs->current_end_subscription_date)->lte(now()))) {
 
+                        //     $periodEnd = data_get($object, 'lines.data.0.period.end');
+                        //     $subs->upcoming_payment = $periodEnd ? Carbon::createFromTimestamp($periodEnd)->format('Y-m-d H:i:s') : null;
+                        //     $subs->current_start_subscription_date = now();
+                        //     $subs->current_end_subscription_date = now()->addMonths(1);
+                        //     $subs->status = "paid";
+                        //     $subs->save();
+
+                        //     $type = '';
+                        //     if ($subs->current_start_subscription_date == null && $subs->current_end_trial_date <= now()) {
+                        //         $type = 'start subscription';
+                        //     } else {
+                        //         $type = 'renew';
+                        //     }
+                        //     SendRenewMail::dispatch($array, $type, 'site');
+                        //     // Optionally: SendPaymentSuccessEmail::dispatch(...)
+                        // }
+                        if (($subs->current_end_trial_date && Carbon::parse($subs->current_end_trial_date)->lte(now()) && !$subs->current_end_subscription_date) ||
+                            ($subs->current_end_subscription_date && Carbon::parse($subs->current_end_subscription_date)->lte(now()))
+                        ) {
                             $periodEnd = data_get($object, 'lines.data.0.period.end');
-                            $subs->upcoming_payment = $periodEnd ? Carbon::createFromTimestamp($periodEnd)->format('Y-m-d H:i:s') : null;
+
+                            $subs->upcoming_payment = $periodEnd
+                                ? Carbon::createFromTimestamp($periodEnd)->format('Y-m-d H:i:s')
+                                : null;
+
+                            // Check if it's the first time or a renewal BEFORE setting new values
+                            $isNewSubscription = $subs->current_start_subscription_date === null;
+
                             $subs->current_start_subscription_date = now();
                             $subs->current_end_subscription_date = now()->addMonths(1);
-                            $subs->status = "paid";
+                            $subs->status = 'paid';
                             $subs->save();
 
-                            SendRenewMail::dispatch($array, 'renew', 'site');
+                            // Determine type before dispatch
+                            $type = $isNewSubscription ? 'start subscription' : 'renew';
+
+                            SendRenewMail::dispatch($array, $type, 'site');
                             // Optionally: SendPaymentSuccessEmail::dispatch(...)
                         }
                         // Carbon::setTestNow(); // optional
