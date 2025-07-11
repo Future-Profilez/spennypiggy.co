@@ -18,7 +18,7 @@ class RenewMail extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct($array,$type,$module)
+    public function __construct($array, $type, $module)
     {
         $this->array = $array;
         $this->type = $type;
@@ -33,12 +33,22 @@ class RenewMail extends Mailable
     public function build()
     {
         try {
-            if($this->module == 'bill' || $this->module == 'membership' || $this->module == 'site'){
-                $subject = "Subscription for $this->module " . $this->type . ".";
+            // if($this->module == 'bill' || $this->module == 'membership' || $this->module == 'site'){
+            //     $subject = "Subscription for $this->module " . $this->type . ".";
+            // }
+            // else{
+            //     $subject = 'Subscription ' . $this->type . ".";
+            // }
+            if (in_array($this->module, ['bill', 'membership', 'site'])) {
+                if ($this->type == 'renew') {
+                    $subject = "Your {$this->module} subscription has been renewed";
+                } else {
+                    $subject = "Your {$this->module} subscription has started";
+                }
+            } else {
+                $subject = "Subscription {$this->type} confirmed";
             }
-            else{
-                $subject = 'Subscription ' . $this->type . ".";
-            }
+
             return $this->view('email.subscription-renew')
                 ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
                 ->subject($subject);
