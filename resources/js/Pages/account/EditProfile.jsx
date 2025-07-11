@@ -7,9 +7,11 @@ import { useForm } from '@inertiajs/react';
 import { useAlerts } from '@/Components/Alerts';
 import UpdateAvatar from './UpdateAvatar';
 import LoaderButton from '@/Components/LoaderButton';
-import PriceFormat from '@/includes/PriceFormat';
 import html2canvas from 'html2canvas';
 import { useEffect } from 'react';
+import spennypiggy from "../../../assets/img/logo.png";
+import socialbg from "../../../assets/social-bg.png";
+
 
 export default function EditProfile({ user, text, classes, updateProfileSteps }) {
 
@@ -17,8 +19,8 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
     const { successAlert, errorAlert } = useAlerts();
     const [profileDP, setProfileDP] = useState();
     const [coverImage, setCoverImage] = useState();
-
     const [socialFile, setSocialFile] = useState();
+
     useEffect(() => {
         if (socialFile) {
             setData('social_image', socialFile);
@@ -42,33 +44,35 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         container.style.top = '0';
         container.style.zIndex = '-1';
         document.body.appendChild(container);
-
-        const nameuper = data?.name ? data?.name.toUpperCase() : user?.name.toUpperCase();
-        console.log("avataruid",avataruid)
         container.innerHTML = `
-                    <div id="card-to-capture" style="
-                    width: 600px;
-                    height: 337.5px;
-                    background: linear-gradient(135deg, #6f42c1, #1e90ff);
-                    color: white;
-                    font-family: sans-serif;
-                    border-radius: 16px;
-                    padding: 30px 50px;
-                    display: flex;
-                    align-items: center;
-                    gap: 20px;">
-                    <img  crossOrigin="anonymous" src="https://ucarecdn.com/${avataruid}/-/crop/face/1:1/-/preview/" style="
-                        width: 130px;
-                        height: 130px;
-                        border-radius: 12px;
-                        object-fit: cover;
-                        border: 2px solid white;">
-                    <div>
-                        <h3 style="margin: 0; margin-top:-14px;font-size: 30px;font-family: cursive;">${nameuper}</h3>
-                        <p style="margin: 0px 0;font-family: cursive;font-size: 22px;">is now on <b style="font-weight: 800;">🎁 SpennyPiggy</b></p>
-                        <p style="font-size: 19px;font-family: system-ui;margin-top: 20px;">https://spennypiggy.co/${data?.username || user?.username}</p>
+            <div id="card-to-capture"  class="dot-pattern relative my-[300px] flex items-center  p-6 w-[600px] h-[337.5px]  text-white shadow-2xl  ">
+                    <img src="${socialbg}" alt="Profile" class="w-full h-full object-cover absolute top-0 left-0 z-[-1]" />
+
+                    <div class="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.2)_3px,transparent_3px)] bg-[size:30px_30px]"></div>
+                    <div class="absolute top-18 left-6 text-yellow-300 text-4xl">✨</div>
+                    <div class="absolute bottom-4 right-28 text-cyan-300 text-2xl">⭐</div>
+                    <div class="absolute top-18 right-20 text-cyan-300 text-3xl">💰</div>
+
+                    <div class="inner-image w-full">
+                        <div class="flex items-center justify-center  mb-4">
+                            <div class="w-28 h-28 rounded-full border-4 border-[#00ff5e] overflow-hidden shadow-lg">
+                                <img src="https://ucarecdn.com/${avataruid}/-/crop/1:1/-/preview/" alt="Profile" class="w-full h-full object-cover" />
+                            </div>
+                            <div class="ps-3">
+                                <h1 class="image-name max-w-[200px] mt-[-20px] pb-2 uppercase font-fre text-3xl text-start  ">
+                                    ${user?.name}
+                                </h1>
+                            </div>
+                        </div>
+
+                        <p class="  text-white text-xl font-bold me-3 absolute top-[180px] left-[210px] max-w-[100px] object-cover">is now on </p>
+                        <img src="${spennypiggy}" alt="Profile" class="me-3 absolute top-[190px] left-[310px] max-w-[100px] object-cover" />
+
+                        <div class="  bg-gradient-to-r mt-[100px] from-[#9b0039] to-[#9b0039b6] link-shadow text-white
+                            px-4 leading-[15px] h-[40px] rounded-[15px] text-center text-[20px] shadow-md">https://spennypiggy.co/${user?.username}
+                        </div>
                     </div>
-                    </div>
+                </div>
         `;
 
         const card = container.querySelector('#card-to-capture');
@@ -94,8 +98,8 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
             setSocialFile(new File([blob],  `${user?.username}-social_avatar`, { type: blob.type }))
             setData('social_image', new File([blob], `${user?.username}-social_avatar`, { type: blob.type }));
         },500);
-        
-        // return true;
+
+
         // 6. Download to user device
         // const localUrl = URL.createObjectURL(blob);
         // const a = document.createElement('a');
@@ -103,6 +107,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         // a.download = `card.png`;
         // a.click();
         // URL.revokeObjectURL(localUrl);
+
 
         // // 7. Cleanup
         // document.body.removeChild(container);
@@ -124,8 +129,6 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
     const [username, setUsername] = useState(user?.username);
     const updateProfile = async (e) => {
         e.preventDefault();
-
-
         post(route('edit-profile', {data}), {
             preserveScroll: true,
             onSuccess: (resp) => {
@@ -155,9 +158,6 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
             }
         });
     };
-
-    const defaultCurrency = user.default_currency;
-
 
     const IsProfileChannged = async() => {
         if(user && user.avatar && !user?.social_image){

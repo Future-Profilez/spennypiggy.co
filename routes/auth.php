@@ -14,6 +14,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\PostsController;
+use App\Http\Controllers\Auth\PwaNotification;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\ShopsController;
 use App\Http\Controllers\Auth\SocialLinksController;
@@ -27,6 +28,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Middleware\VerifyCsrfToken;
 use App\Models\Bills;
+use App\Models\BulkPwaNotification;
 use App\Models\Logs;
 use App\Models\Membership;
 use App\Models\SocialLinks;
@@ -129,9 +131,12 @@ Route::middleware('auth')->group(function () {
             Route::post('edit-category/{id}', [WishitemController::class, 'editWishCategory'])->name('edit-category');
             Route::get('delete-category/{id}', [WishitemController::class, 'deleteCategory'])->name('delete-category');
             Route::get('account', function () {
-                $auto_tweet = Auth::user()->auto_tweet == 1 ? true : false;
+                $user = Auth::user();
+                $auto_tweet = $user->auto_tweet == 1 ? true : false;
+                $pwaNotificationDetails = BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
                 return Inertia::render('accountsetting/Accountsetting', [
-                    'auto_tweet' => $auto_tweet
+                    'auto_tweet' => $auto_tweet,
+                    'pwa_notification_details' => $pwaNotificationDetails ?? null,
                 ]);
             })->name("account");
             Route::get('/scanning/check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content');
@@ -262,19 +267,9 @@ Route::middleware('auth')->group(function () {
         Route::get('show-2fa-qr', [ProfileController::class, 'show2faQR']);
         Route::post('switch-2fa', [ProfileController::class, 'update2faStatus']);
         Route::post('verification-2fa', [ProfileController::class, 'verification2FA']);
-        Route::post('send-pwa-to-follower', [ProfileController::class, 'sendPwaToFollower'])->name('send.pwa.to.follower');
 
-        Route::post('/report-content/', [ProfileController::class, 'reportContent'])->name('report-content');
+        Route::post('/report-content', [ProfileController::class, 'reportContent'])->name('report-content');
 
-        Route::prefix('shop')->group(function () {
-            // Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
-            Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class, 'singleShopList'])->name('single-shop-list')->middleware('mustCompletedCardVerification');
-            Route::match(['get', 'post'], '/buy/{uuid}/{varient_id}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item');
-            Route::post('/answer-to-payment/{payment_id}', [ShopsController::class, 'answerPayment'])->name('answerPayment');
-            Route::get('/success-payment/{uuid}', [ShopsController::class, 'successPayment'])->name('shop.success-payment');
-            Route::get('/cancel-payment/{uuid}', [ShopsController::class, 'cancelPayment'])->name('shop.cancel-payment');
-            Route::get('/shipping-price/{shop_id}', [ShopsController::class, 'shippingPrice'])->name('shop.shipping-price');
-        });
 
         Route::get('gifter-wish-items/{username}', [ProfileController::class, 'gifterWishitems'])->name('gifter-items');
         Route::get('gifter-subs/{username}', [ProfileController::class, 'gifterSubs'])->name('gifter-subscriptions');
@@ -316,8 +311,20 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/update-profile-lock-status', [ProfileController::class, 'updateProfileLockStatus'])->name('update.profile.lock.status');
 
-        Route::post('/user-follow-unfollow', [ProfileController::class, 'userFollowUnFollow'])->name('user.follow.unfollow');
+        Route::post('/user-follow-unfollow', [PwaNotification::class, 'userFollowUnFollow'])->name('user.follow.unfollow');
+        Route::post('send-pwa-to-follower', [PwaNotification::class, 'sendPwaToFollower'])->name('send.pwa.to.follower');
     });
+});
+Route::get('send-automatically-follow-request-to-all', [PwaNotification::class, 'sendAutomaticallyFollowRequestToAll'])->name('send.automatically.follow.request.to.all');
+
+Route::prefix('shop')->group(function () {
+    // Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
+    Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class, 'singleShopList'])->name('single-shop-list');
+    Route::match(['get', 'post'], '/buy/{uuid}/{varient_id}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item');
+    Route::post('/answer-to-payment/{payment_id}', [ShopsController::class, 'answerPayment'])->name('answerPayment');
+    Route::get('/success-payment/{uuid}', [ShopsController::class, 'successPayment'])->name('shop.success-payment');
+    Route::get('/cancel-payment/{uuid}', [ShopsController::class, 'cancelPayment'])->name('shop.cancel-payment');
+    Route::get('/shipping-price/{shop_id}', [ShopsController::class, 'shippingPrice'])->name('shop.shipping-price');
 });
 
 Route::get('/create-checkout-session/{id}', [CheckoutController::class, 'createCheckout'])->name('create.checkout');
@@ -343,13 +350,11 @@ Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
     Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
 });
 
-
 // subscription webhook
-
-// Route::post('creator-monthly-verification-webhook', [StripeWebhookController::class, 'creatorMonthlyVerificationWebhook'])->name('creator.monthly.verification.webhook');
 Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
 Route::post('/mandatory-status', [StripeWebhookController::class, 'mandatorySubscriptionStatus']);
 Route::post('/webhook/payment', [StripeWebhookController::class, 'handle']);
+// Route::post('creator-monthly-verification-webhook', [StripeWebhookController::class, 'creatorMonthlyVerificationWebhook'])->name('creator.monthly.verification.webhook');
 // Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status');
 // Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status');
 // Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-status');
@@ -425,7 +430,7 @@ Route::get('/user/category/{username}', [AuthenticatedSessionController::class, 
 Route::get('/user_shop_category/{username}', [AuthenticatedSessionController::class, 'user_shop_category'])->name('user.shop.category');
 
 Route::prefix("wish")->name("wish.")->group(function () {
-    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name("subscribe.checkout")->middleware('mustCompletedCardVerification');
+    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name("subscribe.checkout");
     Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleSubscription'])->name('subscribe.handle');
 });
 

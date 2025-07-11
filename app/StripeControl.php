@@ -456,12 +456,16 @@ class StripeControl
      * @param array $payload Update Payload
      * @return Throwable|\Stripe\Subscription
      */
-    public static function cancelSubscription($sub_id)
+    public static function cancelSubscription($sub_id, $connectedAccountId = null)
     {
         self::setClient();
         try {
+            $options = [];
+            if ($connectedAccountId) {
+                $options['stripe_account'] = $connectedAccountId;
+            }
 
-            return self::$client->subscriptions->cancel($sub_id, []);
+            return self::$client->subscriptions->cancel($sub_id, [], $options);
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());
         } catch (InvalidRequestException $e) {
@@ -472,6 +476,26 @@ class StripeControl
             throw new Exception("Stripe API Error: " . $e->getMessage());
         }
     }
+
+    // public static function cancelSubscription($sub_id)
+    // {
+    //     self::setClient();
+    //     try {
+    //         $subscription = self::$client->subscriptions->retrieve($sub_id);
+    //         if ($subscription->status !== 'canceled') {
+    //             return self::$client->subscriptions->cancel($sub_id);
+    //         }
+    //         // return self::$client->subscriptions->cancel($sub_id, []);
+    //     } catch (RateLimitException $e) {
+    //         throw new Exception("Stripe RateLimit: " . $e->getMessage());
+    //     } catch (InvalidRequestException $e) {
+    //         throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+    //     } catch (ApiConnectionException $e) {
+    //         throw new Exception("Stripe API Connection: " . $e->getMessage());
+    //     } catch (ApiErrorException $e) {
+    //         throw new Exception("Stripe API Error: " . $e->getMessage());
+    //     }
+    // }
 
 
     /**

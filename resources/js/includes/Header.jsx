@@ -10,7 +10,6 @@ import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 import { add_to_cart } from "../Pages/redux/UserSlice";
 import ChangeCurrency from "@/Components/ChangeCurrency";
-import Notifications from "./Notifications";
 import { IoSettingsOutline } from "react-icons/io5";
 import { FaHeart, FaRegStar, FaUserAlt } from "react-icons/fa";
 import { SlCalculator, SlCalender } from "react-icons/sl";
@@ -25,14 +24,13 @@ import { CiDiscount1 } from "react-icons/ci";
 import { LuBookMinus } from "react-icons/lu";
 import { MdClose } from "react-icons/md";
 import { AiOutlineLogout } from "react-icons/ai";
-import { RiPagesLine } from "react-icons/ri";
 import { FiGift } from "react-icons/fi";
 import { LiaShoppingCartSolid } from "react-icons/lia";
 import MagicBellNotification from "@/Pages/webpush/MagicBellNotification";
 
 export default function Header({classMagicword}) {
     const { global_currency, auth } = usePage().props;
-    
+
     const deviceid = DeviceID();
     const [isActive, setActive] = useState(false);
     const [shows, setShows] = useState(false);
@@ -66,7 +64,7 @@ export default function Header({classMagicword}) {
             <div className="blackbg headermain py-6 ">
                 <div className="containerbox">
                     <div className="header flex w-full items-center  justify-between ">
-                        
+
                         <div className="md:flex hidden leftspaces items-center justify-content-start">
                             <div
                                 className=" menu-toggle cursor-pointer cartLink position-relative"
@@ -126,7 +124,7 @@ export default function Header({classMagicword}) {
                             />
 
                             {/* {auth && auth.user ? <Notifications /> : ""} */}
-                            {auth && auth.user ? 
+                            {auth && auth.user ?
                                 <div className="mr-2">
                                     <MagicBellNotification word={classMagicword} />
                                 </div>
@@ -221,7 +219,7 @@ export default function Header({classMagicword}) {
                 className={`fixed top-0 z-50 h-full w-full  rounded-r-2xl
                     transform transition-transform duration-600 ease-in-out
                      {isActive ? 'opacity-100' : '-opacity-100'}
-                    flex flex-col p-8 bg-[#0008]  
+                    flex flex-col p-8 bg-[#0008]
                     select-none  opacity-[0]
                     `}
                 onClick={toggleClass}
@@ -240,7 +238,7 @@ export default function Header({classMagicword}) {
                             <div class="overflow-y-auto overflow-x-hidden flex-grow">
                                 <ul class=" flex flex-col pt-8 space-y-1 pb-[100px]">
                                     <>
-                                        {auth?.user?.username ? 
+                                        {auth?.user?.username ?
                                             <>
                                                 <li>
                                                     <Link
@@ -276,11 +274,11 @@ export default function Header({classMagicword}) {
                                                             />
                                                         </span>
                                                         <span class="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                        {auth?.user?.role == 1 ? "My Wishlist" : "My Profile" } 
+                                                        {auth?.user?.role == 1 ? "My Wishlist" : "My Profile" }
                                                         </span>
                                                     </Link>
                                                 </li>
-                                            </> 
+                                            </>
                                         : ''}
                                         <li>
                                             <a
@@ -401,8 +399,8 @@ export default function Header({classMagicword}) {
                                             </Link>
                                         </li>
                                     </>
-                                    
-                                    {auth?.user?.username ? 
+
+                                    {auth?.user?.username ?
                                     '' : (
                                         <>
                                             <li>
@@ -418,7 +416,7 @@ export default function Header({classMagicword}) {
                                                         />
                                                     </span>
                                                     <span class="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                        Sign Up 
+                                                        Sign Up
                                                     </span>
                                                 </Link>
                                             </li>
@@ -497,7 +495,7 @@ export default function Header({classMagicword}) {
                                     <li>
                                         <Link
                                             onClick={toggleClass}
-                                            
+
                                             class="livechat relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                         >
                                             <span class="inline-flex justify-center items-center ml-4">

@@ -46,6 +46,27 @@ export default function BillCheckout(props) {
             }),
             {
                 preserveScroll: true,
+                onSuccess: (data) => {
+                    if (props?.flash?.error) {
+                        errorAlert(props?.flash?.error || "Checkout failed.");
+                    }
+                    if (props?.flash?.success) {
+                        successAlert(
+                            props?.flash?.success ||
+                                "Checkout successful! Your payment is being processed."
+                        );
+                    }
+                    // optionally redirect or show success alert
+                },
+                onError: (errorBag) => {
+                    errorAlert(errorBag);
+                    console.error("Checkout failed", errorBag);
+                    // show error toasts, alerts, or update error state
+                },
+                onFinish: () => {
+                    console.log("Request finished (success or error)");
+                    // cleanup, stop loader, etc.
+                },
             }
         );
     };
@@ -114,51 +135,73 @@ export default function BillCheckout(props) {
                                 </div>
                             </div>
 
-
                             <div className="cartTotal px-0 pt-4 flex justify-end">
                                 <ul className="max-w-[300px] w-full">
                                     <li className="flex justify-content-between">
-                                        <span className="min-w-[100px] block text-lg">Subtotal :</span>
-                                        <strong className="text-lg">{formatMultiPrice(bill?.price || "",bill && bill?.currency)}</strong>
+                                        <span className="min-w-[100px] block text-lg">
+                                            Subtotal :
+                                        </span>
+                                        <strong className="text-lg">
+                                            {formatMultiPrice(
+                                                bill?.price || "",
+                                                bill && bill?.currency
+                                            )}
+                                        </strong>
                                     </li>
                                     <li className="flex justify-content-between">
-                                        <span className="min-w-[100px] block text-lg">Platform Fee :</span>
+                                        <span className="min-w-[100px] block text-lg">
+                                            Platform Fee :
+                                        </span>
                                         <div>
-                                            <strong className="text-lg">{formatMultiPrice(bill?.tax_amount || "",bill && bill?.currency, 'adminfee')}</strong>
+                                            <strong className="text-lg">
+                                                {formatMultiPrice(
+                                                    bill?.tax_amount || "",
+                                                    bill && bill?.currency,
+                                                    "adminfee"
+                                                )}
+                                            </strong>
                                             <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">
-                                            ?
-                                            <p className="absolute bg-[#505050] p-[10px] rounded-md top-[22px] right-[-18px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
-                                                15% Card Fees and £1 administrative fee of applies to
-                                            all transactions.
-                                            </p>
+                                                ?
+                                                <p className="absolute bg-[#505050] p-[10px] rounded-md top-[22px] right-[-18px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
+                                                    15% Card Fees and £1
+                                                    administrative fee of
+                                                    applies to all transactions.
+                                                </p>
                                             </button>
                                         </div>
                                     </li>
                                     {vat_amount && vat_amount > 0 ? (
                                         <li className="flex justify-content-between">
-                                            <span className="min-w-[100px] block text-lg">VAT :</span>
-                                            <strong className="text-lg">{formatMultiPrice(
+                                            <span className="min-w-[100px] block text-lg">
+                                                VAT :
+                                            </span>
+                                            <strong className="text-lg">
+                                                {formatMultiPrice(
                                                     vat_amount || "",
-                                                    bill &&
-                                                        bill.currency
-                                                )}</strong>
+                                                    bill && bill.currency
+                                                )}
+                                            </strong>
                                         </li>
                                     ) : (
                                         ""
                                     )}
                                     <li className="flex justify-content-between">
-                                        <span className="min-w-[100px] block text-lg">Total :</span>
-                                        <strong className="text-lg">{formatMultiPrice(
-                                            bill?.tax_amount +
-                                                bill?.price +
-                                                vat_amount || "",
-                                            bill && bill?.currency, 'adminfee'
-                                        )}</strong>
+                                        <span className="min-w-[100px] block text-lg">
+                                            Total :
+                                        </span>
+                                        <strong className="text-lg">
+                                            {formatMultiPrice(
+                                                bill?.tax_amount +
+                                                    bill?.price +
+                                                    vat_amount || "",
+                                                bill && bill?.currency,
+                                                "adminfee"
+                                            )}
+                                        </strong>
                                     </li>
                                 </ul>
                             </div>
 
-                            
                             <div className="addMessage mt-2">
                                 <form onSubmit={executeCaptcha}>
                                     <ul className="row">

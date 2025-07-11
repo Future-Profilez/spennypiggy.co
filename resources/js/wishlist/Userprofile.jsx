@@ -8,6 +8,7 @@ const ShareProfile = React.lazy(() => import("./ShareProfile"));
 const SendTip = React.lazy(() => import("@/Pages/TipJar/SendTip"));
 import { RiVerifiedBadgeFill } from "react-icons/ri";
 import FollowButton from "@/Pages/Profile/FollowButton";
+import { MdOutlineContentCopy } from "react-icons/md";
 
 export default function Userprofile({ IsloggedIn }) {
 
@@ -19,7 +20,7 @@ export default function Userprofile({ IsloggedIn }) {
             <div className="userPr px-4 py-0 py-md-4 lg:flex items-center justify-center lg:justify-between mt-[-80px] md:mt-[-50px]">
                 <div className="update-profile text-center lg:flex items-center justify-center lg:justify-start">
                     <div className="userphoto relative !flex  items-center justify-center mb-4 ">
-                        <LazyLoadImage 
+                        <LazyLoadImage
                             alt={"image"} useIntersectionObserver={true} effect="blur"
                             src={user && user.avatar_url? user.avatar_url: userphoto}
                             height={150} width={150}
@@ -53,7 +54,7 @@ export default function Userprofile({ IsloggedIn }) {
                         )}
                     </div>
                     <div className="ps-3">
-                        <h2 className="font-GillSans mb-2 flex   items-center  justify-center lg:justify-start text-center lg:text-left">
+                        <h2 className="font-GillSans  flex   items-center  justify-center lg:justify-start text-center lg:text-left">
                             {user?.name}
                             {user?.role === 1 &&
                                 user?.profile_status_lock === 2 && (
@@ -70,28 +71,18 @@ export default function Userprofile({ IsloggedIn }) {
                                 classes="flex text-gray-300 mr-4 items-center"
                             >
                                 @{user?.username}
-                                <div className="mt-1 ms-2">
-                                    {/* link icon */}
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="19"
-                                        height="18"
-                                        viewBox="0 0 19 18"
-                                        fill="none"
-                                    >
-                                        <path d="..." fill="#8981A2" />
-                                    </svg>
-                                </div>
+                                <MdOutlineContentCopy className="ms-2  font-bold text-gray-300 mt-2"/>
+
                             </ShareProfile>
 
-                          
+
                         </div>
                     </div>
                 </div>
 
                 <div className="flex lg:block justify-center mt-4 lg:mt-0">
                     <div>
-                        {user && user.role == 1 ? (
+                        {user && user?.role == 1 ? (
                             <div className="flex mb-4 justify-center md:mb-2">
                                 <p className="md:flex text-center font-poppins mt-1 text-white">
                                     <span className='!w-auto !h-auto block md:inline-block pe-1 '>
@@ -109,7 +100,7 @@ export default function Userprofile({ IsloggedIn }) {
                         ) : (
                             ""
                         )}
-                        <div className="flex items-center justify-center">
+                        <div className="flex items-center justify-center mb-2">
                             <div className="">
                                 <FollowButton targetUserId={opponantUser?.id} isInitiallyFollowing={follow_status} />
                             </div>
@@ -130,7 +121,7 @@ export default function Userprofile({ IsloggedIn }) {
                         </div>
 
 
-                        
+
                     </div>
                 </div>
 

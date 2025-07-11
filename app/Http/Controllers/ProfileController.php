@@ -104,8 +104,6 @@ class ProfileController extends Controller
         return back()->with('success', 'Profile information updated.');
     }
 
-
-
     public function uploadToUploadcare($file)
     {
         $uploadcareHost = "https://upload.uploadcare.com/base/";
@@ -126,8 +124,6 @@ class ProfileController extends Controller
         ]);
         return json_decode($response);
     }
-
-
 
     /**
      * Update the user's profile information.
@@ -208,9 +204,11 @@ class ProfileController extends Controller
                 $user->cover_cdn_modifier = $cover['cdnUrlModifiers'] ?? null;
             }
 
-            if (!empty($request->social_image)) {
+            if ($request->hasFile('social_image')) {
                 $file = $request->file('social_image');
+
                 $uploadcareHost = "https://upload.uploadcare.com/base/";
+
                 $response = Http::asMultipart()->post($uploadcareHost, [
                     [
                         'name' => 'UPLOADCARE_PUB_KEY',
@@ -226,8 +224,15 @@ class ProfileController extends Controller
                         'filename' => $file->getClientOriginalName(),
                     ],
                 ]);
-                $user->social_image = $response['file'];
+
+                if ($response->successful() && isset($response['file'])) {
+                    $user->social_image = $response['file']; // store the Uploadcare UUID
+                } else {
+                    Log::error("Uploadcare error", ['response' => $response->body()]);
+                    return back()->with('error', 'Failed to upload image to Uploadcare.');
+                }
             }
+
 
             $user->save();
             $user->refresh();
@@ -280,10 +285,10 @@ class ProfileController extends Controller
         $user = $request->user();
 
         $bills = BillPayment::where('user_id', $user->id)->where('status', 'paid')->get();
-
+        $connectedAccount = $bills->bill->user->account_id;
         if (!empty($bills)) {
             foreach ($bills as $bill) {
-                StripeControl::cancelSubscription($bill->stripe_id);
+                StripeControl::cancelSubscription($bill->stripe_id, $connectedAccount);
             }
         }
 
@@ -463,86 +468,6 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function userFollowUnFollow(Request $request)
-    {
-        $followed_id = $request->user_id;
-        $LoggedInUser = Auth::user();
-        $userFollow = Follow::where('follower_id', Auth::id())->where('followed_id', $followed_id)->first();
-        $followedUser = User::select('id', 'name', 'username', 'email')->where('id', $followed_id)->first();
-        $userName = ucfirst($followedUser->name);
-        // dd($userFollow, $LoggedInUser, $followedUser, $userName);
-        if ($userFollow === null) {
-            // User is not following, so we will follow
-            Follow::create([
-                'follower_id' => Auth::id(),
-                'followed_id' => $followed_id,
-            ]);
-
-            $title = "👥 New Follower!";
-            $content = ucfirst($LoggedInUser->name) . "($LoggedInUser->username)" . " just followed you. Just Check their profile!";
-            $email = $followedUser->email; // user being followed
-
-            Helpers::sendNotification($title, $content, $email);
-
-            $status = 'followed';
-        } else {
-            // User is already following, so we will unfollow
-            $userFollow->delete();
-            $status = 'unfollowed';
-        }
-
-        // Get the updated follow count
-        return response()->json([
-            'status' => true,
-            'msg' => "You have $status $userName.",
-            'status' => $status,
-            'username' => $followedUser->username,
-        ]);
-    }
-
-    public function sendPwaToFollower(Request $request)
-    {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'body' => 'required|string',
-        ]);
-
-        $followerIds = Follow::where('followed_id', Auth::id())
-            ->pluck('follower_id');
-
-        $users = User::whereIn('id', $followerIds)
-            ->where('is_uk', 0)
-            ->get();
-
-        if ($users->isEmpty()) {
-            return response()->json([
-                'status' => false,
-                'msg' => 'No users have followed you yet.',
-            ]);
-        }
-
-
-        try {
-            foreach ($users as $user) {
-                Helpers::sendNotification($request->title, $request->body, $user->email);
-            }
-
-            return response()->json([
-                'status' => true,
-                'msg' => 'Push notifications sent successfully.',
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Push notification error: ' . $e->getMessage());
-
-            return response()->json([
-                'status' => false,
-                'msg' => 'Failed to send push notifications. Please try again later.',
-            ]);
-        }
-    }
-
-
-
     public function checkAdultContent($uuid)
     {
         $rest_words = ['Adult', '18+', 'Pornographic', 'xxx', 'nsfw', 'NSFW', 'XXX', 'Blood', 'Brutality', 'Explicit', 'Mature', 'Weapons', 'Aggression', 'Combat', 'Sexual', 'Porn', 'Fucking', 'Graphic'];
@@ -594,7 +519,6 @@ class ProfileController extends Controller
             'msg' => 'Success.'
         ]);
     }
-
 
     /**
      * Save the intro video
@@ -653,8 +577,6 @@ class ProfileController extends Controller
             'intro' => $intro
         ]);
     }
-
-
 
     /**
      * Delete the intro video
@@ -1020,7 +942,6 @@ class ProfileController extends Controller
         ]);
     }
 
-
     public function gifterSubscription($username)
     {
         $user = User::where('username', $username)->where('is_uk', 0)->first();
@@ -1137,7 +1058,6 @@ class ProfileController extends Controller
             'total' => $total,
         ]);
     }
-
 
     /**
      * Get the list of notifications

@@ -280,7 +280,6 @@ class MembershipController extends Controller
 
     public function removeLevel($uuid)
     {
-
         $mem = Membership::whereUuid($uuid)->first();
 
         if (empty($mem)) {
@@ -346,9 +345,7 @@ class MembershipController extends Controller
         $creatorCurrency = $membership->currency;
         $price = $membership->price;
         $convertedAmount = Helpers::priceFormat($creatorCurrency, $price, 'gbp');
-        if (!Auth::check() && $convertedAmount > 50) {
-            return to_route('login', ['message' => 'You are not eligible for this payment as you need to login first']);
-        }
+
 
         $memberTaxPercent = config('app.member_tax');
         $adminFeeGBP = config('app.administration_fee');
@@ -367,6 +364,9 @@ class MembershipController extends Controller
         $applicationFeePercent = round(($platformTotal / $finalTotalAmount) * 100, 2);
 
         if ($request->isMethod("POST")) {
+            if (!Auth::check() && $convertedAmount > 50) {
+                return to_route('login', ['message' => 'Larger payments more than £50 need to login']);
+            }
             $request->validate([
                 'name' => ['nullable', 'string', 'max:50'],
                 'email' => ['required', 'email:dns'],
@@ -375,7 +375,7 @@ class MembershipController extends Controller
 
             $sub = MembershipPayment::create([
                 'membership_id' => $membership->id,
-                'user_id' => $user->id,
+                'user_id' => $user->id ?? null,
                 'guest_name' => $request->name,
                 'guest_email' => $request->email,
                 'currency' => $currency,
@@ -392,7 +392,7 @@ class MembershipController extends Controller
                 $connectedAccountId = $membership->user->account_id;
 
                 $customerRecord = ConnectedAccountCustomer::where([
-                    'user_id' => $user->id,
+                    'user_id' => $user->id ?? null,
                     'creator_id' => $membership->user->id,
                     'connected_account_id' => $connectedAccountId,
                     'product_type' => 'membership',
@@ -408,8 +408,8 @@ class MembershipController extends Controller
 
                 if ($existingSub && $existingSub->currency !== $currency) {
                     $customer = StripeControl::createCustomer([
-                        'email' => $user->email,
-                        'name' => $user->name,
+                        'email' => $user->email ?? $request->email,
+                        'name' => $user->name ?? $request->name,
                     ], $connectedAccountId);
 
                     $customer_id = $customer->id;
@@ -418,8 +418,8 @@ class MembershipController extends Controller
 
                 if (!$customer_id) {
                     $customer = StripeControl::createCustomer([
-                        'email' => $user->email,
-                        'name' => $user->name,
+                        'email' => $user->email ?? $request->email,
+                        'name' => $user->name ?? $request->name,
                     ], $connectedAccountId);
                     $customer_id = $customer->id;
                 }
@@ -446,7 +446,7 @@ class MembershipController extends Controller
 
                 if (!$customerRecord) {
                     ConnectedAccountCustomer::create([
-                        'user_id' => $user->id,
+                        'user_id' => $user->id ?? null,
                         'creator_id' => $membership->user->id,
                         'connected_account_id' => $connectedAccountId,
                         'stripe_customer_id' => $customer_id,
@@ -481,7 +481,8 @@ class MembershipController extends Controller
                         'application_fee_percent' => $applicationFeePercent,
                         'description' => "Monthly Membership for {$membership->user->username}",
                         'metadata' => [
-                            'user_id' => $user->id,
+                            'user_id' => $user->id ?? 0,
+                            'email' => $user->email ?? $request->email,
                             'creator_id' => $membership->user->id,
                             'membership_id' => $membership->id,
                             'type' => 'membership',
@@ -569,7 +570,7 @@ class MembershipController extends Controller
                 Helpers::sendNotification($title, $content, $email);
 
                 // below is membership pwa for creator
-                $FanName = ucfirst($mem->user->name) ?? 'A Fan';
+                $FanName = ucfirst($mem->user->name ?? $mem->guest_name) ?? 'A Fan';
                 $title = "💎 New Member Joined!";
                 $content = "$FanName just subscribed to your membership!.";
                 $email = $mem->membership->user->email;

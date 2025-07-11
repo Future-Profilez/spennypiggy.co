@@ -1,3 +1,4 @@
+/* home.css */
 @keyframes menu{0%{opacity:0;transition:0.6s;}
 to{opacity:1;transition:0.6s;}
 }
@@ -193,7 +194,7 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 .addMessage ul li.halfbox{width:50%;}
 .addMessage ul li label{color:var(--gray2);text-align:center;font-size:18px;font-style:normal;font-weight:400;line-height:150%;letter-spacing:-0.63px;margin:0 0 6px;}
 .addMessage ul li input[type="text"]{border-radius:3px;border:1px solid #e6e6e6;background:var(--white);width:100%;padding:15px;}
-.addMessage ul li textarea{border-radius:10px;background:#f3e4eb;height:100px;width:100%;padding:15px;}
+.addMessage ul li textarea{border-radius:10px;background:#f3e4eb;width:100%;padding:15px;}
 .addMessage ul li.cheklistbox{position:relative;}
 .addMessage ul li.cheklistbox input[type="checkbox"]{border:1px solid var(--gray);}
 .cheklistnot,.tearmlist ul li{color:#666;font-style:normal;font-weight:400;line-height:150%;letter-spacing:-0.65px;}
@@ -290,6 +291,10 @@ div#msgText p b{font-weight:700 !important;padding:0 4px;color:#000;}
 .m-detail h3{font-family:var(--heading-font) !important;}
 .m-detail h2{font-size:20px;font-weight:300 !important;}
 .m-detail h2 b{font-size:25px !important;}
+
+
+
+/* home css part 2 */
 ul.socialmedia a{display:flex;text-transform:uppercase;font-size:17px;}
 ul.socialmedia a > div{padding-right:4px;}
 .nav.nav-tabs{flex-wrap:nowrap !important;overflow:auto;}
@@ -500,7 +505,7 @@ ul.socialmedia li svg{width:25px !important;height:24px !important;}
 .wishManage .rts___nav___btn___container{position:absolute;right:0;background:linear-gradient(90deg,rgb(0 0 0 / 0%) -84%,rgb(0 0 0) 100%) !important;top:5px;width:60px !important;}
 .wishManage .rts___btn.rts___nav___btn{border:0 !important;width:41px;height:40px !important;margin-left:auto !important;margin-right:5px !important;background:transparent;}
 .wishManage .rts___tabs{padding:0 !important;}
-.wishManage .rts___btn{ border-radius:0 !important;padding-left:2px !important;padding-right:5px !important;margin-right:23px !important;}
+.wishManage .rts___btn{border-radius:0 !important;padding-left:2px !important;padding-right:5px !important;margin-right:23px !important;}
 .wishManage .rts___tab___selected{color:var(--pink) !important;background:transparent !important;border-color:var(--pink) !important;}
 .wishManage button.rts___nav___btn{margin:0 !important;}
 .wishManage .rts___btn.rts___nav___btn svg{stroke:#fff !important;width:30px;height:30px;}
@@ -509,18 +514,13 @@ ul.socialmedia li svg{width:25px !important;height:24px !important;}
 .addoption-action svg{width:40px;height:40px;}
 .wishtracker-box li button{white-space:nowrap !important;}
 .react-select-lists .react-select__control{background:#e5e7eb;border:0;border-radius:10px;padding:10px !important;}
-
-.membershipitems svg {
-  height:100px;
-  width:100px;
-}
+.membershipitems svg{height:100px;width:100px;}
 
 
+/* home.css  part  3 */
 /* responsive */
-@media (min-width:767px){
-  .about-sticky{position:sticky;top:133px;}
+@media (min-width:767px){.about-sticky{position:sticky;top:133px;}
 .new-wish-cats{flex-wrap:wrap;}
-
 }
 @media (max-width:1500px){.loveboxes{padding:0 20px;}
 .loveboxes img{max-width:160px;}
@@ -597,15 +597,8 @@ select#country{width:150px;}
 .membership-image span{width:100% !important;display:block;height:auto !important;}
 html body .intercom-lightweight-app-launcher{margin-bottom:70px !important;}
 }
-.btn-shadow{text-shadow:0.5px 0.5px #000000 !important;}
-@media (max-width:767px){
-  
-  
-  .membershipitems svg {
-  height:70px;
-  width:70px;
-}
-
+.btn-shadow{text-shadow:0.5px 0.5px #000000 !important;letter-spacing:1px;}
+@media (max-width:767px){.membershipitems svg{height:70px;width:70px;}
 .box-e{padding:60px 60px !important;}
 .creatorslider .swiper-pagination{position:static !important;padding-top:20px;}
 .fillbankbtn{position:fixed;bottom:67px;left:15px;z-index:1;width:100%;border-radius:17px;max-width:calc(100% - 30px);padding:16px !important;font-size:17px !important;}
@@ -723,8 +716,7 @@ html body .intercom-lightweight-app-launcher{margin-bottom:70px !important;}
 .proud-banner{align-items:end;}
 .proud-banner p{font-size:12px;}
 }
-@media(max-width:575px){
-.approvalmessge{font-size:14px;}
+@media(max-width:575px){.approvalmessge{font-size:14px;}
 .approvalmessge.membership{font-size:12px;top:38px;padding:6px !important;}
 .commingsooon{top:39%;}
 .livebar p{font-size:15px;}
@@ -855,3 +847,5 @@ select#country{width:100%;}
 .dark6{background:#595959 !important;/* Soft dark gray */
 }
 .dark7{background:#666666 !important;}
+.font-fre{font-family:var(--body-font) !important;}
+.image-name{letter-spacing:1px;}

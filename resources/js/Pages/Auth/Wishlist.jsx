@@ -17,7 +17,7 @@ import axios from "axios";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 import { FaRegHeart } from "react-icons/fa";
 const imageLinks = [
-    "901c0a0e-e5de-4d7a-8ac3-de11a4632542", 
+    "901c0a0e-e5de-4d7a-8ac3-de11a4632542",
     "6d5506b2-7361-4c58-8f1b-dfe1e196885a",
     "467f7ad0-e397-45fe-be22-a6e8e8afe9fa",
     "897b3ec3-63f8-42c0-83b3-a3a9a1b90b7c",
@@ -29,7 +29,7 @@ const imageLinks = [
 
 export default function Wishlist(props) {
     const { global_currency, auth, wish_categories } = usePage().props;
-    const { 
+    const {
         currency,
         item, text,
         editpop,
@@ -92,7 +92,7 @@ export default function Wishlist(props) {
             .then((res) => {
                 setAdding(false);
                 if (res.data.status) {
-                    successAlert(res.data.msg || "Added"); 
+                    successAlert(res.data.msg || "Added");
                     inputRef.current.value = "";
                      fetch_categories();
                 } else {
@@ -225,7 +225,7 @@ export default function Wishlist(props) {
                             route("user.show", {
                             username: auth?.user?.username,
                             page : 'wishes'
-                        })); 
+                        }));
                         reset();
                         setClose(false);
                         setTimeout(() => {
@@ -347,10 +347,7 @@ export default function Wishlist(props) {
                                             type="number"
                                             name="price"
                                             placeholder="Eg. 50"
-                                            value={
-                                                data.price ||
-                                                (item && item.price)
-                                            }
+                                            value={data.price}
                                             step={`0.01`}
                                             className="form-input px-2 py-2 border w-full rounded-md"
                                             autoComplete="price"

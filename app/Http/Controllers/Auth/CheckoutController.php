@@ -68,6 +68,7 @@ class CheckoutController extends Controller
             $subtotal = 0;
             // $taxNew = 0;
             $transfer_amount = 0;
+            Log::info(json_encode($getdata));
             foreach ($getdata as $dd) {
                 if (!$user) {
                     $email = request()->query('email');
@@ -76,10 +77,12 @@ class CheckoutController extends Controller
                         $user = null;
                     }
                 }
+                $subtotals = 0;
                 $totalAmount = $dd->amount;
-                $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, 'gbp');
-                if (!Auth::check() && $ConvertedAmount > 50) {
-                    return to_route('login')->with('error', 'You are not eligible for this payment as you need to login first.');
+                $ConvertedToGBpAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, 'gbp');
+                $subtotals += $ConvertedToGBpAmount * $dd->quantity;
+                if (!Auth::check() && $subtotals > 50) {
+                    return to_route('login', ['message' => 'Larger payments more than £50 need to login']);
                 }
 
                 $adminFee = config('app.administration_fee');
@@ -120,10 +123,12 @@ class CheckoutController extends Controller
                     ]);
                 }
 
-                $subtotal += $ConvertedAmount * $dd->quantity;
+                $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, $currency);
                 $platformFeeAmount = $ConvertedAmount * $taxPercentage / 100;
                 $showTax = $platformFeeAmount + $showAdminsFees;
-                $storeTax = $platformFeeAmount + $StoreAdminsFees;
+                $showTaxWithQuantity = $showTax * $dd->quantity;
+                $storeTax = $platformFeeAmount + $StoreAdminsFees * $dd->quantity;
+                $storeTaxWithQuantity = $storeTax * $dd->quantity;
 
                 $lineItems = [
                     // Your main product
@@ -143,7 +148,7 @@ class CheckoutController extends Controller
                             'product_data' => [
                                 'name' => 'Platform Fee',
                             ],
-                            'unit_amount' => round($showTax * 100),
+                            'unit_amount' => round($showTaxWithQuantity * 100),
                             'tax_behavior' => 'exclusive',
                         ],
                     ],
@@ -183,7 +188,7 @@ class CheckoutController extends Controller
                 'session_id' => $sessionCreate->id,
                 'amount_subtotal' => $subtotal,
                 'amount_total' => $sessionCreate->amount_total / 100,
-                'tax' => $storeTax,
+                'tax' => $storeTaxWithQuantity,
                 'currency' => $getdata[0]->owner->default_currency,
                 'payment_method_config_detail_id' => optional($sessionCreate->payment_method_configuration_details)->id,
                 'payment_method_type' => optional($sessionCreate->payment_method_types)[0],

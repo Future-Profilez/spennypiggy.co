@@ -20,7 +20,6 @@ export default function Wishlistbox(props) {
   const { format, formatMultiPrice } = PriceFormat();
   const { currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped, classes, showall, key } = props;
   const { attributes, listeners, isDragging, index, over, setNodeRef, transform, transition } = useSortable({ id: itm && itm.id });
-
   const style = {
     transform: CSS.Translate.toString(transform)
   };
@@ -47,6 +46,8 @@ export default function Wishlistbox(props) {
     const r = (paid/actual)*100;
     return r.toFixed(1);
   }
+
+  const processingFee = (itm?.price||0) * 0.15;
 
   return <div key={key}
   style={IsloggedIn ? style : stylenone}
@@ -87,9 +88,22 @@ export default function Wishlistbox(props) {
 
         <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative bg-white'>
           <div>
-            <h4 className={`text-lg  !text-gray-800 text-center capitalize  ${itm.subscription !== '0' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>
-            <h5 className='text-center font-bold font-poppins  text-black my-2 titleprice'>{formatMultiPrice(itm.price, itm?.currency || 'GBP')}
-                <button className='tooltipbtn' >?<p>*just not including service fee.</p></button>
+            <h4 className={`text-lg  !text-gray-800 text-center capitalize ${itm.subscription !== '0' ? 'el1' : 'el2'}`} >{itm.wishname}</h4>
+            <h5 className='text-center font-bold font-poppins  text-black my-2 titleprice'>
+                {IsloggedIn ?
+                    <>
+                    {formatMultiPrice(itm.price, itm?.currency || 'GBP')}
+                    </>
+                    :
+                    <>
+                    {formatMultiPrice((parseInt(itm.price)+parseInt(processingFee || 0)), itm?.currency || 'GBP', 'adminfee')}
+                    </>
+                }
+                {IsloggedIn ?
+                    <button className='tooltipbtn' >?<p>*just not including service fee.</p></button>
+                    :
+                    <button className='tooltipbtn' >?<p>*including service fee.</p></button>
+                }
             </h5>
           </div>
           {itm.subscription == '2' ?

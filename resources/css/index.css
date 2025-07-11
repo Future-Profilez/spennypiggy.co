@@ -1,4 +1,4 @@
-
+/* index.css  */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -56,12 +56,12 @@ div{animation:load 0.4s linear;} */
 .text-graydark{color:var(--text-graydark);}
 .text-voilet{color:var(--voilet);}
 .textshadow{text-shadow:0 0 0 rgba(0,0,0,0.8);}
-.border-yellow { 
+.border-yellow {
   border-color: var(--yellow) !important;
 }
 
 
- 
+
 .border-voilet{border-color:var(--voilet) !important;}
 
 
@@ -69,7 +69,7 @@ div{animation:load 0.4s linear;} */
 @layer components{
   .btn-pink{@apply !text-[18px] bg-[#F94F96] text-white uppercase font-gulfs rounded-full !px-4 !py-3 m-auto}
   .lg { @apply !text-[20px] !px-[30px] !py-[12px] text-center }
-  .sm { @apply !text-[16px] !px-[20px] !py-[9px] text-center } 
+  .sm { @apply !text-[16px] !px-[20px] !py-[9px] text-center }
 }
 
 

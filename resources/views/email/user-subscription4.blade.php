@@ -36,7 +36,7 @@
                         Enjoy full access to all premium features during your trial period. Your subscription will
                         automatically start on
                         <b>{{ \Carbon\Carbon::parse($nextPaymentDate)->format('F j, Y') }}</b> and you'll be charged
-                        <b>{{ $planCurrency }}{{ $amount }}</b>.
+                        <b>£{{ $amount }}</b>.
                     </td>
                 </tr>
 
