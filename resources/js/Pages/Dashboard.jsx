@@ -3,6 +3,9 @@ import { useAlerts } from "@/Components/Alerts";
 import { Head, Link, usePage } from "@inertiajs/react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
 import { addicon } from "@/includes/Icons";
+import spennypiggy from "../../assets/img/logo.png";
+import socialbg from "../../assets/social-bg.png";
+
 const Wishlist = React.lazy(() => import("./Auth/Wishlist"));
 const Wishlistbox = React.lazy(() => import("@/wishlist/Wishlistbox"));
 const Userprofile = React.lazy(() => import("@/wishlist/Userprofile"));
@@ -60,6 +63,7 @@ import { CiGift } from "react-icons/ci";
 import OldSubscribe from "./webpush/OldSubscribe";
 import AddSocial from "./Auth/Social";
 import CreatorVerification from "./Profile/CreatorVerification";
+import SiteSubscription from "./Profile/SiteSubscription";
 
 export default function Dashboard(props) {
     const w = useWidthCount();
@@ -391,45 +395,13 @@ export default function Dashboard(props) {
 
     console.log(props);
 
-    const [UserStripeConnected, setUserStripeConnected] = useState(
-        parseInt(user && user?.stripe_details_submitted) || 0
-    );
-    const [AuthUserStripeConnected, setAuthUserStripeConnected] = useState(
-        parseInt(auth && auth?.user && auth?.user?.stripe_details_submitted) ||
-            0
-    );
+    const [UserStripeConnected, setUserStripeConnected] = useState(parseInt(user && user?.stripe_details_submitted) || 0)
+    const [AuthUserStripeConnected, setAuthUserStripeConnected] = useState(parseInt(auth && auth?.user && auth?.user?.stripe_details_submitted) || 0);
 
     return (
         <>
             <Guest auth={auth.user} user={user}>
-                {/* <div id="card-to-capture"  className="dot-pattern relative my-[300px] flex items-center  bg-gradient-to-r from-[#730032] to-[#f94f96]  p-6 w-[600px] h-[337.5px]  text-white shadow-2xl  ">
-                    <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.2)_3px,transparent_3px)] bg-[size:30px_30px]"></div>
-                    <div className="absolute top-6 left-6 text-yellow-300 text-4xl">✨</div>
-                    <div className="absolute bottom-6 right-6 text-cyan-300 text-2xl">⭐</div>
-                    <div className="absolute top-12 right-16 text-cyan-300 text-4xl">🎁</div>
-                    <div className="absolute top-18 right-20 text-cyan-300 text-3xl">💰</div>
-                    <div className="inner-image w-full">
-                        <div className="flex items-center justify-center  mb-4">
-                            <div className="w-28 h-28 rounded-full border-4 border-[#00ff5e] overflow-hidden  shadow-lg">
-                                <img src="https://ucarecdn.com/${avataruid}/-/crop/face/1:1/-/preview/" alt="Profile" className="w-full h-full object-cover" />
-                            </div>
-                            <div className="ps-3">
-                                <h1 className="image-name max-w-[200px] uppercase font-fre text-3xl text-start text-outline leading-snug">
-                                    Naveen Tehrpariya
-                                </h1>
-                            </div>
-                        </div>
-                        <p className="text-center text-[#ffd600] text-xl font-bold mt-1">is now on  Spenny Piggy</p>
-                        <div className="bg-[#730032] mt-4 link-shadow border-2 border-[#730032]  text-white
-                            px-4 py-2 rounded-[15px] text-center text-[20px] shadow-md">
-                        https://spennypiggy.co/dfgdfgdfg
-                        </div>
-                    </div>
-                </div> */}
-
-                <Head
-                    title={`${user?.name || auth?.user?.name} - Spenny Piggy`}
-                />
+                <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
                 <div className="wishlistPage blackbg pt-6 pb-0 pb-sm-5 ">
                     <div className="containerbox">
                         <VersionUpdate />
@@ -477,45 +449,29 @@ export default function Dashboard(props) {
                             <Userprofile IsloggedIn={IsloggedIn} />
                         </div>
 
-                        {user && user?.role == 1 && IsloggedIn && showAlert ? (
-                            <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-lg">
-                                <div>
-                                    <span className="font-medium">
-                                        Stripe Policy Notice:
-                                    </span>{" "}
-                                    To comply with Stripe's requirements, you
-                                    must regularly post content related to
-                                    memberships, billing, and subscriptions.
-                                    Accounts that do not may be suspended.
-                                    Please contact{" "}
-                                    <a className="underline font-medium text-blue-800 hover:text-blue-900 livechat intercom-dud02y e11rlguj1 cursor-pointer">
-                                        support
-                                    </a>{" "}
-                                    for more information.
-                                    <button
-                                        onClick={handleDismiss}
-                                        className="absolute top-2 right-2 text-blue-700 hover:text-blue-900"
-                                        aria-label="Dismiss alert"
-                                    >
-                                        ✕
-                                    </button>
+                            {user && user?.role == 1 && IsloggedIn && showAlert ?
+                                <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-lg">
+                                    <div>
+                                        <span className="font-medium">Stripe Policy Notice:</span> To comply with Stripe's requirements, you must regularly post content related to memberships, billing, and subscriptions. Accounts that do not may be suspended.
+                                        Please contact <a   className="underline font-medium text-blue-800 hover:text-blue-900 livechat intercom-dud02y e11rlguj1 cursor-pointer">support</a> for more information.
+                                        <button
+                                            onClick={handleDismiss}
+                                            className="absolute top-2 right-2 text-blue-700 hover:text-blue-900"
+                                            aria-label="Dismiss alert"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        ) : (
-                            ""
-                        )}
+                            : ''}
 
-                        {user && user.role == 1 ? (
-                            <div className="wishManage sticky top-8 ">
-                                <div className="userManageRt mt-4 ">
-                                    <div
-                                        className={`  tabs-container ${
-                                            IsloggedIn ? "IsloggedIn" : ""
-                                        }`}
-                                    >
-                                        <div className="inlinetab ">
-                                            {/* Show rejection message if profile is rejected */}
-                                            {/* {!IsloggedIn && user?.profile_status_lock != 2 && user?.profile_reject_reason != null && (
+                            {user && user.role == 1 ?
+                                <div className="wishManage sticky top-8 ">
+                                    <div className="userManageRt mt-4 ">
+                                        <div className={`  tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`} >
+                                            <div className="inlinetab ">
+                                                {/* Show rejection message if profile is rejected */}
+                                                {/* {!IsloggedIn && user?.profile_status_lock != 2 && user?.profile_reject_reason != null && (
                                                     <div className="text-red-600 text-xl">
                                                         This creator's profile has been rejected by the admin. Payments to this creator are currently disabled.
                                                     </div>
@@ -661,107 +617,57 @@ export default function Dashboard(props) {
                                                     </Link>
                                                 </Tabs>
 
-                                                {IsloggedIn && <Toggle />}
-                                            </div>
-                                            <div className="tabs-containers min-height">
-                                                {page === "about" ||
-                                                page === false ? (
-                                                    <Suspense
-                                                        fallback={
-                                                            <LoadingScreen />
-                                                        }
-                                                    >
-                                                        <div className="row about-sec align-self-start">
-                                                            <div className="col-md-6  h-auto">
-                                                                <div className="about-sticky">
-                                                                    {UserStripeConnected ==
-                                                                    1 ? (
-                                                                        <MyGoal
-                                                                            IsloggedIn={
-                                                                                IsloggedIn
-                                                                            }
-                                                                        />
-                                                                    ) : (
-                                                                        ""
-                                                                    )}
+                                                    {IsloggedIn && <Toggle />}
+                                                </div>
+                                                <div className="tabs-containers min-height" >
+                                                    {page === "about" || page === false ?
+                                                        <Suspense fallback={<LoadingScreen />} >
+                                                            <div className="row about-sec align-self-start">
+                                                                <div className="col-md-6  h-auto">
+                                                                    <div className="about-sticky" >
 
-                                                                    <div className="box p-3 p-md-4 shadow-voilet rounded-lg mb-4">
-                                                                        <p className="font-bold">
-                                                                            About
-                                                                            me
-                                                                        </p>
-                                                                        <p
-                                                                            className={`text-muted text-start mt-2 ${
-                                                                                user &&
-                                                                                !user.bio
-                                                                                    ? "d-none"
-                                                                                    : ""
-                                                                            }`}
-                                                                        >
-                                                                            {(user &&
-                                                                                user.bio) ||
-                                                                                ""}
-                                                                        </p>
+                                                                        {UserStripeConnected == 1 ?
+                                                                            <MyGoal IsloggedIn={IsloggedIn}  />
+                                                                        :
+                                                                        ""}
 
-                                                                        {IsloggedIn &&
-                                                                        user?.edit_bio_reason ? (
-                                                                            <div className="mt-3">
-                                                                                <p className="text-red-700">
-                                                                                    Bio
-                                                                                    Edit
-                                                                                    Request
-                                                                                </p>
-                                                                                <p className="text-red-500 text-sm">
-                                                                                    Reason
-                                                                                    :{" "}
-                                                                                    {
-                                                                                        user?.edit_bio_reason
-                                                                                    }{" "}
-                                                                                    Please
-                                                                                    update
-                                                                                    your
-                                                                                    bio
-                                                                                    as
-                                                                                    per
-                                                                                    requested.
-                                                                                </p>
-                                                                            </div>
-                                                                        ) : (
-                                                                            ""
-                                                                        )}
+                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1   ?
+                                                                            <SiteSubscription charges={auth?.user?.monthly_charge_enabled} user={auth?.user} />
+                                                                        : ''}
 
-                                                                        <SocialLinks
-                                                                            links={
-                                                                                sLinks
-                                                                            }
-                                                                        />
 
-                                                                        {IsloggedIn ? (
-                                                                            <div className="userProfileDate pt-0 pt-md-3">
-                                                                                {/* {auth?.user && auth?.user?.role == 1
-                                                                                    && !auth?.user?.monthly_charge_enabled ?
-                                                                                        <SiteSubscription user={auth?.user} />
-                                                                                    : ''} */}
+                                                                        <div className="box p-3 p-md-4 shadow-voilet rounded-lg mb-4">
+                                                                            <p className="font-bold">About me</p>
+                                                                            <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
+                                                                                {(user &&user.bio) ||""}
+                                                                            </p>
 
-                                                                                {auth.user &&
-                                                                                auth
-                                                                                    .user
-                                                                                    .role ==
-                                                                                    1 &&
-                                                                                AuthUserStripeConnected ==
-                                                                                    1 ? (
-                                                                                    <PaymentDashboard
-                                                                                        classes="btn-pink lg w-100 mt-3"
-                                                                                        text="Payment Dashboard"
-                                                                                    />
-                                                                                ) : (
-                                                                                    // <div className="finish mt-4 d-block">
-                                                                                    //     <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                                                    //     <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-xs lg" > Finish Setup
-                                                                                    //     </Link>
-                                                                                    // </div>
-                                                                                    ""
-                                                                                )}
+
+
+                                                                            {IsloggedIn && user?.edit_bio_reason  ?
+                                                                                <div className="mt-3">
+                                                                                    <p className="text-red-700">Bio Edit Request</p>
+                                                                                    <p className="text-red-500 text-sm">Reason : {user?.edit_bio_reason } Please update your bio as per requested.</p>
+                                                                                </div>
+                                                                            : ''}
+
+                                                                            <SocialLinks links={sLinks} />
+
+
+
+                                                                            {IsloggedIn ? (
+                                                                                <div className="userProfileDate pt-0 pt-md-3">
+
+
+                                                                                    {auth.user && auth.user.role == 1 && AuthUserStripeConnected == 1  ? (
+                                                                                        <PaymentDashboard classes="btn-pink lg w-100 mt-3 btn-shadow" text="Payment Dashboard" />
+                                                                                        ) :
+                                                                                        <div className="finish mt-4 d-block">
+                                                                                            <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                                                                            <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-xs lg" > Finish Setup
+                                                                                            </Link>
+                                                                                        </div>
+                                                                                    }
 
                                                                                 {/* {auth.user && auth.user.stripe_details_submitted == 1 ?
                                                                                         <AddGoal
@@ -1176,24 +1082,20 @@ export default function Dashboard(props) {
                                                 ) : (
                                                     <PaymentUnActivated
                                                         heading={`WishList not activated yet. `}
-                                                        subheading={`Until they activate their wishlist, this user won't be able to receive gifts.`}
-                                                    />
-                                                )}
+                                                        subheading={`Until they activate their wishlist, this user won't be able to receive gifts.`} />
+                                                    }
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <>
+                                :
                                 <Gifter
-                                    auth={auth}
-                                    sLinks={sLinks}
-                                    IsloggedIn={IsloggedIn}
-                                />
-                            </>
-                        )}
-                    </div>
+                                auth={auth}
+                                sLinks={sLinks}
+                                IsloggedIn={IsloggedIn} />
+                            }
+                        </div>
                 </div>
 
                 {IsloggedIn ? (

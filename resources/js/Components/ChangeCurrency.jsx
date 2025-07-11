@@ -67,6 +67,13 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
       changeCurrency(value);
       setSelectedCurrency(name);
    }
+   const customStyles = {
+    menuList: (base) => ({
+        ...base,
+        maxHeight: '130px', // Set fixed height
+        overflowY: 'auto',  // Enable scrolling
+    }),
+    };
 
    return <>
       {changer ?
@@ -83,16 +90,16 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
             </Dropdown>
          </>
          :
-         <>
+         <div className=" ">
             <h2 className="text-uppercase font-GillSans pb-4 font-large"> Display Currency </h2>
             <div className="form-field mb-4">
-                  <label className="d-block text-start">Please choose as your default display currency.</label>
-                  <Select  classNamePrefix="react-select" className="react-select mb-4 mt-2 "
-                     options={currencies}
+                  <Select  classNamePrefix="react-select" className="max-h-[100px] react-select mb-4 mt-2 "
+                     options={currencies} styles={customStyles}
                      placeholder={data.currency|| 'Select..'}
                      defaultValue={data.currency}
                      onChange={(e) => handleSelect(e)}
                   />
+                  <label className="d-block text-start">Please choose as your default display currency.</label>
             </div>
             <LoaderButton onClick={()=>changeCurrency(data.currency)}
                disabled={processing}
@@ -101,7 +108,7 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
                   spinnerClassName="fill-red-600" >
                   {processing ? "Updating.." : "Update"}
             </LoaderButton>
-         </>
+         </div>
       }
    </>
 }
