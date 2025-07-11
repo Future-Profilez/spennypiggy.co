@@ -8,13 +8,11 @@ export default function SiteSubscription({charges}) {
         <h2 className="text-lg font-semibold mb-2 text-gray-800">
             Subscription Status
         </h2>
-
         <p className={`mb-4 text-sm ${charges ? 'text-gray-700' : 'text-red-600'}`}>
             {charges
             ? "✅ Your subscription is active. Stripe charges £2/month and we add a £2 admin fee due to compliance requirements."
             : "⚠️ You do not have an active subscription. Stripe charges £2/month plus a £2 admin fee for compliance. Please activate your subscription to continue using this service."}
         </p>
-
         {charges ? (
             <button
             disabled
