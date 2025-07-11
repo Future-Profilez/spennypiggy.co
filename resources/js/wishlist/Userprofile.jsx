@@ -8,6 +8,7 @@ const ShareProfile = React.lazy(() => import("./ShareProfile"));
 const SendTip = React.lazy(() => import("@/Pages/TipJar/SendTip"));
 import { RiVerifiedBadgeFill } from "react-icons/ri";
 import FollowButton from "@/Pages/Profile/FollowButton";
+import { MdOutlineContentCopy } from "react-icons/md";
 
 export default function Userprofile({ IsloggedIn }) {
 
@@ -53,7 +54,7 @@ export default function Userprofile({ IsloggedIn }) {
                         )}
                     </div>
                     <div className="ps-3">
-                        <h2 className="font-GillSans mb-2 flex   items-center  justify-center lg:justify-start text-center lg:text-left">
+                        <h2 className="font-GillSans  flex   items-center  justify-center lg:justify-start text-center lg:text-left">
                             {user?.name}
                             {user?.role === 1 &&
                                 user?.profile_status_lock === 2 && (
@@ -70,18 +71,8 @@ export default function Userprofile({ IsloggedIn }) {
                                 classes="flex text-gray-300 mr-4 items-center"
                             >
                                 @{user?.username}
-                                <div className="mt-1 ms-2">
-                                    {/* link icon */}
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="19"
-                                        height="18"
-                                        viewBox="0 0 19 18"
-                                        fill="none"
-                                    >
-                                        <path d="..." fill="#8981A2" />
-                                    </svg>
-                                </div>
+                                <MdOutlineContentCopy className="ms-2  font-bold text-gray-300 mt-2"/>
+
                             </ShareProfile>
 
 
