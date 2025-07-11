@@ -172,34 +172,34 @@ export default function Dashboard(props) {
         }
     };
 
-    // const { flash, errors } = usePage().props;
-    // useEffect(() => {
-    //     if (errors) {
-    //         Object.entries(errors).forEach(([key, value]) => {
-    //             errorAlert(value);
-    //         });
-    //     }
-    //     if (flash?.success) {
-    //         setTimeout(() => {
-    //             successAlert(flash.success);
-    //         }, 500);
-    //     }
-    //     if (flash?.error) {
-    //         setTimeout(() => {
-    //             errorAlert(flash.error);
-    //         }, 500);
-    //     }
-    //     if (flash?.warning) {
-    //         setTimeout(() => {
-    //             warningAlert(flash.warning);
-    //         }, 500);
-    //     }
-    //     if (flash?.info) {
-    //         setTimeout(() => {
-    //             infoAlert(flash.info);
-    //         }, 500);
-    //     }
-    // }, [errors, flash]);
+    const { flash, errors } = usePage().props;
+    useEffect(() => {
+        if (errors) {
+            Object.entries(errors).forEach(([key, value]) => {
+                errorAlert(value);
+            });
+        }
+        if (flash?.success) {
+            setTimeout(() => {
+                successAlert(flash.success);
+            }, 500);
+        }
+        if (flash?.error) {
+            setTimeout(() => {
+                errorAlert(flash.error);
+            }, 500);
+        }
+        if (flash?.warning) {
+            setTimeout(() => {
+                warningAlert(flash.warning);
+            }, 500);
+        }
+        if (flash?.info) {
+            setTimeout(() => {
+                infoAlert(flash.info);
+            }, 500);
+        }
+    }, [errors, flash]);
 
     const [showAlert, setShowAlert] = useState(true);
     useEffect(() => {
