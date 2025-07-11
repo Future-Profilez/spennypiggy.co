@@ -766,9 +766,9 @@ export default function Dashboard(props) {
                                                             </div>
                                                         </div>
                                                     </Suspense>
-                                                ) : (
+                                                 :
                                                     ""
-                                                )}
+                                                }
 
                                                 {IsloggedIn ||
                                                 UserStripeConnected == 1 ? (
@@ -1083,7 +1083,7 @@ export default function Dashboard(props) {
                                                     <PaymentUnActivated
                                                         heading={`WishList not activated yet. `}
                                                         subheading={`Until they activate their wishlist, this user won't be able to receive gifts.`} />
-                                                    }
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
