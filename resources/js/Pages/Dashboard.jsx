@@ -47,6 +47,7 @@ import { CiGift } from "react-icons/ci";
 import OldSubscribe from "./webpush/OldSubscribe";
 import AddSocial from "./Auth/Social";
 import CreatorVerification from "./Profile/CreatorVerification";
+import SiteSubscription from "./Profile/SiteSubscription";
 
 export default function Dashboard(props) {
     const w = useWidthCount();
@@ -289,8 +290,7 @@ export default function Dashboard(props) {
 
 
     const [UserStripeConnected, setUserStripeConnected] = useState(parseInt(user && user?.stripe_details_submitted) || 0)
-    const [AuthUserStripeConnected, setAuthUserStripeConnected] = useState(parseInt(auth && auth?.user && auth?.user?.stripe_details_submitted) || 0)
-
+    const [AuthUserStripeConnected, setAuthUserStripeConnected] = useState(parseInt(auth && auth?.user && auth?.user?.stripe_details_submitted) || 0);
 
     return (
         <>
@@ -397,20 +397,18 @@ export default function Dashboard(props) {
                                                                             {IsloggedIn ? (
                                                                                 <div className="userProfileDate pt-0 pt-md-3">
 
-                                                                                    {/* {auth?.user && auth?.user?.role == 1
-                                                                                    && !auth?.user?.monthly_charge_enabled ?
-                                                                                        <SiteSubscription user={auth?.user} />
-                                                                                    : ''} */}
+                                                                                    {auth?.user && auth?.user?.role == 1   ?
+                                                                                        <SiteSubscription charges={!auth?.user?.monthly_charge_enabled} user={auth?.user} />
+                                                                                    : ''}
 
                                                                                     {auth.user && auth.user.role == 1 && AuthUserStripeConnected == 1  ? (
-                                                                                        <PaymentDashboard classes="btn-pink lg w-100 mt-3" text="Payment Dashboard" />
+                                                                                        <PaymentDashboard classes="btn-pink lg w-100 mt-3 btn-shadow" text="Payment Dashboard" />
                                                                                         ) :
-                                                                                        // <div className="finish mt-4 d-block">
-                                                                                        //     <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                                                        //     <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-xs lg" > Finish Setup
-                                                                                        //     </Link>
-                                                                                        // </div>
-                                                                                        ''
+                                                                                        <div className="finish mt-4 d-block">
+                                                                                            <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                                                                            <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-xs lg" > Finish Setup
+                                                                                            </Link>
+                                                                                        </div>
                                                                                     }
 
                                                                                     {/* {auth.user && auth.user.stripe_details_submitted == 1 ?
