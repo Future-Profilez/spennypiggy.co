@@ -12,6 +12,7 @@ use App\Http\Controllers\TestController;
 use App\StripeControl;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
@@ -34,6 +35,14 @@ Route::get('/send-test-mail', function () {
             ->subject('Test Email');
     });
     return 'Test email sent!';
+});
+
+// seeding command
+Route::get('seed/{seeder}', function ($seeder) {
+    Artisan::call("db:seed --class=$seeder");
+    return response()->json([
+        'seed completed'
+    ]);
 });
 
 Route::get('/', function () {
