@@ -4,7 +4,7 @@ import { Link } from "@inertiajs/react";
 export default function SiteSubscription({charges}) {
   return (
     <>
-      <div className="w-full finish mt-4 p-4 border rounded-xl bg-gray-50 shadow-sm  ">
+      <div className="w-full finish mt-4 p-4 mb-4  rounded-2xl bg-white border-2 !border-black shadow-voilet  ">
         <h2 className="text-lg font-semibold mb-2 text-gray-800">
             Subscription Status
         </h2>

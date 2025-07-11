@@ -377,6 +377,11 @@ export default function Dashboard(props) {
                                                                         :
                                                                         ""}
 
+                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1   ?
+                                                                            <SiteSubscription charges={auth?.user?.monthly_charge_enabled} user={auth?.user} />
+                                                                        : ''}
+
+
                                                                         <div className="box p-3 p-md-4 shadow-voilet rounded-lg mb-4">
                                                                             <p className="font-bold">About me</p>
                                                                             <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
@@ -394,12 +399,11 @@ export default function Dashboard(props) {
 
                                                                             <SocialLinks links={sLinks} />
 
+
+
                                                                             {IsloggedIn ? (
                                                                                 <div className="userProfileDate pt-0 pt-md-3">
 
-                                                                                    {auth?.user && auth?.user?.role == 1   ?
-                                                                                        <SiteSubscription charges={!auth?.user?.monthly_charge_enabled} user={auth?.user} />
-                                                                                    : ''}
 
                                                                                     {auth.user && auth.user.role == 1 && AuthUserStripeConnected == 1  ? (
                                                                                         <PaymentDashboard classes="btn-pink lg w-100 mt-3 btn-shadow" text="Payment Dashboard" />
