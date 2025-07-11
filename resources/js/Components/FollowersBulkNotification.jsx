@@ -3,8 +3,12 @@ import InputError from "@/Components/InputError";
 import { useAlerts } from "@/Components/Alerts";
 import axios from "axios";
 import Popup from "./Popup";
+import { router, usePage } from "@inertiajs/react";
+import Nocontent from "@/includes/Nocontent";
 
 export default function FollowersBulkNotification() {
+    const { pwa_notification_details } = usePage().props;
+    console.log("pwa_notification_detailsssssssss", pwa_notification_details);
     const { successAlert, errorAlert } = useAlerts();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({ title: "", body: "" });
@@ -32,13 +36,14 @@ export default function FollowersBulkNotification() {
             );
             if (response?.data?.status) {
                 successAlert(response?.data?.msg);
+                router.visit(`/account`);
                 setFormData({ title: "", body: "" });
                 // onclose(); // close modal
             } else {
                 errorAlert(response?.data?.msg);
             }
         } catch (error) {
-            console.log('error',error);
+            console.log("error", error);
             errorAlert(error?.response?.data?.msg || "An error occurred");
             setError(error?.response?.data?.errors || {});
         } finally {
@@ -64,13 +69,14 @@ export default function FollowersBulkNotification() {
             {/* Title Field */}
             <div className="mb-2">
                 <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                maxLength={maxTitleLength}
-                className="px-3 py-[13px] bg-gray-100 !border-gray-200 border-1 rounded-lg w-full"
-                placeholder="Notification Title" />
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    maxLength={maxTitleLength}
+                    className="px-3 py-[13px] bg-gray-100 !border-gray-200 border-1 rounded-lg w-full"
+                    placeholder="Notification Title"
+                />
                 <div className="text-right text-xs text-gray-500">
                     {formData.title.length}/{maxTitleLength}
                 </div>
@@ -86,7 +92,8 @@ export default function FollowersBulkNotification() {
                     onChange={handleInputChange}
                     maxLength={maxBodyLength}
                     className="px-3 py-[10px] bg-gray-100 !border-gray-200 border-1 rounded-lg w-full"
-                    placeholder="Enter something..." ></textarea>
+                    placeholder="Enter something..."
+                ></textarea>
                 <div className="text-right text-xs text-gray-500">
                     {formData.body.length}/{maxBodyLength}
                 </div>
@@ -94,14 +101,59 @@ export default function FollowersBulkNotification() {
             </div>
 
             {/* Submit Button */}
-            <div className={`flex justify-end ${formData.title === '' || formData.body === '' ? "disabled" : ""}`}>
+            <div
+                className={`flex justify-end ${
+                    formData.title === "" || formData.body === ""
+                        ? "disabled"
+                        : ""
+                }`}
+            >
                 <button
                     onClick={handleSubmit}
                     disabled={loading}
-                    className={`${loading? "bg-gray-400 text-black": "bg-pink-500 hover:bg-pink-600"} uppercase w-full btn-shadow font-gulfs rounded-full px-4 pt-[10px] pb-[7px] pinkbg text-white`} >
+                    className={`${
+                        loading
+                            ? "bg-gray-400 text-black"
+                            : "bg-pink-500 hover:bg-pink-600"
+                    } uppercase w-full btn-shadow font-gulfs rounded-full px-4 pt-[10px] pb-[7px] pinkbg text-white`}
+                >
                     {loading ? "Sending..." : "Send Notification"}
                 </button>
             </div>
+
+            {pwa_notification_details && pwa_notification_details.length ? (
+                <div className="mt-6">
+                    <h3 className="text-md font-semibold !text-black mb-2">
+                        Notification History
+                    </h3>
+
+                    <div className=" rounded-lg ">
+                        {pwa_notification_details &&
+                            pwa_notification_details?.map((value, key) => {
+                                return (
+                                    <div className="p-3 rounded-[20px] border border-gray-400 shadow-sm mb-2">
+                                        <h2 className="line-clamp-1 font-bold text-black text-[15px]">
+                                            {value?.title}
+                                        </h2>
+                                        <p className="line-clamp-1  text-[13px] text-gray-600">
+                                            {value?.body}
+                                        </p>
+                                        <p className="text-sm mt-2">
+                                            {" "}
+                                            Sent at <b>
+                                                {value?.created_at}
+                                            </b>{" "}
+                                            to <b>{value?.users_count}</b>{" "}
+                                            followers
+                                        </p>
+                                    </div>
+                                );
+                            })}
+                    </div>
+                </div>
+            ) : (
+                ""
+            )}
         </Popup>
     );
 }

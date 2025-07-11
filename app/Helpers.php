@@ -116,6 +116,9 @@ class Helpers
         return $arr[$curr];
     }
 
+    /*
+     * send pwa notification on every activity
+     */
     public static function sendNotification($title, $content, $email)
     {
         $payload = [
@@ -153,6 +156,9 @@ class Helpers
         }
     }
 
+    /*
+     * check login user is fan and is card verified or not
+     */
     public static function checkGifterCardVerificationStatus(): bool
     {
         $user = Auth::user();
