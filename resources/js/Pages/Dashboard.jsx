@@ -393,8 +393,6 @@ export default function Dashboard(props) {
         );
     };
 
-    console.log(props);
-
     const [UserStripeConnected, setUserStripeConnected] = useState(parseInt(user && user?.stripe_details_submitted) || 0)
     const [AuthUserStripeConnected, setAuthUserStripeConnected] = useState(parseInt(auth && auth?.user && auth?.user?.stripe_details_submitted) || 0);
 
