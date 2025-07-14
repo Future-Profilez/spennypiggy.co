@@ -148,7 +148,6 @@ class RegisteredUserController extends Controller
                 'profile_status_lock' => 0,
             ]);
             $user->refresh();
-
             $spennyPiggyAcc = User::where('email', 'spennypiggyofficial@gmail.com')->first();
             if ($user) {
                 Follow::UpdateOrCreate(

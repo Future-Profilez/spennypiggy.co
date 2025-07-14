@@ -101,7 +101,7 @@ export default function Register(props) {
             country_code : c.code
         });
     }
- 
+
     const handleAddressInput = (e) => {
         setAddressData({
             ...address,
@@ -196,7 +196,7 @@ export default function Register(props) {
             return false;
         }
 
-        
+
         // if (role == 0 && !gifterref.current.checked) {
         //     errorAlert("Please accept all terms and conditions.");
         //     gifterref.current.focus();
@@ -307,7 +307,7 @@ export default function Register(props) {
         }
     }
 
-    
+
     return (
         <GuestLayout>
             {/* <IpRedirection />/ */}
@@ -373,7 +373,7 @@ export default function Register(props) {
                         <div className={`${step === 2 ? '' : 'd-none'}`} >
                             <form onSubmit={submit} className='p-4' >
                                 <div className='login-step1 loginform'>
-                                    
+
                                     <div className='row'>
                                         <div className='col-md-6 mb-4 formfield'>
                                             <label>Display Name</label>
@@ -456,7 +456,7 @@ export default function Register(props) {
                                         <div className={`mb-3  ${mypass ? 'd-block' : 'd-none'}`} >
                                             <div className="pass greybox border-0 p-3" >
                                                 <div id="msgText">
-                                                    <h3>Password must contain the following:</h3>
+                                                    <h3 className='mt-2'>Password must contain the following:</h3>
                                                     <p id="letter" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> lowercase</b> letter</p>
                                                     <p id="capital" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> capital (uppercase)</b> letter</p>
                                                     <p id="number" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> number</b></p>
@@ -467,8 +467,8 @@ export default function Register(props) {
                                         </div>
                                     </div>
 
-                                    {role == 0 && role !== 1 ? 
-                                        <>  
+                                    {role == 0 && role !== 1 ?
+                                        <>
                                         <p className='border-t mt-3 pt-4 text-grey uppercase text-normal mb-2'>Billing address information</p>
                                             <div className='row'>
                                                 <div className='col-md-12 mb-4 formfield'>
@@ -487,7 +487,7 @@ export default function Register(props) {
                                                 </div>
                                                 <div className='col-md-6 mb-4 formfield'>
                                                     <label>State</label>
-                                                    <input id="state" 
+                                                    <input id="state"
                                                         name="state"
                                                         className="mt-1 block w-full"
                                                         autoComplete="state"
@@ -515,14 +515,14 @@ export default function Register(props) {
                                                         required
                                                     />
                                                 </div>
-                                                
+
                                             </div>
-                                        </> 
-                                        : 
+                                        </>
+                                        :
                                         <>
                                         </>
                                     }
-                                    
+
                                     <div className='promocode mb-4' >
                                         <div className='flex items-center justify-between' >
                                             <label className='mb-2'>Referral (optional) {codevalid ? <span className='text-success text-small' >Code Applied.</span> : ''}</label>
@@ -576,7 +576,7 @@ export default function Register(props) {
                                         onVerify={onVerify}
                                         />
                                     </div>
-                                     
+
                                     <div className='wishlistbtn text-center flex justify-center mt-2'>
                                         <Popup action={hasPop} modalclass=" full stripe-terms shadow-pink ps-0"
                                             space="4" size="md"
@@ -595,13 +595,13 @@ export default function Register(props) {
                                                             <p className='text-[15px]' >
                                                                 <input type="checkbox" ref={hasNotifiedRef} id="hasNotified" name="hasNotified" value="hasNotified"
                                                                 required ></input>
-                                                                I confirm that the above details are correct and the only details I will use. If I use other information than the above. My account will be suspended. If I need to update any details, I will contact support via live chat who can update my account.  
+                                                                I confirm that the above details are correct and the only details I will use. If I use other information than the above. My account will be suspended. If I need to update any details, I will contact support via live chat who can update my account.
                                                             </p>
                                                         </label>
                                                     </div>
                                                     <LoaderButton onClick={accepted} disabled={processing} className='btn-pink w-full lg lg2 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Accept Terms"}</LoaderButton>
                                                 </div>
-                                        </Popup>  
+                                        </Popup>
                                         <LoaderButton disabled={processing} className='btn-pink w-full lg lg2 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Create Account"}</LoaderButton>
                                     </div>
 

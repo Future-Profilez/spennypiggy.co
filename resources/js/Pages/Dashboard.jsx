@@ -64,13 +64,18 @@ import OldSubscribe from "./webpush/OldSubscribe";
 import AddSocial from "./Auth/Social";
 import CreatorVerification from "./Profile/CreatorVerification";
 import SiteSubscription from "./Profile/SiteSubscription";
+import EnableCardCapabilities from "./stripe/EnableCardCapabilities";
 
 export default function Dashboard(props) {
+
+    console.log(props)
+
+
     const w = useWidthCount();
     const {
         auth,
         user,
-        username,
+        username, card_capabilities,
         global_currency,
         itemid,
         slinks,
@@ -624,23 +629,22 @@ export default function Dashboard(props) {
                                                                 <div className="col-md-6  h-auto">
                                                                     <div className="about-sticky" >
 
+                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && !card_capabilities ?
+                                                                            <EnableCardCapabilities   />
+                                                                        : ''}
                                                                         {UserStripeConnected == 1 ?
-                                                                            <MyGoal IsloggedIn={IsloggedIn}  />
-                                                                        :
+                                                                           <MyGoal IsloggedIn={IsloggedIn}  /> :
                                                                         ""}
 
-                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1   ?
+                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && auth?.user?.monthly_charge_enabled  ?
                                                                             <SiteSubscription charges={auth?.user?.monthly_charge_enabled} user={auth?.user} />
                                                                         : ''}
-
 
                                                                         <div className="box p-3 p-md-4 shadow-voilet rounded-lg mb-4">
                                                                             <p className="font-bold">About me</p>
                                                                             <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
                                                                                 {(user &&user.bio) ||""}
                                                                             </p>
-
-
 
                                                                             {IsloggedIn && user?.edit_bio_reason  ?
                                                                                 <div className="mt-3">
@@ -650,8 +654,6 @@ export default function Dashboard(props) {
                                                                             : ''}
 
                                                                             <SocialLinks links={sLinks} />
-
-
 
                                                                             {IsloggedIn ? (
                                                                                 <div className="userProfileDate pt-0 pt-md-3">

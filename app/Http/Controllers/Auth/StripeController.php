@@ -112,19 +112,18 @@ class StripeController extends Controller
         //     return redirect(route("user.show", ["username" => $user->username]))->with("error", "Before connecting your Stripe account, you need to add at least one Membership and one Bill for your fans total of at least two items.");
         // }
 
+
+
         if (empty($user->account_id)) {
-            // if (!$request->isMethod("POST")) {
-            //     return redirect()->back()->with("error", "Invalid request!");
-            // }
             $country = strtoupper($country);
             try {
-
                 $payload = [
                     "country" => $country,
                     "type" => "express",
                     'email' => $user->email,
                     'capabilities' => [
-                        'card_payments' => ['requested' => $country == 'US'],  // Request only in the US
+                        // 'card_payments' => ['requested' => $country == 'US'],  // Request only in the US
+                        'card_payments' => ['requested' => true],  // Allow for all creators
                         'transfers' => ['requested' => true], // Always request transfers
                     ],
                     'tos_acceptance' => ['service_agreement' => $country == 'US' ? 'full' : 'recipient'],
@@ -151,7 +150,6 @@ class StripeController extends Controller
                 $user->save();
                 return redirect(route("user.show", ["username" => $user->username]))->with("success", "Stripe already connected.");
             }
-
             $link = StripeControl::createAccountLink([
                 "account" => $account->id,
                 "refresh_url" => route("stripe.connect", ["step" => "refresh", "country" => $user->country]),
@@ -159,13 +157,32 @@ class StripeController extends Controller
                 "type"        => "account_onboarding",
                 "collect"   => 'currently_due'
             ]);
-
             return Inertia::location($link->url);
             // return redirect()->away($link->url);
         } catch (Exception $e) {
             return redirect(route("stripe.index"))->with("error", "Internal server error:" . $e->getMessage());
         }
     }
+
+
+    public function enableCardPayments() {
+        $user = User::find(Auth::id());
+        StripeControl::getClient()->accounts->update($user->account_id, [
+            'capabilities' => [
+                'card_payments' => ['requested' => true],
+                'transfers' => ['requested' => true],
+            ],
+        ]);
+        $accountLink =  StripeControl::getClient()->accountLinks->create([
+            'account' => $user->account_id,
+             "refresh_url" => route("stripe.connect", ["step" => "refresh", "country" => $user->country]),
+            "return_url"  => route("stripe.return"),
+            'type' => 'account_onboarding',
+        ]);
+        return Inertia::location($accountLink->url);
+        // return response()->json(['url' => $accountLink->url]);
+    }
+
 
     /**
      * Return URL After Success

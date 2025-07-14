@@ -30,6 +30,7 @@ use App\Models\WishItem;
 use App\Models\WishItemSubscription;
 use App\Providers\RouteServiceProvider;
 use App\SeoMeta;
+use App\StripeControl;
 use App\TwitterAuthService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -242,9 +243,12 @@ class AuthenticatedSessionController extends Controller
 
         $user['followers'] = $followers ?? 0;
         $user['following'] = $following ?? 0;
-
-
-
+        $card_capabilities = true;
+        if(!empty($user->account_id)){
+            if (!StripeControl::isAccountReadyForCheckout($user->account_id)) {
+                $card_capabilities = false;
+            }
+        }
         if($page == 'about'){
             // Social links
             $slinks = $user->social_links()->first();
@@ -319,7 +323,6 @@ class AuthenticatedSessionController extends Controller
             $arr['target'] = $target;
             $arr['currency'] = $user->default_currency;
             $goal = $arr;
-
 
             // Profile Steps
             if($user->stripe_details_submitted == 1){
@@ -581,6 +584,7 @@ class AuthenticatedSessionController extends Controller
         return Inertia::render('Dashboard', [
             "username" => $username,
             "user" => $user,
+            "card_capabilities" => $card_capabilities,
             "itemid" => $itemdid,
             "sociallinks" => $sociallinks,
             "slinks" => $slinks,
@@ -596,7 +600,7 @@ class AuthenticatedSessionController extends Controller
             'shops' => $shops,
             'goal' => $goal,
             'notification_count' => $notification_count,
-            'profile_steps' => $profile_steps
+            'profile_steps' => $profile_steps,
         ]);
     }
 

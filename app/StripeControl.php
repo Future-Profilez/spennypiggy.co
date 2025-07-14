@@ -94,6 +94,31 @@ class StripeControl
     //     }
     // }
 
+
+        public static function getClient()
+        {
+            self::setClient();
+            return self::$client;
+        }
+
+    // ✅   Add a check in your class to validate capabilities
+    public static function isAccountReadyForCheckout(string $accountId): bool
+        {
+            self::setClient();
+
+            try {
+                $account = self::$client->accounts->retrieve($accountId);
+
+                return isset($account->capabilities->card_payments) &&
+                    $account->capabilities->card_payments === 'active' &&
+                    $account->capabilities->transfers === 'active';
+            } catch (\Exception $e) {
+                Log::error("Failed to verify account capabilities: " . $e->getMessage());
+                return false;
+            }
+        }
+
+
     /**
      * Search Customer
      *
