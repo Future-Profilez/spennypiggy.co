@@ -74,7 +74,6 @@ class StripeController extends Controller
     {
         $user = User::find(Auth::id());
         if (!empty($user->account_id)) {
-
             try {
                 $account = StripeControl::getAccount($user->account_id);
                 if ($account->charges_enabled) {
@@ -101,19 +100,6 @@ class StripeController extends Controller
     {
         $user = User::find(Auth::id());
 
-        // $sub_post = Post::where('user_id', $user->id)->where('for_module', 'subscription')->first();
-        // $mem_post = Post::where('user_id', $user->id)->where('for_module', 'membership')->first();
-        // $support_post = Post::where('user_id', $user->id)->where('for_module', 'support')->first();
-
-        // $membership = Membership::where('user_id', $user->id)->where('deleted_at', null)->whereIn('status', [0, 1])->whereIn('approved', [0, 1])->first();
-        // $bill = Bills::where('user_id', $user->id)->where('deleted_at', null)->whereIn('status', [0, 1])->whereIn('approved', [0, 1])->first();
-
-        // if (empty($membership) || empty($bill)) {
-        //     return redirect(route("user.show", ["username" => $user->username]))->with("error", "Before connecting your Stripe account, you need to add at least one Membership and one Bill for your fans total of at least two items.");
-        // }
-
-
-
         if (empty($user->account_id)) {
             $country = strtoupper($country);
             try {
@@ -122,11 +108,10 @@ class StripeController extends Controller
                     "type" => "express",
                     'email' => $user->email,
                     'capabilities' => [
-                        // 'card_payments' => ['requested' => $country == 'US'],  // Request only in the US
                         'card_payments' => ['requested' => true],  // Allow for all creators
                         'transfers' => ['requested' => true], // Always request transfers
                     ],
-                    'tos_acceptance' => ['service_agreement' => $country == 'US' ? 'full' : 'recipient'],
+                    'tos_acceptance' => ['service_agreement' => 'full'],
                     'business_type' => 'individual',
                     'business_profile' => [
                         'url'   => "https://spennypiggy.co/{$user->username}",
@@ -158,11 +143,68 @@ class StripeController extends Controller
                 "collect"   => 'currently_due'
             ]);
             return Inertia::location($link->url);
-            // return redirect()->away($link->url);
         } catch (Exception $e) {
             return redirect(route("stripe.index"))->with("error", "Internal server error:" . $e->getMessage());
         }
     }
+
+
+    public function upgradeStripeAccount(Request $request) {
+        $user = Auth::user();
+
+        if (empty($user->account_id)) {
+            return redirect()->back()->with("error", "You must first connect a Stripe account.");
+        }
+
+    try {
+        $account = StripeControl::getAccount($user->account_id);
+
+        $isLegacy = ($account->tos_acceptance->service_agreement ?? '') === 'recipient';
+        $cardPayments = $account->capabilities->card_payments ?? null;
+
+        if (!$isLegacy && $cardPayments === 'active') {
+            return redirect()->back()->with("success", "Your Stripe account is already fully upgraded.");
+        }
+        if ($account->tos_acceptance->service_agreement === 'recipient') {
+            // Delete old account (optional)
+            // Create a new full express account
+            $newAccount = StripeControl::createAccount([
+                "country" => $user->country,
+                "type" => "express",
+                "email" => $user->email,
+                "capabilities" => [
+                    "card_payments" => ["requested" => true],
+                    "transfers" => ["requested" => true],
+                ],
+                "business_type" => "individual",
+                "business_profile" => [
+                    "url" => "https://spennypiggy.co/{$user->username}",
+                    "mcc" => "7278"
+                ],
+                "tos_acceptance" => [
+                    "service_agreement" => "full"
+                ]
+            ]);
+
+            $user->account_id = $newAccount->id;
+            $user->save();
+
+            // Now redirect to onboarding for the new account
+            $link = StripeControl::createAccountLink([
+                "account" => $newAccount->id,
+                "refresh_url" => route("stripe.connect", ["step" => "refresh", "country" => $user->country]),
+                "return_url"  => route("stripe.return"),
+                "type"        => "account_onboarding",
+                "collect"     => "currently_due",
+            ]);
+
+            return redirect()->away($link->url);
+        }
+
+    } catch (\Exception $e) {
+        return redirect()->back()->with("error", "Failed to upgrade Stripe account: " . $e->getMessage());
+    }
+}
 
 
     public function enableCardPayments() {
@@ -192,7 +234,6 @@ class StripeController extends Controller
      */
     public function connectReturn(Request $request)
     {
-
         $data = $request->all();
         $user = User::find(Auth::id());
         if (empty($user->account_id)) {
@@ -1361,12 +1402,16 @@ class StripeController extends Controller
     {
         $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
-        if ($user->account_id) {
-            StripeControl::deleteAccount($user->account_id);
+            StripeControl::deleteAccount('acct_1QLLeACxpT3akVdx');
             $user->account_id = NULL;
             $user->stripe_details_submitted = 0;
             $user->save();
-        }
+        // if ($user->account_id) {
+        //     StripeControl::deleteAccount($user->account_id);
+        //     $user->account_id = NULL;
+        //     $user->stripe_details_submitted = 0;
+        //     $user->save();
+        // }
 
         return to_route('user.show', ['username' => $user->username])->with('success', 'Stripe account deleted successfully!');
     }

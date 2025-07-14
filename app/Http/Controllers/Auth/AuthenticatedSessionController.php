@@ -238,17 +238,27 @@ class AuthenticatedSessionController extends Controller
         $intro = null;
         $goal = null;
         $profile_steps = null;
-        // $followers = 0;
-        // $following = 0;
 
         $user['followers'] = $followers ?? 0;
         $user['following'] = $following ?? 0;
+        $account = StripeControl::getAccount($user->account_id);
+
+        // STEP 1 .Check if user is recipient
+        $agreement = $account->tos_acceptance->service_agreement ?? null;
+        $IsNeedToUpgrade = $agreement == 'recipient' ? true : false;
+        // dd($IsNeedToUpgrade);
+
+
+        // STEP 2. Allow card capablilities
         $card_capabilities = true;
         if(!empty($user->account_id)){
             if (!StripeControl::isAccountReadyForCheckout($user->account_id)) {
                 $card_capabilities = false;
             }
         }
+
+
+        // dd($card_capabilities);
         if($page == 'about'){
             // Social links
             $slinks = $user->social_links()->first();
@@ -585,6 +595,7 @@ class AuthenticatedSessionController extends Controller
             "username" => $username,
             "user" => $user,
             "card_capabilities" => $card_capabilities,
+            'isNeedToUpgrade' => $IsNeedToUpgrade,
             "itemid" => $itemdid,
             "sociallinks" => $sociallinks,
             "slinks" => $slinks,

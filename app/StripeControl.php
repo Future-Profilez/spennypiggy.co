@@ -105,10 +105,8 @@ class StripeControl
     public static function isAccountReadyForCheckout(string $accountId): bool
         {
             self::setClient();
-
             try {
                 $account = self::$client->accounts->retrieve($accountId);
-
                 return isset($account->capabilities->card_payments) &&
                     $account->capabilities->card_payments === 'active' &&
                     $account->capabilities->transfers === 'active';

@@ -65,6 +65,7 @@ import AddSocial from "./Auth/Social";
 import CreatorVerification from "./Profile/CreatorVerification";
 import SiteSubscription from "./Profile/SiteSubscription";
 import EnableCardCapabilities from "./stripe/EnableCardCapabilities";
+import UpgradeStripeAccount from "./stripe/UpgradeStripeAccount";
 
 export default function Dashboard(props) {
 
@@ -75,7 +76,7 @@ export default function Dashboard(props) {
     const {
         auth,
         user,
-        username, card_capabilities,
+        username, card_capabilities, isNeedToUpgrade,
         global_currency,
         itemid,
         slinks,
@@ -629,14 +630,20 @@ export default function Dashboard(props) {
                                                                 <div className="col-md-6  h-auto">
                                                                     <div className="about-sticky" >
 
-                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && !card_capabilities ?
-                                                                            <EnableCardCapabilities   />
+                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && !card_capabilities && !isNeedToUpgrade && AuthUserStripeConnected ?
+                                                                            <EnableCardCapabilities  />
                                                                         : ''}
+
+                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && isNeedToUpgrade && AuthUserStripeConnected ?
+                                                                            <UpgradeStripeAccount  />
+                                                                        : ''}
+
+
                                                                         {UserStripeConnected == 1 ?
                                                                            <MyGoal IsloggedIn={IsloggedIn}  /> :
                                                                         ""}
 
-                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && auth?.user?.monthly_charge_enabled  ?
+                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && !auth?.user?.monthly_charge_enabled  ?
                                                                             <SiteSubscription charges={auth?.user?.monthly_charge_enabled} user={auth?.user} />
                                                                         : ''}
 
@@ -663,8 +670,8 @@ export default function Dashboard(props) {
                                                                                         <PaymentDashboard classes="btn-pink lg w-100 mt-3 btn-shadow" text="Payment Dashboard" />
                                                                                         ) :
                                                                                         <div className="finish mt-4 d-block">
-                                                                                            <p className="mb-4"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                                                            <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-xs lg" > Finish Setup
+                                                                                            <p className="mb-4 text-lg"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                                                                            <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-sm btn-shadow w-full block text-center bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 3 transition-all duration-200" > Finish Setup
                                                                                             </Link>
                                                                                         </div>
                                                                                     }

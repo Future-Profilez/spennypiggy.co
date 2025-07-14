@@ -125,6 +125,7 @@ Route::middleware('auth')->group(function () {
                 Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
                 Route::post("/login", [StripeController::class, "loginToStripe"])->name("login");
                 Route::get("/enable_card_payments", [StripeController::class, "enableCardPayments"])->name("enable.card.payments");
+                Route::get("/upgrade-express-account", [StripeController::class, "upgradeStripeAccount"])->name("upgrade.account");
             });
             Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
             Route::get('notification-switch', [ProfileController::class, 'notificationSwitch'])->name('switch-notification');
