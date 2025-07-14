@@ -112,7 +112,8 @@ class StripeController extends Controller
                         'transfers' => ['requested' => true], // Always request transfers
                     ],
                     'tos_acceptance' => ['service_agreement' => 'full'],
-                    'business_type' => 'individual',
+                    // 'business_type' => 'individual',
+                    "business_type" => ($user->country === 'AE') ? 'company' : 'individual',
                     'business_profile' => [
                         'url'   => "https://spennypiggy.co/{$user->username}",
                         'mcc'   => '7278',
@@ -176,7 +177,8 @@ class StripeController extends Controller
                     "card_payments" => ["requested" => true],
                     "transfers" => ["requested" => true],
                 ],
-                "business_type" => "individual",
+                // "business_type" => "individual",
+                "business_type" => ($user->country === 'AE') ? 'company' : 'individual',
                 "business_profile" => [
                     "url" => "https://spennypiggy.co/{$user->username}",
                     "mcc" => "7278"
