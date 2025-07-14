@@ -49,6 +49,20 @@ class PwaNotification extends Controller
             ]);
         }
 
+        // Limit check: max 2 notifications per day
+        $today = now()->startOfDay();
+
+        $notificationCountToday = BulkPwaNotification::where('creator_id', $user->id)
+            ->where('created_at', '>=', $today)
+            ->count();
+
+        if ($notificationCountToday >= 2) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'You cannot send more than 2 push notifications per day.',
+            ]);
+        }
+
         try {
             $count = 0;
             $userIds = [];
@@ -56,20 +70,6 @@ class PwaNotification extends Controller
                 $count++;
                 $userIds[] = $usersData->id;
                 Helpers::sendNotification($title, $body, $usersData->email);
-            }
-
-            // Limit check: max 2 notifications per day
-            $today = now()->startOfDay();
-
-            $notificationCountToday = BulkPwaNotification::where('creator_id', $user->id)
-                ->where('created_at', '>=', $today)
-                ->count();
-
-            if ($notificationCountToday >= 2) {
-                return response()->json([
-                    'status' => false,
-                    'msg' => 'You cannot send more than 2 push notifications per day.',
-                ]);
             }
 
             BulkPwaNotification::create([
