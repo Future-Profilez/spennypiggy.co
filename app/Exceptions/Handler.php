@@ -78,7 +78,7 @@ class Handler extends ExceptionHandler
     }
 
     // Fallback for API or JSON
-    return parent::render($request, $exception);
+    return parent::render($request, $exception ?? 'Something went wrong');
 }
 
 
