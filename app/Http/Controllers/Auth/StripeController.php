@@ -57,6 +57,7 @@ use Stripe\Identity;
 use Stripe\Identity\VerificationSession;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\Customer;
+use Stripe\Exception\ApiErrorException;
 
 class StripeController extends Controller
 {
@@ -150,81 +151,151 @@ class StripeController extends Controller
     }
 
 
-    public function upgradeStripeAccount(Request $request) {
+    public function upgradeStripeAccount(Request $request)
+    {
         $user = Auth::user();
 
-        if (empty($user->account_id)) {
-            return redirect()->back()->with("error", "You must first connect a Stripe account.");
+        if (!$user->account_id) {
+            return back()->with('error', 'You must first connect a Stripe account.');
         }
 
-    try {
-        $account = StripeControl::getAccount($user->account_id);
+        try {
+            // ── 1. Inspect the current account ───────────────────────────
+            $account = StripeControl::getAccount($user->account_id);
 
-        $isLegacy = ($account->tos_acceptance->service_agreement ?? '') === 'recipient';
-        $cardPayments = $account->capabilities->card_payments ?? null;
+            // If Stripe has already rejected it, don’t continue
+            if (($account->requirements->disabled_reason ?? '') === 'rejected') {
+                return back()->with(
+                    'error',
+                    'Stripe rejected your previous application. Please contact support or submit updated information.'
+                );
+            }
 
-        if (!$isLegacy && $cardPayments === 'active') {
-            return redirect()->back()->with("success", "Your Stripe account is already fully upgraded.");
-        }
-        if ($account->tos_acceptance->service_agreement === 'recipient') {
-            // Delete old account (optional)
-            // Create a new full express account
-            $newAccount = StripeControl::createAccount([
-                "country" => $user->country,
-                "type" => "express",
-                "email" => $user->email,
-                "capabilities" => [
-                    "card_payments" => ["requested" => true],
-                    "transfers" => ["requested" => true],
-                ],
-                // "business_type" => "individual",
-                "business_type" => ($user->country === 'AE') ? 'company' : 'individual',
-                "business_profile" => [
-                    "url" => "https://spennypiggy.co/{$user->username}",
-                    "mcc" => "7278"
-                ],
-                "tos_acceptance" => [
-                    "service_agreement" => "full"
-                ]
-            ]);
+            $isLegacy      = ($account->tos_acceptance->service_agreement ?? '') === 'recipient';
+            $cardPayments  = $account->capabilities->card_payments ?? null;
 
+            if (!$isLegacy && $cardPayments === 'active') {
+                return back()->with('success', 'Your Stripe account is already fully upgraded.');
+            }
+
+            // ── 2. Delete legacy + create brand‑new Express account ───────
+            // (Optional) Stripe::Account::delete($user->account_id);
+
+            $newAccount = null;
+
+            try {
+                $newAccount = StripeControl::createAccount([
+                    'country'       => $user->country,
+                    'type'          => 'express',
+                    'email'         => $user->email,
+                    'capabilities'  => [
+                        'card_payments' => ['requested' => true],
+                        'transfers'     => ['requested' => true],
+                    ],
+                    'business_type' => ($user->country === 'AE') ? 'company' : 'individual',
+                    'business_profile' => [
+                        'url' => "https://spennypiggy.co/{$user->username}",
+                        'mcc' => '7278',
+                    ],
+                    'tos_acceptance' => [
+                        'service_agreement' => 'full',
+                    ],
+                ]);
+            } catch (ApiErrorException $e) {
+                Log::error('Stripe createAccount failed', [
+                    'user_id'   => $user->id,
+                    'stripe_id' => $user->account_id,
+                    'code'      => $e->getStripeCode(),
+                    'msg'       => $e->getError()->message ?? $e->getMessage(),
+                ]);
+
+                return back()->with(
+                    'error',
+                    $e->getError()->message
+                        ?? 'Could not create a new Stripe account. Please try again later.'
+                );
+            }
+
+            // Persist the new ID only after creation succeeds
             $user->account_id = $newAccount->id;
             $user->save();
 
-            // Now redirect to onboarding for the new account
-            $link = StripeControl::createAccountLink([
-                "account" => $newAccount->id,
-                "refresh_url" => route("stripe.connect", ["step" => "refresh", "country" => $user->country]),
-                "return_url"  => route("stripe.return"),
-                "type"        => "account_onboarding",
-                "collect"     => "currently_due",
+            // ── 3. Generate onboarding link ──────────────────────────────
+            try {
+                $link = StripeControl::createAccountLink([
+                    'account'     => $newAccount->id,
+                    'refresh_url' => route('stripe.connect', [
+                        'step'    => 'refresh',
+                        'country' => $user->country,
+                    ]),
+                    'return_url'  => route('stripe.return'),
+                    'type'        => 'account_onboarding',
+                    'collect'     => 'currently_due',
+                ]);
+
+                return Inertia::location($link->url);
+            } catch (ApiErrorException $e) {
+                Log::warning('Stripe accountLink failed', [
+                    'user_id' => $user->id,
+                    'new_id'  => $newAccount->id,
+                    'code'    => $e->getStripeCode(),
+                    'msg'     => $e->getError()->message ?? $e->getMessage(),
+                ]);
+
+                return back()->with(
+                    'error',
+                    $e->getError()->message
+                        ?? 'Your Stripe account could not be onboarded. Please contact support.'
+                );
+            }
+
+        } catch (ApiErrorException $e) {
+            return back()->with(
+                'error',
+                $e->getError()->message ?? 'Failed to upgrade Stripe account. Please try again.'
+            );
+        }
+    }
+
+
+
+    public function enableCardPayments()
+    {
+        $user = User::findOrFail(Auth::id());
+        try {
+            // 1. Ask for the capabilities ↴
+            StripeControl::getClient()->accounts->update(
+                $user->account_id,
+                [
+                    'capabilities' => [
+                        'card_payments' => ['requested' => true],
+                        'transfers'     => ['requested' => true],
+                    ],
+                ]
+            );
+
+            // 2. Create an onboarding link ↴
+            $accountLink = StripeControl::getClient()->accountLinks->create([
+                'account'      => $user->account_id,
+                'refresh_url'  => route('stripe.connect', [
+                    'step'    => 'refresh',
+                    'country' => $user->country,
+                ]),
+                'return_url'   => route('stripe.return'),
+                'type'         => 'account_onboarding',
             ]);
 
-            return redirect()->away($link->url);
+            // 3. Redirect to Stripe’s URL
+            return Inertia::location($accountLink->url);
+        } catch (ApiErrorException $e) {
+            Log::warning('Stripe onboarding failed', [
+                'user_id' => $user->id,
+                'stripe_error' => $e->getError()->message ?? $e->getMessage(),
+                'stripe_code'  => $e->getStripeCode(),
+            ]);
+            return redirect(route("user.show", ["username" => $user->username, "page" => 'about']))->with("error",  
+            $e->getError()->message ?? 'Your Stripe account can’t be onboarded. Please contact support.');
         }
-
-    } catch (\Exception $e) {
-        return redirect()->back()->with("error", "Failed to upgrade Stripe account: " . $e->getMessage());
-    }
-}
-
-
-    public function enableCardPayments() {
-        $user = User::find(Auth::id());
-        StripeControl::getClient()->accounts->update($user->account_id, [
-            'capabilities' => [
-                'card_payments' => ['requested' => true],
-                'transfers' => ['requested' => true],
-            ],
-        ]);
-        $accountLink =  StripeControl::getClient()->accountLinks->create([
-            'account' => $user->account_id,
-             "refresh_url" => route("stripe.connect", ["step" => "refresh", "country" => $user->country]),
-            "return_url"  => route("stripe.return"),
-            'type' => 'account_onboarding',
-        ]);
-        return Inertia::location($accountLink->url);
-        // return response()->json(['url' => $accountLink->url]);
     }
 
 
