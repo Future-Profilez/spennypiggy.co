@@ -293,7 +293,7 @@ class StripeController extends Controller
                 'stripe_error' => $e->getError()->message ?? $e->getMessage(),
                 'stripe_code'  => $e->getStripeCode(),
             ]);
-            return redirect(route("user.show", ["username" => $user->username, "page" => 'about']))->with("error",  
+            return redirect(route("user.show", ["username" => $user->username, "page" => 'about']))->with("error",
             $e->getError()->message ?? 'Your Stripe account can’t be onboarded. Please contact support.');
         }
     }
