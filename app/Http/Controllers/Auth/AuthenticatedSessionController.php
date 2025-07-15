@@ -182,6 +182,7 @@ class AuthenticatedSessionController extends Controller
             return Inertia::render('NotFound');
         }
 
+
         if (!empty($user)) {
             if ((Auth::check() && Auth::id() != $user->id && $user->suspended_account == 1) || (!Auth::check() && $user->suspended_account == 1)) {
                 return Inertia::render('NotFound');
