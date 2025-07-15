@@ -16,6 +16,11 @@
     <meta property="twitter:image:alt" content="Exclusive Content, Memberships & More!" />
     <meta property="twitter:image:src" content="{{ URL::asset('/siteicon.png') }}" /> --}}
 
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Spenny Piggy">
+    <meta name="mobile-web-app-capable" content="yes"/>
+
     <link rel="canonical" href="https://spennypiggy.co" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link rel="mask-icon" href="{{ URL::asset('/favicon.ico') }}" />
@@ -38,8 +43,7 @@
     <meta property="og:image" content="{{ URL::asset('/siteicon.png') }}" />
     <meta property="og:site_name" content="spennypiggy.co" />
     <meta property="og:description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="mobile-web-app-capable" content="yes"/>
+   
     <script type="text/javascript" src="//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js"></script>
 
     <link rel="manifest" href="{{ url('/manifest.json')}}" />

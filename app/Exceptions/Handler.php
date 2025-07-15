@@ -3,6 +3,9 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -27,4 +30,57 @@ class Handler extends ExceptionHandler
             //
         });
     }
+
+
+
+     /**
+     * A list of error messages
+     *
+     * @var array<int, string>
+     */
+    protected $messages = [
+        500 => 'Something went wrong',
+        503 => 'Service unavailable',
+        404 => 'Not found',
+        403 => 'Not authorized',
+    ];
+
+    /**
+     * Render an exception into an HTTP response.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Symfony\Component\HttpFoundation\Response
+     *
+     * @throws \Throwable
+     */
+
+
+    public function render($request, Throwable $exception)
+{
+
+    $status = 500;
+    if ($exception instanceof HttpExceptionInterface) {
+        $status = $exception->getStatusCode();
+    }
+
+    // Render Inertia ErrorPage for Inertia requests
+    if ($request->header('X-Inertia')) {
+        return Inertia::render('ErrorPage', ['status' => $status])
+            ->toResponse($request)
+            ->setStatusCode($status);
+    }
+
+    // Render Inertia ErrorPage even for full-page browser loads
+    if ($request->isMethod('GET') && $request->acceptsHtml()) {
+        return Inertia::render('ErrorPage', ['status' => $status])
+            ->toResponse($request)
+            ->setStatusCode($status);
+    }
+
+    // Fallback for API or JSON
+    return parent::render($request, $exception);
+}
+
+
+
 }

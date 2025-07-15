@@ -458,6 +458,11 @@ Route::get('image/dalle', [TestController::class, 'testAiImage'])->name("image-d
 
 Route::match(["get", "post"], '/test-kyc-webhook', [TestController::class, 'reviewWebhook'])->name("test-kyc")->withoutMiddleware(VerifyCsrfToken::class);
 
-Route::get('/stripe/manual-payout', [TestController::class, 'manualPayout'])->name('stripe-payout');
 
+// ADD IN ADMIN PANEL
+Route::get('/stripe/manual-payout', [TestController::class, 'manualPayout'])->name('stripe-payout');
 Route::get('/delete-connected-account/{accountId}', [StripeController::class, 'deleteConnectedAccount']);
+
+Route::get('/force-error/error/file', function () {
+    throw new \Exception("Testing Handler.php");
+});
