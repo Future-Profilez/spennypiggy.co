@@ -638,7 +638,7 @@ export default function Dashboard(props) {
                                                                             <UpgradeStripeAccount  />
                                                                         : ''}
 
-
+ <button onClick={() => {throw new Error("This is your first error!");}}>Break the world</button>;
                                                                         {UserStripeConnected == 1 ?
                                                                            <MyGoal IsloggedIn={IsloggedIn}  /> :
                                                                         ""}

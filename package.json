@@ -30,6 +30,8 @@
         "@magicbell/webpush": "^2.1.0",
         "@reduxjs/toolkit": "^1.9.7",
         "@rye-api/rye-sdk": "^1.4.2",
+        "@sentry/react": "^9.38.0",
+        "@sentry/vite-plugin": "^3.5.0",
         "@stripe/stripe-js": "^5.4.0",
         "@uploadcare/blocks": "0.25.0",
         "aos": "^2.3.4",
