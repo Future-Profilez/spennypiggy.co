@@ -13,7 +13,7 @@ import "../assets/fonts/CeraGRMedium.woff2";
 import { Provider } from "react-redux";
 import store from "./Pages/redux/Store";
 import * as Sentry from "@sentry/react";
-if(import.meta.env.VITE_APP_ENV === 'production'){
+if(import.meta.env.VITE_APP_ENV == 'production'){
     console.log("sentry enabled");
     Sentry.init({
       dsn: "https://14cda094324469c174a7e04a2298502d@o4509650305679360.ingest.us.sentry.io/4509650314526720",
