@@ -205,7 +205,7 @@ Route::middleware('auth')->group(function () {
                 Route::get('remove/{uuid}', [BillsController::class, 'removeBill'])->name('remove');
             });
 
-            Route::match(['get', 'delete'], 'delete-stripe-account', [StripeController::class, 'deleteStripeAccount'])->name('deleteStripeAccount');
+            Route::match(['get', 'delete'], 'delete-stripe-account/{accountid}', [StripeController::class, 'deleteStripeAccount'])->name('deleteStripeAccount');
 
             Route::get('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->name("mandatory.checkout");
             Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleMandatorySubscription'])->name('mandatory.handle');

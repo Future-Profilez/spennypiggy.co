@@ -1400,16 +1400,18 @@ class StripeController extends Controller
      * @param string $uuid user UUID
      * @return mixed
      */
-    public function deleteStripeAccount()
+    public function deleteStripeAccount($accountid)
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
-        if ($user->account_id) {
-            StripeControl::deleteAccount($user->account_id);
-            $user->account_id = NULL;
-            $user->stripe_details_submitted = 0;
-            $user->save();
-        }
-        return to_route('user.show', ['username' => $user->username])->with('success', 'Stripe account deleted successfully!');
+        // $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        // if ($user->account_id) {
+        //     StripeControl::deleteAccount($user->account_id);
+        //     $user->account_id = NULL;
+        //     $user->stripe_details_submitted = 0;
+        //     $user->save();
+        // }
+        // return to_route('user.show', ['username' => $user->username])->with('success', 'Stripe account deleted successfully!');
+        StripeControl::deleteAccount($accountid);
+        return 'Deleted';
     }
 
     /**
