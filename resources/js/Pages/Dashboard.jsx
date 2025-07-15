@@ -468,6 +468,9 @@ export default function Dashboard(props) {
                                     </div>
                                 </div>
                             : ''}
+ 
+
+
 
                             {user && user.role == 1 ?
                                 <div className="wishManage sticky top-8 ">
@@ -638,7 +641,6 @@ export default function Dashboard(props) {
                                                                             <UpgradeStripeAccount  />
                                                                         : ''}
 
- <button onClick={() => {throw new Error("This is your first error!");}}>Break the world</button>;
                                                                         {UserStripeConnected == 1 ?
                                                                            <MyGoal IsloggedIn={IsloggedIn}  /> :
                                                                         ""}
