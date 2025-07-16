@@ -37,7 +37,7 @@ class User extends Authenticatable
 
     protected $appends = [
         'avatar_url', 'cover_url', 'twitter_username',
-        'monthly_charge_enabled', 'is_creator_address_found',
+        'monthly_charge_enabled', 'is_creator_address_found','followers_count','following_count',
     ];
 
     public static function boot()
@@ -95,10 +95,8 @@ class User extends Authenticatable
         return $this->creatorShippingAddress()->exists();
     }
 
-    public function getFollowersCountAttribute()
-    {
-        return Cache::remember("followers_count_{$this->id}", 300, fn () => $this->followers()->count());
-    }
+
+
 
     // ───────────────────────
     // Scopes
@@ -208,15 +206,29 @@ class User extends Authenticatable
         return $this->hasOne(MonthlyCharge::class, 'user_id');
     }
 
-    public function followers()
-    {
-        return $this->hasMany(Follow::class, 'followed_id');
-    }
+ public function followers()
+{
+    return $this->hasMany(Follow::class, 'followed_id');
+}
 
-    public function following()
-    {
-        return $this->hasMany(Follow::class, 'follower_id');
-    }
+public function following()
+{
+    return $this->hasMany(Follow::class, 'follower_id');
+}
+
+
+public function getFollowersCountAttribute()
+{
+    return $this->followers()->count();
+}
+
+public function getFollowingCountAttribute()
+{
+    return $this->following()->count();
+}
+
+
+
 
     public function paymentitems()
     {

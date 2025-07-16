@@ -18,13 +18,13 @@ export default function Post({item}) {
   const { auth, user } = usePage().props;
   const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
 
-  function posturl (){ 
+  function posturl (){
     if(item && item.is_lock === 0){
       return item.image_url
     } else {
       if(item && item.for_module == 'membership'){
         return membershipimg
-      } 
+      }
       if(item && item.for_module == 'subscription'){
         return subscriberimg
       }
@@ -36,18 +36,18 @@ export default function Post({item}) {
 
   const [lcount, setlcount] = useState(item?.likes_count || 0);
   const [ccount, setccount] = useState(item?.comments_count || 0);
-  const updateComments = (e) => { 
+  const updateComments = (e) => {
     setccount(ccount+1);
   }
-  const updatecount = (e) => { 
+  const updatecount = (e) => {
     setlcount(e);
   }
   const [showComments, setShowComments] = useState(false);
 
-  const postBadge = () => { 
+  const postBadge = () => {
     if(item && item.for_module === 'membership'){
       return "membership only"
-    } 
+    }
     if(item && item.for_module === 'subscription'){
       return "subscriber only"
     }
@@ -61,15 +61,15 @@ export default function Post({item}) {
       <div className="post-wrap bg-light rounded-[30px] p-[15px] xl:p-6 mb-3 mb-md-4 shadow-pink border-2 border-[#F94F97]">
         <div className='flex items-center justify-between mb-3' >
             {item?.user ? <Link href={`${item?.user?.username}`} className="headerpost mb-0 head w-auto" >
-                <img className="author-img" src={item?.user?.avatar_url || userphoto} />
+                <img alt='spenny piggy' className="author-img" src={item?.user?.avatar_url || userphoto} />
                 <div>
                   <p className="authors text-dark !capitalize"> <b> {item?.user?.name || "SPENNY PIGGY"} </b> </p>
                   <p className="authors text-muted text-small"> <TimeFormat dateString={item?.updated_at || ''} />   </p>
                 </div>
             </Link>
-            : 
+            :
             <Link href={`${user && user.username}`} className="headerpost mb-0 head w-auto" >
-                <img className="author-img" src={user && user.avatar_url || userphoto} />
+                <img alt='spenny piggy' className="author-img" src={user && user.avatar_url || userphoto} />
               <div>
                 <p className="authors text-dark !capitalize"> <b> {user && user.name || "SPENNY PIGGY"} </b> </p>
                 <p className="authors text-muted text-small"> <TimeFormat dateString={item?.updated_at || ''} />   </p>
@@ -87,17 +87,17 @@ export default function Post({item}) {
             </div>}>
                 <AddPost title="Edit Post"   text={"Edit Post"} classes={`text-start`} item={item} isEdit={true} />
                 <RemovePost classes={`px-[18px] py-2 text-start w-full`} uuid={item.uuid} text="Remove Post" />
-            </DropdownButton> : ''} 
+            </DropdownButton> : ''}
         </div>
 
         {IsloggedIn && item && item.approved == 0 ?  <div className='bg-yellow-50 text-yellow-500 p-2 text-sm rounded-3 mb-2 border !border-yellow-500' >
           Post waiting for approval. Currently only you can see this post.
         </div> : ''}
-        
-        {item && item.type =='image' ? 
+
+        {item && item.type =='image' ?
           <div className='post-images position-relative' >
               <span className='rounded-xl pinkbg position-absolute py-1 px-2 top-3 right-3 text-uppercase text-[10px] text-light ' >{postBadge()}</span>
-              <img className="post-img w-100 max-h-[400px] object-cover" src={posturl()} />
+              <img alt='spenny piggy' className="post-img w-100 max-h-[400px] object-cover" src={posturl()} />
               {item.ai_generated == 1 ? <div className='absolute bottom-2 left-2 z-1 bg-black shadow-sm rounded-xl px-2 py-1 text-[8px] text-white'>MADE WITH AI </div> : ""}
           </div>
         : ''}
@@ -111,14 +111,14 @@ export default function Post({item}) {
           <PostLike is_liked={item.liked} likes_count={item?.likes_count || 0} updatecount={updatecount} text={likes} post_uuid={item.uuid} />
           <div onClick={()=>setShowComments(!showComments)} dangerouslySetInnerHTML={{ __html: comment }} />
         </div>
-        
+
         <div className='flex' >
           <p className="like-count text-dark me-3"><b><span id="like-number">{lcount || 0}</span> likes</b></p>
           <p className="like-count text-dark"><b><span id="like-number">{ccount || 0}</span> Comments</b></p>
         </div>
 
         {showComments ? <CommentList updateComments={updateComments}  post_uuid={item.uuid} /> : ''}
-        
+
       </div>
     </>
   )

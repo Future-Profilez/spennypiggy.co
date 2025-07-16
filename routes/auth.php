@@ -351,6 +351,7 @@ Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
     Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay");
     Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
 });
+Route::get('/user/tip/goal/{username?}', [AuthenticatedSessionController::class, 'usergoal'])->name('user.goal');
 
 // subscription webhook
 Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);

@@ -86,12 +86,12 @@ export default function Userprofile({ IsloggedIn }) {
                             <div className="flex mb-4 justify-center md:mb-2">
                                 <p className="md:flex text-center font-poppins mt-1 text-white">
                                     <span className='!w-auto !h-auto block md:inline-block pe-1 '>
-                                        {user?.followers}
+                                        {user?.followers_count}
                                     </span>
                                       Followers
                                 </p>
                                 <p className="md:flex text-center font-poppins mt-1 ms-3 text-white">
-                                     <span className='!w-auto !h-auto block md:inline-block pe-1 ' >{user?.following}</span> Following
+                                     <span className='!w-auto !h-auto block md:inline-block pe-1 ' >{user?.following_count}</span> Following
                                 </p>
                                 <p className="md:flex text-center font-poppins mt-1 ms-3 text-white">
                                     <span className='!w-auto !h-auto block md:inline-block pe-1 '>🐷 {supporters}</span> Supporters
