@@ -1234,7 +1234,6 @@ class StripeController extends Controller
                         "support_type" => 'leaderboard_unlock',
                         "guest_name" => $request->name ?? null,
                         "user_id" => Auth::id() ?? null,
-                        "user_profile" => env('APP_URL'). '/' . Auth::user()->username ?? null,
                         "creator_id" => $creator->id,
                         "creator_profile" => env('APP_URL'). '/' . $creator->username ?? null,
                     ],
