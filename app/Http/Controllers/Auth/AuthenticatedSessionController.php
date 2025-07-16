@@ -250,6 +250,7 @@ class AuthenticatedSessionController extends Controller
         SeoMeta::addTag('meta', ['property' => 'twitter:image:alt', 'content' => 'Financial Gifts,Donations & Memberships']);
         SeoMeta::addTag('meta', ['property' => 'twitter:image:src', 'content' => $image]);
         SeoMeta::addTag('meta', ['property' => 'og:image', 'content' => $image]);
+        SeoMeta::addTag('link', ['rel' => 'canonical', 'href' => "https://spennypiggy.co/{$username}"]);
 
         return Inertia::render('Dashboard', [
             'username' => $username,

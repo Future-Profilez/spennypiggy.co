@@ -154,7 +154,7 @@ export default function Footer(props) {
                                 HELP
                             </h3>
                             <ul className="space-y-2 font-poppins cursor-pointer">
-                                <li> <a className="livechat intercom-dud02y e11rlguj1" > Live Chat</a> </li>
+                                <li> <a target="_blank" href="https://spennypiggy.co" className="livechat intercom-dud02y e11rlguj1" > Live Chat</a> </li>
                                 <li> <a target="_blank" href="https://intercom.help/spenny-piggy" > FAQ's </a> </li>
                                 <li> <Link href={route("promotion-terms")}> Promotion Terms </Link> </li>
                             </ul>
