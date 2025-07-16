@@ -104,7 +104,7 @@ export default function Wishtracker(props) {
                     src={userphoto}
                   />
                 ) : (
-                  <Avatar 
+                  <Avatar
                     role={n && n.user && n.user.role}
                     profile_status_lock={n && n.user && n.user.profile_status_lock == 2 ? true : false}
                     name={`From:${
@@ -149,11 +149,11 @@ export default function Wishtracker(props) {
                     xmlns="http://www.w3.org/2000/svg"
                   >
                     {' '}
-                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>{' '}
+                    <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>{' '}
                     <g
                       id="SVGRepo_tracerCarrier"
                       stroke-linecap="round"
-                      stroke-linejoin="round"
+                      strokeLinejoin="round"
                     ></g>{' '}
                     <g id="SVGRepo_iconCarrier">
                       {' '}
@@ -252,7 +252,7 @@ export default function Wishtracker(props) {
                       src={n.message_url}
                       alt="image"
                       height={'100%'}
-                      useIntersectionObserver={true}
+
                       effect="blur"
                       width={'100%'}
                     />
@@ -273,7 +273,7 @@ export default function Wishtracker(props) {
                                             <LazyLoadImage
                                                 src={message_url} alt="image"
                                                 height={"100%"}
-                                                useIntersectionObserver={true} effect="blur"
+                                                 effect="blur"
                                                 width={"100%"}
                                             />
                                             :
@@ -419,7 +419,7 @@ export default function Wishtracker(props) {
                 >
                   <svg
                     aria-hidden="true"
-                    class="w-16 h-16 text-gray-200 animate-spin  fill-[var(--main)]"
+                    className="w-16 h-16 text-gray-200 animate-spin  fill-[var(--main)]"
                     viewBox="0 0 100 101"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"

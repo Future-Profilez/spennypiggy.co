@@ -12,7 +12,7 @@
                 </tr>
                 <tr>
                     <td style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 22px; line-height: 30px;  color:F94F97; text-align: left; text-align: center;">
-                        <br class="text-transform:capitalize;color:#F94F97 "> {{ $payment->payment->owner->name }} sent you <br></br> a Thank You message.</b>
+                        <br className="text-transform:capitalize;color:#F94F97 "> {{ $payment->payment->owner->name }} sent you <br></br> a Thank You message.</b>
                     </td>
                 </tr>
                 <tr>
@@ -26,7 +26,7 @@
                     <td
                         style="padding: 0 0 15px 0;  font-weight: normal;
                         font-size: 16px; line-height: 24px;  color:#000000; text-align: left; text-align: center;">
-                        <b class="text-transform:capitalize">{{ $payment->thankyou_message }}</b>
+                        <b className="text-transform:capitalize">{{ $payment->thankyou_message }}</b>
                     </td>
                 </tr>
                 @endif
@@ -47,7 +47,7 @@
                             @if ($payment->media_type == 'video')
                             <tr>
                                 <td style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 18px; line-height: 27px;  color:#000000; text-align: left; text-align: center;">
-                                    <b class="text-transform:capitalize">{{ $payment->payment->owner->name }} has attached a video message.Click "See Message" to find the video message.</b>
+                                    <b className="text-transform:capitalize">{{ $payment->payment->owner->name }} has attached a video message.Click "See Message" to find the video message.</b>
                                 </td>
                             </tr>
                             @endif

@@ -116,7 +116,7 @@ export default function Footer(props) {
     return (
         <>
             <Head>
-               
+
                 <script
                     async
                     src="https://www.googletagmanager.com/gtag/js?id=G-9F1M3QZZB3"
@@ -180,7 +180,7 @@ export default function Footer(props) {
                             <LazyLoadImage
                                 alt={"image"}
                                 height={70}
-                                useIntersectionObserver={true}
+
                                 effect="blur"
                                 src={spennypiggy}
                                 width={220}

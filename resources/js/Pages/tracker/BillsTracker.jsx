@@ -61,7 +61,7 @@ export default function BillsTracker({ auth }) {
                                     />
                                 ) : (
                                     <Avatar
-                                    
+
                                         role={n && n.user && n.user.role}
                                         profile_status_lock={
                                             n && n.user && n.user.profile_status_lock == 2 ? true : false}
@@ -123,12 +123,12 @@ export default function BillsTracker({ auth }) {
                                         {" "}
                                         <g
                                             id="SVGRepo_bgCarrier"
-                                            stroke-width="0"
+                                            strokeWidth="0"
                                         ></g>{" "}
                                         <g
                                             id="SVGRepo_tracerCarrier"
                                             stroke-linecap="round"
-                                            stroke-linejoin="round"
+                                            strokeLinejoin="round"
                                         ></g>{" "}
                                         <g id="SVGRepo_iconCarrier">
                                             {" "}
@@ -225,7 +225,7 @@ export default function BillsTracker({ auth }) {
                                             src={n.message_url}
                                             alt="image"
                                             height={"100%"}
-                                            useIntersectionObserver={true}
+
                                             effect="blur"
                                             width={"100%"}
                                         />

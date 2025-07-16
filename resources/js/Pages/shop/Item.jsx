@@ -99,7 +99,7 @@ export default function ShopDetailItem(props) {
                            <li>
                               <div className="flex items-center">
                               <svg className="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                                 <path stroke="currentColor" stroke-linecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 9 4-4-4-4"/>
                               </svg>
                               <p className="ms-1 text-md font-medium text-gray-700 md:ms-2">Shop</p>
                               </div>
@@ -107,7 +107,7 @@ export default function ShopDetailItem(props) {
                            <li aria-current="page">
                               <div className="flex items-center">
                               <svg className="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                                 <path stroke="currentColor" stroke-linecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 9 4-4-4-4"/>
                               </svg>
                               <span className="ms-1 text-md font-medium text-gray-500 md:ms-2 dark:text-gray-400">{shop.name}</span>
                               </div>
@@ -153,8 +153,8 @@ export default function ShopDetailItem(props) {
                               href={`https://twitter.com/intent/tweet?url=${url}`} target="_blank"
                                className=" text-break text-muted inline-flex items-center rounded-lg p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
                                  aria-label="Twitter" ><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round" className="h-7 w-7">
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" stroke-linecap="round"
+                                    strokeLinejoin="round" className="h-7 w-7">
                                     <path
                                           d="M22 4.01c-1 .49 -1.98 .689 -3 .99c-1.121 -1.265 -2.783 -1.335 -4.38 -.737s-2.643 2.06 -2.62 3.737v1c-3.245 .083 -6.135 -1.395 -8 -4c0 0 -4.182 7.433 4 11c-1.872 1.247 -3.739 2.088 -6 2c3.308 1.803 6.913 2.423 10.034 1.517c3.58 -1.04 6.522 -3.723 7.651 -7.742a13.84 13.84 0 0 0 .497 -3.753c0 -.249 1.51 -2.772 1.818 -4.013z">
                                     </path>
@@ -166,8 +166,8 @@ export default function ShopDetailItem(props) {
                               <div onClick={instashare}
                                className="cursor-pointer text-muted inline-flex items-center rounded-lg p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
                                  aria-label="Instagram"  ><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round" className="h-7 w-7">
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" stroke-linecap="round"
+                                    strokeLinejoin="round" className="h-7 w-7">
                                     <path d="M4 4m0 4a4 4 0 0 1 4 -4h8a4 4 0 0 1 4 4v8a4 4 0 0 1 -4 4h-8a4 4 0 0 1 -4 -4z"></path>
                                     <path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"></path>
                                     <path d="M16.5 7.5l0 .01"></path>
@@ -180,8 +180,8 @@ export default function ShopDetailItem(props) {
                                     aria-label="Facebook"
                                      onClick={fbShare}
                                      ><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                       stroke-linejoin="round" className="h-7 w-7">
+                                       viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" stroke-linecap="round"
+                                       strokeLinejoin="round" className="h-7 w-7">
                                        <path d="M7 10v4h3v7h4v-7h3l1 -4h-4v-2a1 1 0 0 1 1 -1h3v-4h-3a5 5 0 0 0 -5 5v2h-3"></path>
                                     </svg>
                               </div>
@@ -190,8 +190,8 @@ export default function ShopDetailItem(props) {
                            <li>
                               <div className="cursor-pointer text-muted inline-flex items-center rounded-lg p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
                                  aria-label="RSS" onClick={rssShare}><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round" className="h-7 w-7">
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" stroke-linecap="round"
+                                    strokeLinejoin="round" className="h-7 w-7">
                                     <path d="M5 19m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path>
                                     <path d="M4 4a16 16 0 0 1 16 16"></path>
                                     <path d="M4 11a9 9 0 0 1 9 9"></path>

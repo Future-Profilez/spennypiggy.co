@@ -80,9 +80,9 @@ export default function Header({classMagicword}) {
                                     <path
                                         d="M8.42188 36.75H40.5781M8.42188 24.75H40.5781M8.42188 12.75H40.5781"
                                         stroke="#F94F96"
-                                        stroke-width="2.625"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
+                                        strokeWidth="2.625"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
                                     />
                                 </svg>
                             </div>
@@ -107,7 +107,7 @@ export default function Header({classMagicword}) {
                                 <LazyLoadImage
                                     alt={"image"}
                                     height={60}
-                                    useIntersectionObserver={true}
+
                                     effect="blur"
                                     src={spennypiggy}
                                     width={210}
@@ -204,9 +204,9 @@ export default function Header({classMagicword}) {
                                     <path
                                         d="M8.42188 36.75H40.5781M8.42188 24.75H40.5781M8.42188 12.75H40.5781"
                                         stroke="#05EFB8"
-                                        stroke-width="2.625"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
+                                        strokeWidth="2.625"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
                                     />
                                 </svg>
                             </div>
@@ -228,15 +228,15 @@ export default function Header({classMagicword}) {
                     transform transition-transform duration-500 ease-in-out
                     ${isActive ? 'translate-x-0' : '-translate-x-full'}
                     flex flex-col p-8 select-none${isActive ? "Open" : null}`}>
-                        <div class="fixed menu p-2 z-10 top-0 left-0 pinkbg max-h-screen overflow-auto w-full sm:max-w-[320px] h-full border-r">
+                        <div className="fixed menu p-2 z-10 top-0 left-0 pinkbg max-h-screen overflow-auto w-full sm:max-w-[320px] h-full border-r">
                             <button
                                 onClick={toggleClass}
                                 className="absolute top-3 right-4"
                             >
                                 <MdClose color="#fff" size={"2rem"} />
                             </button>
-                            <div class="overflow-y-auto overflow-x-hidden flex-grow">
-                                <ul class=" flex flex-col pt-8 space-y-1 pb-[100px]">
+                            <div className="overflow-y-auto overflow-x-hidden flex-grow">
+                                <ul className=" flex flex-col pt-8 space-y-1 pb-[100px]">
                                     <>
                                         {auth?.user?.username ?
                                             <>
@@ -244,15 +244,15 @@ export default function Header({classMagicword}) {
                                                     <Link
                                                         onClick={toggleClass}
                                                         href={"/account"}
-                                                        class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                                     >
-                                                        <span class="inline-flex justify-center items-center ml-4">
+                                                        <span className="inline-flex justify-center items-center ml-4">
                                                             <IoSettingsOutline
                                                                 color="#fff"
                                                                 size={"1.2rem"}
                                                             />
                                                         </span>
-                                                        <span class="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white">
                                                             My Account
                                                         </span>
                                                     </Link>
@@ -265,15 +265,15 @@ export default function Header({classMagicword}) {
                                                                 auth?.user?.username) ||
                                                             ""
                                                         }`}
-                                                        class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                                     >
-                                                        <span class="inline-flex justify-center items-center ml-4">
+                                                        <span className="inline-flex justify-center items-center ml-4">
                                                             <FaHeart
                                                                 color="#fff"
                                                                 size={"1.2rem"}
                                                             />
                                                         </span>
-                                                        <span class="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white">
                                                         {auth?.user?.role == 1 ? "My Wishlist" : "My Profile" }
                                                         </span>
                                                     </Link>
@@ -283,15 +283,15 @@ export default function Header({classMagicword}) {
                                         <li>
                                             <a
                                                 href="https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk"
-                                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                             >
-                                                <span class="inline-flex justify-center items-center ml-4">
+                                                <span className="inline-flex justify-center items-center ml-4">
                                                     <SlCalender
                                                         color="#fff"
                                                         size={"1.2rem"}
                                                     />
                                                 </span>
-                                                <span class="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                <span className="ml-2 text-[17px] tracking-wide truncate text-white">
                                                     Subscription Billing
                                                 </span>
                                             </a>
@@ -306,15 +306,15 @@ export default function Header({classMagicword}) {
                                                     <Link
                                                         onClick={toggleClass}
                                                         href={`/shop`}
-                                                        class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                                     >
-                                                        <span class="inline-flex justify-center items-center ml-4">
+                                                        <span className="inline-flex justify-center items-center ml-4">
                                                             <FaBasketShopping
                                                                 color="#fff"
                                                                 size={"1.2rem"}
                                                             />
                                                         </span>
-                                                        <span class="ml-2 text-[17px]  tracking-wide truncate text-white">
+                                                        <span className="ml-2 text-[17px]  tracking-wide truncate text-white">
                                                             Shop
                                                         </span>
                                                     </Link>
@@ -323,15 +323,15 @@ export default function Header({classMagicword}) {
                                                     <Link
                                                         onClick={toggleClass}
                                                         href={"giftstore"}
-                                                        class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                                     >
-                                                        <span class="inline-flex justify-center items-center ml-4">
+                                                        <span className="inline-flex justify-center items-center ml-4">
                                                             <FiGift
                                                                 color="#fff"
                                                                 size={"1.2rem"}
                                                             />
                                                         </span>
-                                                        <span class="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white">
                                                             Gift Store
                                                         </span>
                                                     </Link>
@@ -340,15 +340,15 @@ export default function Header({classMagicword}) {
                                                     <Link
                                                         onClick={toggleClass}
                                                         href={`/earnings`}
-                                                        class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                                     >
-                                                        <span class="inline-flex justify-center items-center ml-4">
+                                                        <span className="inline-flex justify-center items-center ml-4">
                                                             <GiTwoCoins
                                                                 color="#fff"
                                                                 size={"1.2rem"}
                                                             />
                                                         </span>
-                                                        <span class="ml-2 text-[17px] tracking-wide truncate text-white" >
+                                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white" >
                                                             Earnings
                                                         </span>
                                                     </Link>
@@ -357,16 +357,16 @@ export default function Header({classMagicword}) {
                                                     <Link
                                                         onClick={toggleClass}
                                                         href={`/membership-dashboard`}
-                                                        class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                                     >
-                                                        <span class="inline-flex justify-center items-center ml-4">
+                                                        <span className="inline-flex justify-center items-center ml-4">
                                                             <FaHouseChimneyUser
                                                                 color="#fff"
                                                                 size={"1.2rem"}
                                                             />
                                                         </span>
                                                         <span
-                                                            class="ml-2 text-[17px]
+                                                            className="ml-2 text-[17px]
                                 tracking-wide truncate text-white"
                                                         >
                                                             Membership Dashboard
@@ -382,16 +382,16 @@ export default function Header({classMagicword}) {
                                             <Link
                                                 onClick={toggleClass}
                                                 href={`/wish-tracker`}
-                                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                             >
-                                                <span class="inline-flex justify-center items-center ml-4">
+                                                <span className="inline-flex justify-center items-center ml-4">
                                                     <SlCalculator
                                                         color="#fff"
                                                         size={"1.2rem"}
                                                     />
                                                 </span>
                                                 <span
-                                                    class="ml-2 text-[17px]
+                                                    className="ml-2 text-[17px]
                             tracking-wide truncate text-white"
                                                 >
                                                     Wish tracker
@@ -407,15 +407,15 @@ export default function Header({classMagicword}) {
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={route("register")}
-                                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                                 >
-                                                    <span class="inline-flex justify-center items-center ml-4">
+                                                    <span className="inline-flex justify-center items-center ml-4">
                                                         <FaUserAlt
                                                             color="#fff"
                                                             size={"1.2rem"}
                                                         />
                                                     </span>
-                                                    <span class="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
                                                         Sign Up
                                                     </span>
                                                 </Link>
@@ -424,15 +424,15 @@ export default function Header({classMagicword}) {
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={route("login")}
-                                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                                 >
-                                                    <span class="inline-flex justify-center items-center ml-4">
+                                                    <span className="inline-flex justify-center items-center ml-4">
                                                         <IoIosUnlock
                                                             color="#fff"
                                                             size={"1.2rem"}
                                                         />
                                                     </span>
-                                                    <span class="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
                                                         Login
                                                     </span>
                                                 </Link>
@@ -444,15 +444,15 @@ export default function Header({classMagicword}) {
                                         <Link
                                             onClick={toggleClass}
                                             href={route("leaderboard")}
-                                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                         >
-                                            <span class="inline-flex justify-center items-center ml-4">
+                                            <span className="inline-flex justify-center items-center ml-4">
                                                 <FaRegStar
                                                     color="#fff"
                                                     size={"1.2rem"}
                                                 />
                                             </span>
-                                            <span class="ml-2 text-[17px] tracking-wide truncate text-white" >
+                                            <span className="ml-2 text-[17px] tracking-wide truncate text-white" >
                                                 Leaderboard
                                             </span>
                                         </Link>
@@ -461,15 +461,15 @@ export default function Header({classMagicword}) {
                                         <Link
                                             onClick={toggleClass}
                                             href={"giftstore"}
-                                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                         >
-                                            <span class="inline-flex justify-center items-center ml-4">
+                                            <span className="inline-flex justify-center items-center ml-4">
                                                 <FiGift
                                                     color="#fff"
                                                     size={"1.2rem"}
                                                 />
                                             </span>
-                                            <span class="ml-2 text-[17px] tracking-wide truncate text-white">
+                                            <span className="ml-2 text-[17px] tracking-wide truncate text-white">
                                                 Gift Store
                                             </span>
                                         </Link>
@@ -478,15 +478,15 @@ export default function Header({classMagicword}) {
                                         <Link
                                             onClick={toggleClass}
                                             href={route("how-it-works")}
-                                            class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                         >
-                                            <span class="inline-flex justify-center items-center ml-4">
+                                            <span className="inline-flex justify-center items-center ml-4">
                                                 <TbSettingsCog
                                                     color="#fff"
                                                     size={"1.2rem"}
                                                 />
                                             </span>
-                                            <span class="ml-2 text-[17px] tracking-wide truncate text-white">
+                                            <span className="ml-2 text-[17px] tracking-wide truncate text-white">
                                                 How it works
                                             </span>
                                         </Link>
@@ -496,15 +496,15 @@ export default function Header({classMagicword}) {
                                         <Link
                                             onClick={toggleClass}
 
-                                            class="livechat relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                            className="livechat relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                         >
-                                            <span class="inline-flex justify-center items-center ml-4">
+                                            <span className="inline-flex justify-center items-center ml-4">
                                                 <MdOutlineSupportAgent
                                                     color="#fff"
                                                     size={"1.2rem"}
                                                 />
                                             </span>
-                                            <span class="ml-2 text-[17px] tracking-wide truncate text-white">
+                                            <span className="ml-2 text-[17px] tracking-wide truncate text-white">
                                                 Need help ?
                                             </span>
                                         </Link>
@@ -515,16 +515,16 @@ export default function Header({classMagicword}) {
                                             <a target="_blank"
                                                 onClick={toggleClass}
                                                 href="https://blog.spennypiggy.co"
-                                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                             >
-                                                <span class="inline-flex justify-center items-center ml-4">
+                                                <span className="inline-flex justify-center items-center ml-4">
                                                     <ImBlog
                                                         color="#fff"
                                                         size={"1.2rem"}
                                                     />
                                                 </span>
                                                 <span
-                                                    class="ml-2 text-[17px] tracking-wide truncate text-white" >
+                                                    className="ml-2 text-[17px] tracking-wide truncate text-white" >
                                                     Blog
                                                 </span>
                                             </a>
@@ -534,16 +534,16 @@ export default function Header({classMagicword}) {
                                                 onClick={toggleClass}
                                                 target="_blank"
                                                 href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
-                                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                             >
-                                                <span class="inline-flex justify-center items-center ml-4">
+                                                <span className="inline-flex justify-center items-center ml-4">
                                                     <MdOutlinePrivacyTip
                                                         color="#fff"
                                                         size={"1.2rem"}
                                                     />
                                                 </span>
                                                 <span
-                                                    class="ml-2 text-[17px]
+                                                    className="ml-2 text-[17px]
                                         tracking-wide truncate text-white"
                                                 >
                                                     Privacy Policy
@@ -555,16 +555,16 @@ export default function Header({classMagicword}) {
                                                 onClick={toggleClass}
                                                 target="_blank"
                                                 href="https://app.termly.io/document/cookie-policy/45944c26-6e99-4065-833a-8fa224fb8e20"
-                                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                             >
-                                                <span class="inline-flex justify-center items-center ml-4">
+                                                <span className="inline-flex justify-center items-center ml-4">
                                                     <BsCookie
                                                         color="#fff"
                                                         size={"1.2rem"}
                                                     />
                                                 </span>
                                                 <span
-                                                    class="ml-2 text-[17px]
+                                                    className="ml-2 text-[17px]
                                         tracking-wide truncate text-white"
                                                 >
                                                     Cookies Policy
@@ -577,16 +577,16 @@ export default function Header({classMagicword}) {
                                                 onClick={toggleClass}
                                                 target="_blank"
                                                 href="https://app.termly.io/document/acceptable-use/458f5fac-0c41-406f-a02f-b50adff1ec9c"
-                                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                             >
-                                                <span class="inline-flex justify-center items-center ml-4">
+                                                <span className="inline-flex justify-center items-center ml-4">
                                                     <LuBookMinus
                                                         color="#fff"
                                                         size={"1.2rem"}
                                                     />
                                                 </span>
                                                 <span
-                                                    class="ml-2 text-[17px]
+                                                    className="ml-2 text-[17px]
                                         tracking-wide truncate text-white"
                                                 >
                                                     Acceptable Use Policy
@@ -598,16 +598,16 @@ export default function Header({classMagicword}) {
                                                 onClick={toggleClass}
                                                 target="_blank"
                                                 href={route("terms-and-conditions")}
-                                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                             >
-                                                <span class="inline-flex justify-center items-center ml-4">
+                                                <span className="inline-flex justify-center items-center ml-4">
                                                     <GiInjustice
                                                         color="#fff"
                                                         size={"1.2rem"}
                                                     />
                                                 </span>
                                                 <span
-                                                    class="ml-2 text-[17px]
+                                                    className="ml-2 text-[17px]
                                         tracking-wide truncate text-white"
                                                 >
                                                     Terms
@@ -619,15 +619,15 @@ export default function Header({classMagicword}) {
                                                 onClick={toggleClass}
                                                 target="_blank"
                                                 href={route("promotion-terms")}
-                                                class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                             >
-                                                <span class="inline-flex justify-center items-center ml-4">
+                                                <span className="inline-flex justify-center items-center ml-4">
                                                     <CiDiscount1
                                                         color="#fff"
                                                         size={"1.4rem"}
                                                     />
                                                 </span>
-                                                <span class="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                <span className="ml-2 text-[17px] tracking-wide truncate text-white">
                                                     Promotion Terms
                                                 </span>
                                             </Link>
@@ -639,15 +639,15 @@ export default function Header({classMagicword}) {
                                                     onClick={toggleClass}
                                                     method="get"
                                                     href={route("logout")}
-                                                    class="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                                 >
-                                                    <span class="inline-flex justify-center items-center ml-4">
+                                                    <span className="inline-flex justify-center items-center ml-4">
                                                         <AiOutlineLogout
                                                             color="#fff"
                                                             size={"1.4rem"}
                                                         />
                                                     </span>
-                                                    <span class="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
                                                         Logout
                                                     </span>
                                                 </Link>

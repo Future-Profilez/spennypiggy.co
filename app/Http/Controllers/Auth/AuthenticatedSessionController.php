@@ -182,7 +182,6 @@ class AuthenticatedSessionController extends Controller
             return Inertia::render('NotFound');
         }
 
-
         if (!empty($user)) {
             if ((Auth::check() && Auth::id() != $user->id && $user->suspended_account == 1) || (!Auth::check() && $user->suspended_account == 1)) {
                 return Inertia::render('NotFound');
@@ -203,7 +202,6 @@ class AuthenticatedSessionController extends Controller
                 }
             }
         }
-
         $wish_count = StripePaymentDetail::where('owner_id', $user->id)->where('payment_status', 'paid')->get();
 
         foreach ($wish_count as $key => $value) {
@@ -244,13 +242,10 @@ class AuthenticatedSessionController extends Controller
         $user['following'] = $following ?? 0;
         $account = StripeControl::getAccount($user->account_id);
 
-        // STEP 1 .Check if user is recipient
         $agreement = $account->tos_acceptance->service_agreement ?? null;
         $IsNeedToUpgrade = $agreement == 'recipient' ? true : false;
-        // dd($IsNeedToUpgrade);
 
 
-        // STEP 2. Allow card capablilities
         $card_capabilities = true;
         if(!empty($user->account_id)){
             if (!StripeControl::isAccountReadyForCheckout($user->account_id)) {
@@ -258,8 +253,6 @@ class AuthenticatedSessionController extends Controller
             }
         }
 
-
-        // dd($card_capabilities);
         if($page == 'about'){
             // Social links
             $slinks = $user->social_links()->first();
@@ -427,11 +420,11 @@ class AuthenticatedSessionController extends Controller
             }
         }
 
-
         $wishitems = [];
         $pinned = [];
         $categories = $user->user_categories()->get();
         $category = request()->query('category') ?? false;
+
         if($page == 'wishes'){
 
             if ($category) {
@@ -545,7 +538,6 @@ class AuthenticatedSessionController extends Controller
             });
         }
 
-
         $memberships = [];
         if($page == 'memberships'){
             $query = $user->memberships();
@@ -577,8 +569,6 @@ class AuthenticatedSessionController extends Controller
                 $shops = $query->get();
 
         }
-
-
 
         // SEO Meta Tags
         SeoMeta::addTag('title', "{$user->name} - Spenny Piggy - Financial Gifts, Exclusive Content & Memberships");

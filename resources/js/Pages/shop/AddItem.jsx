@@ -448,7 +448,7 @@ export default function AddItem(props) {
         };
         return (
             <Popup
-            modalclass="addShopItems modals full"
+            modalclassName="addShopItems modals full"
             // size="lg"
             action={open}
             text={title || <AddItem />}

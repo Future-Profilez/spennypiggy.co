@@ -20,7 +20,7 @@ const GlobalUploader = forwardRef(({ options, sendFile, clear, view, isUploading
       if (!ctxProvider) return;
       const resetUploaderState = () => dataOutputRef.current?.uploadCollection.clearAll();
       resetUploaderState();
-    }; 
+    };
 
     useImperativeHandle(ref, () => ({
         reset: () => {
@@ -32,19 +32,19 @@ const GlobalUploader = forwardRef(({ options, sendFile, clear, view, isUploading
         const { data } = e.detail;
         checkAdult(data);
     },[]);
-  
+
     useEffect(() => {
         const el = dataOutputRef && dataOutputRef.current;
         el && el.addEventListener("lr-data-output", handleUploaderEvent);
         return () => { el && el.removeEventListener("lr-data-output", handleUploaderEvent); };
     }, [handleUploaderEvent]);
 
-    useEffect(()=>{ 
+    useEffect(()=>{
         window.addEventListener('LR_UPLOAD_START', (e) => {
           if (e.detail.ctx) {
             setCheckIsUploading(true);
             isUploading && isUploading(checkIsUploading);
-          }  
+          }
         });
 
         window.addEventListener('LR_UPLOAD_FINISH', (e) => {
@@ -56,7 +56,7 @@ const GlobalUploader = forwardRef(({ options, sendFile, clear, view, isUploading
           setCheckIsUploading(false);
           isUploading && isUploading(checkIsUploading);
         });
-    }, []); 
+    }, []);
 
     const [scanning, setScanning] = useState(false);
     const controller = new AbortController();
@@ -64,7 +64,7 @@ const GlobalUploader = forwardRef(({ options, sendFile, clear, view, isUploading
 
     const checkAdult = async (d) => {
       const f = d[0];
-      const type= f && f.contentInfo && f.contentInfo.mime && f.contentInfo.mime.type; 
+      const type= f && f.contentInfo && f.contentInfo.mime && f.contentInfo.mime.type;
       const fileuid= f && f.uuid;
       if(fileuid && type !== 'video'){
           setScanning(true);
@@ -75,9 +75,9 @@ const GlobalUploader = forwardRef(({ options, sendFile, clear, view, isUploading
             if(resp.data.status){
               successAlert("File has been scanned !!");
               sendFile(d[0]);
-              setFiles(d); 
+              setFiles(d);
               controller.abort()
-            } else { 
+            } else {
                 errorAlert(resp.data.msg);
                 handleResetUploader();
             }
@@ -87,15 +87,15 @@ const GlobalUploader = forwardRef(({ options, sendFile, clear, view, isUploading
                 setScanning(false);
             },2000);
           });
-      } else { 
+      } else {
         sendFile(d[0]);
-        setFiles(d); 
+        setFiles(d);
       }
-    } 
+    }
 
     return <>
 
-          {view && 
+          {view &&
             <div className={'uploadcare-view mb-0'}>
               {files.map((file) => (
                 <div className="uploadcare-view-wrap"  >
@@ -105,8 +105,8 @@ const GlobalUploader = forwardRef(({ options, sendFile, clear, view, isUploading
                       key={file.uuid} width="25%" alt="Preview"
                       src={`https://ucarecdn.com/${file.uuid}/${file.cdnUrlModifiers || ""}`}
                     />
-                  </> 
-                  : 
+                  </>
+                  :
                   <video playsInline controls
                     className="rounded"
                     key={file.uuid}
@@ -119,51 +119,51 @@ const GlobalUploader = forwardRef(({ options, sendFile, clear, view, isUploading
             </div>
           }
 
-          {type =='minimal' ?  
-              <lr-file-uploader-minimal  
-              class={options}  
+          {type =='minimal' ?
+              <lr-file-uploader-minimal
+              className={options}
               css-src={`https://cdn.jsdelivr.net/npm/@uploadcare/blocks@${PACKAGE_VERSION}/web/lr-file-uploader-minimal.min.css`}>
                 <lr-data-output
                     use-event ref={dataOutputRef}
                     hidden use-template
-                    class={options}  
+                    className={options}
                     onEvent={handleUploaderEvent}>
                 </lr-data-output>
-              </lr-file-uploader-minimal>  
+              </lr-file-uploader-minimal>
           : ''}
 
-          {type =='inline' ? 
-            <lr-file-uploader-inline  
-            class={options}  
+          {type =='inline' ?
+            <lr-file-uploader-inline
+            className={options}
             css-src={`https://cdn.jsdelivr.net/npm/@uploadcare/blocks@${PACKAGE_VERSION}/web/lr-file-uploader-inline.min.css`}>
               <lr-data-output
                 use-event ref={dataOutputRef}
                 hidden use-template
-                class={options}  
+                className={options}
                 onEvent={handleUploaderEvent}>
               </lr-data-output>
-            </lr-file-uploader-inline>  
+            </lr-file-uploader-inline>
           : ''}
 
-          {type =='regular' ? 
+          {type =='regular' ?
             <lr-file-uploader-regular  cropPreset="1:1"
-            class={options}  
+            className={options}
             css-src={`https://cdn.jsdelivr.net/npm/@uploadcare/blocks@${PACKAGE_VERSION}/web/lr-file-uploader-regular.min.css`}>
               <lr-data-output
                 use-event ref={dataOutputRef}
                 hidden use-template
-                class={options}  
+                className={options}
                 onEvent={handleUploaderEvent}>
               </lr-data-output>
-            </lr-file-uploader-regular> 
+            </lr-file-uploader-regular>
           : ''}
 
-          {scanning ? 
+          {scanning ?
             <div className={`scanning rounded bg-light shadow-sm border p-3 my-2 mb-4`} >
               <ProgressBar animated now={100} />
               <p className='text-center mt-2' >Adult content scanning...</p>
-            </div> : '' 
-          } 
+            </div> : ''
+          }
 
     </>
 });

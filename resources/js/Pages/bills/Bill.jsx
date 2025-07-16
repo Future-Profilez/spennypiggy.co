@@ -58,7 +58,7 @@ export default function Bill(props) {
 
             <div onClick={openAddtocart} className='wishlistimg cursor-pointer relative'>
               <LazyLoadImage
-              alt={"image"} useIntersectionObserver={true} effect="blur"
+              alt={"image"}  effect="blur"
               height={193}
               src={itm?.perma_link ? itm?.perma_link : uploadedimg} className=''
               width={243} />

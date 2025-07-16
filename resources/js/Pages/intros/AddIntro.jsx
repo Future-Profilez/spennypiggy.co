@@ -88,7 +88,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
         text={<>
         <div className='isintro relative cursor-pointer shadow-voilet'>
           <img
-          alt={"image"} useIntersectionObserver={true} effect="blur"
+          alt={"image"}  effect="blur"
           height={350} src={ intro && intro.poster_url || wishlistbannerimg} className='' width={400} />
           <div className='cursor-pointer playicon' >
             <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -121,7 +121,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
                   <div className='cursor-pointer box shadow-voilet rounded-lg p-3 py-4 flex items-center justify-content-center' >
                     <div>
                         <div className='svg-icon m-auto d-table' >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="50px" height="50px" viewBox="0 0 24 24" className="stroke-green-400 fill-none group-hover:fill-green-800 group-active:stroke-green-200 group-active:fill-green-600 group-active:duration-0 duration-300"> <path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" stroke-width="1.5" ></path> <path d="M8 12H16" stroke-width="1.5"></path> <path d="M12 16V8" stroke-width="1.5"></path> </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="50px" height="50px" viewBox="0 0 24 24" className="stroke-green-400 fill-none group-hover:fill-green-800 group-active:stroke-green-200 group-active:fill-green-600 group-active:duration-0 duration-300"> <path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" strokeWidth="1.5" ></path> <path d="M8 12H16" strokeWidth="1.5"></path> <path d="M12 16V8" strokeWidth="1.5"></path> </svg>
                         </div>
                         <p className='w-100 text-center mt-2' >Add Intro</p>
                     </div>

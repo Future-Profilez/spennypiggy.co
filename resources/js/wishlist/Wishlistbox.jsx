@@ -57,7 +57,7 @@ export default function Wishlistbox(props) {
         {IsloggedIn ?
         <>
           <div className='movesvg' ref={setNodeRef} {...listeners} {...attributes} >
-            <svg fill="#000000" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="m15.46 7-3.2-2.19-.71 1 2.29 1.57H8.62V2.16l1.57 2.29 1-.71L9 .54a1.25 1.25 0 0 0-2 0l-2.22 3.2 1 .71 1.59-2.29v5.22H2.16l2.29-1.57-.71-1L.54 7a1.25 1.25 0 0 0 0 2l3.2 2.19.71-1-2.29-1.57h5.21v5.22l-1.56-2.29-1 .71L7 15.46a1.25 1.25 0 0 0 2.06 0l2.19-3.2-1-.71-1.63 2.29V8.62h5.22l-2.29 1.57.71 1L15.46 9a1.25 1.25 0 0 0 0-2z"></path></g></svg>
+            <svg fill="#000000" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" strokeWidth="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" strokeLinejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="m15.46 7-3.2-2.19-.71 1 2.29 1.57H8.62V2.16l1.57 2.29 1-.71L9 .54a1.25 1.25 0 0 0-2 0l-2.22 3.2 1 .71 1.59-2.29v5.22H2.16l2.29-1.57-.71-1L.54 7a1.25 1.25 0 0 0 0 2l3.2 2.19.71-1-2.29-1.57h5.21v5.22l-1.56-2.29-1 .71L7 15.46a1.25 1.25 0 0 0 2.06 0l2.19-3.2-1-.71-1.63 2.29V8.62h5.22l-2.29 1.57.71 1L15.46 9a1.25 1.25 0 0 0 0-2z"></path></g></svg>
           </div>
             <Wishlist currency={currency} setuped={setuped} openPop={open} item={itm} editpop={true}   />
         </>
@@ -77,7 +77,7 @@ export default function Wishlistbox(props) {
         </DropdownButton> : ''}
         <div onClick={openAddtocart} className='rounded-[12px] h-[150px] md:h-[200px] wishbox overflow-hidden cursor-pointer'>
           <LazyLoadImage
-          alt={"image"} useIntersectionObserver={true} effect="blur"
+          alt={"image"}  effect="blur"
           height={193} className='rounded-t-3xl block w-full h-full object-cover'
           src={itm?.perma_link ? itm?.perma_link : uploadedimg}
           width={243} />
@@ -110,9 +110,9 @@ export default function Wishlistbox(props) {
             </div>
           : '' }
 
-          {itm && itm.subscription == '1' ? <div class="bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full absolute top-[-35px] right-2">Subscribable</div> : ''}
-          <div class="absolute top-1 left-1 text-xl">👀</div>
-          <div class="absolute bottom-2 right-2 text-xl">⭐</div>
+          {itm && itm.subscription == '1' ? <div className="bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full absolute top-[-35px] right-2">Subscribable</div> : ''}
+          <div className="absolute top-1 left-1 text-xl">👀</div>
+          <div className="absolute bottom-2 right-2 text-xl">⭐</div>
           <div className='flex justify-center items-center mt-3'  >
             <ShareProfile username={itm.wishname} custom={`${window.location.href}?item=${itm.uuid}`} >
               <div className='bg-yellow-400 hover:bg-yellow-500 text-black font-bold text-[13px] md:text-normal py-2 px-4 rounded-full shadow'>Share Link</div>
@@ -125,17 +125,17 @@ export default function Wishlistbox(props) {
 
 
 
-// <div class="bg-white rounded-3xl shadow-pink  sshadow-lg relative border-2 border-[#F94F97] w-full max-w-[250px]">
+// <div className="bg-white rounded-3xl shadow-pink  sshadow-lg relative border-2 border-[#F94F97] w-full max-w-[250px]">
 
 
-//                                                 <div class="flex justify-center ">
-//                                                     <img src="https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/" alt="Piggy Bank Illustration" class="w-full rounded-[20px]" />
+//                                                 <div className="flex justify-center ">
+//                                                     <img src="https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/" alt="Piggy Bank Illustration" className="w-full rounded-[20px]" />
 //                                                 </div>
 //                                                 <div className="p-4">
-//                                                     <div class="text-lg   text-gray-800 text-center">Naveen Tehrpariya</div>
-//                                                     <div class="text-center font-bold font-poppins  text-black my-2">US$45.00</div>
-//                                                     <div class="text-center mt-4">
-//                                                         <button class="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-4 rounded-full shadow">
+//                                                     <div className="text-lg   text-gray-800 text-center">Naveen Tehrpariya</div>
+//                                                     <div className="text-center font-bold font-poppins  text-black my-2">US$45.00</div>
+//                                                     <div className="text-center mt-4">
+//                                                         <button className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-4 rounded-full shadow">
 //                                                         Special Link
 //                                                         </button>
 //                                                     </div>
@@ -143,6 +143,6 @@ export default function Wishlistbox(props) {
 
 
 
-//                                                 <div class="absolute top-2 left-2 text-xl">👀</div>
-//                                                 <div class="absolute bottom-2 right-2 text-xl">⭐</div>
+//                                                 <div className="absolute top-2 left-2 text-xl">👀</div>
+//                                                 <div className="absolute bottom-2 right-2 text-xl">⭐</div>
 //                                                 </div>

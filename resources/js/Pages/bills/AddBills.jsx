@@ -137,7 +137,7 @@ export default function AddBills(props) {
     const defaultCurrency = (auth && auth.user && auth.user.default_currency) || "USD";
     return (
         <Popup
-            modalclass="pinkmodal full"
+            modalclassName="pinkmodal full"
             size="md"
             action={close}
             classes={classes ? classes : `  ${editpop? "editpop": "addop w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center"}`}

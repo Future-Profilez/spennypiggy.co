@@ -414,7 +414,7 @@ export default function Dashboard(props) {
                             <div className="relative">
                                 <LazyLoadImage
                                     alt={"image"}
-                                    useIntersectionObserver={true}
+
                                     effect="blur"
                                     height={400}
                                     className="w-full border-black border-2 shadow-mint rounded-[30px]"
@@ -468,7 +468,7 @@ export default function Dashboard(props) {
                                     </div>
                                 </div>
                             : ''}
- 
+
 
 
 

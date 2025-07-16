@@ -50,7 +50,7 @@ export default function ShopTracker() {
                         <div className="flex items-center justify-between">
                             <div className="text-dark">
                                 {g.anonymous == 1 && g && g.sender == false ? (
-                                    <Avatar 
+                                    <Avatar
                                         name={`From : Anonymous`}
                                         subhead={
                                             (g.shop &&
@@ -128,12 +128,12 @@ export default function ShopTracker() {
                                         {" "}
                                         <g
                                             id="SVGRepo_bgCarrier"
-                                            stroke-width="0"
+                                            strokeWidth="0"
                                         ></g>{" "}
                                         <g
                                             id="SVGRepo_tracerCarrier"
                                             stroke-linecap="round"
-                                            stroke-linejoin="round"
+                                            strokeLinejoin="round"
                                         ></g>{" "}
                                         <g id="SVGRepo_iconCarrier">
                                             {" "}
@@ -232,7 +232,7 @@ export default function ShopTracker() {
                                           src={g.message_url}
                                           alt="image"
                                           height={"100%"}
-                                          useIntersectionObserver={true}
+
                                           effect="blur"
                                           width={"100%"}
                                       />

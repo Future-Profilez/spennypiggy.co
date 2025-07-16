@@ -128,7 +128,7 @@ export default function HappyCreators() {
                     </div>
                 </div>
                 <div  className="containerbox relative lg:!mb-[-160px]">
-                    <div class="hidden lg:block relative bottom-[60px] 
+                    <div className="hidden lg:block relative bottom-[60px]
                     left-0 ">
                         <img src={faq} className="" alt="Decorative" />
                     </div>

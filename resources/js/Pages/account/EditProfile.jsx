@@ -165,7 +165,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         }
     }
     return (
-        <Popup modalclass='pinkmodal editprofile full' size='md' action={close}
+        <Popup modalclassName='pinkmodal editprofile full' size='md' action={close}
             text={text||<> Update Profile </>}
             classes={`${classes ? classes : "button bg-pink d-table d-sm-flex m-auto m-sm-0"}`} >
             <div className='editForm  mt-4'>

@@ -21,7 +21,7 @@ export default function AddPost({item, text, classes, isEdit, title}) {
     const [filetype, setfiletype] =  useState('image');
     const [rewardImage, setRewardImage] = useState(item?.image || '');
     const [isAiImage, setIsAiImage] = useState();
-    const getAIImage = (e) =>{ 
+    const getAIImage = (e) =>{
         setRewardImage(e.uuid+'/-/text_align/left/center/-/font/10/fff/-/text/80px8p/8p,100p/Made%20with%20AI%20/-/format/jpeg/-/preview/');
         setIsAiImage(e.url);
     }
@@ -57,17 +57,17 @@ export default function AddPost({item, text, classes, isEdit, title}) {
     const handleInput = (e) => {
         setData({ ...data, [e.target.name]: e.target.value });
     }
-    
+
     const [loading, setLoading] = useState(false);
-    const submitPost = (e) => { 
+    const submitPost = (e) => {
         e && e.preventDefault();
         if(rewardImage == '' || rewardImage == null){
             toast.error("Please choose a media image for this post.");
             return false
         }
         setLoading(true);
-        axios.post(`${isEdit ? `/post/edit/${item.uuid}` : "/post/save"}`, {...data, 
-            image:rewardImage, 
+        axios.post(`${isEdit ? `/post/edit/${item.uuid}` : "/post/save"}`, {...data,
+            image:rewardImage,
             type: rewardImage ? 'image' : "blog",
             ai_generated : isAiImage ? 1 : item && item?.ai_generated || 0
          })
@@ -79,7 +79,7 @@ export default function AddPost({item, text, classes, isEdit, title}) {
                     title: "",
                     content:""
                 });
-                 
+
                 toast.success(resp.data.msg);
                 setClose(false);
                 setTimeout(()=>{
@@ -111,22 +111,22 @@ export default function AddPost({item, text, classes, isEdit, title}) {
         </div>
     }
     return (
-    <Popup modalclass='' space="4" size='md' action={close} 
-    classes={` w-full addop bg-white rounded-xl py-2 px-3 ${classes}`} 
+    <Popup modalclassName='' space="4" size='md' action={close}
+    classes={` w-full addop bg-white rounded-xl py-2 px-3 ${classes}`}
     text={text ? text : <AddItem />} >
         {/* <form onSubmit={submitPost} > */}
             <div className="flex items-center" >
-                <div className={`gift-icon me-2 voilet`} dangerouslySetInnerHTML={{ __html: piggy }} />  
+                <div className={`gift-icon me-2 voilet`} dangerouslySetInnerHTML={{ __html: piggy }} />
                 <h2 className="text-xl font-bold text-dark-500" >{title ? title: "Add Post"}</h2>
             </div>
-            
+
             <div className="mt-1 ">
                 <input onChange={handleInput} defaultValue={item?.title || ''} name="title" placeholder="Post Title ..."
-                className="text-normal form-input text-lg border px-3 py-3 text-dark rounded-4 mt-4 text-post-content form-control"/>   
-                <textarea onChange={handleInput} defaultValue={item?.content || ''}  name="content" placeholder="Say Something..." className="text-lg border form-input h-[150px] mt-4 text-post-content form-control" ></textarea>   
+                className="text-normal form-input text-lg border px-3 py-3 text-dark rounded-4 mt-4 text-post-content form-control"/>
+                <textarea onChange={handleInput} defaultValue={item?.content || ''}  name="content" placeholder="Say Something..." className="text-lg border form-input h-[150px] mt-4 text-post-content form-control" ></textarea>
                 <div className="chhoseimage mt-4 pt-2" >
                     <p className="text-grey-400 mb-2" >Choose a image file to attached with your post.</p>
-                    {item && item.image_url ? 
+                    {item && item.image_url ?
                         <>
                             <div className="default-wish-img border relative mb-1 ">
                                 <img src={item && item.image_url}
@@ -135,24 +135,24 @@ export default function AddPost({item, text, classes, isEdit, title}) {
                             <h2 className="w-100 my-2 text-center" >Or</h2>
                         </>
                     : ''}
-                    {isAiImage ? 
+                    {isAiImage ?
                         <div className="default-wish-img border relative mb-2 ">
                             <img src={isAiImage}
                             className="img-fluid" />
-                        </div> 
+                        </div>
                     : ""}
 
                     <div className="relative">
                         <GlobalUploader ref={uploaderRef} view={false} type="minimal" sendFile={getfile} options={st.post} />
                         <div className="absolute top-[14px] right-12">
                             <ImageGenerationWithAI classes={`button bg-pink d-table text-[10px] d-sm-flex m-auto m-sm-0 hover:opacity-80`} update={getAIImage} />
-                        </div> 
+                        </div>
                     </div>
                 </div>
 
                 <p className="text-grey-500 mb-1 mt-4" >Choose Audience</p>
                 <div className="flex align-center justify-content-center flex-wrap" >
-                    <select id="countries" defaultValue={item?.for_module} onChange={handleInput} name="for_module" className="form-input  
+                    <select id="countries" defaultValue={item?.for_module} onChange={handleInput} name="for_module" className="form-input
                     text-md w-full focus:ring-green-50 block ">
                         <option value="membership">Memberships</option>
                         <option value="subscription">Subscription</option>
@@ -166,15 +166,15 @@ export default function AddPost({item, text, classes, isEdit, title}) {
                 disabled={loading}
                 className={`${rewardImage == '' || rewardImage == null ? 'opacity-50 cursor-not-allowed' : ''}  mt-4 w-full `}
                 spinnerClassName="fill-red-600">
-                {isEdit ? 
-                    loading ? "Updating.." :"Update Post" 
-                : 
-                    loading ? "Posting.." : "Add New Post" 
+                {isEdit ?
+                    loading ? "Updating.." :"Update Post"
+                :
+                    loading ? "Posting.." : "Add New Post"
                 }
             </LoaderButton>
 
         {/* </form> */}
-        
+
     </Popup>
     );
 }

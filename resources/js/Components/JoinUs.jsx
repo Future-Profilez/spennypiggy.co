@@ -21,7 +21,7 @@ export default function JoinUs() {
                         <div key={idx} data-aos="zoom-in" className="px-4 py-2">
                             <LazyLoadImage
                                 alt="image"
-                                useIntersectionObserver={true}
+
                                 effect="blur"
                                 className=""
                                 src={src}

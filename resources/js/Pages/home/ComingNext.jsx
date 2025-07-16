@@ -10,7 +10,7 @@ export default function ComingNext() {
             <div className='col-lg-6 ' >
                <div className='nextimage-wrap mb-4 mb-lg-0' >
                   <LazyLoadImage
-                  alt={"image"} useIntersectionObserver={true} effect="blur"
+                  alt={"image"}  effect="blur"
                   height={"auto"}
                   src={next}
                   width={"auto"} />

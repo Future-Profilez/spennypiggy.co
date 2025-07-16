@@ -5,7 +5,7 @@ import userphoto from "../../assets/siteicon.png";
 import { RiVerifiedBadgeFill } from "react-icons/ri";
 
 export default function Avatar({ src, role, profile_status_lock, imageSrc, name, username, subhead, url, link }) {
-  
+
   return (
     <>
       <style>{`
@@ -25,14 +25,14 @@ export default function Avatar({ src, role, profile_status_lock, imageSrc, name,
                 src={imageSrc || src || userphoto}
                 alt="image-avatar"
                 className="img-fluid"
-                useIntersectionObserver={true}
+
                 effect="blur"
                 height={100}
                 width={100}
               />
             </div>
             <div className="avatar-content">
-              <h2 className='flex items-center'>{name} {role && profile_status_lock ? 
+              <h2 className='flex items-center'>{name} {role && profile_status_lock ?
               <RiVerifiedBadgeFill  size={'1.2rem'} className="ms-1 mt-1 text-pink" /> : ''}
               </h2>
               <p>{subhead || username}</p>

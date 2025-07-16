@@ -340,7 +340,7 @@ export default function Accountsetting(props) {
                             <li>
                                 <Popup
                                     space="4"
-                                    modalclass="pinkmodal"
+                                    modalclassName="pinkmodal"
                                     text={<>DELETE ACCOUNT </>}
                                 >
                                     <DeleteUserForm />

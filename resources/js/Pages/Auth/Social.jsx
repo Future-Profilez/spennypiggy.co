@@ -113,7 +113,7 @@ export default function AddSocial({ removetext, openSocial, sLinks, type, redire
     <Popup
       action={close}
       space="4"
-      modalclass="pinkmodal full"
+      modalclassName="pinkmodal full"
       size="md"
       classes=""
       text={removetext ? "" : "Add Socials"}

@@ -27,7 +27,7 @@ export default function NotForBusiness() {
     return (
         <>
             {/* <style>{`
-  .conversion { 
+  .conversion {
     background: #D9EFEA;
   }
   `}</style>
@@ -47,7 +47,7 @@ export default function NotForBusiness() {
                                         <LazyLoadImage
                                             alt={"image"}
                                             height={70}
-                                            useIntersectionObserver={true}
+
                                             effect="blur"
                                             src={not1}
                                             width={70}
@@ -68,7 +68,7 @@ export default function NotForBusiness() {
                                         <LazyLoadImage
                                             alt={"image"}
                                             height={70}
-                                            useIntersectionObserver={true}
+
                                             effect="blur"
                                             src={not2}
                                             width={70}
@@ -90,7 +90,7 @@ export default function NotForBusiness() {
                                         <LazyLoadImage
                                             alt={"image"}
                                             height={70}
-                                            useIntersectionObserver={true}
+
                                             effect="blur"
                                             src={not3}
                                             width={70}

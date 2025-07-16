@@ -133,7 +133,7 @@ export default function Home({ auth, user }) {
         <LiveBar
                 reps={15}
                 classes={"py-3 bg-[#E6EA7B]"}
-                textClass={`!text-4xl font-gulfs mb-0 mx-4 text-uppercase`}
+                textclassName={`!text-4xl font-gulfs mb-0 mx-4 text-uppercase`}
                 color={`bg-[#E6EA7B]`}
                 text={
                     <>
