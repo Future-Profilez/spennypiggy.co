@@ -293,7 +293,7 @@ class StripeController extends Controller
                 'stripe_error' => $e->getError()->message ?? $e->getMessage(),
                 'stripe_code'  => $e->getStripeCode(),
             ]);
-            return redirect(route("user.show", ["username" => $user->username, "page" => 'about']))->with("error",  
+            return redirect(route("user.show", ["username" => $user->username, "page" => 'about']))->with("error",
             $e->getError()->message ?? 'Your Stripe account can’t be onboarded. Please contact support.');
         }
     }
@@ -1104,19 +1104,19 @@ class StripeController extends Controller
         }
 
         $user = Auth::user();
-        if ($user) {
-            $checkCardVerification = User::where('id', Auth::id())->where('role', 0)
-                ->whereHas('gifterCardVerification', function ($q) use ($user) {
-                    $q->where('user_id', $user->id ?? null)->where('status', 'success');
-                })->first();
+        // if ($user) {
+        //     $checkCardVerification = User::where('id', Auth::id())->where('role', 0)
+        //         ->whereHas('gifterCardVerification', function ($q) use ($user) {
+        //             $q->where('user_id', $user->id ?? null)->where('status', 'success');
+        //         })->first();
 
-            if (empty($checkCardVerification) && $user->role == 0) {
-                return response()->json([
-                    'status' => false,
-                    'msg' => "You must have to activate your account before making any payment."
-                ]);
-            }
-        }
+        //     if (empty($checkCardVerification) && $user->role == 0) {
+        //         return response()->json([
+        //             'status' => false,
+        //             'msg' => "You must have to activate your account before making any payment."
+        //         ]);
+        //     }
+        // }
 
 
         if (Auth::check()) {
