@@ -194,9 +194,7 @@ class AuthenticatedSessionController extends Controller
 
         $guest_ids = User::whereIn('email', $guest_emails)->where('is_uk', 0)->pluck('id')->toArray();
         $supporters = count(array_unique(array_merge($support_user_ids, $guest_ids, $guest_emails->diff($guest_ids)->toArray())));
-
         $image = $user->social_image ? "https://ucarecdn.com/{$user->social_image}/-/preview/" : null;
-
         $IsNeedToUpgrade = false;
         $card_capabilities = true;
         if(!empty($user->account_id)) {
@@ -204,8 +202,6 @@ class AuthenticatedSessionController extends Controller
             $IsNeedToUpgrade = ($account->tos_acceptance->service_agreement ?? '') === 'recipient';
             $card_capabilities = StripeControl::isAccountReadyForCheckout($user->account_id);
         }
-
-
 
         $wishitems = [];
         if ($page === 'wishes') {
