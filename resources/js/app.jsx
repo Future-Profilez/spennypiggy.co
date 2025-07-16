@@ -13,24 +13,25 @@ import "../assets/fonts/CeraGRMedium.woff2";
 import { Provider } from "react-redux";
 import store from "./Pages/redux/Store";
 import * as Sentry from "@sentry/react";
-Sentry.init({
-  dsn: "https://14cda094324469c174a7e04a2298502d@o4509650305679360.ingest.us.sentry.io/4509650314526720",
-  // Setting this option to true will send default PII data to Sentry.
-  // For example, automatic IP address collection on events
-  sendDefaultPii: true,
-  integrations: [
-    Sentry.replayIntegration(),
-    Sentry.feedbackIntegration({
-      colorScheme: "system",
-      isNameRequired: true,
-    }),
-  ],
-
-  // Session Replay
-  replaysSessionSampleRate: 0.1, // This sets the sample rate at 10%. You may want to change it to 100% while in development and then sample at a lower rate in production.
-  replaysOnErrorSampleRate: 1.0 // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
-});
-
+// if(import.meta.env.VITE_APP_ENV == 'production'){
+    console.log("sentry enabled");
+    Sentry.init({
+      dsn: "https://14cda094324469c174a7e04a2298502d@o4509650305679360.ingest.us.sentry.io/4509650314526720",
+      sendDefaultPii: true,
+      integrations: [
+        Sentry.replayIntegration(),
+        Sentry.feedbackIntegration({
+          colorScheme: "system",
+          autoInject: false,
+        }),
+      ],
+      // Session Replay
+      replaysSessionSampleRate: 0.1, // This sets the sample rate at 10%. You may want to change it to 100% while in development and then sample at a lower rate in production.
+      replaysOnErrorSampleRate: 1.0 // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
+    });
+// } else {
+//     console.log("sentry Disabled");
+// }
 
 createInertiaApp({
     title: (title) =>
