@@ -263,49 +263,31 @@ export default function Register(props) {
         promoinput.current.value = '';
         setData("promo", '');
     }
-
+    const inputFieldRef = useRef(null);
+    const letterRef = useRef(null);
+    const capitalRef = useRef(null);
+    const numberRef = useRef(null);
+    const specialRef = useRef(null);
+    const lengthRef = useRef(null);
     const handlePassHints = (e) => {
-        setmypass(e.target.value);
-        if (inputField.value.match(lowerLetter)) {
-            letter.classList.remove('text-grey');
-            letter.classList.add('valid');
-        } else {
-            letter.classList.remove('valid');
-            letter.classList.add('text-grey');
-        }
+        const value = e.target.value;
+        setmypass(value);
 
-        if (inputField.value.match(capitalLetter)) {
-            capital.classList.remove('text-grey');
-            capital.classList.add('valid');
-        } else {
-            capital.classList.remove('valid');
-            capital.classList.add('text-grey');
-        }
+        if (letterRef.current)
+            letterRef.current.className = value.match(lowerLetter) ? 'valid' : 'text-grey';
 
-        if (inputField.value.match(numberLetter)) {
-            number.classList.remove('text-grey');
-            number.classList.add('valid');
-        } else {
-            number.classList.remove('valid');
-            number.classList.add('text-grey');
-        }
+        if (capitalRef.current)
+            capitalRef.current.className = value.match(capitalLetter) ? 'valid' : 'text-grey';
 
-        if (inputField.value.match(specialLetter)) {
-            special.classList.remove('text-grey');
-            special.classList.add('valid');
-        } else {
-            special.classList.remove('valid');
-            special.classList.add('text-grey');
-        }
+        if (numberRef.current)
+            numberRef.current.className = value.match(numberLetter) ? 'valid' : 'text-grey';
 
-        if (inputField.value.length > 7) {
-            length.classList.remove('text-grey');
-            length.classList.add('valid');
-        } else {
-            length.classList.add('text-grey');
-            length.classList.remove('valid');
-        }
-    }
+        if (specialRef.current)
+            specialRef.current.className = value.match(specialLetter) ? 'valid' : 'text-grey';
+
+        if (lengthRef.current)
+            lengthRef.current.className = value.length > 7 ? 'valid' : 'text-grey';
+    };
 
 
     return (
@@ -429,7 +411,7 @@ export default function Register(props) {
                                             <input id="password"
                                                 type="password"
                                                 name="password"
-                                                value={mypass}
+                                                value={mypass} ref={inputFieldRef}
                                                 className="mt-1 block w-full"
                                                 autoComplete="off"
                                                 onKeyUp={(e)=>setData('password', e.target.value)}
@@ -457,11 +439,11 @@ export default function Register(props) {
                                             <div className="pass greybox border-0 p-3" >
                                                 <div id="msgText">
                                                     <h3 className='mt-2'>Password must contain the following:</h3>
-                                                    <p id="letter" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> lowercase</b> letter</p>
-                                                    <p id="capital" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> capital (uppercase)</b> letter</p>
-                                                    <p id="number" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> number</b></p>
-                                                    <p id="special" className="text-grey"><CheckCircleIcon /> &nbsp;Special characters</p>
-                                                    <p id="length" className="text-grey mb-0"><CheckCircleIcon /> &nbsp;Password should minimum 8 characters.</p>
+                                                    <p ref={letterRef} id="letter" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> lowercase</b> letter</p>
+                                                    <p ref={capitalRef} id="capital" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> capital (uppercase)</b> letter</p>
+                                                    <p ref={numberRef} id="number" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> number</b></p>
+                                                    <p ref={specialRef} id="special" className="text-grey"><CheckCircleIcon /> &nbsp;Special characters</p>
+                                                    <p ref={lengthRef} id="length" className="text-grey mb-0"><CheckCircleIcon /> &nbsp;Password should minimum 8 characters.</p>
                                                 </div>
                                             </div>
                                         </div>
