@@ -19,12 +19,7 @@ if(import.meta.env.VITE_APP_ENV == 'production'){
       dsn: "https://14cda094324469c174a7e04a2298502d@o4509650305679360.ingest.us.sentry.io/4509650314526720",
       sendDefaultPii: true,
       integrations: [
-        Sentry.replayIntegration({
-            networkDetailAllowUrls: [/.*/],
-            networkRequestHeaders: ['Content-Type', 'Authorization'],
-            networkResponseHeaders: ['Content-Type'],
-            experimental_networkBodyCapture: true,
-        }),
+        Sentry.replayIntegration(),
         Sentry.feedbackIntegration({
           colorScheme: "system",
           autoInject: false,
