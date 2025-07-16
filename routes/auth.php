@@ -455,7 +455,6 @@ Route::prefix("bill")->name("bill.")->group(function () {
 
 
 Route::get('image/dalle', [TestController::class, 'testAiImage'])->name("image-dalle");
-
 Route::match(["get", "post"], '/test-kyc-webhook', [TestController::class, 'reviewWebhook'])->name("test-kyc")->withoutMiddleware(VerifyCsrfToken::class);
 
 
