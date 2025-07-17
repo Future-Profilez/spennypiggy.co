@@ -3,9 +3,6 @@ import { useAlerts } from "@/Components/Alerts";
 import { Head, Link, usePage } from "@inertiajs/react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
 import { addicon } from "@/includes/Icons";
-import spennypiggy from "../../assets/img/logo.png";
-import socialbg from "../../assets/social-bg.png";
-
 const Wishlist = React.lazy(() => import("./Auth/Wishlist"));
 const Wishlistbox = React.lazy(() => import("@/wishlist/Wishlistbox"));
 const Userprofile = React.lazy(() => import("@/wishlist/Userprofile"));
@@ -414,9 +411,8 @@ export default function Dashboard(props) {
                             <div className="relative">
                                 <LazyLoadImage
                                     alt={"image"}
-
                                     effect="blur"
-                                    height={400}
+                                    height={400} fetchPriority="high"
                                     className="w-full border-black border-2 shadow-mint rounded-[30px]"
                                     src={user?.cover_url || wishlistbannerimg}
                                     width={1200}
@@ -461,8 +457,7 @@ export default function Dashboard(props) {
                                         <button
                                             onClick={handleDismiss}
                                             className="absolute top-2 right-2 text-blue-700 hover:text-blue-900"
-                                            aria-label="Dismiss alert"
-                                        >
+                                            aria-label="Dismiss alert">
                                             ✕
                                         </button>
                                     </div>

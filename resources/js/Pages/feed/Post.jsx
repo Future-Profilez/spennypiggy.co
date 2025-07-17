@@ -6,12 +6,12 @@ import subscriberimg from '../../../assets/img/subscribers-img.png'
 import membershipimg from '../../../assets/img/membership-img.png'
 import PostLike from './PostLike'
 import CommentList from './CommetsLists'
-import Dropdown from 'react-bootstrap/Dropdown';
 import DropdownButton from 'react-bootstrap/DropdownButton';
 import AddPost from './AddPost';
 import {  Link, usePage } from "@inertiajs/react";
 import userphoto from "../../../assets/siteicon.png";
 import RemovePost from './RemovePost'
+import { LazyLoadImage } from 'react-lazy-load-image-component'
 
 export default function Post({item}) {
 
@@ -97,7 +97,12 @@ export default function Post({item}) {
         {item && item.type =='image' ?
           <div className='post-images position-relative' >
               <span className='rounded-xl pinkbg position-absolute py-1 px-2 top-3 right-3 text-uppercase text-[10px] text-light ' >{postBadge()}</span>
-              <img alt='spenny piggy' className="post-img w-100 max-h-[400px] object-cover" src={posturl()} />
+
+              <LazyLoadImage
+              effect="blur"
+              width='400' height='400' alt='spenny piggy'
+              className="post-img w-100 max-h-[400px] object-cover" src={posturl()} />
+
               {item.ai_generated == 1 ? <div className='absolute bottom-2 left-2 z-1 bg-black shadow-sm rounded-xl px-2 py-1 text-[8px] text-white'>MADE WITH AI </div> : ""}
           </div>
         : ''}

@@ -1,5 +1,4 @@
 import React from "react";
-// import userphoto from "../../assets/siteicon.png";
 import userphoto from "../../assets/siteicon.png";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { usePage } from "@inertiajs/react";

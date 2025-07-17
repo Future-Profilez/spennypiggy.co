@@ -39,7 +39,7 @@ export default function MyGoal({  IsloggedIn}) {
       </div>
       <div className='p-3' >
         <p className='mb-3 '>Total Earnings</p>
-        <ProgressBar now={goal?.fullfilled}  max={goal?.target} />
+        <ProgressBar aria-label="Earnings" title="Earnings" now={goal?.fullfilled}  max={goal?.target} />
         {goal ? <>{showEarning || IsloggedIn ? <p className='text-muted text-small mt-2' >{formatMultiPrice(goal?.fullfilled, goal?.currency)} earned.</p> : ''}</>: ''}
       </div>
     </div>
