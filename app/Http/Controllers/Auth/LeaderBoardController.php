@@ -25,10 +25,7 @@ class LeaderBoardController extends Controller
 {
     public function wishtenderWishers($type = null)
     {
-        // try {
-
         $users = $this->calc($type);
-
         $perPage = 50;
         $page = request()->get('page', 1);
         $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
@@ -38,7 +35,6 @@ class LeaderBoardController extends Controller
             $page,
             ['path' => request()->url(), 'query' => request()->query()]
         );
-
         $data = [];
         $rank = 1;
         foreach ($paginator as $query) {
@@ -56,7 +52,6 @@ class LeaderBoardController extends Controller
             ];
             $rank++;
         }
-
         if (empty($type)) {
             $is_daily = 0;
             $daily = $this->calc('daily');
@@ -72,6 +67,7 @@ class LeaderBoardController extends Controller
             ]);
         }
 
+        // Leaderboard stars
         return response()->json([
             "success" => true,
             'data' => $data,
@@ -80,14 +76,9 @@ class LeaderBoardController extends Controller
             "current_page" => $paginator->currentPage() ?? null,
             "total" => $paginator->total() ?? null,
             "per_page" => $paginator->perPage() ?? null,
+            "stars" => $paginator->perPage() ?? null,
         ]);
-        // } catch (\Exception $e) {
-        //     return response()->json([
-        //         "success" => false,
-        //         "message" => 'Something went wrong',
-        //         "error" => $e
-        //     ]);
-        // }
+        
     }
 
 
@@ -288,6 +279,138 @@ class LeaderBoardController extends Controller
         }
     }
 
+
+public function recentGifters()
+{
+    try {
+        $last24hour = Carbon::now()->subHours(24);
+        $gifters = [];
+
+        // Wishlist Payments
+        $wishes = StripePaymentItems::whereHas('payment', function ($q) use ($last24hour) {
+            $q->where('payment_status', 'paid')
+              ->where('created_at', '>', $last24hour);
+        })->with('payment.user')->get();
+
+        foreach ($wishes as $item) {
+            $user = $item->payment->user ?? null;
+            if ($user) {
+                $gifters[] = [ 
+                    'name' => $user->name ?? "Anonymous",
+                    'username' => $user->username ?? "Anonymous",
+                    'avatar_url' => $user->avatar_url ?? null,
+                    'cover_url' => $user->cover_url ?? 'Anonymous',
+                    'role' => $user->role ?? 'Anonymous',
+                    'profile_status_lock' => $user->profile_status_lock ?? 1,
+                    'amount' => $item->amount,
+                    'currency' => $item->payment->currency,
+                ];
+            }
+        }
+
+        // Wishlist Subscriptions
+        $subscriptions = WishItemSubscription::with('user')
+            ->where('status', 'paid')
+            ->where('created_at', '>', $last24hour)
+            ->get();
+
+        foreach ($subscriptions as $sub) {
+            $user = $sub->user;
+            $gifters[] = [
+                'name' => $user->name ?? "Anonymous",
+                'username' => $user->username ?? "Anonymous",
+                'avatar_url' => $user->avatar_url ?? null,
+                'cover_url' => $user->cover_url ?? 'Anonymous',
+                'role' => $user->role ?? 'Anonymous',
+                'profile_status_lock' => $user->profile_status_lock ?? 1,
+                'amount' => $sub->amount,
+                'currency' => $sub->currency,
+            ];
+        }
+
+        // Tips
+        $tips = TipGoalsPayment::with('user')
+            ->where('status', 'paid')
+            ->where('created_at', '>', $last24hour)
+            ->get();
+
+        foreach ($tips as $tip) {
+            $user = $tip->user;
+            $gifters[] = [
+                'name' => $user->name ?? "Anonymous",
+                'username' => $user->username ?? "Anonymous",
+                'avatar_url' => $user->avatar_url ?? null,
+                'cover_url' => $user->cover_url ?? 'Anonymous',
+                'role' => $user->role ?? 'Anonymous',
+                'profile_status_lock' => $user->profile_status_lock ?? 1,
+                'amount' => $tip->amount,
+                'currency' => $tip->currency,
+            ];
+        }
+
+        // Memberships
+        $members = MembershipPayment::with('user')
+            ->where('status', 'paid')
+            ->where('created_at', '>', $last24hour)
+            ->get();
+
+        foreach ($members as $member) {
+            $user = $member->user;
+            $gifters[] = [
+                'name' => $user->name ?? "Anonymous",
+                'username' => $user->username ?? "Anonymous",
+                'avatar_url' => $user->avatar_url ?? null,
+                'cover_url' => $user->cover_url ?? 'Anonymous',
+                'role' => $user->role ?? 'Anonymous',
+                'profile_status_lock' => $user->profile_status_lock ?? 1,
+                'amount' => $member->amount,
+                'currency' => $member->currency,
+            ];
+        }
+
+        // Bills
+        $bills = BillPayment::with('user')
+            ->where('status', 'paid')
+            ->where('created_at', '>', $last24hour)
+            ->get();
+
+        foreach ($bills as $bill) {
+            $user = $bill->user;
+            $gifters[] = [
+                'name' => $user->name ?? "Anonymous",
+                'username' => $user->username ?? "Anonymous",
+                'avatar_url' => $user->avatar_url ?? null,
+                'cover_url' => $user->cover_url ?? 'Anonymous',
+                'role' => $user->role ?? 'Anonymous',
+                'profile_status_lock' => $user->profile_status_lock ?? 1,
+                'amount' => $bill->amount,
+                'currency' => $bill->currency,
+            ];
+        }
+
+        // Sort by amount (optional)
+        usort($gifters, fn ($a, $b) => $b['amount'] <=> $a['amount']);
+
+        // Optional: remove duplicates based on username
+        $gifters = collect($gifters)->unique('username')->values()->take(5);
+
+        return response()->json([
+            "status" => true,
+            'data' => $gifters,
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            "status" => false,
+            "msg" => 'Something went wrong',
+            "error" => $e->getMessage()
+        ]);
+    }
+}
+
+
+
+
     public function largestGifts($type = null)
     {
         try {
@@ -460,6 +583,51 @@ class LeaderBoardController extends Controller
             ]);
         }
     }
+   public function leaderboardStar($type = null)
+{
+    try {
+        // Group by user (the tipper/fan), get total amount tipped per user
+        $tips = TipGoalsPayment::whereHas('creator', function ($q) {
+            $q->where(function ($s) {
+                $s->whereNot('country', 'GB')->orWhereNull('country');
+            });
+        })
+        ->where('status', 'paid')
+        ->select('user_id', DB::raw('SUM(amount) as total_amount'), DB::raw('MAX(currency) as currency'))
+        ->groupBy('user_id')
+        ->with(['user']) // make sure user relation exists
+        ->orderByDesc('total_amount')
+        ->get();
+
+        $array = [];
+
+        foreach ($tips as $tip) {
+            if (!$tip->user) continue; // in case user is null
+
+            $array[] = [
+                'name' => $tip->user->name,
+                'username' => $tip->user->username,
+                'avatar_url' => $tip->user->avatar_url,
+                'cover_url' => $tip->user->cover_url,
+                'amount' => $tip->total_amount,
+                'currency' => $tip->currency,
+            ];
+        }
+
+        return response()->json([
+            "status" => true,
+            'data' => $array,
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            "status" => false,
+            "msg" => 'Something went wrong',
+            "error" => $e->getMessage(),
+        ]);
+    }
+}
+
 
 
     /**

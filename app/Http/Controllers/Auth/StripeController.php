@@ -1298,7 +1298,7 @@ class StripeController extends Controller
                 Helpers::sendNotification($title, $content, $email);
 
                 // below is membership pwa for creator
-                $FanName = ucfirst($tip_pay->user->name) ?? 'A Fan';
+                $FanName = ucfirst($tip_pay->user->name ?? 'A Fan');
                 $title = "💰 New Support Received";
                 $content = "You just received a support payment from $FanName!.";
                 $email = $tip_pay->creator->email;

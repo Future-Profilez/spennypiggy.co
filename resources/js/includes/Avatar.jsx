@@ -20,22 +20,21 @@ export default function Avatar({ src, role, profile_status_lock, imageSrc, name,
       {username ? (
         <div className="avatar-wrap">
           <Link href={url || `/${link || username}`} className="useravatar">
-            <div className="avatar">
+            <div className="avatar ">
               <LazyLoadImage
                 src={imageSrc || src || userphoto}
                 alt="image-avatar"
-                className="img-fluid"
-
+                className="img-fluid "
                 effect="blur"
                 height={100}
                 width={100}
               />
             </div>
             <div className="avatar-content">
-              <h2 className='flex items-center'>{name} {role && profile_status_lock ?
+              <h2 className='flex items-center '>{name} {role && profile_status_lock ?
               <RiVerifiedBadgeFill  size={'1.2rem'} className="ms-1 mt-1 text-pink" /> : ''}
               </h2>
-              <p>{subhead || username}</p>
+              <p className='text-gray-500'>{subhead || username}</p>
             </div>
           </Link>
         </div>

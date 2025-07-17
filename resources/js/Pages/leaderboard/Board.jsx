@@ -8,6 +8,7 @@ import React, { useState, useMemo } from "react";
 import LargestGifts from "./LargestGifts";
 import { crown } from "@/includes/Icons";
 import { RiVerifiedBadgeFill } from "react-icons/ri";
+import LeaderboardStars from "./LeaderboardStars";
 
 export default function Board(props) {
     const { auth, data, is_daily } = props;
@@ -53,7 +54,6 @@ export default function Board(props) {
                         <p className="font-gulfs">#{r && r.rank}</p>
                     </div>
                     <div className="wisher">
-                        
                         <Avatar
                             role={r && r.role}
                             profile_status_lock={r && r.profile_status_lock === 2 ? true : false}
@@ -172,66 +172,71 @@ export default function Board(props) {
     return (
         <Authenticated auth={auth && auth.user}>
             <Head title={"Leaderboard"} />
-            <div className="blackbg pt-4">
+            <div className="bg-white pt-4">
                 <div className="containerbox pb-5 pt-2 ">
+                    <h1 className="text-bl font-GillSans text-start text-4xl my-6 uppercase text-black ">
+                        Leaderboard
+                    </h1>
                     <div className="row">
                         <div className="col-xl-8 mb-4">
                             <div className="pe-md-4">
-                                <div className="pt-4 pt-md-0 d-block d-mflex items-center justify-between mb-4 pb-4">
-                                    <h1 className="text-bl font-GillSans text-start text-4xl mb-3 uppercase text-white ">
-                                        Leaderboard
-                                    </h1>
-                                    <div className="changePeriod">
-                                        <button className={`!text-sm md:!text-[18px] ${period == "all" ? "active":""}`}
-                                        onClick={() => switchTime("all")}
-                                        > All Time </button>
-                                        <button className={`!text-sm md:!text-[18px] ${period == "monthly" ? "active":""}`}
-                                        onClick={() => switchTime("monthly")}
-                                        > Monthly </button>
-                                        <button className={`!text-sm md:!text-[18px] ${period == "weekly" ? "active":""}`}
-                                        onClick={() => switchTime("weekly")}
-                                        > Weekly </button>
-                                        {is_daily == 1 ? ( <button className={`!text-sm md:!text-[18px] ${period == "daily" ? "active":""}`}
-                                        onClick={() => switchTime("daily")}
-                                        > Daily </button> ):( "" )}
+                                <div className="p-2 md:p-4 pinkbg rounded-[30px] mb-6">
+                                    <div className="pt-4 pt-md-0  mt-6   mb-4 pb-4">
+                                        <h1 className="text-bl btn-shadow text-center font-GillSans  text-3xl mb-3 uppercase text-white ">
+                                            Top Creators Getting <br></br> the Most Love
+                                        </h1>
+                                        <div className="changePeriod w-full">
+                                            <button className={`!text-sm md:!text-[18px] ${period == "all" ? "active text-white":""}`}
+                                            onClick={() => switchTime("all")}
+                                            > All Time </button>
+                                            <button className={`!text-sm md:!text-[18px] ${period == "monthly" ? "active text-white":""}`}
+                                            onClick={() => switchTime("monthly")}
+                                            > Monthly </button>
+                                            <button className={`!text-sm md:!text-[18px] ${period == "weekly" ? "active text-white":""}`}
+                                            onClick={() => switchTime("weekly")}
+                                            > Weekly </button>
+                                            {is_daily == 1 ? ( <button className={`!text-sm md:!text-[18px] ${period == "daily" ? "active":""}`}
+                                            onClick={() => switchTime("daily")}
+                                            > Daily </button> ):( "" )}
 
+                                        </div>
                                     </div>
-                                </div>
-                                <div
-                                    className={`${
-                                        loading ? "loading-state" : ""
-                                    }  postions pb-3 sm:pb-3 lg:pb-5 pt-5 mt-3`}
-                                >
-                                    {positions && positions[1] ? (
-                                        <Position
-                                            position={2}
-                                            p={positions && positions[1]}
-                                        />
-                                    ) : (
-                                        ""
-                                    )}
-                                    {positions && positions[0] ? (
-                                        <Position
-                                            position={1}
-                                            p={positions && positions[0]}
-                                        />
-                                    ) : (
-                                        ""
-                                    )}
-                                    {positions && positions[2] ? (
-                                        <Position
-                                            position={3}
-                                            p={positions && positions[2]}
-                                        />
-                                    ) : (
-                                        ""
-                                    )}
+                                    <div
+                                        className={`${
+                                            loading ? "loading-state" : ""
+                                        }  postions pb-3 sm:pb-3 lg:pb-5 pt-5 mt-3`}
+                                    >
+                                        {positions && positions[1] ? (
+                                            <Position
+                                                position={2}
+                                                p={positions && positions[1]}
+                                            />
+                                        ) : (
+                                            ""
+                                        )}
+                                        {positions && positions[0] ? (
+                                            <Position
+                                                position={1}
+                                                p={positions && positions[0]}
+                                            />
+                                        ) : (
+                                            ""
+                                        )}
+                                        {positions && positions[2] ? (
+                                            <Position
+                                                position={3}
+                                                p={positions && positions[2]}
+                                            />
+                                        ) : (
+                                            ""
+                                        )}
+                                    </div>
                                 </div>
                                 {ranks && ranks.length ? (
                                     <div
                                         className={`${
                                             loading ? "loading-state" : ""
-                                        }  rank_lists bg-white py-3 px-3 rounded-[25px]`}
+                                        }  rank_lists bg-gray-100 py-3 px-3 rounded-[25px] `}
                                     >
                                         {ranks.map((r, i) => {
                                             return <Rank r={r} key={i} />;
@@ -244,6 +249,7 @@ export default function Board(props) {
                         </div>
                         <div className="col-xl-4">
                             <LargestGifts />
+                            <LeaderboardStars />
                         </div>
                     </div>
                 </div>

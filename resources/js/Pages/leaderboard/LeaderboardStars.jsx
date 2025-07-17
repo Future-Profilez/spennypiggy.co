@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 import LoadingScreen from '@/includes/LoadingScreen';
 import PriceFormat from '@/includes/PriceFormat';
 import Nocontent from '@/includes/Nocontent';
-export default function LargestGifts() {
+export default function LeaderboardStars() {
 
   const { formatMultiPrice } = PriceFormat();
   const [ period, setPeriod] = useState('last24hour');
@@ -16,7 +16,7 @@ export default function LargestGifts() {
 
   const fetchGifts = (period) => {
     setLoading(true);
-    axios.get(`largest-gifts/${period}`)
+    axios.get(`leaderboard/star/lists`)
       .then((response) => {
         setData(response.data.data);
         setLoading(false);
@@ -58,29 +58,25 @@ export default function LargestGifts() {
   );
 
   return (
-    <>
-    {data.length > 0 ? <div className="bg-gray-100 rounded-[25px] p-4 mb-6">
-      <h2 className="text-bl font-GillSans text-start text-2xl uppercase text-dark ">Recents Gifters</h2>
-      {/* <div className="time-hrs">
-        <button className={period === 'last24hour' ? "active" : ''} onClick={() => setPeriod('last24hour')}>Last 24 hrs </button>
-        <button className={period === 'lasthour' ? "active" : ''} onClick={() => setPeriod('lasthour')}> Last Hour </button>
-      </div> */}
-      {/* {loading ? (
-        <LoadingScreen />
-      ) : (
+   <>
+    {data.length > 0 ?  <div className="bg-gray-100 rounded-[25px] p-4">
+      <h2 className="text-bl font-GillSans  text-2xl uppercase text-dark mb-4 text-start">🏅 Top Supporters</h2>
+         {/* {loading ? (
+         <LoadingScreen />
+         ) : (
+         )} */}
         <>
+          {data.length ? (
+            data.map((gift, index) => (
+              <GiftItem key={gift.id} gift={gift} index={index} />
+            ))
+          ) : (
+            <div className="my-4">
+              <Nocontent classes="bg-white" text="Nothing to see" />
+            </div>
+          )}
         </>
-      )} */}
-      {data.length ? (
-        data.map((gift, index) => (
-          <GiftItem key={gift.id} gift={gift} index={index} />
-        ))
-      ) : (
-        <div className="my-4">
-          <Nocontent classes="bg-white" text="Nothing to see" />
-        </div>
-      )}
     </div> : ''}
-    </>
+   </>
   );
 }
