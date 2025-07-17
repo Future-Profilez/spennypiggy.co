@@ -67,7 +67,7 @@ export default function Board(props) {
                     </div>
                 </div>
                 <div className="rank-stats">
-                    <p className="toppercentage pe-4">{r && r.top}</p>
+                    <p className="toppercentage md:pe-4">{r && r.top}</p>
                 </div>
             </div>
         );
@@ -238,9 +238,9 @@ export default function Board(props) {
                                     <div
                                     className={`${
                                         loading ? "loading-state" : ""
-                                        }  rank_lists bg-gray-100 p-4  rounded-[25px] `}
+                                        }  rank_lists bg-gray-100 p-3 md:p-4  rounded-[25px] `}
                                         >
-                                        <h2 className="text-bl font-GillSans text-start text-2xl uppercase text-dark ">🔥 Rising Creators</h2>
+                                        <h2 className=" font-GillSans text-start text-2xl uppercase text-dark ">🔥 Rising Creators</h2>
                                         <p className="mb-6">New creators gaining support fast</p>
                                         {ranks.map((r, i) => {
                                             return <Rank r={r} key={i} />;

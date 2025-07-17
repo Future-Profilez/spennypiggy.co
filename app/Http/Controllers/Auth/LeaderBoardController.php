@@ -390,8 +390,7 @@ class LeaderBoardController extends Controller
 
             // Sort by amount (optional)
             usort($gifters, fn ($a, $b) => $b['amount'] <=> $a['amount']);
-
-            // Optional: remove duplicates based on username
+ 
             $gifters = collect($gifters)->unique('username')->values()->take(5);
 
             return response()->json([
@@ -668,12 +667,10 @@ class LeaderBoardController extends Controller
                 }
             }
 
-            // Convert to array and sort by total amount
             $sortedGifters = collect($gifters)->sortByDesc('amount')->values();
-
             return response()->json([
                 "status" => true,
-                'data' => $sortedGifters,
+            'data' => $sortedGifters,
             ]);
 
         } catch (\Exception $e) {

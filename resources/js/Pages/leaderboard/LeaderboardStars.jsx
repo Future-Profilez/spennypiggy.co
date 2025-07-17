@@ -13,12 +13,17 @@ export default function LeaderboardStars() {
   const [ period, setPeriod] = useState('last24hour');
   const [ loading, setLoading] = useState(false);
   const [ data, setData] = useState([]);
+  const [ lists, setLists] = useState([]);
 
   const fetchGifts = (period) => {
     setLoading(true);
     axios.get(`leaderboard/star/lists`)
       .then((response) => {
+         const l = response.data.data;
         setData(response.data.data);
+        if(l.length > 0){
+           setLists(l.slice(0, 10));
+        }
         setLoading(false);
       })
       .catch((error) => {
@@ -59,7 +64,7 @@ export default function LeaderboardStars() {
 
   return (
    <>
-    {data.length > 0 ?  <div className="bg-gray-100 rounded-[25px] p-4">
+    {lists.length > 0 ?  <div className="bg-gray-100 rounded-[25px] p-4">
       <h2 className="text-bl font-GillSans  text-2xl uppercase text-dark text-start">🏅 Top Supporters</h2>
       <p className='text-gray-500  mb-3'>Most generous fans this week</p>
          {/* {loading ? (
@@ -67,15 +72,16 @@ export default function LeaderboardStars() {
          ) : (
          )} */}
         <>
-          {data.length ? (
-            data.map((gift, index) => (
-              <GiftItem key={gift.id} gift={gift} index={index} />
+          {lists.length ? (
+            lists.map((gift, index) => (
+              <GiftItem key={`supportor${index}`} gift={gift} index={index} />
             ))
           ) : (
-            <div className="my-4">
-              <Nocontent classes="bg-white" text="Nothing to see" />
-            </div>
+            ''
           )}
+          {data.length == lists.length  ? '' : <div className='flex justify-center mt-3'>
+            <button onClick={() => setLists(data)} className="text-black m-auto">See All</button>
+          </div>}
         </>
     </div> : ''}
    </>
