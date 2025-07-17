@@ -5,10 +5,11 @@ import userphoto from "../../../assets/siteicon.png";
 import Avatar from "@/includes/Avatar";
 import axios from "axios";
 import React, { useState, useMemo } from "react";
-import LargestGifts from "./LargestGifts";
 import { crown } from "@/includes/Icons";
 import { RiVerifiedBadgeFill } from "react-icons/ri";
 import LeaderboardStars from "./LeaderboardStars";
+import RecentGifters from "./RecentGifters";
+import DeviceID from "@/includes/DeviceID";
 
 export default function Board(props) {
     const { auth, data, is_daily } = props;
@@ -186,16 +187,16 @@ export default function Board(props) {
                                             Top Creators Getting <br></br> the Most Love
                                         </h1>
                                         <div className="changePeriod w-full">
-                                            <button className={`!text-sm md:!text-[18px] ${period == "all" ? "active text-white":""}`}
+                                            <button className={` !text-sm md:!text-[18px] ${period == "all" ? "active text-white":""}`}
                                             onClick={() => switchTime("all")}
                                             > All Time </button>
-                                            <button className={`!text-sm md:!text-[18px] ${period == "monthly" ? "active text-white":""}`}
+                                            <button className={` !text-sm md:!text-[18px] ${period == "monthly" ? "active text-white":""}`}
                                             onClick={() => switchTime("monthly")}
                                             > Monthly </button>
-                                            <button className={`!text-sm md:!text-[18px] ${period == "weekly" ? "active text-white":""}`}
+                                            <button className={` !text-sm md:!text-[18px] ${period == "weekly" ? "active text-white":""}`}
                                             onClick={() => switchTime("weekly")}
                                             > Weekly </button>
-                                            {is_daily == 1 ? ( <button className={`!text-sm md:!text-[18px] ${period == "daily" ? "active":""}`}
+                                            {is_daily == 1 ? ( <button className={` !text-sm md:!text-[18px] ${period == "daily" ? "active text-white":""}`}
                                             onClick={() => switchTime("daily")}
                                             > Daily </button> ):( "" )}
 
@@ -232,12 +233,15 @@ export default function Board(props) {
                                         )}
                                     </div>
                                 </div>
+
                                 {ranks && ranks.length ? (
                                     <div
-                                        className={`${
-                                            loading ? "loading-state" : ""
-                                        }  rank_lists bg-gray-100 py-3 px-3 rounded-[25px] `}
-                                    >
+                                    className={`${
+                                        loading ? "loading-state" : ""
+                                        }  rank_lists bg-gray-100 p-4  rounded-[25px] `}
+                                        >
+                                        <h2 className="text-bl font-GillSans text-start text-2xl uppercase text-dark ">🔥 Rising Creators</h2>
+                                        <p className="mb-6">New creators gaining support fast</p>
                                         {ranks.map((r, i) => {
                                             return <Rank r={r} key={i} />;
                                         })}
@@ -248,7 +252,7 @@ export default function Board(props) {
                             </div>
                         </div>
                         <div className="col-xl-4">
-                            <LargestGifts />
+                            <RecentGifters />
                             <LeaderboardStars />
                         </div>
                     </div>

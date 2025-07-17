@@ -383,8 +383,8 @@ Route::get('/files/{filename}', function (string $filename) {
     return Storage::response($fullPath);
 });
 
-Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'recentGifters'])->name('largest-gifts');
-Route::get('leaderboard/star/lists', [LeaderBoardController::class, 'leaderboardStar'])->name('leaderboard.stars');
+Route::get('recent-gifters/{type?}', [LeaderBoardController::class, 'recentGifters'])->name('largest-gifts');
+Route::get('leaderboard/star/lists', [LeaderBoardController::class, 'topGiftersAllTime'])->name('leaderboard.stars');
 
 /* wishtender */
 Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('leaderboard');

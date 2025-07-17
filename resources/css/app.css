@@ -85,7 +85,7 @@ body{position:relative;font-family:var(--para-font)}
 .profile-image img{max-height:100%;max-width:100%;width:100%;height:100%;object-fit:cover;border-radius:50%}
 .rank-position h2{text-shadow:2px 2px 1px #e6ea82;-webkit-text-stroke:1px #e6ea82;color:var(--pink);font-size:25px}
 .changePeriod{display:flex;justify-content:center}
-.changePeriod button{color:#808080;font-size:20px;padding:10px 2px;border-bottom:2px solid transparent;margin:0 10px}
+.changePeriod button{color:#ebebeb;font-size:20px;padding:10px 2px;border-bottom:2px solid transparent;margin:0 10px}
 .changePeriod button.active{border-bottom:2px solid var(--mint);color:#fff}
 /* .postions .position-1 .profile-content *{color:#fff !important}
 */

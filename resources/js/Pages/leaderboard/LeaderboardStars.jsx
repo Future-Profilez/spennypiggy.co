@@ -60,7 +60,8 @@ export default function LeaderboardStars() {
   return (
    <>
     {data.length > 0 ?  <div className="bg-gray-100 rounded-[25px] p-4">
-      <h2 className="text-bl font-GillSans  text-2xl uppercase text-dark mb-4 text-start">🏅 Top Supporters</h2>
+      <h2 className="text-bl font-GillSans  text-2xl uppercase text-dark text-start">🏅 Top Supporters</h2>
+      <p className='text-gray-500  mb-3'>Most generous fans this week</p>
          {/* {loading ? (
          <LoadingScreen />
          ) : (
