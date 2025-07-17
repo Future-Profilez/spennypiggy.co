@@ -582,7 +582,7 @@ class LeaderBoardController extends Controller
             ]);
         }
     }
-  public function topGiftersAllTime()
+    public function topGiftersAllTime()
     {
         try {
             $gifters = [];
@@ -681,6 +681,95 @@ class LeaderBoardController extends Controller
             ]);
         }
     }
+
+
+
+    public function top10UniqueBiggestGifters()
+{
+    try {
+        $gifters = [];
+
+        $storeMaxPayment = function (&$gifters, $user, $amount, $currency, $type, $createdAt) {
+            $username = $user->username ?? 'anonymous_' . ($user->id ?? uniqid());
+
+            if (
+                !isset($gifters[$username]) || 
+                $amount > $gifters[$username]['amount']
+            ) {
+                $gifters[$username] = [
+                    'type' => $type,
+                    'name' => $user->name ?? "Anonymous",
+                    'username' => $user->username ?? "Anonymous",
+                    'avatar_url' => $user->avatar_url ?? null,
+                    'cover_url' => $user->cover_url ?? 'Anonymous',
+                    'role' => $user->role ?? 'Anonymous',
+                    'profile_status_lock' => $user->profile_status_lock ?? 1,
+                    'amount' => $amount,
+                    'currency' => $currency,
+                    'created_at' => $createdAt,
+                ];
+            }
+        };
+
+        // Wishlist Gifts
+        $wishes = StripePaymentItems::whereHas('payment', fn($q) => $q->where('payment_status', 'paid'))
+            ->with('payment.user')->get();
+
+        foreach ($wishes as $item) {
+            $user = $item->payment->user ?? null;
+            if ($user) {
+                $storeMaxPayment($gifters, $user, $item->amount, $item->payment->currency, 'wishlist_gift', $item->created_at);
+            }
+        }
+
+        // Subscriptions
+        $subs = WishItemSubscription::with('user')->where('status', 'paid')->get();
+        foreach ($subs as $sub) {
+            if ($sub->user) {
+                $storeMaxPayment($gifters, $sub->user, $sub->amount, $sub->currency, 'subscription', $sub->created_at);
+            }
+        }
+
+        // Tips
+        $tips = TipGoalsPayment::with('user')->where('status', 'paid')->get();
+        foreach ($tips as $tip) {
+            if ($tip->user) {
+                $storeMaxPayment($gifters, $tip->user, $tip->amount, $tip->currency, 'tip', $tip->created_at);
+            }
+        }
+
+        // Memberships
+        $memberships = MembershipPayment::with('user')->where('status', 'paid')->get();
+        foreach ($memberships as $member) {
+            if ($member->user) {
+                $storeMaxPayment($gifters, $member->user, $member->amount, $member->currency, 'membership', $member->created_at);
+            }
+        }
+
+        // Bills
+        $bills = BillPayment::with('user')->where('status', 'paid')->get();
+        foreach ($bills as $bill) {
+            if ($bill->user) {
+                $storeMaxPayment($gifters, $bill->user, $bill->amount, $bill->currency, 'bill', $bill->created_at);
+            }
+        }
+
+        $topUniqueGifters = collect($gifters)->sortByDesc('amount')->values()->take(5);
+
+        return response()->json([
+            'status' => true,
+            'data' => $topUniqueGifters,
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'msg' => 'Something went wrong',
+            'error' => $e->getMessage(),
+        ]);
+    }
+}
+
 
 
 
@@ -1134,4 +1223,4 @@ class LeaderBoardController extends Controller
             'data' => $resp
         ]);
     }
-}
+    }

@@ -10,6 +10,7 @@ import { RiVerifiedBadgeFill } from "react-icons/ri";
 import LeaderboardStars from "./LeaderboardStars";
 import RecentGifters from "./RecentGifters";
 import DeviceID from "@/includes/DeviceID";
+import LargestGifts from "./LargestGifts";
 
 export default function Board(props) {
     const { auth, data, is_daily } = props;
@@ -253,6 +254,7 @@ export default function Board(props) {
                         </div>
                         <div className="col-xl-4">
                             <RecentGifters />
+                            <LargestGifts />
                             <LeaderboardStars />
                         </div>
                     </div>
