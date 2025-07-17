@@ -110,6 +110,9 @@ export default function Board(props) {
                                         <RiVerifiedBadgeFill  size={'1.2rem'} className="ms-1 mt-1 text-pink" />
                                         : ''}
                                 </h2>
+                                <h2 className=" text-sm capitalize text-gray-500 mb-3 flex justify-center">
+                                    @{p && p.username} 
+                                </h2>
                                 <p className="toppercentage text-center font-gulfs">
                                     {p && p.top}%{" "}
                                 </p>
