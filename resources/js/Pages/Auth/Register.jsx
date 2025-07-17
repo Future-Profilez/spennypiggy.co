@@ -307,7 +307,7 @@ export default function Register(props) {
                         <h2 className='text-[30px] font-GillSans text-uppercase pt-8 text-center px-2'>Create Account</h2>
                         <p className='text-center text-[18px] text-dark mb-4 '>Already registered? <Link className={'text-pink'} href={route('login')}  > Log In</Link></p>
 
-                        <div className={`${step === 0 ? '' : 'd-none'}    px-3 py-3 pb-5`} >
+                        {step === 0 && <div className={`${step === 0 ? '' : 'd-none'}    px-3 py-3 pb-5`} >
                             <div className='p-2 w-full max-w-[400px] m-auto'>
                                 <div  onClick={()=>handleBecomeCreator(1)}  className={`${role==1 ? 'active' : '' }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}>
                                     <h2 className='text-[22px] font-GillSans text-uppercase' >I'm a Creator</h2>
@@ -322,15 +322,15 @@ export default function Register(props) {
                             </div>
 
                             <p className='text-muted text-base text-center max-w-[450px] m-auto mt-4' >You can support other creators with either of the account types and can change your account type anytime.</p>
-                        </div>
+                        </div>}
 
-                        <div className={`${step === 1 ? '' : 'd-none'}    px-3`} >
+                        {step === 1 && <div className={`${step === 1 ? '' : 'd-none'}    px-3`} >
                             <div className='px-0 px-md-4 px-lg-5 pb-4'>
                                 <p className='text-center text-[17px] text-muted ' >Choose from the following categories. This helps people find your profile. You can change these at any time.</p>
 
                                 <div className='flex creator-tags justify-content-center flex-wrap mt-4' >
                                     {creatortypes.map((s, index) => (
-                                        <div key={index} className="flex items-center">
+                                        <div key={s.value} className="flex items-center">
                                             <input
                                                 id={`tyeps-${index}`}
                                                 name={s.value}
@@ -338,7 +338,7 @@ export default function Register(props) {
                                                 value={s.value}
                                                 className="mr-2  text-indigo-500  hidden"
                                                 onChange={handleProfileTags}
-                                            />
+                                            /> 
                                             <label
                                                 htmlFor={`tyeps-${index}`}
                                                 className="me-1 mb-1 bg-gray-200 px-4 py-[10px] rounded-[40px] text-[15px] text-gray-600 cursor-pointer" >
@@ -350,9 +350,9 @@ export default function Register(props) {
 
                                 <button onClick={handleNext} className='btn-pink md m-auto mt-3 w-full' >  Next</button>
                             </div>
-                        </div>
+                        </div> }
 
-                        <div className={`${step === 2 ? '' : 'd-none'}`} >
+                        {step === 2 && <div className={`${ step === 2 ? '' : 'd-none'}`} >
                             <form onSubmit={submit} className='p-4' >
                                 <div className='login-step1 loginform'>
 
@@ -551,7 +551,7 @@ export default function Register(props) {
                                     </div>
 
                                     <div className='m-auto hcaptcha-wrap d-table mb-2 mt-4  mt-md-3' >
-                                        <HCaptcha  ref={captchaRef}
+                                        <HCaptcha ref={captchaRef}
                                         sitekey={props.hcaptchakey || ''}
                                         data-theme="light"
                                         data-size="compact"
@@ -589,7 +589,7 @@ export default function Register(props) {
 
                                 </div>
                             </form>
-                        </div>
+                        </div> }
                     </div>
                 </div>
             </div>
