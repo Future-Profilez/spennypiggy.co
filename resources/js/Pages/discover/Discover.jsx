@@ -19,12 +19,12 @@ export default function Discover(props) {
                     <p className='text-center text-large'>Search through all wishes and creators to make their dreams come true!</p>
                 </div>
                 <div className='howWorkTab mt-12 pb-12 mx-auto'>
-                    <Tabs defaultActiveKey="1" id="uncontrolled-tab-example" className="mb-3">
-                        <Tab eventKey="1" title="Wishes" className='px-0'>
-                              <Allwishes />
-                        </Tab>
+                    <Tabs defaultActiveKey="2" id="uncontrolled-tab-example" className="mb-3">
                         <Tab eventKey="2" title="Creators" className='px-0'>
                               <IntroVideos />
+                        </Tab>
+                        <Tab eventKey="1" title="Wishes" className='px-0'>
+                              <Allwishes />
                         </Tab>
                     </Tabs>
                 </div>

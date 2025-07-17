@@ -757,7 +757,7 @@ class LeaderBoardController extends Controller
         $topUniqueGifters = collect($gifters)->sortByDesc('amount')->values()->take(5);
 
         return response()->json([
-            'status' => true,
+            'status' => true, 
             'data' => $topUniqueGifters,
         ]);
 
