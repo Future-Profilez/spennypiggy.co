@@ -64,7 +64,7 @@ export default function TipInner({classes, idd}) {
   const { data, setData, post, processing, errors, reset } = useForm({
     email: auth && auth.user?.email || '',
     name: auth && auth.user?.name || '',
-    message: '',
+    message: 'Just a small token of appreciation 💖',
     anonymous: 0,
     amount: amount
   });
@@ -83,6 +83,10 @@ export default function TipInner({classes, idd}) {
 
   const send = (e) => {
     e.preventDefault();
+    if(data.email === "" || data.name === "" ){
+        errorAlert("Please enter all the required details.");
+        return false;
+    }
     if(auth && !auth.user && usdToGbp(data.amount) > 50){
         errorAlert("Larger payments more than £50 need to login.");
         router.visit(`/login?redirect=${window.location.pathname}&message=Larger payments more than £50 need to login.`);
@@ -142,8 +146,8 @@ export default function TipInner({classes, idd}) {
                 </div>
             </div> : ''}
 
-            <div className="form-field mb-3">
-              <textarea className="form-input w-100 rounded"
+            <div className="form-field mb-3"> 
+              <textarea className="form-input w-100 rounded" defaultValue={'Just a small token of appreciation 💖'}
               onChange={(e) => setData('message', e.target.value)}
               placeholder="Write a short note." />
             </div>
