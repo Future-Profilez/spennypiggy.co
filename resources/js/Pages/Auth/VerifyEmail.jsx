@@ -9,8 +9,7 @@ import { useAlerts } from "@/Components/Alerts";
 export default function VerifyEmail({auth}) {
     const [loading, setLoading] = useState(false);
     const [send, setSent] = useState(false);
-    const submit = (e) => {
-        e.preventDefault();
+    const sendMail = (e) => {
         setLoading(true);
         axios.get(`/email/send-verification-email`).then(resp => {
             setSent(true);
@@ -21,14 +20,23 @@ export default function VerifyEmail({auth}) {
         });
     };
 
+
     useEffect(() => {
-        let timer = setInterval(() => {
-          window.location.reload(false)
-        }, 10000);
+        const lastSent = localStorage.getItem('last_verification_sent_at');
+        const now = new Date().getTime();
+        if (!lastSent || now - parseInt(lastSent) > 10 * 60 * 1000) {
+            sendMail();
+            localStorage.setItem('last_verification_sent_at', now.toString());
+        }
+    }, []);
+    
+    
+    useEffect(() => {
+        const timer = setInterval(() => {
+            window.location.reload();
+        }, 15000); 
         return () => clearInterval(timer);
     }, []);
-
-
 
 
     return <div className="blackbg pageheight p-4">
@@ -93,18 +101,11 @@ export default function VerifyEmail({auth}) {
                     </svg>
                 </div>
                 <h3 className="headingSm shadow-yellow mb-3 text-center" >Confirm your email</h3>
-                <h5 className="font-large  text-center text-mint w-75 m-auto d-table" >Thanks for signing up! Before getting started, please verify
-                    your email.</h5>
-                <form onSubmit={submit}>
-                    <div className="mt-4 flex items-center justify-content-center">
-                        <PrimaryButton className="btn-pink md   py-3 px-2" disabled={loading}>
-                            {loading ? "Sending..." :  "Send Verification Link"}
-                        </PrimaryButton>
-                    </div>
-                </form>
-
-                {send ? <p className="text-mint text-center mt-4 font-light"  >Verification link sent successfully.</p> : ''}
-
+                <h5 className="text-xl  text-center text-mint w-75 m-auto d-table" >Thanks for signing up! Before getting started, please verify your email.</h5> 
+                <div className="flex justify-center mt-6 mb-2">
+                    <button onClick={sendMail} className="text-pink m-auto">Re-send Verification Link</button>
+                </div>
+                <p className='text-gray-400 max-w-[500px] text-lg m-auto text-center mt-6'>If you didn’t receive the email, please check your spam folder or click again after a minute.</p>
             </div>
         </div>
     </div>

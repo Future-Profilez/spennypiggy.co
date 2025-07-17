@@ -95,13 +95,13 @@ export default function Post({item}) {
         </div> : ''}
 
         {item && item.type =='image' ?
-          <div className='post-images position-relative' >
+          <div className='post-images lazywrap position-relative  w-full' >
               <span className='rounded-xl pinkbg position-absolute py-1 px-2 top-3 right-3 text-uppercase text-[10px] text-light ' >{postBadge()}</span>
 
               <LazyLoadImage
               effect="blur"
               width='400' height='400' alt='spenny piggy'
-              className="post-img w-100 max-h-[400px] object-cover" src={posturl()} />
+              className="post-img w-full max-h-[400px] object-cover" src={posturl()} />
 
               {item.ai_generated == 1 ? <div className='absolute bottom-2 left-2 z-1 bg-black shadow-sm rounded-xl px-2 py-1 text-[8px] text-white'>MADE WITH AI </div> : ""}
           </div>

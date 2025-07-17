@@ -170,3 +170,9 @@ a.css-1j56y57{width:30px !important;height:30px !important}
 */
 .dropdown-toggle::after{display:none !important}
 .introvideobox .lazy-load-image-background{display:block !important;width:100% !important;height:100% !important}
+
+.lazywrap  span.lazy-load-image-background {
+    display: block !important;
+    width: 100% !important;
+}
+

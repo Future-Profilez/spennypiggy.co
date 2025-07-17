@@ -149,11 +149,13 @@ class RegisteredUserController extends Controller
             ]);
             $user->refresh();
             $spennyPiggyAcc = User::where('email', 'spennypiggyofficial@gmail.com')->first();
-            if ($user) {
-                Follow::UpdateOrCreate(
-                    ['follower_id' => $user->id, 'followed_id' => $spennyPiggyAcc->id],
-                    ['follower_id' => $user->id, 'followed_id' => $spennyPiggyAcc->id]
-                );
+            if(!empty($spennyPiggyAcc)){
+                if ($user) {
+                    Follow::UpdateOrCreate(
+                        ['follower_id' => $user->id, 'followed_id' => $spennyPiggyAcc->id],
+                        ['follower_id' => $user->id, 'followed_id' => $spennyPiggyAcc->id]
+                    );
+                }
             }
 
             if ($request->role == 1) {
