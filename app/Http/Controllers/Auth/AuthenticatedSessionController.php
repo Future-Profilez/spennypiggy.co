@@ -197,10 +197,17 @@ class AuthenticatedSessionController extends Controller
         $image = $user->social_image ? "https://ucarecdn.com/{$user->social_image}/-/preview/" : null;
         $IsNeedToUpgrade = false;
         $card_capabilities = true;
-        if(!empty($user->account_id)) {
-            $account = StripeControl::getAccount($user->account_id);
-            $IsNeedToUpgrade = ($account->tos_acceptance->service_agreement ?? '') === 'recipient';
-            $card_capabilities = StripeControl::isAccountReadyForCheckout($user->account_id);
+        if (!empty($user->account_id)) {
+            try {
+                $account = StripeControl::getAccount($user->account_id);
+                $IsNeedToUpgrade = ($account->tos_acceptance->service_agreement ?? '') === 'recipient';
+                $card_capabilities = StripeControl::isAccountReadyForCheckout($user->account_id);
+            } catch (\Exception $e) {
+                $user->stripe_details_submitted = 0;
+                $user->save();
+                $IsNeedToUpgrade = false;
+                $card_capabilities = true;
+            }
         }
 
         $wishitems = [];
