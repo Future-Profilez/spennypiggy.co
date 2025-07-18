@@ -120,21 +120,47 @@ export default function Accountsetting(props) {
                                                 uppercase
                                                 ${site_subscription && site_subscription.status == "ACTIVE" || site_subscription.status == "FREE_TRIAL" ? "text-green-600" : "text-red-600"}
                                             `}>
+                                                {site_subscription?.trial_status === "active" ? "Free Trial" : 
+                                                <>
                                                 {site_subscription && site_subscription.status || "Start"}
+                                                </>}
                                             </span>
                                         </>
                                     }
                                 >
                                     <h2 className="text-black font-gulfs text-xl mb-3">SPENNY PIGGY SUBSCRIPTION</h2>
 
-                                    {site_subscription && site_subscription.status == "FREE_TRIAL" ? <>
-                                    <p>Free Trial Start : {site_subscription?.trial_start ||''}</p>
-                                    <p>Free Trial End In : {site_subscription?.trial_end_in ||''}</p>
+                                    {site_subscription?.trial_status === "active" ? <>
+                                            <h2>Subscription Status : <span className="text-green-600 font-bold text-lg uppercase">Free Trial</span></h2>
+                                            <p className="text-lg my-2">Free Trial Start : <strong>{site_subscription?.trial_start ||''}</strong></p>
+                                            <p className="text-lg my-2">Free Trial End In : <strong>{site_subscription?.trial_end_in ||''}</strong></p>
+                                    </>
+                                    : <>
+                                        {site_subscription && site_subscription.status == "ACTIVE" ? <>
+                                        <p className="text-lg my-2">Subscription Start On : <strong>{site_subscription?.subscription_start ||''}</strong></p>
+                                        <p className="text-lg my-2">Subscription Renew On : <strong>{site_subscription?.subscription_renew_in ||''}</strong></p>
+                                        <p className="text-lg my-2">Next Payment On : <strong>{site_subscription?.next_payment_date ||''}</strong></p>
+                                        </> : ''}
+                                    </> }
+
+
+                                    {site_subscription && site_subscription.status == "EXPIRED" ? <>
+                                        {site_subscription?.subscription_end ?
+                                            <p className="text-lg text-red-600 my-2">Subscription expired on : <strong>{site_subscription?.subscription_end ||''}</strong></p>
+                                            :
+                                            <>
+                                                {site_subscription?.trial_end_in ? 
+                                                    <p className="text-lg my-2 text-red-600">Subscription Free trial ended {site_subscription?.trial_end_in||''}  </p>
+                                                : ''}
+                                            </>
+                                        }
                                     </> : ''}
-                                    {site_subscription && site_subscription.status == "ACTIVE" ? <>
-                                    <p>Subscription Start On : {site_subscription?.subscription_start ||''}</p>
-                                    <p>Subscription Renew In : {site_subscription?.subscription_renew_in ||''}</p>
-                                    </> : ''}
+
+                                    {site_subscription && site_subscription.status == "INACTIVE" ?  
+                                            <p className="text-lg my-2 text-blue-700">You don't have any active subscription</p>
+                                     : ''}
+
+
                                     
                                 </Popup>
                             </li> : 

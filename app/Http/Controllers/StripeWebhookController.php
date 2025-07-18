@@ -465,98 +465,135 @@ class StripeWebhookController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
+    // $endpoint_secret = 'whsec_eM6QEz8bKlZrsw0bdh148Qcp3AyDlK8a';
     public function mandatorySubscriptionStatus(Request $request)
     {
         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+
+        // $endpoint_secret = 'whsec_eM6QEz8bKlZrsw0bdh148Qcp3AyDlK8a';
         $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
 
         $payload = $request->getContent();
         $sig_header = $request->header('Stripe-Signature');
-        $event = null;
 
         try {
-            $event = Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
+            $event = \Stripe\Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
         } catch (\UnexpectedValueException | \Stripe\Exception\SignatureVerificationException $e) {
             Log::error("Webhook signature verification failed: " . $e->getMessage());
             return response()->json(['error' => 'Invalid signature'], 400);
         }
 
-        if ($event) {
-            $eventType = $event->type;
-            $object = $event->data->object;
+        $eventType = $event->type;
+        $object = $event->data->object;
+        $subscriptionId = data_get($object, 'subscription') ?? data_get($object, 'id');
+        $customerId = data_get($object, 'customer');
 
-            $customer_id = $object->customer ?? null;
-            $customer = $stripe->customers->retrieve($customer_id, []);
+        try {
+            $customer = $stripe->customers->retrieve($customerId, []);
+        } catch (\Exception $e) {
+            Log::error("Failed to retrieve customer: " . $e->getMessage());
+            return response()->json(['error' => 'Customer not found'], 404);
+        }
 
-            $subscriptionId = data_get($object, 'subscription');
-            $customerEmail = $customer->email ?? null;
-            $customerName = data_get($object, 'customer_name');
-            $invoicePdf = data_get($object, 'invoice_pdf');
+        $subscription = null;
+        try {
+            $subscription = $stripe->subscriptions->retrieve($subscriptionId, []);
+        } catch (\Exception $e) {
+            Log::error("Failed to retrieve subscription: " . $e->getMessage());
+        }
 
-            $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->orderBy('updated_at', 'desc')->first();
+        $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->latest()->first();
 
-            if ($subs) {
-                $array = [
-                    'email' => $customerEmail,
-                    'name' => $customerName,
-                    'invoice_pdf' => $invoicePdf,
-                    'uuid' => $subs->uuid,
-                    'notification' => $subs->user->notification_send ?? 0,
-                    'trial_end' => $subs->upcoming_payment ?? null,
-                    'amount' => $subs->amount ?? null,
-                    'currency' => $subs->currency ?? 'GBP',
-                ];
+        if (!$subs) {
+            Log::info("Subscription record not found for Stripe ID: {$subscriptionId}");
+            return response()->json(['message' => 'No record to update'], 200);
+        }
 
-                switch ($eventType) {
-                    case "customer.subscription.trial_will_end":
-                        // Notify user 3 days before charge
-                        SendRenewMail::dispatch($array, 'trial', 'site');
-                        break;
+        $currentPeriodStart = optional($subscription)->current_period_start ? Carbon::createFromTimestamp($subscription->current_period_start) : null;
+        $currentPeriodEnd = optional($subscription)->current_period_end ? Carbon::createFromTimestamp($subscription->current_period_end) : null;
+        $status = $subscription->status ?? 'incomplete';
 
-                    case "invoice.payment_succeeded":
-                        if (($subs->current_end_trial_date && Carbon::parse($subs->current_end_trial_date)->lte(now()) && !$subs->current_end_subscription_date) ||
-                            ($subs->current_end_subscription_date && Carbon::parse($subs->current_end_subscription_date)->lte(now()))
-                        ) {
-                            $periodEnd = data_get($object, 'lines.data.0.period.end');
+        $subs->current_start_subscription_date = $currentPeriodStart;
+        $subs->current_end_subscription_date = $currentPeriodEnd;
+        $subs->status = $status;
 
-                            $subs->upcoming_payment = $periodEnd
-                                ? Carbon::createFromTimestamp($periodEnd)->format('Y-m-d H:i:s')
-                                : null;
+        if (in_array($status, ['active', 'trialing']) && !$subscription->cancel_at_period_end) {
+            $subs->upcoming_payment = Carbon::createFromTimestamp($subscription->current_period_end);
+        } else {
+            $subs->upcoming_payment = null;
+        }
 
-                            // Check if it's the first time or a renewal BEFORE setting new values
-                            $isNewSubscription = $subs->current_start_subscription_date === null;
+        $subs->save();
+        $subscriptionId = data_get($object, 'subscription');
+        $customerName = data_get($object, 'customer_name');
+        $invoicePdf = data_get($object, 'invoice_pdf');
+        $customerEmail = $customer->email ?? null;
 
-                            $subs->current_start_subscription_date = now();
-                            $subs->current_end_subscription_date = now()->addMonths(1);
-                            $subs->status = 'paid';
-                            $subs->save();
+        $array = [
+            'email' => $customerEmail ?? null,
+            'name' => $customerName ?? null,
+            'uuid' => $subs->uuid,
+            'invoice_pdf' => $invoicePdf,
+            'notification' => $subs->user->notification_send ?? 0,
+            'trial_end' => $subs->current_end_trial_date,
+            'amount' => $subs->amount ?? null,
+            'currency' => $subs->currency ?? 'GBP',
+        ];
 
-                            // Determine type before dispatch
-                            $type = $isNewSubscription ? 'start subscription' : 'renew';
+        // Handle user subscription flag
+        $user = $subs->user;
 
-                            SendRenewMail::dispatch($array, $type, 'site');
-                            // Optionally: SendPaymentSuccessEmail::dispatch(...)
-                        }
-                        // Carbon::setTestNow(); // optional
+        Log::info($array);
+        // SendRenewMail::dispatch($array, 'start subscription', 'site');
+        // SendRenewMail::dispatch($array, 'renew', 'site');
+        // SendRenewMail::dispatch($array, 'failed', 'site');
+        // SendRenewMail::dispatch($array, 'cancelled', 'site');
 
-                        break;
+        switch ($eventType) {
+            case 'customer.subscription.trial_will_end':
+                SendRenewMail::dispatch($array, 'trial', 'site');
+                break;
 
-                    case "invoice.payment_failed":
-                        Log::warning("Payment failed for subscription: {$subscriptionId}");
-                        $subs->status = "failed";
-                        $subs->save();
-                        SendRenewMail::dispatch($array, 'failed', 'site');
-                        break;
-
-                    default:
-                        Log::info("Unhandled event type: {$eventType}");
-                        break;
+            case 'invoice.payment_succeeded':
+                if ($user) {
+                    $user->is_subscribed = 1;
+                    $user->save();
                 }
-            }
+                $type = ($subs->current_start_subscription_date === null) ? 'start subscription' : 'renew';
+                SendRenewMail::dispatch($array, $type, 'site');
+                break;
+
+            case 'invoice.payment_failed':
+                $subs->status = 'failed';
+                $subs->save();
+                if ($user) {
+                    $user->is_subscribed = 0;
+                    $user->save();
+                }
+                SendRenewMail::dispatch($array, 'failed', 'site');
+                break;
+
+            case 'customer.subscription.deleted':
+                Log::info("Subscription deleted: {$subscriptionId}");
+                $subs->status = "cancelled";
+                $subs->cancelled_at = now();
+                $subs->save();
+                if ($user) {
+                    $user->is_subscribed = 0;
+                    $user->save();
+                }
+                SendRenewMail::dispatch($array, 'cancelled', 'site');
+                break;
+
+            default:
+                Log::info("Unhandled event type: {$eventType}");
+                break;
         }
 
         return response()->json(['status' => 'success']);
     }
+
+
 
     public function CreateProductForCreatorAndGifter()
     {

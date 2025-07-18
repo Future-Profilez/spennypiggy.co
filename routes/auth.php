@@ -139,21 +139,22 @@ Route::middleware('auth')->group(function () {
 
 Route::get('account', function () {
     $user = Auth::user();
-    $auto_tweet = $user->auto_tweet == 1 ? true : false;
+    $auto_tweet = $user->auto_tweet == 1;
     $pwaNotificationDetails = BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
 
     $subscription = MonthlyCharge::where('user_id', $user->id)
         ->orderByDesc('created_at')
         ->first();
 
-    $now = now();
-
     $site_subscription = [
-        'status' => 'INACTIVE', // default status
+        'status' => 'INACTIVE',
+        'trial_status' => null,
         'trial_start' => null,
         'trial_end_in' => null,
         'subscription_start' => null,
+        'subscription_end' => null,
         'subscription_renew_in' => null,
+        'next_payment_date' => null,
         'expired_at' => null,
     ];
 
@@ -162,24 +163,36 @@ Route::get('account', function () {
         $trial_end = $subscription->current_end_trial_date;
         $subscription_start = $subscription->current_start_subscription_date;
         $subscription_end = $subscription->current_end_subscription_date;
-        $sub_status = $subscription->status;
 
-        $isTrialOngoing = $trial_end && Carbon::parse($trial_end)->isFuture();
-        $isSubscriptionActive = $sub_status === 'paid' && $subscription_end && Carbon::parse($subscription_end)->isFuture();
-        $isExpired = $subscription_end && Carbon::parse($subscription_end)->isPast();
+        $now = Carbon::now();
+        $trialStartCarbon = $trial_start ? Carbon::parse($trial_start) : null;
+        $trialEndCarbon = $trial_end ? Carbon::parse($trial_end) : null;
+        $subStartCarbon = $subscription_start ? Carbon::parse($subscription_start) : null;
+        $subEndCarbon = $subscription_end ? Carbon::parse($subscription_end) : null;
 
-        // Humanize values
-        $site_subscription['trial_start'] = $trial_start ? Carbon::parse($trial_start)->diffForHumans(null, true) . ' ago' : null;
-        $site_subscription['trial_end_in'] = $trial_end ? Carbon::parse($trial_end)->diffForHumans() : null;
-        $site_subscription['subscription_start'] = $subscription_start ? Carbon::parse($subscription_start)->diffForHumans(null, true) . ' ago' : null;
-        $site_subscription['subscription_renew_in'] = $subscription_end ? Carbon::parse($subscription_end)->diffForHumans() : null;
-        $site_subscription['expired_at'] = $subscription_end && $isExpired ? Carbon::parse($subscription_end)->diffForHumans() : null;
+        $isTrialOngoing = $trialEndCarbon && $now->lessThan($trialEndCarbon);
+        $isTrialEnded = $trialEndCarbon && $now->greaterThanOrEqualTo($trialEndCarbon);
+        $isSubscriptionActive = $user->is_subscribed == 1 && $subEndCarbon && $now->lessThan($subEndCarbon);
+        $isExpired = $subEndCarbon && $now->greaterThanOrEqualTo($subEndCarbon);
 
-        if ($isTrialOngoing && $sub_status === 'paid') {
-            $site_subscription['status'] = 'FREE_TRIAL';
-        } elseif ($isSubscriptionActive) {
+        // Format output
+        $site_subscription['trial_start'] = $trialStartCarbon ? $trialStartCarbon->format('d F Y') : null;
+        $site_subscription['trial_end_in'] = $trialEndCarbon ? $trialEndCarbon->diffForHumans($now) : null;
+        $site_subscription['trial_status'] = $isTrialOngoing ? 'active' : 'ended';
+
+        $site_subscription['subscription_start'] = $subStartCarbon ? $subStartCarbon->format('d F Y') : null;
+        $site_subscription['subscription_end'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
+        $site_subscription['subscription_renew_in'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
+        $site_subscription['expired_at'] = $isExpired ? $subEndCarbon->diffForHumans($now) : null;
+
+        $site_subscription['next_payment_date'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
+
+        // Correct status logic
+        if ($isSubscriptionActive) {
             $site_subscription['status'] = 'ACTIVE';
-        } elseif ($isExpired) {
+        } elseif ($isTrialOngoing && !$isSubscriptionActive) {
+            $site_subscription['status'] = 'FREE_TRIAL';
+        } elseif ($isExpired || $user->is_subscribed == 0) {
             $site_subscription['status'] = 'EXPIRED';
         }
     }
@@ -190,6 +203,7 @@ Route::get('account', function () {
         'pwa_notification_details' => $pwaNotificationDetails ?? null,
     ]);
 });
+
 
 
 

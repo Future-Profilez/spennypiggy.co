@@ -1413,7 +1413,7 @@ class StripeController extends Controller
         $amount = $price + $tax;
         $unit_amount = round(Helpers::priceFormat("GBP", $amount, $currency) * 100); // Ensure integer
 
-        $trial_period_days = 3; // 3-day free trial
+        $trial_period_days = 3; 
 
         $payload = [
             "mode"  =>  'subscription',

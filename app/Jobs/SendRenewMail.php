@@ -3,12 +3,12 @@
 namespace App\Jobs;
 
 use App\EmailService;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Bus\Queueable; 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class SendRenewMail implements ShouldQueue
 {
@@ -32,8 +32,11 @@ class SendRenewMail implements ShouldQueue
      */
     public function handle(): void
     {
+
+        Log::info("come in sendRenewMail class handle function $this->array");
         if ($this->array['notification'] == 1) {
             EmailService::sendRenewMail($this->array, $this->type, $this->module);
+            Log::info("Email sent successfully");
         }
     }
 }
