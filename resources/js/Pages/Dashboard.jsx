@@ -636,13 +636,13 @@ export default function Dashboard(props) {
                                                                             <UpgradeStripeAccount  />
                                                                         : ''}
 
+                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && !auth?.user?.monthly_charge_enabled  ?
+                                                                            <SiteSubscription charges={auth?.user?.monthly_charge_enabled} user={auth?.user} />
+                                                                        : ''}
                                                                         {UserStripeConnected == 1 ?
                                                                            <MyGoal IsloggedIn={IsloggedIn}  /> :
                                                                         ""}
 
-                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && !auth?.user?.monthly_charge_enabled  ?
-                                                                            <SiteSubscription charges={auth?.user?.monthly_charge_enabled} user={auth?.user} />
-                                                                        : ''}
 
                                                                         <div className="box p-3 p-md-4 shadow-voilet rounded-lg mb-4">
                                                                             <p className="font-bold">About me</p>

@@ -312,7 +312,6 @@ class StripeController extends Controller
         if (empty($user->account_id)) {
             return redirect(route("user.show", ["username" => $user->username]))->with("error", "Stripe did not initiated properly.");
         }
-
         try {
             $account = StripeControl::getAccount($user->account_id);
             if (empty($user->stripe_details_submitted)) {
@@ -1386,7 +1385,11 @@ class StripeController extends Controller
         $tax = round(($price * 20 / 100), 2, PHP_ROUND_HALF_UP);
         $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
 
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
+        if (!$user) {
+            return back()->with('error', 'Subscription not allowed for this user.');
+        }
+
         if (!$user->account_id) {
             $customer = StripeControl::createCustomer([
                 'email' => $user->email,
@@ -1428,7 +1431,7 @@ class StripeController extends Controller
                 ]
             ]],
             'subscription_data' =>  [
-                'trial_period_days' => $trial_period_days, // 3-day trial (REMOVED billing_cycle_anchor)
+                'trial_period_days' => $trial_period_days, 
                 'description' => "Subscription for using site through Stripe."
             ],
             'customer_email' => $user->email,
@@ -1442,8 +1445,7 @@ class StripeController extends Controller
                 'session_id' => $session->id,
                 'current_start_trial_date' => now(),
                 'current_end_trial_date' => now()->addDays($trial_period_days),
-            ]);
-
+            ]); 
             return Inertia::location($session->url);
         } catch (Exception $e) {
             $sub->delete();

@@ -31,6 +31,7 @@ use App\Models\Bills;
 use App\Models\BulkPwaNotification;
 use App\Models\Logs;
 use App\Models\Membership;
+use App\Models\MonthlyCharge;
 use App\Models\SocialLinks;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
@@ -44,6 +45,7 @@ use App\StripeControl;
 use App\Uploadcare;
 use Illuminate\Support\Facades\Http;
 use App\SeoMeta;
+use Carbon\Carbon;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Request;
 use PHPUnit\Event\Code\Test;
@@ -132,15 +134,67 @@ Route::middleware('auth')->group(function () {
             Route::post('user/save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
             Route::post('edit-category/{id}', [WishitemController::class, 'editWishCategory'])->name('edit-category');
             Route::get('delete-category/{id}', [WishitemController::class, 'deleteCategory'])->name('delete-category');
-            Route::get('account', function () {
-                $user = Auth::user();
-                $auto_tweet = $user->auto_tweet == 1 ? true : false;
-                $pwaNotificationDetails = BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
-                return Inertia::render('accountsetting/Accountsetting', [
-                    'auto_tweet' => $auto_tweet,
-                    'pwa_notification_details' => $pwaNotificationDetails ?? null,
-                ]);
-            })->name("account");
+
+
+
+Route::get('account', function () {
+    $user = Auth::user();
+    $auto_tweet = $user->auto_tweet == 1 ? true : false;
+    $pwaNotificationDetails = BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
+
+    $subscription = MonthlyCharge::where('user_id', $user->id)
+        ->orderByDesc('created_at')
+        ->first();
+
+    $now = now();
+
+    $site_subscription = [
+        'status' => 'INACTIVE', // default status
+        'trial_start' => null,
+        'trial_end_in' => null,
+        'subscription_start' => null,
+        'subscription_renew_in' => null,
+        'expired_at' => null,
+    ];
+
+    if ($subscription) {
+        $trial_start = $subscription->current_start_trial_date;
+        $trial_end = $subscription->current_end_trial_date;
+        $subscription_start = $subscription->current_start_subscription_date;
+        $subscription_end = $subscription->current_end_subscription_date;
+        $sub_status = $subscription->status;
+
+        $isTrialOngoing = $trial_end && Carbon::parse($trial_end)->isFuture();
+        $isSubscriptionActive = $sub_status === 'paid' && $subscription_end && Carbon::parse($subscription_end)->isFuture();
+        $isExpired = $subscription_end && Carbon::parse($subscription_end)->isPast();
+
+        // Humanize values
+        $site_subscription['trial_start'] = $trial_start ? Carbon::parse($trial_start)->diffForHumans(null, true) . ' ago' : null;
+        $site_subscription['trial_end_in'] = $trial_end ? Carbon::parse($trial_end)->diffForHumans() : null;
+        $site_subscription['subscription_start'] = $subscription_start ? Carbon::parse($subscription_start)->diffForHumans(null, true) . ' ago' : null;
+        $site_subscription['subscription_renew_in'] = $subscription_end ? Carbon::parse($subscription_end)->diffForHumans() : null;
+        $site_subscription['expired_at'] = $subscription_end && $isExpired ? Carbon::parse($subscription_end)->diffForHumans() : null;
+
+        if ($isTrialOngoing && $sub_status === 'paid') {
+            $site_subscription['status'] = 'FREE_TRIAL';
+        } elseif ($isSubscriptionActive) {
+            $site_subscription['status'] = 'ACTIVE';
+        } elseif ($isExpired) {
+            $site_subscription['status'] = 'EXPIRED';
+        }
+    }
+
+    return Inertia::render('accountsetting/Accountsetting', [
+        'auto_tweet' => $auto_tweet,
+        'site_subscription' => $site_subscription,
+        'pwa_notification_details' => $pwaNotificationDetails ?? null,
+    ]);
+});
+
+
+
+
+
             Route::get('/scanning/check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content'); 
             Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
             Route::get('unlink-twitter', [AuthenticatedSessionController::class, 'unlinkTwitter'])->name('unlink-twitter');

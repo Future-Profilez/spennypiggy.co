@@ -19,8 +19,10 @@ import AddressForm from "../rye/AddressForm";
 import FollowersBulkNotification from "@/Components/FollowersBulkNotification";
 
 export default function Accountsetting(props) {
+
+    console.log('props', props);
     const { successAlert, errorAlert } = useAlerts();
-    const { auth, user, global_currency, auto_tweet, pwa_notification_details } = props;
+    const { auth, user, global_currency, auto_tweet, pwa_notification_details, site_subscription } = props;
     console.log('pwa_notification_details',pwa_notification_details);
     const [showModal, setShowModal] = useState(false);
 
@@ -86,55 +88,57 @@ export default function Accountsetting(props) {
                     </div>
                     <div className="accsettingList !p-6">
                         <ul>
-                            {auth && auth?.user?.role == 1 ? (
-                                <>
-                                    {auth.user &&
-                                    auth.user.monthly_charge_enabled ? (
-                                        <>
-                                            {
-                                                auth &&
-                                                auth.user &&
-                                                auth.user
-                                                    .stripe_details_submitted ==
-                                                    1 ? (
-                                                    <li>
-                                                        <PaymentDashboard
-                                                            classes="w-100 !bg-white !py-0 !mt-0 !text-black hover:!text-black"
-                                                            text={
-                                                                <>
-                                                                    PAYMENT
-                                                                    DASHBOARD{" "}
-                                                                    <span className="text-mint text-sm">
-                                                                        Linked
-                                                                    </span>
-                                                                </>
-                                                            }
-                                                        />
-                                                    </li>
-                                                ) : (
-                                                    ""
-                                                )
-                                                // <li>
-                                                //     <Link href={route("stripe")} >LINK STRIPE <span className='text-voilet'>Link</span></Link>
-                                                // </li>
+                            { auth && auth.user && auth?.user?.role == 1 && auth.user.stripe_details_submitted == 1 ? (
+                                    <li>
+                                        <PaymentDashboard
+                                            classes="w-100 !bg-white !py-0 !mt-0 !text-black hover:!text-black"
+                                            text={
+                                                <>
+                                                    PAYMENT DASHBOARD 
+                                                    <span className="text-green-600 font-bold text-sm">
+                                                        Linked
+                                                    </span>
+                                                </>
                                             }
+                                        />
+                                    </li>
+                                ) : (
+                                    ""
+                                )
+                            }
+
+                        {auth && auth.user && auth?.user?.role == 1 ?  
+                            <li>
+                                <Popup
+                                    space="4"
+                                    modalclassName="pinkmodal"
+                                    text={
+                                        <>
+                                            SPENNY PIGGY SUBSCRIPTION 
+                                            <span className={`
+                                                text-gray 
+                                                uppercase
+                                                ${site_subscription && site_subscription.status == "ACTIVE" || site_subscription.status == "FREE_TRIAL" ? "text-green-600" : "text-red-600"}
+                                            `}>
+                                                {site_subscription && site_subscription.status || "Start"}
+                                            </span>
                                         </>
-                                    ) : (
-                                        <li>
-                                            <Link
-                                                href={"/activate-subscription"}
-                                            >
-                                                Activate Subscription{" "}
-                                                <span className="text-voilet">
-                                                    Activate
-                                                </span>
-                                            </Link>
-                                        </li>
-                                    )}
-                                </>
-                            ) : (
-                                ""
-                            )}
+                                    }
+                                >
+                                    <h2 className="text-black font-gulfs text-xl mb-3">SPENNY PIGGY SUBSCRIPTION</h2>
+
+                                    {site_subscription && site_subscription.status == "FREE_TRIAL" ? <>
+                                    <p>Free Trial Start : {site_subscription?.trial_start ||''}</p>
+                                    <p>Free Trial End In : {site_subscription?.trial_end_in ||''}</p>
+                                    </> : ''}
+                                    {site_subscription && site_subscription.status == "ACTIVE" ? <>
+                                    <p>Subscription Start On : {site_subscription?.subscription_start ||''}</p>
+                                    <p>Subscription Renew In : {site_subscription?.subscription_renew_in ||''}</p>
+                                    </> : ''}
+                                    
+                                </Popup>
+                            </li> : 
+                             ""}    
 
                             <li>
                                 <Popup
