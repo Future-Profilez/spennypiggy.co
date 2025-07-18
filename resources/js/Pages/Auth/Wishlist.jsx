@@ -440,7 +440,7 @@ export default function Wishlist(props) {
                                         } editable`}
                                     >
                                         <GlobalUploader
-                                            type="minimal"
+                                            type="minimal" ctxName="wishlist"
                                             ref={uploaderRef}
                                             sendFile={getFileUID}
                                             options={st.wishitemUploader}

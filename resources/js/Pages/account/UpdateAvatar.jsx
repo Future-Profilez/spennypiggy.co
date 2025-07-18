@@ -45,15 +45,14 @@ export default function UpdateAvatar({getImageUID, text, close, type }) {
 
 
     return <>
-        <Popup  modalclassName="updateavatar p-4" action={ClosePop} text={text}  >
+        {/* <Popup  modalclassName="updateavatar p-4" action={ClosePop} text={text}  > */}
             <div className='editprofileModal innermodal  '>
                 <div className='editprofileModalInner p-4'>
-                    <h2 className="updateprofile" > Update {type == 'cover' ? "Cover":"Profile"} Image </h2>
                     <div className={`${isEditable ? '' : 'd-none'} editable`} >
                         <UploadcareEditor height={'50vh'} uuid={file && file.uuid || ''} updateFile={updateFile}  />
                     </div>
                     <div className={`${!isEditable ? '' : 'd-none'} edited`} >
-                        <div className="py-4" >
+                        <div className="pb-4" >
                             <GlobalUploader type='minimal' ref={uploaderRef} sendFile={getFileUID} options={st.profileimage} />
                         </div>
                         <button disabled={!file} onClick={updateImage} className={`${!file ? 'disabled' :''} btn-pink sm w-100`} >Confirm</button>
@@ -61,6 +60,6 @@ export default function UpdateAvatar({getImageUID, text, close, type }) {
                     
                 </div>
             </div>
-        </Popup>
+        {/* </Popup> */}
     </>
 }

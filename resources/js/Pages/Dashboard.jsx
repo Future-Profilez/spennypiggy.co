@@ -412,7 +412,7 @@ export default function Dashboard(props) {
                                 <LazyLoadImage
                                     alt={"image"}
                                     effect="blur"
-                                    height={400} fetchPriority="high"
+                                    height={400} 
                                     className="w-full border-black border-2 shadow-mint rounded-[30px]"
                                     src={user?.cover_url || wishlistbannerimg}
                                     width={1200}

@@ -12,7 +12,7 @@ export default function VerifyEmail({auth}) {
     const sendMail = (e) => {
         setLoading(true);
         axios.get(`/email/send-verification-email`).then(resp => {
-            setSent(true);
+            // setSent(true);
             setLoading(false);
         }).catch(_err => {
             console.error("error", _err);
@@ -103,7 +103,11 @@ export default function VerifyEmail({auth}) {
                 <h3 className="headingSm shadow-yellow mb-3 text-center" >Confirm your email</h3>
                 <h5 className="text-xl  text-center text-mint w-75 m-auto d-table" >Thanks for signing up! Before getting started, please verify your email.</h5> 
                 <div className="flex justify-center mt-6 mb-2">
-                    <button onClick={sendMail} className="text-pink m-auto">Re-send Verification Link</button>
+                    <button  onClick={()=>{setSent(true);sendMail()}} className="text-pink m-auto">{loading ? 'Sending..' : 
+                    <>
+                        {send ? 'Email Sent' : 'Re-send Verification Link'}
+                    </>
+                    }</button>
                 </div>
                 <p className='text-gray-400 max-w-[500px] text-lg m-auto text-center mt-6'>If you didn’t receive the email, please check your spam folder or click again after a minute.</p>
             </div>

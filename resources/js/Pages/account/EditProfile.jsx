@@ -119,11 +119,13 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         if(e){
             generateCardAndUpload(e?.uuid);
         }
+        setUploadingStart(false)
     }
 
     const getCoverUID = (e) => {
         setCoverImage(e.cdnUrl);
         setData('cover', e);
+        setCoverUploadingStart(false)
     }
 
     const [username, setUsername] = useState(user?.username);
@@ -159,74 +161,101 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         });
     };
 
+    const [UploadingStart, setUploadingStart] = useState(false);
+    const [CoverUploadingStart, setCoverUploadingStart] = useState(false);
     const IsProfileChannged = async() => {
         if(user && user.avatar && !user?.social_image){
             await generateCardAndUpload(user.avatar);
         }
+
     }
     return (
         <Popup modalclassName='pinkmodal editprofile full' size='md' action={close}
             text={text||<> Update Profile </>}
             classes={`${classes ? classes : "button bg-pink d-table d-sm-flex m-auto m-sm-0"}`} >
             <div className='editForm  mt-4'>
-                <div className='mainprofile mb-5 position-relative w-100 '>
-                    <div className='profilePhotoImg cover'>
-                        <img src={coverImage ? coverImage : (user?.cover_url || coverimage)} alt='img' />
-                        <UpdateAvatar type="cover" getImageUID={getCoverUID}
-                        text={<> <button className='editbtn'> <img src={editicon} alt="img" /> </button> </>} />
-                    </div>
-                    <div className='profilePhotoImg dp'>
-                        <img src={ profileDP ? profileDP : (user?.avatar_url || userdefaultphoto)} alt='img' />
-                        <UpdateAvatar type="avatar" getImageUID={getImageUID} text={<> <button className='editbtn'><img src={editicon} alt="img" /></button></>} />
-                    </div>
-                </div>
-                <form onSubmit={updateProfile} >
-                    <ul>
-                        <li className="mb-3">
-                            <label className="mb-1">Display Name</label>
-                            <input onBlur={IsProfileChannged} type="text" name="name" defaultValue={user?.name || ''}
-                                onChange={(e) => setData('name', e.target.value)}
-                                className="form-input px-2 py-2 border w-full rounded-md" />
-                        </li>
-                        <li className="mb-2">
-                            <label className="mb-1">Username</label>
-                            <input onBlur={IsProfileChannged} defaultValue={user?.username || ''} onChange={(e) => setData("username", e.target.value)}
-                                type="text" name="username" className="form-input px-2 py-2 border w-full rounded-md" placeholder='Spennypiggy.co/warner99' onKeyUp={(e) => {setUsername(e.target.value)}}/>
-                        </li>
-
-                        <li><strong className='d-block text-start mb-4' >Profile URL : {window.location.href}</strong></li>
-
-                        <li className="mb-3">
-                            <label className="mb-1">Bio</label>
-                            <textarea onBlur={IsProfileChannged} defaultValue={user?.bio || ''}
-                                onChange={(e) => setData("bio", e.target.value)}
-                                name="bio" className="form-input px-2 py-2 border w-full rounded-md"
-                                placeholder='Bio' />
-                        </li>
-
-                        {/* <li className="mb-3">
-                            <label className="mb-1">Minimum surprise gift amount</label>
-                            <div className='currency-wrapper position-relative' >
-                                <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
-                                <input type="text" name="name" defaultValue={user?.min_surprise_amount || ''}
-                                onChange={(e) => setData('min_surprise_amount', e.target.value)}
-                                className="form-input px-2 py-2 border w-full rounded-md" />
+                        {UploadingStart ? <div className=''>
+                            <div className='flex items-center justify-between'>
+                                <h2 className='p-4 pb-0 font-gulfs uppercase text-xl'>Update Avatar</h2>
+                                <button onClick={()=>setUploadingStart(false)} className='me-4 mt-4 bg-gray-200 px-4 py-1 rounded-lg'>Exit</button>
                             </div>
-                            <p className="mt-1">
-                                The Minimum amount is set
-                                to {formatMultiPrice(user?.min_surprise_amount || 0,  defaultCurrency )}.
-                            </p>
-                        </li> */}
+                            <UpdateAvatar type="avatar" getImageUID={getImageUID} text={<> <button className='editbtn'><img src={editicon} alt="img" /></button></>} />
+                        </div> : ''}
 
-                    </ul>
+                        {CoverUploadingStart ? <div className=''>
+                            <div className='flex items-center justify-between'>
+                                <h2 className='p-4 pb-0 font-gulfs uppercase text-xl'>Update Cover</h2>
+                                <button onClick={()=>setCoverUploadingStart(false)} className='me-4 mt-4 bg-gray-200 px-4 py-1 rounded-lg'>Exit</button>
+                            </div>
+                            
+                             <UpdateAvatar type="cover" getImageUID={getCoverUID}
+                                        text={<> <button className='editbtn'> <img src={editicon} alt="img" /> </button> </>} />
+                        </div> : ''}
 
-                    <div className=" text-center mb-7">
-                        <LoaderButton type='submit' disabled={processing} className='btn-pink sm m-auto'
-                         spinnerClassName='fill-red-600'>
-                            {processing ? "Updating" : "Update"}
-                        </LoaderButton>
-                    </div>
-                </form>
+                        {UploadingStart || CoverUploadingStart ? ''
+                            :
+                            <>
+                                <div className='mainprofile mb-5 position-relative w-100 '>
+                                    <div className='profilePhotoImg cover'>
+                                        <img src={coverImage ? coverImage : (user?.cover_url || coverimage)} alt='img' />
+                                        <button onClick={()=>setCoverUploadingStart(true)} className='editbtn'><img src={editicon} alt="img" /></button>
+                             
+                                        
+                                    </div>
+                                    <div className='profilePhotoImg dp'>
+                                        <img src={ profileDP ? profileDP : (user?.avatar_url || userdefaultphoto)} alt='img' />
+                                        <button onClick={()=>setUploadingStart(true)} className='editbtn'><img src={editicon} alt="img" /></button>
+                                    </div>
+                                </div>
+                                <form onSubmit={updateProfile} >
+                                    <ul>
+                                        <li className="mb-3">
+                                            <label className="mb-1">Display Name</label>
+                                            <input onBlur={IsProfileChannged} type="text" name="name" defaultValue={user?.name || ''}
+                                                onChange={(e) => setData('name', e.target.value)}
+                                                className="form-input px-2 py-2 border w-full rounded-md" />
+                                        </li>
+                                        <li className="mb-2">
+                                            <label className="mb-1">Username</label>
+                                            <input onBlur={IsProfileChannged} defaultValue={user?.username || ''} onChange={(e) => setData("username", e.target.value)}
+                                                type="text" name="username" className="form-input px-2 py-2 border w-full rounded-md" placeholder='Spennypiggy.co/warner99' onKeyUp={(e) => {setUsername(e.target.value)}}/>
+                                        </li>
+
+                                        <li><strong className='d-block text-start mb-4' >Profile URL : {window.location.href}</strong></li>
+
+                                        <li className="mb-3">
+                                            <label className="mb-1">Bio</label>
+                                            <textarea onBlur={IsProfileChannged} defaultValue={user?.bio || ''}
+                                                onChange={(e) => setData("bio", e.target.value)}
+                                                name="bio" className="form-input px-2 py-2 border w-full rounded-md"
+                                                placeholder='Bio' />
+                                        </li>
+
+                                        {/* <li className="mb-3">
+                                            <label className="mb-1">Minimum surprise gift amount</label>
+                                            <div className='currency-wrapper position-relative' >
+                                                <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
+                                                <input type="text" name="name" defaultValue={user?.min_surprise_amount || ''}
+                                                onChange={(e) => setData('min_surprise_amount', e.target.value)}
+                                                className="form-input px-2 py-2 border w-full rounded-md" />
+                                            </div>
+                                            <p className="mt-1">
+                                                The Minimum amount is set
+                                                to {formatMultiPrice(user?.min_surprise_amount || 0,  defaultCurrency )}.
+                                            </p>
+                                        </li> */}
+
+                                    </ul>
+
+                                    <div className=" text-center mb-7">
+                                        <LoaderButton type='submit' disabled={processing} className='btn-pink sm m-auto'
+                                        spinnerClassName='fill-red-600'>
+                                            {processing ? "Updating" : "Update"}
+                                        </LoaderButton>
+                                    </div>
+                                </form>
+                            </>
+                        }
             </div>
         </Popup>
     )

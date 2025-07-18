@@ -141,7 +141,7 @@ Route::middleware('auth')->group(function () {
                     'pwa_notification_details' => $pwaNotificationDetails ?? null,
                 ]);
             })->name("account");
-            Route::get('/scanning/check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content');
+            Route::get('/scanning/check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content'); 
             Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
             Route::get('unlink-twitter', [AuthenticatedSessionController::class, 'unlinkTwitter'])->name('unlink-twitter');
             Route::get('wish-tracker', [WishitemController::class, 'wishtrackerItems'])->name('wish-tracker');

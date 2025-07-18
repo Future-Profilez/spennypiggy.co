@@ -19,7 +19,7 @@ export default function Userprofile({ IsloggedIn }) {
             <div className="userPr px-4 py-0 py-md-4 lg:flex items-center justify-center lg:justify-between mt-[-80px] md:mt-[-50px]">
                 <div className="update-profile text-center lg:flex items-center justify-center lg:justify-start">
                     <div className="userphoto relative !flex  items-center justify-center mb-4 ">
-                        <LazyLoadImage fetchpriority="high"
+                        <LazyLoadImage 
                             alt={"image"}  effect="blur"
                             src={user && user.avatar_url? user.avatar_url: userphoto}
                             height={150} width={150}
