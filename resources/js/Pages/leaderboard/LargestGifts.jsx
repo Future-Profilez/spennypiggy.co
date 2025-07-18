@@ -60,7 +60,7 @@ export default function LargestGifts() {
   return (
     <>
     {data.length > 0 ? <div className="bg-gray-100 rounded-[25px] p-4 mb-6">
-      <h2 className="text-bl font-GillSans text-start text-2xl uppercase text-dark ">Largest Gifts</h2>
+      <h2 className="  font-GillSans text-start text-2xl uppercase text-dark ">Largest Gifts</h2>
       <p className='text-gray-500  mb-3'>Who dropped the fattest piggy</p>
     
       {data.length ? (

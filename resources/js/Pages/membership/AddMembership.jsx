@@ -237,7 +237,7 @@ export default function AddMembership({updateState, item, text, classes}) {
 
                         <div className={`${!isEditable ? '' : 'd-none'} editable`} >
                           <GlobalUploader type='minimal'
-                            ref={uploaderRef}
+                            ref={uploaderRef} ctxName='add-membership-context'
                             sendFile={getFileUID}
                             options={st.membership}
                           />

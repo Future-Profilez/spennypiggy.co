@@ -74,7 +74,7 @@ export default function SayThanks(props) {
          />
          <p className='mb-2 mt-3' >Choose Video or Picture</p>
          <GlobalUploader  type='minimal'
-            ref={uploaderRef}
+            ref={uploaderRef} ctxName='add-thankyou-context'
             sendFile={getFileUID}
             options={st.thankyoumessage}
          />

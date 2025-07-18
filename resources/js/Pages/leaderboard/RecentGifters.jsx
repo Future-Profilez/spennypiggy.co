@@ -60,8 +60,8 @@ export default function RecentGifters() {
   return (
     <>
     {data.length > 0 ? <div className="bg-gray-100 rounded-[25px] p-4 mb-6">
-      <h2 className="text-bl font-GillSans text-start text-2xl uppercase text-dark ">Who just showed love?</h2>
-      <p className='text-gray-500  mb-3'>Latest fans to show support</p>
+      <h2 className="text-bls font-GillSans text-start text-2xl uppercase text-dark ">Who just showed love?</h2>
+      <p className='text-gray-500  mb-3'>Latest fans who has just show support.</p>
       
       {/* <div className="time-hrs">
         <button className={period === 'last24hour' ? "active" : ''} onClick={() => setPeriod('last24hour')}>Last 24 hrs </button>

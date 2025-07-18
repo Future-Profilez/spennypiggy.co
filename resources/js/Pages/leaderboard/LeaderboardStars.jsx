@@ -65,12 +65,8 @@ export default function LeaderboardStars() {
   return (
    <>
     {lists.length > 0 ?  <div className="bg-gray-100 rounded-[25px] p-4">
-      <h2 className="text-bl font-GillSans  text-2xl uppercase text-dark text-start">🏅 Top Supporters</h2>
-      <p className='text-gray-500  mb-3'>Most generous fans this week</p>
-         {/* {loading ? (
-         <LoadingScreen />
-         ) : (
-         )} */}
+      <h2 className=" font-GillSans  text-2xl uppercase text-dark text-start">🏅 Top Supporters</h2>
+      <p className='text-gray-500  mb-3'>Fans who have shown the highest support through generous contributions.</p>
         <>
           {lists.length ? (
             lists.map((gift, index) => (

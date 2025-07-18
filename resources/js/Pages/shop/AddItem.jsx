@@ -511,7 +511,7 @@ export default function AddItem(props) {
                         <h2 className="text-md font-normal mb-3 mt-3">Item image</h2>
                         {isEdit ? <img alt="image-profile" className="w-full max-h-[500px] object-cover h-auto rounded-4" src={item && item.perma_link} /> : ""}
                         <div className={`uploader mb-4 mt-2 overflow-hidden`}>
-                            <GlobalUploader
+                            <GlobalUploader ctxName='add-shop1-context'
                                 type="minimal"
                                 ref={uploaderRef}
                                 sendFile={getFileUID}
@@ -673,7 +673,7 @@ export default function AddItem(props) {
                                                 className=" mb-2 mt-1 w-full max-h-[500px] object-cover h-auto rounded-4"
                                                 src={IsAiImage} />
                                             : ""}
-                                            <GlobalUploader
+                                            <GlobalUploader ctxName='add-shop2-context'
                                                 type="minimal"
                                                 ref={uploaderRef}
                                                 sendFile={getRewardFile}

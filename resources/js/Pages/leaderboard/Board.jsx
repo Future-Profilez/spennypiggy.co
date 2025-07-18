@@ -104,10 +104,10 @@ export default function Board(props) {
                                 </div>
                             </div>
                             <div className="profile-content">
-                                <h2 className=" text-large pt-2 capitalize flex justify-center">
+                                <h2 className=" text-large pt-2 capitalize  justify-center">
                                     {(p && p.name) || "Anonymous"}  
                                     {p?.role == 1 && p?.profile_status_lock === 2 ? 
-                                        <RiVerifiedBadgeFill  size={'1.2rem'} className="ms-1 mt-1 text-pink" />
+                                        <RiVerifiedBadgeFill  size={'1.2rem'} className="ms-1 inline-block text-pink" />
                                         : ''}
                                 </h2>
                                 <h2 className=" text-sm capitalize text-gray-500 mb-3 flex justify-center">

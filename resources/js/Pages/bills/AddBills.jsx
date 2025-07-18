@@ -314,7 +314,7 @@ export default function AddBills(props) {
                                             !isEditable ? "" : "d-none"
                                         } editable`}
                                     >
-                                        <GlobalUploader
+                                        <GlobalUploader ctxName='add-bills-context'
                                             type="minimal"
                                             ref={uploaderRef}
                                             sendFile={getFileUID}

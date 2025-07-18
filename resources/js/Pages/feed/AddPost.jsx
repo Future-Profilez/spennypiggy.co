@@ -143,7 +143,7 @@ export default function AddPost({item, text, classes, isEdit, title}) {
                     : ""}
 
                     <div className="relative">
-                        <GlobalUploader ref={uploaderRef} view={false} type="minimal" sendFile={getfile} options={st.post} />
+                        <GlobalUploader ctxName='add-post-context' ref={uploaderRef} view={false} type="minimal" sendFile={getfile} options={st.post} />
                         <div className="absolute top-[14px] right-12">
                             <ImageGenerationWithAI classes={`button bg-pink d-table text-[10px] d-sm-flex m-auto m-sm-0 hover:opacity-80`} update={getAIImage} />
                         </div>

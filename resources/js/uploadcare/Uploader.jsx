@@ -3,8 +3,7 @@ import { useState, useCallback, useEffect, useRef, forwardRef, useImperativeHand
 import { PACKAGE_VERSION } from "@uploadcare/blocks/env";
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import { useAlerts } from "@/Components/Alerts";
-import axios from "axios";
-import { router } from "@inertiajs/react";
+import axios from "axios"; 
 LR.registerBlocks(LR);
 
 const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploading, type, ctxName = 'default' }, ref) => {

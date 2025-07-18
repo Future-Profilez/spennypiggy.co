@@ -133,7 +133,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
                 <p className='text-muted mb-3' >Add a 15 to 30 sec video to introduce yourself.</p>
                 <p className='text-danger mb-4' >All videos are reviewed against our terms before being accepted or rejected.</p>
                 <div className='my-3' >
-                  <GlobalUploader view={true}
+                  <GlobalUploader view={true} ctxName='add-intro-context'
                     ref={uploaderRef} type='minimal'
                     sendFile={getFileUID}
                     options={st.profileVideo}

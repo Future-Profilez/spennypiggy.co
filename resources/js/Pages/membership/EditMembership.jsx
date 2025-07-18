@@ -303,7 +303,7 @@ export default function EditMembership({ item }) {
                                 !isEditable ? "" : "d-none"
                             } editable`}
                         >
-                            <GlobalUploader
+                            <GlobalUploader ctxName='add-edit-membership-context'
                                 type="minimal"
                                 ref={uploaderRef}
                                 sendFile={getFileUID}

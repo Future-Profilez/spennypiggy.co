@@ -53,7 +53,7 @@ export default function UpdateAvatar({getImageUID, text, close, type }) {
                     </div>
                     <div className={`${!isEditable ? '' : 'd-none'} edited`} >
                         <div className="pb-4" >
-                            <GlobalUploader type='minimal' ref={uploaderRef} sendFile={getFileUID} options={st.profileimage} />
+                            <GlobalUploader ctxName={`update-${type}`} type='minimal' ref={uploaderRef} sendFile={getFileUID} options={st.profileimage} />
                         </div>
                         <button disabled={!file} onClick={updateImage} className={`${!file ? 'disabled' :''} btn-pink sm w-100`} >Confirm</button>
                     </div>
