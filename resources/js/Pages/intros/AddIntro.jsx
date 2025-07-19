@@ -135,7 +135,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
                 <div className='my-3' >
                   <GlobalUploader view={true} ctxName='add-intro-context'
                     ref={uploaderRef} type='minimal'
-                    sendFile={getFileUID}
+                    sendFile={getFileUID}  imgonly={false}
                     options={st.profileVideo}
                   />
                 </div>

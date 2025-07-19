@@ -6,7 +6,7 @@ import { useAlerts } from "@/Components/Alerts";
 import axios from "axios"; 
 LR.registerBlocks(LR);
 
-const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploading, type, ctxName = 'default' }, ref) => {
+const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploading, type, ctxName = 'default', imgonly = true }, ref) => {
   const { successAlert, errorAlert } = useAlerts();
   const [files, setFiles] = useState([]);
   const [checkIsUploading, setCheckIsUploading] = useState(false);
@@ -116,21 +116,21 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
         pubkey="af0e7b54d1432d098e25"
         multiple={false}
         darkmode={false}
-        thumb-size={500}
+        thumb-size={500} inputAcceptTypes="image/*,video/mp4,video/webm"
         confirm-upload={false}
         store
-        accept={accept || "image/*,video/*"}
+        accept={"image/*,video/*"}
         preview-step
         camera-mirror={false}
         source-list="local,url,camera,dropbox"
         done-activity={false}
         show-empty-list={false}
-        img-only={type !== 'video'}
+        img-only={imgonly}
         remove-copyright
         max-concurrent-requests={4}
         multipart-max-attempts={3}
       />
-
+       
       {view && (
         <div className={'uploadcare-view mb-0'}>
           {files.map((file) => (
