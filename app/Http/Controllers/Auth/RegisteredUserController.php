@@ -155,7 +155,7 @@ class RegisteredUserController extends Controller
                         ['follower_id' => $user->id, 'followed_id' => $spennyPiggyAcc->id],
                         ['follower_id' => $user->id, 'followed_id' => $spennyPiggyAcc->id]
                     );
-                    $content = ucfirst($user->name) . "@($user->username)" . " just followed you.";
+                    $content = ucfirst($user->name) . " (@$user->username)" . " just followed you.";
                     if($spennyPiggyAcc->email){
                         Helpers::sendNotification('👥 New Follower!', $content, $spennyPiggyAcc->email ?? null);
                     }
