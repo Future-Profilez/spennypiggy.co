@@ -470,7 +470,6 @@ class StripeWebhookController extends Controller
     {
         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
-        // $endpoint_secret = 'whsec_eM6QEz8bKlZrsw0bdh148Qcp3AyDlK8a';
         $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
 
         $payload = $request->getContent();
@@ -530,8 +529,7 @@ class StripeWebhookController extends Controller
         $customerEmail = $customer->email ?? null;
 
         $array = [
-            // 'email' => $customerEmail ?? null,
-            'email' => 'naveen@internetbusinesssolutionsindia.com',
+            'email' => $customerEmail ?? null,
             'name' => $customerName ?? null,
             'uuid' => $subs->uuid,
             'invoice_pdf' => $invoicePdf,
