@@ -639,6 +639,7 @@ export default function Dashboard(props) {
                                                                         {IsloggedIn && auth?.user && auth?.user?.role == 1 && !auth?.user?.monthly_charge_enabled  ?
                                                                             <SiteSubscription charges={auth?.user?.monthly_charge_enabled} user={auth?.user} />
                                                                         : ''}
+                                                                        
                                                                         {UserStripeConnected == 1 ?
                                                                            <MyGoal IsloggedIn={IsloggedIn}  /> :
                                                                         ""}

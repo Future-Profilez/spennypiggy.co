@@ -36,7 +36,7 @@ class User extends Authenticatable
     ];
 
     protected $appends = [
-        'avatar_url', 'cover_url', 'twitter_username',
+        'avatar_url', 'cover_url', 'twitter_username', 
         'monthly_charge_enabled', 'is_creator_address_found','followers_count','following_count',
     ];
 
@@ -85,13 +85,15 @@ class User extends Authenticatable
     public function getMonthlyChargeEnabledAttribute()
     {
         if (Auth::check() && $this->id === Auth::id()) {
-            return MonthlyCharge::where('user_id', $this->id)->where('status', 'paid')->exists();
+            return MonthlyCharge::where('user_id', $this->id)
+                ->whereIn('status', ['paid', 'trialing'])
+                ->exists();
         }
         return false;
     }
+     
 
-    public function getIsCreatorAddressFoundAttribute(): bool
-    {
+    public function getIsCreatorAddressFoundAttribute(): bool {
         return $this->creatorShippingAddress()->exists();
     }
 
