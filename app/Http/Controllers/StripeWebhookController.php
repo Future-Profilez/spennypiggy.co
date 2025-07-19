@@ -470,9 +470,7 @@ class StripeWebhookController extends Controller
     public function mandatorySubscriptionStatus(Request $request)
     {
         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-
         $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
-
         $payload = $request->getContent();
         $sig_header = $request->header('Stripe-Signature');
 

@@ -148,13 +148,17 @@ class RegisteredUserController extends Controller
                 'profile_status_lock' => 0,
             ]);
             $user->refresh();
-            $spennyPiggyAcc = User::where('email', 'spennypiggyofficial@gmail.com')->first();
+            $spennyPiggyAcc = User::where('username', 'spenny_piggy')->first();
             if(!empty($spennyPiggyAcc)){
                 if ($user) {
                     Follow::UpdateOrCreate(
                         ['follower_id' => $user->id, 'followed_id' => $spennyPiggyAcc->id],
                         ['follower_id' => $user->id, 'followed_id' => $spennyPiggyAcc->id]
                     );
+                    $content = ucfirst($user->name) . "@($user->username)" . " just followed you.";
+                    if($spennyPiggyAcc->email){
+                        Helpers::sendNotification('👥 New Follower!', $content, $spennyPiggyAcc->email ?? null);
+                    }
                 }
             }
 
