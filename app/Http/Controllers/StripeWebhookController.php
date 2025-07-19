@@ -553,7 +553,17 @@ class StripeWebhookController extends Controller
                     $user->is_subscribed = 1;
                     $user->save();
                 }
-                $type = ($subs->current_start_subscription_date === null) ? 'start' : 'renew';
+
+                $nowStart = optional($subscription)->current_period_start;
+                $previousStart = optional($subs->getOriginal('current_start_subscription_date'))?->timestamp ?? 0;
+
+                if ($nowStart > $previousStart) {
+                    $type = ($subscription->status === 'active' && !$subscription->cancel_at_period_end && $subscription->trial_end && $nowStart > $subscription->trial_end)
+                        ? 'start'  
+                        : 'renew';
+                } else {
+                    $type = 'renew'; 
+                }
                 SendRenewMail::dispatch($array, $type, 'site');
                 break;
 
