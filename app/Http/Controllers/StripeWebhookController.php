@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers;
 use App\Jobs\SendIdentityVerificationEmail;
 use App\Jobs\SendPaymentSuccessEmail;
 use App\Mail\PaymentSuccessMail;
@@ -465,7 +466,7 @@ class StripeWebhookController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    // $endpoint_secret = 'whsec_eM6QEz8bKlZrsw0bdh148Qcp3AyDlK8a';
+
     public function mandatorySubscriptionStatus(Request $request)
     {
         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
@@ -544,6 +545,7 @@ class StripeWebhookController extends Controller
 
         switch ($eventType) {
             case 'customer.subscription.trial_will_end':
+                Helpers::sendNotification('Free Trial Ending Soon ⏳.', 'Your free trial is about to end.', $customerEmail ?? null);
                 SendRenewMail::dispatch($array, 'trial', 'site');
                 break;
 
@@ -566,6 +568,11 @@ class StripeWebhookController extends Controller
                 } else {
                     $type = 'renew'; // Fallback
                 }
+                if($type == 'renew') {
+                    Helpers::sendNotification('Subscription renewed 🎉', '🎉 Your subscription was renewed. Thank you for continuing your journey with Spenny Piggy!', $customerEmail ?? null);
+                } else { 
+                    Helpers::sendNotification('🎉 You’ve successfully started your subscription!', 'Get ready to unlock all premium features 🚀 — no limits, no restrictions!', $customerEmail ?? null);
+                }
                 SendRenewMail::dispatch($array, $type, 'site');
                 break;
 
@@ -576,23 +583,25 @@ class StripeWebhookController extends Controller
                     $user->is_subscribed = 0;
                     $user->save();
                 }
+                Helpers::sendNotification('Spenny PiggySubscription could not be processed ❌', 'There was a problem processing your payment. Please update your payment method to continue enjoying premium access.', $customerEmail ?? null);
                 SendRenewMail::dispatch($array, 'failed', 'site');
                 break;
 
             case 'customer.subscription.deleted':
-                Log::info("Subscription deleted: {$subscriptionId}");
-                $subs->status = "cancelled";
+                Log::info('Subscription deleted: {$subscriptionId}');
+                $subs->status = 'cancelled';
                 $subs->cancelled_at = now();
                 $subs->save();
                 if ($user) {
                     $user->is_subscribed = 0;
                     $user->save();
                 }
+                Helpers::sendNotification('Subscription has been cancelled 🛑', 'We’re sorry to see you go. Your access will remain active until the end of the current billing period.', $customerEmail ?? null);
                 SendRenewMail::dispatch($array, 'cancelled', 'site');
                 break;
 
             default:
-                Log::info("Unhandled event type: {$eventType}");
+                Log::info('Unhandled event type: {$eventType}');
                 break;
         }
 
