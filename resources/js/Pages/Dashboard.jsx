@@ -666,11 +666,13 @@ export default function Dashboard(props) {
                                                                                     {auth.user && auth.user.role == 1 && AuthUserStripeConnected == 1  ? (
                                                                                         <PaymentDashboard classes="btn-pink lg w-100 mt-3 btn-shadow" text="Payment Dashboard" />
                                                                                         ) :
-                                                                                        <div className="finish mt-4 d-block">
+                                                                                        <>
+                                                                                        {auth?.user?.identity_status == 1 ? <div className="finish mt-4 d-block">
                                                                                             <p className="mb-4 text-lg"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
                                                                                             <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-sm btn-shadow w-full block text-center bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 3 transition-all duration-200" > Finish Setup
                                                                                             </Link>
-                                                                                        </div>
+                                                                                        </div> : ''}
+                                                                                        </>
                                                                                     }
 
                                                                                 {/* {auth.user && auth.user.stripe_details_submitted == 1 ?
