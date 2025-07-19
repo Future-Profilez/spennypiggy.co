@@ -74,7 +74,7 @@ export default function AddSocial({ removetext, openSocial, sLinks, type, redire
     const hasError = Object.values(errors).some(err => err);
     return hasAnyFilled && !hasError;
   };
-
+  const isValid = isFormValid();
   const createSocial = (e) => {
     e.preventDefault();
     const isValid = isFormValid();
@@ -123,11 +123,11 @@ export default function AddSocial({ removetext, openSocial, sLinks, type, redire
           <h2 className="pb-4 font-GillSans text-xl text-uppercase">
             Social Links
           </h2>
-          {type === "membership" && (
-            <p className="text-yellow-500 mb-4">
-              Please add at least one social media handle. We will share your social media handles to the creator so they can chat with you.
-            </p>
-          )}
+
+          {!isValid?  <p className="text-red-500 mb-4">
+              Please add at least one social media handle. This is required to verify your account.
+            </p> : ''}
+
           <form onSubmit={createSocial}>
             <ul className="ps-0 row">
               {[

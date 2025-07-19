@@ -258,8 +258,8 @@ export default function Dashboard(props) {
                                 <div className="w-full max-w-[550px]  px-3">
                                     <Suspense fallback={"Loading.."}>
                                         <div className="bg-gray-100 w-full p-6 md:p-10 rounded-3xl shadow-lg z-10">
-                                            <h2 className="font-bold text-black  text-xl md:text-2xl mb-4 text-center m-auto ">
-                                                Add Item to fund your lifestyle.
+                                            <h2 className="  text-black font-gulfs uppercase text-xl md:text-2xl mb-4 text-center m-auto ">
+                                                Fund your Lifestyle
                                             </h2>
                                             <div className="max-h-[55vh]  sm:max-h-[40vh] overflow-y-auto">
                                                 {wishOptions ? (
