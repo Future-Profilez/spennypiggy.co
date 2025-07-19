@@ -19,32 +19,25 @@ class Helpers
     {
         $blockedWords = ['paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive', 'tax', 'fee', 'session', 'deposit', 'tribute', 'dick', 'goddess', 'master', 'mistress'];
         $blockedEmojis = ['😈', '💩', '💬', '👅', '🍆', '🍌', '🌽', '🌶️', '🍑', '💎', '💦'];
-        foreach ($blockedWords as $key => $word) {
-            if (stripos($request->getContent(), $word) !== false) {
-                // return response()->json([
-                //     'status' => true,
-                //     'message' => 'Some restricted words are not allowed.',
-                // ]);
+
+        $inputText = implode(' ', $request->all());
+
+        foreach ($blockedWords as $word) {
+            if (preg_match("/\b" . preg_quote($word) . "\b/i", $inputText)) {
                 return true;
-                // return redirect()->route('home')->with('error', "These words are not allowed.");
             }
         }
 
         foreach ($blockedEmojis as $emoji) {
-            $emojiPattern = preg_quote($emoji);
-            if (preg_match("/$emojiPattern/u", $request->getContent())) {
-                // return response()->json([
-                //     'status' => true,
-                //     'message' => 'Some restricted emojis are not allowed.',
-                // ]);
+            if (mb_strpos($inputText, $emoji) !== false) {
                 return true;
-
-                // return redirect()->route('home')->with('error', "These emojis are not allowed.");
             }
         }
 
         return false;
     }
+
+
 
     public static function priceFormat($currency1, $amount, $currency2)
     {
