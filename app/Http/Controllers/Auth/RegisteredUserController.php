@@ -149,7 +149,9 @@ class RegisteredUserController extends Controller
             ]);
             $user->refresh();
             $spennyPiggyAcc = User::where('username', 'spenny_piggy')->first();
+            
             if(!empty($spennyPiggyAcc)){
+                $spennyPiggyAcc = User::where('username', 'spenny_piggy')->first();
                 if ($user) {
                     Follow::UpdateOrCreate(
                         ['follower_id' => $user->id, 'followed_id' => $spennyPiggyAcc->id],
