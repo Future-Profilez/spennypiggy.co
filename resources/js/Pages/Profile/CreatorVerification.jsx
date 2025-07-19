@@ -148,7 +148,10 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             </h2>
                             <p className="text-gray-500 text-[14px]">
                                 Update at least one social media handle to help
-                                fans connect with you.
+                                fans connect with you. 
+                            </p>
+                            <p className="text-red-500 text-[14px]">
+                                It must show an active account. Older than 6 months.
                             </p>
                         </div>
                     </div>

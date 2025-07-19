@@ -628,6 +628,7 @@ export default function Dashboard(props) {
                                                                 <div className="col-md-6  h-auto">
                                                                     <div className="about-sticky" >
 
+<SiteSubscription charges={auth?.user?.monthly_charge_enabled} user={auth?.user} />
                                                                         {IsloggedIn && auth?.user && auth?.user?.role == 1 && !card_capabilities && !isNeedToUpgrade && AuthUserStripeConnected ?
                                                                             <EnableCardCapabilities  />
                                                                         : ''}
@@ -727,6 +728,7 @@ export default function Dashboard(props) {
                                                             </div>
 
                                                             <div className="ps-md-4 col-md-6">
+                                                                
                                                                 {IsloggedIn &&
                                                                 UserStripeConnected !==
                                                                     1 ? (
