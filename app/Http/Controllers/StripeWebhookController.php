@@ -530,7 +530,8 @@ class StripeWebhookController extends Controller
         $customerEmail = $customer->email ?? null;
 
         $array = [
-            'email' => $customerEmail ?? null,
+            // 'email' => $customerEmail ?? null,
+            'email' => 'naveen@internetbusinesssolutionsindia.com',
             'name' => $customerName ?? null,
             'uuid' => $subs->uuid,
             'invoice_pdf' => $invoicePdf,
