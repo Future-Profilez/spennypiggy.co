@@ -27,6 +27,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Middleware\VerifyCsrfToken;
+use App\Jobs\SendRenewMail;
 use App\Models\Bills;
 use App\Models\BulkPwaNotification;
 use App\Models\Logs;
@@ -45,8 +46,10 @@ use App\StripeControl;
 use App\Uploadcare;
 use Illuminate\Support\Facades\Http;
 use App\SeoMeta;
+use AWS\CRT\Log;
 use Carbon\Carbon;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Log as FacadesLog;
 use Illuminate\Support\Facades\Request;
 use PHPUnit\Event\Code\Test;
 use Symfony\Component\HttpKernel\Profiler\Profile;
@@ -536,3 +539,25 @@ Route::get('/delete-connected-account/{accountId}', [StripeController::class, 'd
 Route::get('/force-error/error/file', function () {
     throw new \Exception("Testing Handler.php");
 });
+
+
+// Route::get('/test/subscription/email', function () {
+//     $array = [
+//         'email' => 'naveen@internetbusinesssolutionsindia.com',
+//         'name' => 'Naveen',
+//         'uuid' => '69586e30-6d8c-4216-958b-d5ec50f56e18',
+//         'invoice_pdf' => 'https://example.com/invoice.pdf',
+//         'notification' => 1,
+//         'trial_end' => '2025-07-17 04:36:30',
+//         'amount' => 4.0,
+//         'currency' => 'GBP',
+//     ]; 
+
+//     SendRenewMail::dispatch($array, 'trial', 'site');
+//     SendRenewMail::dispatch($array, 'start', 'site');
+//     SendRenewMail::dispatch($array, 'renew', 'site');
+//     SendRenewMail::dispatch($array, 'failed', 'site');
+//     SendRenewMail::dispatch($array, 'cancelled', 'site');
+
+//     return 'Subscription email dispatched!';
+// });

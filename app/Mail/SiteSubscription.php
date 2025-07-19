@@ -5,7 +5,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class RenewMail extends Mailable
+class SiteSubscription extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -23,8 +23,8 @@ class RenewMail extends Mailable
     public function build()
     {
 
-        return $this->subject('Spenny Piggy Subscription Status Notification')
-            ->view('email.subscription-renew')  
+        return $this->subject('Subscription Update')
+            ->view('email.sitesubscription')  
             ->with([
                 'array' => $this->array,
                 'type' => $this->type,

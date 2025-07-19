@@ -470,8 +470,8 @@ class StripeWebhookController extends Controller
     {
         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
-        // $endpoint_secret = 'whsec_eM6QEz8bKlZrsw0bdh148Qcp3AyDlK8a';
-        $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
+        $endpoint_secret = 'whsec_eM6QEz8bKlZrsw0bdh148Qcp3AyDlK8a';
+        // $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
 
         $payload = $request->getContent();
         $sig_header = $request->header('Stripe-Signature');
@@ -535,19 +535,13 @@ class StripeWebhookController extends Controller
             'uuid' => $subs->uuid,
             'invoice_pdf' => $invoicePdf,
             'notification' => $subs->user->notification_send ?? 0,
+            'renew_on' => $subs->currentPeriodStart,
             'trial_end' => $subs->current_end_trial_date,
             'amount' => $subs->amount ?? null,
             'currency' => $subs->currency ?? 'GBP',
         ];
 
-        // Handle user subscription flag
         $user = $subs->user;
-
-        Log::info($array);
-        // SendRenewMail::dispatch($array, 'start subscription', 'site');
-        // SendRenewMail::dispatch($array, 'renew', 'site');
-        // SendRenewMail::dispatch($array, 'failed', 'site');
-        // SendRenewMail::dispatch($array, 'cancelled', 'site');
 
         switch ($eventType) {
             case 'customer.subscription.trial_will_end':
@@ -559,7 +553,7 @@ class StripeWebhookController extends Controller
                     $user->is_subscribed = 1;
                     $user->save();
                 }
-                $type = ($subs->current_start_subscription_date === null) ? 'start subscription' : 'renew';
+                $type = ($subs->current_start_subscription_date === null) ? 'start' : 'renew';
                 SendRenewMail::dispatch($array, $type, 'site');
                 break;
 
