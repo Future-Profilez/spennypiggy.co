@@ -470,8 +470,8 @@ class StripeWebhookController extends Controller
     {
         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
-        $endpoint_secret = 'whsec_eM6QEz8bKlZrsw0bdh148Qcp3AyDlK8a';
-        // $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
+        // $endpoint_secret = 'whsec_eM6QEz8bKlZrsw0bdh148Qcp3AyDlK8a';
+        $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
 
         $payload = $request->getContent();
         $sig_header = $request->header('Stripe-Signature');
