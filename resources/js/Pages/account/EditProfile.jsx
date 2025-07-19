@@ -112,14 +112,23 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         // // 7. Cleanup
         // document.body.removeChild(container);
     };
+    const [UploadingStart, setUploadingStart] = useState(false);
+    const [CoverUploadingStart, setCoverUploadingStart] = useState(false);
+    const [localAvatar, setLocalAvatar] = useState('');
 
-    const getImageUID = (e) => {
-        setData('avatar', e);
-        setProfileDP(e.cdnUrl);
-        if(e){
+    useEffect(() => {
+        if(localAvatar){
+            setData('avatar', localAvatar);
             generateCardAndUpload(e?.uuid);
         }
-        setUploadingStart(false)
+    },[localAvatar]);
+
+    
+    const getImageUID = (e) => {
+        setData('avatar', e);
+        setLocalAvatar(e);
+        setProfileDP(e.cdnUrl);
+        setUploadingStart(false);
     }
 
     const getCoverUID = (e) => {
@@ -131,7 +140,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
     const [username, setUsername] = useState(user?.username);
     const updateProfile = async (e) => {
         e.preventDefault();
-        post(route('edit-profile', {data}), {
+        post(route('edit-profile', {...data}), {
             preserveScroll: true,
             onSuccess: (resp) => {
                 setClose(false);
@@ -139,11 +148,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                     setClose();
                 }, 1000);
                 if(resp.props.flash?.success){
-                    successAlert(resp.props.flash?.success || "Updated successfully.");
                     updateProfileSteps && updateProfileSteps();
-                }
-                if(resp.props.flash?.error){
-                    errorAlert(resp.props.flash?.error || "Something went wrong.")
                 }
             },
             onError: (_err) => {
@@ -161,8 +166,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         });
     };
 
-    const [UploadingStart, setUploadingStart] = useState(false);
-    const [CoverUploadingStart, setCoverUploadingStart] = useState(false);
+    
     const IsProfileChannged = async() => {
         if(user && user.avatar && !user?.social_image){
             await generateCardAndUpload(user.avatar);
