@@ -86,7 +86,7 @@ class User extends Authenticatable
     {
         if (Auth::check() && $this->id === Auth::id()) {
             return MonthlyCharge::where('user_id', $this->id)
-                ->whereIn('status', ['paid', 'trialing'])
+                ->whereIn('status', ['paid', 'trialing', 'active'])
                 ->exists();
         }
         return false;

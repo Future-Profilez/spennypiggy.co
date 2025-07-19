@@ -16,26 +16,33 @@ use Image;
 class Helpers
 {
     public static function checkBlockData($request)
-    {
-        $blockedWords = ['paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive', 'tax', 'fee', 'session', 'deposit', 'tribute', 'dick', 'goddess', 'master', 'mistress'];
-        $blockedEmojis = ['😈', '💩', '💬', '👅', '🍆', '🍌', '🌽', '🌶️', '🍑', '💎', '💦'];
+{
+    $blockedWords = ['paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive', 'tax', 'fee', 'session', 'deposit', 'tribute', 'dick', 'goddess', 'master', 'mistress'];
+    $blockedEmojis = ['😈', '💩', '💬', '👅', '🍆', '🍌', '🌽', '🌶️', '🍑', '💎', '💦'];
 
-        $inputText = implode(' ', $request->all());
+    // Filter out non-stringable values (like arrays or objects)
+    $stringValues = array_filter($request->all(), function ($value) {
+        return is_scalar($value) || (is_object($value) && method_exists($value, '__toString'));
+    });
 
-        foreach ($blockedWords as $word) {
-            if (preg_match("/\b" . preg_quote($word) . "\b/i", $inputText)) {
-                return true;
-            }
+    // Combine all the valid inputs into one string
+    $inputText = implode(' ', $stringValues);
+
+    foreach ($blockedWords as $word) {
+        if (preg_match("/\b" . preg_quote($word) . "\b/i", $inputText)) {
+            return true;
         }
-
-        foreach ($blockedEmojis as $emoji) {
-            if (mb_strpos($inputText, $emoji) !== false) {
-                return true;
-            }
-        }
-
-        return false;
     }
+
+    foreach ($blockedEmojis as $emoji) {
+        if (mb_strpos($inputText, $emoji) !== false) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 
 
 
