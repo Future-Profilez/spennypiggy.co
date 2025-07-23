@@ -514,27 +514,6 @@ class StripeWebhookController extends Controller
                         break;
 
                     case "invoice.payment_succeeded":
-                        // Carbon::setTestNow(Carbon::create(2026, 1, 5, 10, 30, 0));
-
-                        // if (($subs->current_end_trial_date && Carbon::parse($subs->current_end_trial_date)->lte(now()) && !$subs->current_end_subscription_date) || ($subs->current_end_subscription_date &&
-                        //     Carbon::parse($subs->current_end_subscription_date)->lte(now()))) {
-
-                        //     $periodEnd = data_get($object, 'lines.data.0.period.end');
-                        //     $subs->upcoming_payment = $periodEnd ? Carbon::createFromTimestamp($periodEnd)->format('Y-m-d H:i:s') : null;
-                        //     $subs->current_start_subscription_date = now();
-                        //     $subs->current_end_subscription_date = now()->addMonths(1);
-                        //     $subs->status = "paid";
-                        //     $subs->save();
-
-                        //     $type = '';
-                        //     if ($subs->current_start_subscription_date == null && $subs->current_end_trial_date <= now()) {
-                        //         $type = 'start subscription';
-                        //     } else {
-                        //         $type = 'renew';
-                        //     }
-                        //     SendRenewMail::dispatch($array, $type, 'site');
-                        //     // Optionally: SendPaymentSuccessEmail::dispatch(...)
-                        // }
                         if (($subs->current_end_trial_date && Carbon::parse($subs->current_end_trial_date)->lte(now()) && !$subs->current_end_subscription_date) ||
                             ($subs->current_end_subscription_date && Carbon::parse($subs->current_end_subscription_date)->lte(now()))
                         ) {
