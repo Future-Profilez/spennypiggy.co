@@ -35,10 +35,12 @@ export default function GifterCardVerification({ auth, gifterCardVerification}) 
 
     return (
         <Authenticated>
-            <div className="bg-black py-12">
+            <div className="bg-black py-6 ">
                 <div className="container">
+                    <div className="!h-[80vh]  flex items-center  ">
                     <div className="max-w-[800px] m-auto ">
                         <ActivateCard />
+                    </div>
                     </div>
                 </div>
             </div>

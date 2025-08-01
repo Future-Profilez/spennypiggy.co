@@ -41,7 +41,7 @@ export default function ActivateCard() {
                         <div className="dark2 rounded-[30px] p-3">
                             <div className="stripNote p-3 p-md-4">
                                 <h4 className="text-[30px] font-GillSans text-white text-center text-uppercase mb-3">
-                                   {auth?.user?.profile_reject_reason ? 'Re-Activate Account' : ' Activate Account' }
+                                   {auth?.user?.profile_reject_reason ? 'Retry Card Verification' : 'Card Verification' }
                                 </h4>
                                 {auth?.user?.profile_reject_reason ? (
                                     <div className="mt-3 text-center mb-6">
@@ -79,13 +79,10 @@ export default function ActivateCard() {
                             <div className="text-center flex justify-center mb-2">
                                 <LoaderButton
                                     onClick={checkTerms}
-                                    disabled={loading}
-                                    className={"p-3 lg"}
-                                    spinnerClassName="fill-red-600"
-                                >
-                                    {auth?.user?.profile_reject_reason
-                                        ? "Re-Activate Account"
-                                        : "Activate Account"}
+                                    disabled={loading} 
+                                    className={"p-3 lg btn-shadow !font-normal"}
+                                    spinnerClassName="fill-red-600 " >
+                                    {auth?.user?.profile_reject_reason ? "Re-Activate Account" : "Activate Account"}
                                 </LoaderButton>
                             </div>
 

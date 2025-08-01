@@ -99,7 +99,7 @@ export default function Wishtracker(props) {
               <div className="text-dark">
                 {n.payment.anonymous == 1 && n && n.sender === false ? (
                   <Avatar
-                    name={`From : Anonymous 11 `}
+                    name={`Anonymous 11 `}
                     subhead={(n.wish && n.wish.wishname) || 'Surprise Gift'}
                     src={userphoto}
                   />
@@ -107,7 +107,7 @@ export default function Wishtracker(props) {
                   <Avatar
                     role={n && n.user && n.user.role}
                     profile_status_lock={n && n.user && n.user.profile_status_lock == 2 ? true : false}
-                    name={`From:${
+                    name={`${
                       (n && n.user && n.user.name) || 'Anonymous 222'
                     }`}
                     link={(n.user && n.user.username) || null}

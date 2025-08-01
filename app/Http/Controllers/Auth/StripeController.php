@@ -1100,6 +1100,14 @@ class StripeController extends Controller
 
     public function tipToJar(Request $request, $creator_uid)
     {
+        $user = Auth::user();
+        if ( !empty($user) && $user->role === 0 && $user->is_uk == 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
+            return response()->json([
+                'status' => false,
+                'msg' => "Please complete your card verification process. Go your profile and complete your card verification process."
+            ]);
+        }
+
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'usd';
         $creator = User::where('uuid', $creator_uid)->where('is_uk', 0)->first();
         if (!$creator) {

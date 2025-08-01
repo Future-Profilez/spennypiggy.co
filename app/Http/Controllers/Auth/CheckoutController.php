@@ -32,80 +32,72 @@ class CheckoutController extends Controller
 {
     /* create checkout */
     public function createCheckout($id) {
-
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
-        if ($checkGifterStatus == true) {
+        if ($checkGifterStatus) {
             $user = Auth::user();
-            return to_route('user.show', ['username' => $user->username])->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
+            return to_route('user.show', ['username' => $user->username])
+                ->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
         }
 
         $owner = User::find($id);
-        if (!empty($owner) && $owner['is_subscribed'] !== 1) {
-            return redirect()->back()->with("error", "Currently creator has paused gift payments. Please try again later when gift payments are active.");
+        if (!$owner || $owner['is_subscribed'] !== 1) {
+            return redirect()->back()->with("error", "Currently creator has paused gift payments. Please try again later.");
         }
 
-        $user = Auth::user();  
-        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+        $user = Auth::user();
+        $currency = strtolower(request()->cookie('currency') ?? 'gbp');
+
         try {
-            if (!empty(request()->query('message'))) {
-                $wordLimit = 100;
-                $message = request()->query('message');
-
-                if (str_word_count($message) > $wordLimit) {
-                    return redirect()->back()->with("error", "Max limit for message is 100 words");
-                }
-            }
-            if (Auth::check()) {
-                $getdata = UserCart::where('user_id', Auth::id())
-                    ->where('owner_id', $id)
-                    ->where('status', 1)
-                    ->with(['wish'])
-                    ->get();
-            } else {
-                $getdata = UserCart::where('device_id', $id)
-                    ->where('status', 1)
-                    ->with(['wish'])
-                    ->get();
+            $message = request()->query('message');
+            if (!empty($message) && str_word_count($message) > 100) {
+                return redirect()->back()->with("error", "Max limit for message is 100 words");
             }
 
-            if ($getdata->isNotEmpty() && $getdata->first()->owner->is_subscribed !== 1) {
-                return redirect()->back()->with('error', 'Currently creator has paused gift payments. Please try again later when gift payments are active.');
+            $getdata = Auth::check()
+                ? UserCart::where('user_id', Auth::id())->where('owner_id', $id)->where('status', 1)->with('wish')->get()
+                : UserCart::where('device_id', $id)->where('status', 1)->with('wish')->get();
+
+            if ($getdata->isEmpty()) {
+                return redirect()->back()->with('error', 'No items found in cart.');
+            }
+
+            if ($getdata->first()->owner->is_subscribed !== 1) {
+                return redirect()->back()->with('error', 'Currently creator has paused gift payments. Please try again later.');
             }
 
             $lineItems = [];
             $subtotal = 0;
+            $totalPlatformFee = 0;
             $transfer_amount = 0;
+            $adminFee = config('app.administration_fee');
+            $taxPercentage = config('app.single_tax');
+
             foreach ($getdata as $dd) {
-                if (!$user) {
-                    $email = request()->query('email');
-                    $user = User::where('email', $email)->first();
-                    if (!$user) {
-                        $user = null;
-                    }
+                if (!$user && request()->query('email')) {
+                    $user = User::where('email', request()->query('email'))->first();
                 }
-                $subtotals = 0;
-                $totalAmount = $dd->amount * $dd->quantity;
+
+                $totalAmount = $dd->amount;
                 $ConvertedToGBpAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, 'gbp');
-                $subtotals += $ConvertedToGBpAmount * $dd->quantity;
-                if (!Auth::check() && $subtotals > 50) {
-                    return to_route('login', ['message' => 'Larger payments more than £50 need to login']);
+                $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, $currency);
+
+                if (!Auth::check() && ($ConvertedToGBpAmount * $dd->quantity) > 50) {
+                    return to_route('login', ['message' => 'Larger payments more than £50 require login']);
                 }
 
-                $adminFee = config('app.administration_fee');
-                $showAdminsFees = Helpers::priceFormat('GBP', $adminFee, $currency);
-                $StoreAdminsFees = Helpers::priceFormat('GBP', $adminFee, $dd->owner->default_currency);
-                $taxPercentage = config('app.single_tax');
+                // Platform fee per item
+                $platformFeeAmountPerItem = $ConvertedAmount * $taxPercentage / 100;
+                $totalPlatformFee += $platformFeeAmountPerItem * $dd->quantity;
+                $subtotal += $ConvertedToGBpAmount * $dd->quantity;
+                $transfer_amount += $ConvertedAmount * $dd->quantity;
 
-                $connectedAccountId = $getdata[0]->owner->account_id;
-
-                // Step 1: Check if customer already exists in connected account
+                $connectedAccountId = $dd->owner->account_id;
                 $storeCustomer = ConnectedAccountCustomer::where('user_id', Auth::id())
                     ->where('creator_id', $dd->owner->id)
                     ->where('connected_account_id', $connectedAccountId)
                     ->where('product_type', 'wish item')
                     ->first();
 
-                // Step 3: Create customer in connected account if not exists
                 $customer = null;
                 if (!$storeCustomer) {
                     $customer = StripeControl::createCustomer([
@@ -116,52 +108,27 @@ class CheckoutController extends Controller
 
                 $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
 
-                // Step 5: Store customer & price if not already stored
                 if (!$storeCustomer && $user) {
                     ConnectedAccountCustomer::create([
-                        'user_id' => Auth::id() ?? $user->id,
+                        'user_id' => $user->id,
                         'creator_id' => $dd->owner->id,
                         'connected_account_id' => $connectedAccountId,
                         'stripe_customer_id' => $customer_id,
                         'product_type' => 'wish item',
                         'product_id' => $dd->wish->stripe_product_id,
-                        // 'price_id' => $priceId,
                     ]);
                 }
 
-                $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, $currency);
-                $platformFeeAmount = $ConvertedAmount * $taxPercentage / 100;
-                $showTax = $platformFeeAmount + $showAdminsFees;
-                $showTaxWithQuantity = $showTax * $dd->quantity;
-                $storeTax = $platformFeeAmount + $StoreAdminsFees * $dd->quantity;
-                $storeTaxWithQuantity = $storeTax * $dd->quantity;
-
-                $lineItems = [
-                    // Your main product
-                    [
-                        'quantity' => $dd->quantity,
-                        'price_data' => [
-                            'currency' => $currency,
-                            'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
-                            'unit_amount_decimal' => round($totalAmount * 100),
-                        ]
-                    ],
-                    // Platform fee + Vat as a separate item
-                    [
-                        'quantity' => 1,
-                        'price_data' => [
-                            'currency' => $currency,
-                            'product_data' => [
-                                'name' => 'Platform Fee',
-                            ],
-                            'unit_amount' => round($showTaxWithQuantity * 100),
-                            'tax_behavior' => 'exclusive',
-                        ],
-                    ],
+                $lineItems[] = [
+                    'quantity' => $dd->quantity,
+                    'price_data' => [
+                        'currency' => $currency,
+                        'product' => ($dd->wish_item_id == null || (isset($dd->wish->subscription) && $dd->wish->subscription == 2))
+                            ? $dd->priceid
+                            : $dd->wish->stripe_product_id,
+                        'unit_amount_decimal' => round($totalAmount * 100),
+                    ]
                 ];
-
-                // this amount will be transfer to the creators account
-                $transfer_amount += $ConvertedAmount * $dd->quantity;
             }
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
@@ -169,28 +136,25 @@ class CheckoutController extends Controller
             $payload = [
                 'success_url' => route('checkout.success', [$id]),
                 'cancel_url' => route('checkout.cancel', [$id]),
-                "mode"  =>  "payment",
+                'mode' => 'payment',
                 'line_items' => $lineItems,
-                // 'customer_email' => $user->email ?? request()->query('email'),
                 'payment_intent_data' => [
-                    'application_fee_amount' => round($showTax * 100), // Admin fee + tax
+                    'application_fee_amount' => round($totalPlatformFee * 100),
                     'description' => "Platform Fee.",
                     "metadata" => [
-                        "guest_name" => $request->name ?? null,
+                        "guest_name" => request()->query('name') ?? $user->name ?? null,
                         "user_id" => Auth::id() ?? null,
                         "gifter_id" => Auth::id() ?? null,
                         "purpose" => "wishlist_contribution",
                         "wishlist_creator_id" => $owner->id,
-                        "creator_profile" => env('APP_URL'). '/' . $owner->username ?? null,
+                        "creator_profile" => env('APP_URL') . '/' . $owner->username,
                     ],
                 ],
-                'customer_email' =>  $getdata[0]->user->email ?? request()->query('email'),
+                'customer_email' => $getdata[0]->user->email ?? request()->query('email'),
             ];
 
-            $connectedAccount = $connectedAccountId;
-
             try {
-                $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccount);
+                $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccountId);
             } catch (\Stripe\Exception\InvalidRequestException $e) {
                 Log::error("Stripe Checkout Error: " . $e->getMessage());
                 return redirect()->back()->with('error', 'Payment failed. Please try again.');
@@ -198,11 +162,12 @@ class CheckoutController extends Controller
 
             session()->forget('session_id');
             session(['session_id' => $sessionCreate->id]);
-            $stripePaymentDetail = StripePaymentDetail::create([
+
+            StripePaymentDetail::create([
                 'session_id' => $sessionCreate->id,
                 'amount_subtotal' => $subtotal,
                 'amount_total' => $sessionCreate->amount_total / 100,
-                'tax' => $storeTaxWithQuantity,
+                'tax' => $totalPlatformFee,
                 'currency' => $getdata[0]->owner->default_currency,
                 'payment_method_config_detail_id' => optional($sessionCreate->payment_method_configuration_details)->id,
                 'payment_method_type' => optional($sessionCreate->payment_method_types)[0],
@@ -215,10 +180,7 @@ class CheckoutController extends Controller
                 'session_expires_at' => $sessionCreate->expires_at,
                 'created_at' => now(),
                 'updated_at' => now(),
-             
             ]);
-
-            $stripePaymentDetail->refresh();
 
             return Inertia::location($sessionCreate->url);
         } catch (\Throwable $th) {
@@ -226,6 +188,7 @@ class CheckoutController extends Controller
             throw $th;
         }
     }
+
 
     public function successCheckout($id)
     {

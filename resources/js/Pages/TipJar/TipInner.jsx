@@ -93,8 +93,8 @@ export default function TipInner({classes, idd}) {
         return false;
     }
     setLoading(true);
-    const resp = axios.post(`/tip-jar/pay/${user.uuid}`, data);
-    resp.then((res) => {
+    const tipresp = axios.post(`/tip-jar/pay/${user.uuid}`, data);
+    tipresp.then((res) => {
       if(res.data.status){
         window.location.href = res.data.url
       } else {
