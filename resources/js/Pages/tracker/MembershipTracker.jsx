@@ -204,7 +204,7 @@ export default function MembershipTracker({auth}) {
       </>
    }
    return (
-      <div className='tips mt-4'>
+      <div className='tips '>
          {membership && membership.map((g, i)=>{
             return <GoalItem n={g} />
          })}

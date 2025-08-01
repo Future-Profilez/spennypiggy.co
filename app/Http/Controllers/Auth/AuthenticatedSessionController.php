@@ -179,7 +179,15 @@ class AuthenticatedSessionController extends Controller
             'social_links', 'followers', 'following', 'wishItems', 'user_categories', 'memberships', 'bills', 'shop', 'intro'
         ])->where('username', $username)->where('is_uk', 0)->first();
 
-        if (!$user || ($user->suspended_account == 1 && (!Auth::check() || Auth::id() != $user->id))) {
+
+
+        if (!empty($user)) {
+            if ($user->suspended_account == 1) {
+                return Inertia::render('Suspanded');
+            }
+        }
+        
+        if (!$user || !Auth::check()){
             return Inertia::render('NotFound');
         }
 

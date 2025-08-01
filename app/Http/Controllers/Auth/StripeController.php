@@ -650,6 +650,13 @@ class StripeController extends Controller
         $user = Auth::user();
         $wish = WishItem::whereUuid($uuid)->with('user')->first();
         if (!$wish) return redirect()->back()->with('error', 'Wish item not found!');
+
+        if ($wish->user['is_subscribed'] !== 1) {
+            return redirect()->back()->with('error', 'Currently creator has paused gift payments. Please again later when gift payments are active.');
+           
+        }
+
+
         $subtotals = 0;
         $totalAmount = $wish->price;
         $ConvertedToGBpAmount = Helpers::priceFormat($wish->currency, $totalAmount, 'gbp');
@@ -1099,6 +1106,12 @@ class StripeController extends Controller
             return response()->json([
                 'status' => false,
                 'msg' => "Creator not found."
+            ]);
+        }
+        if ($creator['is_subscribed'] !== 1) {
+            return response()->json([
+                'status' => false,
+                'msg' => "Currently creator has paused gift payments. Please try again later when gift payments are active."
             ]);
         }
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();

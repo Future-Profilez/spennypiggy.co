@@ -381,11 +381,15 @@ export default function Wishtracker(props) {
   return (
     <Authenticated auth={auth.user} user={user}>
       <Head title={'Wish Tracker'} />
-      <div className=" wishtracker blackbg min-h-screen pb-5">
+
+      <div className=" wishtracker blackbg min-h-screen pb-5 pt-6">
         <div className="containerbox blackbg wishtracker-box px-4">
-          <Tabs defaultActiveKey="1" id="tracker-tab" className="mb-4 ">
-            <Tab eventKey="1" title="Wish Tracker">
-              <div className="tracks mt-4 pt-4">
+
+          <h2 className='font-gulfs uppercase text-white text-xl lg:text-3xl mb-6 lg:mt-6'>Wish Tracker</h2>
+
+          <Tabs defaultActiveKey="1" id="tracker-tab" >
+            <Tab className="pt-6" eventKey="1" title="Wish Payments">
+              <div className="tracks ">
                 {tracks &&
                   tracks.map((n, i) => {
                     return <Wish n={n} key={`track-${i}`} />;
@@ -397,7 +401,7 @@ export default function Wishtracker(props) {
                 )}
               </div>
             </Tab>
-            <Tab eventKey="2" title="Subscriptions">
+            <Tab className="pt-6" eventKey="2" title="Subscriptions">
               <div className="subsctabs d-block d-sm-flex mb-4">
                 <button
                   onClick={() => handleTabs(1)}
@@ -670,16 +674,16 @@ export default function Wishtracker(props) {
                 </>
               )}
             </Tab>
-            <Tab eventKey="3" title="Piggy Bank">
+            <Tab className="pt-6" eventKey="3" title="Piggy Bank">
               <Tiplisting />
             </Tab>
-            <Tab eventKey="4" title="Bills">
+            <Tab className="pt-6" eventKey="4" title="Bills">
               <BillsTracker auth={auth} />
             </Tab>
-            <Tab eventKey="5" title="Memberships">
+            <Tab className="pt-6" eventKey="5" title="Memberships">
               <MembershipTracker auth={auth} />
             </Tab>
-            <Tab eventKey="6" title="Shop">
+            <Tab className="pt-6" eventKey="6" title="Shop">
               <ShopTracker shop_payment={shop_payment} />
             </Tab>
           </Tabs>

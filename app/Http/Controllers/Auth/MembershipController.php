@@ -340,6 +340,12 @@ class MembershipController extends Controller
 
         $membership = Membership::with('user')->whereUuid($uuid)->first();
         if (!$membership) return redirect()->back()->with('error', 'Membership not found!');
+
+
+        if ($membership->user['is_subscribed'] !== 1) {
+            return redirect()->back()->with('error', "Currently creator has paused gift payments. Please again later when gift payments are active.");
+        }
+
         if ($user != null && $membership->user_id === $user->id) return redirect()->back()->with('error', "You can't buy your own membership!");
         $currency = strtolower($request->cookie("currency", "GBP"));
         $creatorCurrency = $membership->currency;

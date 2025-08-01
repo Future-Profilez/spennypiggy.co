@@ -35,7 +35,7 @@ export default function Tiplisting({ auth }) {
     };
     return (
       <>
-        <div className="box shadow-pink rounded-lg p-3 mb-4 mt-4">
+        <div className="box shadow-pink rounded-lg p-3 mb-4 ">
           <div
             onClick={openState}
             aria-controls="example-collapse-text "
@@ -146,7 +146,7 @@ export default function Tiplisting({ auth }) {
   };
 
   return (
-    <div className="tips mt-4">
+    <div className="tips ">
       {tips && tips.length ? (
         tips.map((g, i) => {
           return <TipItem g={g} />;

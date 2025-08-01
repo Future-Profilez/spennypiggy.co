@@ -248,7 +248,7 @@ export default function ShopTracker() {
         );
     };
     return (
-        <div className="tips mt-4">
+        <div className="tips ">
             {goals &&
                 goals.map((g, i) => {
                     return <ShopItem g={g} />;

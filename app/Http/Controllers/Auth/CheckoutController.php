@@ -39,7 +39,12 @@ class CheckoutController extends Controller
             return to_route('user.show', ['username' => $user->username])->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
         }
 
-        $user = Auth::user(); // or $requestingUser if handling guests
+        $owner = User::find($id);
+        if (!empty($owner) && $owner['is_subscribed'] !== 1) {
+            return redirect()->back()->with("error", "Currently creator has paused gift payments. Please try again later when gift payments are active.");
+        }
+
+        $user = Auth::user();  
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         try {
             if (!empty(request()->query('message'))) {
@@ -64,11 +69,14 @@ class CheckoutController extends Controller
                     ->get();
             }
 
+            if ($getdata->isNotEmpty() && $getdata->first()->owner->is_subscribed !== 1) {
+                return redirect()->back()->with('error', 'Currently creator has paused gift payments. Please try again later when gift payments are active.');
+ 
+            }
+
             $lineItems = [];
             $subtotal = 0;
-            // $taxNew = 0;
             $transfer_amount = 0;
-            Log::info(json_encode($getdata));
             foreach ($getdata as $dd) {
                 if (!$user) {
                     $email = request()->query('email');
@@ -201,6 +209,8 @@ class CheckoutController extends Controller
                 'session_expires_at' => $sessionCreate->expires_at,
                 'created_at' => now(),
                 'updated_at' => now(),
+                'purpose' => 'wishlist_contribution', 
+                'wishlist_owner_id' => $getdata[0]->owner->id,
             ]);
 
             $stripePaymentDetail->refresh();

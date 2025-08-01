@@ -241,7 +241,7 @@ export default function BillsTracker({ auth }) {
         );
     };
     return (
-        <div className="tips mt-4">
+        <div className="tips ">
             {bills &&
                 bills.map((g, i) => {
                     return <GoalItem n={g} />;

@@ -65,9 +65,7 @@ class TwitterController extends Controller
                         'refresh_token' =>  $resp['data']['refresh_token'],
                         'expires_at'    => Carbon::now()->addSeconds($resp['data']['expires_in'])
                     ]);
-
                     FetchSelfTwitterData::dispatch($token);
-
                     return to_route('user.show', ['username' => $user->username])->with('success', 'X.com successfully setup for Auto-tweets.');
                 }
                 return to_route('user.show', ['username' => $user->username])->with('error', 'Failed to connect. ' . $resp['data']['error_description']);

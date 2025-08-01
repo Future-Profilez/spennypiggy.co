@@ -278,14 +278,16 @@ class BillsController extends Controller
     public function buyBill(Request $request, $uuid, $reccure = 'continue')
     {
         DB::beginTransaction();
-
-
         new StripeClient(env('STRIPE_SECRET_KEY'));
         $bill = Bills::with('user')->whereUuid($uuid)->first();
+        if ($bill->user['is_subscribed'] !== 1) {
+            return redirect()->back()->with('error', "Currently creator has paused gift payments. Please again later when gift payments are active.");
+        }
+        if (!$bill) return redirect()->back()->with('error', 'Bill not found!');
+
         $price = $bill->price;
         $currency = strtolower($request->cookie("currency", "GBP"));
         $ConvertedAmount = Helpers::priceFormat($bill->currency, $price, 'gbp');
-
 
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus === true) {
@@ -294,12 +296,11 @@ class BillsController extends Controller
                 ->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
         }
 
-        if (!$bill) return redirect()->back()->with('error', 'Bill not found!');
-
         $user = Auth::user();
         if ($user) {
             if ($bill->user_id === $user->id) return redirect()->back()->with('error', "You can't buy your own bill!");
         }
+
 
         $adminFeeAmount = config('app.administration_fee');
         $billTaxPercent = config('app.bill_tax');
