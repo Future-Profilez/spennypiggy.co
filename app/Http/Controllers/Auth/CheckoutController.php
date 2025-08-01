@@ -31,8 +31,8 @@ use Stripe\Stripe;
 class CheckoutController extends Controller
 {
     /* create checkout */
-    public function createCheckout($id)
-    {
+    public function createCheckout($id) {
+        
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus == true) {
             $user = Auth::user();
@@ -55,12 +55,11 @@ class CheckoutController extends Controller
                     return redirect()->back()->with("error", "Max limit for message is 100 words");
                 }
             }
-
             if (Auth::check()) {
                 $getdata = UserCart::where('user_id', Auth::id())
                     ->where('owner_id', $id)
                     ->where('status', 1)
-                    ->with(['h'])
+                    ->with(['wish'])
                     ->get();
             } else {
                 $getdata = UserCart::where('device_id', $id)
@@ -71,7 +70,6 @@ class CheckoutController extends Controller
 
             if ($getdata->isNotEmpty() && $getdata->first()->owner->is_subscribed !== 1) {
                 return redirect()->back()->with('error', 'Currently creator has paused gift payments. Please try again later when gift payments are active.');
- 
             }
 
             $lineItems = [];
@@ -146,7 +144,8 @@ class CheckoutController extends Controller
                             'currency' => $currency,
                             'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
                             'unit_amount_decimal' => round($subtotals * 100),
-                        ]
+                        ],
+                        
                     ],
                     // Platform fee + Vat as a separate item
                     [
@@ -176,7 +175,15 @@ class CheckoutController extends Controller
                 // 'customer_email' => $user->email ?? request()->query('email'),
                 'payment_intent_data' => [
                     'application_fee_amount' => round($showTax * 100), // Admin fee + tax
-                    'description' => "Platform Fee."
+                    'description' => "Platform Fee.",
+                    "metadata" => [
+                        "guest_name" => $request->name ?? null,
+                        "user_id" => Auth::id() ?? null,
+                        "gifter_id" => Auth::id() ?? null,
+                        "purpose" => "wishlist_contribution",
+                        "wishlist_creator_id" => $owner->id,
+                        "creator_profile" => env('APP_URL'). '/' . $owner->username ?? null,
+                    ],
                 ],
                 'customer_email' =>  $getdata[0]->user->email ?? request()->query('email'),
             ];
@@ -209,8 +216,7 @@ class CheckoutController extends Controller
                 'session_expires_at' => $sessionCreate->expires_at,
                 'created_at' => now(),
                 'updated_at' => now(),
-                'purpose' => 'wishlist_contribution', 
-                'wishlist_owner_id' => $getdata[0]->owner->id,
+             
             ]);
 
             $stripePaymentDetail->refresh();
