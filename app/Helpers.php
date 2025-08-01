@@ -16,35 +16,35 @@ use Image;
 class Helpers
 {
     public static function checkBlockData($request)
-    {
-        $blockedWords = ['paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive', 'tax', 'fee', 'session', 'deposit', 'tribute', 'dick', 'goddess', 'master', 'mistress'];
-        $blockedEmojis = ['😈', '💩', '💬', '👅', '🍆', '🍌', '🌽', '🌶️', '🍑', '💎', '💦'];
-        foreach ($blockedWords as $key => $word) {
-            if (stripos($request->getContent(), $word) !== false) {
-                // return response()->json([
-                //     'status' => true,
-                //     'message' => 'Some restricted words are not allowed.',
-                // ]);
-                return true;
-                // return redirect()->route('home')->with('error', "These words are not allowed.");
-            }
+{
+    $blockedWords = ['paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive', 'tax', 'fee', 'session', 'deposit', 'tribute', 'dick', 'goddess', 'master', 'mistress'];
+    $blockedEmojis = ['😈', '💩', '💬', '👅', '🍆', '🍌', '🌽', '🌶️', '🍑', '💎', '💦'];
+
+    // Filter out non-stringable values (like arrays or objects)
+    $stringValues = array_filter($request->all(), function ($value) {
+        return is_scalar($value) || (is_object($value) && method_exists($value, '__toString'));
+    });
+
+    // Combine all the valid inputs into one string
+    $inputText = implode(' ', $stringValues);
+
+    foreach ($blockedWords as $word) {
+        if (preg_match("/\b" . preg_quote($word) . "\b/i", $inputText)) {
+            return true;
         }
-
-        foreach ($blockedEmojis as $emoji) {
-            $emojiPattern = preg_quote($emoji);
-            if (preg_match("/$emojiPattern/u", $request->getContent())) {
-                // return response()->json([
-                //     'status' => true,
-                //     'message' => 'Some restricted emojis are not allowed.',
-                // ]);
-                return true;
-
-                // return redirect()->route('home')->with('error', "These emojis are not allowed.");
-            }
-        }
-
-        return false;
     }
+
+    foreach ($blockedEmojis as $emoji) {
+        if (mb_strpos($inputText, $emoji) !== false) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+
 
     public static function priceFormat($currency1, $amount, $currency2)
     {

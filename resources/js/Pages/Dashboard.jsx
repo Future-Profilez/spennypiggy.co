@@ -3,9 +3,6 @@ import { useAlerts } from "@/Components/Alerts";
 import { Head, Link, usePage } from "@inertiajs/react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
 import { addicon } from "@/includes/Icons";
-import spennypiggy from "../../assets/img/logo.png";
-import socialbg from "../../assets/social-bg.png";
-
 const Wishlist = React.lazy(() => import("./Auth/Wishlist"));
 const Wishlistbox = React.lazy(() => import("@/wishlist/Wishlistbox"));
 const Userprofile = React.lazy(() => import("@/wishlist/Userprofile"));
@@ -261,8 +258,8 @@ export default function Dashboard(props) {
                                 <div className="w-full max-w-[550px]  px-3">
                                     <Suspense fallback={"Loading.."}>
                                         <div className="bg-gray-100 w-full p-6 md:p-10 rounded-3xl shadow-lg z-10">
-                                            <h2 className="font-bold text-black  text-xl md:text-2xl mb-4 text-center m-auto ">
-                                                Add Item to fund your lifestyle.
+                                            <h2 className="  text-black font-gulfs uppercase text-xl md:text-2xl mb-4 text-center m-auto ">
+                                                Fund your Lifestyle
                                             </h2>
                                             <div className="max-h-[55vh]  sm:max-h-[40vh] overflow-y-auto">
                                                 {wishOptions ? (
@@ -414,9 +411,8 @@ export default function Dashboard(props) {
                             <div className="relative">
                                 <LazyLoadImage
                                     alt={"image"}
-                                    useIntersectionObserver={true}
                                     effect="blur"
-                                    height={400}
+                                    height={400} 
                                     className="w-full border-black border-2 shadow-mint rounded-[30px]"
                                     src={user?.cover_url || wishlistbannerimg}
                                     width={1200}
@@ -457,18 +453,17 @@ export default function Dashboard(props) {
                                 <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-lg">
                                     <div>
                                         <span className="font-medium">Stripe Policy Notice:</span> To comply with Stripe's requirements, you must regularly post content related to memberships, billing, and subscriptions. Accounts that do not may be suspended.
-                                        Please contact <a   className="underline font-medium text-blue-800 hover:text-blue-900 livechat intercom-dud02y e11rlguj1 cursor-pointer">support</a> for more information.
+                                        Please contact <a target="_blank" href="https://spennypiggy.co" className="underline font-medium text-blue-800 hover:text-blue-900 livechat intercom-dud02y e11rlguj1 cursor-pointer">support</a> for more information.
                                         <button
                                             onClick={handleDismiss}
                                             className="absolute top-2 right-2 text-blue-700 hover:text-blue-900"
-                                            aria-label="Dismiss alert"
-                                        >
+                                            aria-label="Dismiss alert">
                                             ✕
                                         </button>
                                     </div>
                                 </div>
                             : ''}
- 
+
 
 
 
@@ -641,13 +636,14 @@ export default function Dashboard(props) {
                                                                             <UpgradeStripeAccount  />
                                                                         : ''}
 
+                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && !auth?.user?.monthly_charge_enabled  ?
+                                                                            <SiteSubscription charges={auth?.user?.monthly_charge_enabled} user={auth?.user} />
+                                                                        : ''}
+                                                                        
                                                                         {UserStripeConnected == 1 ?
                                                                            <MyGoal IsloggedIn={IsloggedIn}  /> :
                                                                         ""}
 
-                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && !auth?.user?.monthly_charge_enabled  ?
-                                                                            <SiteSubscription charges={auth?.user?.monthly_charge_enabled} user={auth?.user} />
-                                                                        : ''}
 
                                                                         <div className="box p-3 p-md-4 shadow-voilet rounded-lg mb-4">
                                                                             <p className="font-bold">About me</p>
@@ -671,11 +667,13 @@ export default function Dashboard(props) {
                                                                                     {auth.user && auth.user.role == 1 && AuthUserStripeConnected == 1  ? (
                                                                                         <PaymentDashboard classes="btn-pink lg w-100 mt-3 btn-shadow" text="Payment Dashboard" />
                                                                                         ) :
-                                                                                        <div className="finish mt-4 d-block">
+                                                                                        <>
+                                                                                        {auth?.user?.identity_status == 1 ? <div className="finish mt-4 d-block">
                                                                                             <p className="mb-4 text-lg"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
                                                                                             <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-sm btn-shadow w-full block text-center bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 3 transition-all duration-200" > Finish Setup
                                                                                             </Link>
-                                                                                        </div>
+                                                                                        </div> : ''}
+                                                                                        </>
                                                                                     }
 
                                                                                 {/* {auth.user && auth.user.stripe_details_submitted == 1 ?
@@ -729,6 +727,7 @@ export default function Dashboard(props) {
                                                             </div>
 
                                                             <div className="ps-md-4 col-md-6">
+                                                                
                                                                 {IsloggedIn &&
                                                                 UserStripeConnected !==
                                                                     1 ? (

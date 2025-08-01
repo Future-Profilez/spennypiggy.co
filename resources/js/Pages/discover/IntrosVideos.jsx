@@ -27,11 +27,11 @@ export default function IntroVideos(props) {
         });
     }
 
-    useEffect(()=>{ 
+    useEffect(()=>{
       !loading && fetch_videos();
     },[order, gender]);
 
-    const Switch = () => { 
+    const Switch = () => {
         return <div className='flex mb-3 mb-sm-0 items-center toggleswitch' >
         <button onClick={()=>setorder('new')} className={`${order == 'new' ? 'active' : ''}`} >Newest</button>
         <button onClick={()=>setorder('old')} className={`${order == 'old' ? 'active' : ''}`} >Oldest</button>
@@ -49,13 +49,13 @@ export default function IntroVideos(props) {
       </>
     }
 
-    
-    const Intro = ({w}) => { 
+
+    const Intro = ({w}) => {
       return   <ProfileIntro data={w}   text={<>
         <div className=' ' >
             <div className='introvideobox overflow-hidden h-[350px] rounded-[25px] border-3 !border-[#F94F97] position-relative' >
-              <LazyLoadImage   
-              alt={"image"} useIntersectionObserver={true} effect="blur"
+              <LazyLoadImage
+              alt={"image"}  effect="blur"
               height={360} src={ w && w?.poster_url || w?.user && w?.user?.avatar_url|| userphoto} className='w-full h-full object-cover' width={260} />
               <div  className='cursor-pointer playicon ' >
                 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -79,9 +79,9 @@ export default function IntroVideos(props) {
                 <Switch />
             <div className='flex items-center' >
               <div className='filter-select-wrap' >
-                  <select onChange={(e)=> setgender(e.target.value)} id="types" className="me-2 filter-select bg-gray-50 border border-gray-300 text-gray-900 
-                  text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 
-                  block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 
+                  <select onChange={(e)=> setgender(e.target.value)} id="types" className="me-2 filter-select bg-gray-50 border border-gray-300 text-gray-900
+                  text-sm rounded-md focus:ring-blue-500 focus:border-blue-500
+                  block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400
                   dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
                       <option selected value="all" >All Gender </option>
                       <option value="he">He</option>
@@ -93,13 +93,13 @@ export default function IntroVideos(props) {
         </div>
 
         <div className='row' >
-          {loading ? 
-          <div className='w-100 flex justify-content-center' ><LoadingScreen /></div>  
+          {loading ?
+          <div className='w-100 flex justify-content-center' ><LoadingScreen /></div>
           :
           <>
-            {intros && intros.length ? 
+            {intros && intros.length ?
             <div className='grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 lg:!gap-4' >
-              {intros.map((w, i)=> { 
+              {intros.map((w, i)=> {
                 return <Intro w={w} />
               })}
             </div>
@@ -108,6 +108,6 @@ export default function IntroVideos(props) {
 
       </div>
     </>
-    
+
 }
 

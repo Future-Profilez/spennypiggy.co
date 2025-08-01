@@ -165,7 +165,7 @@ export default function GlobalCheckout({
           `}</style>
 
             <Popup
-                modalclass={`pinkmodal full stripe-terms shadow-pink ps-0`}
+                modalclassName={`pinkmodal full stripe-terms shadow-pink ps-0`}
                 space="4"
                 size="md"
                 action={close}
@@ -204,24 +204,24 @@ export default function GlobalCheckout({
                                             </p>
                                         </div>
                                         <div className="block cards-accepted text-center">
-                                            <div class="flex -space-x-5 rtl:space-x-reverse justify-center">
+                                            <div className="flex -space-x-5 rtl:space-x-reverse justify-center">
                                                 <img
-                                                    class="w-[35px] min-w-[35px] me-2 h-[35px] object-contain border-1 border-gray-800 rounded-full bg-white"
+                                                    className="w-[35px] min-w-[35px] me-2 h-[35px] object-contain border-1 border-gray-800 rounded-full bg-white"
                                                     src="https://th.bing.com/th/id/R.755107bb9d77abcd0451fcd28b18f9ee?rik=kAZlSvLYq5USrg&riu=http%3a%2f%2fwww.pngplay.com%2fwp-content%2fuploads%2f3%2fHSBC-Logo-Transparent-File.png&ehk=PHVQ0QyPzGV6vzGKukviYHYPbRNVzENGNCL40ggNDQI%3d&risl=&pid=ImgRaw&r=0"
                                                     alt="HSBC"
                                                 />
                                                 <img
-                                                    class="w-[35px] min-w-[35px] bg-[#006a4c] me-2 h-[35px] object-contain border-1 border-gray-800 rounded-full "
+                                                    className="w-[35px] min-w-[35px] bg-[#006a4c] me-2 h-[35px] object-contain border-1 border-gray-800 rounded-full "
                                                     src="https://th.bing.com/th/id/R.2689a3b1bc0a082c49c26f2169766922?rik=hDh%2bPG7TLXoQ5Q&riu=http%3a%2f%2fcdn.mos.cms.futurecdn.net%2f5d04dbf2b31c1744d5531fb745e1b66d.jpg&ehk=CBJSj1SgxYngQnkg4y87juAbinPpWND50fdhtwpVt0o%3d&risl=&pid=ImgRaw&r=0"
                                                     alt=""
                                                 />
                                                 <img
-                                                    class="w-[35px] min-w-[35px] me-2 h-[35px] object-contain border-1 border-gray-800 rounded-full bg-white"
+                                                    className="w-[35px] min-w-[35px] me-2 h-[35px] object-contain border-1 border-gray-800 rounded-full bg-white"
                                                     src="https://logos-world.net/wp-content/uploads/2021/08/Barclays-Symbol.png"
                                                     alt=""
                                                 />
                                                 <a
-                                                    class="flex items-center justify-center w-[35px] min-w-[35px] me-2 h-[35px] object-contain border-1 border-gray-800 rounded-full bg-white"
+                                                    className="flex items-center justify-center w-[35px] min-w-[35px] me-2 h-[35px] object-contain border-1 border-gray-800 rounded-full bg-white"
                                                     href="#"
                                                 >
                                                     +

@@ -9,11 +9,10 @@ import { useAlerts } from "@/Components/Alerts";
 export default function VerifyEmail({auth}) {
     const [loading, setLoading] = useState(false);
     const [send, setSent] = useState(false);
-    const submit = (e) => {
-        e.preventDefault();
+    const sendMail = (e) => {
         setLoading(true);
         axios.get(`/email/send-verification-email`).then(resp => {
-            setSent(true);
+            // setSent(true);
             setLoading(false);
         }).catch(_err => {
             console.error("error", _err);
@@ -21,14 +20,23 @@ export default function VerifyEmail({auth}) {
         });
     };
 
+
     useEffect(() => {
-        let timer = setInterval(() => {
-          window.location.reload(false)
-        }, 10000);
+        const lastSent = localStorage.getItem('last_verification_sent_at');
+        const now = new Date().getTime();
+        if (!lastSent || now - parseInt(lastSent) > 10 * 60 * 1000) {
+            sendMail();
+            localStorage.setItem('last_verification_sent_at', now.toString());
+        }
+    }, []);
+    
+    
+    useEffect(() => {
+        const timer = setInterval(() => {
+            window.location.reload();
+        }, 15000); 
         return () => clearInterval(timer);
     }, []);
-
-  
 
 
     return <div className="blackbg pageheight p-4">
@@ -40,7 +48,7 @@ export default function VerifyEmail({auth}) {
             <div  >
                 <div className="mailicon m-auto d-table" >
                     <svg width="341" height="287" viewBox="0 0 341 287" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M54.1393 241.814V237.535H49.8604H31.1628C16.3152 237.535 4.27889 225.499 4.27889 210.651V79.7678C4.27889 64.9202 16.3152 52.8839 31.1628 52.8839H261.767C276.615 52.8839 288.651 64.9202 288.651 79.7677V210.651C288.651 225.499 276.615 237.535 261.767 237.535H102.837H101.26L100.06 238.559L54.1393 277.727V241.814Z" fill="#F94F97" stroke="#E6EA7B" stroke-width="8.55778" />
+                        <path d="M54.1393 241.814V237.535H49.8604H31.1628C16.3152 237.535 4.27889 225.499 4.27889 210.651V79.7678C4.27889 64.9202 16.3152 52.8839 31.1628 52.8839H261.767C276.615 52.8839 288.651 64.9202 288.651 79.7677V210.651C288.651 225.499 276.615 237.535 261.767 237.535H102.837H101.26L100.06 238.559L54.1393 277.727V241.814Z" fill="#F94F97" stroke="#E6EA7B" strokeWidth="8.55778" />
                         <rect x="266.941" width="4.62903" height="33.9462" rx="2.31452" fill="#E6EA7B" />
                         <rect x="302.994" y="9.2583" width="4.62903" height="33.9462" rx="2.31452" transform="rotate(31.1065 302.994 9.2583)" fill="#E6EA7B" />
                         <rect x="327.876" y="30.0889" width="4.62903" height="33.9462" rx="2.31452" transform="rotate(57.1905 327.876 30.0889)" fill="#E6EA7B" />
@@ -93,18 +101,15 @@ export default function VerifyEmail({auth}) {
                     </svg>
                 </div>
                 <h3 className="headingSm shadow-yellow mb-3 text-center" >Confirm your email</h3>
-                <h5 className="font-large  text-center text-mint w-75 m-auto d-table" >Thanks for signing up! Before getting started, please verify
-                    your email.</h5>
-                <form onSubmit={submit}>
-                    <div className="mt-4 flex items-center justify-content-center">
-                        <PrimaryButton className="btn-pink md   py-3 px-2" disabled={loading}>
-                            {loading ? "Sending..." :  "Send Verification Link"}
-                        </PrimaryButton>
-                    </div>
-                </form>
-
-                {send ? <p className="text-mint text-center mt-4 font-light"  >Verification link sent successfully.</p> : ''}
-              
+                <h5 className="text-xl  text-center text-mint w-75 m-auto d-table" >Thanks for signing up! Before getting started, please verify your email.</h5> 
+                <div className="flex justify-center mt-6 mb-2">
+                    <button  onClick={()=>{setSent(true);sendMail()}} className="text-pink m-auto">{loading ? 'Sending..' : 
+                    <>
+                        {send ? 'Email Sent' : 'Re-send Verification Link'}
+                    </>
+                    }</button>
+                </div>
+                <p className='text-gray-400 max-w-[500px] text-lg m-auto text-center mt-6'>If you didn’t receive the email, please check your spam folder or click again after a minute.</p>
             </div>
         </div>
     </div>

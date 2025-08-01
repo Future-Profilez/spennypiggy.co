@@ -39,6 +39,8 @@ export default function UploadcareEditor({uuid, updateFile, setIsEditable, heigh
           ctx-name="my-editor"
           css-src="https://cdn.jsdelivr.net/npm/@uploadcare/blocks@0.25.0/web/lr-cloud-image-editor.min.css"
           uuid={uuid}  
+          crop-preset="1:1"
+          crop="true"
         ></lr-cloud-image-editor>
       </div> : ''}
     </>

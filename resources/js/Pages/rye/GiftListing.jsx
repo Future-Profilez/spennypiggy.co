@@ -111,7 +111,7 @@ export default function GiftListing({
                         <SwiperSlide key={index}>
                             <LazyLoadImage
                                 alt={"image"}
-                                useIntersectionObserver={true}
+
                                 effect="blur"
                                 height={280}
                                 src={item?.url || ""}
@@ -124,7 +124,7 @@ export default function GiftListing({
             <div className="relative w-full h-[280px] overflow-hidden">
                 <LazyLoadImage
                     alt="image"
-                    useIntersectionObserver={true}
+
                     effect="blur"
                     src={(details?.images && details?.images[0]?.url) || ""}
                     className="w-full h-full object-cover cursor-pointer"

@@ -113,7 +113,7 @@ export default function Stripe(props) {
                                 <strong className="d-block w-100 pt-3 mb-1">Choose Country</strong>
                                 <Countries send={getCountry} />
                                 <div className="text-center flex justify-center mb-4 ">
-                                    <Popup modalclass="pinkmodal full stripe-terms shadow-pink ps-0"
+                                    <Popup modalclassName="pinkmodal full stripe-terms shadow-pink ps-0"
                                         space="4" size="md"
                                         action={close} classes={`btn-pink mt-4 lg w-1/2`}
                                         text={`Accept TERMS`} >

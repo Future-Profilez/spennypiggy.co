@@ -51,8 +51,8 @@ export default function ErrorPage(props) {
                         <div className='noresultimg mb-5 m-auto d-table'>
                             <img className="max-h-[100px]" alt="img" src={noresultimg} />
                         </div>
-                        <p class="p-a pb-4 mb-0 text-2xl font-bold px-12">Sorry, we are doing some maintenance. Please check back soon.</p>
-                        <p class="p-a pb-4 mb-0 text-normal px-12">{message}</p>
+                        <p className="p-a pb-4 mb-0 text-2xl font-bold px-12">Sorry, we are doing some maintenance. Please check back soon.</p>
+                        <p className="p-a pb-4 mb-0 text-normal px-12">{message}</p>
                             {/* <Link onClick={goBack} className="back block max-w-[300px] m-auto">Back to previous page</Link> */}
                             <button id='reportbug' className="back block max-w-[300px] m-auto">Back to previous page</button>
                         </div>

@@ -64,7 +64,7 @@ export default function TipInner({classes, idd}) {
   const { data, setData, post, processing, errors, reset } = useForm({
     email: auth && auth.user?.email || '',
     name: auth && auth.user?.name || '',
-    message: '',
+    message: 'Just a small token of appreciation 💖',
     anonymous: 0,
     amount: amount
   });
@@ -83,6 +83,10 @@ export default function TipInner({classes, idd}) {
 
   const send = (e) => {
     e.preventDefault();
+    if(data.email === "" || data.name === "" ){
+        errorAlert("Please enter all the required details.");
+        return false;
+    }
     if(auth && !auth.user && usdToGbp(data.amount) > 50){
         errorAlert("Larger payments more than £50 need to login.");
         router.visit(`/login?redirect=${window.location.pathname}&message=Larger payments more than £50 need to login.`);
@@ -112,7 +116,7 @@ export default function TipInner({classes, idd}) {
 
           <div className='legleft'  dangerouslySetInnerHTML={{ __html: leftleg }} />
           <div className='legright'  dangerouslySetInnerHTML={{ __html: rightleg }} />
-          <h2 className='p-3 text-pink font-GillSans uppercase text-large mb-1 mt-4 pe-5'>Fill My Piggy bank 🐖</h2>
+          <h2 className='p-3 text-pink !font-normal font-GillSans uppercase text-2xl mb-1 mt-4 pe-5'>Support Me</h2>
           <div className='border-top p-3 pt-3' >
 
             <div className='tip-counter flex items-center justify-between mb-3' >
@@ -126,11 +130,11 @@ export default function TipInner({classes, idd}) {
                 </div>
             </div>
 
-            <div className="flex flex-wrap grid grid-cols-2 xl:grid-cols-4 gap-3 mb-4 mt-2">
-                <button className={`${ selectegTag == 25 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={()=>customAmountTag(25)}  >{formatMultiPrice(25, global_currency || "GBP")}</button>
-                <button className={`${ selectegTag == 50 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={()=>customAmountTag(50)}  >{formatMultiPrice(50, global_currency || "GBP")}</button>
-                <button className={`${ selectegTag == 99 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={()=>customAmountTag(99)}  >{formatMultiPrice(99, global_currency || "GBP")}</button>
-                <button className={`${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3`} onClick={selectCustom} >Custom</button>
+            <div className="flex flex-wrap  gap-1 mb-4 mt-2">
+                <button className={`${ selectegTag == 25 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3 text-sm`} onClick={()=>customAmountTag(25)}  >{formatMultiPrice(25, global_currency || "GBP")}</button>
+                <button className={`${ selectegTag == 50 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3 text-sm`} onClick={()=>customAmountTag(50)}  >{formatMultiPrice(50, global_currency || "GBP")}</button>
+                <button className={`${ selectegTag == 99 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3 text-sm`} onClick={()=>customAmountTag(99)}  >{formatMultiPrice(99, global_currency || "GBP")}</button>
+                <button className={`${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3 text-sm`} onClick={selectCustom} >Custom</button>
             </div>
 
             {selectegTag === 'custom' ? <div className="form-field mb-4 ">
@@ -142,8 +146,8 @@ export default function TipInner({classes, idd}) {
                 </div>
             </div> : ''}
 
-            <div className="form-field mb-3">
-              <textarea className="form-input w-100 rounded"
+            <div className="form-field mb-3"> 
+              <textarea className="form-input w-100 rounded" defaultValue={'Just a small token of appreciation 💖'}
               onChange={(e) => setData('message', e.target.value)}
               placeholder="Write a short note." />
             </div>
@@ -196,10 +200,13 @@ export default function TipInner({classes, idd}) {
                 <p className="text-muted text-small mt-1 mb-3" >Your personal email and name will be private.</p>
             </div>
             <button disabled={loading} onClick={send} className={`items-center px-4  shadow-black
-               rounded-[30px] btn-pink md justify-content-center
+               rounded-[30px] btn-pink md justify-content-center btn-shadow !font-normal
               ease-in-out duration-150 flex button text-center w-100
-              font-CeraGR mx-auto  ${checkRef.current && checkRef.current.checked ? '' :'disabled'}`}
+                mx-auto  ${checkRef.current && checkRef.current.checked ? '' :'disabled'} font-gulfs`}
                > {loading ? "Processing" : 'Support Me'} </button>
+
+
+
             <div className='securestripe text-center mt-3' >
               🔒 Secured via <b>Stripe</b>
             </div>

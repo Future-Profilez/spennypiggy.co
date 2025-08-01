@@ -81,26 +81,26 @@ export default function EnterOTP({user, action}) {
     return (
         <>
          <Popup space="2 md:p-4" action={open}
-         modalclass=""
+         modalclassName=""
          text={<></>} >
-            <div class=" text-center py-10">
-               <header class="mb-8">
-                  <h1 class="text-2xl font-bold mb-1">OTP Verification</h1>
-                  <p class="text-[15px] text-slate-500 max-w-[300px] m-auto ">Enter the 6-digit verification code from your authenticator app.</p>
+            <div className=" text-center py-10">
+               <header className="mb-8">
+                  <h1 className="text-2xl font-bold mb-1">OTP Verification</h1>
+                  <p className="text-[15px] text-slate-500 max-w-[300px] m-auto ">Enter the 6-digit verification code from your authenticator app.</p>
                </header>
                <form  >
                   {backup ? <>
-                     <div class="flex items-center justify-center gap-3">
-                           <input type="text" class="w-full  text-center text-md text-slate-900 bg-slate-100 border border-transparent hover:border-slate-200 appearance-none rounded-xl p-3 max-w-[85%] outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"
+                     <div className="flex items-center justify-center gap-3">
+                           <input type="text" className="w-full  text-center text-md text-slate-900 bg-slate-100 border border-transparent hover:border-slate-200 appearance-none rounded-xl p-3 max-w-[85%] outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"
                               pattern="\d*" onChange={enterBCode} placeholder="Enter backup code..." />
                      </div>
-                     <div class="max-w-[260px] mx-auto mt-4">
+                     <div className="max-w-[260px] mx-auto mt-4">
                            <button  onClick={verify} className="pinkbg-i text-white px-3 py-2 rounded-xl">{ processing ? "processing..." : "Verify"}</button>
                      </div>
-                     <div class="text-sm text-slate-500 mt-4"> Don't have backup code ? <button class="font-medium text-indigo-500 hover:text-indigo-600" onClick={()=>setBackup(false)}  >Use Authenticator app</button></div>
+                     <div className="text-sm text-slate-500 mt-4"> Don't have backup code ? <button className="font-medium text-indigo-500 hover:text-indigo-600" onClick={()=>setBackup(false)}  >Use Authenticator app</button></div>
                   </>
                      :
-                     <> <div class="flex items-center justify-center ">
+                     <> <div className="flex items-center justify-center ">
                            {otp.map((data, index) => (
                                  <input
                                     key={index}
@@ -114,10 +114,10 @@ export default function EnterOTP({user, action}) {
                                  />
                               ))}
                         </div>
-                        <div class="max-w-[260px] mx-auto mt-4">
+                        <div className="max-w-[260px] mx-auto mt-4">
                               <button disabled={loading} onClick={verify} className="pinkbg-i text-white px-3 py-2 rounded-xl">{ loading ? "processing..." : "Verify"}</button>
                         </div>
-                        <div class="text-sm text-slate-500 mt-4"> Don't have phone ? <button class="font-medium text-indigo-500 hover:text-indigo-600" onClick={()=>setBackup(true)} >Use Backup code</button></div>
+                        <div className="text-sm text-slate-500 mt-4"> Don't have phone ? <button className="font-medium text-indigo-500 hover:text-indigo-600" onClick={()=>setBackup(true)} >Use Backup code</button></div>
                      </>
                   }
                </form>

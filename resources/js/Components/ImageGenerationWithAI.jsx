@@ -68,7 +68,7 @@ export default function ImageGenerationWithAI({ classes, size, update }) {
     return (
         <div>
             <Popup
-                modalclass="editprofile full"
+                modalclassName="editprofile full"
                 size="md"
                 action={close}
                 text={<> USE AI 🤖</>}
@@ -85,11 +85,11 @@ export default function ImageGenerationWithAI({ classes, size, update }) {
                     {generating ? (
                         <div className="pt-4">
                             <div className="spinner ">
-                                <div class="flex animate-bounce justify-center items-center min-h-[100px]">
-                                    <div class="flex flex-row gap-2">
-                                        <div class="w-4 h-4 rounded-full bg-blue-700 animate-bounce"></div>
-                                        <div class="w-4 h-4 rounded-full bg-blue-700 animate-bounce [animation-delay:-.3s]"></div>
-                                        <div class="w-4 h-4 rounded-full bg-blue-700 animate-bounce [animation-delay:-.5s]"></div>
+                                <div className="flex animate-bounce justify-center items-center min-h-[100px]">
+                                    <div className="flex flex-row gap-2">
+                                        <div className="w-4 h-4 rounded-full bg-blue-700 animate-bounce"></div>
+                                        <div className="w-4 h-4 rounded-full bg-blue-700 animate-bounce [animation-delay:-.3s]"></div>
+                                        <div className="w-4 h-4 rounded-full bg-blue-700 animate-bounce [animation-delay:-.5s]"></div>
                                     </div>
                                 </div>
                                 <h2 className="text-center text-lg font-normal">

@@ -87,12 +87,12 @@ export default function MembershipTracker({auth}) {
                                         {" "}
                                         <g
                                             id="SVGRepo_bgCarrier"
-                                            stroke-width="0"
+                                            strokeWidth="0"
                                         ></g>{" "}
                                         <g
                                             id="SVGRepo_tracerCarrier"
                                             stroke-linecap="round"
-                                            stroke-linejoin="round"
+                                            strokeLinejoin="round"
                                         ></g>{" "}
                                         <g id="SVGRepo_iconCarrier">
                                             {" "}
@@ -189,7 +189,7 @@ export default function MembershipTracker({auth}) {
                                             src={n.message_url}
                                             alt="image"
                                             height={"100%"}
-                                            useIntersectionObserver={true}
+
                                             effect="blur"
                                             width={"100%"}
                                         />

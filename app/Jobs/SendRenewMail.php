@@ -2,24 +2,19 @@
 
 namespace App\Jobs;
 
-use App\EmailService;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class SendRenewMail implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $array;
-    public $type;
-    public $module;
-    /**
-     * Create a new job instance.
-     */
+    public $array, $type, $module;
+
     public function __construct($array, $type, $module)
     {
         $this->array = $array;
@@ -27,13 +22,19 @@ class SendRenewMail implements ShouldQueue
         $this->module = $module;
     }
 
-    /**
-     * Execute the job.
-     */
     public function handle(): void
     {
-        if ($this->array['notification'] == 1) {
-            EmailService::sendRenewMail($this->array, $this->type, $this->module);
+        try {
+            if (!empty($this->array['notification'])) {
+                \App\EmailService::sendRenewMail($this->array, $this->type, $this->module);
+            } else {
+                Log::info('🔕 Notification disabled. Skipping email.');
+            }
+        } catch (\Exception $e) {
+            Log::error('❌ SendRenewMail Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
         }
     }
 }
+

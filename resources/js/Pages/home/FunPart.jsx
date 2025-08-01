@@ -27,7 +27,7 @@ export default function FunPart({imgbg, mainbg, textbg, heading, eclasses, text,
       <div className="image-container">
         <LazyLoadImage
           alt="image" className='max-h-[600px]'
-          useIntersectionObserver={true}
+
           effect="blur"
           src={img || seek}
         />

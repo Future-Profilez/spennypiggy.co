@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 
 export default function Register(props) {
     const CheckCircleIcon = () => {
-        return <><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path opacity="0.1" d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" fill="#000000"></path> <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#000000" stroke-width="2"></path> <path d="M9 12L10.6828 13.6828V13.6828C10.858 13.858 11.142 13.858 11.3172 13.6828V13.6828L15 10" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg></>
+        return <><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" strokeWidth="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" strokeLinejoin="round"></g><g id="SVGRepo_iconCarrier"> <path opacity="0.1" d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" fill="#000000"></path> <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#000000" strokeWidth="2"></path> <path d="M9 12L10.6828 13.6828V13.6828C10.858 13.858 11.142 13.858 11.3172 13.6828V13.6828L15 10" stroke="#000000" strokeWidth="2" stroke-linecap="round" strokeLinejoin="round"></path> </g></svg></>
     }
     const captchaRef = useRef(null);
     const checkRef = useRef();
@@ -263,49 +263,31 @@ export default function Register(props) {
         promoinput.current.value = '';
         setData("promo", '');
     }
-
+    const inputFieldRef = useRef(null);
+    const letterRef = useRef(null);
+    const capitalRef = useRef(null);
+    const numberRef = useRef(null);
+    const specialRef = useRef(null);
+    const lengthRef = useRef(null);
     const handlePassHints = (e) => {
-        setmypass(e.target.value);
-        if (inputField.value.match(lowerLetter)) {
-            letter.classList.remove('text-grey');
-            letter.classList.add('valid');
-        } else {
-            letter.classList.remove('valid');
-            letter.classList.add('text-grey');
-        }
+        const value = e.target.value;
+        setmypass(value);
 
-        if (inputField.value.match(capitalLetter)) {
-            capital.classList.remove('text-grey');
-            capital.classList.add('valid');
-        } else {
-            capital.classList.remove('valid');
-            capital.classList.add('text-grey');
-        }
+        if (letterRef.current)
+            letterRef.current.className = value.match(lowerLetter) ? 'valid' : 'text-grey';
 
-        if (inputField.value.match(numberLetter)) {
-            number.classList.remove('text-grey');
-            number.classList.add('valid');
-        } else {
-            number.classList.remove('valid');
-            number.classList.add('text-grey');
-        }
+        if (capitalRef.current)
+            capitalRef.current.className = value.match(capitalLetter) ? 'valid' : 'text-grey';
 
-        if (inputField.value.match(specialLetter)) {
-            special.classList.remove('text-grey');
-            special.classList.add('valid');
-        } else {
-            special.classList.remove('valid');
-            special.classList.add('text-grey');
-        }
+        if (numberRef.current)
+            numberRef.current.className = value.match(numberLetter) ? 'valid' : 'text-grey';
 
-        if (inputField.value.length > 7) {
-            length.classList.remove('text-grey');
-            length.classList.add('valid');
-        } else {
-            length.classList.add('text-grey');
-            length.classList.remove('valid');
-        }
-    }
+        if (specialRef.current)
+            specialRef.current.className = value.match(specialLetter) ? 'valid' : 'text-grey';
+
+        if (lengthRef.current)
+            lengthRef.current.className = value.length > 7 ? 'valid' : 'text-grey';
+    };
 
 
     return (
@@ -325,7 +307,7 @@ export default function Register(props) {
                         <h2 className='text-[30px] font-GillSans text-uppercase pt-8 text-center px-2'>Create Account</h2>
                         <p className='text-center text-[18px] text-dark mb-4 '>Already registered? <Link className={'text-pink'} href={route('login')}  > Log In</Link></p>
 
-                        <div className={`${step === 0 ? '' : 'd-none'}    px-3 py-3 pb-5`} >
+                        {step === 0 && <div className={`${step === 0 ? '' : 'd-none'}    px-3 py-3 pb-5`} >
                             <div className='p-2 w-full max-w-[400px] m-auto'>
                                 <div  onClick={()=>handleBecomeCreator(1)}  className={`${role==1 ? 'active' : '' }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}>
                                     <h2 className='text-[22px] font-GillSans text-uppercase' >I'm a Creator</h2>
@@ -340,15 +322,15 @@ export default function Register(props) {
                             </div>
 
                             <p className='text-muted text-base text-center max-w-[450px] m-auto mt-4' >You can support other creators with either of the account types and can change your account type anytime.</p>
-                        </div>
+                        </div>}
 
-                        <div className={`${step === 1 ? '' : 'd-none'}    px-3`} >
+                        {step === 1 && <div className={`${step === 1 ? '' : 'd-none'}    px-3`} >
                             <div className='px-0 px-md-4 px-lg-5 pb-4'>
                                 <p className='text-center text-[17px] text-muted ' >Choose from the following categories. This helps people find your profile. You can change these at any time.</p>
 
                                 <div className='flex creator-tags justify-content-center flex-wrap mt-4' >
                                     {creatortypes.map((s, index) => (
-                                        <div key={index} className="flex items-center">
+                                        <div key={s.value} className="flex items-center">
                                             <input
                                                 id={`tyeps-${index}`}
                                                 name={s.value}
@@ -356,7 +338,7 @@ export default function Register(props) {
                                                 value={s.value}
                                                 className="mr-2  text-indigo-500  hidden"
                                                 onChange={handleProfileTags}
-                                            />
+                                            /> 
                                             <label
                                                 htmlFor={`tyeps-${index}`}
                                                 className="me-1 mb-1 bg-gray-200 px-4 py-[10px] rounded-[40px] text-[15px] text-gray-600 cursor-pointer" >
@@ -368,9 +350,9 @@ export default function Register(props) {
 
                                 <button onClick={handleNext} className='btn-pink md m-auto mt-3 w-full' >  Next</button>
                             </div>
-                        </div>
+                        </div> }
 
-                        <div className={`${step === 2 ? '' : 'd-none'}`} >
+                        {step === 2 && <div className={`${ step === 2 ? '' : 'd-none'}`} >
                             <form onSubmit={submit} className='p-4' >
                                 <div className='login-step1 loginform'>
 
@@ -429,7 +411,7 @@ export default function Register(props) {
                                             <input id="password"
                                                 type="password"
                                                 name="password"
-                                                value={mypass}
+                                                value={mypass} ref={inputFieldRef}
                                                 className="mt-1 block w-full"
                                                 autoComplete="off"
                                                 onKeyUp={(e)=>setData('password', e.target.value)}
@@ -457,11 +439,11 @@ export default function Register(props) {
                                             <div className="pass greybox border-0 p-3" >
                                                 <div id="msgText">
                                                     <h3 className='mt-2'>Password must contain the following:</h3>
-                                                    <p id="letter" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> lowercase</b> letter</p>
-                                                    <p id="capital" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> capital (uppercase)</b> letter</p>
-                                                    <p id="number" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> number</b></p>
-                                                    <p id="special" className="text-grey"><CheckCircleIcon /> &nbsp;Special characters</p>
-                                                    <p id="length" className="text-grey mb-0"><CheckCircleIcon /> &nbsp;Password should minimum 8 characters.</p>
+                                                    <p ref={letterRef} id="letter" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> lowercase</b> letter</p>
+                                                    <p ref={capitalRef} id="capital" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> capital (uppercase)</b> letter</p>
+                                                    <p ref={numberRef} id="number" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> number</b></p>
+                                                    <p ref={specialRef} id="special" className="text-grey"><CheckCircleIcon /> &nbsp;Special characters</p>
+                                                    <p ref={lengthRef} id="length" className="text-grey mb-0"><CheckCircleIcon /> &nbsp;Password should minimum 8 characters.</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -569,7 +551,7 @@ export default function Register(props) {
                                     </div>
 
                                     <div className='m-auto hcaptcha-wrap d-table mb-2 mt-4  mt-md-3' >
-                                        <HCaptcha  ref={captchaRef}
+                                        <HCaptcha ref={captchaRef}
                                         sitekey={props.hcaptchakey || ''}
                                         data-theme="light"
                                         data-size="compact"
@@ -578,7 +560,7 @@ export default function Register(props) {
                                     </div>
 
                                     <div className='wishlistbtn text-center flex justify-center mt-2'>
-                                        <Popup action={hasPop} modalclass=" full stripe-terms shadow-pink ps-0"
+                                        <Popup action={hasPop} modalclassName=" full stripe-terms shadow-pink ps-0"
                                             space="4" size="md"
                                             classes={`hidden`}
                                             text={`Create Account`} >
@@ -607,7 +589,7 @@ export default function Register(props) {
 
                                 </div>
                             </form>
-                        </div>
+                        </div> }
                     </div>
                 </div>
             </div>

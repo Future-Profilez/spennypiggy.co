@@ -14,13 +14,13 @@ import OrderDetail from './OrderDetail';
 
 
 export default function OrdersLists() {
-   const slug = (inputString) => { 
+   const slug = (inputString) => {
       return inputString
-      .toLowerCase() 
-      .replace(/[^a-z0-9\s-]/g, '') 
-      .trim() 
-      .replace(/\s+/g, '-') 
-      .replace(/-+/g, '-'); 
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
    }
    const { global_currency, auth, user } = usePage().props;
    const [orderloading, setOrderLoading] = useState(false);
@@ -54,7 +54,7 @@ export default function OrdersLists() {
 
 
   return <>
-      
+
       {!orderloading ?
       <>
 
@@ -74,45 +74,45 @@ export default function OrdersLists() {
       </div>
 
       <h2 className='font-GillSans text-uppercase text-xl mb-3 pt-3' >Recent Claims</h2>
-      <div  class="bg-white rounded-2xl px-0">
-         <div class="p-3 py-1 relative ">
-            {orders &&  orders.map((item, index) => 
-               <div key={index} class={`flex justify-between ${index > 0 ? "border-t" : "" } py-3 w-full items-center`}>
-                     <Link href={`/${item.username}`} class="flex w-30">
-                        <div class="p-relative flex-shrink-0">
-                              <img class="border border-gray-200 h-12 w-12 min-w-12 min-h-12 rounded-[50px] object-cover" src={item.avatar_url || userdefaultphoto} alt='user' />
+      <div  className="bg-white rounded-2xl px-0">
+         <div className="p-3 py-1 relative ">
+            {orders &&  orders.map((item, index) =>
+               <div key={index} className={`flex justify-between ${index > 0 ? "border-t" : "" } py-3 w-full items-center`}>
+                     <Link href={`/${item.username}`} className="flex w-30">
+                        <div className="p-relative flex-shrink-0">
+                              <img className="border border-gray-200 h-12 w-12 min-w-12 min-h-12 rounded-[50px] object-cover" src={item.avatar_url || userdefaultphoto} alt='user' />
                         </div>
-                        <div class=" ml-3 w-100 w-[40%] flex-vert-center">
+                        <div className=" ml-3 w-100 w-[40%] flex-vert-center">
                            <div>
-                                 <div class="text-sm text-dark font-cr-medium flex bmc-pp bmc-pp-sm grey-pp-color">
-                                    <span class="limit-text-line-2">
+                                 <div className="text-sm text-dark font-cr-medium flex bmc-pp bmc-pp-sm grey-pp-color">
+                                    <span className="limit-text-line-2">
                                      {item.name}
                                     </span>
                                  </div>
                                  <div className='hidden md:block '>
-                                    <div class="text-break line-clamp-1 text-sm font-cr-regular text-[#666666] W-95">
+                                    <div className="text-break line-clamp-1 text-sm font-cr-regular text-[#666666] W-95">
                                        {item.email}
                                     </div>
                                  </div>
-                                 <div class="block md:hidden">
-                                    <div class="text-break line-clamp-1 text-sm font-cr-regular text-[#666666] W-95">
+                                 <div className="block md:hidden">
+                                    <div className="text-break line-clamp-1 text-sm font-cr-regular text-[#666666] W-95">
                                        {item.shop.name}
                                     </div>
                                  </div>
                            </div>
                         </div>
                      </Link>
-                     <div class="hidden md:block w-40 flex pd-l-16 flex-vert-center">
-                        <Link href={`/shop/item/${slug(item.shop.name)}/${item.shop.uuid}`} class=" text-dark  text-sm  font-cr-regular  flex">
-                           <span class="limit-text-line-1 leading-4  max-w-60  mr-3">{item.shop.name || ""}</span>
+                     <div className="hidden md:block w-40 flex pd-l-16 flex-vert-center">
+                        <Link href={`/shop/item/${slug(item.shop.name)}/${item.shop.uuid}`} className=" text-dark  text-sm  font-cr-regular  flex">
+                           <span className="limit-text-line-1 leading-4  max-w-60  mr-3">{item.shop.name || ""}</span>
                         </Link>
                      </div>
-                     <div class=" flex flex-vert-center">
-                        <div class=" text-dark  font-cr-medium  text-sm  block  leading-4">
+                     <div className=" flex flex-vert-center">
+                        <div className=" text-dark  font-cr-medium  text-sm  block  leading-4">
                            {item && item.amount ? <> {formatMultiPrice((item.amount), item?.currency || 'GBP') }</> : "FREE"}                                    </div>
                      </div>
-                     <div class="flex justify-between items-center">
-                        <div class=" text-[#4d4d4d] text-sm hidden lg:block pb-2 me-2">
+                     <div className="flex justify-between items-center">
+                        <div className=" text-[#4d4d4d] text-sm hidden lg:block pb-2 me-2">
                             <TimeFormat dateString={item.created_at} />
                         </div>
                         <Menu as="div" className=" relative inline-block text-left">
@@ -125,22 +125,22 @@ export default function OrdersLists() {
                            enterFrom="transform opacity-0 scale-95"
                            enterTo="transform opacity-100 scale-100"
                            leave="transition ease-in duration-75"
-                           leaveFrom="transform opacity-100 scale-100" 
+                           leaveFrom="transform opacity-100 scale-100"
                            leaveTo="transform opacity-0 scale-95" >
                         <Menu.Items className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-xl overflow-hidden bg-white shadow-xl ring-1 ring-black ring-opacity-5">
                            <OrderDetail date={<TimeFormat dateString={item.created_at} />} item={item} text={'View Info'} />
                         </Menu.Items>
                         </Transition>
                      </Menu>
-                        
+
                      </div>
                </div>
             )}
-         </div> 
-      </div> 
+         </div>
+      </div>
       </>
       : ''}
-      
+
       {orderloading ? <LoadingScreen /> : "" }
       {!orderloading && orders.length < 1 ? <Nocontent bg="none" text="Nothing to see" /> : ""}
 
@@ -153,6 +153,6 @@ export default function OrdersLists() {
          .dropdown-menu.dropdown-anim #viewInfoTransaction:hover svg path,.dropdown-menu.dropdown-anim #send_single_message:hover svg path{stroke:#222 !important;}
          .dropdown-menu.dropdown-anim .dont-open-modal:hover svg path{fill:#222 !important;}
       `}</style>
-         
+
   </>
 }

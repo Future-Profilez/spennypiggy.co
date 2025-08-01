@@ -39,7 +39,7 @@ Route::get('/send-test-mail', function () {
 
 // seeding command
 Route::get('seed/{seeder}', function ($seeder) {
-    Artisan::call("db:seed --class=$seeder");
+    Artisan::call("db:seed --className=$seeder");
     return response()->json([
         'seed completed'
     ]);

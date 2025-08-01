@@ -204,7 +204,7 @@ export default function BuyShopItem({
                 classes={classes}
                 text={text}
             >
-                <div class={`${loading ? "item-purchasing" : ""}`}>
+                <div className={`${loading ? "item-purchasing" : ""}`}>
                     <div className="mx-auto w-32 h-32 relative -mt-16 border-4 border-white rounded-full overflow-hidden">
                         <img
                             className="object-cover object-center h-32 w-full"
@@ -499,7 +499,7 @@ export default function BuyShopItem({
                             <button
                                 disabled={checking}
                                 onClick={executeCaptcha}
-                                class={`${
+                                className={`${
                                     checking ? "opacity-[0.5]" : ""
                                 }  w-1/2 block mx-auto rounded-full bg-gray-900 hover:shadow-lg font-semibold text-white px-6 py-2`}
                             >

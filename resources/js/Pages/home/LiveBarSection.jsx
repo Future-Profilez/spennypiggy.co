@@ -24,9 +24,9 @@ export default function LiveBarSection() {
         <div data-aos="zoom-in" className='px-4 py-2' >
           <LazyLoadImage
             alt={"image"}
-            useIntersectionObserver={true}
+
             effect="blur"
-          
+
             className=""
             src={tiktok}
             width={190}
@@ -35,9 +35,9 @@ export default function LiveBarSection() {
         <div data-aos="zoom-in" className='px-4 py-2' >
           <LazyLoadImage
             alt={"image"}
-            useIntersectionObserver={true}
+
             effect="blur"
-          
+
             className=""
             src={x}
             width={190}
@@ -46,9 +46,9 @@ export default function LiveBarSection() {
         <div data-aos="zoom-in" className='px-4 py-2' >
           <LazyLoadImage
             alt={"image"}
-            useIntersectionObserver={true}
+
             effect="blur"
-          
+
             className=""
             src={youtube}
             width={190}
@@ -57,9 +57,9 @@ export default function LiveBarSection() {
         <div data-aos="zoom-in" className='px-4 py-2' >
           <LazyLoadImage
             alt={"image"}
-            useIntersectionObserver={true}
+
             effect="blur"
-          
+
             className=""
             src={instagram}
             width={190}
@@ -68,9 +68,9 @@ export default function LiveBarSection() {
         <div data-aos="zoom-in" className='px-4 py-2' >
           <LazyLoadImage
             alt={"image"}
-            useIntersectionObserver={true}
+
             effect="blur"
-          
+
             className=""
             src={twitch}
             width={190}
@@ -82,14 +82,14 @@ export default function LiveBarSection() {
       <div className=' livebarsections pt-0 pt-md-5 mt-4 '>
         <div className='container px-4 w-100' >
           <h2 className='headingSm shadow-none text-light stroke-none text-center text-4xl md:text-5xl mb-1 pt-4 pt-lg-0' >What is spenny Piggy ? 🐷</h2>
-          
+
            <Lightbox classes="m-auto d-table" text={<>
               <div data-aos="zoom-out" className="videoBg w-100 mt-3 rounded-5 shadow-mint" >
                 <img alt={"image"}  className='rounded-5 shadow-mint' src={spennys} />
               </div>
            </>
            } images={[ { src: spennys }]} />
-           
+
 
            {/* <div className='shadow-voilet rounded-5 mt-5 bg-white max-w-[600px] mx-auto px-6 py-[80px]'  >
             <h2 className='headingSm shadow-none text-dark text-3xl stroke-none text-center' >New Video Coming Soon*</h2>

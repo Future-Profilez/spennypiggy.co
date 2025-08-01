@@ -312,7 +312,6 @@ class StripeController extends Controller
         if (empty($user->account_id)) {
             return redirect(route("user.show", ["username" => $user->username]))->with("error", "Stripe did not initiated properly.");
         }
-
         try {
             $account = StripeControl::getAccount($user->account_id);
             if (empty($user->stripe_details_submitted)) {
@@ -1089,11 +1088,19 @@ class StripeController extends Controller
         return to_route('user.show', ['username' => $subs->wish_item->user->username])->with('success', "Subscription is cancelled for wish {$subs->wish_item->wishname}.");
     }
 
+
+
+
     public function tipToJar(Request $request, $creator_uid)
     {
-        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'usd';
         $creator = User::where('uuid', $creator_uid)->where('is_uk', 0)->first();
-
+        if (!$creator) {
+            return response()->json([
+                'status' => false,
+                'msg' => "Creator not found."
+            ]);
+        }
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus == true) {
             $user = Auth::user();
@@ -1117,8 +1124,6 @@ class StripeController extends Controller
         //         ]);
         //     }
         // }
-
-
         if (Auth::check()) {
             if ($creator->id == Auth::id()) {
                 return response()->json([
@@ -1150,6 +1155,12 @@ class StripeController extends Controller
 
             $amount = $request->amount;
             $ConvertedAmount = Helpers::priceFormat($creator->default_currency, $amount, 'gbp');
+            // return response()->json([
+            //     'creator->default_currency' => $creator->default_currency,
+            //     'amount' => $amount,
+            //     'ConvertedAmount' => $ConvertedAmount,
+            //     'cookies_currency' => $currency,
+            // ]);
 
             if (!Auth::check() && $ConvertedAmount > 50) {
                 return response()->json([
@@ -1171,6 +1182,8 @@ class StripeController extends Controller
             $taxAmount = round(($amount * $taxPercentage / 100), 2, PHP_ROUND_HALF_UP);
             $adminFeeForPay = Helpers::priceFormat('GBP', $adminFeeAmount, $currency);
             $totalTaxForPay = $taxAmount + $adminFeeForPay;
+            $applicationFeeAmount = $isZeroDecimalCurrency? round($totalTaxForPay): round($totalTaxForPay * 100);
+
             // $totalPrice = round($amount + $totalTaxForPay, 2, PHP_ROUND_HALF_UP);
             $unitAmount = $isZeroDecimalCurrency ? round($amount) : round($amount * 100);
 
@@ -1195,7 +1208,7 @@ class StripeController extends Controller
                         'quantity' => 1,
                         'price_data' => [
                             'currency' => $currency,
-                            'product_data' => ['name' => "Support Payment to Creator"],
+                            'product_data' => ['name' => "Support payment to {$creator->name}"],
                             'unit_amount' => $unitAmount,
                         ]
                     ],
@@ -1206,14 +1219,24 @@ class StripeController extends Controller
                             'product_data' => [
                                 'name' => 'Platform Fee',
                             ],
-                            'unit_amount' => $totalTaxForPay * 100,
+                            'unit_amount' => $applicationFeeAmount,
                             'tax_behavior' => 'exclusive',
                         ],
                     ],
                 ],
                 'payment_intent_data' => [
-                    'application_fee_amount' => round($totalTaxForPay * 100), // Admin fee + tax
-                    'description' => "Platform Fee."
+                    'application_fee_amount' => $applicationFeeAmount,
+                    'description' => "Platform Fee.",
+                    "metadata" => [
+                        "purpose" => "support_payment",
+                        "badge" => 'Leaderboard Star	',
+                        "support_type" => 'leaderboard_unlock',
+                        "guest_name" => $request->name ?? null,
+                        "user_id" => Auth::id() ?? null,
+                        "creator_id" => $creator->id,
+                        "creator_profile" => env('APP_URL'). '/' . $creator->username ?? null,
+                    ],
+                    "description" => "Support payment to {$creator->name}",
                 ],
                 'customer_email' =>  $user->email ?? $request->email,
                 'success_url' => route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "success"]),
@@ -1235,137 +1258,6 @@ class StripeController extends Controller
                 ]);
             }
         }
-
-        // if ($request->isMethod("POST")) {
-        //     $request->validate([
-        //         'name' => [
-        //             'required',
-        //             'string',
-        //             'min:3',
-        //             'max:50'
-        //         ],
-        //         'email' =>  [
-        //             'required',
-        //             'email:dns'
-        //         ],
-        //         'amount' => [
-        //             'required',
-        //             'numeric'
-        //         ],
-        //         'anonymous' => [
-        //             'required'
-        //         ],
-        //         'message' =>  [
-        //             'sometimes',
-        //             'nullable',
-        //             'string',
-        //             'max:800'
-        //         ]
-        //     ]);
-
-        //     $isZeroDecimalCurrency = in_array(strtolower($currency), ['jpy', 'krw', 'vnd']);
-
-        //     $amount = $request->amount;
-        //     $adminFeeAmount = config('app.administration_fee', 1); // Administration fee percentage
-
-        //     // define variable to store in db
-        //     $price = Helpers::priceFormat($currency, $amount, $creator->default_currency);
-        //     $tax = round(($price * config('app.jar_tax') / 100), 2, PHP_ROUND_HALF_UP);
-        //     $adminFeeForStoreDB = Helpers::priceFormat('GBP', $adminFeeAmount, $creator->default_currency);
-        //     $totalTaxForDB = $tax + $adminFeeForStoreDB;
-        //     $totalAmountForStoreDB = round($price + $totalTaxForDB);
-
-        //     // define variable to show and pay on payment page
-        //     $taxPercentage = config('app.jar_tax'); // Tax percentage
-        //     $adminFeeForPay = Helpers::priceFormat('GBP', $adminFeeAmount, $currency);
-        //     $taxAmount = round(($amount * $taxPercentage / 100), 2, PHP_ROUND_HALF_UP); // Tax based on combined percentage
-        //     $totalTaxForPay = $taxAmount + $adminFeeForPay;
-        //     $totalPrice = round($amount + $totalTaxForPay, 2, PHP_ROUND_HALF_UP);
-        //     $roundTotalPrice = round($amount + $totalTaxForPay);
-
-
-        //     $unitAmount = $isZeroDecimalCurrency
-        //         ? round($roundTotalPrice) // totalPrice is already in user currency
-        //         : round($totalPrice * 100); // e.g. for USD/GBP
-
-        //     $amountToTransfer = $isZeroDecimalCurrency ? intval($amount) : round($amount * 100);
-
-        //     try {
-        //         $stripe_client = StripeControl::createProduct([
-        //             'name' => $goal->name ?? 'Support-creator',
-        //             'images' => ["https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/"],
-        //             "default_price_data" => ["currency" => strtolower($creator->default_currency), "unit_amount_decimal" => $totalPrice * 100],
-        //         ], $creator->account_id);
-        //     } catch (Exception $e) {
-        //         return response()->json([
-        //             'status' => false,
-        //             'msg' => $e->getMessage()
-        //         ]);
-        //     }
-
-        //     $pay = TipGoalsPayment::create([
-        //         'tip_goal_id'  =>  $goal->id ?? null,
-        //         'user_id'       =>  Auth::id() ?? NULL,
-        //         'creator_id' => $creator->id,
-        //         'guest_name'    =>  $request->name,
-        //         'guest_email'    =>  $request->email,
-        //         'currency'      =>  $creator->default_currency,
-        //         'amount'        =>  $price,
-        //         'tax'           =>  $totalTaxForDB,
-        //         'message'  =>  $request->message ?? NULL,
-        //         'anonymous' => $request->anonymous ?? 0,
-        //         'product_id' => $stripe_client->id
-        //     ]);
-
-        //     $payload = [
-        //         "mode"  =>  'payment',
-        //         'payment_method_types' => ['card'],
-        //         'line_items' =>  [
-        //             [
-        //                 'quantity' => 1,
-        //                 'price_data' => [
-        //                     'currency' => $currency,
-        //                     'product' => $stripe_client->id,
-        //                     'unit_amount_decimal' => $unitAmount,
-        //                 ]
-        //             ]
-        //         ],
-        //         'payment_intent_data' => [
-        //             // 'transfer_data' => [
-        //             //     'destination' => $creator->account_id, // Creator's connected account ID
-        //             //     'amount' => $amountToTransfer,
-        //             // ],
-        //             // 'application_fee_amount' => $totalTaxForPay * 100,
-        //             // 'on_behalf_of'  => $creator->account_id,
-        //             'description' => "Supporter Membership Payment."
-        //         ],
-        //         'customer_email' =>  $request->email,
-        //         'success_url'       =>  route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "success"]),
-        //         'cancel_url'       =>  route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "cancel"]),
-        //     ];
-
-        //     try {
-        //         $session = StripeControl::createCheckoutSession($payload, $creator->account_id);
-        //         $pay->update([
-        //             'session_id' =>  $session->id
-        //         ]);
-
-        //         return response()->json([
-        //             'status' => true,
-        //             'url' => $session->url
-        //         ]);
-        //     } catch (Exception $e) {
-        //         return response()->json([
-        //             'status' => false,
-        //             'msg' => $e->getMessage()
-        //         ]);
-        //     }
-        // }
-
-        // return Inertia::render('cart/SubCheckout', [
-        //     'wish'  => $wish,
-        //     'reccure'   => $reccure
-        // ]);
     }
 
     /**
@@ -1389,6 +1281,7 @@ class StripeController extends Controller
                 $ownerCurrency = Currency::where('iso', strtoupper($tip_pay->currency))->first();
                 $userCurrency = Currency::where('iso', strtoupper($currency))->first();
                 $userAmount = Helpers::priceFormat($tip_pay->currency, $tip_pay->amount, $currency);
+                $creatorAmount = Helpers::priceFormat($tip_pay->currency, $tip_pay->amount, $currency);
 
                 TipJarPurchased::dispatch($tip_pay, $ownerCurrency->symbol);
                 TipJarMailToUser::dispatch($tip_pay, $userCurrency->symbol, $userAmount);
@@ -1397,16 +1290,16 @@ class StripeController extends Controller
                 /**************************TIP**JAR**PWA**START****************************************************/
                 // below is TIP JAR pwa for fans
                 $CreatorName = ucfirst($tip_pay->creator->name) ?? 'A Creator';
-                $title = "🙌 Tip Sent!";
-                $content = "You just tipped $CreatorName. Thanks for supporting them!.";
+                $title = "🏅 You've unlocked a new badge!";
+                $content = "You just tipped to $CreatorName. Thanks for supporting them!.";
                 $email = $tip_pay->guest_email ?? $tip_pay->user->email;
 
                 Helpers::sendNotification($title, $content, $email);
 
                 // below is membership pwa for creator
-                $FanName = ucfirst($tip_pay->user->name) ?? 'A Fan';
-                $title = "🎉 You Got a Tip!";
-                $content = "$FanName just dropped a tip in your jar!.";
+                $FanName = ucfirst($tip_pay->user->name ?? 'A Fan');
+                $title = "💰 New Support Received";
+                $content = "You just received a support payment from $FanName!.";
                 $email = $tip_pay->creator->email;
 
                 Helpers::sendNotification($title, $content, $email);
@@ -1458,11 +1351,6 @@ class StripeController extends Controller
             Log::error("Stripe Checkout Error: " . $e->getMessage());
             return to_route('user.show', ['username' => $tip_pay->creator->username])->with('error', $e->getMessage());
         }
-        // return response()->json([
-        //     'success'   =>  true,
-        //     'session'   =>  $session,
-        //     'status'    =>  $status
-        // ]);
     }
 
     /**
@@ -1497,7 +1385,11 @@ class StripeController extends Controller
         $tax = round(($price * 20 / 100), 2, PHP_ROUND_HALF_UP);
         $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
 
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
+        if (!$user) {
+            return back()->with('error', 'Subscription not allowed for this user.');
+        }
+
         if (!$user->account_id) {
             $customer = StripeControl::createCustomer([
                 'email' => $user->email,
@@ -1521,7 +1413,7 @@ class StripeController extends Controller
         $amount = $price + $tax;
         $unit_amount = round(Helpers::priceFormat("GBP", $amount, $currency) * 100); // Ensure integer
 
-        $trial_period_days = 3; // 3-day free trial
+        $trial_period_days = 3; 
 
         $payload = [
             "mode"  =>  'subscription',
@@ -1539,7 +1431,7 @@ class StripeController extends Controller
                 ]
             ]],
             'subscription_data' =>  [
-                'trial_period_days' => $trial_period_days, // 3-day trial (REMOVED billing_cycle_anchor)
+                'trial_period_days' => $trial_period_days, 
                 'description' => "Subscription for using site through Stripe."
             ],
             'customer_email' => $user->email,
@@ -1553,8 +1445,7 @@ class StripeController extends Controller
                 'session_id' => $session->id,
                 'current_start_trial_date' => now(),
                 'current_end_trial_date' => now()->addDays($trial_period_days),
-            ]);
-
+            ]); 
             return Inertia::location($session->url);
         } catch (Exception $e) {
             $sub->delete();

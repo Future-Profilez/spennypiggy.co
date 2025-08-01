@@ -4,9 +4,9 @@ import { useState } from 'react';
 export default function OrderDetail({classes, text, item,date}) {
 
    const [close, setClose] = useState(false);
-   
+
   return (
-      <Popup modalclass='order-detail-modal full' space="4" size='md' action={close} 
+      <Popup modalclassName='order-detail-modal full' space="4" size='md' action={close}
          text={text || 'open'}
          classes={`${classes ? classes : "px-3 py-2"}`} >
             <div className='p-0' >

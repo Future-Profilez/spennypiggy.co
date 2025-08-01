@@ -7,8 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
     <style>
         * {
-            font-family: 'Outfit', sans-serif;
-        }
+                font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+            }
 
         .userVimg img {
             width: 100%;

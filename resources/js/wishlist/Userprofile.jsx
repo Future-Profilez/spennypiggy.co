@@ -1,5 +1,4 @@
 import React from "react";
-// import userphoto from "../../assets/siteicon.png";
 import userphoto from "../../assets/siteicon.png";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { usePage } from "@inertiajs/react";
@@ -20,8 +19,8 @@ export default function Userprofile({ IsloggedIn }) {
             <div className="userPr px-4 py-0 py-md-4 lg:flex items-center justify-center lg:justify-between mt-[-80px] md:mt-[-50px]">
                 <div className="update-profile text-center lg:flex items-center justify-center lg:justify-start">
                     <div className="userphoto relative !flex  items-center justify-center mb-4 ">
-                        <LazyLoadImage
-                            alt={"image"} useIntersectionObserver={true} effect="blur"
+                        <LazyLoadImage 
+                            alt={"image"}  effect="blur"
                             src={user && user.avatar_url? user.avatar_url: userphoto}
                             height={150} width={150}
                             className="rounded-full !border-3 !border-[var(--mint)]
@@ -86,12 +85,12 @@ export default function Userprofile({ IsloggedIn }) {
                             <div className="flex mb-4 justify-center md:mb-2">
                                 <p className="md:flex text-center font-poppins mt-1 text-white">
                                     <span className='!w-auto !h-auto block md:inline-block pe-1 '>
-                                        {user?.followers}
+                                        {user?.followers_count}
                                     </span>
                                       Followers
                                 </p>
                                 <p className="md:flex text-center font-poppins mt-1 ms-3 text-white">
-                                     <span className='!w-auto !h-auto block md:inline-block pe-1 ' >{user?.following}</span> Following
+                                     <span className='!w-auto !h-auto block md:inline-block pe-1 ' >{user?.following_count}</span> Following
                                 </p>
                                 <p className="md:flex text-center font-poppins mt-1 ms-3 text-white">
                                     <span className='!w-auto !h-auto block md:inline-block pe-1 '>🐷 {supporters}</span> Supporters

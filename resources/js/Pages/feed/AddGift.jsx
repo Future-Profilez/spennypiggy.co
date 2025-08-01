@@ -117,7 +117,7 @@ export default function AddGift({
 
     return (
         <Popup
-            modalclass=""
+            modalclassName=""
             space="4"
             size={hasAdded ? "md" : "lg"}
             action={close}

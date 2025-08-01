@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 import LoadingScreen from '@/includes/LoadingScreen';
 import PriceFormat from '@/includes/PriceFormat';
 import Nocontent from '@/includes/Nocontent';
-export default function LargestGifts() {
+export default function RecentGifters() {
 
   const { formatMultiPrice } = PriceFormat();
   const [ period, setPeriod] = useState('last24hour');
@@ -16,7 +16,7 @@ export default function LargestGifts() {
 
   const fetchGifts = (period) => {
     setLoading(true);
-    axios.get(`largest/gifts/alltime`)
+    axios.get(`recent-gifters/${period}`)
       .then((response) => {
         setData(response.data.data);
         setLoading(false);
@@ -60,9 +60,19 @@ export default function LargestGifts() {
   return (
     <>
     {data.length > 0 ? <div className="bg-gray-100 rounded-[25px] p-4 mb-6">
-      <h2 className="  font-GillSans text-start text-2xl uppercase text-dark ">Largest Gifts</h2>
-      <p className='text-gray-500  mb-3'>Who dropped the fattest piggy</p>
-    
+      <h2 className="text-bls font-GillSans text-start text-2xl uppercase text-dark ">Who just showed love?</h2>
+      <p className='text-gray-500  mb-3'>Latest fans who has just show support.</p>
+      
+      {/* <div className="time-hrs">
+        <button className={period === 'last24hour' ? "active" : ''} onClick={() => setPeriod('last24hour')}>Last 24 hrs </button>
+        <button className={period === 'lasthour' ? "active" : ''} onClick={() => setPeriod('lasthour')}> Last Hour </button>
+      </div> */}
+      {/* {loading ? (
+        <LoadingScreen />
+      ) : (
+        <>
+        </>
+      )} */}
       {data.length ? (
         data.map((gift, index) => (
           <GiftItem key={gift.id} gift={gift} index={index} />

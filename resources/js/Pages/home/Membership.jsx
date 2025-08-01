@@ -77,7 +77,7 @@ export default function Membership() {
   return (
     <>
     {/* <style>{`
-    .commingsooon { 
+    .commingsooon {
       position:absolute;
       top:47%;
       left:0
@@ -88,14 +88,14 @@ export default function Membership() {
         <h2 className='headingSm shadow-none text-dark stroke-none mb-3 text-center mb-6' >Premium Membership</h2>
         <p className='max-width-900 text-muted m-auto text-center text-[20px]' >Discover a hassle-free way to enhance your earnings potential. Enjoy zero fees for fans, with creators keeping 100% of their earnings. Unlock premium features, including enhanced chargeback protection. Cancel anytime. Join us today!</p>
       </div>
-        
+
         <div className='position-relative p-0 p-md-4' >
         <LiveBar reps={20} color={`yellowbg`} classes={'commingsooon'} text={"  Coming Soon      "} />
 
               <div data-aos="zoom-in-up" className='membership-image py-2 m-auto d-table flex justify-content-center max-width-900 mt-3 ' >
                 <LazyLoadImage
-                  alt={"image"} 
-                  useIntersectionObserver={true}
+                  alt={"image"}
+
                   effect="blur"
                   className=""
                   src={PREMIUMMEMBERSHIP}
@@ -125,15 +125,15 @@ export default function Membership() {
               {item.icon}
             </div>
           </div>
-        
+
           <h3 className="mt-3 leading-tight md:leading-[1.35rem] text-lg md:text-xl uppercase font-gulfs">
             {item.title}
           </h3>
-        
+
           <p className="mt-1 md:mt-1.5 text-sm text-white leading-tight sm:leading-normal max-w-[17rem] font-poppins">
             {item.description}
           </p>
-        </div>        
+        </div>
         ))}
       </div>
     </div>

@@ -27,10 +27,12 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Middleware\VerifyCsrfToken;
+use App\Jobs\SendRenewMail;
 use App\Models\Bills;
 use App\Models\BulkPwaNotification;
 use App\Models\Logs;
 use App\Models\Membership;
+use App\Models\MonthlyCharge;
 use App\Models\SocialLinks;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
@@ -44,7 +46,10 @@ use App\StripeControl;
 use App\Uploadcare;
 use Illuminate\Support\Facades\Http;
 use App\SeoMeta;
+use AWS\CRT\Log;
+use Carbon\Carbon;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Log as FacadesLog;
 use Illuminate\Support\Facades\Request;
 use PHPUnit\Event\Code\Test;
 use Symfony\Component\HttpKernel\Profiler\Profile;
@@ -132,16 +137,82 @@ Route::middleware('auth')->group(function () {
             Route::post('user/save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
             Route::post('edit-category/{id}', [WishitemController::class, 'editWishCategory'])->name('edit-category');
             Route::get('delete-category/{id}', [WishitemController::class, 'deleteCategory'])->name('delete-category');
-            Route::get('account', function () {
-                $user = Auth::user();
-                $auto_tweet = $user->auto_tweet == 1 ? true : false;
-                $pwaNotificationDetails = BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
-                return Inertia::render('accountsetting/Accountsetting', [
-                    'auto_tweet' => $auto_tweet,
-                    'pwa_notification_details' => $pwaNotificationDetails ?? null,
-                ]);
-            })->name("account");
-            Route::get('/scanning/check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content');
+
+
+
+Route::get('account', function () {
+    $user = Auth::user();
+    $auto_tweet = $user->auto_tweet == 1;
+    $pwaNotificationDetails = BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
+
+    $subscription = MonthlyCharge::where('user_id', $user->id)
+        ->orderByDesc('created_at')
+        ->first();
+
+    $site_subscription = [
+        'status' => 'INACTIVE',
+        'trial_status' => null,
+        'trial_start' => null,
+        'trial_end_in' => null,
+        'subscription_start' => null,
+        'subscription_end' => null,
+        'subscription_renew_in' => null,
+        'next_payment_date' => null,
+        'expired_at' => null,
+    ];
+
+    if ($subscription) {
+        $trial_start = $subscription->current_start_trial_date;
+        $trial_end = $subscription->current_end_trial_date;
+        $subscription_start = $subscription->current_start_subscription_date;
+        $subscription_end = $subscription->current_end_subscription_date;
+
+        $now = Carbon::now();
+        $trialStartCarbon = $trial_start ? Carbon::parse($trial_start) : null;
+        $trialEndCarbon = $trial_end ? Carbon::parse($trial_end) : null;
+        $subStartCarbon = $subscription_start ? Carbon::parse($subscription_start) : null;
+        $subEndCarbon = $subscription_end ? Carbon::parse($subscription_end) : null;
+
+        $isTrialOngoing = $trialEndCarbon && $now->lessThan($trialEndCarbon);
+        $isTrialEnded = $trialEndCarbon && $now->greaterThanOrEqualTo($trialEndCarbon);
+        $isSubscriptionActive = $user->is_subscribed == 1 && $subEndCarbon && $now->lessThan($subEndCarbon);
+        $isExpired = $subEndCarbon && $now->greaterThanOrEqualTo($subEndCarbon);
+
+        // Format output
+        $site_subscription['trial_start'] = $trialStartCarbon ? $trialStartCarbon->format('d F Y') : null;
+        $site_subscription['trial_end_in'] = $trialEndCarbon ? $trialEndCarbon->diffForHumans($now) : null;
+        $site_subscription['trial_status'] = $isTrialOngoing ? 'active' : 'ended';
+
+        $site_subscription['subscription_start'] = $subStartCarbon ? $subStartCarbon->format('d F Y') : null;
+        $site_subscription['subscription_end'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
+        $site_subscription['subscription_renew_in'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
+        $site_subscription['expired_at'] = $isExpired ? $subEndCarbon->diffForHumans($now) : null;
+
+        $site_subscription['next_payment_date'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
+
+        // Correct status logic
+        if ($isSubscriptionActive) {
+            $site_subscription['status'] = 'ACTIVE';
+        } elseif ($isTrialOngoing && !$isSubscriptionActive) {
+            $site_subscription['status'] = 'FREE_TRIAL';
+        } elseif ($isExpired || $user->is_subscribed == 0) {
+            $site_subscription['status'] = 'EXPIRED';
+        }
+    }
+
+    return Inertia::render('accountsetting/Accountsetting', [
+        'auto_tweet' => $auto_tweet,
+        'site_subscription' => $site_subscription,
+        'pwa_notification_details' => $pwaNotificationDetails ?? null,
+    ]);
+});
+
+
+
+
+
+
+            Route::get('/scanning/check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content'); 
             Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
             Route::get('unlink-twitter', [AuthenticatedSessionController::class, 'unlinkTwitter'])->name('unlink-twitter');
             Route::get('wish-tracker', [WishitemController::class, 'wishtrackerItems'])->name('wish-tracker');
@@ -351,6 +422,7 @@ Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
     Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay");
     Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
 });
+Route::get('/user/tip/goal/{username?}', [AuthenticatedSessionController::class, 'usergoal'])->name('user.goal');
 
 // subscription webhook
 Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
@@ -382,7 +454,9 @@ Route::get('/files/{filename}', function (string $filename) {
     return Storage::response($fullPath);
 });
 
-Route::get('largest-gifts/{type?}', [LeaderBoardController::class, 'largestGifts'])->name('largest-gifts');
+Route::get('recent-gifters/{type?}', [LeaderBoardController::class, 'recentGifters'])->name('largest-gifts');
+Route::get('leaderboard/star/lists', [LeaderBoardController::class, 'topGiftersAllTime'])->name('leaderboard.stars');
+Route::get('largest/gifts/alltime', [LeaderBoardController::class, 'top10UniqueBiggestGifters'])->name('leaderboard.stars');
 
 /* wishtender */
 Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('leaderboard');
@@ -455,7 +529,6 @@ Route::prefix("bill")->name("bill.")->group(function () {
 
 
 Route::get('image/dalle', [TestController::class, 'testAiImage'])->name("image-dalle");
-
 Route::match(["get", "post"], '/test-kyc-webhook', [TestController::class, 'reviewWebhook'])->name("test-kyc")->withoutMiddleware(VerifyCsrfToken::class);
 
 
@@ -466,3 +539,25 @@ Route::get('/delete-connected-account/{accountId}', [StripeController::class, 'd
 Route::get('/force-error/error/file', function () {
     throw new \Exception("Testing Handler.php");
 });
+
+
+// Route::get('/test/subscription/email', function () {
+//     $array = [
+//         'email' => 'naveen@internetbusinesssolutionsindia.com',
+//         'name' => 'Naveen',
+//         'uuid' => '69586e30-6d8c-4216-958b-d5ec50f56e18',
+//         'invoice_pdf' => 'https://example.com/invoice.pdf',
+//         'notification' => 1,
+//         'trial_end' => '2025-07-17 04:36:30',
+//         'amount' => 4.0,
+//         'currency' => 'GBP',
+//     ]; 
+
+//     SendRenewMail::dispatch($array, 'trial', 'site');
+//     SendRenewMail::dispatch($array, 'start', 'site');
+//     SendRenewMail::dispatch($array, 'renew', 'site');
+//     SendRenewMail::dispatch($array, 'failed', 'site');
+//     SendRenewMail::dispatch($array, 'cancelled', 'site');
+
+//     return 'Subscription email dispatched!';
+// });

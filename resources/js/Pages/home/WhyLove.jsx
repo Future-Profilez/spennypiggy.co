@@ -143,7 +143,7 @@ export default function WhyLove() {
                                             <LazyLoadImage
                                                 alt={"image"}
                                                 height={70}
-                                                useIntersectionObserver={true}
+
                                                 effect="blur"
                                                 src={item.icon}
                                                 width={70}
@@ -178,7 +178,7 @@ export default function WhyLove() {
                                             <LazyLoadImage
                                                 alt={"image"}
                                                 height={70}
-                                                useIntersectionObserver={true}
+
                                                 effect="blur"
                                                 src={item.icon}
                                                 width={70}
@@ -221,11 +221,11 @@ export default function WhyLove() {
                             src={brand.src}
                             alt={brand.name}
                             className="max-h-32 md:max-h-36 min-h-28 object-contain"
-                            useIntersectionObserver={true}
+
                             effect="blur"
                             width={190}
                         /> */}
-                   </div>                   
+                   </div>
                   ))}
                 </div>
             </div>

@@ -32,7 +32,7 @@ export default function Thankyou(props) {
                     <div className="avatar rounded-[50%] w-20 h-20 overflow-hidden m-auto d-table mt-4 " >
                           <LazyLoadImage
                           src={owner.avatar_url || userphoto}
-                          alt="image-avatar" className="img-fluid rounded w-full h-full object-cover" useIntersectionObserver={true} effect="blur"
+                          alt="image-avatar" className="img-fluid rounded w-full h-full object-cover"  effect="blur"
                           height={100}
                           width={100} />
                     </div>

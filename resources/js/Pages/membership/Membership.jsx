@@ -73,7 +73,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
 
   return (
     <>
-            <div class="bg-white bg-opacity-90 relative rounded-[30px] overflow-hidden  border-3 md:border-4 !border-[#F94F97] h-full">
+            <div className="bg-white bg-opacity-90 relative rounded-[30px] overflow-hidden  border-3 md:border-4 !border-[#F94F97] h-full">
               <div className='m-imag rounded-lg relative ' >
                 {IsloggedIn && item && item?.approved === 0 ?
                 <div className='absolute bottom-2 m-3 bg-yellow-500 text-sm p-2 text-center rounded-[20px]' >Membership waiting for approval. Currently only you can see this membership.</div>
@@ -92,15 +92,15 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                 </div>}>
                   <RemoveMembership classes={`px-[18px] py-2 text-start w-full`}   uuid={item?.uuid} text="Remove" />
                 </DropdownButton> : ''}
-                <h2 class="text-xl text-black font-bold uppercase mt-2">{item && item?.level}</h2>
-                <p class="text-2xl font-extrabold mb-6">{formatMultiPrice(item && item?.price, item && item?.currency)}  <span class="text-sm">Monthly</span></p>
-                <ul class="space-y-1 mb-6">
+                <h2 className="text-xl text-black font-bold uppercase mt-2">{item && item?.level}</h2>
+                <p className="text-2xl font-extrabold mb-6">{formatMultiPrice(item && item?.price, item && item?.currency)}  <span className="text-sm">Monthly</span></p>
+                <ul className="space-y-1 mb-6">
                     <li key={`reward-${i} `} className='flex items-center' >
-                        ✅ <span class="ml-2 text-sm">Access to Member only posts</span>
+                        ✅ <span className="ml-2 text-sm">Access to Member only posts</span>
                     </li>
                     {rewards && rewards.map((r, i)=>{
                       return <li key={`reward-${i} `} className='flex items-center' >
-                        ✅ <span class="ml-2 text-sm">{getRewardTitle(r)}</span>
+                        ✅ <span className="ml-2 text-sm">{getRewardTitle(r)}</span>
                       </li>
                     })}
                 </ul>

@@ -220,22 +220,27 @@ class EmailService
         }
     }
 
+ 
+
     public static function sendRenewMail($array, $type, $module)
     {
         try {
-            if (!isset($array['email']) || empty($array['email'])) {
-                throw new \InvalidArgumentException("Email address is missing in sendRenewMail.");
+            if (empty($array['email'])) {
+                throw new \InvalidArgumentException("Email address is missing.");
             }
-
-            Mail::to($array['email'])->send(new RenewMail($array, $type, $module));
+            Mail::to($array['email'])->send(new \App\Mail\RenewMail($array, $type, $module));
         } catch (\InvalidArgumentException $e) {
-            Log::error('Email not sent: ' . $e->getMessage(), ['array' => $array]);
-        } catch (TransportException $e) {
-            AppService::setStatus('email', 0, $e->getMessage());
+            Log::error('🚫 InvalidArgumentException: ' . $e->getMessage());
+        } catch (\Symfony\Component\Mailer\Exception\TransportException $e) {
+            Log::error('🚨 TransportException: ' . $e->getMessage());
         } catch (\Exception $e) {
-            Log::error('Unexpected error in sendRenewMail: ' . $e->getMessage());
+            Log::error('🔥 Unexpected error in sendRenewMail: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
         }
     }
+
+
 
 
     public static function sendSubscribedMail($sub, $creatorFinalAmount)
