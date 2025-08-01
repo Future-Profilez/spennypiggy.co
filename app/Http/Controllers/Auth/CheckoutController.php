@@ -60,7 +60,7 @@ class CheckoutController extends Controller
                 $getdata = UserCart::where('user_id', Auth::id())
                     ->where('owner_id', $id)
                     ->where('status', 1)
-                    ->with(['wish'])
+                    ->with(['h'])
                     ->get();
             } else {
                 $getdata = UserCart::where('device_id', $id)
@@ -145,7 +145,7 @@ class CheckoutController extends Controller
                         'price_data' => [
                             'currency' => $currency,
                             'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
-                            'unit_amount_decimal' => round($ConvertedAmount * 100),
+                            'unit_amount_decimal' => round($subtotals * 100),
                         ]
                     ],
                     // Platform fee + Vat as a separate item
