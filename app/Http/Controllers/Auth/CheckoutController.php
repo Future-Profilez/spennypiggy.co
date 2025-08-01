@@ -32,7 +32,7 @@ class CheckoutController extends Controller
 {
     /* create checkout */
     public function createCheckout($id) {
-        
+
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus == true) {
             $user = Auth::user();
@@ -84,7 +84,7 @@ class CheckoutController extends Controller
                     }
                 }
                 $subtotals = 0;
-                $totalAmount = $dd->amount;
+                $totalAmount = $dd->amount * $dd->quantity;
                 $ConvertedToGBpAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, 'gbp');
                 $subtotals += $ConvertedToGBpAmount * $dd->quantity;
                 if (!Auth::check() && $subtotals > 50) {
@@ -143,9 +143,8 @@ class CheckoutController extends Controller
                         'price_data' => [
                             'currency' => $currency,
                             'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
-                            'unit_amount_decimal' => round($subtotals * 100),
-                        ],
-                        
+                            'unit_amount_decimal' => round($ConvertedToGBpAmount * 100),
+                        ]
                     ],
                     // Platform fee + Vat as a separate item
                     [
