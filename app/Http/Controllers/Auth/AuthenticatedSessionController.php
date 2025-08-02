@@ -179,17 +179,16 @@ class AuthenticatedSessionController extends Controller
             'social_links', 'followers', 'following', 'wishItems', 'user_categories', 'memberships', 'bills', 'shop', 'intro'
         ])->where('username', $username)->where('is_uk', 0)->first();
 
-
+        if (!$user){
+            return Inertia::render('NotFound');
+        }
 
         if (!empty($user)) {
             if ($user->suspended_account == 1) {
                 return Inertia::render('Suspanded');
             }
         }
-        
-        if (!$user || !Auth::check()){
-            return Inertia::render('NotFound');
-        }
+         
 
         $authUser = Auth::id();
         $notification_count = Cache::remember("notifications_{$authUser}", 60, fn () => Notification::where('notifiable_id', $authUser)->where('is_read', 0)->count());
