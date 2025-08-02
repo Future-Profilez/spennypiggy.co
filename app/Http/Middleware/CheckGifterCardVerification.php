@@ -22,9 +22,8 @@ class CheckGifterCardVerification
         $user = Auth::user();
         if (!$user){
             $next($request);
-            // return redirect()->route('login')->with('error', 'please login first');
         }
-        if ($user->role === 0 && $user->is_uk == 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
+        if (!empty($user) && $user->role === 0 && $user->is_uk == 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
             $isVerified = $user->gifterCardVerification()
                 ->where('status', 'success')
                 ->exists();

@@ -296,13 +296,13 @@ class RegisteredUserController extends Controller
         $existingSuccess = GifterCardVerification::where('user_id', $user->id)->where('status', 'success')->whereNull('deleted_at')->first();
         GifterCardVerification::where('user_id', $user->id)->whereIn('status', ['pending', 'rejected by admin'])->delete();
 
-        if ($existingSuccess) {
-            $user->update(['profile_status_lock' => 1]);
-            return response()->json([
-                'status' => false,
-                'message' => 'You have already completed verification.',
-            ]);
-        }
+        // if ($existingSuccess) {
+        //     $user->update(['profile_status_lock' => 1]);
+        //     return response()->json([
+        //         'status' => false,
+        //         'message' => 'You have already completed verification.',
+        //     ]);
+        // }
 
         // Static base amount in GBP
         $baseAmount = 1.00;
