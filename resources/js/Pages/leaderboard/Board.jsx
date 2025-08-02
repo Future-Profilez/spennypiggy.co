@@ -80,10 +80,10 @@ export default function Board(props) {
                 {p && p.username ? (
                     <Link
                         href={p && p.username}
-                        className={`position-${position} position text-center rounded-[20px] md:rounded-[40px] border-2 
-                            md:border-4 border-[#F94F97] !shadow-none shadow-pinks bg-white`}
+                        className={`position-${position} position text-center rounded-[20px] md:rounded-[30px]  
+                              border-[#F94F97] !shadow-none shadow-pinks bg-white m-0`}
                     >
-                        <div className="profile p-3 pb-0">
+                        <div className="profile p-2 sm:p-3 pb-0">
                             <div className="position-relative">
                                 {position == 1 ? (
                                     <div
@@ -104,13 +104,13 @@ export default function Board(props) {
                                 </div>
                             </div>
                             <div className="profile-content">
-                                <h2 className=" text-large pt-2 capitalize  justify-center">
+                                <h2 className=" !text-sm sm:!text-lg font-bold pt-2 capitalize  justify-center">
                                     {(p && p.name) || "Anonymous"}  
                                     {p?.role == 1 && p?.profile_status_lock === 2 ? 
                                         <RiVerifiedBadgeFill  size={'1.2rem'} className="ms-1 inline-block text-pink" />
                                         : ''}
                                 </h2>
-                                <h2 className=" text-sm capitalize text-gray-500 mb-3 flex justify-center">
+                                <h2 className="!text-[10px] sm:!text-sm capitalize text-gray-500 mb-3 flex justify-center">
                                     @{p && p.username} 
                                 </h2>
                                 <p className="toppercentage text-center font-gulfs">
@@ -118,19 +118,19 @@ export default function Board(props) {
                                 </p>
                             </div>
                             {position === 1 ? 
-                                <div className={`rank-position  `}>
+                                <div className={`rank-position p-1  `}>
                                     <h2 className="font-gulfs !text-[80px] md:!text-[95px] xl:!text-[130px]">{position}</h2>
                                 </div>
                                 : ''
                             }
                             {position === 2 ? 
-                                <div className={`rank-position  `}>
+                                <div className={`rank-position p-1  `}>
                                     <h2 className="font-gulfs  !text-[45px] md:!text-[60px] xl:!text-[80px]">{position}</h2>
                                 </div>
                                 : ''
                             }
                             {position === 3 ? 
-                                <div className={`rank-position  `}>
+                                <div className={`rank-position p-1  `}>
                                     <h2 className="font-gulfs  !text-[30px] md:!text-[35px] xl:!text-[50px]">{position}</h2>
                                 </div>
                                 : ''
@@ -179,15 +179,15 @@ export default function Board(props) {
             <Head title={"Leaderboard"} />
             <div className="bg-white pt-4">
                 <div className="containerbox pb-5 pt-2 ">
-                    <h1 className="text-bl font-GillSans text-start text-4xl my-6 uppercase text-black ">
+                    <h1 className="text-bl font-GillSans text-center xl:!text-start text-3xl lg:text-4xl my-6 uppercase text-black ">
                         Leaderboard
                     </h1>
                     <div className="row">
                         <div className="col-xl-8 mb-4">
-                            <div className="pe-md-4">
-                                <div className="p-2 md:p-4 pinkbg rounded-[30px] mb-6">
+                            <div className=" ">
+                                <div className="p-2  md:!p-6 pinkbg rounded-[30px] mb-6">
                                     <div className="pt-4 pt-md-0  mt-6   mb-4 pb-4">
-                                        <h1 className="text-bl btn-shadow text-center font-GillSans  text-3xl mb-3 uppercase text-white ">
+                                        <h1 className="text-bl btn-shadow text-center font-GillSans  text-2xl md:text-3xl  mb-3 uppercase text-white ">
                                             Top Creators Getting <br></br> the Most Love
                                         </h1>
                                         <div className="changePeriod w-full">
@@ -209,7 +209,7 @@ export default function Board(props) {
                                     <div
                                         className={`${
                                             loading ? "loading-state" : ""
-                                        }  postions pb-3 sm:pb-3 lg:pb-5 pt-5 mt-3`}
+                                        }  postions grid grid-cols-3 !gap-2 md:!gap-4 pt-[10px] md:pt-[50px] `}
                                     >
                                         {positions && positions[1] ? (
                                             <Position
