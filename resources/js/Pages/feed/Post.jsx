@@ -19,7 +19,7 @@ export default function Post({item}) {
   const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
 
   function posturl (){
-    if(item && item.is_lock === 0){
+    if(IsloggedIn || item && item.is_lock === 0){
       return item.image_url
     } else {
       if(item && item.for_module == 'membership'){
@@ -97,7 +97,6 @@ export default function Post({item}) {
         {item && item.type =='image' ?
           <div className='post-images lazywrap position-relative  w-full' >
               <span className='rounded-xl pinkbg position-absolute py-1 px-2 top-3 right-3 text-uppercase text-[10px] text-light ' >{postBadge()}</span>
-
               <LazyLoadImage
               effect="blur"
               width='400' height='400' alt='spenny piggy'

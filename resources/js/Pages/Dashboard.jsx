@@ -449,7 +449,7 @@ export default function Dashboard(props) {
                             <Userprofile IsloggedIn={IsloggedIn} />
                         </div>
 
-                            {user && user?.role == 1 && IsloggedIn && showAlert ?
+                            {user && user?.role == 1 && AuthUserStripeConnected == 1 && IsloggedIn && showAlert ?
                                 <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-lg">
                                     <div>
                                         <span className="font-medium">Stripe Policy Notice:</span> To comply with Stripe's requirements, you must regularly post content related to memberships, billing, and subscriptions. Accounts that do not may be suspended.
@@ -463,8 +463,6 @@ export default function Dashboard(props) {
                                     </div>
                                 </div>
                             : ''}
-
-
 
 
                             {user && user.role == 1 ?

@@ -173,9 +173,9 @@ export default function AddBills(props) {
                                     <label className="mb-2 text-start d-block">
                                         Price{" "}
                                     </label>
-                                    <div className="currency-wrapper dollar position-relative">
-                                        <span className="currency-tag ">$
-                                            {/* {defaultCurrency} */}
+                                    <div className="currency-wrapper dollar-symbols position-relative">
+                                        <span className="currency-tag "> 
+                                            {defaultCurrency}
                                         </span>
                                         <input
                                             id="price"
@@ -186,21 +186,22 @@ export default function AddBills(props) {
                                                 (item && item.price) ||
                                                 data.price
                                             }
-                                            className="form-input px-2 py-2 border w-full rounded-md"
+                                            className="form-input px-2 py-2 pl-8 border w-full rounded-md"
                                             autoComplete="price"
                                             onChange={(e) =>
                                                 setData("price", e.target.value)
                                             }
                                         />
                                     </div>
-                                    {defaultCurrency !== 'USD' &&
+                                    {/* {defaultCurrency !== 'USD' && */}
                                     <p className="mt-1">
                                         The Bill amount is set to{" "}
                                         {formatMultiPrice(
                                             data.price,
                                             defaultCurrency
                                         )}.
-                                    </p> }
+                                    </p> 
+                                    {/* // } */}
                                 </li>
 
                                 <li className="mb-4">

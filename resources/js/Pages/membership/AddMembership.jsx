@@ -215,8 +215,8 @@ export default function AddMembership({updateState, item, text, classes}) {
 
                       <div className="col-md-12 form-field mb-4">
                           <label className="d-block text-start mb-2">{data && data.level =='lifetime' ? "Lifetime membership price" : 'Monthly Price'}</label>
-                          <div className="position-relative  currency-wrapper dollar" >
-                            <span className="currency-tag">{'$'}</span>
+                          <div className="position-relative  currency-wrapper dollar-simbols" >
+                            <span className="currency-tag">{defaultCurrency}</span>
                             <input className="form-input w-100 rounded"
                                 onChange={handleInput} defaultValue={item && item.price || ''}
                                 type="number" name="month_price"

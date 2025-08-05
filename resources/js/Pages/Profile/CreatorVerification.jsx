@@ -150,9 +150,9 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 Update at least one social media handle to help
                                 fans connect with you. 
                             </p>
-                            <p className="text-red-500 text-[14px]">
+                            {!hasAnySocialMedia && <p className="text-red-500 text-[14px]">
                                 It must show an active account. Older than 6 months.
-                            </p>
+                            </p>}
                         </div>
                     </div>
                     {!hasAnySocialMedia && <Social links={slinks} />}
