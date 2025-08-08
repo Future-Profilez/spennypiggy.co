@@ -137,27 +137,26 @@ class CheckoutController extends Controller
                 $storeTax = $platformFeeAmount + $StoreAdminsFees * $dd->quantity;
                 $storeTaxWithQuantity = $storeTax * $dd->quantity;
 
-                $lineItems = [
-                    // Your main product
-                    [
-                        'quantity' => $dd->quantity,
-                        'price_data' => [
-                            'currency' => $currency,
-                            'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
-                            'unit_amount_decimal' => round($totalAmount * 100),
-                        ]
-                    ],
-                    // Platform fee + Vat as a separate item
-                    [
-                        'quantity' => 1,
-                        'price_data' => [
-                            'currency' => $currency,
-                            'product_data' => [
-                                'name' => 'Platform Fee',
-                            ],
-                            'unit_amount' => round($showTaxWithQuantity * 100),
-                            'tax_behavior' => 'exclusive',
+                // Add items to line items array instead of overwriting
+                $lineItems[] = [
+                    'quantity' => $dd->quantity,
+                    'price_data' => [
+                        'currency' => $currency,
+                        'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
+                        'unit_amount_decimal' => round($totalAmount * 100),
+                    ]
+                ];
+                
+                // Add platform fee as separate line item for each product
+                $lineItems[] = [
+                    'quantity' => 1,
+                    'price_data' => [
+                        'currency' => $currency,
+                        'product_data' => [
+                            'name' => 'Platform Fee - ' . ($dd->wish->wishname ?? 'Item'),
                         ],
+                        'unit_amount' => round($showTaxWithQuantity * 100),
+                        'tax_behavior' => 'exclusive',
                     ],
                 ];
 
@@ -314,6 +313,10 @@ class CheckoutController extends Controller
                 $payment_data->refresh();
 
                 $symbol = Currency::where('iso', strtoupper($payment_data->payment->currency))->first();
+                if (!$symbol) {
+                    Log::error("Currency not found for ISO: " . strtoupper($payment_data->payment->currency));
+                    return redirect(route('user.show', [$stripeid->owner->username ?? $getdata[0]->owner->username]))->with('error', 'Currency configuration error. Please contact support.');
+                }
                 $vat_percentage = $dd->owner ? $dd->owner->vat_amount_percentage : 0; // Default to 0 if not set
 
                 $tax = $stripeid->amount_subtotal * config('app.single_tax') / 100;
@@ -368,7 +371,12 @@ class CheckoutController extends Controller
 
             if (Auth::check()) {
                 $curr = Currency::where('iso', strtoupper($currency))->first();
-                CheckoutMailToUser::dispatch($stripeid, $curr->symbol);
+                if ($curr) {
+                    CheckoutMailToUser::dispatch($stripeid, $curr->symbol);
+                } else {
+                    Log::warning("Currency not found for checkout email: " . strtoupper($currency));
+                    CheckoutMailToUser::dispatch($stripeid, '£'); // Default fallback
+                }
             }
 
             return redirect(route('thank-you', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');

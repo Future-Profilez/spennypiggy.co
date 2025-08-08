@@ -9,29 +9,41 @@
                   <table width="100%" cellspacing="0" cellpadding="0" border="0"
                      style="max-width: 296px; width: 100%; text-align: center;">
                      <tr>
-                           <td style=" font-weight: bold; font-size: 18px; color:#000; line-height: 26px; padding: 0 0 25px 0; text-align: center;">
-                              {{ $mem->anonymous == 1 ? 'Someone' : ucfirst($mem->user->name) }} subscribed to your <span style="color: #8C52FF"> {{ ucwords(str_replace('_',' ',$mem->membership->level)) }} </span> Membership of {{ $amountWithCurr }} on Spenny Piggy 🐷🎁!
+                           <td style="font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
+                              New <span style="color: #8C52FF">Membership!</span> 🎉🐷
+                           </td>
+                     </tr>
+                     <tr>
+                         <td style="line-height:20px;height:20px;"></td>
+                     </tr>
+                     <tr>
+                         <td style="padding: 0 0 25px 0; text-align: center;">
+                             <img style="max-width: 200px;" src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" alt="Membership Gift">
+                         </td>
+                     </tr>
+                     <tr>
+                           <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
+                              <strong style="color:#8C52FF;">{{ $mem->anonymous == 1 ? 'Someone' : ucfirst($mem->user->name) }}</strong> subscribed to your <strong style="color:#8C52FF;">{{ ucwords(str_replace('_',' ',$mem->membership->level)) }}</strong> Membership!<br><br>
+                              They purchased it for <strong style="color:#8C52FF;">{{ $amountWithCurr }}</strong> on Spenny Piggy.
                            </td>
                      </tr>
          
                      <tr>
-                           <td style=" font-weight: normal; font-size: 14px; color:#4D4D4D; text-align: center; line-height: 20px; padding-bottom: 25px;">
-                              {{ $mem->anonymous == 1 ? 'Someone' : ucfirst($mem->user->name) }} has just bought a new membership for you.
-                              <a href="{{ env('APP_URL') . '/' . $mem->user->username }}" style="color: #8C52FF; text-decoration: underline;">
-                                 Send them a message
-                              </a> and say thanks!
+                           <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
+                              {{ $mem->anonymous == 1 ? 'Someone' : ucfirst($mem->user->name) }} has just bought a new membership for you. <a href="{{ env('APP_URL') . '/' . $mem->user->username }}" style="color:#F94F97; text-decoration:none;">Send them a message</a> and say thanks!
                            </td>
                      </tr>
          
                      <tr>
-                           <td style="padding: 0 0 20px 0;  font-weight: normal; font-size: 14px; color: #4D4D4D; text-align: center; line-height: 18px;">
-                              Go to <a href="{{ env('APP_URL') . '/wish-tracker' }}">Spenny Piggy</a> to manage your current Memberships.</td>
+                           <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
+                              Visit <a href="{{ env('APP_URL') . '/wish-tracker' }}" style="color:#F94F97; text-decoration:none;">Spenny Piggy</a> to manage your current memberships.
+                           </td>
                      </tr>
                      <tr style="line-height: 10px; height: 10px;"><td></td></tr>
          
                      <tr>
                            <td style="padding:0 0 10px 0; text-align: center;">
-                              <a href="{{ env('APP_URL') . '/wish-tracker' }}" style="border-radius:30px;padding: 13px 25px 13px 25px;border:none;background-color:#f94f97;font-family:Arial;font-weight:bold;font-size: 15px;text-align:center;color:#ffffff;text-decoration: none;">My Account.</a>
+                              <a href="{{ env('APP_URL') . '/wish-tracker' }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Manage Memberships</a>
                            </td>
                      </tr>
                      <tr style="line-height: 10px; height: 10px;"><td></td></tr>

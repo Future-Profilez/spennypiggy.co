@@ -1,7 +1,7 @@
 <html>
 
 <head>
-    <title>{{ $title ?? 'spenny Piggy Emails' }}</title>
+    <title>{{ $title ?? 'Spenny Piggy Emails' }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
@@ -130,7 +130,7 @@
                                                 <td><img src="https://ucarecdn.com/fcce9347-a23a-495e-b6c3-b3a71360b9f9/lockicon.png" alt="img"></td>
                                                 <td
                                                     style="color:#8C52FF; font-family: Arial; font-size:12px; font-style: normal; font-weight: 400; line-height: normal;">
-                                                    SSl Encryption</td>
+                                                    SSL Encryption</td>
                                             </tr>
                                         </table>
                                     </td>
@@ -139,7 +139,7 @@
                                             <tr>
                                                 <td><img src="https://ucarecdn.com/be624d04-6b8d-485b-ac21-b20fd0c0d5bc/pciimg.png" alt="img"></td>
                                                 <td style="color:#8C52FF; font-family: Arial; font-size:12px; font-style: normal; font-weight: 400; line-height: normal;">
-                                                    SSl Encryption</td>
+                                                    PCI Compliant</td>
                                             </tr>
                                         </table>
                                     </td>
@@ -155,15 +155,15 @@
                     <tr>
                         <td
                             style="padding:0 0 10px 0; font-family: Arial; font-weight: normal;font-size: 12px; line-height: 18px;color: #666666; text-align: center;">
-                            To stop receiving notification emails, Please <a
-                                href="www.spennypiggy.co" style="color:#5D25FD">click here</a>
+                            To stop receiving notification emails, please <a
+                                href="https://spennypiggy.co/unsubscribe" style="color:#5D25FD">click here</a>
                         </td>
                     </tr>
 
                     <tr>
                         <td
                             style="padding:0 0 10px; font-family: Arial; font-weight: normal; font-size: 12px; line-height: 18px; color: #666666; text-align: center; ">
-                            Copyright &copy; 2023 Spenny Piggy
+                            Copyright &copy; 2024 Spenny Piggy. All rights reserved.
                         </td>
                     </tr>
                 </table>

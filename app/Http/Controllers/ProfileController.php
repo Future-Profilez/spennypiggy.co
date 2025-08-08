@@ -452,11 +452,19 @@ class ProfileController extends Controller
     public function notificationSwitch()
     {
         $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'User not found.'
+            ], 404);
+        }
+        
         if ($user->notification_send == 0) {
-            $user->notification_send == 1;
+            $user->notification_send = 1;
             $status = 'Enabled';
         } else {
-            $user->notification_send == 0;
+            $user->notification_send = 0;
             $status = 'Disabled';
         }
 
@@ -509,7 +517,7 @@ class ProfileController extends Controller
             if (count($common) > 0) {
                 return response()->json([
                     'status' => false,
-                    'msg' => 'Your content contains the nudity. Please try alernative.'
+                    'msg' => 'Your content contains nudity. Please try an alternative.'
                 ]);
             }
         }
@@ -570,7 +578,7 @@ class ProfileController extends Controller
      */
     public function getIntroVideo()
     {
-        $intro = UserIntro::firstWhere(Auth::id());
+        $intro = UserIntro::where('user_id', Auth::id())->first();
 
         return response()->json([
             'status' => true,
@@ -585,7 +593,15 @@ class ProfileController extends Controller
      */
     public function removeIntro()
     {
-        $intro = UserIntro::whereUserId(Auth::id())->first();
+        $intro = UserIntro::where('user_id', Auth::id())->first();
+        
+        if (!$intro) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'No intro video found to remove.'
+            ], 404);
+        }
+        
         $intro->delete();
 
         return response()->json([

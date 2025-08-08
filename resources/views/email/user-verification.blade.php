@@ -2,50 +2,49 @@
 @extends('email.default-2')
 @section('content')
 <tr>
-         <td align="center" style="padding:10px 10px 20px 10px;">
-             <table cellspacing="0" cellpadding="0" border="0"
-                 style="width: 100%; text-align: center;">
-                 <tr>
+        <td align="center" style="padding:10px 10px 20px 10px;">
+            <a href="{{ env('APP_URL') . '/' }}">
+                <img width="119" src="https://ucarecdn.com/2c2af8ee-fbdb-4d38-9ba4-3de474410a20/emaillogo.png" style="border:none" alt="Spenny Piggy Logo">
+            </a>
+        </td>
+    </tr>
+    <tr>
+        <td align="center" style="padding:10px 10px 20px 10px;">
+            <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 400px; width: 100%; text-align: center;">
+                <tr>
+                    <td style="font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
+                        Verify Your <span style="color: #8C52FF">Email</span> ✉️✨
+                    </td>
+                </tr>
+                <tr>
                     <td style="line-height:20px;height:20px;"></td>
                 </tr>
-     
-                 <tr>
-                     <td style=" padding: 0 0 25px 0; text-align: center;"><img
-                           style="max-width: 200px;"  src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" alt="img"></td>
-                 </tr>
-                 <tr>
-                     <td
-                         style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                         <b>Hello {{ $data['name'] ?? 'user' }}</b><br></br>
-                             <span style="color:#F94F97 ">
-                             <b>Click on the given below button to verify your email</b>
-                             </span>
-                     </td>
-                 </tr>
-     
-                 <tr>
-                     <td style="line-height:20px;height:20px;"></td>
-                 </tr>
-     
-                 <tr>
-                     <td>
-                         <a
-                             href="{{ env('APP_URL') }}/user/{{ $data['uuid'] }}"
-                             style="border-radius:30px;background-color:#F94F97;color:white;border:none; padding:13px 30px 13px 30px; width: 210px;
-                             text-decoration:none; border:none;background-color: #F94F97;
-                              font-weight: bold; font-size:
-                             15px; text-align: center; color:#ffffff; cursor: pointer;"
-                         >Verify Email</a>
-     
-                     </td>
-                 </tr>
-                 <tr>
-                    <td style="line-height:20px;height:20px;"></td>
+                <tr>
+                    <td style="padding: 0 0 25px 0; text-align: center;">
+                        <img style="max-width: 200px;" src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" alt="Email Verification">
+                    </td>
                 </tr>
-     
-             </table>
-         </td>
-     </tr>
+                <tr>
+                    <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
+                        Hello <strong style="color:#8C52FF;">{{ $data['name'] ?? 'there' }}</strong>!<br><br>
+                        Welcome to Spenny Piggy! Please verify your email address to get started.
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
+                        Click the button below to confirm your email address and activate your account. This helps us keep your account secure.
+                    </td>
+                </tr>
+                <tr style="line-height: 10px; height: 10px;"><td></td></tr>
+                <tr>
+                    <td style="padding:0 0 10px 0; text-align: center;">
+                        <a href="{{ env('APP_URL') }}/user/{{ $data['uuid'] }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Verify Email Address</a>
+                    </td>
+                </tr>
+                <tr style="line-height: 10px; height: 10px;"><td></td></tr>
+            </table>
+        </td>
+    </tr>
 
 @endsection
 

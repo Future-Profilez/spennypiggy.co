@@ -46,7 +46,25 @@ class CheckAdultContent implements ShouldQueue
             'Authorization' => 'Uploadcare.Simple ' . env('UPLOADCARE_PUBLIC_KEY') . ':' . env('UPLOADCARE_SECRET_KEY'),
         ])->get("https://api.uploadcare.com/files/". $this->wish->thumbnail ."/?include=appdata");
 
+        if (!$response->successful()) {
+            Log::error('Uploadcare API failed for wish thumbnail check', [
+                'wish_id' => $this->wish->id,
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+            return;
+        }
+
         $data = $response->json();
+        
+        if (!isset($data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'])) {
+            Log::warning('ModerationLabels not found in Uploadcare response', [
+                'wish_id' => $this->wish->id,
+                'response' => $data
+            ]);
+            return;
+        }
+        
         $tags = $data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'];
 
         $rest = false;

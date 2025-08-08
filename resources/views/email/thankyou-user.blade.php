@@ -11,8 +11,8 @@
                     src="https://ucarecdn.com/9833ac18-d610-44de-8c9a-8ca9371f15a0/thankyouimage.png" alt="img"></td>
                 </tr>
                 <tr>
-                    <td style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 22px; line-height: 30px;  color:F94F97; text-align: left; text-align: center;">
-                        <br className="text-transform:capitalize;color:#F94F97 "> {{ $payment->payment->owner->name }} sent you <br></br> a Thank You message.</b>
+                    <td style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold; font-size: 22px; line-height: 30px; color:#F94F97; text-align: center;">
+                        <strong style="color:#F94F97; text-transform: capitalize;">{{ $payment->payment->owner->name }}</strong> sent you<br><br>a Thank You message! ✨
                     </td>
                 </tr>
                 <tr>
@@ -24,9 +24,8 @@
                 @if (!empty($payment->thankyou_message))
                 <tr>
                     <td
-                        style="padding: 0 0 15px 0;  font-weight: normal;
-                        font-size: 16px; line-height: 24px;  color:#000000; text-align: left; text-align: center;">
-                        <b className="text-transform:capitalize">{{ $payment->thankyou_message }}</b>
+                        style="padding: 15px 20px; font-family: Arial; font-weight: normal; font-size: 16px; line-height: 24px; color:#333333; text-align: center; background-color: #f8f9fa; border-radius: 8px; margin: 10px 0;">
+                        <em style="font-style: italic; color:#555;">"{{ $payment->thankyou_message }}"</em>
                     </td>
                 </tr>
                 @endif
@@ -46,8 +45,8 @@
 
                             @if ($payment->media_type == 'video')
                             <tr>
-                                <td style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 18px; line-height: 27px;  color:#000000; text-align: left; text-align: center;">
-                                    <b className="text-transform:capitalize">{{ $payment->payment->owner->name }} has attached a video message.Click "See Message" to find the video message.</b>
+                                <td style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold; font-size: 18px; line-height: 27px; color:#000000; text-align: center;">
+                                    <strong>{{ $payment->payment->owner->name }}</strong> has attached a video message.<br><br>Click "See Message" below to view the video message.
                                 </td>
                             </tr>
                             @endif
@@ -61,11 +60,8 @@
                 </tr>
                 <tr>
                     <td style="padding:0 0 10px 0; text-align: center;">
-                        <a href="{{env('APP_URL')/wish-tracker}"
-                            style="padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97;
-                             font-weight: bold;
-                            font-size: 15px; text-align: center; border-radius:30px;
-                            color:#ffffff !important; cursor: pointer;">See Message</a>
+                        <a href="{{ env('APP_URL') . '/wish-tracker' }}"
+                            style="padding:13px 30px; border-radius:30px; text-decoration:none; border:none; background-color: #F94F97; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer; display: inline-block;">See Message</a>
                     </td>
                 </tr>
 

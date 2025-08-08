@@ -24,13 +24,13 @@
  
                      <td
                          style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                         Thank’s for topping up {{ $tip->creator->name }}'s Tip Jar with {{ $symbol }}{{ $amount }}! You’ve just made their day a little brighter 😍🎁
+                        Thanks for topping up {{ $tip->creator->name }}'s Tip Jar with <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($amount, 2) }}</strong>!<br><br>You've just made their day a little brighter 😍🎁
                      </td>
                  </tr>
                  <tr>
                      <td
                          style="padding: 0 0 20px 0;  font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                         Go to <a href="{{ env('APP_URL') . '/' }}">Spenny Piggy</a> and discover more creators wishes to fulfil! Check out their profile Intros, memberships and more! </td>
+                         Visit <a href="{{ env('APP_URL') . '/' }}" style="color:#F94F97; text-decoration:none;">Spenny Piggy</a> to discover more creators' wishes to fulfill! Check out their profiles, intros, memberships, and more.
                  </tr>
                  @if (!empty($tip->message))
                      <tr>

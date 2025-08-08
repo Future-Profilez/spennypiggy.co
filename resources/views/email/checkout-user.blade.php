@@ -10,9 +10,12 @@
                  <tr>
                      <td
                          style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                         <span style="color:#F94F97 ">
-                             Thank you for granting {{ $data->owner->name }}'s wish of {{ $curr }}{{ $data->amount_subtotal }} on Spenny Piggy 🐷🎁
-                         </span>
+                        <span style="color:#F94F97; font-weight: bold;">
+                            Thank you for granting {{ $data->owner->name }}'s wish!
+                        </span><br><br>
+                        <span style="color:#141414;">
+                            Your generous gift of {{ $curr }}{{ number_format($data->amount_subtotal, 2) }} has made their day brighter 🎁✨
+                        </span>
                      </td>
                  </tr>
                  <tr>

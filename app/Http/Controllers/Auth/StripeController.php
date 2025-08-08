@@ -872,6 +872,10 @@ class StripeController extends Controller
             if ($session->payment_status == 'paid') {
 
                 $symbol = Currency::where('iso', strtoupper($sub->currency))->first();
+                if (!$symbol) {
+                    Log::error("Currency not found for ISO: " . strtoupper($sub->currency));
+                    return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('error', 'Currency configuration error. Please contact support.');
+                }
                 $creatorAmount = $sub->amount + $sub->vat_tax_amount;
                 $creatorFinalAmount = $symbol->symbol . $creatorAmount;
                 $amountTotal = $symbol->symbol . $sub->amount;
@@ -1301,6 +1305,12 @@ class StripeController extends Controller
             if ($session->payment_status == 'paid') {
                 $ownerCurrency = Currency::where('iso', strtoupper($tip_pay->currency))->first();
                 $userCurrency = Currency::where('iso', strtoupper($currency))->first();
+                
+                if (!$ownerCurrency || !$userCurrency) {
+                    Log::error("Currency not found - Owner: " . strtoupper($tip_pay->currency) . ", User: " . strtoupper($currency));
+                    return to_route('user.show', ['username' => $tip_pay->creator->username])->with('error', 'Currency configuration error. Please contact support.');
+                }
+                
                 $userAmount = Helpers::priceFormat($tip_pay->currency, $tip_pay->amount, $currency);
                 $creatorAmount = Helpers::priceFormat($tip_pay->currency, $tip_pay->amount, $currency);
 
@@ -1327,15 +1337,8 @@ class StripeController extends Controller
                 /****************************TIP**JAR**PWA**ENDS****************************************************/
 
                 if (!empty($tip_pay->tipGoal)) {
-
-                    if (!empty($tip_pay->tipGoal)) {
-                        $tip_pay->tipGoal->fullfilled += $tip_pay->amount;
-                        $tip_pay->tipGoal->save();
-
-                        if ($tip_pay->tipGoal->user->auto_tweet == 1) {
-                            TipJarTweet::dispatch($tip_pay);
-                        }
-                    }
+                    $tip_pay->tipGoal->fullfilled += $tip_pay->amount;
+                    $tip_pay->tipGoal->save();
 
                     if ($tip_pay->tipGoal->user->auto_tweet == 1) {
                         TipJarTweet::dispatch($tip_pay);

@@ -49,11 +49,25 @@ class Helpers
     public static function priceFormat($currency1, $amount, $currency2)
     {
         $def = Currency::where('ISO', strtoupper($currency1))->first();
-
         $prof = Currency::where('ISO', strtoupper($currency2))->first();
 
-        $gbp_price = $amount / $def->conversion_rate;
+        if (!$def || !$prof) {
+            Log::error('Currency not found', [
+                'currency1' => $currency1,
+                'currency2' => $currency2
+            ]);
+            return $amount; // Return original amount if currencies not found
+        }
 
+        if ($def->conversion_rate == 0) {
+            Log::error('Division by zero prevented in priceFormat', [
+                'currency1' => $currency1,
+                'conversion_rate' => $def->conversion_rate
+            ]);
+            return $amount; // Return original amount to prevent division by zero
+        }
+
+        $gbp_price = $amount / $def->conversion_rate;
         $prof_cur_price = $prof->conversion_rate * $gbp_price;
 
         return round($prof_cur_price, 2, PHP_ROUND_HALF_UP);
@@ -61,8 +75,9 @@ class Helpers
 
     public static function checkUnsafeContent($uuid)
     {
-
-        $rest_words = ['adult', '18+', 'pornographic', 'XXX', 'NSFW', 'blood', 'brutality', 'explicit', 'mature', 'weapons', 'aggression', 'combat', 'adult', 'adult', 'adult',];
+        // Remove duplicate entries from restricted words
+        $rest_words = ['adult', '18+', 'pornographic', 'XXX', 'NSFW', 'blood', 'brutality', 'explicit', 'mature', 'weapons', 'aggression', 'combat'];
+        
         Http::withHeaders([
             'Content-Type' => 'application/json',
             'Accept' => 'application/vnd.uploadcare-v0.7+json',
@@ -71,28 +86,42 @@ class Helpers
             'target' => $uuid,
         ]);
 
-
         $response = Http::withHeaders([
             'Accept' => 'application/vnd.uploadcare-v0.7+json',
             'Authorization' => 'Uploadcare.Simple ' . env('UPLOADCARE_PUBLIC_KEY') . ':' . env('UPLOADCARE_SECRET_KEY'),
         ])->get("https://api.uploadcare.com/files/$uuid/?include=appdata");
 
-        $data = $response->json();
-        $tags = $data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'];
+        if (!$response->successful()) {
+            Log::error('Uploadcare API failed in checkUnsafeContent', [
+                'uuid' => $uuid,
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+            return false; // Return false if API fails
+        }
 
-        $rest = false;
+        $data = $response->json();
+        
+        if (!isset($data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'])) {
+            Log::warning('ModerationLabels not found in checkUnsafeContent', [
+                'uuid' => $uuid,
+                'response' => $data
+            ]);
+            return false;
+        }
+        
+        $tags = $data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'];
 
         foreach ($tags as $key => $tag) {
             $name = explode(" ", $tag['Name']);
-
             $common = array_intersect($rest_words, $name);
 
             if (count($common) > 0) {
-                $rest = true;
+                return true;
             }
         }
 
-        return $rest;
+        return false;
     }
 
     public static function getCurrency($currency)

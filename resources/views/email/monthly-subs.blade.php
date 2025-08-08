@@ -9,9 +9,8 @@
                <table width="100%" cellspacing="0" cellpadding="0" border="0"
                   style="max-width: 296px; width: 100%; text-align: center;">
                   <tr>
-                        <td style=" font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align:
-                        center;">
-                           <span style="color: #8C52FF">Payment </span>{{ $sub->status }} on <br> Spenny Piggy 🎁
+                        <td style="font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
+                           Payment <span style="color: #8C52FF">{{ ucfirst($sub->status) }}</span> 💳🎁
                         </td>
                   </tr>
                   <tr>
@@ -19,16 +18,32 @@
                   </tr>
       
                   <tr>
-                        <td style=" padding: 0 0 25px 0; text-align: center;"><img style="max-width: 200px;"
-                              src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" alt="img"></td>
-                  </tr>
-                  <tr>
-                        <td style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                           Hello {{ $sub->name }}! <br><br>
-                           Your payment for monthly subscription is {{ $sub->status }} on Spenny Piggy.
+                        <td style="padding: 0 0 25px 0; text-align: center;">
+                            <img style="max-width: 200px;" src="https://ucarecdn.com/84ef1131-a3fe-434c-a234-bd77f9590e7c/gifticon.png" alt="Payment Status">
                         </td>
                   </tr>
-                  <br>
+                  <tr>
+                        <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
+                           Hello <strong style="color:#8C52FF;">{{ $sub->name }}</strong>!<br><br>
+                           Your payment for monthly subscription is <strong style="color:#8C52FF;">{{ $sub->status }}</strong> on Spenny Piggy.
+                        </td>
+                  </tr>
+                  <tr>
+                        <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
+                           @if($sub->status == 'successful' || $sub->status == 'completed')
+                               Thank you for your continued support! Your subscription helps creators achieve their dreams.
+                           @else
+                               Don't worry - you can update your payment method anytime. Visit your account to manage your subscriptions.
+                           @endif
+                        </td>
+                  </tr>
+                  <tr style="line-height: 10px; height: 10px;"><td></td></tr>
+                  <tr>
+                        <td style="padding:0 0 10px 0; text-align: center;">
+                            <a href="{{ env('APP_URL') . '/wish-tracker' }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Manage Subscriptions</a>
+                        </td>
+                  </tr>
+                  <tr style="line-height: 10px; height: 10px;"><td></td></tr>
                </table>
             </td>
       </tr>

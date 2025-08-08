@@ -25,22 +25,22 @@
                      @if ($data->wish_item_id == null)
                      <td
                          style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                         Lucky you! <br></br>
-                         @if ($data->payment->anonymous == 0)
-                         {{ $anon == false ? ucwords($data->cart->user->name) : $anonname }} just granted you a surprise gift on Spenny Piggy for {{ $symbol }}{{ $data->amount}} 🎁🥳 .
-                         @else
-                         Anonymous user just granted you a surprise gift on Spenny Piggy for {{ $symbol }}{{ $data->amount}} 🎁🥳 .
-                         @endif
+                        <span style="color:#F94F97; font-weight: bold;">Lucky you!</span><br><br>
+                        @if ($data->payment->anonymous == 0)
+                        <strong>{{ $anon == false ? ucwords($data->cart->user->name) : $anonname }}</strong> just granted you a surprise gift on Spenny Piggy for <span style="color:#8C52FF; font-weight: bold;">{{ $symbol }}{{ number_format($data->amount, 2) }}</span> 🎁🥳
+                        @else
+                        An <strong>anonymous user</strong> just granted you a surprise gift on Spenny Piggy for <span style="color:#8C52FF; font-weight: bold;">{{ $symbol }}{{ number_format($data->amount, 2) }}</span> 🎁🥳
+                        @endif
                      </td>
                      @else
                      <td
                          style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                         Lucky you! <br></br>
-                         @if ($data->payment->anonymous == 0)
-                         {{ $anon == false ? ucwords($data->cart->user->name) : $anonname }} just granted your wish {{ $data->wish->wishname ?? 'surprise gift' }} on Spenny Piggy for {{ $symbol }}{{ $data->amount}} 🎁🥳 .
-                         @else
-                         Anonymous user just granted your wish {{ $data->wish->wishname ?? 'surprise gift' }} on Spenny Piggy for {{ $symbol }}{{ $data->amount}} 🎁🥳 .
-                         @endif
+                        <span style="color:#F94F97; font-weight: bold;">Lucky you!</span><br><br>
+                        @if ($data->payment->anonymous == 0)
+                        <strong>{{ $anon == false ? ucwords($data->cart->user->name) : $anonname }}</strong> just granted your wish <em>"{{ $data->wish->wishname ?? 'surprise gift' }}"</em> on Spenny Piggy for <span style="color:#8C52FF; font-weight: bold;">{{ $symbol }}{{ number_format($data->amount, 2) }}</span> 🎁🥳
+                        @else
+                        An <strong>anonymous user</strong> just granted your wish <em>"{{ $data->wish->wishname ?? 'surprise gift' }}"</em> on Spenny Piggy for <span style="color:#8C52FF; font-weight: bold;">{{ $symbol }}{{ number_format($data->amount, 2) }}</span> 🎁🥳
+                        @endif
      
                      </td>
                      @endif

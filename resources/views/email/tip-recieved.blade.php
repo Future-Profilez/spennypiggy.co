@@ -24,15 +24,13 @@
  
                      <td
                          style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                         You just received a new tip of {{ $symbol }}{{ $tip->amount }} towards your tip jar goal on Spenny Piggy!🤑🎉
+                        You just received a new tip of <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($tip->amount, 2) }}</strong> towards your tip jar goal on Spenny Piggy! 🤑🎉
                      </td>
                  </tr>
                  <tr>
                      <td
                          style="padding: 0 0 20px 0;  font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                         Go to <a href="spennypiggy.co">Spenny Piggy</a> where you can see your granted tip, send a message
-                         to
-                         your gifter and share your gift on social media </td>
+                         Visit <a href="https://spennypiggy.co" style="color:#F94F97; text-decoration:none;">Spenny Piggy</a> where you can see your granted tip, send a message to your gifter, and share your gift on social media.
                  </tr>
                  @if (!empty($tip->message))
                      <tr>
