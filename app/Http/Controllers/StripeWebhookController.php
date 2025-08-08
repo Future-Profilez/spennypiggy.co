@@ -522,7 +522,7 @@ class StripeWebhookController extends Controller
         }
 
         $subs->save();
-        $subscriptionId = data_get($object, 'subscription');
+        // $subscriptionId = data_get($object, 'subscription');
         $customerName = data_get($object, 'customer_name');
         $invoicePdf = data_get($object, 'invoice_pdf');
         $customerEmail = $customer->email ?? null;
@@ -533,7 +533,7 @@ class StripeWebhookController extends Controller
             'uuid' => $subs->uuid,
             'invoice_pdf' => $invoicePdf,
             'notification' => $subs->user->notification_send ?? 0,
-            'renew_on' => $subs->currentPeriodStart,
+            'renew_on' => $currentPeriodStart,
             'trial_end' => $subs->current_end_trial_date,
             'amount' => $subs->amount ?? null,
             'currency' => $subs->currency ?? 'GBP',
@@ -557,22 +557,43 @@ class StripeWebhookController extends Controller
                 $previousStart = optional($subs->getOriginal('current_start_subscription_date'))?->timestamp ?? 0;
                 $trialEnd = optional($subscription)->trial_end ?? 0;
 
-                if ($nowStart > $previousStart) {
-                    if ($trialEnd > 0 && $nowStart > $trialEnd && $previousStart < $trialEnd) {
-                        $type = 'start'; // First time after trial ends
-                    } else {
-                        $type = 'renew'; // Any later renewals
-                    }
+                // Determine if this is first payment after trial
+                if (
+                    $status === 'active' &&
+                    $trialEnd > 0 &&
+                    $nowStart > $trialEnd &&
+                    $previousStart < $trialEnd
+                ) {
+                    $type = 'start';
                 } else {
-                    $type = 'renew'; // Fallback
+                    $type = 'renew';
                 }
-                if($type == 'renew') {
-                    Helpers::sendNotification('Subscription renewed 🎉', '🎉 Your subscription was renewed. Thank you for continuing your journey with Spenny Piggy!', $customerEmail ?? null);
-                } else { 
-                    Helpers::sendNotification('🎉 You’ve successfully started your subscription!', 'Get ready to unlock all premium features 🚀 — no limits, no restrictions!', $customerEmail ?? null);
+
+                // Ensure we don't send the same type twice for the same cycle
+                if ($subs->last_email_type !== $type) {
+                    if ($type === 'renew') {
+                        Helpers::sendNotification(
+                            'Subscription renewed 🎉',
+                            '🎉 Your subscription was renewed. Thank you for continuing your journey with Spenny Piggy!',
+                            $customerEmail ?? null
+                        );
+                    } else { 
+                        Helpers::sendNotification(
+                            '🎉 You’ve successfully started your subscription!',
+                            'Get ready to unlock all premium features 🚀 — no limits, no restrictions!',
+                            $customerEmail ?? null
+                        );
+                    }
+                    SendRenewMail::dispatch($array, $type, 'site');
+
+                    // Update record so next webhook won't send same email again
+                    $subs->last_email_type = $type;
+                    $subs->save();
+                } else {
+                    Log::info("Skipping duplicate {$type} email for subscription {$subscriptionId}");
                 }
-                SendRenewMail::dispatch($array, $type, 'site');
                 break;
+
 
             case 'invoice.payment_failed':
                 $subs->status = 'failed';
@@ -586,7 +607,7 @@ class StripeWebhookController extends Controller
                 break;
 
             case 'customer.subscription.deleted':
-                Log::info('Subscription deleted: {$subscriptionId}');
+                Log::info("Subscription deleted: {$subscriptionId}");
                 $subs->status = 'cancelled';
                 $subs->cancelled_at = now();
                 $subs->save();

@@ -8,6 +8,13 @@ export default function Countries({send}) {
         "currency": "EUR"
     },
     {
+        "code": "GB",
+        "label": "United Kingdom",
+        "phone": "44",
+        "currency": "GBP"
+    },
+
+    {
         "code": "AU",
         "label": "Australia",
         "phone": "61",

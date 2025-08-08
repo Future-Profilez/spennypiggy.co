@@ -1411,7 +1411,7 @@ class StripeController extends Controller
             return back()->with('error', 'Subscription not allowed for this user.');
         }
 
-        if (!$user->account_id) {
+        if (!$user->stripe_id) {
             $customer = StripeControl::createCustomer([
                 'email' => $user->email,
                 'name' => $user->name,
