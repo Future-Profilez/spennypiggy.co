@@ -12,11 +12,13 @@ export default function LeaderboardStars() {
   const { formatMultiPrice } = PriceFormat();
   const [ period, setPeriod] = useState('last24hour');
   const [ loading, setLoading] = useState(false);
+  const [ error, setError] = useState(null);
   const [ data, setData] = useState([]);
   const [ lists, setLists] = useState([]);
 
   const fetchGifts = (period) => {
     setLoading(true);
+    setError(null);
     axios.get(`leaderboard/star/lists`)
       .then((response) => {
          const l = response.data.data;
@@ -24,10 +26,12 @@ export default function LeaderboardStars() {
         if(l.length > 0){
            setLists(l.slice(0, 10));
         }
-        setLoading(false);
       })
       .catch((error) => {
         console.error("Error fetching gifts:", error);
+        setError("Failed to load top supporters. Please try again.");
+      })
+      .finally(() => {
         setLoading(false);
       });
   };
@@ -61,6 +65,32 @@ export default function LeaderboardStars() {
       </div>
     </div>
   );
+
+  if (loading) {
+    return (
+      <div className="bg-gray-100 rounded-[25px] p-4 d-flex justify-content-center align-items-center" style={{minHeight: '200px'}}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-gray-100 rounded-[25px] p-4 text-center">
+        <div className="alert alert-danger" role="alert">
+          {error}
+          <button 
+            className="btn btn-sm btn-outline-danger ms-2" 
+            onClick={() => fetchGifts(period)}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
    <>

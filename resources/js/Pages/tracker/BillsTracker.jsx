@@ -13,8 +13,12 @@ const defaultsec = "https://ucarecdn.com/55965522-e075-4ef3-8afc-195dacbf267b/";
 export default function BillsTracker({ auth }) {
     const { formatMultiPrice } = PriceFormat();
     const [bills, serBills] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     const fetchBills = () => {
+        setLoading(true);
+        setError(null);
         axios
             .get(`bill-tracker`)
             .then((resp) => {
@@ -22,6 +26,10 @@ export default function BillsTracker({ auth }) {
             })
             .catch((_err) => {
                 console.error("error", _err);
+                setError("Failed to load bill payments. Please try again.");
+            })
+            .finally(() => {
+                setLoading(false);
             });
     };
 
@@ -164,7 +172,7 @@ export default function BillsTracker({ auth }) {
                                                     "Surprise Gift"}
                                             </p>
                                             <p className="text-muted text-small">
-                                                OTY : {n.quantity || 1} x{" "}
+                                                QTY : {n.quantity || 1} x{" "}
                                                 {formatMultiPrice(
                                                     n.amount,
                                                     n?.currency || "gbp"
@@ -240,11 +248,37 @@ export default function BillsTracker({ auth }) {
             </>
         );
     };
+    if (loading) {
+        return (
+            <div className="tips d-flex justify-content-center align-items-center" style={{minHeight: '200px'}}>
+                <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="tips text-center" style={{minHeight: '200px'}}>
+                <div className="alert alert-danger" role="alert">
+                    {error}
+                    <button 
+                        className="btn btn-sm btn-outline-danger ms-2" 
+                        onClick={fetchBills}
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="tips ">
             {bills &&
                 bills.map((g, i) => {
-                    return <GoalItem n={g} />;
+                    return <GoalItem key={g.id || i} n={g} />;
                 })}
             {bills && bills.length < 1 ? (
                 <Nocontent text="nothing to see" />

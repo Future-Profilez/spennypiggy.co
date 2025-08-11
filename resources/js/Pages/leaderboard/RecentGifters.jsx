@@ -12,17 +12,21 @@ export default function RecentGifters() {
   const { formatMultiPrice } = PriceFormat();
   const [ period, setPeriod] = useState('last24hour');
   const [ loading, setLoading] = useState(false);
+  const [ error, setError] = useState(null);
   const [ data, setData] = useState([]);
 
   const fetchGifts = (period) => {
     setLoading(true);
+    setError(null);
     axios.get(`recent-gifters/${period}`)
       .then((response) => {
         setData(response.data.data);
-        setLoading(false);
       })
       .catch((error) => {
         console.error("Error fetching gifts:", error);
+        setError("Failed to load recent gifters. Please try again.");
+      })
+      .finally(() => {
         setLoading(false);
       });
   };
@@ -59,7 +63,25 @@ export default function RecentGifters() {
 
   return (
     <>
-    {data.length > 0 ? <div className="bg-gray-100 rounded-[25px] p-4 mb-6">
+    {loading ? (
+      <div className="bg-gray-100 rounded-[25px] p-4 mb-6 d-flex justify-content-center align-items-center" style={{minHeight: '200px'}}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    ) : error ? (
+      <div className="bg-gray-100 rounded-[25px] p-4 mb-6 text-center">
+        <div className="alert alert-danger" role="alert">
+          {error}
+          <button 
+            className="btn btn-sm btn-outline-danger ms-2" 
+            onClick={() => fetchGifts(period)}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    ) : data.length > 0 ? <div className="bg-gray-100 rounded-[25px] p-4 mb-6">
       <h2 className="text-bls font-GillSans text-start text-2xl uppercase text-dark ">Who just showed love?</h2>
       <p className='text-gray-500  mb-3'>Latest fans who has just show support.</p>
       

@@ -14,12 +14,19 @@ export default function MembershipTracker({auth}) {
 
    const { formatMultiPrice } = PriceFormat();
    const [membership, serMembership] = useState([]);
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState(null);
 
    const fetchMembership = () => {
+      setLoading(true);
+      setError(null);
       axios.get(`membership-tracker`).then(resp => {
          serMembership(resp.data.membership_payments);
       }).catch(_err => {
          console.error("error", _err);
+         setError("Failed to load membership payments. Please try again.");
+      }).finally(() => {
+         setLoading(false);
       });
    }
 
@@ -203,10 +210,36 @@ export default function MembershipTracker({auth}) {
                 </div>
       </>
    }
+   if (loading) {
+      return (
+         <div className="tips d-flex justify-content-center align-items-center" style={{minHeight: '200px'}}>
+            <div className="spinner-border text-primary" role="status">
+               <span className="visually-hidden">Loading...</span>
+            </div>
+         </div>
+      );
+   }
+
+   if (error) {
+      return (
+         <div className="tips text-center" style={{minHeight: '200px'}}>
+            <div className="alert alert-danger" role="alert">
+               {error}
+               <button 
+                  className="btn btn-sm btn-outline-danger ms-2" 
+                  onClick={fetchMembership}
+               >
+                  Retry
+               </button>
+            </div>
+         </div>
+      );
+   }
+
    return (
       <div className='tips '>
          {membership && membership.map((g, i)=>{
-            return <GoalItem n={g} />
+            return <GoalItem key={g.id || i} n={g} />
          })}
           {membership && membership.length < 1 ?<Nocontent text="nothing to see" /> : ''}
       </div>

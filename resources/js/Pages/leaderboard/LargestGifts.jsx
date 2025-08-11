@@ -12,17 +12,21 @@ export default function LargestGifts() {
   const { formatMultiPrice } = PriceFormat();
   const [ period, setPeriod] = useState('last24hour');
   const [ loading, setLoading] = useState(false);
+  const [ error, setError] = useState(null);
   const [ data, setData] = useState([]);
 
   const fetchGifts = (period) => {
     setLoading(true);
+    setError(null);
     axios.get(`largest/gifts/alltime`)
       .then((response) => {
         setData(response.data.data);
-        setLoading(false);
       })
       .catch((error) => {
         console.error("Error fetching gifts:", error);
+        setError("Failed to load largest gifts. Please try again.");
+      })
+      .finally(() => {
         setLoading(false);
       });
   };
@@ -56,6 +60,32 @@ export default function LargestGifts() {
       </div>
     </div>
   );
+
+  if (loading) {
+    return (
+      <div className="bg-gray-100 rounded-[25px] p-4 mb-6 d-flex justify-content-center align-items-center" style={{minHeight: '200px'}}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-gray-100 rounded-[25px] p-4 mb-6 text-center">
+        <div className="alert alert-danger" role="alert">
+          {error}
+          <button 
+            className="btn btn-sm btn-outline-danger ms-2" 
+            onClick={() => fetchGifts(period)}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

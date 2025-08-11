@@ -12,8 +12,12 @@ const defaultsec = "https://ucarecdn.com/55965522-e075-4ef3-8afc-195dacbf267b/";
 export default function ShopTracker() {
     const { formatMultiPrice } = PriceFormat();
     const [goals, setGoals] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     const fetchgoals = () => {
+        setLoading(true);
+        setError(null);
         axios
             .get(`shop-tracker`)
             .then((resp) => {
@@ -21,6 +25,10 @@ export default function ShopTracker() {
             })
             .catch((_err) => {
                 console.error("error", _err);
+                setError("Failed to load shop payments. Please try again.");
+            })
+            .finally(() => {
+                setLoading(false);
             });
     };
 
@@ -247,11 +255,37 @@ export default function ShopTracker() {
             </>
         );
     };
+    if (loading) {
+        return (
+            <div className="tips d-flex justify-content-center align-items-center" style={{minHeight: '200px'}}>
+                <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="tips text-center" style={{minHeight: '200px'}}>
+                <div className="alert alert-danger" role="alert">
+                    {error}
+                    <button 
+                        className="btn btn-sm btn-outline-danger ms-2" 
+                        onClick={fetchgoals}
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="tips ">
             {goals &&
                 goals.map((g, i) => {
-                    return <ShopItem g={g} />;
+                    return <ShopItem key={g.id || i} g={g} />;
                 })}
             {goals && goals.length < 1 ? (
                 <Nocontent text="nothing to see" />

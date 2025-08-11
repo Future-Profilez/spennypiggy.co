@@ -9,12 +9,19 @@ export default function TipTracker({auth}) {
 
    const { formatMultiPrice } = PriceFormat();
    const [goals, setGoals] = useState([]);
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState(null);
 
    const fetchgoals = () => {
+      setLoading(true);
+      setError(null);
       axios.get(`all-goals`).then(resp => {
          setGoals(resp.data.goals);
       }).catch(_err => {
          console.error("error", _err);
+         setError("Failed to load tip goals. Please try again.");
+      }).finally(() => {
+         setLoading(false);
       });
    }
 
@@ -89,10 +96,36 @@ export default function TipTracker({auth}) {
          </div>
       </>
    }
+   if (loading) {
+      return (
+         <div className="tips d-flex justify-content-center align-items-center mt-4" style={{minHeight: '200px'}}>
+            <div className="spinner-border text-primary" role="status">
+               <span className="visually-hidden">Loading...</span>
+            </div>
+         </div>
+      );
+   }
+
+   if (error) {
+      return (
+         <div className="tips text-center mt-4" style={{minHeight: '200px'}}>
+            <div className="alert alert-danger" role="alert">
+               {error}
+               <button 
+                  className="btn btn-sm btn-outline-danger ms-2" 
+                  onClick={fetchgoals}
+               >
+                  Retry
+               </button>
+            </div>
+         </div>
+      );
+   }
+
    return (
       <div className='tips mt-4'>
          {goals && goals.map((g, i)=>{
-            return <GoalItem g={g} />
+            return <GoalItem key={g.id || i} g={g} />
          })}
           {goals && goals.length < 1 ?<Nocontent text="nothing to see" /> : ''}
       </div>

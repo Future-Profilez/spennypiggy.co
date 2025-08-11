@@ -11,6 +11,10 @@ import LeaderboardStars from "./LeaderboardStars";
 import RecentGifters from "./RecentGifters";
 import DeviceID from "@/includes/DeviceID";
 import LargestGifts from "./LargestGifts";
+import GrowthTrends from "./GrowthTrends";
+import CategoryLeaders from "./CategoryLeaders";
+import PlatformAnalytics from "./PlatformAnalytics";
+import AchievementSystem from "./AchievementSystem";
 
 export default function Board(props) {
     const { auth, data, is_daily } = props;
@@ -33,17 +37,21 @@ export default function Board(props) {
 
     const [period, setPeriod] = useState("all");
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
     const switchTime = (e) => {
         setPeriod(e);
         setLoading(true);
+        setError(null);
         axios
             .get(`leaderboard/${e}`)
             .then((resp) => {
                 filterPositions(resp.data.data);
-                setLoading(false);
             })
             .catch((_err) => {
                 console.error("error", _err);
+                setError(`Failed to load ${e} leaderboard. Please try again.`);
+            })
+            .finally(() => {
                 setLoading(false);
             });
     };
@@ -205,6 +213,19 @@ export default function Board(props) {
                                             > Daily </button> ):( "" )}
 
                                         </div>
+                                        {error && (
+                                            <div className="alert alert-danger mx-4 mb-3" role="alert">
+                                                <div className="d-flex justify-content-between align-items-center">
+                                                    <span>{error}</span>
+                                                    <button 
+                                                        className="btn btn-sm btn-outline-light ms-2" 
+                                                        onClick={() => setError(null)}
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                     <div
                                         className={`${
@@ -259,6 +280,28 @@ export default function Board(props) {
                             <RecentGifters />
                             <LargestGifts />
                             <LeaderboardStars />
+                        </div>
+                    </div>
+                    
+                    {/* Additional Professional Reports */}
+                    <div className="row mt-6">
+                        <div className="col-12">
+                            <PlatformAnalytics />
+                        </div>
+                    </div>
+                    
+                    <div className="row">
+                        <div className="col-xl-6">
+                            <GrowthTrends />
+                        </div>
+                        <div className="col-xl-6">
+                            <CategoryLeaders />
+                        </div>
+                    </div>
+                    
+                    <div className="row">
+                        <div className="col-12">
+                            <AchievementSystem />
                         </div>
                     </div>
                 </div>
