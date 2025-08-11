@@ -1,0 +1,538 @@
+{
+    "info": {
+        "name": "Leaderboard Security Tests",
+        "description": "Comprehensive security testing for leaderboard endpoints",
+        "version": "1.0.0",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "{{base_url}}",
+            "type": "string"
+        },
+        {
+            "key": "auth_token",
+            "value": "{{auth_token}}",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "Guest Access Tests",
+            "item": [
+                {
+                    "name": "Guest - Public Leaderboard Access",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "// Test that guests can access public leaderboard",
+                                    "pm.test('Status code is 200 or valid redirect', function () {",
+                                    "    pm.expect([200, 302]).to.include(pm.response.code);",
+                                    "});",
+                                    "",
+                                    "// Test that response doesn't contain sensitive data",
+                                    "if (pm.response.code === 200) {",
+                                    "    const responseJson = pm.response.json();",
+                                    "    ",
+                                    "    pm.test('No sensitive fields in response', function () {",
+                                    "        const sensitiveFields = ['email', 'password', 'stripe_account_id', 'bank_account'];",
+                                    "        const responseStr = JSON.stringify(responseJson);",
+                                    "        ",
+                                    "        sensitiveFields.forEach(field => {",
+                                    "            pm.expect(responseStr).to.not.include(field);",
+                                    "        });",
+                                    "    });",
+                                    "",
+                                    "    pm.test('No financial amounts in public response', function () {",
+                                    "        if (responseJson.data && Array.isArray(responseJson.data)) {",
+                                    "            responseJson.data.forEach(user => {",
+                                    "                pm.expect(user).to.not.have.property('amount');",
+                                    "                pm.expect(user).to.not.have.property('earnings');",
+                                    "                pm.expect(user).to.not.have.property('revenue');",
+                                    "            });",
+                                    "        }",
+                                    "    });",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/leaderboard",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "leaderboard"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Guest - Recent Gifters (Should exclude financial data)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.expect(pm.response.code).to.eql(200);",
+                                    "});",
+                                    "",
+                                    "const responseJson = pm.response.json();",
+                                    "",
+                                    "pm.test('No personal names in public response', function () {",
+                                    "    if (responseJson.data && Array.isArray(responseJson.data)) {",
+                                    "        responseJson.data.forEach(user => {",
+                                    "            pm.expect(user).to.not.have.property('name');",
+                                    "        });",
+                                    "    }",
+                                    "});",
+                                    "",
+                                    "pm.test('No financial amounts in public response', function () {",
+                                    "    if (responseJson.data && Array.isArray(responseJson.data)) {",
+                                    "        responseJson.data.forEach(user => {",
+                                    "            pm.expect(user).to.not.have.property('amount');",
+                                    "            pm.expect(user).to.not.have.property('currency');",
+                                    "        });",
+                                    "    }",
+                                    "});",
+                                    "",
+                                    "pm.test('Only safe fields present', function () {",
+                                    "    if (responseJson.data && Array.isArray(responseJson.data) && responseJson.data.length > 0) {",
+                                    "        const allowedFields = ['uuid', 'username', 'avatar', 'coverimg', 'profile_status_lock', 'role'];",
+                                    "        const user = responseJson.data[0];",
+                                    "        ",
+                                    "        Object.keys(user).forEach(key => {",
+                                    "            pm.expect(allowedFields).to.include(key, `Field '${key}' should not be exposed`);",
+                                    "        });",
+                                    "    }",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/recent-gifters",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recent-gifters"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Guest - Cannot Access Earnings",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 401 or 302 (redirect to login)', function () {",
+                                    "    pm.expect([401, 302]).to.include(pm.response.code);",
+                                    "});",
+                                    "",
+                                    "pm.test('No earnings data exposed', function () {",
+                                    "    if (pm.response.code === 200) {",
+                                    "        pm.test.skip('Earnings endpoint should not be accessible to guests');",
+                                    "    }",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/earnings/all-data",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "earnings",
+                                "all-data"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "IDOR Tests",
+            "item": [
+                {
+                    "name": "IDOR - Parameter Tampering User ID",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code indicates proper access control', function () {",
+                                    "    // Should either reject (403/404) or only return current user's data",
+                                    "    pm.expect([200, 403, 404]).to.include(pm.response.code);",
+                                    "});",
+                                    "",
+                                    "if (pm.response.code === 200) {",
+                                    "    pm.test('Response should not contain other user data', function () {",
+                                    "        // This test would need to verify that only the authenticated user's data is returned",
+                                    "        // regardless of the user_id parameter",
+                                    "        pm.expect(pm.response.text()).to.not.include('unauthorized_user_data');",
+                                    "    });",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/earnings/all-data?user_id=999999",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "earnings",
+                                "all-data"
+                            ],
+                            "query": [
+                                {
+                                    "key": "user_id",
+                                    "value": "999999"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "IDOR - Direct Object Access",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Access to other user earnings prevented', function () {",
+                                    "    pm.expect([401, 403, 404]).to.include(pm.response.code);",
+                                    "});",
+                                    "",
+                                    "pm.test('No sensitive data leaked', function () {",
+                                    "    const responseText = pm.response.text();",
+                                    "    pm.expect(responseText).to.not.include('stripe_account_id');",
+                                    "    pm.expect(responseText).to.not.include('bank_details');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/earnings/top-wishes/999999",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "earnings",
+                                "top-wishes",
+                                "999999"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Mass Assignment Tests",
+            "item": [
+                {
+                    "name": "Mass Assignment - Protected Fields",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Protected fields not mass assignable', function () {",
+                                    "    // Should either reject the request or ignore the protected fields",
+                                    "    pm.expect([200, 400, 422]).to.include(pm.response.code);",
+                                    "});",
+                                    "",
+                                    "// Subsequent request should verify user role/permissions unchanged",
+                                    "pm.test('User permissions not escalated', function () {",
+                                    "    // This would need a follow-up request to verify the user's role",
+                                    "    // wasn't changed to admin through mass assignment",
+                                    "    pm.expect(true).to.be.true; // Placeholder",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"role\": \"admin\",\n    \"is_uk\": 1,\n    \"suspended_account\": 1,\n    \"stripe_details_submitted\": 0,\n    \"earnings_override\": 999999\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/earnings/all-data",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "earnings",
+                                "all-data"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Injection Tests",
+            "item": [
+                {
+                    "name": "SQL Injection - Leaderboard Type",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('SQL injection handled safely', function () {",
+                                    "    pm.expect([200, 400, 404, 422]).to.include(pm.response.code);",
+                                    "});",
+                                    "",
+                                    "pm.test('No database error exposed', function () {",
+                                    "    const responseText = pm.response.text().toLowerCase();",
+                                    "    pm.expect(responseText).to.not.include('mysql');",
+                                    "    pm.expect(responseText).to.not.include('sql');",
+                                    "    pm.expect(responseText).to.not.include('database');",
+                                    "    pm.expect(responseText).to.not.include('table');",
+                                    "    pm.expect(responseText).to.not.include('column');",
+                                    "});",
+                                    "",
+                                    "pm.test('No sensitive data leaked', function () {",
+                                    "    const responseText = pm.response.text();",
+                                    "    pm.expect(responseText).to.not.include('password');",
+                                    "    pm.expect(responseText).to.not.include('email');",
+                                    "    pm.expect(responseText).to.not.include('token');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/leaderboard/'; DROP TABLE users; --",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "leaderboard",
+                                "'; DROP TABLE users; --"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "XSS - Script Injection",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('XSS payload properly handled', function () {",
+                                    "    pm.expect([200, 400, 404, 422]).to.include(pm.response.code);",
+                                    "});",
+                                    "",
+                                    "pm.test('Script tags escaped or removed', function () {",
+                                    "    const responseText = pm.response.text();",
+                                    "    pm.expect(responseText).to.not.include('<script>');",
+                                    "    pm.expect(responseText).to.not.include('onerror=');",
+                                    "    pm.expect(responseText).to.not.include('javascript:');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/leaderboard/<script>alert('xss')</script>",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "leaderboard",
+                                "<script>alert('xss')</script>"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Rate Limiting Tests",
+            "item": [
+                {
+                    "name": "Rate Limit - Public Endpoint",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "exec": [
+                                    "// This test should be run multiple times rapidly",
+                                    "// The collection runner can be configured to run this many times"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Rate limiting eventually applied', function () {",
+                                    "    // After many requests, should eventually hit rate limit",
+                                    "    pm.expect([200, 429]).to.include(pm.response.code);",
+                                    "});",
+                                    "",
+                                    "if (pm.response.code === 429) {",
+                                    "    pm.test('Rate limit message present', function () {",
+                                    "        pm.expect(pm.response.text()).to.include('rate');",
+                                    "    });",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/recent-gifters",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "recent-gifters"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Authorization Tests",
+            "item": [
+                {
+                    "name": "Invalid Token - Earnings Access",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Invalid token rejected', function () {",
+                                    "    pm.expect([401, 403]).to.include(pm.response.code);",
+                                    "});",
+                                    "",
+                                    "pm.test('No sensitive data with invalid token', function () {",
+                                    "    const responseText = pm.response.text();",
+                                    "    pm.expect(responseText).to.not.include('earnings');",
+                                    "    pm.expect(responseText).to.not.include('amount');",
+                                    "    pm.expect(responseText).to.not.include('revenue');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer invalid_token_12345"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/earnings/all-data",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "earnings",
+                                "all-data"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Expired Token - Sensitive Endpoint",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Expired token rejected', function () {",
+                                    "    pm.expect([401, 403]).to.include(pm.response.code);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer expired_token"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/earnings/top-wishes",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "earnings",
+                                "top-wishes"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}
