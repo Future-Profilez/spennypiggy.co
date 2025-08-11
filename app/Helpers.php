@@ -70,7 +70,9 @@ class Helpers
         $gbp_price = $amount / $def->conversion_rate;
         $prof_cur_price = $prof->conversion_rate * $gbp_price;
 
-        return round($prof_cur_price, 2, PHP_ROUND_HALF_UP);
+        // Use ISOdigits to determine decimal places for proper rounding
+        $decimalPlaces = $prof->ISOdigits ?? 2;
+        return round($prof_cur_price, $decimalPlaces, PHP_ROUND_HALF_UP);
     }
 
     public static function checkUnsafeContent($uuid)

@@ -3,6 +3,8 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
+        "livebuild": "php vendor/bin/vapor deploy production --message='implementing stripe identity verification' --commit='619ad66b'",
+        "devbuild": "php vendor/bin/vapor deploy development --message='implementing stripe identity verification' --commit='619ad66b'",
         "build": "vite build"
     },
     "devDependencies": {

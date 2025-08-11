@@ -202,14 +202,18 @@ class ShopsController extends Controller
         $taxamount = round(($request->price * config('app.shop_tax') / 100), 2, PHP_ROUND_HALF_UP);
 
         $createpriceid = $request->price + $taxamount;
+        
+        // Get currency metadata to handle zero-decimal currencies properly
+        $currencyModel = Currency::where('ISO', strtoupper($user->default_currency))->first();
+        $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
         $slug = strtolower(str_replace(" ", "-", $shop->name));
         $productPayload = [
-            "name"  =>  $shop->name,
+            "name"  => $shop->name,
             "images" => [$shop->perma_link],
-            "default_price_data"    =>  [
-                "currency"  =>  $user->default_currency,
-                "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
+            "default_price_data"    => [
+                "currency"  => $user->default_currency,
+                "unit_amount_decimal"   => round($createpriceid * $multiplier, 2, PHP_ROUND_HALF_UP),
             ],
             "url"   => env('APP_URL') . "/shop/$slug/$shop->uuid"
         ];
@@ -338,6 +342,10 @@ class ShopsController extends Controller
 
             $taxamount = round(($request->price * config('app.shop_tax', 20) / 100), 2, PHP_ROUND_HALF_UP);
             $createpriceid = $request->price + $taxamount;
+            
+            // Get currency metadata to handle zero-decimal currencies properly
+            $currencyModel = Currency::where('ISO', strtoupper($user->default_currency))->first();
+            $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
             $slug = strtolower(str_replace(" ", "_", $shop->name));
             $productPayload = [
@@ -345,7 +353,7 @@ class ShopsController extends Controller
                 "images" => [$shop->perma_link],
                 "default_price_data"    =>  [
                     "currency"  =>  $user->default_currency,
-                    "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
+                    "unit_amount_decimal"   => round($createpriceid * $multiplier, 2, PHP_ROUND_HALF_UP),
                 ],
                 "url"   => env('APP_URL') . "/shop/$slug/$shop->uuid"
             ];
@@ -689,8 +697,12 @@ class ShopsController extends Controller
                 if ($existingPriceEntry) {
                     $priceId = $existingPriceEntry->price_id;
                 } else {
+                    // Get currency metadata to handle zero-decimal currencies properly
+                    $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
+                    $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+                    
                     $pricePayload = [
-                        'unit_amount' => round($totalAmount * 100, 2),
+                        'unit_amount' => round($totalAmount * $multiplier, 2),
                         'currency' => $currency,
                         'product' => $shop->stripe_product_id,
                     ];
@@ -734,7 +746,7 @@ class ShopsController extends Controller
                     'payment_method_types' => ['card'], // Add this line
                     "customer" => $customer_id,
                     'payment_intent_data' => [
-                        'application_fee_amount' => (int) round($ConvertedTotalTaxAmount * 100), // Fixed here
+                        'application_fee_amount' => (int) round($ConvertedTotalTaxAmount * $multiplier),
                         'description' => "Shop Payment for {$shop->user->username}",
                     ],
 

@@ -90,12 +90,16 @@ class BillsController extends Controller
 
         $bill->save();
 
+        // Get currency metadata to handle zero-decimal currencies properly
+        $currencyModel = Currency::where('ISO', strtoupper($user->default_currency))->first();
+        $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+        
         $productPayload = [
             "name"  => $bill->name,
             "images" => [$bill->perma_link],
-            "default_price_data"    =>  [
-                "currency"  =>  $user->default_currency,
-                "unit_amount_decimal"   => round($createPriceId, 2, PHP_ROUND_HALF_UP) * 100,
+            "default_price_data"    => [
+                "currency"  => $user->default_currency,
+                "unit_amount_decimal"   => round($createPriceId * $multiplier, 2, PHP_ROUND_HALF_UP),
                 'recurring' => [
                     'interval'  =>  StripeControl::$periods[$bill->period],
                     'interval_count'    =>  1
@@ -186,8 +190,13 @@ class BillsController extends Controller
 
             if ($old_price != $price || $old_periods != $request->period) {
                 Log::info("request->period: $request->period");
+                
+                // Get currency metadata to handle zero-decimal currencies properly
+                $currencyModel = Currency::where('ISO', strtoupper($user->default_currency))->first();
+                $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+                
                 $newPrice = $stripe->prices->create([
-                    'unit_amount_decimal' => (string) round($totalAmount * 100),
+                    'unit_amount_decimal' => (string) round($totalAmount * $multiplier),
                     'currency' => $user->default_currency,
                     'product' => $bill->product_id,
                     'recurring' => [
@@ -412,8 +421,12 @@ class BillsController extends Controller
                 $priceId = $existingPriceEntry->price_id ?? null;
 
                 if (!$priceId) {
+                    // Get currency metadata to handle zero-decimal currencies properly
+                    $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
+                    $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+                    
                     $priceData = [
-                        'unit_amount' => round($finalTotalAmount * 100),
+                        'unit_amount' => round($finalTotalAmount * $multiplier),
                         'currency' => $currency,
                         'product' => $bill->product_id,
                         'recurring' => [

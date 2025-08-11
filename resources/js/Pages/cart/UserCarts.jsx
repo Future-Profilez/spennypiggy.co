@@ -207,11 +207,11 @@ export default function UserCarts(props) {
                                                             : ""
                                                     } form-input w-100 rounded`}
                                                     value={auth && auth.email}
-                                                    disabled={
-                                                        auth && auth.email
-                                                            ? true
-                                                            : false
-                                                    }
+                                                    // disabled={
+                                                    //     auth && auth.email
+                                                    //         ? true
+                                                    //         : false
+                                                    // }
                                                     onChange={(e) =>
                                                         setEmail(e.target.value)
                                                     }

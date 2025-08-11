@@ -747,8 +747,12 @@ class StripeController extends Controller
             $priceId = $existingPrice->price_id ?? null;
 
             if (!$priceId) {
+                // Get currency metadata to handle zero-decimal currencies properly
+                $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
+                $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+                
                 $priceParams = [
-                    'unit_amount' => round($finalTotalAmount * 100),
+                    'unit_amount' => round($finalTotalAmount * $multiplier),
                     'currency' => $currency,
                     'product' => $wish->stripe_product_id,
                 ];
@@ -816,7 +820,7 @@ class StripeController extends Controller
 
             if ($reccure === 'onetime') {
                 $payload['payment_intent_data'] = [
-                    'application_fee_amount' => round($platformTotal * 100),
+                    'application_fee_amount' => round($platformTotal * $multiplier),
                 ];
             } else {
                 $payload['subscription_data'] = [
@@ -1207,10 +1211,12 @@ class StripeController extends Controller
             $taxAmount = round(($amount * $taxPercentage / 100), 2, PHP_ROUND_HALF_UP);
             $adminFeeForPay = Helpers::priceFormat('GBP', $adminFeeAmount, $currency);
             $totalTaxForPay = $taxAmount + $adminFeeForPay;
-            $applicationFeeAmount = $isZeroDecimalCurrency? round($totalTaxForPay): round($totalTaxForPay * 100);
-
-            // $totalPrice = round($amount + $totalTaxForPay, 2, PHP_ROUND_HALF_UP);
-            $unitAmount = $isZeroDecimalCurrency ? round($amount) : round($amount * 100);
+            // Get currency metadata to handle zero-decimal currencies properly
+            $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
+            $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+            
+            $applicationFeeAmount = round($totalTaxForPay * $multiplier);
+            $unitAmount = round($amount * $multiplier);
 
             $pay = TipGoalsPayment::create([
                 'tip_goal_id' => $goal->id ?? null,
@@ -1435,7 +1441,11 @@ class StripeController extends Controller
         ]);
 
         $amount = $price + $tax;
-        $unit_amount = round(Helpers::priceFormat("GBP", $amount, $currency) * 100); // Ensure integer
+        // Get currency metadata to handle zero-decimal currencies properly
+        $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
+        $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+        
+        $unit_amount = round(Helpers::priceFormat("GBP", $amount, $currency) * $multiplier);
 
         $trial_period_days = 3; 
 
@@ -1737,10 +1747,15 @@ class StripeController extends Controller
 
     public function makeProductId($price)
     {
+        // Get currency metadata to handle zero-decimal currencies properly
+        $currency = 'gbp';
+        $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
+        $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+        
         $product = StripeControl::createProduct([
             'name' => 'Gifter Card Verification',
             'images' => ["https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/"],
-            "default_price_data" => ["currency" => 'gbp', "unit_amount_decimal" => $price * 100],
+            "default_price_data" => ["currency" => $currency, "unit_amount_decimal" => $price * $multiplier],
         ], true);
 
         return response()->json([

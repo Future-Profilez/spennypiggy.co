@@ -75,8 +75,9 @@ class HandleInertiaRequests extends Middleware
                 ];
             },
             'cart_count' =>  $items,
-            // 'symbols'   =>  Currency::symbols(),
+            'symbols'   =>  Currency::symbols(),
             'rates'     =>  Currency::rates(),
+            'currencies' => Currency::select('ISO', 'ISOdigits', 'symbol')->get()->keyBy('ISO'),
             'global_currency'   =>  Cookie::get('currency'),
             'hcaptchakey'   =>  env('HCAPTCHA')
         ];

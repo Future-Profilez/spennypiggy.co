@@ -72,10 +72,15 @@ class CheckoutController extends Controller
                 return redirect()->back()->with('error', 'Currently creator has paused gift payments. Please try again later when gift payments are active.');
             }
 
+            // Get currency metadata to handle zero-decimal currencies properly
+            $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
+            $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+            
             $lineItems = [];
             $subtotal = 0;
             $transfer_amount = 0;
-            $totalShowTaxWithQuantity = 0; // <-- ADD THIS
+            $totalShowTaxWithQuantity = 0;
+            $totalStoreTax = 0; // Add this to accumulate store tax
             foreach ($getdata as $dd) {
                 if (!$user) {
                     $email = request()->query('email');
@@ -143,7 +148,7 @@ class CheckoutController extends Controller
                     'price_data' => [
                         'currency' => $currency,
                         'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
-                        'unit_amount_decimal' => round($totalAmount * 100),
+                        'unit_amount_decimal' => round($totalAmount * $multiplier),
                     ]
                 ];
                 
@@ -155,15 +160,17 @@ class CheckoutController extends Controller
                         'product_data' => [
                             'name' => 'Platform Fee - ' . ($dd->wish->wishname ?? 'Item'),
                         ],
-                        'unit_amount' => round($showTaxWithQuantity * 100),
+                        'unit_amount' => round($showTaxWithQuantity * $multiplier),
                         'tax_behavior' => 'exclusive',
                     ],
                 ];
 
                 // this amount will be transfer to the creators account
                 $transfer_amount += $ConvertedAmount * $dd->quantity;
+                $subtotal += $ConvertedAmount * $dd->quantity; // Add this line to properly calculate subtotal
                 $showTaxWithQuantity = $showTax * $dd->quantity;
-                $totalShowTaxWithQuantity += $showTaxWithQuantity; 
+                $totalShowTaxWithQuantity += $showTaxWithQuantity;
+                $totalStoreTax += $storeTaxWithQuantity; // Accumulate store tax properly
             }
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
@@ -175,7 +182,7 @@ class CheckoutController extends Controller
                 'line_items' => $lineItems,
                 // 'customer_email' => $user->email ?? request()->query('email'),
                 'payment_intent_data' => [
-                    'application_fee_amount' => round($totalShowTaxWithQuantity * 100), // ✅ CORRECT
+                    'application_fee_amount' => round($totalShowTaxWithQuantity * $multiplier),
                     'description' => "Platform Fee.",
                     "metadata" => [
                         "guest_name" => $request->name ?? null,
@@ -203,8 +210,8 @@ class CheckoutController extends Controller
             $stripePaymentDetail = StripePaymentDetail::create([
                 'session_id' => $sessionCreate->id,
                 'amount_subtotal' => $subtotal,
-                'amount_total' => $sessionCreate->amount_total / 100,
-                'tax' => $storeTaxWithQuantity,
+                'amount_total' => $sessionCreate->amount_total / $multiplier,
+                'tax' => $totalStoreTax, // Use the accumulated store tax
                 'currency' => $getdata[0]->owner->default_currency,
                 'payment_method_config_detail_id' => optional($sessionCreate->payment_method_configuration_details)->id,
                 'payment_method_type' => optional($sessionCreate->payment_method_types)[0],
@@ -422,11 +429,16 @@ class CheckoutController extends Controller
             $tax += ($c->tax * $c->quantity);
         }
 
+        // Get currency metadata to handle zero-decimal currencies properly
+        $currency = 'gbp'; // Test method uses GBP by default
+        $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
+        $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+        
         $payload = [
-            "mode"  =>  "payment",
+            "mode"  => "payment",
             "line_items"    => $items,
             "payment_intent_data"   =>  [
-                'application_fee_amount'    => $tax * 100,
+                'application_fee_amount'    => $tax * $multiplier,
                 'transfer_data' => [
                     'destination'   => $owner->account_id
                 ],

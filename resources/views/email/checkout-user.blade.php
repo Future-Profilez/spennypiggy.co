@@ -14,7 +14,18 @@
                             Thank you for granting {{ $data->owner->name }}'s wish!
                         </span><br><br>
                         <span style="color:#141414;">
-                            Your generous gift of {{ $curr }}{{ number_format($data->amount_subtotal, 2) }} has made their day brighter 🎁✨
+                            @php
+                                // Find the display currency based on the symbol passed to the email
+                                $displayCurrency = \App\Models\Currency::where('symbol', $curr)->first();
+                                $decimalPlaces = $displayCurrency && $displayCurrency->ISOdigits !== null ? $displayCurrency->ISOdigits : 2;
+                                
+                                // Convert amount from payment currency to display currency
+                                $convertedAmount = $data->amount_subtotal;
+                                if ($displayCurrency && $displayCurrency->ISO !== $data->currency) {
+                                    $convertedAmount = \App\Helpers::priceFormat($data->currency, $data->amount_subtotal, $displayCurrency->ISO);
+                                }
+                            @endphp
+                            Your generous gift of {{ $curr }}{{ number_format($convertedAmount, $decimalPlaces) }} has made their day brighter 🎁✨
                         </span>
                      </td>
                  </tr>
@@ -24,7 +35,7 @@
                      </tr>
                  <tr>
                      <td style="padding:0 0 10px 0; text-align: center;">
-                         <a href={{ env('APP_URL') . '/wish-tracker' }} style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Send more surprises</a>
+                       <a href="{{ env('APP_URL') . '/' . $data->owner->username }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-family: Arial; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Send more surprises</a>
                      </td>
                  </tr>
                  <tr style="line-height: 20px; height: 20px;">

@@ -7,5 +7,13 @@
  7. Subscription should sort by recent created date. and subscription pagination couting not updating
  8. in admin creator showing as unsubscribed when it in free trial.
  9. when profile is verify of any creatort then their cover banner not appproved automatically
-10. admin counter snot showing
+10. admin counter not showing
 11. check bill added in same currency 
+
+
+
+
+Issue 
+1. gifter checkout mail get errro or amount zero zero
+2. On checkout platform fee is correct in in gbp, usd but not in jaapanese currency or some other
+i notice that the platform fee is 12000 but the actual order was only 1200 approx. i dont what is this issue

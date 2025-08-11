@@ -105,12 +105,16 @@ class MembershipController extends Controller
 
         $mem->save();
 
+        // Get currency metadata to handle zero-decimal currencies properly
+        $currencyModel = Currency::where('ISO', strtoupper($user->default_currency))->first();
+        $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+        
         $productPayload = [
             "name"  =>  'Membership_' . $mem->level . '_' . $user->username,
             "images" => [$mem->perma_link],
             "default_price_data"    =>  [
-                "currency"  =>  $user->default_currency,
-                "unit_amount_decimal"   => round($totalPrice, 2, PHP_ROUND_HALF_UP) * 100,
+                "currency"  => $user->default_currency,
+                "unit_amount_decimal"   => round($totalPrice * $multiplier, 2, PHP_ROUND_HALF_UP),
             ],
             "url"   =>  env('APP_URL') . '/' . $user->username
         ];
@@ -208,8 +212,12 @@ class MembershipController extends Controller
                 $priceChanged = $old_price != $price || $old_level != $newLevel;
 
                 if ($priceChanged) {
+                    // Get currency metadata to handle zero-decimal currencies properly
+                    $currencyModel = Currency::where('ISO', strtoupper($user->default_currency))->first();
+                    $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+                    
                     $pricePayload = [
-                        'unit_amount_decimal' => (string) round($createpriceid * 100),
+                        'unit_amount_decimal' => (string) round($createpriceid * $multiplier),
                         'currency' => $user->default_currency,
                         'product' => $mem->product_id,
                     ];
@@ -433,8 +441,12 @@ class MembershipController extends Controller
                 $priceId = $customerRecord->price_id ?? null;
 
                 if (!$priceId) {
+                    // Get currency metadata to handle zero-decimal currencies properly
+                    $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
+                    $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+                    
                     $priceData = [
-                        'unit_amount' => round($finalTotalAmount * 100),
+                        'unit_amount' => round($finalTotalAmount * $multiplier),
                         'currency' => $currency,
                         'product' => $membership->product_id,
                     ];
@@ -478,7 +490,7 @@ class MembershipController extends Controller
                 if ($membership->level === 'lifetime') {
                     $payload['mode'] = 'payment';
                     $payload['payment_intent_data'] = [
-                        'application_fee_amount' => round($platformTotal * 100),
+                        'application_fee_amount' => round($platformTotal * $multiplier),
                         'description' => "Lifetime Membership for {$membership->user->username}",
                     ];
                 } else {
