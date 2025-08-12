@@ -17,10 +17,18 @@ class Membership extends Model
         'product_id',
         'price_id',
         'level',
-        'price',
+        // Deprecated monetary fields - use supporterCount and social metrics instead
+        // 'price',
         'thumbnail',
         'rewards',
-        'status'
+        'status',
+        // New social engagement fields
+        'supporter_count',
+        'gift_frequency',
+        'creator_growth_rate',
+        'rising_score',
+        'engagement_level',
+        'trending_status'
     ];
 
 

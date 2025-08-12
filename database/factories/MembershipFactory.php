@@ -23,11 +23,19 @@ class MembershipFactory extends Factory
             'product_id' => fake()->uuid(),
             'price_id' => fake()->uuid(),
             'level' => fake()->randomElement(['bronze', 'silver', 'gold', 'platinum', 'lifetime']),
-            'price' => fake()->randomFloat(2, 5, 100),
+            // Deprecated monetary fields - replaced with social engagement metrics
+            // 'price' => fake()->randomFloat(2, 5, 100),
             'thumbnail' => null,
             'rewards' => fake()->sentence(),
             'status' => 1,
             'approved' => true,
+            // New social engagement fields
+            'supporter_count' => fake()->numberBetween(0, 2000),
+            'gift_frequency' => fake()->randomElement(['daily', 'weekly', 'monthly', 'rarely']),
+            'creator_growth_rate' => fake()->randomFloat(2, 0, 100),
+            'rising_score' => fake()->numberBetween(0, 100),
+            'engagement_level' => fake()->randomElement(['low', 'medium', 'high', 'viral']),
+            'trending_status' => fake()->boolean(),
         ];
     }
 

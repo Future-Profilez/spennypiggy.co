@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { TrendingUp, TrendingDown, Activity } from 'react-feather';
+import { RiArrowUpLine, RiArrowDownLine, RiPulseLine } from 'react-icons/ri';
 import PriceFormat from '@/includes/PriceFormat';
 import Avatar from '@/includes/Avatar';
 
@@ -12,7 +12,20 @@ export default function GrowthTrends() {
         fastest_growing: [],
         momentum_leaders: [],
         comeback_creators: [],
-        platform_stats: {}
+        platform_stats: {
+            total_creators: 0,
+            creators_growth: 0,
+            total_interactions: 0,
+            engagement_growth: 0,
+            new_supporters: 0,
+            supporters_growth: 0,
+            avg_community_score: 0,
+            community_growth: 0,
+            monthly_revenue: 0,
+            revenue_growth: 0,
+            avg_support: 0,
+            avg_growth: 0,
+        }
     });
 
     const fetchGrowthData = () => {
@@ -20,7 +33,26 @@ export default function GrowthTrends() {
         setError(null);
         axios.get('leaderboard/growth-trends')
             .then((response) => {
-                setData(response.data.data);
+                const responseData = response.data?.data || {};
+                setData({
+                    fastest_growing: responseData.fastest_growing || [],
+                    momentum_leaders: responseData.momentum_leaders || [],
+                    comeback_creators: responseData.comeback_creators || [],
+                    platform_stats: {
+                        total_creators: responseData.platform_stats?.total_creators ?? 0,
+                        creators_growth: responseData.platform_stats?.creators_growth ?? 0,
+                        total_interactions: responseData.platform_stats?.total_interactions ?? 0,
+                        engagement_growth: responseData.platform_stats?.engagement_growth ?? 0,
+                        new_supporters: responseData.platform_stats?.new_supporters ?? 0,
+                        supporters_growth: responseData.platform_stats?.supporters_growth ?? 0,
+                        avg_community_score: responseData.platform_stats?.avg_community_score ?? 0,
+                        community_growth: responseData.platform_stats?.community_growth ?? 0,
+                        monthly_revenue: responseData.platform_stats?.monthly_revenue ?? 0,
+                        revenue_growth: responseData.platform_stats?.revenue_growth ?? 0,
+                        avg_support: responseData.platform_stats?.avg_support ?? 0,
+                        avg_growth: responseData.platform_stats?.avg_growth ?? 0,
+                    }
+                });
             })
             .catch((error) => {
                 console.error("Error fetching growth trends:", error);
@@ -74,8 +106,18 @@ export default function GrowthTrends() {
                     </div>
                 </div>
                 <div className="text-right">
-                    <p className="font-bold text-lg">{formatMultiPrice(creator.current_amount, creator.currency)}</p>
-                    <p className="text-sm text-green-600">+{creator.growth_percentage}% growth</p>
+                    {/* Show engagement metrics if available, otherwise show monetary */}
+                    {creator.supporters ? (
+                        <>
+                            <p className="font-bold text-lg">👥 {creator.supporters}</p>
+                            <p className="text-sm text-green-600">+{creator.growth_percentage}% growth</p>
+                        </>
+                    ) : (
+                        <>
+                            <p className="font-bold text-lg">{formatMultiPrice(creator.current_amount, creator.currency)}</p>
+                            <p className="text-sm text-green-600">+{creator.growth_percentage}% growth</p>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
@@ -118,25 +160,25 @@ export default function GrowthTrends() {
                     title="Total Active Creators"
                     value={data.platform_stats.total_creators}
                     change={data.platform_stats.creators_growth}
-                    icon={Activity}
+                    icon={RiPulseLine}
                 />
                 <TrendCard 
-                    title="This Month's Revenue"
-                    value={formatMultiPrice(data.platform_stats.monthly_revenue, 'USD')}
-                    change={data.platform_stats.revenue_growth}
-                    icon={TrendingUp}
+                    title="Community Engagement"
+                    value={data.platform_stats.total_interactions || formatMultiPrice(data.platform_stats.monthly_revenue, 'USD')}
+                    change={data.platform_stats.engagement_growth || data.platform_stats.revenue_growth}
+                    icon={RiArrowUpLine}
                 />
                 <TrendCard 
                     title="New Supporters"
                     value={data.platform_stats.new_supporters}
                     change={data.platform_stats.supporters_growth}
-                    icon={TrendingUp}
+                    icon={RiArrowUpLine}
                 />
                 <TrendCard 
-                    title="Avg. Support Value"
-                    value={formatMultiPrice(data.platform_stats.avg_support, 'USD')}
-                    change={data.platform_stats.avg_growth}
-                    icon={TrendingUp}
+                    title="Avg. Community Score"
+                    value={data.platform_stats.avg_community_score || formatMultiPrice(data.platform_stats.avg_support, 'USD')}
+                    change={data.platform_stats.community_growth || data.platform_stats.avg_growth}
+                    icon={RiArrowUpLine}
                 />
             </div>
 

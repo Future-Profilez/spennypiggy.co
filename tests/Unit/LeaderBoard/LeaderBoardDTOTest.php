@@ -24,8 +24,8 @@ class LeaderBoardDTOTest extends TestCase
             1.0,
             2,
             1,
-            150.50, // Should be excluded from public
-            'USD'   // Should be excluded from public
+            150, // Changed to supporter count - should be excluded from public
+            'supporters'   // Changed to supporter metric - should be excluded from public
         );
 
         $publicResponse = $dto->toPublicArray();
@@ -61,16 +61,16 @@ class LeaderBoardDTOTest extends TestCase
             1.0,
             2,
             1,
-            150.50,
-            'USD'
+            250, // Changed to supporter count
+            'supporters' // Changed to supporter metric
         );
 
         $internalResponse = $dto->toInternalArray();
 
         // Should include all data including sensitive fields
         $this->assertEquals('John Doe', $internalResponse['name']);
-        $this->assertEquals(150.50, $internalResponse['amount']);
-        $this->assertEquals('USD', $internalResponse['currency']);
+        $this->assertEquals(250, $internalResponse['amount']); // Now supporter count
+        $this->assertEquals('supporters', $internalResponse['currency']); // Now metric type
 
         // Should also include public data
         $this->assertEquals('user-uuid-123', $internalResponse['uuid']);
@@ -92,8 +92,8 @@ class LeaderBoardDTOTest extends TestCase
             5.0,
             1,
             0,
-            0.0, // Zero amount
-            'USD'
+            0, // Zero supporters
+            'supporters'
         );
 
         $nonZeroValueDto = new LeaderBoardUserDTO(
@@ -106,8 +106,8 @@ class LeaderBoardDTOTest extends TestCase
             3.0,
             1,
             0,
-            50.0, // Non-zero amount
-            'USD'
+            50, // Non-zero supporters
+            'supporters'
         );
 
         $this->assertTrue($zeroValueDto->hasZeroValue());
@@ -266,25 +266,113 @@ class LeaderBoardDTOTest extends TestCase
     }
 
     /**
-     * Test DTO amount getters work correctly
+     * Test DTO amount getters work correctly with social metrics
      */
-    public function test_dto_amount_getters()
+    public function test_dto_amount_getters_with_social_metrics()
     {
         $leaderboardDto = new LeaderBoardUserDTO(
-            'user-1', 'user1', 'User 1', null, null, 1, 1.0, 1, 1, 100.0, 'USD'
+            'user-1', 'user1', 'User 1', null, null, 1, 1.0, 1, 1, 500, 'supporters'
         );
 
         $recentGifterDto = new RecentGifterDTO(
-            'user-2', 'user2', 'User 2', null, null, 1, 1, 50.0, 'EUR'
+            'user-2', 'user2', 'User 2', null, null, 1, 1, 75, 'gifts'
         );
 
         $largestGiftDto = new LargestGiftDTO(
-            'user-3', 'user3', 'User 3', null, null, 1, 1, 200.0, 'GBP', 'membership'
+            'user-3', 'user3', 'User 3', null, null, 1, 1, 95, 'engagement_score', 'membership'
         );
 
-        $this->assertEquals(100.0, $leaderboardDto->getTotalAmount());
-        $this->assertEquals(50.0, $recentGifterDto->getAmount());
-        $this->assertEquals(200.0, $largestGiftDto->getAmount());
+        $this->assertEquals(500, $leaderboardDto->getTotalAmount()); // Now supporter count
+        $this->assertEquals(75, $recentGifterDto->getAmount()); // Now gift count
+        $this->assertEquals(95, $largestGiftDto->getAmount()); // Now engagement score
         $this->assertEquals('membership', $largestGiftDto->getType());
+    }
+
+    /**
+     * Test DTOs properly handle social engagement metrics
+     */
+    public function test_social_engagement_metrics_handling()
+    {
+        $supporterDto = new LeaderBoardUserDTO(
+            'user-supporter', 'supporteruser', 'Supporter User', 
+            'avatar.jpg', 'cover.jpg', 1, 1.0, 1, 1, 1250, 'supporters'
+        );
+
+        $engagementDto = new RecentGifterDTO(
+            'user-engagement', 'engagementuser', 'Engagement User',
+            'avatar.jpg', 'cover.jpg', 2, 1, 85, 'engagement_level'
+        );
+
+        // Test supporter metrics
+        $supporterInternal = $supporterDto->toInternalArray();
+        $this->assertEquals(1250, $supporterInternal['amount']);
+        $this->assertEquals('supporters', $supporterInternal['currency']);
+
+        // Test engagement metrics  
+        $engagementInternal = $engagementDto->toInternalArray();
+        $this->assertEquals(85, $engagementInternal['amount']);
+        $this->assertEquals('engagement_level', $engagementInternal['currency']);
+
+        // Public arrays should not expose these metrics
+        $supporterPublic = $supporterDto->toPublicArray();
+        $engagementPublic = $engagementDto->toPublicArray();
+        
+        $this->assertArrayNotHasKey('amount', $supporterPublic);
+        $this->assertArrayNotHasKey('supporters', $supporterPublic);
+        $this->assertArrayNotHasKey('amount', $engagementPublic);
+        $this->assertArrayNotHasKey('engagement_level', $engagementPublic);
+    }
+
+    /**
+     * Test growth percentage calculations
+     */
+    public function test_growth_percentage_calculations()
+    {
+        $highGrowthDto = new LeaderBoardUserDTO(
+            'user-growth', 'growthuser', 'Growth User',
+            null, null, 1, 1.0, 1, 1, 800, 'supporters'
+        );
+
+        $lowGrowthDto = new LeaderBoardUserDTO(
+            'user-stable', 'stableuser', 'Stable User', 
+            null, null, 5, 5.0, 1, 1, 120, 'supporters'
+        );
+
+        // High growth user should rank higher (lower rank number)
+        $this->assertLessThan($lowGrowthDto->toPublicArray()['rank'], $highGrowthDto->toPublicArray()['rank']);
+        
+        // High growth user should have better top percentage
+        $this->assertLessThan($lowGrowthDto->toPublicArray()['top'], $highGrowthDto->toPublicArray()['top']);
+
+        // High growth user should have more supporters
+        $highInternal = $highGrowthDto->toInternalArray();
+        $lowInternal = $lowGrowthDto->toInternalArray();
+        $this->assertGreaterThan($lowInternal['amount'], $highInternal['amount']);
+    }
+
+    /**
+     * Test trending status indicators
+     */
+    public function test_trending_status_indicators()
+    {
+        $trendingDto = new LargestGiftDTO(
+            'user-trending', 'trendinguser', 'Trending User',
+            'avatar.jpg', 'cover.jpg', 1, 1, 92, 'trending_score', 'viral_content'
+        );
+
+        $regularDto = new LargestGiftDTO(
+            'user-regular', 'regularuser', 'Regular User',
+            'avatar.jpg', 'cover.jpg', 8, 1, 35, 'trending_score', 'regular_content'
+        );
+
+        $trendingInternal = $trendingDto->toInternalArray();
+        $regularInternal = $regularDto->toInternalArray();
+
+        // Trending content should have higher engagement scores
+        $this->assertGreaterThan($regularInternal['amount'], $trendingInternal['amount']);
+        $this->assertEquals(92, $trendingInternal['amount']);
+        $this->assertEquals(35, $regularInternal['amount']);
+        $this->assertEquals('viral_content', $trendingDto->getType());
+        $this->assertEquals('regular_content', $regularDto->getType());
     }
 }

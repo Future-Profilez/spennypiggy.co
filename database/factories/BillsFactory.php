@@ -23,12 +23,20 @@ class BillsFactory extends Factory
             'product_id' => fake()->uuid(),
             'price_id' => fake()->uuid(),
             'name' => fake()->sentence(3),
-            'price' => fake()->randomFloat(2, 20, 500),
-            'currency' => 'GBP',
+            // Deprecated monetary fields - replaced with social engagement metrics
+            // 'price' => fake()->randomFloat(2, 20, 500),
+            // 'currency' => 'GBP',
+            // 'tax_amount' => fake()->randomFloat(2, 2, 50),
             'thumbnail' => null,
-            'tax_amount' => fake()->randomFloat(2, 2, 50),
             'status' => 1,
             'approved' => true,
+            // New social engagement fields
+            'supporter_count' => fake()->numberBetween(0, 500),
+            'gift_frequency' => fake()->randomElement(['daily', 'weekly', 'monthly', 'rarely']),
+            'creator_growth_rate' => fake()->randomFloat(2, 0, 100),
+            'rising_score' => fake()->numberBetween(0, 100),
+            'engagement_level' => fake()->randomElement(['low', 'medium', 'high', 'viral']),
+            'trending_status' => fake()->boolean(),
         ];
     }
 

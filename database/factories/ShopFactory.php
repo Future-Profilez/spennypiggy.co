@@ -25,8 +25,10 @@ class ShopFactory extends Factory
             'name' => fake()->sentence(3),
             'description' => fake()->paragraph(),
             'image' => null,
-            'price' => fake()->randomFloat(2, 10, 200),
-            'currency' => 'GBP',
+            // Deprecated monetary fields - replaced with social engagement metrics
+            // 'price' => fake()->randomFloat(2, 10, 200),
+            // 'currency' => 'GBP',
+            // 'special_member_price' => null,
             'success_page_type' => 'message',
             'success_page_value' => fake()->sentence(),
             'reward_file_type' => null,
@@ -34,11 +36,17 @@ class ShopFactory extends Factory
             'ai_generated' => false,
             'ask_question' => false,
             'slot_limitation' => null,
-            'special_member_price' => null,
             'quantity_allow' => 1,
             'shipping_information' => null,
             'vat_applicable' => false,
             'approved' => true,
+            // New social engagement fields
+            'supporter_count' => fake()->numberBetween(0, 800),
+            'gift_frequency' => fake()->randomElement(['daily', 'weekly', 'monthly', 'rarely']),
+            'creator_growth_rate' => fake()->randomFloat(2, 0, 100),
+            'rising_score' => fake()->numberBetween(0, 100),
+            'engagement_level' => fake()->randomElement(['low', 'medium', 'high', 'viral']),
+            'trending_status' => fake()->boolean(),
         ];
     }
 

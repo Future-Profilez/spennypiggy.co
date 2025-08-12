@@ -18,20 +18,27 @@ class Shop extends Model
         'name',
         'description',
         'image',
-        'price',
-        'currency',
+        // Deprecated monetary fields - use supporterCount and social metrics instead
+        // 'price',
+        // 'currency',
+        // 'special_member_price',
         'success_page_type',
         'success_page_value',
-        'success_page_type',
         'reward_file_type',
         'reward_file',
         'ai_generated',
         'ask_question',
         'slot_limitation',
-        'special_member_price',
         'quantity_allow',
         'shipping_information',
-        'vat_applicable'
+        'vat_applicable',
+        // New social engagement fields
+        'supporter_count',
+        'gift_frequency',
+        'creator_growth_rate',
+        'rising_score',
+        'engagement_level',
+        'trending_status'
     ];
 
     protected $hidden   =   [

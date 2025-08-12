@@ -8,13 +8,11 @@ import React, { useState, useMemo } from "react";
 import { crown } from "@/includes/Icons";
 import { RiVerifiedBadgeFill } from "react-icons/ri";
 import LeaderboardStars from "./LeaderboardStars";
-import RecentGifters from "./RecentGifters";
+import RecentSupporters from "./RecentSupporters";
 import DeviceID from "@/includes/DeviceID";
-import LargestGifts from "./LargestGifts";
-import GrowthTrends from "./GrowthTrends";
+import TopSupporters from "./TopSupporters";
 import CategoryLeaders from "./CategoryLeaders";
-import PlatformAnalytics from "./PlatformAnalytics";
-import AchievementSystem from "./AchievementSystem";
+import VipSupporters from "./VipSupporters";
 
 export default function Board(props) {
     const { auth, data, is_daily } = props;
@@ -76,7 +74,13 @@ export default function Board(props) {
                     </div>
                 </div>
                 <div className="rank-stats">
-                    <p className="toppercentage md:pe-4">{r && r.top}</p>
+                    <p className="toppercentage md:pe-4">{r && r.top}%</p>
+                    {/* Display engagement metrics if available */}
+                    {r?.supporters > 0 ? (
+                        <p className="text-xs text-gray-500 md:pe-4">
+                            👥 {r.supporters} Supporters
+                        </p>
+                    ):''}
                 </div>
             </div>
         );
@@ -124,6 +128,12 @@ export default function Board(props) {
                                 <p className="toppercentage text-center font-gulfs">
                                     {p && p.top}%{" "}
                                 </p>
+                                {/* Display engagement metrics if available */}
+                                { p?.supporters > 0 ? (
+                                    <p className="text-xs text-gray-600 text-center mt-1">
+                                        👥 {p.supporters} supporters
+                                    </p>
+                                ) : null}
                             </div>
                             {position === 1 ? 
                                 <div className={`rank-position p-1  `}>
@@ -198,6 +208,9 @@ export default function Board(props) {
                                         <h1 className="text-bl btn-shadow text-center font-GillSans  text-2xl md:text-3xl  mb-3 uppercase text-white ">
                                             Top Creators Getting <br></br> the Most Love
                                         </h1>
+                                        <p className="text-center text-white text-sm opacity-90 mb-4">
+                                            Ranked by community support and engagement
+                                        </p>
                                         <div className="changePeriod w-full">
                                             <button className={` !text-sm md:!text-[18px] ${period == "all" ? "active text-white":""}`}
                                             onClick={() => switchTime("all")}
@@ -275,35 +288,17 @@ export default function Board(props) {
                                     ""
                                 )}
                             </div>
+                            <CategoryLeaders />
                         </div>
                         <div className="col-xl-4">
-                            <RecentGifters />
-                            <LargestGifts />
+                            <RecentSupporters />
+                            <VipSupporters />
+                            {/* <TopSupporters /> */}
                             <LeaderboardStars />
                         </div>
                     </div>
                     
-                    {/* Additional Professional Reports */}
-                    <div className="row mt-6">
-                        <div className="col-12">
-                            <PlatformAnalytics />
-                        </div>
-                    </div>
                     
-                    <div className="row">
-                        <div className="col-xl-6">
-                            <GrowthTrends />
-                        </div>
-                        <div className="col-xl-6">
-                            <CategoryLeaders />
-                        </div>
-                    </div>
-                    
-                    <div className="row">
-                        <div className="col-12">
-                            <AchievementSystem />
-                        </div>
-                    </div>
                 </div>
             </div>
         </Authenticated>

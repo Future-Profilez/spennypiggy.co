@@ -17,18 +17,26 @@ class TipGoal extends Model
         "uuid",
         "user_id",
         'name',
-        "target",
-        "default_price",
-        'fullfilled',
+        // Deprecated monetary fields - use supporterCount and social metrics instead
+        // "target",
+        // "default_price",
+        // 'fullfilled',
+        // 'tax_amount',
+        // 'currency',
         'description',
         'status',
         'days',
         'completed',
         'completed_at',
-        'tax_amount',
-        'currency',
         'price_id',
-        'product_id'
+        'product_id',
+        // New social engagement fields
+        'supporter_count',
+        'gift_frequency',
+        'creator_growth_rate',
+        'rising_score',
+        'engagement_level',
+        'trending_status'
     ];
 
 

@@ -19,8 +19,11 @@ class WishItem extends Model
         "user_id",
         "stripe_product_id",
         "wishname",
-        "price",
-        "currency",
+        // Deprecated monetary fields - use supporterCount and social metrics instead
+        // "price",
+        // "currency",
+        // "fullfill_amount",
+        // 'tax_amount',
         'price_id',
         "item_url",
         "thumbnail",
@@ -31,14 +34,19 @@ class WishItem extends Model
         "repeat_purchase",
         "category",
         'is_pin',
-        "fullfill_amount",
-        'tax_amount',
         "twitter_response",
         'delete_reason',
         'edited_reason',
         'edited_status',
         'deleted_at',
-        'is_approved'
+        'is_approved',
+        // New social engagement fields
+        'supporter_count',
+        'gift_frequency',
+        'creator_growth_rate',
+        'rising_score',
+        'engagement_level',
+        'trending_status'
     ];
 
     protected $appends = [

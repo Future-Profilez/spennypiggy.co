@@ -1,21 +1,18 @@
 import Avatar from '@/includes/Avatar'
 import React from 'react'
-import userphoto from "../../../assets/siteicon.png";
 import { useState } from 'react';
 import  axios  from 'axios';
 import { useEffect } from 'react';
-import LoadingScreen from '@/includes/LoadingScreen';
-import PriceFormat from '@/includes/PriceFormat';
 import Nocontent from '@/includes/Nocontent';
-export default function RecentGifters() {
 
-  const { formatMultiPrice } = PriceFormat();
+export default function RecentSupporters() {
+
   const [ period, setPeriod] = useState('last24hour');
   const [ loading, setLoading] = useState(false);
   const [ error, setError] = useState(null);
   const [ data, setData] = useState([]);
 
-  const fetchGifts = (period) => {
+  const fetchSupport = (period) => {
     setLoading(true);
     setError(null);
     axios.get(`recent-gifters/${period}`)
@@ -23,8 +20,8 @@ export default function RecentGifters() {
         setData(response.data.data);
       })
       .catch((error) => {
-        console.error("Error fetching gifts:", error);
-        setError("Failed to load recent gifters. Please try again.");
+        console.error("Error fetching supporters:", error);
+        setError("Failed to load recent supporters. Please try again.");
       })
       .finally(() => {
         setLoading(false);
@@ -33,29 +30,29 @@ export default function RecentGifters() {
 
   useEffect(() => {
     if (!loading) {
-      fetchGifts(period);
+      fetchSupport(period);
     }
   }, [period]);
 
-  const GiftItem = ({ gift, index }) => (
+  const SupportItem = ({ supporter, index }) => (
     <div className="rank py-3 border-bottom flex items-center justify-between">
       <div className="flex items-center justify-between">
         <div className="wisher wisher-rank">
           <Avatar
-            role={gift.role}
-            profile_status_lock={gift.profile_status_lock == 2 ? true : false}
-            name={gift.name}
-            link={gift.username || null}
-            subhead={`@${gift.username || "anonymous"}`}
-            username={gift.username || ""}
-            src={gift.avatar_url}
+            role={supporter.role}
+            profile_status_lock={supporter.profile_status_lock == 2 ? true : false}
+            name={supporter.name}
+            link={supporter.username || null}
+            subhead={`@${supporter.username || "anonymous"}`}
+            username={supporter.username || ""}
+            src={supporter.avatar_url}
           />
           <div className="index-badge">{index + 1}</div>
         </div>
       </div>
       <div className="rank-stats ps-2">
-        <p className="toppercentage income">
-          {formatMultiPrice(gift.amount, gift.currency || 'gbp')}
+        <p className="text-sm text-gray-500">
+          Just now
         </p>
       </div>
     </div>
@@ -75,15 +72,15 @@ export default function RecentGifters() {
           {error}
           <button 
             className="btn btn-sm btn-outline-danger ms-2" 
-            onClick={() => fetchGifts(period)}
+            onClick={() => fetchSupport(period)}
           >
             Retry
           </button>
         </div>
       </div>
     ) : data.length > 0 ? <div className="bg-gray-100 rounded-[25px] p-4 mb-6">
-      <h2 className="text-bls font-GillSans text-start text-2xl uppercase text-dark ">Who just showed love?</h2>
-      <p className='text-gray-500  mb-3'>Latest fans who has just show support.</p>
+      <h2 className="text-bls font-GillSans text-start text-2xl uppercase text-dark ">Recent Supporters</h2>
+      <p className='text-gray-500  mb-3'>Latest supporters who have shown their love.</p>
       
       {/* <div className="time-hrs">
         <button className={period === 'last24hour' ? "active" : ''} onClick={() => setPeriod('last24hour')}>Last 24 hrs </button>
@@ -96,12 +93,12 @@ export default function RecentGifters() {
         </>
       )} */}
       {data.length ? (
-        data.map((gift, index) => (
-          <GiftItem key={gift.id} gift={gift} index={index} />
+        data.map((supporter, index) => (
+          <SupportItem key={supporter.id || `${supporter.username}_${index}`} supporter={supporter} index={index} />
         ))
       ) : (
         <div className="my-4">
-          <Nocontent classes="bg-white" text="Nothing to see" />
+          <Nocontent classes="bg-white" text="No recent supporters" />
         </div>
       )}
     </div> : ''}

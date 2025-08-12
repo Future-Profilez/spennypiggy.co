@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { BarChart3, TrendingUp, Users, DollarSign, Globe, Calendar, Award, Target } from 'react-feather';
-import PriceFormat from '@/includes/PriceFormat';
+import { RiBarChart2Line, RiArrowUpLine, RiUser3Line, RiEarthLine, RiMedal2Line, RiFocus3Line } from 'react-icons/ri';
 
 export default function PlatformAnalytics() {
-    const { formatMultiPrice } = PriceFormat();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [data, setData] = useState({
-        overview: {},
+        overview: {
+            active_creators: 0,
+            total_supporters: 0,
+            avg_growth: 0,
+            creators_trend: null,
+            supporters_trend: null
+        },
         milestones: [],
         countries: [],
         achievements: []
@@ -19,7 +23,20 @@ export default function PlatformAnalytics() {
         setError(null);
         axios.get('leaderboard/platform-analytics')
             .then((response) => {
-                setData(response.data.data);
+                // Safely merge response data with defaults
+                const responseData = response.data?.data || {};
+                setData({
+                    overview: {
+                        active_creators: responseData.overview?.active_creators || 0,
+                        total_supporters: responseData.overview?.total_supporters || 0,
+                        avg_growth: responseData.overview?.avg_growth || 0,
+                        creators_trend: responseData.overview?.creators_trend || null,
+                        supporters_trend: responseData.overview?.supporters_trend || null
+                    },
+                    milestones: responseData.milestones || [],
+                    countries: responseData.countries || [],
+                    achievements: responseData.achievements || []
+                });
             })
             .catch((error) => {
                 console.error("Error fetching analytics:", error);
@@ -48,7 +65,7 @@ export default function PlatformAnalytics() {
             </div>
             {trend && (
                 <div className="flex items-center">
-                    <TrendingUp size={16} className={trend.positive ? 'text-green-500' : 'text-red-500'} />
+                    <RiArrowUpLine size={16} className={trend.positive ? 'text-green-500' : 'text-red-500'} />
                     <span className={`text-sm ml-1 ${trend.positive ? 'text-green-600' : 'text-red-600'}`}>
                         {trend.positive ? '+' : ''}{trend.percentage}% from last month
                     </span>
@@ -63,14 +80,14 @@ export default function PlatformAnalytics() {
                 <h4 className="font-semibold text-gray-900">{milestone.title}</h4>
                 {isCompleted && (
                     <div className="text-green-500">
-                        <Award size={20} />
+                        <RiMedal2Line size={20} />
                     </div>
                 )}
             </div>
             <p className="text-sm text-gray-600 mb-3">{milestone.description}</p>
             <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-900">
-                    {formatMultiPrice(milestone.current, milestone.currency)} / {formatMultiPrice(milestone.target, milestone.currency)}
+                    {milestone.current?.toLocaleString()} / {milestone.target?.toLocaleString()}
                 </span>
                 <span className="text-sm text-gray-600">
                     {Math.round((milestone.current / milestone.target) * 100)}%
@@ -99,8 +116,8 @@ export default function PlatformAnalytics() {
                     </div>
                 </div>
                 <div className="text-right">
-                    <p className="font-bold text-lg">{formatMultiPrice(country.total_amount, country.currency)}</p>
-                    <p className="text-sm text-gray-600">{country.percentage}% of total</p>
+                    <p className="font-bold text-lg">{country.supporters?.toLocaleString() || 0}</p>
+                    <p className="text-sm text-gray-600">supporters</p>
                 </div>
             </div>
         </div>
@@ -140,18 +157,10 @@ export default function PlatformAnalytics() {
             {/* Overview Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <StatCard
-                    title="Total Revenue"
-                    value={formatMultiPrice(data.overview.total_revenue, 'USD')}
-                    subtitle="All time platform revenue"
-                    icon={DollarSign}
-                    color="text-green-600"
-                    trend={data.overview.revenue_trend}
-                />
-                <StatCard
                     title="Active Creators"
                     value={data.overview.active_creators?.toLocaleString()}
                     subtitle="Creating content this month"
-                    icon={Users}
+                    icon={RiUser3Line}
                     color="text-blue-600"
                     trend={data.overview.creators_trend}
                 />
@@ -159,7 +168,7 @@ export default function PlatformAnalytics() {
                     title="Global Supporters"
                     value={data.overview.total_supporters?.toLocaleString()}
                     subtitle="People supporting creators"
-                    icon={Globe}
+                    icon={RiEarthLine}
                     color="text-purple-600"
                     trend={data.overview.supporters_trend}
                 />
@@ -167,7 +176,7 @@ export default function PlatformAnalytics() {
                     title="Avg. Monthly Growth"
                     value={data.overview.avg_growth?.toFixed(1) + '%'}
                     subtitle="Platform growth rate"
-                    icon={TrendingUp}
+                    icon={RiArrowUpLine}
                     color="text-orange-600"
                 />
             </div>
@@ -175,7 +184,7 @@ export default function PlatformAnalytics() {
             {/* Milestones Section */}
             <div className="mb-8">
                 <div className="flex items-center mb-4">
-                    <Target size={24} className="text-blue-600" />
+                    <RiFocus3Line size={24} className="text-blue-600" />
                     <h3 className="text-lg font-semibold ml-2">Platform Milestones</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -192,8 +201,8 @@ export default function PlatformAnalytics() {
             {/* Top Countries */}
             <div className="mb-8">
                 <div className="flex items-center mb-4">
-                    <Globe size={24} className="text-green-600" />
-                    <h3 className="text-lg font-semibold ml-2">Top Countries by Revenue</h3>
+                    <RiEarthLine size={24} className="text-green-600" />
+                    <h3 className="text-lg font-semibold ml-2">Top Countries by Supporter Activity</h3>
                 </div>
                 <div className="space-y-3">
                     {data.countries?.map((country, index) => (
@@ -210,7 +219,7 @@ export default function PlatformAnalytics() {
             {data.achievements?.length > 0 && (
                 <div>
                     <div className="flex items-center mb-4">
-                        <Award size={24} className="text-yellow-600" />
+                        <RiMedal2Line size={24} className="text-yellow-600" />
                         <h3 className="text-lg font-semibold ml-2">Recent Platform Achievements</h3>
                     </div>
                     <div className="space-y-3">
@@ -230,32 +239,6 @@ export default function PlatformAnalytics() {
                 </div>
             )}
 
-            {/* Time Period Stats */}
-            <div className="mt-8 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold mb-4">Performance by Time Period</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center p-4 bg-white rounded-lg">
-                        <Calendar size={20} className="text-gray-600 mx-auto mb-2" />
-                        <p className="text-sm text-gray-600">Today</p>
-                        <p className="text-xl font-bold">{formatMultiPrice(data.overview.today_revenue, 'USD')}</p>
-                    </div>
-                    <div className="text-center p-4 bg-white rounded-lg">
-                        <Calendar size={20} className="text-gray-600 mx-auto mb-2" />
-                        <p className="text-sm text-gray-600">This Week</p>
-                        <p className="text-xl font-bold">{formatMultiPrice(data.overview.week_revenue, 'USD')}</p>
-                    </div>
-                    <div className="text-center p-4 bg-white rounded-lg">
-                        <Calendar size={20} className="text-gray-600 mx-auto mb-2" />
-                        <p className="text-sm text-gray-600">This Month</p>
-                        <p className="text-xl font-bold">{formatMultiPrice(data.overview.month_revenue, 'USD')}</p>
-                    </div>
-                    <div className="text-center p-4 bg-white rounded-lg">
-                        <Calendar size={20} className="text-gray-600 mx-auto mb-2" />
-                        <p className="text-sm text-gray-600">This Year</p>
-                        <p className="text-xl font-bold">{formatMultiPrice(data.overview.year_revenue, 'USD')}</p>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 }

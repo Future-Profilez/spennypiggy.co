@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Avatar from '@/includes/Avatar';
 import PriceFormat from '@/includes/PriceFormat';
-import { Award, Star, Trophy, Crown, Shield, Target, Zap, Heart } from 'react-feather';
+import { RiAwardLine, RiStarLine, RiTrophyLine, RiVipCrownLine, RiShieldLine, RiFocus3Line, RiSpeedLine, RiHeartLine } from 'react-icons/ri';
 
 export default function AchievementSystem() {
     const { formatMultiPrice } = PriceFormat();
@@ -37,14 +37,14 @@ export default function AchievementSystem() {
     }, []);
 
     const badgeIcons = {
-        'first_supporter': Heart,
-        'top_creator': Crown,
-        'milestone_reached': Target,
-        'growth_champion': Zap,
-        'community_hero': Shield,
-        'trending_star': Star,
-        'loyal_supporter': Award,
-        'platform_veteran': Trophy
+        'first_supporter': RiHeartLine,
+        'top_creator': RiVipCrownLine,
+        'milestone_reached': RiFocus3Line,
+        'growth_champion': RiSpeedLine,
+        'community_hero': RiShieldLine,
+        'trending_star': RiStarLine,
+        'loyal_supporter': RiAwardLine,
+        'platform_veteran': RiTrophyLine
     };
 
     const badgeColors = {
@@ -59,7 +59,7 @@ export default function AchievementSystem() {
     };
 
     const AchievementCard = ({ achievement }) => {
-        const IconComponent = badgeIcons[achievement.badge_type] || Award;
+        const IconComponent = badgeIcons[achievement.badge_type] || RiAwardLine;
         const colorClass = badgeColors[achievement.badge_type] || 'text-blue-600 bg-blue-100';
         
         return (
@@ -103,7 +103,7 @@ export default function AchievementSystem() {
         <div className="milestone-card bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg p-6 shadow-lg">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
-                    <Trophy size={28} />
+                    <RiTrophyLine size={28} />
                     <h3 className="text-xl font-bold">{milestone.title}</h3>
                 </div>
                 <span className="text-sm opacity-90">{milestone.category}</span>
@@ -135,7 +135,7 @@ export default function AchievementSystem() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">{category}</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {badges.map((badge, index) => {
-                    const IconComponent = badgeIcons[badge.type] || Award;
+                    const IconComponent = badgeIcons[badge.type] || RiAwardLine;
                     const colorClass = badgeColors[badge.type] || 'text-blue-600 bg-blue-100';
                     
                     return (
@@ -154,9 +154,9 @@ export default function AchievementSystem() {
     );
 
     const tabs = [
-        { key: 'recent', label: 'Recent Achievements', icon: Award },
-        { key: 'milestones', label: 'Milestone Holders', icon: Trophy },
-        { key: 'badges', label: 'Badge System', icon: Star }
+        { key: 'recent', label: 'Recent Achievements', icon: RiAwardLine },
+        { key: 'milestones', label: 'Milestone Holders', icon: RiTrophyLine },
+        { key: 'badges', label: 'Badge System', icon: RiStarLine }
     ];
 
     if (loading) {
@@ -223,7 +223,7 @@ export default function AchievementSystem() {
                             ))
                         ) : (
                             <div className="text-center py-12">
-                                <Award size={48} className="text-gray-400 mx-auto mb-4" />
+                                <RiAwardLine size={48} className="text-gray-400 mx-auto mb-4" />
                                 <h3 className="text-lg font-medium text-gray-900 mb-2">No Recent Achievements</h3>
                                 <p className="text-gray-600">New achievements will appear here as they're earned!</p>
                             </div>
@@ -239,7 +239,7 @@ export default function AchievementSystem() {
                             ))
                         ) : (
                             <div className="text-center py-12">
-                                <Trophy size={48} className="text-gray-400 mx-auto mb-4" />
+                                <RiTrophyLine size={48} className="text-gray-400 mx-auto mb-4" />
                                 <h3 className="text-lg font-medium text-gray-900 mb-2">No Milestones Yet</h3>
                                 <p className="text-gray-600">Major platform milestones will be celebrated here!</p>
                             </div>
@@ -261,28 +261,28 @@ export default function AchievementSystem() {
                 <h3 className="text-lg font-semibold mb-4">Achievement Statistics</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center p-4 bg-white rounded-lg">
-                        <Award size={20} className="text-blue-600 mx-auto mb-2" />
+                        <RiAwardLine size={20} className="text-blue-600 mx-auto mb-2" />
                         <p className="text-2xl font-bold text-gray-900">
                             {data.recent_achievements?.length || 0}
                         </p>
                         <p className="text-sm text-gray-600">Recent Achievements</p>
                     </div>
                     <div className="text-center p-4 bg-white rounded-lg">
-                        <Trophy size={20} className="text-yellow-600 mx-auto mb-2" />
+                        <RiTrophyLine size={20} className="text-yellow-600 mx-auto mb-2" />
                         <p className="text-2xl font-bold text-gray-900">
                             {data.milestone_holders?.length || 0}
                         </p>
                         <p className="text-sm text-gray-600">Milestone Holders</p>
                     </div>
                     <div className="text-center p-4 bg-white rounded-lg">
-                        <Star size={20} className="text-purple-600 mx-auto mb-2" />
+                        <RiStarLine size={20} className="text-purple-600 mx-auto mb-2" />
                         <p className="text-2xl font-bold text-gray-900">
                             {Object.values(data.badge_categories || {}).reduce((sum, badges) => sum + badges.length, 0)}
                         </p>
                         <p className="text-sm text-gray-600">Available Badges</p>
                     </div>
                     <div className="text-center p-4 bg-white rounded-lg">
-                        <Crown size={20} className="text-orange-600 mx-auto mb-2" />
+                        <RiVipCrownLine size={20} className="text-orange-600 mx-auto mb-2" />
                         <p className="text-2xl font-bold text-gray-900">
                             {data.leaderboard_badges?.length || 0}
                         </p>

@@ -19,11 +19,19 @@ class Bills extends Model
         'product_id',
         'price_id',
         'name',
-        'price',
-        'currency',
+        // Deprecated monetary fields - use supporterCount and social metrics instead
+        // 'price',
+        // 'currency',
+        // 'tax_amount',
         'thumbnail',
-        'tax_amount',
-        'status'
+        'status',
+        // New social engagement fields
+        'supporter_count',
+        'gift_frequency',
+        'creator_growth_rate',
+        'rising_score',
+        'engagement_level',
+        'trending_status'
     ];
 
     protected $appends = [
