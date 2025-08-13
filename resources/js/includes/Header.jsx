@@ -104,13 +104,12 @@ export default function Header({classMagicword}) {
 
                         <div className="spennylogo">
                             <Link href={route("home")}>
-                                <LazyLoadImage
-                                    alt={"image"}
+                                <img
+                                    alt="Spenny Piggy - Financial Gifts, Exclusive Content & Memberships"
                                     height={60}
-
-                                    effect="blur"
-                                    src={spennypiggy}
                                     width={210}
+                                    src={spennypiggy}
+                                    loading="eager"
                                 />
                             </Link>
                         </div>

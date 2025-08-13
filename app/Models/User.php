@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\CacheableModel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -13,7 +14,7 @@ use Ramsey\Uuid\Uuid;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, Notifiable, SoftDeletes;
+    use HasApiTokens, Notifiable, SoftDeletes, CacheableModel;
 
     protected $dates = ['deleted_at'];
 
@@ -255,5 +256,85 @@ public function getFollowingCountAttribute()
     public function referredBills()
     {
         return $this->hasMany(Bills::class, 'user_id');
+    }
+
+    // ───────────────────────
+    // Performance Optimizations
+    // ───────────────────────
+
+    /**
+     * Define common relationships for eager loading
+     */
+    protected function getCommonRelations(): array
+    {
+        return [
+            'social_links',
+            'user_categories',
+            'twitter_token',
+            'creatorShippingAddress'
+        ];
+    }
+
+    /**
+     * Define optimized columns for queries
+     */
+    protected function getOptimizedColumns(): array
+    {
+        return [
+            'id', 'uuid', 'username', 'name', 'email', 'avatar', 'cover',
+            'bio', 'country', 'default_currency', 'approved', 'created_at'
+        ];
+    }
+
+    /**
+     * Get user with cached wish items count
+     */
+    public function getCachedWishItemsCount()
+    {
+        return $this->rememberComputation('wish_items_count', function () {
+            return $this->wishItems()->count();
+        });
+    }
+
+    /**
+     * Get user with cached followers count
+     */
+    public function getCachedFollowersCount()
+    {
+        return $this->rememberComputation('followers_count', function () {
+            return $this->followers()->count();
+        });
+    }
+
+    /**
+     * Scope for users with recent activity
+     */
+    public function scopeWithRecentActivity($query, int $days = 30)
+    {
+        return $query->where(function ($q) use ($days) {
+            $q->whereHas('wishItems', function ($wishQuery) use ($days) {
+                $wishQuery->where('created_at', '>=', now()->subDays($days));
+            })
+            ->orWhereHas('posts', function ($postQuery) use ($days) {
+                $postQuery->where('created_at', '>=', now()->subDays($days));
+            });
+        });
+    }
+
+    /**
+     * Scope for popular users (with caching)
+     */
+    public function scopePopular($query, int $limit = 10)
+    {
+        $cacheKey = "popular_users_{$limit}";
+        
+        return Cache::remember($cacheKey, 3600, function () use ($query, $limit) {
+            return $query
+                ->withCount(['wishItems', 'followers'])
+                ->orderByDesc('wish_items_count')
+                ->orderByDesc('followers_count')
+                ->limit($limit)
+                ->get();
+        });
     }
 }

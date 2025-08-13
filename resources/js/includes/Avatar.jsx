@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from "@inertiajs/react";
-import { LazyLoadImage } from 'react-lazy-load-image-component';
+import ModernImage from '../Components/ModernImage';
 import userphoto from "../../assets/siteicon.png";
 import { RiVerifiedBadgeFill } from "react-icons/ri";
 
@@ -21,13 +21,20 @@ export default function Avatar({ src, role, profile_status_lock, imageSrc, name,
         <div className="avatar-wrap">
           <Link href={url || `/${link || username}`} className="useravatar">
             <div className="avatar ">
-              <LazyLoadImage
+              <ModernImage
                 src={imageSrc || src || userphoto}
                 alt="image-avatar"
-                className="img-fluid "
-                effect="blur"
-                height={100}
+                className="img-fluid"
                 width={100}
+                height={100}
+                loading="lazy"
+                decoding="async"
+                objectFit="cover"
+                responsive={true}
+                formats={['webp', 'avif']}
+                quality={85}
+                aspectRatio="1/1"
+                placeholder="blur"
               />
             </div>
             <div className="avatar-content">
@@ -42,7 +49,17 @@ export default function Avatar({ src, role, profile_status_lock, imageSrc, name,
         <div className="avatar-wrap">
           <div className="useravatar">
             <div className="avatar">
-              <img src={imageSrc || src} alt="image-avatar" className="img-fluid" />
+              <ModernImage
+                src={imageSrc || src}
+                alt="image-avatar"
+                className="img-fluid"
+                objectFit="cover"
+                responsive={true}
+                formats={['webp', 'avif']}
+                quality={85}
+                aspectRatio="1/1"
+                placeholder="blur"
+              />
             </div>
             <div className="avatar-content">
               <h2>{name}</h2>

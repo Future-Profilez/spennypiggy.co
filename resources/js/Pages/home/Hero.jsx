@@ -1,8 +1,12 @@
 import React from 'react'
 import { Link, Head } from "@inertiajs/react";
+import ModernImage from '../../Components/ModernImage';
 import itsfree from "../../../assets/img/itsfree.png";
 import itsfreemob from "../../../assets/img/itsfree-mob.png";
 import herobanner from '../../../assets/new/HeroBg.png';
+
+// 1x1 transparent placeholder for critical LCP optimization
+const transparentPixel = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB2aWV3Qm94PSIwIDAgMSAxIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9InRyYW5zcGFyZW50Ii8+PC9zdmc+';
 import proud from '../../../assets/img/proud.png';
 import TrustBox from './TrustBox';
 import Scrollspy from 'react-scrollspy';
@@ -96,7 +100,18 @@ export default function Hero({auth}) {
       </div>
 
 
-      <div style={{ backgroundImage:`url(${herobanner})` }}  id="home" className="heroSec pb-2 sm:pb-10 position-relative">
+      {/* Critical LCP optimization: Inline 1x1 transparent placeholder */}
+      <img 
+        src={transparentPixel} 
+        alt="" 
+        width="1" 
+        height="1" 
+        style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
+        loading="eager"
+        fetchPriority="high"
+      />
+      
+      <div id="home" className="heroSec heroSec--optimized pb-2 sm:pb-10 position-relative">
         <div className="containerbox">
           <div className="welcome" data-aos="zoom-out" >
               <div className="welcomeLeft m-auto pt-[50px] xl:pt-[80px] d-table">
@@ -129,13 +144,33 @@ export default function Hero({auth}) {
                     }
 
                     <div className='absolute top-[35px] -right-[77%] max-w-[300px] hidden md:block' >
-                      <img alt={"image"}  className=' '
+                      <ModernImage
                         src={itsfree}
+                        alt="It's free badge"
+                        className=""
+                        priority={true}
+                        responsive={true}
+                        formats={['webp', 'avif']}
+                        quality={85}
+                        loading="eager"
+                        decoding="async"
+                        width={300}
+                        height={"auto"}
                       />
                     </div>
                     <div className='itsfree-tag block md:hidden' >
-                      <img alt={"image"}  className=' '
+                      <ModernImage
                         src={itsfreemob}
+                        alt="It's free mobile badge"
+                        className=""
+                        priority={true}
+                        responsive={true}
+                        formats={['webp', 'avif']}
+                        quality={85}
+                        loading="eager"
+                        decoding="async"
+                        width={200}
+                        height={"auto"}
                       />
                     </div>
                   </div>

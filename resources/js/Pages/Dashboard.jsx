@@ -5,7 +5,7 @@ import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
 import { addicon } from "@/includes/Icons";
 const Wishlist = React.lazy(() => import("./Auth/Wishlist"));
 const Wishlistbox = React.lazy(() => import("@/wishlist/Wishlistbox"));
-const Userprofile = React.lazy(() => import("@/wishlist/Userprofile"));
+import Userprofile from "@/wishlist/Userprofile";
 const ShareProfile = React.lazy(() => import("@/wishlist/ShareProfile"));
 const Nocontent = React.lazy(() => import("@/includes/Nocontent"));
 const LoadingScreen = React.lazy(() => import("@/includes/LoadingScreen"));
@@ -409,13 +409,14 @@ export default function Dashboard(props) {
                         {/* <Side /> */}
                         <div className="wishbanner relative ">
                             <div className="relative">
-                                <LazyLoadImage
-                                    alt={"image"}
-                                    effect="blur"
+                                <img
+                                    alt={`${user?.name} - Cover Image`}
                                     height={400} 
+                                    width={1200}
                                     className="w-full border-black border-2 shadow-mint rounded-[30px]"
                                     src={user?.cover_url || wishlistbannerimg}
-                                    width={1200}
+                                    loading="eager"
+                                    fetchPriority="high"
                                 />
                                 {IsloggedIn &&
                                 auth &&

@@ -33,10 +33,12 @@ use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
 use App\Rules\ValidSubscriptionPeriod;
+use App\Services\CacheService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -593,63 +595,65 @@ class WishitemController extends Controller
     public function discover_all_wishes($order, $type, $price)
     {
         $tag = request()->query('tag') ? str_replace('-', ' ', request()->query('tag')) : false;
+        $cacheKey = "discover_wishes_{$order}_{$type}_{$price}_" . md5($tag ?? '');
 
-        $query = WishItem::query()
-            ->whereNull('deleted_at')
-            ->where('is_approved', 1)
-            ->with(['user'])
-            ->whereHas('user', function ($q) use ($tag) {
-                $q->where('is_uk', 0)->where('profile_status_lock', 2)->where('profile_reject_reason', null);
-                // $q->where(function ($s) {
-                //     $s->whereNot('country', 'GB')->orWhereNull('country');
-                // });
+        return CacheService::remember($cacheKey, CacheService::SHORT_CACHE, function () use ($order, $type, $price, $tag) {
+            $query = WishItem::query()
+                ->forListing()
+                ->whereHas('user', function ($q) use ($tag) {
+                    $q->where('is_uk', 0)->where('profile_status_lock', 2)->where('profile_reject_reason', null);
+                    
+                    if ($tag) {
+                        $q->whereJsonContains('creator_category', $tag);
+                    }
+                });
 
-                if ($tag) {
-                    $q->whereJsonContains('creator_category', $tag);
-                }
-            });
+            // Order by condition with performance optimization
+            if ($order === 'new') {
+                $query->latest();
+            } elseif ($order === 'trending') {
+                $query->trending();
+            }
 
-        // Order by condition
-        if ($order === 'new') {
-            $query->latest();
-        }
+            // Price range filter
+            $priceRanges = [
+                '5to10' => [4.99, 9.99],
+                '10to30' => [9.99, 29.99],
+                '30to50' => [29.99, 49.99],
+                '50to100' => [49.99, 99.99],
+            ];
 
-        // Price range filter
-        $priceRanges = [
-            '5to10' => [4.99, 9.99],
-            '10to30' => [9.99, 29.99],
-            '30to50' => [29.99, 49.99],
-            '50to100' => [49.99, 99.99],
-        ];
+            if (isset($priceRanges[$price])) {
+                $query->whereBetween('price', $priceRanges[$price]);
+            } elseif ($price === '100plus') {
+                $query->where('price', '>', 99.99);
+            }
 
-        if (isset($priceRanges[$price])) {
-            $query->whereBetween('price', $priceRanges[$price]);
-        } elseif ($price === '100plus') {
-            $query->where('price', '>', 99.99);
-        }
+            // Subscription type filter
+            $subscriptionTypes = [
+                'subscription' => 1,
+                'crowdfund' => 2,
+                'single' => 0,
+            ];
 
-        // Subscription type filter
-        $subscriptionTypes = [
-            'subscription' => 1,
-            'crowdfund' => 2,
-            'single' => 0,
-        ];
+            if (isset($subscriptionTypes[$type])) {
+                $query->where('subscription', $subscriptionTypes[$type]);
+            }
 
-        if (isset($subscriptionTypes[$type])) {
-            $query->where('subscription', $subscriptionTypes[$type]);
-        }
-
-        // Pagination and response
-        $wishes = $query->paginate(30);
-
-        return response()->json([
-            'success' => true,
-            'wishes' => $wishes,
-            'last_page' => $wishes->lastPage(),
-            'current_page' => $wishes->currentPage(),
-            'total' => $wishes->total(),
-            'per_page' => $wishes->perPage(),
-        ]);
+            // Use cached pagination
+            $wishes = $query->cachedPaginate(30);
+            
+            return [
+                'success' => true,
+                'wishes' => $wishes,
+                'last_page' => $wishes->lastPage(),
+                'current_page' => $wishes->currentPage(),
+                'total' => $wishes->total(),
+                'per_page' => $wishes->perPage(),
+            ];
+        });
+        
+        return response()->json($result);
     }
 
     public function discover_all_creators($order, $gender)

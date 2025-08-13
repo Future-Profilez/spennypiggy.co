@@ -17,7 +17,7 @@ body{position:relative;font-family:var(--para-font)}
 .btn-pink.shadow-mint{box-shadow:2px 3px 0 0 var(--mint)}
 .btn-pink.shadow-mint:hover{box-shadow:5px 5px 0 0 var(--mint)}
 .btn-pink lg:hover,.btn-pink lg:focus{box-shadow:none;transition:all ease 0.3s}
-.rotate-btn a,.rotate-btn button:hover,.rotate-btn a,.rotate-btn button:focus{transform:rotate(5deg);box-shadow:8px 8px 0 0 rgba(0,0,0,0.9)}
+.rotate-btn a,.rotate-btn button:hover,.rotate-btn a,.rotate-btn button:focus{transform:rotate(5deg) translateZ(0);box-shadow:8px 8px 0 0 rgba(0,0,0,0.9);will-change:transform}
 .btn-pink-md{border-radius:15px;border:1px solid var(--black);background:var(--pink);color:var(--white);font-family:var(--heading-font);font-size:18px;font-style:normal;font-weight:400;line-height:19px;text-transform:uppercase;width:286px;height:60px;display:flex;text-align:center;align-items:center;align-content:center;justify-content:center;box-shadow:6px 6px 0 0 rgba(0,0,0,0.9);transition:all ease 0.3s}
 .bt-wh{border-radius:10px;border:1px solid var(--voilet);background:var(--white);box-shadow:5px 5px 0px 0px var(--voilet);display:flex;width:100%;padding:14px 10px;text-align:center;align-items:center;align-content:center;justify-content:center;color:var(--voilet);font-size:22px;font-style:normal;font-weight:400;line-height:120%;letter-spacing:-1.98px;cursor:pointer}
 .btn-mint{border-radius:9px;background:var(--mint);box-shadow:4px 4px 0px 0px var(--black);color:var(--voilet);text-align:right;font-family:var(--heading-font);font-size:20px;font-style:normal;font-weight:400;line-height:15px;text-transform:uppercase;display:inline-flex;width:130px;height:51px;align-items:center;align-content:center;justify-content:center;transition:all ease 0.3s}
@@ -124,7 +124,7 @@ body{position:relative;font-family:var(--para-font)}
 @keyframes load{0%{opacity:0}
 100%{opacity:1;transform:scale(1.1)}
 }
-.wish-item-box{animation:load linear 0.3s}
+.wish-item-box{animation:load linear 0.3s;will-change:transform,opacity;transform:translateZ(0)}
 /* tabs */
 .inlinetab .nav-tabs{padding-bottom:20px}
 .inlinetab .nav-tabs li button{font-size:19px;color:#afafaf !important;margin-right:20px;border-bottom:3px solid transparent;padding-bottom:10px;background:transparent !important;border:0 !important;padding-left:2px}

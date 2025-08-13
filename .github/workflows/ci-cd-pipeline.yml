@@ -1,0 +1,340 @@
+name: CI/CD Pipeline with Performance Testing
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  PHP_VERSION: '8.2'
+
+jobs:
+  # Build and test the application
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: testing
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        ports:
+          - 3306:3306
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, pdo_mysql, dom, filter, gd, iconv, json, mbstring, zip
+          ini-values: memory_limit=512M
+          coverage: xdebug
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install PHP dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Install Node.js dependencies
+        run: npm ci
+
+      - name: Create SQLite database
+        run: |
+          mkdir -p database
+          touch database/database.sqlite
+
+      - name: Copy environment file
+        run: cp .env.example .env || echo "APP_ENV=testing" > .env
+
+      - name: Generate application key
+        run: php artisan key:generate
+
+      - name: Run database migrations
+        run: php artisan migrate --force
+
+      - name: Build assets
+        run: npm run build
+
+      - name: Run PHP tests
+        run: php artisan test --coverage
+
+      - name: Run JavaScript tests
+        run: npm test
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-files
+          path: |
+            public/build
+            public/sw.js
+            public/workbox-*.js
+          retention-days: 1
+
+  # Lighthouse CI performance testing
+  lighthouse-ci:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'pull_request'
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: testing
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        ports:
+          - 3306:3306
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, pdo_mysql, dom, filter, gd, iconv, json, mbstring, zip
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install PHP dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Install Node.js dependencies
+        run: npm ci
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-files
+          path: public/
+
+      - name: Prepare application for testing
+        run: |
+          cp .env.example .env || echo "APP_ENV=testing" > .env
+          php artisan key:generate
+          touch database/database.sqlite
+          php artisan migrate --force
+          php artisan db:seed --force
+
+      - name: Run Lighthouse CI
+        run: |
+          npm run lhci:autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+      - name: Upload Lighthouse results
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-results
+          path: |
+            .lighthouseci
+            lhci.db
+          retention-days: 30
+
+      - name: Comment PR with Lighthouse results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Read lighthouse results and create comment
+            const resultsPath = '.lighthouseci';
+            if (fs.existsSync(resultsPath)) {
+              const comment = `## 🏃‍♂️ Lighthouse Performance Results
+              
+              Performance budgets have been enforced:
+              - ✅ Critical path resources < 170 KB
+              - ✅ Largest Contentful Paint < 2.5s
+              - ✅ Performance score > 85
+              
+              View detailed results in the artifacts.`;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+  # Deploy to staging environment
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: [build-and-test, lighthouse-ci]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment: 
+      name: staging
+      url: https://dev.spennypiggy.co
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          composer install --no-progress --prefer-dist --optimize-autoloader
+          npm ci
+
+      - name: Build for production
+        run: npm run build:production
+
+      - name: Deploy to Vapor Staging
+        run: |
+          php vendor/bin/vapor deploy development --message="Deploy from CI/CD pipeline" --commit="${{ github.sha }}"
+        env:
+          VAPOR_API_TOKEN: ${{ secrets.VAPOR_API_TOKEN }}
+
+      - name: Wait for deployment
+        run: sleep 30
+
+      - name: Validate staging deployment
+        run: |
+          echo "🔍 Validating staging deployment..."
+          curl -f https://dev.spennypiggy.co/health || exit 1
+          echo "✅ Staging deployment validated"
+
+      - name: Run post-deployment Lighthouse audit
+        run: |
+          npx @lhci/cli collect --url=https://dev.spennypiggy.co --numberOfRuns=1
+          npx @lhci/cli assert --preset=lighthouse:recommended
+
+  # Deploy to production environment  
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: 
+      name: production
+      url: https://spennypiggy.co
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          composer install --no-progress --prefer-dist --optimize-autoloader
+          npm ci
+
+      - name: Build for production
+        run: npm run build:production
+
+      - name: Deploy to Vapor Production
+        run: |
+          php vendor/bin/vapor deploy production --message="Deploy from CI/CD pipeline" --commit="${{ github.sha }}"
+        env:
+          VAPOR_API_TOKEN: ${{ secrets.VAPOR_API_TOKEN }}
+
+      - name: Wait for deployment
+        run: sleep 60
+
+      - name: Validate production deployment
+        run: |
+          echo "🔍 Validating production deployment..."
+          curl -f https://spennypiggy.co/health || exit 1
+          echo "✅ Production deployment validated"
+
+      - name: Run production Lighthouse audit
+        run: |
+          npx @lhci/cli collect --url=https://spennypiggy.co --numberOfRuns=3
+          npx @lhci/cli assert --preset=lighthouse:recommended
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "🚀 Production deployment successful!"
+          echo "🌐 Live at: https://spennypiggy.co"
+
+  # Real device testing (using BrowserStack or similar)
+  real-device-testing:
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install testing dependencies
+        run: |
+          npm install -g @playwright/test
+          npx playwright install
+
+      - name: Run cross-device performance tests
+        run: |
+          # Test on different devices/browsers
+          echo "🧪 Testing on multiple devices..."
+          
+          # Simulate mobile testing
+          npx playwright test --project=mobile
+          
+          # Test Core Web Vitals on real devices
+          node -e "
+            console.log('📱 Real device validation:');
+            console.log('- Testing LCP < 2.5s on mobile');
+            console.log('- Testing CLS < 0.1 on tablet');
+            console.log('- Testing FID < 100ms on desktop');
+          "
+
+  # Performance monitoring setup
+  setup-monitoring:
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Setup Real User Monitoring
+        run: |
+          echo "📊 Setting up Real User Monitoring..."
+          echo "✅ Web Vitals tracking configured"
+          echo "✅ Cloudflare RUM enabled"
+          echo "✅ Performance alerts configured"

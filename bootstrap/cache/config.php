@@ -44,7 +44,9 @@
       23 => 'App\\Providers\\AuthServiceProvider',
       24 => 'App\\Providers\\EventServiceProvider',
       25 => 'App\\Providers\\RouteServiceProvider',
-      26 => 'Intervention\\Image\\ImageServiceProvider',
+      26 => 'App\\Providers\\CriticalCssServiceProvider',
+      27 => 'App\\Providers\\ResourcePreloadServiceProvider',
+      28 => 'Intervention\\Image\\ImageServiceProvider',
     ),
     'aliases' => 
     array (
@@ -429,7 +431,7 @@
   array (
     'ssr' => 
     array (
-      'enabled' => true,
+      'enabled' => false,
       'url' => 'http://127.0.0.1:13714',
     ),
     'testing' => 
@@ -634,6 +636,14 @@
       array (
         'path' => '/Users/shrii/WORK/spennypiggy.co/storage/logs/laravel.log',
       ),
+      'performance' => 
+      array (
+        'driver' => 'daily',
+        'path' => '/Users/shrii/WORK/spennypiggy.co/storage/logs/performance.log',
+        'level' => 'debug',
+        'days' => 30,
+        'replace_placeholders' => true,
+      ),
     ),
   ),
   'mail' => 
@@ -701,6 +711,66 @@
       array (
         0 => '/Users/shrii/WORK/spennypiggy.co/resources/views/vendor/mail',
       ),
+    ),
+  ),
+  'modern-images' => 
+  array (
+    'quality' => 85,
+    'formats' => 
+    array (
+      'webp' => true,
+      'avif' => true,
+    ),
+    'responsive_sizes' => 
+    array (
+      'mobile' => 320,
+      'mobile_large' => 640,
+      'tablet' => 768,
+      'desktop_small' => 1024,
+      'desktop' => 1280,
+      'desktop_large' => 1920,
+    ),
+    'default_sizes' => '(max-width: 320px) 300px, (max-width: 640px) 600px, (max-width: 768px) 720px, (max-width: 1024px) 960px, (max-width: 1280px) 1200px, 100vw',
+    'cache_ttl' => 86400,
+    'cdn' => 
+    array (
+      'uploadcare' => 
+      array (
+        'enabled' => true,
+        'base_url' => 'https://ucarecdn.com/',
+        'quality_suffix' => '/-/quality/',
+        'format_suffix' => '/-/format/',
+        'resize_suffix' => '/-/resize/',
+        'progressive_suffix' => '/-/progressive/yes/',
+      ),
+    ),
+    'lazy_loading' => 
+    array (
+      'enabled' => true,
+      'root_margin' => '50px',
+      'threshold' => 0.01,
+      'placeholder_type' => 'blur',
+    ),
+    'critical_images' => 
+    array (
+      'hero_images' => true,
+      'logo_images' => true,
+      'first_post_image' => true,
+      'profile_avatars_above_fold' => true,
+    ),
+    'driver' => 'gd',
+    'error_handling' => 
+    array (
+      'log_errors' => true,
+      'fallback_to_original' => true,
+      'show_processing_errors' => false,
+    ),
+    'performance' => 
+    array (
+      'enable_progressive_jpeg' => true,
+      'strip_metadata' => true,
+      'optimize_for_web' => true,
+      'max_processing_size' => 4096,
     ),
   ),
   'queue' => 

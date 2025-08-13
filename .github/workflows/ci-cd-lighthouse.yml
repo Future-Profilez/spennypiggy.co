@@ -1,0 +1,311 @@
+name: CI/CD with Lighthouse Performance Testing
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # Build and Test Job
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: spennypiggy_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, dom, filter, gd, iconv, json, mbstring, zip
+        ini-values: post_max_size=256M, upload_max_filesize=256M, max_execution_time=300
+        coverage: xdebug
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Copy environment file
+      run: cp .env.example .env
+      
+    - name: Update environment for testing
+      run: |
+        sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
+        sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
+        sed -i 's/DB_PORT=.*/DB_PORT=3306/' .env
+        sed -i 's/DB_DATABASE=.*/DB_DATABASE=spennypiggy_test/' .env
+        sed -i 's/DB_USERNAME=.*/DB_USERNAME=root/' .env
+        sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=root/' .env
+        sed -i 's/APP_ENV=.*/APP_ENV=testing/' .env
+        echo "APP_KEY=base64:$(openssl rand -base64 32)" >> .env
+        
+    - name: Cache Composer dependencies
+      uses: actions/cache@v3
+      with:
+        path: /tmp/composer-cache
+        key: ${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
+        
+    - name: Install Composer dependencies
+      run: |
+        composer install --no-progress --prefer-dist --optimize-autoloader --no-dev
+        
+    - name: Install Node dependencies
+      run: npm ci
+      
+    - name: Build assets
+      run: npm run build
+      
+    - name: Generate application key
+      run: php artisan key:generate
+      
+    - name: Run database migrations
+      run: php artisan migrate --force
+      
+    - name: Run PHP tests
+      run: php artisan test --coverage --min=80
+      
+    - name: Run ESLint
+      run: npm run lint --if-present
+      
+    - name: Upload test coverage
+      uses: codecov/codecov-action@v3
+      if: success()
+      
+  # Lighthouse CI Performance Testing
+  lighthouse-ci:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'pull_request'
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: spennypiggy_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, dom, filter, gd, iconv, json, mbstring, zip
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        composer install --no-progress --prefer-dist --optimize-autoloader
+        npm ci
+        
+    - name: Build assets
+      run: npm run build
+      
+    - name: Setup environment
+      run: |
+        cp .env.example .env
+        sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
+        sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
+        sed -i 's/DB_PORT=.*/DB_PORT=3306/' .env
+        sed -i 's/DB_DATABASE=.*/DB_DATABASE=spennypiggy_test/' .env
+        sed -i 's/DB_USERNAME=.*/DB_USERNAME=root/' .env
+        sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=root/' .env
+        echo "APP_KEY=base64:$(openssl rand -base64 32)" >> .env
+        php artisan key:generate
+        php artisan migrate --force
+        
+    - name: Start Laravel server
+      run: php artisan serve --host=0.0.0.0 --port=8000 &
+      env:
+        APP_ENV: testing
+        
+    - name: Wait for server to start
+      run: |
+        timeout 30 bash -c 'until curl -s http://localhost:8000/health > /dev/null; do sleep 1; done' || echo "Server may not be responding to /health, trying root..."
+        timeout 30 bash -c 'until curl -s -f http://localhost:8000/ > /dev/null; do sleep 1; done' || echo "Server started but may have issues"
+        
+    - name: Install Lighthouse CI
+      run: npm install -g @lhci/cli@0.12.x
+      
+    - name: Run Lighthouse CI
+      run: lhci autorun
+      env:
+        LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+        LHCI_BUILD_CONTEXT__CURRENT_HASH: ${{ github.sha }}
+        LHCI_BUILD_CONTEXT__COMMIT_TIME: ${{ github.event.head_commit.timestamp }}
+        
+    - name: Upload Lighthouse results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: lighthouse-results
+        path: .lighthouseci/
+        
+  # Staging Deployment
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: [build-and-test, lighthouse-ci]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment: staging
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install Vapor CLI
+      run: npm install -g laravel-vapor-cli
+      
+    - name: Configure Vapor
+      run: |
+        echo "${{ secrets.VAPOR_API_TOKEN }}" | vapor login --token
+        
+    - name: Deploy to Staging
+      run: vapor deploy staging
+      env:
+        VAPOR_API_TOKEN: ${{ secrets.VAPOR_API_TOKEN }}
+        
+    - name: Run staging health checks
+      run: |
+        sleep 30  # Wait for deployment
+        curl -f https://staging.spennypiggy.co/health || exit 1
+        
+    - name: Run post-deployment Lighthouse audit
+      run: |
+        npx @lhci/cli@0.12.x autorun \
+          --upload.target=temporary-public-storage \
+          --collect.url=https://staging.spennypiggy.co \
+          --collect.numberOfRuns=3
+          
+    - name: Notify deployment success
+      uses: 8398a7/action-slack@v3
+      if: success()
+      with:
+        status: success
+        text: '🚀 Staging deployment successful!'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        
+  # Production Deployment
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install Vapor CLI
+      run: npm install -g laravel-vapor-cli
+      
+    - name: Configure Vapor
+      run: |
+        echo "${{ secrets.VAPOR_API_TOKEN }}" | vapor login --token
+        
+    - name: Deploy to Production
+      run: vapor deploy production
+      env:
+        VAPOR_API_TOKEN: ${{ secrets.VAPOR_API_TOKEN }}
+        
+    - name: Run production health checks
+      run: |
+        sleep 60  # Wait for deployment
+        curl -f https://spennypiggy.co/health || exit 1
+        
+    - name: Run production performance audit
+      run: |
+        npx @lhci/cli@0.12.x autorun \
+          --upload.target=temporary-public-storage \
+          --collect.url=https://spennypiggy.co \
+          --collect.numberOfRuns=5 \
+          --collect.settings.throttling.rttMs=40 \
+          --collect.settings.throttling.throughputKbps=10240 \
+          --collect.settings.throttling.cpuSlowdownMultiplier=1
+          
+    - name: Monitor Web Vitals
+      run: |
+        curl -X POST https://spennypiggy.co/api/analytics/web-vitals/monitor \
+          -H "Content-Type: application/json" \
+          -d '{"deployment": true, "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)'"}' || echo "Monitoring API not available"
+          
+    - name: Notify deployment success
+      uses: 8398a7/action-slack@v3
+      if: success()
+      with:
+        status: success
+        text: '✅ Production deployment successful! 🎉'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        
+    - name: Notify deployment failure
+      uses: 8398a7/action-slack@v3
+      if: failure()
+      with:
+        status: failure
+        text: '❌ Production deployment failed!'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Performance Monitoring Job
+  performance-monitoring:
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Wait for deployment to stabilize
+      run: sleep 120
+      
+    - name: Run comprehensive performance test
+      run: |
+        npx @lhci/cli@0.12.x autorun \
+          --upload.target=temporary-public-storage \
+          --collect.url=https://spennypiggy.co \
+          --collect.numberOfRuns=10 \
+          --collect.settings.onlyCategories=performance \
+          --assert.assertMatrix[0].matchingUrlPattern=https://spennypiggy.co \
+          --assert.assertMatrix[0].assertions.categories:performance=0.85 \
+          --assert.assertMatrix[0].assertions.categories:accessibility=0.90 \
+          --assert.assertMatrix[0].assertions.categories:best-practices=0.85 \
+          --assert.assertMatrix[0].assertions.categories:seo=0.90
+          
+    - name: Upload performance monitoring results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: production-performance-results
+        path: .lighthouseci/
+        retention-days: 30

@@ -12,7 +12,47 @@ body{background:#000;}
 .wishlistimg span.lazy-load-image-background{display:block !important;width:100% !important;height:100% !important;}
 .box{padding:15px;border-radius:20px;background:#fff;border:1px solid #d6d6d6;}
 .containerbox{max-width:1215px;margin:auto;padding:0 15px;}
+/* Original fallback for older browsers */
 .heroSec{background:var(--black);}
+
+/* Optimized hero background with CSS image-set() for LCP optimization */
+.heroSec--optimized {
+  background: var(--black);
+  
+  /* Modern browsers with image-set() support */
+  background-image: image-set(
+    url('../assets/new/HeroBg.webp') type('image/webp'),
+    url('../assets/new/HeroBg.avif') type('image/avif'),
+    url('../assets/new/HeroBg.png') type('image/png')
+  );
+  
+  /* Fallback for browsers without image-set support */
+  background-image: url('../assets/new/HeroBg.png');
+  
+  /* Optimal background properties for performance */
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-attachment: scroll; /* Avoid fixed for better mobile performance */
+  
+  /* Responsive background sizing */
+  @media (max-width: 768px) {
+    background-size: cover;
+    background-position: center top;
+  }
+  
+  @media (max-width: 480px) {
+    background-size: cover;
+    background-position: center top;
+    /* Consider smaller mobile-specific image */
+    background-image: image-set(
+      url('../assets/new/HeroBg-mobile.webp') type('image/webp'),
+      url('../assets/new/HeroBg-mobile.avif') type('image/avif'),
+      url('../assets/new/HeroBg-mobile.png') type('image/png')
+    );
+    background-image: url('../assets/new/HeroBg-mobile.png'); /* fallback */
+  }
+}
 .carticon svg path{fill:var(--black);}
 .header{margin:0 auto;}
 .headtitle{width:33.33%;font-size:24px;text-transform:uppercase;}

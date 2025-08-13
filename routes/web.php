@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\Auth\WishitemController;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
@@ -225,6 +226,9 @@ Route::get('/splashscreen.png', function () {
     ]);
 })->name('32.image.file');
 
+// Health Check Endpoints for CI/CD Pipeline
+Route::get('/health', [HealthController::class, 'index'])->name('health.check');
+Route::get('/health/detailed', [HealthController::class, 'detailed'])->name('health.detailed');
 
 
 require __DIR__ . '/auth.php';

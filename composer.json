@@ -25,6 +25,7 @@
         "pragmarx/recovery": "^0.2.1",
         "silviolleite/laravelpwa": "^2.0",
         "spatie/emoji": "^4.0",
+        "spatie/image": "^3.8",
         "stripe/stripe-php": "^16.4",
         "tightenco/ziggy": "^1.0",
         "uploadcare/uploadcare-php": "^4.1"

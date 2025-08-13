@@ -50,9 +50,78 @@ class Post extends Model
     {
         $url = false;
         if (!empty($this->image)) {
-            $url = "https://ucarecdn.com/" . $this->image . '/-/format/jpeg/';
+            $url = "https://ucarecdn.com/" . $this->image . '/-/format/jpeg/-/quality/85/';
         }
         return $url;
+    }
+
+    /**
+     * Get optimized image URL with modern format support
+     */
+    public function getOptimizedImageUrl(string $format = 'webp', int $quality = 85, array $options = []): string
+    {
+        if (empty($this->image)) {
+            return '';
+        }
+
+        $baseUrl = "https://ucarecdn.com/" . $this->image;
+        $transformations = [];
+
+        // Add format transformation
+        if (in_array($format, ['webp', 'avif', 'jpeg', 'png'])) {
+            $transformations[] = "format/{$format}";
+        }
+
+        // Add quality transformation
+        $transformations[] = "quality/{$quality}";
+
+        // Add resize if specified
+        if (isset($options['width'])) {
+            $width = $options['width'];
+            $height = $options['height'] ?? '';
+            $transformations[] = "resize/{$width}x{$height}";
+        }
+
+        // Add other transformations
+        if (isset($options['progressive']) && $options['progressive']) {
+            $transformations[] = 'progressive/yes';
+        }
+
+        return $baseUrl . '/-/' . implode('/-/', $transformations) . '/';
+    }
+
+    /**
+     * Get responsive image data for modern formats
+     */
+    public function getResponsiveImageData(): array
+    {
+        if (empty($this->image)) {
+            return [];
+        }
+
+        $baseUrl = "https://ucarecdn.com/" . $this->image;
+        $sizes = [320, 640, 768, 1024, 1280, 1920];
+        $formats = ['original', 'webp', 'avif'];
+        
+        $data = [
+            'original' => $baseUrl . '/-/format/jpeg/-/quality/85/',
+            'formats' => [
+                'webp' => $baseUrl . '/-/format/webp/-/quality/85/',
+                'avif' => $baseUrl . '/-/format/avif/-/quality/85/'
+            ],
+            'responsive' => []
+        ];
+
+        foreach ($formats as $format) {
+            $formatUrl = $format === 'original' ? $data['original'] : $data['formats'][$format];
+            $data['responsive'][$format] = [];
+
+            foreach ($sizes as $size) {
+                $data['responsive'][$format][$size] = str_replace('/-/quality/', "/-/resize/{$size}x/-/quality/", $formatUrl);
+            }
+        }
+
+        return $data;
     }
 
     public function likes()

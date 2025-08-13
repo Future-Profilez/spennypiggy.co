@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\CacheableModel;
 use App\Uploadcare;
 use App\WatermarkHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,7 +13,7 @@ use Ramsey\Uuid\Uuid;
 
 class WishItem extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, CacheableModel;
     protected $dates = ['deleted_at'];
 
     protected $fillable = [
@@ -153,5 +154,88 @@ class WishItem extends Model
     public function wishItemsSubscription()
     {
         return $this->hasMany(WishItemSubscription::class, 'wish_item_id');
+    }
+
+    // ───────────────────────
+    // Performance Optimizations
+    // ───────────────────────
+
+    /**
+     * Define common relationships for eager loading
+     */
+    protected function getCommonRelations(): array
+    {
+        return [
+            'user' => function ($query) {
+                $query->select('id', 'username', 'name', 'avatar', 'bio');
+            },
+            'wishCategories.category'
+        ];
+    }
+
+    /**
+     * Define optimized columns for queries
+     */
+    protected function getOptimizedColumns(): array
+    {
+        return [
+            'id', 'uuid', 'user_id', 'wishname', 'thumbnail', 'reward',
+            'subscription', 'is_pin', 'supporter_count', 'trending_status', 'created_at'
+        ];
+    }
+
+    /**
+     * Scope for trending wish items
+     */
+    public function scopeTrending($query, int $limit = 20)
+    {
+        return $query
+            ->where('is_approved', true)
+            ->where('trending_status', 'hot')
+            ->orderByDesc('rising_score')
+            ->orderByDesc('supporter_count')
+            ->limit($limit);
+    }
+
+    /**
+     * Scope for popular wish items by category
+     */
+    public function scopePopularByCategory($query, $categoryId, int $limit = 10)
+    {
+        return $query
+            ->whereHas('wishCategories', function ($q) use ($categoryId) {
+                $q->where('user_category_id', $categoryId);
+            })
+            ->where('is_approved', true)
+            ->orderByDesc('supporter_count')
+            ->orderByDesc('engagement_level')
+            ->limit($limit);
+    }
+
+    /**
+     * Scope for user's pinned items
+     */
+    public function scopePinned($query)
+    {
+        return $query->where('is_pin', true);
+    }
+
+    /**
+     * Scope for approved items only
+     */
+    public function scopeApproved($query)
+    {
+        return $query->where('is_approved', true);
+    }
+
+    /**
+     * Scope with essential data for listings
+     */
+    public function scopeForListing($query)
+    {
+        return $query
+            ->select($this->getOptimizedColumns())
+            ->with($this->getCommonRelations())
+            ->approved();
     }
 }
