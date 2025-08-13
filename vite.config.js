@@ -2,7 +2,7 @@ import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import react from '@vitejs/plugin-react';
-import { criticalCss } from './vite-plugins/critical-css.js';
+// import { criticalCss } from './vite-plugins/critical-css.js';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { GenerateSW } from 'workbox-webpack-plugin';
 
