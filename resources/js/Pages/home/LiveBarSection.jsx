@@ -1,5 +1,4 @@
 import LiveBar from '@/includes/LiveBar'
-import React from 'react'
 import spennys from "../../../assets/img/spennys.png";
 import instagram from '../../../assets/img/instagram.png'
 import youtube from '../../../assets/img/youtube.png'

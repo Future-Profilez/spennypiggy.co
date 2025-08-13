@@ -1,5 +1,4 @@
 import { usePage } from '@inertiajs/react';
-import React from 'react'
 import { useState } from 'react';
 import AllContries from '../../includes/AllCountries';
 import { useEffect } from 'react';

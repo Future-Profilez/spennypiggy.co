@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useState } from "react";
 import Popup from "@/Components/Popup";
 import { piggy } from '@/includes/Icons';

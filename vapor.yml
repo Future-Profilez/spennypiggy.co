@@ -17,6 +17,7 @@ environments:
       - "npm ci"
       - "npm run build"
       - "rm -rf node_modules"   # Linux/macOS
+      - "rm -rf package-lock.json"   # Linux/macOS
       # - "rd /s /q node_modules"  # Windows/
     deploy:
       - "php artisan migrate --force"
@@ -42,6 +43,7 @@ environments:
       - "npm ci"
       - "npm run build"
       - "rm -rf node_modules" # Linux/mac/OS
+      - "rm -rf package-lock.json"   # Linux/macOS
       # - "rd /s /q node_modules" # Windows
     deploy:
       - "php artisan migrate --force"

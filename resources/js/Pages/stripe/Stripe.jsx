@@ -2,7 +2,6 @@ import { useAlerts } from "@/Components/Alerts";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import Countries from "@/includes/Countries";
 import { useForm, Head } from "@inertiajs/react";
-import React from "react";
 import { useState } from "react";
 import { useRef } from "react";
 import Popup from '@/Components/Popup';

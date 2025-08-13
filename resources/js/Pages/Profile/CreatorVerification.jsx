@@ -1,6 +1,6 @@
 import { Link, usePage } from "@inertiajs/react";
 import axios from "axios";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { ProgressBar, Collapse } from "react-bootstrap";
 import AddIntro from "../intros/AddIntro";
 import EditProfile from "../account/EditProfile";

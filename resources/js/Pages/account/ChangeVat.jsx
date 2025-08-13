@@ -1,5 +1,4 @@
 import { useAlerts } from "@/Components/Alerts";
-import React from "react";
 import  LoaderButton from "@/Components/LoaderButton";
 import { useForm } from "@inertiajs/react";
 import Select from 'react-select';

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from "react";
 import confetti from 'canvas-confetti';
 
 export default function Confetti  ({sender, is_read_owner, children, onclick, classes}) {

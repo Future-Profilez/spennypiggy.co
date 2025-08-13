@@ -1,8 +1,8 @@
-import React from 'react';
 import { Link } from "@inertiajs/react";
+import { useState } from "react";
 
 export default function UpgradeStripeAccount() {
-    const [loading, setLoading] = React.useState(false);
+    const [loading, setLoading] = useState(false);
   return (
     <>
         <div className="w-full finishs  mb-4 rounded-3xl bg-white !border-voilet  shadow-voilet  ">

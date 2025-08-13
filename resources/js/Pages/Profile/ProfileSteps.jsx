@@ -1,6 +1,5 @@
 import { Link, usePage } from "@inertiajs/react";
 import axios from "axios";
-import React from "react";
 import { useState } from "react";
 import { useEffect } from "react";
 import { ProgressBar } from "react-bootstrap";

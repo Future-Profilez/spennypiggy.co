@@ -218,12 +218,9 @@ class CacheInertiaResponse
      */
     private function addCompressionHeaders(SymfonyResponse $response): SymfonyResponse
     {
-        // Enable compression for text-based responses
-        if ($this->shouldCompress($response)) {
-            $response->headers->set('Content-Encoding', 'gzip');
-            $response->headers->set('Vary', 'Accept-Encoding');
-        }
-
+        // Don't add compression headers - let the server handle compression
+        // This was causing issues where headers were set but content wasn't actually compressed
+        
         // Add cache control headers
         if ($response->isSuccessful()) {
             $response->headers->set('Cache-Control', 'public, max-age=300, s-maxage=600');

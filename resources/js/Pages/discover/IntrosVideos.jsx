@@ -1,11 +1,11 @@
+import { lazy } from "react";
 import { Link } from '@inertiajs/react';
-import React from 'react';
 import { useState } from 'react';
 import axios from 'axios';
 import { useEffect } from 'react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
-const LoadingScreen = React.lazy(() => import('@/includes/LoadingScreen'));
-const Nocontent = React.lazy(() => import('@/includes/Nocontent'));
+const LoadingScreen = lazy(() => import('@/includes/LoadingScreen'));
+const Nocontent = lazy(() => import('@/includes/Nocontent'));
 import userphoto from "../../../assets/siteicon.png";
 import Popup from '@/Components/Popup';
 

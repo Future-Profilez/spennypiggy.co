@@ -1,6 +1,6 @@
 import LoaderButton from "@/Components/LoaderButton";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
-import React, { useState } from "react";
+import { useState } from "react";
 import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
 

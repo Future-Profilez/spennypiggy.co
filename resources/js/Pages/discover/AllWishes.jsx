@@ -1,11 +1,10 @@
 import { usePage } from "@inertiajs/react";
-import React from "react";
-import { useState } from "react";
+import { useState, lazy } from "react";
 import axios from "axios";
 import { useEffect } from "react";
-const Wishlistbox = React.lazy(() => import("@/wishlist/Wishlistbox"));
-const LoadingScreen = React.lazy(() => import("@/includes/LoadingScreen"));
-const Nocontent = React.lazy(() => import("@/includes/Nocontent"));
+const Wishlistbox = lazy(() => import("@/wishlist/Wishlistbox"));
+const LoadingScreen = lazy(() => import("@/includes/LoadingScreen"));
+const Nocontent = lazy(() => import("@/includes/Nocontent"));
 
 export default function Allwishes(props) {
     const { auth, global_currency } = usePage().props;

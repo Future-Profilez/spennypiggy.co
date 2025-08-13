@@ -1,4 +1,3 @@
-import React from "react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import noresultimg from '../../assets/img/noresultimg.png' ;
 import { useState } from "react";

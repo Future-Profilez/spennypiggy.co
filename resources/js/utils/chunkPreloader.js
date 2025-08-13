@@ -38,6 +38,11 @@ class ChunkPreloader {
      */
     setupHoverPreloading() {
         document.addEventListener('mouseenter', (e) => {
+            // Check if target exists and has closest method
+            if (!e.target || typeof e.target.closest !== 'function') {
+                return;
+            }
+            
             const link = e.target.closest('a[href]');
             if (link && this.isInternalLink(link.href)) {
                 const page = this.getPageFromUrl(link.href);

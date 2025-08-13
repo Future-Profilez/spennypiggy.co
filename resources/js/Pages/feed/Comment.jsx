@@ -1,5 +1,5 @@
 import { TimeFormat } from '@/includes/TimeFormat'
-import React, { useState } from 'react';
+import { useState } from "react";
 import AddComment from './AddComment';
 export default function Comment({c, update, updateComments}) {
 

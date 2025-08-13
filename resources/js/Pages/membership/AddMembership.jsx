@@ -1,15 +1,15 @@
+import { useEffect, lazy, useState, useRef } from "react";
 import { useAlerts } from "@/Components/Alerts";
-import React, { useEffect } from "react";
-const Popup = React.lazy(() => import('@/Components/Popup'));
-import { useState } from "react";
 import GlobalUploader from "@/uploadcare/Uploader";
 import st from "../../../css/uploader.module.css";
 import axios from "axios";
-import { useRef } from "react";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 import { FaHouseChimneyUser } from "react-icons/fa6";
 import PriceFormat from "@/includes/PriceFormat";
 import { router, usePage } from "@inertiajs/react";
+
+// Lazy-loaded components
+const Popup = lazy(() => import('@/Components/Popup'));
 
 const memberships = [
   {

@@ -1,4 +1,3 @@
-import React from 'react';
 import MagicBell, { NotificationInbox } from '@magicbell/magicbell-react';
 import { usePage } from '@inertiajs/react';
 import messagereciev from '../../../assets/audio/bell.mp3'; // Correct import

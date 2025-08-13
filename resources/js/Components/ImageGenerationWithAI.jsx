@@ -1,5 +1,4 @@
 import axios from "axios";
-import React from "react";
 import { useState } from "react";
 import Popup from "./Popup";
 import { useAlerts } from "./Alerts";

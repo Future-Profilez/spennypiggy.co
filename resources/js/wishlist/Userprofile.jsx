@@ -1,10 +1,10 @@
-import React from "react";
+import { lazy } from "react";
 import userphoto from "../../assets/siteicon.png";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { usePage } from "@inertiajs/react";
-const EditProfile = React.lazy(() => import("@/Pages/account/EditProfile"));
-const ShareProfile = React.lazy(() => import("./ShareProfile"));
-const SendTip = React.lazy(() => import("@/Pages/TipJar/SendTip"));
+const EditProfile = lazy(() => import("@/Pages/account/EditProfile"));
+const ShareProfile = lazy(() => import("./ShareProfile"));
+const SendTip = lazy(() => import("@/Pages/TipJar/SendTip"));
 import { RiVerifiedBadgeFill } from "react-icons/ri";
 import FollowButton from "@/Pages/Profile/FollowButton";
 import { MdOutlineContentCopy } from "react-icons/md";

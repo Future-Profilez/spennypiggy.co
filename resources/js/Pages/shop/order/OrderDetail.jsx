@@ -1,5 +1,4 @@
 import Popup from '@/Components/Popup'
-import React from 'react'
 import { useState } from 'react';
 export default function OrderDetail({classes, text, item,date}) {
 

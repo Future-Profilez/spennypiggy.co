@@ -1,4 +1,3 @@
-import React from 'react';
 import noresultimg from '../../assets/img/noresultimg.png' ;
 import { Link } from '@inertiajs/react';
 

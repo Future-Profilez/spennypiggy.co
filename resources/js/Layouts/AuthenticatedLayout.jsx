@@ -1,16 +1,16 @@
+import { lazy } from "react";
 import { useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
 import { Toaster } from 'react-hot-toast';
 import { useAlerts } from '@/Components/Alerts';
-import React from 'react';
 import BottomBar from './BottomBar';
-const Footer = React.lazy(() => import('@/includes/Footer'));
-const Header = React.lazy(() => import('@/includes/Header'));
+const Footer = lazy(() => import('@/includes/Footer'));
+const Header = lazy(() => import('@/includes/Header'));
 
 export default function Authenticated(props){ 
 
     const { auth, user, children, cart_count } = props;
-    const { successAlert, errorAlert } = useAlerts();
+    const { successAlert, errorAlert, warningAlert } = useAlerts();
     const { flash, errors } = usePage().props;
     useEffect(() => {
         if(errors){

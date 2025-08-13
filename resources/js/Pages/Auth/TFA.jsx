@@ -2,7 +2,6 @@ import { useAlerts } from "@/Components/Alerts";
 import Popup from "@/Components/Popup";
 import { usePage } from "@inertiajs/react";
 import axios from "axios";
-import React from "react";
 import { useEffect } from "react";
 import { useRef } from "react";
 import { useState } from "react";

@@ -1,6 +1,6 @@
 import Popup from "@/Components/Popup";
 import { usePage, router, useForm } from "@inertiajs/react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { CiCircleCheck } from "react-icons/ci";
 import { FaCheckCircle } from "react-icons/fa";
 import britishflag from "../../../assets/img/british-flag.png";

@@ -1,4 +1,3 @@
-import React from "react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import { Head, useForm, usePage } from "@inertiajs/react";
 import { useState } from "react";

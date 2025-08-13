@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from "react";
 import Accordion from "react-bootstrap/Accordion";
 
 export default function FAQ() {

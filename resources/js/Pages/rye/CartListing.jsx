@@ -1,4 +1,3 @@
-import React from "react";
 import { useEffect } from "react";
 import Axios from "axios";
 import { useState } from "react";

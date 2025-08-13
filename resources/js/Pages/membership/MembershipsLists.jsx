@@ -1,4 +1,3 @@
-import React from 'react'
 import Membership from './Membership';
 import { useState } from 'react';
 import { useEffect } from 'react';

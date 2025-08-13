@@ -1,33 +1,34 @@
 // Critical CSS imports - loaded synchronously
+import "bootstrap/dist/css/bootstrap.min.css";
 import "../css/theme.css";
 import "../css/app.css";
 import "../css/core-web-vitals.css";
+import "../css/index.css";
+import "../css/home.css";
 
-// React core imports
-import React, { Suspense, lazy } from "react";
+// React core imports - Suspense and lazy for automatic JSX runtime
+import { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import { createInertiaApp } from "@inertiajs/react";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 
 // Critical app dependencies - loaded immediately
 import { Provider } from "react-redux";
-import store from "./Pages/redux/Store";
+import store from "./Pages/redux/Store.jsx";
 
 // Performance components
-import { ErrorBoundary, LoadingSkeleton } from "./Components/OptimizedComponents";
+import { LoadingSkeleton } from "./Components/OptimizedComponents";
+// Temporarily disable ErrorBoundary to isolate JSX runtime issue
+// import { ErrorBoundary } from "./Components/OptimizedComponents";
 
 // Intelligent chunk preloader
 import chunkPreloader from "./utils/chunkPreloader.js";
 
 // Dynamic imports for non-critical resources
 const loadNonCriticalAssets = async () => {
-    // Load Bootstrap CSS and additional styles asynchronously
-    await Promise.all([
-        import("bootstrap/dist/css/bootstrap.min.css"),
-        import("../css/index.css"),
-        import("../css/home.css"),
-        // Font preloading handled via CSS
-    ]);
+    // Non-critical CSS is now loaded statically at the top of the file
+    // to prevent MIME type issues in production
+    console.log('📦 Non-critical assets loaded');
 };
 
 // Initialize Web Vitals monitoring
@@ -45,7 +46,10 @@ const initWebVitals = async () => {
         
         console.log('📊 Web Vitals monitoring initialized');
     } catch (error) {
-        console.warn('Failed to initialize Web Vitals monitoring:', error);
+        // Silently fail in production to avoid breaking the app
+        if (process.env.NODE_ENV === 'development') {
+            console.warn('Failed to initialize Web Vitals monitoring:', error);
+        }
     }
 };
 
@@ -102,13 +106,11 @@ createInertiaApp({
     setup({ el, App, props }) {
         const root = createRoot(el);
         root.render(
-            <ErrorBoundary>
-                <Provider store={store}>
-                    <Suspense fallback={<LoadingSkeleton rows={3} />}>
-                        <App {...props} />
-                    </Suspense>
-                </Provider>
-            </ErrorBoundary>
+            <Provider store={store}>
+                <Suspense fallback={<LoadingSkeleton rows={3} />}>
+                    <App {...props} />
+                </Suspense>
+            </Provider>
         );
         
         // Initialize non-critical resources after the app is mounted
@@ -117,8 +119,10 @@ createInertiaApp({
             initializeApp().catch(console.error);
             
             // Initialize intelligent chunk preloading
-            const currentPage = props.page.component;
-            chunkPreloader.preloadCriticalChunks(currentPage);
+            const currentPage = props?.page?.component;
+            if (currentPage) {
+                chunkPreloader.preloadCriticalChunks(currentPage);
+            }
             
             // Re-observe links after Inertia navigation
             document.addEventListener('inertia:success', () => {

@@ -1,7 +1,6 @@
 
 import Authenticated from '@/Layouts/AuthenticatedLayout';
 import { Link, Head, usePage } from '@inertiajs/react';
-import React from 'react';
 import { useState } from 'react';
 import { useRef } from 'react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';

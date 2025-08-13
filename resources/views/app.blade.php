@@ -39,22 +39,37 @@
             $pageComponent = $page['component'];
         }
     @endphp
-    @resourceOptimization($pageComponent)
+    {{-- @resourceOptimization($pageComponent) --}}
     
     {{-- Critical Hero Image Preloading for LCP Optimization --}}
     @if($pageComponent === 'home' || $pageComponent === 'Welcome')
         {{-- Preload hero background images in order of format efficiency --}}
-        <link rel="preload" as="image" href="{{ asset('resources/assets/new/HeroBg.avif') }}" type="image/avif" fetchpriority="high">
-        <link rel="preload" as="image" href="{{ asset('resources/assets/new/HeroBg.webp') }}" type="image/webp" fetchpriority="high">
-        <link rel="preload" as="image" href="{{ asset('resources/assets/new/HeroBg.png') }}" type="image/png" fetchpriority="high">
-        
-        {{-- Mobile-specific preloads for smaller screens --}}
-        <link rel="preload" as="image" href="{{ asset('resources/assets/new/HeroBg-mobile.avif') }}" type="image/avif" media="(max-width: 480px)" fetchpriority="high">
-        <link rel="preload" as="image" href="{{ asset('resources/assets/new/HeroBg-mobile.webp') }}" type="image/webp" media="(max-width: 480px)" fetchpriority="high">
+        @if(app()->environment('local', 'development'))
+            <link rel="preload" as="image" href="http://localhost:5173/resources/assets/new/HeroBg.avif" type="image/avif" fetchpriority="high">
+            <link rel="preload" as="image" href="http://localhost:5173/resources/assets/new/HeroBg.webp" type="image/webp" fetchpriority="high">
+            <link rel="preload" as="image" href="http://localhost:5173/resources/assets/new/HeroBg.png" type="image/png" fetchpriority="high">
+            
+            {{-- Mobile-specific preloads for smaller screens --}}
+            <link rel="preload" as="image" href="http://localhost:5173/resources/assets/new/HeroBg-mobile.avif" type="image/avif" media="(max-width: 480px)" fetchpriority="high">
+            <link rel="preload" as="image" href="http://localhost:5173/resources/assets/new/HeroBg-mobile.webp" type="image/webp" media="(max-width: 480px)" fetchpriority="high">
+        @else
+            <link rel="preload" as="image" href="{{ asset('resources/assets/new/HeroBg.avif') }}" type="image/avif" fetchpriority="high">
+            <link rel="preload" as="image" href="{{ asset('resources/assets/new/HeroBg.webp') }}" type="image/webp" fetchpriority="high">
+            <link rel="preload" as="image" href="{{ asset('resources/assets/new/HeroBg.png') }}" type="image/png" fetchpriority="high">
+            
+            {{-- Mobile-specific preloads for smaller screens --}}
+            <link rel="preload" as="image" href="{{ asset('resources/assets/new/HeroBg-mobile.avif') }}" type="image/avif" media="(max-width: 480px)" fetchpriority="high">
+            <link rel="preload" as="image" href="{{ asset('resources/assets/new/HeroBg-mobile.webp') }}" type="image/webp" media="(max-width: 480px)" fetchpriority="high">
+        @endif
         
         {{-- Preload other critical above-the-fold images --}}
-        <link rel="preload" as="image" href="{{ asset('resources/assets/img/itsfree.png') }}" type="image/png" fetchpriority="high">
-        <link rel="preload" as="image" href="{{ asset('resources/assets/img/itsfree-mob.png') }}" type="image/png" media="(max-width: 768px)" fetchpriority="high">
+        @if(app()->environment('local', 'development'))
+            <link rel="preload" as="image" href="http://localhost:5173/resources/assets/img/itsfree.png" type="image/png" fetchpriority="high">
+            <link rel="preload" as="image" href="http://localhost:5173/resources/assets/img/itsfree-mob.png" type="image/png" media="(max-width: 768px)" fetchpriority="high">
+        @else
+            <link rel="preload" as="image" href="{{ asset('resources/assets/img/itsfree.png') }}" type="image/png" fetchpriority="high">
+            <link rel="preload" as="image" href="{{ asset('resources/assets/img/itsfree-mob.png') }}" type="image/png" media="(max-width: 768px)" fetchpriority="high">
+        @endif
     @endif
     
     <!-- Google Fonts - will be loaded asynchronously below -->
@@ -247,80 +262,17 @@
     @viteReactRefresh
     
     {{-- Critical CSS - Inline above-the-fold styles --}}
-    @criticalCss($pageComponent)
+    {{-- @criticalCss($pageComponent) --}}
     
     {{-- Optimized Font Loading --}}
-    @optimizeFonts
+    {{-- @optimizeFonts --}}
     
     {{-- Self-hosted fonts are now preloaded via ResourcePreloadService --}}
     
-    {{-- Optimized JavaScript loading with modulepreload hints --}}
-    @if(app()->environment('production'))
-        @php
-            // Get manifest for preloading critical chunks
-            $manifest = json_decode(file_get_contents(public_path('build/manifest.json')), true);
-            $appJs = $manifest['resources/js/app.jsx'] ?? null;
-            $vendorChunks = [];
-            $criticalChunks = [];
-            
-            // Identify vendor and critical chunks from manifest
-            foreach ($manifest as $key => $file) {
-                if (str_contains($file['file'] ?? '', 'react-vendor') || 
-                    str_contains($file['file'] ?? '', 'inertia-framework') ||
-                    str_contains($file['file'] ?? '', 'app-store')) {
-                    $criticalChunks[] = $file['file'];
-                }
-                if (str_contains($file['file'] ?? '', 'vendor') && !in_array($file['file'], $criticalChunks)) {
-                    $vendorChunks[] = $file['file'];
-                }
-            }
-        @endphp
-        
-        {{-- Preload critical vendor chunks --}}
-        @foreach($criticalChunks as $chunk)
-            <link rel="modulepreload" href="{{ asset('build/' . $chunk) }}" crossorigin>
-        @endforeach
-        
-        {{-- Preload main app bundle --}}
-        @if($appJs)
-            <link rel="modulepreload" href="{{ asset('build/' . $appJs['file']) }}" crossorigin>
-        @endif
-        
-        {{-- Load main JavaScript as ES module with async --}}
-        @vite(['resources/js/app.jsx'], null, ['type' => 'module', 'async' => true])
-        
-        {{-- Defer loading of non-critical vendor chunks --}}
-        <script type="module">
-            // Preload non-critical chunks after main app loads
-            setTimeout(() => {
-                @foreach($vendorChunks as $chunk)
-                    import('{{ asset('build/' . $chunk) }}').catch(() => {});
-                @endforeach
-            }, 100);
-        </script>
-    @else
-        {{-- Development mode - standard loading --}}
-        @vite(['resources/css/app.css', 'resources/js/app.jsx'])
-    @endif
-    
-    {{-- Defer non-critical CSS --}}
-    @if(app()->environment('production'))
-        @php
-            $cssFiles = [];
-            foreach ($manifest as $key => $file) {
-                if (str_ends_with($key, '.css') && !str_contains($key, 'critical')) {
-                    $cssFiles[] = $file['file'];
-                }
-            }
-        @endphp
-        
-        @foreach($cssFiles as $cssFile)
-            @deferCss("build/{$cssFile}")
-        @endforeach
-    @endif
+    {{-- Standard Vite asset loading for both development and production --}}
+    @vite(['resources/js/app.jsx'])
     
     @inertiaHead
-    <!-- "resources/js/Pages/{$page['component']}.jsx" -->
 </head>
 
 <body className="font-sans antialiased">

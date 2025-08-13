@@ -1,6 +1,5 @@
 import Guest from '@/Layouts/GuestLayout'
 import { Head, Link } from '@inertiajs/react';
-import React from 'react'
 import BuyShopItem from './BuyShopItem';
 import { RiDiscountPercentFill } from "react-icons/ri";
 import { useState } from 'react';

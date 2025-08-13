@@ -1,4 +1,4 @@
-import React, {  useState } from 'react';
+import {  useState } from "react";
 import GuestLayout from '@/Layouts/GuestLayout';
 import InputError from '@/Components/InputError';
 import { useAlerts } from "@/Components/Alerts";

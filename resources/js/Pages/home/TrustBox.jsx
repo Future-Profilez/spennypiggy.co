@@ -1,13 +1,13 @@
 import { Helmet } from "react-helmet";
-import React from 'react';
+import { useEffect, useRef } from "react";
 import trust from '../../../assets/img/trust.png';
 const TrustBox = () => {
-  const ref = React.useRef(null);
-    // React.useEffect(() => {
-    //   if (window.Trustpilot) {
-    //     window.Trustpilot.loadFromElement(ref.current, true);
-    //   }
-    // }, []);
+  const ref = useRef(null);
+    useEffect(() => {
+      if (window.Trustpilot) {
+        window.Trustpilot.loadFromElement(ref.current, true);
+      }
+    }, []);
   return (
     <>
     <div className="trust-pilot pt-4 pb-2 mt-4 lg:mt-0" >

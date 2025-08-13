@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import axios from 'axios';
 import { RiArrowUpLine, RiArrowDownLine, RiPulseLine } from 'react-icons/ri';
 import PriceFormat from '@/includes/PriceFormat';

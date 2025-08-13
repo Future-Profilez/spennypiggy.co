@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import React, {Fragment} from 'react';
+import {Fragment, useState} from "react";
 import { Menu, Transition } from '@headlessui/react'
 import { HiDotsVertical } from "react-icons/hi";
 import toast from 'react-hot-toast';
@@ -20,7 +20,7 @@ export default function MyShopProducts({lists, loading, update}) {
       .replace(/-+/g, '-'); 
    }
 
-   const [copied, setCopied] = React.useState(false);
+   const [copied, setCopied] =  useState(false);
    const handleCopy = (text) => {
       navigator.clipboard.writeText(text).then(() => {
          setCopied(true)
@@ -45,7 +45,19 @@ export default function MyShopProducts({lists, loading, update}) {
                   <div className='shop-item flex justify-between w-full items-center ' >
                      <div className='shop-item-user flex  items-center max-w-[40%] min-w-[40%] ' >
                         <Link href={`/shop/item/${slug(s.name)}/${s.uuid}`} className='shop-img w-12 h-12 min-w-12' >
-                           <img className='w-full h-full object-cover rounded-lg' src={s.perma_link} alt='' />
+                           <img 
+                             className='w-full h-full object-cover rounded-lg' 
+                             src={s.perma_link} 
+                             alt={s.name || 'Shop item'}
+                             onError={(e) => {
+                               console.warn('Shop image failed to load:', s.perma_link);
+                               e.target.style.backgroundColor = '#f3f4f6';
+                               e.target.style.display = 'flex';
+                               e.target.style.alignItems = 'center';
+                               e.target.style.justifyContent = 'center';
+                               e.target.innerHTML = '📷';
+                             }}
+                           />
                         </Link>
                         <Link href={`/shop/item/${slug(s.name)}/${s.uuid}`} className='shop-text ps-3 ' >
                            <h2 className='text-md font-bold line-clamp-2'>{s.name}</h2>

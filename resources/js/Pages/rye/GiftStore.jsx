@@ -1,6 +1,4 @@
 import Guest from "@/Layouts/GuestLayout";
-import React from "react";
-
 export default function GiftStore() {
     return (
         <Guest>

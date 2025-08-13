@@ -1,4 +1,3 @@
-import React from 'react'
 import { usePage } from '@inertiajs/react';
 import GifterItems from './GifterItems';
 import GifterTips from './GifterTips';

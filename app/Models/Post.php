@@ -50,7 +50,8 @@ class Post extends Model
     {
         $url = false;
         if (!empty($this->image)) {
-            $url = "https://ucarecdn.com/" . $this->image . '/-/format/jpeg/-/quality/85/';
+            // Use only format transformation, quality seems to cause 400 errors
+            $url = "https://ucarecdn.com/" . $this->image . '/-/format/jpeg/';
         }
         return $url;
     }

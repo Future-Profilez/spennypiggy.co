@@ -1,7 +1,6 @@
 import { useAlerts } from '@/Components/Alerts';
 import { usePage } from '@inertiajs/react';
 import axios from 'axios';
-import React from 'react'
 import { useRef } from 'react';
 import { useEffect } from 'react';
 import { useState } from 'react';

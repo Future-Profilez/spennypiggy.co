@@ -1,4 +1,3 @@
-import React from "react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import Nocontent from "@/includes/Nocontent";
 

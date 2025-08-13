@@ -1,4 +1,3 @@
-import React from "react";
 import howitworks1 from "../../../assets/new/howitworks1.png";
 import howitworks2 from "../../../assets/new/howitworks2.png";
 import howitworks3 from "../../../assets/new/howitworks3.png";

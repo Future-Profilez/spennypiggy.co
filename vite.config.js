@@ -2,43 +2,49 @@ import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import react from '@vitejs/plugin-react';
-// import { criticalCss } from './vite-plugins/critical-css.js';
 import { visualizer } from 'rollup-plugin-visualizer';
-import { GenerateSW } from 'workbox-webpack-plugin';
 
 export default defineConfig({
+    resolve: {
+        alias: {
+            // Force single React instance to prevent version conflicts
+            'react': 'react',
+            'react-dom': 'react-dom'
+        },
+        dedupe: ['react', 'react-dom']
+    },
     plugins: [
         laravel({
             input: 'resources/js/app.jsx',
-            // ssr: 'resources/js/ssr.js',
             refresh: true,
-        }), 
-        react(), 
-        // criticalCss({
-        //     inlineThreshold: 1024, // Inline styles smaller than 1KB
-        //     minimumExternalSize: 1024,
-        //     pruneSource: false, // Keep original CSS files
-        //     preload: 'media',
-        //     noscriptFallback: true,
-        //     compress: true
-        // }),
-        sentryVitePlugin({
-            org: "spenny-piggy",
-            project: "javascript-react"
         }),
-        // Bundle analyzer - only in production
+        react({
+            // Use automatic JSX runtime (React 17+ style)
+            jsxRuntime: 'automatic',
+            include: ['resources/**/*.{jsx,tsx}'],
+            exclude: [/node_modules/]
+        }),
+        // Only include Sentry in production
+        process.env.NODE_ENV === 'production' && sentryVitePlugin({
+            org: "spenny-piggy",
+            project: "javascript-react",
+            authToken: process.env.SENTRY_AUTH_TOKEN,
+        }),
+        // Bundle analyzer - only when ANALYZE env is set
         process.env.ANALYZE && visualizer({
             filename: 'dist/stats.html',
             open: true,
             gzipSize: true,
             brotliSize: true,
         })
-    ],
+    ].filter(Boolean),
 
     server: {
+        host: 'localhost', // Explicitly use localhost
+        port: 5173,
         // Enable HTTP/2 for development
         https: false, // Set to true for HTTPS/HTTP2 in dev
-        http2: true, // Enable HTTP/2
+        // http2: true, // Temporarily disable HTTP/2 to avoid IPv6 issues
         cors: {
             origin: '*',
             methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -109,7 +115,7 @@ export default defineConfig({
         minify: 'terser',
         terserOptions: {
             compress: {
-                drop_console: true,
+                drop_console: false, // Temporarily keep console for debugging
                 drop_debugger: true,
             }
         }

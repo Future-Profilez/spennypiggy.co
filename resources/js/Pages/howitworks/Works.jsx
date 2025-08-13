@@ -1,4 +1,3 @@
-import React from 'react'
 import Tab from 'react-bootstrap/Tab';
 import Tabs from 'react-bootstrap/Tabs';
 import vishitimg01 from '../../../assets/img/vishitimg01.png'; 

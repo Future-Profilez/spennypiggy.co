@@ -1,4 +1,3 @@
-import React from "react";
 import LoaderButton from "@/Components/LoaderButton";
 import { useState } from "react";
 import axios from "axios";

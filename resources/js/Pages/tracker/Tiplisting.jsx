@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import axios from 'axios';
 import Collapse from 'react-bootstrap/Collapse';
 import PriceFormat from '@/includes/PriceFormat';

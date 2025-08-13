@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
 
 const ModernImage = ({
     src,
@@ -82,25 +82,35 @@ const ModernImage = ({
 
             // Handle Uploadcare CDN URLs
             if (src.includes('ucarecdn.com')) {
-                const baseUrl = src.replace(/\/$/, '');
+                // Extract the base UUID from the URL
+                const urlParts = src.split('/');
+                const uuidIndex = urlParts.findIndex(part => part.includes('ucarecdn.com')) + 1;
+                const uuid = urlParts[uuidIndex];
+                const baseUrl = `https://ucarecdn.com/${uuid}`;
                 
-                // Generate format variations
+                // Generate format variations (remove quality as it causes 400 errors)
                 if (formats.includes('webp')) {
-                    data.formats.webp = `${baseUrl}/-/format/webp/-/quality/${quality}/`;
+                    data.formats.webp = `${baseUrl}/-/format/webp/`;
                 }
                 if (formats.includes('avif')) {
-                    data.formats.avif = `${baseUrl}/-/format/avif/-/quality/${quality}/`;
+                    data.formats.avif = `${baseUrl}/-/format/avif/`;
                 }
 
                 // Generate responsive sizes for each format
                 if (responsive) {
                     ['original', 'webp', 'avif'].forEach(format => {
                         if (format === 'original' || data.formats[format]) {
-                            const formatUrl = format === 'original' ? baseUrl : data.formats[format];
                             data.responsive[format] = {};
                             
                             responsiveSizes.forEach(size => {
-                                data.responsive[format][size] = `${formatUrl.replace(/\/$/, '')}/-/resize/${size}x/`;
+                                if (format === 'original') {
+                                    // For original, use jpeg format with resize (no quality to avoid 400 errors)
+                                    data.responsive[format][size] = `${baseUrl}/-/resize/${size}x/-/format/jpeg/`;
+                                } else {
+                                    // For other formats, construct URL with resize + format (no quality)
+                                    const formatType = format === 'webp' ? 'webp' : 'avif';
+                                    data.responsive[format][size] = `${baseUrl}/-/resize/${size}x/-/format/${formatType}/`;
+                                }
                             });
                         }
                     });
@@ -173,7 +183,8 @@ const ModernImage = ({
         position: 'relative',
         width: width || '100%',
         height: height || 'auto',
-        aspectRatio: aspectRatio || 'auto'
+        aspectRatio: aspectRatio || 'auto',
+        overflow: 'hidden'
     };
 
     const imageStyle = {

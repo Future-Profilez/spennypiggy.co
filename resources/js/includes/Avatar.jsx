@@ -1,4 +1,3 @@
-import React from 'react'
 import { Link } from "@inertiajs/react";
 import ModernImage from '../Components/ModernImage';
 import userphoto from "../../assets/siteicon.png";
@@ -9,32 +8,84 @@ export default function Avatar({ src, role, profile_status_lock, imageSrc, name,
   return (
     <>
       <style>{`
-      .avatar { border:1px solid #fff;width:60px;height:60px;max-width:60px;max-height:60px;border-radius:13px;overflow:hidden;}
-      .avatar img{width:100%;height:100%;object-fit:cover;}
-      .useravatar{width:fit-content;display:flex;align-items:center;}
-      .avatar-content{margin-left:13px;}
-      .avatar-content p{margin-bottom:0;font-size:16px;}
-      .avatar-content h2{margin-bottom:2px;font-size:18px;}
+      .avatar { 
+        border: 1px solid #fff;
+        width: 60px;
+        height: 60px;
+        max-width: 60px;
+        max-height: 60px;
+        min-width: 60px;
+        min-height: 60px;
+        border-radius: 13px;
+        overflow: hidden;
+        position: relative;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .avatar img,
+      .avatar picture,
+      .avatar > div {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+      }
+      .avatar .relative {
+        position: absolute !important;
+        width: 100% !important;
+        height: 100% !important;
+      }
+      .useravatar {
+        width: fit-content;
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+      }
+      .avatar-content {
+        margin-left: 13px;
+        flex: 1;
+        min-width: 0;
+      }
+      .avatar-content p {
+        margin-bottom: 0;
+        font-size: 16px;
+        word-wrap: break-word;
+      }
+      .avatar-content h2 {
+        margin-bottom: 2px;
+        font-size: 18px;
+        word-wrap: break-word;
+      }
       `}</style>
 
       {username ? (
         <div className="avatar-wrap">
           <Link href={url || `/${link || username}`} className="useravatar">
             <div className="avatar ">
-              <ModernImage
+              <img
                 src={imageSrc || src || userphoto}
                 alt="image-avatar"
                 className="img-fluid"
-                width={100}
-                height={100}
                 loading="lazy"
                 decoding="async"
-                objectFit="cover"
-                responsive={true}
-                formats={['webp', 'avif']}
-                quality={85}
-                aspectRatio="1/1"
-                placeholder="blur"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0
+                }}
+                onError={(e) => {
+                  console.warn('Avatar image failed to load:', imageSrc || src);
+                  e.target.src = userphoto;
+                }}
               />
             </div>
             <div className="avatar-content">
@@ -49,16 +100,24 @@ export default function Avatar({ src, role, profile_status_lock, imageSrc, name,
         <div className="avatar-wrap">
           <div className="useravatar">
             <div className="avatar">
-              <ModernImage
-                src={imageSrc || src}
+              <img
+                src={imageSrc || src || userphoto}
                 alt="image-avatar"
                 className="img-fluid"
-                objectFit="cover"
-                responsive={true}
-                formats={['webp', 'avif']}
-                quality={85}
-                aspectRatio="1/1"
-                placeholder="blur"
+                loading="lazy"
+                decoding="async"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0
+                }}
+                onError={(e) => {
+                  console.warn('Avatar image failed to load:', imageSrc || src);
+                  e.target.src = userphoto;
+                }}
               />
             </div>
             <div className="avatar-content">

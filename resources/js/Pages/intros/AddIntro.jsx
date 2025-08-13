@@ -1,6 +1,5 @@
 import Popup from '@/Components/Popup'
 import GlobalUploader from '@/uploadcare/Uploader'
-import React from 'react'
 import st from "../../../css/uploader.module.css";
 import { useState } from 'react';
 import { useAlerts } from '@/Components/Alerts';

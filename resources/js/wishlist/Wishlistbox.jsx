@@ -1,4 +1,4 @@
-import React from 'react';
+import { lazy } from "react";
 import ShareProfile from './ShareProfile';
 import { useState } from 'react';
 import uploadedimg from '../../assets/img/uploadedimg.png';
@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import Wishlist from '@/Pages/Auth/Wishlist';
 import PriceFormat from '@/includes/PriceFormat';
-const AddCart = React.lazy(() => import('./AddCart'));
+const AddCart = lazy(() => import('./AddCart'));
 import Dropdown from 'react-bootstrap/Dropdown';
 import DropdownButton from 'react-bootstrap/DropdownButton';
 import PinWish from '@/includes/PinWish';

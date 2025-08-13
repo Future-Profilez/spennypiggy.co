@@ -1,6 +1,5 @@
 import PriceFormat from '@/includes/PriceFormat';
 import { Link } from '@inertiajs/react'
-import React from 'react'
 
 export default function ProfileProduct({item}) {
 

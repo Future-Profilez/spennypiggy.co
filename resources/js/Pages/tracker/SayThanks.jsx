@@ -2,7 +2,6 @@ import { useAlerts } from '@/Components/Alerts';
 import LoaderButton from '@/Components/LoaderButton';
 import GlobalUploader from '@/uploadcare/Uploader';
 import  axios   from 'axios';
-import React from 'react'
 import { useState } from 'react'
 import st from "../../../css/uploader.module.css";
 import { useEffect } from 'react';

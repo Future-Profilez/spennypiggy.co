@@ -1,5 +1,4 @@
 import Avatar from '@/includes/Avatar'
-import React from 'react'
 import userphoto from "../../../assets/siteicon.png";
 import { useState } from 'react';
 import  axios  from 'axios';

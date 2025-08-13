@@ -1,4 +1,3 @@
-import React from "react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 // import image1 from "../../../assets/fea/1.png";
 // import image2 from "../../../assets/fea/2.png";

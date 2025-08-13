@@ -1,7 +1,6 @@
 import axios from "axios";
 import { useEffect } from "react";
 import { useState } from "react";
-import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function MonthlyRevenue() {
@@ -69,7 +68,7 @@ export default function MonthlyRevenue() {
     },
   ];
   
-      const [opacity, setOpacity] = React.useState({
+      const [opacity, setOpacity] = useState({
       uv: 1,
       pv: 1,
     });

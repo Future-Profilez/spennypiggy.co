@@ -1,7 +1,5 @@
-  import axios   from 'axios';
-  import React from 'react'
-  import { useState } from 'react';
-  import { useEffect } from 'react';
+import axios from 'axios';
+import { useState, useEffect } from 'react';
   import { usePage, Link } from '@inertiajs/react';
   import LoadingScreen from '@/includes/LoadingScreen';
   import Nocontent from '@/includes/Nocontent';

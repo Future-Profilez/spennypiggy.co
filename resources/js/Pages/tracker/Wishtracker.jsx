@@ -1,4 +1,3 @@
-import React from 'react';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import Tab from 'react-bootstrap/Tab';

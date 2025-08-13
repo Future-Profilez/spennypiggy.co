@@ -1,8 +1,6 @@
-import React from "react";
 import { Link, usePage, router } from "@inertiajs/react";
 import spennypiggy from "../../assets/img/logo.png";
-import { useState } from "react";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import DeviceID from "./DeviceID";
 import axios from "axios";
 import { LazyLoadImage } from "react-lazy-load-image-component";
@@ -26,7 +24,7 @@ import { MdClose } from "react-icons/md";
 import { AiOutlineLogout } from "react-icons/ai";
 import { FiGift } from "react-icons/fi";
 import { LiaShoppingCartSolid } from "react-icons/lia";
-import MagicBellNotification from "@/Pages/webpush/MagicBellNotification";
+import MagicBellNotification from "@/Pages/webpush/MagicBellNotificationDisabled";
 
 export default function Header({classMagicword}) {
     const { global_currency, auth } = usePage().props;
@@ -61,6 +59,7 @@ export default function Header({classMagicword}) {
 
     return (
         <>
+            {/* <ReactDebugTest /> */}
             <div className="blackbg headermain py-6 ">
                 <div className="containerbox">
                     <div className="header flex w-full items-center  justify-between ">

@@ -1,4 +1,4 @@
-import React from 'react';
+import { lazy } from "react";
 import { useState } from 'react';
 import uploadedimg from '../../../assets/img/uploadedimg.png';
 import { useEffect } from 'react';
@@ -7,7 +7,7 @@ import { Link, router, usePage } from "@inertiajs/react";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-const AddBills = React.lazy(() => import('./AddBills'));
+const AddBills = lazy(() => import('./AddBills'));
 import DropdownButton from 'react-bootstrap/DropdownButton';
 import RemoveBill from './RemoveBill';
 import { useAlerts } from '@/Components/Alerts';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import axios from 'axios';
 import { RiVipDiamondLine, RiStarLine, RiHeartLine, RiTrophyLine, RiGiftLine, RiUserStarLine, RiCalendarLine } from 'react-icons/ri';
 import Avatar from '@/includes/Avatar';

@@ -1,4 +1,3 @@
-import React from 'react'
 import { Link, Head } from "@inertiajs/react";
 import ModernImage from '../../Components/ModernImage';
 import itsfree from "../../../assets/img/itsfree.png";

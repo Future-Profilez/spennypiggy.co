@@ -1,9 +1,8 @@
 import { useAlerts } from "@/Components/Alerts";
-import React from "react";
 import  LoaderButton from "@/Components/LoaderButton";
-const Popup = React.lazy(() => import('@/Components/Popup'));
+const Popup = lazy(() => import('@/Components/Popup'));
 import PriceFormat from "@/includes/PriceFormat";
-import { useState } from "react";
+import { useState, lazy } from "react";
 import { useForm, usePage } from "@inertiajs/react";
 import DeviceID from "@/includes/DeviceID";
 import { useDispatch, useSelector } from "react-redux";

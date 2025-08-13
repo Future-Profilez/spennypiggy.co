@@ -1,8 +1,8 @@
 import { useAlerts } from "@/Components/Alerts";
-import React, { useEffect } from "react";
+import { useEffect, lazy } from "react";
 import  LoaderButton from "@/Components/LoaderButton";
 import { useForm, usePage } from "@inertiajs/react";
-const Popup = React.lazy(() => import('@/Components/Popup'));
+const Popup = lazy(() => import('@/Components/Popup'));
 import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
 import ProgressBar from 'react-bootstrap/ProgressBar';

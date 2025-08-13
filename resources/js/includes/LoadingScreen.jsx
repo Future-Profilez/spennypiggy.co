@@ -1,4 +1,3 @@
-import React from 'react';
 import loading from '../../assets/img/loading.gif';
 
 export default function LoadingScreen({hideimage}) {

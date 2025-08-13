@@ -1,4 +1,3 @@
-import React from 'react'
 import { useAlerts } from "@/Components/Alerts";
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import axios from "axios";

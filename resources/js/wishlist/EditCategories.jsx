@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState, lazy } from "react";
 import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
-const Popup = React.lazy(() => import('@/Components/Popup'));
+const Popup = lazy(() => import('@/Components/Popup'));
 export default function EditCategories({username, fetch_categories}) {
 
    const [data, setData] = useState(null);

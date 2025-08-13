@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Popup from "@/Components/Popup";
 import { piggy } from "@/includes/Icons";
 import LoaderButton from "@/Components/LoaderButton";

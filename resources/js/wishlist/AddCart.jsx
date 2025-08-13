@@ -1,10 +1,10 @@
-import React from "react";
-const Popup = React.lazy(() => import("@/Components/Popup"));
+import { useState, lazy, useEffect } from "react";
 import ToCart from "./ToCart";
 import uploadedimg from "../../assets/img/uploadedimg.png";
 import ProgressBar from "react-bootstrap/ProgressBar";
-import { useState } from "react";
-import { useEffect } from "react";
+
+// Lazy-loaded components
+const Popup = lazy(() => import("@/Components/Popup"));
 import PriceFormat from "@/includes/PriceFormat";
 import { Link, router, usePage } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";

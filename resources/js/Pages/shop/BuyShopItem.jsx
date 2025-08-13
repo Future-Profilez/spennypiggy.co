@@ -1,6 +1,5 @@
 import Popup from "@/Components/Popup";
 import { Link, router, usePage } from "@inertiajs/react";
-import React from "react";
 import { useState } from "react";
 import userdefaultphoto from "../../../assets/img/userphoto.png";
 import axios from "axios";
@@ -179,7 +178,7 @@ export default function BuyShopItem({
             });
     };
 
-    const [copied, setCopied] = React.useState(false);
+    const [copied, setCopied] = useState(false);
     const handleCopy = () => {
         const text = window.location.href;
         navigator.clipboard

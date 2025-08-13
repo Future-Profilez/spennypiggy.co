@@ -1,4 +1,3 @@
-import React from "react";
 import LoaderButton from "@/Components/LoaderButton";
 import { useAlerts } from "@/Components/Alerts";
 import axios from "axios";

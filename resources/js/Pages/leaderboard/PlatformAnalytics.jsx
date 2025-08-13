@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import axios from 'axios';
 import { RiBarChart2Line, RiArrowUpLine, RiUser3Line, RiEarthLine, RiMedal2Line, RiFocus3Line } from 'react-icons/ri';
 

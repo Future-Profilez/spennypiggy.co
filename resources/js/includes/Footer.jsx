@@ -1,42 +1,41 @@
-import React from "react";
 import { Head, Link } from "@inertiajs/react";
 import { useEffect } from "react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import spennypiggy from "../../assets/img/logo.png";
-import scriptManager from "../../utils/thirdPartyScriptManager";
+// import scriptManager from "../../utils/thirdPartyScriptManager";
 
 export default function Footer(props) {
     const { auth } = props;
-    // Initialize third-party scripts using the script manager
-    async function initializeThirdPartyScripts() {
-        // Load Google Analytics with lazy loading
-        scriptManager.loadGoogleAnalytics('G-9F1M3QZZB3', {
-            delay: 5000,
-            events: ['click', 'scroll', 'touchstart', 'keydown']
-        });
+    // // Initialize third-party scripts using the script manager
+    // async function initializeThirdPartyScripts() {
+    //     // Load Google Analytics with lazy loading
+    //     scriptManager.loadGoogleAnalytics('G-9F1M3QZZB3', {
+    //         delay: 5000,
+    //         events: ['click', 'scroll', 'touchstart', 'keydown']
+    //     });
         
-        // Load Intercom chat widget with user-specific settings
-        const intercomSettings = {
-            api_base: "https://api-iam.intercom.io",
-            custom_launcher_selector: ".livechat",
-            ...(auth && auth.user && {
-                name: auth?.name,
-                email: auth?.email,
-                created_at: auth?.createdAt,
-            })
-        };
+    //     // Load Intercom chat widget with user-specific settings
+    //     const intercomSettings = {
+    //         api_base: "https://api-iam.intercom.io",
+    //         custom_launcher_selector: ".livechat",
+    //         ...(auth && auth.user && {
+    //             name: auth?.name,
+    //             email: auth?.email,
+    //             created_at: auth?.createdAt,
+    //         })
+    //     };
         
-        scriptManager.loadIntercom('xomg14o9', intercomSettings, {
-            delay: 8000,
-            events: ['click', 'scroll', 'touchstart', 'keydown']
-        });
-    }
+    //     scriptManager.loadIntercom('xomg14o9', intercomSettings, {
+    //         delay: 8000,
+    //         events: ['click', 'scroll', 'touchstart', 'keydown']
+    //     });
+    // }
 
 
-    useEffect(() => {
-        // Initialize all third-party scripts with lazy loading
-        initializeThirdPartyScripts();
-    }, [auth && auth?.name]);
+    // useEffect(() => {
+    //     // Initialize all third-party scripts with lazy loading
+    //     initializeThirdPartyScripts();
+    // }, [auth && auth?.name]);
 
     const date = new Date();
     return (

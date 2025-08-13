@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import cartproductimg from '../../../assets/img/cartproductimg.png';
 import PriceFormat from "@/includes/PriceFormat";
 import { useAlerts } from "@/Components/Alerts";

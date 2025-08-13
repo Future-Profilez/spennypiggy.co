@@ -1,4 +1,3 @@
-import React from 'react'
 import seek from "../../../assets/img/seeksearch.png";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 

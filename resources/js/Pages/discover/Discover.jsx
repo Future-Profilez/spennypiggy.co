@@ -1,11 +1,11 @@
-import React from 'react'
+import { lazy } from "react";
 import Tab from 'react-bootstrap/Tab';
 import Tabs from 'react-bootstrap/Tabs';
 import { Head  } from '@inertiajs/react';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
-const JoinUs = React.lazy(() => import('@/Components/JoinUs'));
-const Allwishes = React.lazy(() => import('./AllWishes'));
-const IntroVideos = React.lazy(() => import('./IntrosVideos'));
+const JoinUs = lazy(() => import('@/Components/JoinUs'));
+const Allwishes = lazy(() => import('./AllWishes'));
+const IntroVideos = lazy(() => import('./IntrosVideos'));
 
 export default function Discover(props) {
   const {auth} = props;

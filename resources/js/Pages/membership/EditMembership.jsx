@@ -1,8 +1,8 @@
 import { useAlerts } from "@/Components/Alerts";
-import React, { useEffect } from "react";
+import { useEffect, lazy } from "react";
 import LoaderButton from "@/Components/LoaderButton";
 import { router, useForm, usePage } from "@inertiajs/react";
-const Popup = React.lazy(() => import("@/Components/Popup"));
+const Popup = lazy(() => import("@/Components/Popup"));
 import { useState } from "react";
 import GlobalUploader from "@/uploadcare/Uploader";
 import st from "../../../css/uploader.module.css";

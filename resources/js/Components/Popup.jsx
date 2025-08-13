@@ -1,4 +1,4 @@
-import React, {  useEffect,  useState } from 'react';
+import {  useEffect,  useState } from "react";
 import Modal from 'react-bootstrap/Modal';
 export default function Popup(props) {
   const { children, text, classes, action, hidecontrols, size, space, modalclass, bodyclass } = props;

@@ -1,4 +1,3 @@
-import React from "react";
 import LoaderButton from "@/Components/LoaderButton";
 import { piggy } from "@/includes/Icons";
 import { useState } from "react";

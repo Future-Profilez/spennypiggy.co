@@ -4,7 +4,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { useForm } from '@inertiajs/react';
-import { Transition } from '@headlessui/react';
+import SafeTransition from '@/Components/SafeTransition';
 import { useAlerts } from '@/Components/Alerts';
 
 export default function UpdatePasswordForm({passwordUpdate, className = '' }) {
@@ -99,7 +99,7 @@ export default function UpdatePasswordForm({passwordUpdate, className = '' }) {
 
                 <div className="flex items-center gap-4">
                     <PrimaryButton disabled={processing}>Save</PrimaryButton>
-                    <Transition
+                    <SafeTransition
                         show={recentlySuccessful}
                         enter="transition ease-in-out"
                         enterFrom="opacity-0"
@@ -107,7 +107,7 @@ export default function UpdatePasswordForm({passwordUpdate, className = '' }) {
                         leaveTo="opacity-0"
                     >
                         <p className="text-sm text-gray-600">Saved.</p>
-                    </Transition>
+                    </SafeTransition>
                 </div>
             </form>
         </section>

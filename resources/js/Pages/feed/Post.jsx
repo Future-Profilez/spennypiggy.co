@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from "react";
 import {likes, comment} from '../../includes/Icons'
 import { TimeFormat } from '@/includes/TimeFormat'
 import supportorsimg from '../../../assets/img/supportors-img.png'

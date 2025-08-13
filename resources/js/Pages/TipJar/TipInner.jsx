@@ -1,5 +1,5 @@
 
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from "react";
 import { useForm, Link, usePage, router } from "@inertiajs/react";
 import PriceFormat from '@/includes/PriceFormat';
 import {piggynose, piggyface, tipheading, leftleg, rightleg} from '@/includes/Icons';

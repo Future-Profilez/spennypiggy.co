@@ -1,4 +1,3 @@
-import React from "react";
 import { Link } from "@inertiajs/react";
 import instagram from "../../assets/new/instagram.png";
 import youtube from "../../assets/new/youtube.png";

@@ -3,7 +3,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Link, useForm, usePage } from '@inertiajs/react';
-import { Transition } from '@headlessui/react';
+import SafeTransition from '@/Components/SafeTransition';
 import { useAlerts } from '@/Components/Alerts';
 
 export default function UpdateProfileInformation({ mustVerifyEmail, status, className = '' }) {
@@ -21,7 +21,7 @@ export default function UpdateProfileInformation({ mustVerifyEmail, status, clas
             onSuccess: (resp) => {
                 if (resp.props.flash?.success) {
                     successAlert(resp.props.flash?.success || "Updated !!");
-                    passwordUpdate(false);
+                    // passwordUpdate(false); // Removed undefined function call
                 }
                 if (resp.props.flash?.error) {
                     errorAlert(resp.props.flash?.error);
@@ -94,14 +94,14 @@ export default function UpdateProfileInformation({ mustVerifyEmail, status, clas
 
                 <div className="flex items-center gap-4">
                     <PrimaryButton disabled={processing}>Save</PrimaryButton>
-                    <Transition
+                    <SafeTransition
                         show={recentlySuccessful}
                         enter="transition ease-in-out"
                         enterFrom="opacity-0"
                         leave="transition ease-in-out"
                         leaveTo="opacity-0" >
                         <p className="text-sm text-success">Saved.</p>
-                    </Transition>
+                    </SafeTransition>
                 </div>
             </form>
         </section>

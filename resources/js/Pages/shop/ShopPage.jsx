@@ -1,6 +1,5 @@
 import Guest from '@/Layouts/GuestLayout';
 import { Head } from '@inertiajs/react';
-import React from 'react'
 import { useState } from 'react';
 import AddShop from './AddShop';
 import MyShopProducts from './MyShopProducts';

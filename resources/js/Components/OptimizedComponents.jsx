@@ -1,4 +1,4 @@
-import React, { memo, Suspense, lazy, forwardRef, useCallback, useMemo } from 'react';
+import { memo, Suspense, lazy, forwardRef, useCallback, useMemo, cloneElement, Component } from 'react';
 import { useIntersectionObserver, useVirtualList } from '../hooks/usePerformanceOptimization';
 
 /**
@@ -338,7 +338,7 @@ export const OptimizedFormField = memo(({
                     {required && <span className="text-red-500 ml-1">*</span>}
                 </label>
             )}
-            {React.cloneElement(children, { id: fieldId })}
+            {cloneElement(children, { id: fieldId })}
             {error && (
                 <p className="mt-1 text-sm text-red-600">
                     {error}
@@ -384,7 +384,7 @@ LoadingSkeleton.displayName = 'LoadingSkeleton';
 /**
  * Error Boundary Component
  */
-export class ErrorBoundary extends React.Component {
+export class ErrorBoundary extends Component {
     constructor(props) {
         super(props);
         this.state = { hasError: false, error: null };

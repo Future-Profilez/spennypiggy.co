@@ -1,8 +1,6 @@
 import { useAlerts } from "@/Components/Alerts";
 import PriceFormat from "@/includes/PriceFormat";
 import { Link, router, usePage } from "@inertiajs/react";
-import React from "react";
-
 export default function ProfileProduct({ item, IsloggedIn }) {
     const { auth, rates } = usePage().props;
     const { formatMultiPrice } = PriceFormat();
@@ -48,6 +46,15 @@ export default function ProfileProduct({ item, IsloggedIn }) {
                         className="object-cover h-[130px] sm:h-[200px] w-full"
                         src={item.perma_link}
                         alt={item.name}
+                        onError={(e) => {
+                            console.warn('Shop item image failed to load:', item.perma_link);
+                            e.target.style.backgroundColor = '#f3f4f6';
+                            e.target.style.display = 'flex';
+                            e.target.style.alignItems = 'center';
+                            e.target.style.justifyContent = 'center';
+                            e.target.style.fontSize = '2rem';
+                            e.target.innerHTML = '🛍️';
+                        }}
                     />
                     {item.ai_generated == 1 && (
                         <div className="absolute bottom-2 left-2 z-1 bg-black shadow-sm rounded-xl px-2 py-1 text-[8px] text-white">

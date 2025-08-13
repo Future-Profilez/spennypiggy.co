@@ -1,4 +1,3 @@
-import React from "react";
 import { usePage } from '@inertiajs/react';
 import Bill from "./Bill";
 import Nocontent from "@/includes/Nocontent";

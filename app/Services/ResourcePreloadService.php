@@ -286,7 +286,7 @@ class ResourcePreloadService
      */
     private function preloadHeroImages(string $page): void
     {
-        $heroImages = [
+        $heroImagePaths = [
             'home' => [
                 // Critical hero background image - prioritize WebP/AVIF formats
                 'resources/assets/new/HeroBg.webp',
@@ -297,9 +297,21 @@ class ResourcePreloadService
                 'resources/assets/new/HeroBg-mobile.avif',
                 'resources/assets/new/HeroBg-mobile.png',
                 // Other critical images
-                'build/assets/logo-164abf9b.png',
                 'resources/assets/img/itsfree.png',
-                'resources/assets/img/itsfree-mob.png',
+                'resources/assets/img/itsfree-mob.png'
+            ],
+            'profile' => [
+                // These are built assets, use asset() helper
+            ],
+            'dashboard' => [
+                // These are built assets, use asset() helper
+            ]
+        ];
+        
+        // Handle built assets (logo, siteicon) separately as they're served by Laravel
+        $builtAssets = [
+            'home' => [
+                'build/assets/logo-164abf9b.png',
                 'build/assets/siteicon-cf8a44f4.png'
             ],
             'profile' => [
@@ -311,9 +323,20 @@ class ResourcePreloadService
             ]
         ];
 
-        if (isset($heroImages[$page])) {
-            foreach ($heroImages[$page] as $image) {
-                $this->preloadImage(asset($image), true);
+        // Preload Vite assets (resources/assets/*)
+        if (isset($heroImagePaths[$page])) {
+            foreach ($heroImagePaths[$page] as $imagePath) {
+                $imageUrl = app()->environment('local', 'development')
+                    ? "http://localhost:5173/{$imagePath}"
+                    : asset($imagePath);
+                $this->preloadImage($imageUrl, true);
+            }
+        }
+        
+        // Preload built assets (always served by Laravel)
+        if (isset($builtAssets[$page])) {
+            foreach ($builtAssets[$page] as $imagePath) {
+                $this->preloadImage(asset($imagePath), true);
             }
         }
     }
@@ -324,14 +347,20 @@ class ResourcePreloadService
     private function preloadCriticalFonts(): void
     {
         // Optimized self-hosted fonts - ordered by priority (most critical first)
-        $fonts = [
-            // Primary font used for body text - highest priority (50% size reduction)
-            asset('resources/assets/fonts/optimized/CeraGRMedium.woff2'),
-            // Secondary font used for headings - 28% size reduction
-            asset('resources/assets/fonts/optimized/newfont.woff2'),
-            // Bold variant - lower priority, 49% size reduction
-            asset('resources/assets/fonts/optimized/CeraGRBold.woff2')
+        $fontPaths = [
+            'resources/assets/fonts/optimized/CeraGRMedium.woff2',
+            'resources/assets/fonts/optimized/newfont.woff2', 
+            'resources/assets/fonts/optimized/CeraGRBold.woff2'
         ];
+        
+        $fonts = [];
+        foreach ($fontPaths as $path) {
+            if (app()->environment('local', 'development')) {
+                $fonts[] = "http://localhost:5173/{$path}";
+            } else {
+                $fonts[] = asset($path);
+            }
+        }
 
         foreach ($fonts as $font) {
             $this->preloadFont($font);

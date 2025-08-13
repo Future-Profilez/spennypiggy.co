@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 const Lightbox = ({ images, text, classes }) => {
   const [isOpen, setIsOpen] = useState(false);

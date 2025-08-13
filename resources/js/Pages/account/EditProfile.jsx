@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react'
+import { useRef, useState } from "react";
 import userdefaultphoto from '../../../assets/siteicon.png';
 import coverimage from '../../../assets/img/wishlistbannerimg.jpg';
 import editicon from '../../../assets/img/editicon.png';

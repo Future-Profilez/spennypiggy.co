@@ -1,4 +1,3 @@
-import React from 'react'
 import PREMIUMMEMBERSHIP from '../../../assets/img/PREMIUMMEMBERSHIP.png'
 import { LazyLoadImage } from 'react-lazy-load-image-component'
 import LiveBar from '@/includes/LiveBar'

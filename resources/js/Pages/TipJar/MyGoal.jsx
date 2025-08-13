@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from "react";
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import PriceFormat from '@/includes/PriceFormat';
 import mouse from '../../../assets/img/mouse.png';

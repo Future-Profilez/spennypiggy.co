@@ -1,32 +1,32 @@
-import React, { useState, useMemo, useEffect, Suspense } from "react";
+import { useState, useMemo, useEffect, Suspense, lazy } from "react";
 import { useAlerts } from "@/Components/Alerts";
 import { Head, Link, usePage } from "@inertiajs/react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
 import { addicon } from "@/includes/Icons";
-const Wishlist = React.lazy(() => import("./Auth/Wishlist"));
-const Wishlistbox = React.lazy(() => import("@/wishlist/Wishlistbox"));
+const Wishlist = lazy(() => import("./Auth/Wishlist"));
+const Wishlistbox = lazy(() => import("@/wishlist/Wishlistbox"));
 import Userprofile from "@/wishlist/Userprofile";
-const ShareProfile = React.lazy(() => import("@/wishlist/ShareProfile"));
-const Nocontent = React.lazy(() => import("@/includes/Nocontent"));
-const LoadingScreen = React.lazy(() => import("@/includes/LoadingScreen"));
-const VersionUpdate = React.lazy(() => import("@/Components/VersionUpdate"));
-const PaymentDashboard = React.lazy(() => import("./stripe/PaymentDashboard"));
-const ChangeCurrency = React.lazy(() => import("@/Components/ChangeCurrency"));
-const Popup = React.lazy(() => import("@/Components/Popup"));
-const MembershipsLists = React.lazy(() =>
+const ShareProfile = lazy(() => import("@/wishlist/ShareProfile"));
+const Nocontent = lazy(() => import("@/includes/Nocontent"));
+const LoadingScreen = lazy(() => import("@/includes/LoadingScreen"));
+const VersionUpdate = lazy(() => import("@/Components/VersionUpdate"));
+const PaymentDashboard = lazy(() => import("./stripe/PaymentDashboard"));
+const ChangeCurrency = lazy(() => import("@/Components/ChangeCurrency"));
+const Popup = lazy(() => import("@/Components/Popup"));
+const MembershipsLists = lazy(() =>
     import("./membership/MembershipsLists")
 );
-const AddMembership = React.lazy(() => import("./membership/AddMembership"));
-const Gifter = React.lazy(() => import("./gifter/Gifter"));
-const AddBills = React.lazy(() => import("./bills/AddBills"));
-const EditCategories = React.lazy(() => import("@/wishlist/EditCategories"));
-const TipInner = React.lazy(() => import("./TipJar/TipInner"));
-const Billslist = React.lazy(() => import("./bills/Billslist"));
-const FeedList = React.lazy(() => import("./feed/FeedList"));
-const AddPost = React.lazy(() => import("./feed/AddPost"));
-const AddIntro = React.lazy(() => import("./intros/AddIntro"));
-const MyGoal = React.lazy(() => import("./TipJar/MyGoal"));
-const SocialLinks = React.lazy(() => import("@/includes/SocialLinks"));
+const AddMembership = lazy(() => import("./membership/AddMembership"));
+const Gifter = lazy(() => import("./gifter/Gifter"));
+const AddBills = lazy(() => import("./bills/AddBills"));
+const EditCategories = lazy(() => import("@/wishlist/EditCategories"));
+const TipInner = lazy(() => import("./TipJar/TipInner"));
+const Billslist = lazy(() => import("./bills/Billslist"));
+const FeedList = lazy(() => import("./feed/FeedList"));
+const AddPost = lazy(() => import("./feed/AddPost"));
+const AddIntro = lazy(() => import("./intros/AddIntro"));
+const MyGoal = lazy(() => import("./TipJar/MyGoal"));
+const SocialLinks = lazy(() => import("@/includes/SocialLinks"));
 import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
 import { LazyLoadImage } from "react-lazy-load-image-component";
@@ -48,8 +48,8 @@ import {
     useSensors,
 } from "@dnd-kit/core";
 import PaymentUnActivated from "@/Components/PaymentUnActivated";
-import { Tabs } from "react-tabs-scrollable";
-import "react-tabs-scrollable/dist/rts.css";
+// import { Tabs } from "react-tabs-scrollable";
+// import "react-tabs-scrollable/dist/rts.css";
 import ProfileSteps from "./Profile/ProfileSteps";
 import ProfileProductLists from "./shop/profile/ProfileProductLists";
 import AddItem from "./shop/AddItem";
@@ -221,8 +221,8 @@ export default function Dashboard(props) {
     };
 
     useEffect(() => {
-        if (auth?.user?.email && twq) {
-            twq("event", "tw-ozu4h-pt5uc", {
+        if (auth?.user?.email && typeof window !== 'undefined' && window.twq) {
+            window.twq("event", "tw-ozu4h-pt5uc", {
                 conversion_id: auth?.user?.uuid,
                 email_address: auth?.user?.email,
             });
@@ -478,7 +478,7 @@ export default function Dashboard(props) {
                                                     </div>
                                                 )} */}
                                             <div className="newnav-tabs flex  justify-between gap-2 mb-4">
-                                                <Tabs
+                                                {/* <Tabs
                                                     activeTab={1}
                                                     hideNavBtnsOnMobile={false}
                                                 >
@@ -616,7 +616,7 @@ export default function Dashboard(props) {
                                                     >
                                                         gifts
                                                     </Link>
-                                                </Tabs>
+                                                </Tabs> */}
 
                                                     {IsloggedIn && <Toggle />}
                                                 </div>

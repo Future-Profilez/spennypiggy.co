@@ -4,7 +4,7 @@ import { Head, Link } from "@inertiajs/react";
 import userphoto from "../../../assets/siteicon.png";
 import Avatar from "@/includes/Avatar";
 import axios from "axios";
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { crown } from "@/includes/Icons";
 import { RiVerifiedBadgeFill } from "react-icons/ri";
 import LeaderboardStars from "./LeaderboardStars";

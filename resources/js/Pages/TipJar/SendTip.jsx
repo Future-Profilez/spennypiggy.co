@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import { useState, lazy } from "react";
 import TipInner from "./TipInner";
-const Popup = React.lazy(() => import("@/Components/Popup"));
+const Popup = lazy(() => import("@/Components/Popup"));
 export default function SendTip({auth}) {
     const [close, setClose] = useState();
     return (

@@ -1,4 +1,3 @@
-import React from 'react'
 import publish from '../../../assets/img/publish.png'
 import { LazyLoadImage } from 'react-lazy-load-image-component'
 
