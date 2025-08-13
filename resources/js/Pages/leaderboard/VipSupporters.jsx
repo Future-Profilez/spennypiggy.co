@@ -62,11 +62,7 @@ export default function VipSupporters() {
                     </div>
                     
                 </div>
-                <div className="vip-badge flex my-2 mb-3 text-center justify-center items-center px-3 py-1 rounded-full text-sm font-semibold" style={badgeStyle}>
-                    <span className="mr-1">{vip_level.icon}</span>
-                    <span style={{color: vip_level.color}}>{vip_level.level}</span>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-center">
+                <div className="flex justify-between gap-3 text-center">
                     {/* <div className="stat-item">
                         <div className="flex items-center justify-center mb-1">
                             <RiGiftLine size={16} className="text-pink-500 mr-1" />
@@ -74,7 +70,7 @@ export default function VipSupporters() {
                         </div>
                         <p className="font-bold text-gray-900 text-sm">{supporter.total_gifts}</p>
                     </div> */}
-                    <div className="stat-item">
+                    {/* <div className="stat-item">
                         <div className="flex items-center justify-center mb-1">
                             <RiHeartLine size={16} className="text-red-500 mr-1" />
                             <span className="text-xs text-gray-500">Total</span>
@@ -82,21 +78,25 @@ export default function VipSupporters() {
                         <p className="font-bold text-gray-900 text-sm">
                             {formatMultiPrice(supporter.total_amount, supporter.currency)}
                         </p>
-                    </div>
+                    </div> */}
                     <div className="stat-item">
+                        <p className="font-bold text-gray-900 text-sm">{supporter.creators_supported_count}</p>
                         <div className="flex items-center justify-center mb-1">
                             <RiUserStarLine size={16} className="text-blue-500 mr-1" />
                             <span className="text-xs text-gray-500">Supportors</span>
                         </div>
-                        <p className="font-bold text-gray-900 text-sm">{supporter.creators_supported_count}</p>
                     </div>
                     <div className="stat-item">
+                        <p className="font-bold text-gray-900 text-sm">{Math.round(supporter.vip_score)}</p>
                         <div className="flex items-center justify-center mb-1">
                             <RiStarLine size={16} className="text-yellow-500 mr-1" />
                             <span className="text-xs text-gray-500">VIP Score</span>
                         </div>
-                        <p className="font-bold text-gray-900 text-sm">{Math.round(supporter.vip_score)}</p>
                     </div>
+                </div>
+                <div className="vip-badge flex   mt-3 text-center justify-center items-center px-3 py-1 rounded-full text-sm font-semibold" style={badgeStyle}>
+                    <span className="mr-1">{vip_level.icon}</span>
+                    <span style={{color: vip_level.color}}>{vip_level.level}</span>
                 </div>
 
                 {/* <div className="mt-3 flex items-center justify-between">
@@ -133,8 +133,7 @@ export default function VipSupporters() {
                     {error}
                     <button 
                         className="btn btn-sm btn-outline-danger ms-2" 
-                        onClick={fetchVipSupporters}
-                    >
+                        onClick={fetchVipSupporters} >
                         Retry
                     </button>
                 </div>
@@ -152,9 +151,7 @@ export default function VipSupporters() {
             </p>
 
             <div className="space-y-3">
-
                 <VipCard supporter={vipSupporters[0]} />
-
                 {vipSupporters.slice(0, 5).map((supporter, index) => (
                     <div key={supporter.id} className={`${index === 0 ? 'hidden':""} rank py-3 border-bottom flex items-center justify-between relative`}>
                         <div className="flex items-center space-x-3">

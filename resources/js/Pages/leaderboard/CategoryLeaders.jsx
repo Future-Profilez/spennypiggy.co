@@ -128,7 +128,7 @@ export default function CategoryLeaders() {
 
     return (
         <div className="bg-gray-100 rounded-[25px] p-4 mb-6 mt-6">
-            <h2 className="font-GillSans text-2xl uppercase text-dark text-start mb-2">🏆 Category Leaders</h2>
+            <h2 className="font-GillSans text-2xl uppercase text-dark text-start mb-2">🏆 Category Leaders Creators</h2>
             <p className="text-gray-500 mb-6 ">Top performers in each category</p>
 
             {/* Category Tabs */}
@@ -178,41 +178,41 @@ export default function CategoryLeaders() {
             </div>
 
             {/* Category Stats */}
-            {currentData.length > 0 && (
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                        <div>
-                            <p className="text-2xl font-bold text-gray-900">
-                                {/* Show engagement total if available, otherwise monetary */}
-                                {currentData.some(creator => creator.engagement_score) ? (
-                                    currentData.reduce((sum, creator) => sum + (creator.engagement_score || 0), 0)
-                                ) : (
-                                    formatMultiPrice(
-                                        currentData.reduce((sum, creator) => sum + creator.total_amount, 0),
-                                        'USD'
-                                    )
-                                )}
-                            </p>
-                            <p className="text-sm text-gray-600">{currentData.some(creator => creator.engagement_score) ? 'Total Engagement' : 'Total Volume'}</p>
-                        </div>
-                        <div>
-                            <p className="text-2xl font-bold text-gray-900">
-                                {currentData.reduce((sum, creator) => sum + creator.total_count, 0)}
-                            </p>
-                            <p className="text-sm text-gray-600">Total Transactions</p>
-                        </div>
-                        <div>
-                            <p className="text-2xl font-bold text-gray-900">
-                                {/* Show average engagement if available, otherwise monetary */}
-                                {currentData.some(creator => creator.engagement_score) ? (
-                                    Math.round( currentData.length > 0  ? currentData.reduce((sum, creator) => sum + (creator.engagement_score || 0), 0) / currentData.length: 0)
-                                ) : (
-                                    formatMultiPrice(currentData.length > 0  ? currentData.reduce((sum, creator) => sum + creator.total_amount, 0) / currentData.length : 0,'USD'))}
-                            </p>
-                            <p className="text-sm text-gray-600">Average per Creator</p>
-                        </div>
-                    </div>
-                </div>
+            {currentData.length > 0 && (''
+                // <div className="mt-6 pt-6 border-t border-gray-200">
+                //     <div className="grid grid-cols-3 gap-4 text-center">
+                //         <div>
+                //             <p className="text-2xl font-bold text-gray-900">
+                //                 {/* Show engagement total if available, otherwise monetary */}
+                //                 {currentData.some(creator => creator.engagement_score) ? (
+                //                     currentData.reduce((sum, creator) => sum + (creator.engagement_score || 0), 0)
+                //                 ) : (
+                //                     formatMultiPrice(
+                //                         currentData.reduce((sum, creator) => sum + creator.total_amount, 0),
+                //                         'USD'
+                //                     )
+                //                 )}
+                //             </p>
+                //             <p className="text-sm text-gray-600">{currentData.some(creator => creator.engagement_score) ? 'Total Engagement' : 'Total Volume'}</p>
+                //         </div>
+                //         <div>
+                //             <p className="text-2xl font-bold text-gray-900">
+                //                 {currentData.reduce((sum, creator) => sum + creator.total_count, 0)}
+                //             </p>
+                //             <p className="text-sm text-gray-600">Total Transactions</p>
+                //         </div>
+                //         <div>
+                //             <p className="text-2xl font-bold text-gray-900">
+                //                 {/* Show average engagement if available, otherwise monetary */}
+                //                 {currentData.some(creator => creator.engagement_score) ? (
+                //                     Math.round( currentData.length > 0  ? currentData.reduce((sum, creator) => sum + (creator.engagement_score || 0), 0) / currentData.length: 0)
+                //                 ) : (
+                //                     formatMultiPrice(currentData.length > 0  ? currentData.reduce((sum, creator) => sum + creator.total_amount, 0) / currentData.length : 0,'USD'))}
+                //             </p>
+                //             <p className="text-sm text-gray-600">Average per Creator</p>
+                //         </div>
+                //     </div>
+                // </div>
             )}
         </div>
     );
