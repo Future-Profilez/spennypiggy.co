@@ -1,5 +1,5 @@
-// React initialization fix to prevent "Cannot set properties of undefined (setting 'Children')" error
-// This should be imported very early in the app lifecycle
+// React initialization fix - DEPRECATED
+// This file is no longer needed as React is properly initialized in app.jsx
 
 // Force console logs in production for debugging
 if (typeof window !== 'undefined') {

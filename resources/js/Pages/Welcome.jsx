@@ -1,4 +1,5 @@
 import { Link, Head } from "@inertiajs/react";
+import { useEffect, lazy } from "react";
 import Hero from './home/Hero';
 import Guest from '@/Layouts/GuestLayout';
 import ComingNext from "./home/ComingNext";
@@ -19,7 +20,6 @@ import lockprofile from "../../assets/img/lockprofile.png";
 import Membership from "./home/Membership";
 import NotForBusiness from "./home/NotForBusiness";
 import FAQ from "./home/FAQ";
-import { useEffect, lazy } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import SitelinksSearchBox from "@/global/SiteLink";

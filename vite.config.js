@@ -13,6 +13,10 @@ export default defineConfig({
         },
         dedupe: ['react', 'react-dom']
     },
+    define: {
+        // Fix React 18 Children undefined issue in production
+        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+    },
     plugins: [
         laravel({
             input: 'resources/js/app.jsx',

@@ -44,32 +44,17 @@
     {{-- Critical Hero Image Preloading for LCP Optimization --}}
     @if($pageComponent === 'home' || $pageComponent === 'Welcome')
         {{-- Preload hero background images in order of format efficiency --}}
-        @if(app()->environment('local', 'development'))
-            <link rel="preload" as="image" href="http://localhost:5173/resources/assets/new/HeroBg.avif" type="image/avif" fetchpriority="high">
-            <link rel="preload" as="image" href="http://localhost:5173/resources/assets/new/HeroBg.webp" type="image/webp" fetchpriority="high">
-            <link rel="preload" as="image" href="http://localhost:5173/resources/assets/new/HeroBg.png" type="image/png" fetchpriority="high">
-            
-            {{-- Mobile-specific preloads for smaller screens --}}
-            <link rel="preload" as="image" href="http://localhost:5173/resources/assets/new/HeroBg-mobile.avif" type="image/avif" media="(max-width: 480px)" fetchpriority="high">
-            <link rel="preload" as="image" href="http://localhost:5173/resources/assets/new/HeroBg-mobile.webp" type="image/webp" media="(max-width: 480px)" fetchpriority="high">
-        @else
-            <link rel="preload" as="image" href="{{ asset('resources/assets/new/HeroBg.avif') }}" type="image/avif" fetchpriority="high">
-            <link rel="preload" as="image" href="{{ asset('resources/assets/new/HeroBg.webp') }}" type="image/webp" fetchpriority="high">
-            <link rel="preload" as="image" href="{{ asset('resources/assets/new/HeroBg.png') }}" type="image/png" fetchpriority="high">
-            
-            {{-- Mobile-specific preloads for smaller screens --}}
-            <link rel="preload" as="image" href="{{ asset('resources/assets/new/HeroBg-mobile.avif') }}" type="image/avif" media="(max-width: 480px)" fetchpriority="high">
-            <link rel="preload" as="image" href="{{ asset('resources/assets/new/HeroBg-mobile.webp') }}" type="image/webp" media="(max-width: 480px)" fetchpriority="high">
-        @endif
+        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/new/HeroBg.avif') }}" type="image/avif" fetchpriority="high">
+        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/new/HeroBg.webp') }}" type="image/webp" fetchpriority="high">
+        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/new/HeroBg.png') }}" type="image/png" fetchpriority="high">
+        
+        {{-- Mobile-specific preloads for smaller screens --}}
+        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/new/HeroBg-mobile.avif') }}" type="image/avif" media="(max-width: 480px)" fetchpriority="high">
+        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/new/HeroBg-mobile.webp') }}" type="image/webp" media="(max-width: 480px)" fetchpriority="high">
         
         {{-- Preload other critical above-the-fold images --}}
-        @if(app()->environment('local', 'development'))
-            <link rel="preload" as="image" href="http://localhost:5173/resources/assets/img/itsfree.png" type="image/png" fetchpriority="high">
-            <link rel="preload" as="image" href="http://localhost:5173/resources/assets/img/itsfree-mob.png" type="image/png" media="(max-width: 768px)" fetchpriority="high">
-        @else
-            <link rel="preload" as="image" href="{{ asset('resources/assets/img/itsfree.png') }}" type="image/png" fetchpriority="high">
-            <link rel="preload" as="image" href="{{ asset('resources/assets/img/itsfree-mob.png') }}" type="image/png" media="(max-width: 768px)" fetchpriority="high">
-        @endif
+        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/img/itsfree.png') }}" type="image/png" fetchpriority="high">
+        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/img/itsfree-mob.png') }}" type="image/png" media="(max-width: 768px)" fetchpriority="high">
     @endif
     
     <!-- Google Fonts - will be loaded asynchronously below -->

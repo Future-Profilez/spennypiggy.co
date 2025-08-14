@@ -326,8 +326,9 @@ class ResourcePreloadService
         // Preload Vite assets (resources/assets/*)
         if (isset($heroImagePaths[$page])) {
             foreach ($heroImagePaths[$page] as $imagePath) {
+                // In development, serve through Laravel since assets are in public folder
                 $imageUrl = app()->environment('local', 'development')
-                    ? "http://localhost:5173/{$imagePath}"
+                    ? url($imagePath)
                     : asset($imagePath);
                 $this->preloadImage($imageUrl, true);
             }
@@ -355,11 +356,8 @@ class ResourcePreloadService
         
         $fonts = [];
         foreach ($fontPaths as $path) {
-            if (app()->environment('local', 'development')) {
-                $fonts[] = "http://localhost:5173/{$path}";
-            } else {
-                $fonts[] = asset($path);
-            }
+            // In development, serve through Laravel since assets are in public folder
+            $fonts[] = url($path);
         }
 
         foreach ($fonts as $font) {

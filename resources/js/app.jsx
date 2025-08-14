@@ -6,9 +6,18 @@ import "../css/core-web-vitals.css";
 import "../css/index.css";
 import "../css/home.css";
 
-// React core imports - Suspense and lazy for automatic JSX runtime
-import { Suspense, lazy } from "react";
+// React core imports - ensure React is available globally to prevent Children undefined errors
+import React, { Suspense, lazy, Children } from "react";
 import { createRoot } from "react-dom/client";
+
+// Make React globally available for components that expect it
+if (typeof window !== 'undefined') {
+    window.React = React;
+    // Ensure React.Children is available globally to fix production issues
+    if (!React.Children) {
+        React.Children = Children;
+    }
+}
 import { createInertiaApp } from "@inertiajs/react";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 
